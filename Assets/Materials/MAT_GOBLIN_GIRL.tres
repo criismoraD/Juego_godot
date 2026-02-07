@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bpcfmhg61sn8w"]
+
+[ext_resource type="Texture2D" uid="uid://bmoykq05w0dx0" path="res://Assets/Textures/Characters/TEX_GOBLIN_GIRL.jpg" id="1_xhq3u"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/thickness = 0.02
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+
+[resource]
+resource_name = "Material.002"
+next_pass = SubResource("ShaderMaterial_outline")
+cull_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_xhq3u")

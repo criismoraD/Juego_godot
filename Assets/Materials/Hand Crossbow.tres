@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://4fxlfonkc6n0"]
+
+[ext_resource type="Texture2D" uid="uid://b15trd4gsjoko" path="res://Assets/Textures/Armas y Projectiles/TEX_BALLESTA.png" id="1_1fj6t"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/thickness = 9.999999746999996e-05
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+
+[resource]
+resource_name = "Hand Crossbow"
+next_pass = SubResource("ShaderMaterial_outline")
+shading_mode = 0
+albedo_texture = ExtResource("1_1fj6t")

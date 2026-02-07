@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3 uid="uid://dh6gp8m6qcofm"]
+
+[ext_resource type="Script" uid="uid://i24sqemy5r1" path="res://Scripts/Projectiles/GoblinGirlArrow.gd" id="1_script"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_arrow"]
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.3
+
+[sub_resource type="StandardMaterial3D" id="Material_yellow"]
+albedo_color = Color(1, 0.20784314, 0, 1)
+emission_enabled = true
+emission = Color(1, 0.19607843, 0, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_arrow"]
+radius = 0.03
+height = 0.3
+
+[node name="GoblinGirlArrow" type="Area3D"]
+collision_layer = 8
+collision_mask = 3
+script = ExtResource("1_script")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_arrow")
+surface_material_override/0 = SubResource("Material_yellow")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("CapsuleShape_arrow")

@@ -1,0 +1,221 @@
+[gd_scene format=3 uid="uid://dr21pjnsniiir"]
+
+[ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Scenes/Characters/Player.tscn" id="4_1cr8j"]
+[ext_resource type="Texture2D" uid="uid://bgc5rl13dopuj" path="res://Assets/Textures/Environment/sky_2.png" id="4_ln05h"]
+[ext_resource type="Script" uid="uid://dhksy0vksfyqc" path="res://Scripts/Core/WaveSpawner.gd" id="5_spawner"]
+[ext_resource type="PackedScene" uid="uid://dh6gp8m68vbd3" path="res://Scenes/Characters/GoblinGirl.tscn" id="6_an7ty"]
+[ext_resource type="PackedScene" uid="uid://dgatsttvqixnc" path="res://Scenes/Characters/Goblin.tscn" id="6_goblin"]
+[ext_resource type="PackedScene" uid="uid://jkq8yur2sbta" path="res://Assets/Models/Environment/MDL_tower.fbx" id="7_75bds"]
+[ext_resource type="PackedScene" uid="uid://cr61kgfu7qhp0" path="res://Scenes/Environment/ESCALERA.tscn" id="7_ladder"]
+[ext_resource type="PackedScene" uid="uid://cypidmyp0u2xc" path="res://Assets/Models/Environment/MDL_spike_trap.fbx" id="8_t22cv"]
+[ext_resource type="PackedScene" uid="uid://c7a4c82odgcle" path="res://Scenes/Environment/BarreraLimite.tscn" id="9_8uf3n"]
+[ext_resource type="PackedScene" uid="uid://d3e4f5g6h7i8j" path="res://Scenes/Environment/Escudo.tscn" id="10_j54d2"]
+[ext_resource type="PackedScene" uid="uid://v8ci5ta3tkkr" path="res://Scenes/Environment/PlataformaOneway.tscn" id="11_j5qtk"]
+[ext_resource type="PackedScene" uid="uid://c0gtu2yrqpnxw" path="res://Scenes/UI/GameUI.tscn" id="15_gameui"]
+[ext_resource type="Texture2D" uid="uid://bvx7egiurhae4" path="res://Assets/Textures/UI/1frame.png" id="16_gfe6n"]
+[ext_resource type="VideoStream" uid="uid://yaua7cp2sunt" path="res://Assets/Videos/FONDo.ogv" id="16_nmxfx"]
+[ext_resource type="PackedScene" path="res://Scenes/Environment/FogPlane.tscn" id="17_fogplane"]
+[ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Scenes/Environment/WaterPlane.tscn" id="18_gpjsk"]
+[ext_resource type="PackedScene" uid="uid://c20j7pudi7arc" path="res://Scenes/Environment/BASE_ARQUERA.tscn" id="19_mbwsw"]
+[ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_jka67"]
+panorama = ExtResource("4_ln05h")
+
+[sub_resource type="Sky" id="Sky_i5arm"]
+sky_material = SubResource("PanoramaSkyMaterial_jka67")
+
+[sub_resource type="Environment" id="Environment_wc5p8"]
+background_mode = 2
+background_energy_multiplier = 1.25
+sky = SubResource("Sky_i5arm")
+sky_rotation = Vector3(0, 1.13446, 0)
+ambient_light_sky_contribution = 0.02
+tonemap_mode = 3
+tonemap_white = 1.2
+glow_enabled = true
+glow_intensity = 1.1
+glow_strength = 1.45
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.5135, 0.73930836, 0.79, 1)
+fog_light_energy = 0.65
+fog_sun_scatter = 0.04
+fog_density = 1.064
+fog_aerial_perspective = 0.173
+fog_sky_affect = 0.0
+fog_height = 0.4
+fog_height_density = 0.1389
+fog_depth_curve = 0.9330333
+fog_depth_begin = 37.2
+fog_depth_end = 236.7
+volumetric_fog_density = 0.0145
+volumetric_fog_temporal_reprojection_enabled = false
+adjustment_enabled = true
+adjustment_contrast = 1.15
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_jpub6"]
+dof_blur_far_enabled = true
+dof_blur_far_distance = 45.0
+dof_blur_far_transition = 1.0
+dof_blur_amount = 0.03
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_gfe6n"]
+viewport_path = NodePath("SubViewport")
+
+[node name="Node3D" type="Node3D" unique_id=615207129]
+script = ExtResource("Script_Level01")
+
+[node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting" unique_id=1150657961]
+transform = Transform3D(0.94819623, 0.051700268, -0.31345022, 0, 0.9866689, 0.16274051, 0.3176853, -0.15430994, 0.9355557, -5.7785883, 2.29496, 2.7377172)
+light_energy = 0.3
+shadow_enabled = true
+shadow_opacity = 0.5
+shadow_blur = 0.2
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=1266906329]
+transform = Transform3D(0.40658453, -0.30609614, 0.8608101, 0.19945472, 0.9492161, 0.24332443, -0.8915757, 0.072760716, 0.4469887, 11.101227, 3.2153306, -2.8423328)
+light_energy = 0.8
+shadow_enabled = true
+shadow_opacity = 0.5
+shadow_blur = 0.2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Lighting" unique_id=1658111597]
+environment = SubResource("Environment_wc5p8")
+camera_attributes = SubResource("CameraAttributesPractical_jpub6")
+
+[node name="PRESPECTIVA" type="Camera3D" parent="Lighting" unique_id=61242936]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+projection = 2
+fov = 5.0
+size = 0.01
+
+[node name="Player" parent="." unique_id=57901427 instance=ExtResource("4_1cr8j")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.682749, 5.103947, 2.3841858e-07)
+color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
+escala_min_salto = 0.01
+escala_max_salto = 0.05
+velocidad_escalar_subir = 0.5
+velocidad_escalar_bajar = 0.5
+
+[node name="WaveSpawner" type="Node3D" parent="." unique_id=818768354]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 4.746284, 0.9962306, 0)
+script = ExtResource("5_spawner")
+escena_goblin = ExtResource("6_goblin")
+escena_goblin_girl = ExtResource("6_an7ty")
+probabilidad_goblin_girl = 0.0
+
+[node name="SpawnMarker" type="Marker3D" parent="WaveSpawner" unique_id=1697843293]
+gizmo_extents = 0.5
+
+[node name="Torre" parent="." unique_id=521934829 instance=ExtResource("7_75bds")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -10.0445385, 0.0794332, -2.9301252)
+
+[node name="PINCHOS" parent="." unique_id=2015324355 instance=ExtResource("8_t22cv")]
+transform = Transform3D(0.78873014, 0.61473954, 0, -0.61473954, 0.78873014, 0, 0, 0, 1, -6.399726, -0.08775346, 0.36632776)
+
+[node name="LIMITZONE" parent="." unique_id=2108357977 instance=ExtResource("9_8uf3n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.736953, 0.15665722, -0.18122053)
+collision_layer = 512
+
+[node name="LIMITZONE2" parent="." unique_id=1939650596 instance=ExtResource("9_8uf3n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.998319, 1.3309662, -0.022488594)
+collision_layer = 512
+
+[node name="PlataformaOneway1" parent="." unique_id=76834893 instance=ExtResource("11_j5qtk")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -7.617247, 1.7013383, -0.37669206)
+
+[node name="EscudoDestruible1" parent="PlataformaOneway1" unique_id=1252358932 instance=ExtResource("10_j54d2")]
+transform = Transform3D(1.9769274, -0.15782219, -0.25855345, 0.16095226, 1.9934651, 0.013838094, 0.2566167, -0.03448584, 1.983169, 1.9678831, -0.18828106, 0.544318)
+fuerza_explosion = 0.5
+fuerza_vertical = 2.0
+torque_min = 0.0
+torque_max = 0.01
+tiempo_congelar = 6.0
+
+[node name="Ladder1" parent="PlataformaOneway1" unique_id=788968404 instance=ExtResource("7_ladder")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -2.9612694, 0.1503278)
+
+[node name="PlataformaOneway2" parent="." unique_id=188995314 instance=ExtResource("11_j5qtk")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -8.364106, 3.248637, -0.37669206)
+
+[node name="EscudoDestruible2" parent="PlataformaOneway2" unique_id=1438793568 instance=ExtResource("10_j54d2")]
+transform = Transform3D(1.9769274, -0.15782219, -0.25855345, 0.16095226, 1.9934651, 0.013838094, 0.2566167, -0.03448584, 1.983169, 1.9678831, -0.23470688, 0.544318)
+fuerza_explosion = 0.5
+fuerza_vertical = 2.0
+torque_min = 0.0
+torque_max = 0.01
+tiempo_congelar = 6.0
+
+[node name="Ladder2" parent="PlataformaOneway2" unique_id=297526372 instance=ExtResource("7_ladder")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
+
+[node name="PlataformaOneway3" parent="." unique_id=410870069 instance=ExtResource("11_j5qtk")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -9.14372, 4.721031, -0.37669206)
+
+[node name="EscudoDestruible3" parent="PlataformaOneway3" unique_id=1315861802 instance=ExtResource("10_j54d2")]
+transform = Transform3D(1.9769274, -0.15782219, -0.25855345, 0.16095226, 1.9934651, 0.013838094, 0.2566167, -0.03448584, 1.983169, 1.9678841, -0.21232605, 0.544318)
+fuerza_explosion = 0.5
+fuerza_vertical = 2.0
+torque_min = 0.0
+torque_max = 0.01
+tiempo_congelar = 6.0
+
+[node name="Ladder3" parent="PlataformaOneway3" unique_id=1422258178 instance=ExtResource("7_ladder")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
+
+[node name="GameUI" parent="." unique_id=370663490 instance=ExtResource("15_gameui")]
+
+[node name="SubViewport" type="SubViewport" parent="." unique_id=1162834119]
+size = Vector2i(1505, 1080)
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="SubViewport" unique_id=763944868]
+custom_minimum_size = Vector2(1504, 1080)
+offset_right = 40.0
+offset_bottom = 40.0
+stream = ExtResource("16_nmxfx")
+autoplay = true
+expand = true
+loop = true
+
+[node name="TextureRect" type="TextureRect" parent="SubViewport" unique_id=22287514]
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("16_gfe6n")
+
+[node name="FONDO ANIMADO" type="Sprite3D" parent="." unique_id=625058086]
+transform = Transform3D(1.9454114, 0, 0, 0, 1.55, 0, 0, 0, 1.55, -3, 3, -39.5)
+texture = SubResource("ViewportTexture_gfe6n")
+
+[node name="FogPlane" parent="." unique_id=1524639475 instance=ExtResource("17_fogplane")]
+transform = Transform3D(0.19913417, 0, 0, 0, 0.15469623, 0, 0, 0, 1.0000006, 1.680629, -0.25954807, -34.412235)
+
+[node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.904056, -0.1726765, -12.279569)
+
+[node name="TestCube-BASE_ALIADa" parent="." unique_id=1864087643 instance=ExtResource("19_mbwsw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.782, -0.843, -0.888)
+uv_scale_sides = Vector2(0.2, 0.4)
+uv_scale_top = Vector2(0.1, 0.2)
+blend_sharpness = 4.0
+normal_intensity = 0.2
+displacement_scale_y = 0.05
+displacement_scale_xz = 0.264
+roughness = 1.0
+bevel_radius = 0.15
+
+[node name="TestCube2-BASE_ENEMIGA" parent="." unique_id=1680604205 instance=ExtResource("19_mbwsw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.94, -0.843, -0.888)
+mesh_size = Vector3(17, 2, 4)
+subdivide_width = 100
+subdivide_height = 100
+subdivide_depth = 100
+uv_scale_sides = Vector2(0.2, 0.4)
+uv_scale_top = Vector2(0.2, 0.5)
+blend_sharpness = 4.0
+normal_intensity = 0.2
+displacement_scale_y = 0.0
+displacement_scale_xz = 0.166
+bevel_radius = 0.15

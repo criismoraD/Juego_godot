@@ -1,0 +1,46 @@
+[gd_scene load_steps=7 format=3 uid="uid://devh4g84ip0l1"]
+
+[ext_resource type="Script" uid="uid://c86uwyp7215jm" path="res://Scripts/Projectiles/Arrow.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Assets/Models/Armas y Projectiles/FLECHA.fbx" id="2_model"]
+
+[sub_resource type="CapsuleShape3D" id="collision_shape"]
+radius = 0.03
+height = 0.34990233
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qaq63"]
+emission_enabled = true
+emission = Color(0.9882353, 0.8784314, 0, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="ParticleProcessMaterial" id="trail_process"]
+direction = Vector3(-1, 0, 0)
+spread = 8.0
+initial_velocity_min = 0.3
+initial_velocity_max = 0.6
+gravity = Vector3(0, -0.3, 0)
+scale_min = 0.3
+scale_max = 0.8
+color = Color(1, 0.6, 0.1, 1)
+
+[sub_resource type="SphereMesh" id="trail_mesh"]
+radius = 0.01
+height = 0.02
+
+[node name="ArrowProjectile" type="Area3D"]
+collision_layer = 4
+collision_mask = 5
+script = ExtResource("1_script")
+
+[node name="FLECHA" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-0.4, 0, -6.039832e-08, 0, 0.4, 0, 6.039832e-08, 0, -0.4, -0.20053375, -2.9802322e-08, -0.0053989887)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(-4.371139e-08, 1, -4.371139e-08, 0, -4.371139e-08, -1, -1, -4.371139e-08, 1.9106855e-15, -0.025048837, 1.0949195e-09, 1.0949195e-09)
+shape = SubResource("collision_shape")
+
+[node name="TrailParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17913201, 0, 0)
+material_override = SubResource("StandardMaterial3D_qaq63")
+amount = 12
+process_material = SubResource("trail_process")
+draw_pass_1 = SubResource("trail_mesh")

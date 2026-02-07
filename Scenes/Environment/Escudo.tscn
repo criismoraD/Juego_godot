@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://d3e4f5g6h7i8j"]
+
+[ext_resource type="PackedScene" uid="uid://bb67gujc4cy6x" path="res://Assets/Models/Environment/MDL_shield.fbx" id="1_escudo"]
+[ext_resource type="Script" uid="uid://b4365tp1donxq" path="res://Scripts/Environment/Escudo.gd" id="2_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.11456299, 0.9216614, 0.72670287)
+
+[node name="EscudoDestruible" type="StaticBody3D"]
+script = ExtResource("2_script")
+
+[node name="EscudoModel" parent="." instance=ExtResource("1_escudo")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.025177002, 0.46095276, 0.0036285147)
+shape = SubResource("BoxShape3D_1")

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://44h7qgw6ij2x"]
+
+[ext_resource type="Script" uid="uid://bf5ystawlkhmj" path="res://Scripts/Environment/custom_floor.gd" id="1_script"]
+
+[node name="CustomFloor" type="StaticBody3D"]
+script = ExtResource("1_script")

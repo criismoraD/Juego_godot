@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://c8j6k4m2n1p5q"]
+
+[ext_resource type="PackedScene" uid="uid://coaicf4rwl7v4" path="res://Assets/Models/Environment/escudo_partes.glb" id="1_model"]
+
+[ext_resource type="Script" uid="uid://b8tq5y3k2x1j4" path="res://Scripts/Environment/EscudoRoto.gd" id="2_physics"]
+
+[node name="EscudoRoto" type="Node3D"]
+script = ExtResource("2_physics")
+
+
+[node name="escudo_partes" parent="." instance=ExtResource("1_model")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)

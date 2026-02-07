@@ -1,0 +1,62 @@
+[gd_scene load_steps=4 format=3 uid="uid://dh6gp8m68vbd3"]
+
+[ext_resource type="Script" uid="uid://dualxct8nv4di" path="res://Scripts/Characters/GoblinGirl.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://oi50n8vycsh3" path="res://Assets/Models/Goblin/GEO_GOBLIN_GIRL.fbx" id="2_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_goblingirl"]
+radius = 0.1665039
+height = 0.64101565
+
+[node name="GoblinGirl" type="CharacterBody3D"]
+collision_layer = 4
+script = ExtResource("1_script")
+
+[node name="GOBLING_GIRL" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-2.8412401e-08, 0, -0.65, 0, 0.65, 0, 0.65, 0, -2.8412401e-08, 0, 0, 0)
+
+[node name="Skeleton3D" parent="GOBLING_GIRL/Armature" index="0"]
+bones/0/position = Vector3(0.0031978767, 0.5478855, -0.004232254)
+bones/0/rotation = Quaternion(-0.01003745, 0.04474379, -0.0072682174, 0.99892163)
+bones/1/rotation = Quaternion(-0.011470776, -0.001204633, -0.05134442, 0.99861443)
+bones/2/rotation = Quaternion(-0.03204241, -0.0033644575, 0.032350533, 0.99895716)
+bones/3/rotation = Quaternion(-0.031903546, -0.0036898493, 0.032432396, 0.9989578)
+bones/4/rotation = Quaternion(0.104052976, -0.023564385, -0.01408032, 0.99419284)
+bones/5/rotation = Quaternion(0.042949386, -0.023753513, 0.00488139, 0.99878293)
+bones/8/rotation = Quaternion(0.60841703, 0.3852203, -0.55762064, 0.4129085)
+bones/9/rotation = Quaternion(0.34970555, -0.032655563, -0.11034952, 0.92976487)
+bones/10/rotation = Quaternion(0.025593136, 0.1457525, 0.12306922, 0.9813028)
+bones/11/rotation = Quaternion(-0.04130118, 0.30801648, -0.01629578, 0.95034444)
+bones/12/rotation = Quaternion(-0.120520234, 0.16217677, 0.16443628, 0.96547097)
+bones/13/rotation = Quaternion(0.13872774, -0.14244077, -0.011828922, 0.979962)
+bones/14/rotation = Quaternion(-0.0057261316, -0.07938449, 0.0045363232, 0.9968173)
+bones/15/rotation = Quaternion(9.669746e-08, -1.1345877e-07, 1.1194059e-08, 1)
+bones/17/rotation = Quaternion(0.09007768, 0.025540007, -0.0017762046, 0.99560565)
+bones/18/rotation = Quaternion(0.16340885, -0.022075942, 0.124869324, 0.9783751)
+bones/19/rotation = Quaternion(0.14291035, -0.016174208, -0.009037351, 0.9895623)
+bones/20/rotation = Quaternion(2.2351289e-08, 4.005134e-08, 6.100459e-08, 1)
+bones/22/rotation = Quaternion(0.568115, -0.408965, 0.61014676, 0.37109828)
+bones/23/rotation = Quaternion(0.35855588, 0.0075780344, 0.002403301, 0.9334745)
+bones/24/rotation = Quaternion(-0.006711917, -0.14621753, -0.1908061, 0.9706536)
+bones/25/rotation = Quaternion(0.019053414, -0.35938576, 0.04147899, 0.93207216)
+bones/26/rotation = Quaternion(-0.057812158, -0.18859391, -0.15602355, 0.96785676)
+bones/27/rotation = Quaternion(0.143065, 0.13603878, 0.019498676, 0.98012537)
+bones/28/rotation = Quaternion(-0.06909787, 0.0633729, -0.25223407, 0.96311337)
+bones/29/rotation = Quaternion(3.7212885e-08, 1.1918587e-07, 1.8597348e-08, 1)
+bones/31/rotation = Quaternion(0.042569116, -0.022403587, 0.035528395, 0.99821025)
+bones/32/rotation = Quaternion(0.12082856, 0.020773957, -0.15317234, 0.9805647)
+bones/33/rotation = Quaternion(0.10196492, 0.013322897, 0.044269193, 0.9937132)
+bones/34/rotation = Quaternion(-1.461261e-07, -1.3039018e-07, 7.960483e-08, 1)
+bones/36/rotation = Quaternion(-0.13527697, 0.36712924, 0.9201507, -0.015461133)
+bones/37/rotation = Quaternion(-0.6731794, 0.028096406, -0.032735303, 0.7382198)
+bones/38/rotation = Quaternion(0.33118722, 0.004251525, 0.05255975, 0.9420905)
+bones/39/rotation = Quaternion(0.4955822, -0.08362661, 0.031793386, 0.863941)
+bones/42/rotation = Quaternion(-0.048448898, 0.09886287, 0.98930997, -0.095627606)
+bones/43/rotation = Quaternion(-0.2789428, 0.00014667948, 0.01458319, 0.960197)
+bones/44/rotation = Quaternion(0.34181136, -0.0355674, -0.114613935, 0.93207496)
+bones/45/rotation = Quaternion(0.5753611, -0.026136963, 0.008338915, 0.8174394)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.32550782, 0)
+shape = SubResource("CapsuleShape_goblingirl")
+
+[editable path="GOBLING_GIRL"]
