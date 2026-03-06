@@ -14,7 +14,7 @@ class_name EnemyBase
 
 # === CONFIGURACIÓN - COMBATE ===
 @export_category("Combate")
-@export var vida_maxima: int = 2
+@export var vida_maxima: int = 1
 @export var altura_spawn_flecha: float = 0.5
 
 # === CONFIGURACIÓN - APUNTADO ===
@@ -52,11 +52,15 @@ var anim_player: AnimationPlayer
 var player_ref: Node3D = null
 var skeleton: Skeleton3D = null
 var spine_bone_idx: int = -1
+var hips_bone_idx: int = -1
 
 # === ESTADO ===
 enum State {WALKING, SHOOTING, DYING, DEAD}
 var current_state: State = State.WALKING
 var health: int = 2
+var modo_pacifico: bool = false ## Si true, el enemigo solo camina sin atacar
+var limite_pacifico_x: float = -10.0 ## Posición X donde se detiene en modo pacífico
+var pacifico_detenido: bool = false ## True cuando ya se detuvo en el borde
 var walked_distance: float = 0.0
 var target_walk_distance: float = 0.0
 var shoot_timer: float = 0.0
@@ -70,6 +74,7 @@ var dissolve_particles: GPUParticles3D = null
 
 # === SEÑALES ===
 signal died
+signal pacifico_danado ## Emitida cuando un enemigo pacífico recibe daño
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
@@ -100,7 +105,7 @@ func _buscar_animation_player():
 	if anim_player:
 		for anim_name in anim_player.get_animation_list():
 			if "CORRER" in anim_name or "CAMINAR" in anim_name or "CAMINA" in anim_name \
-				or "RUN" in anim_name or "WALK" in anim_name:
+				or "RUN" in anim_name or "WALK" in anim_name or "IDLE" in anim_name:
 				var anim = anim_player.get_animation(anim_name)
 				if anim:
 					anim.loop_mode = Animation.LOOP_LINEAR
@@ -111,14 +116,39 @@ func _buscar_skeleton():
 		spine_bone_idx = skeleton.find_bone("mixamorig_Spine1")
 		if spine_bone_idx == -1:
 			spine_bone_idx = skeleton.find_bone("mixamorig_Spine")
+		hips_bone_idx = skeleton.find_bone("mixamorig_Hips")
+		if hips_bone_idx == -1:
+			hips_bone_idx = skeleton.find_bone("Hips")
 
 func _buscar_jugador():
 	await get_tree().process_frame
 	player_ref = get_tree().get_first_node_in_group("player")
 
+func _process(delta):
+	# Actualizar posición de partículas de disolución para seguir el centro del cuerpo
+	if is_dissolving and dissolve_particles and is_instance_valid(dissolve_particles):
+		var bone_pos = _get_hips_global_position()
+		if bone_pos != Vector3.ZERO:
+			dissolve_particles.global_position = bone_pos
+
+func _get_hips_global_position() -> Vector3:
+	if skeleton and is_instance_valid(skeleton) and hips_bone_idx != -1:
+		var bone_pose = skeleton.get_bone_global_pose(hips_bone_idx)
+		return skeleton.global_transform * bone_pose.origin
+	# Fallback: usar spine si no hay hips
+	if skeleton and is_instance_valid(skeleton) and spine_bone_idx != -1:
+		var bone_pose = skeleton.get_bone_global_pose(spine_bone_idx)
+		return skeleton.global_transform * bone_pose.origin
+	return Vector3.ZERO
+
 ## Hook para que las subclases ejecuten lógica adicional en _ready()
 func _on_enemy_ready():
 	pass
+
+## Hook para cuando el enemigo se detiene en modo pacífico.
+## Las subclases pueden overridear para poses específicas.
+func _on_pacifico_detenido():
+	_play_animation("IDLE")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MATERIALES
@@ -159,6 +189,15 @@ func _process_walking(delta):
 	velocity.x = -velocidad_caminar
 	walked_distance += velocidad_caminar * delta
 
+	# En modo pacífico, solo camina y se detiene al llegar al borde
+	if modo_pacifico:
+		if global_position.x <= limite_pacifico_x:
+			velocity.x = 0
+			if not pacifico_detenido:
+				pacifico_detenido = true
+				_on_pacifico_detenido()
+		return
+
 	if walked_distance >= target_walk_distance:
 		if _check_spacing():
 			_change_state(State.SHOOTING)
@@ -181,6 +220,15 @@ func _check_spacing() -> bool:
 			var dist = abs(global_position.x - enemy.global_position.x)
 			if dist < distancia_minima_entre_enemigos:
 				return false
+	# Verificar distancia a ImpShieldGirls posicionadas
+	var shield_imps = get_tree().get_nodes_in_group("shield_imps")
+	for si in shield_imps:
+		if not is_instance_valid(si) or si == self:
+			continue
+		if si.current_state == si.State.DEFENDING or si.current_state == si.State.SHIELD_HIT:
+			var dist = abs(global_position.x - si.global_position.x)
+			if dist < distancia_minima_entre_enemigos:
+				return false
 	return true
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -198,6 +246,7 @@ func _change_state(new_state: State):
 		State.DYING:
 			_on_state_dying()
 		State.DEAD:
+			_cleanup_all_materials()
 			queue_free()
 
 ## Hooks para subclases
@@ -216,21 +265,21 @@ func _on_state_dying():
 # ANIMACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
 
-func _play_animation(anim_name: String):
+func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float = 1.0):
 	if not anim_player:
 		return
 
-	var possible_names = [anim_name, "Armature|" + anim_name]
+	var possible_names = [anim_name, "Armature|" + anim_name, "Armature|Armature|" + anim_name]
 	for possible_anim in possible_names:
 		if anim_player.has_animation(possible_anim):
-			anim_player.play(possible_anim)
+			anim_player.play(possible_anim, custom_blend, speed)
 			return
 
 func _get_animation_duration(anim_name: String) -> float:
 	if not anim_player:
 		return 2.0
 
-	var possible_names = [anim_name, "Armature|" + anim_name]
+	var possible_names = [anim_name, "Armature|" + anim_name, "Armature|Armature|" + anim_name]
 	for possible_anim in possible_names:
 		if anim_player.has_animation(possible_anim):
 			return anim_player.get_animation(possible_anim).length
@@ -245,8 +294,10 @@ func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
+	if modo_pacifico:
+		pacifico_danado.emit()
+
 	health -= int(amount)
-	_flash_red()
 
 	if has_node("/root/GameFeel"):
 		get_node("/root/GameFeel").on_enemy_hurt()
@@ -277,11 +328,34 @@ func _flash_red():
 	)
 
 func _reset_materials():
+	# Restaurar los materiales originales guardados en _store_original_materials()
+	for item in original_materials:
+		if is_instance_valid(item["mesh"]):
+			item["mesh"].set_surface_override_material(item["index"], item["material"])
+
+## Limpia TODOS los materiales del nodo y sus hijos antes de queue_free()
+## para evitar errores "Parameter 'material' is null" del RenderingServer.
+func _cleanup_all_materials():
 	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
 	for mesh in mesh_instances:
-		mesh.material_override = null
-		for i in range(mesh.get_surface_override_material_count()):
-			mesh.set_surface_override_material(i, null)
+		if is_instance_valid(mesh):
+			mesh.material_override = null
+			if mesh.mesh:
+				for si in range(mesh.mesh.get_surface_count()):
+					mesh.set_surface_override_material(si, null)
+			mesh.visible = false
+	
+	# Detener todas las partículas y limpiar sus materiales de draw_pass
+	var particles = find_children("*", "GPUParticles3D", true, false)
+	for p in particles:
+		if is_instance_valid(p):
+			p.emitting = false
+			if p.draw_pass_1 and p.draw_pass_1 is Mesh:
+				p.draw_pass_1.material = null
+			p.draw_pass_1 = null
+	
+	dissolve_materials.clear()
+	original_materials.clear()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TRACKING DEL JUGADOR (Rotación de torso)
@@ -371,6 +445,16 @@ func _update_dissolve(value: float):
 			item["material"].set_shader_parameter("dissolve_amount", value)
 
 func _finish_dissolve():
+	# Limpiar materiales de TODOS los meshes antes de queue_free
+	# para evitar "Parameter 'material' is null" en el RenderingServer
+	for item in dissolve_materials:
+		if is_instance_valid(item["mesh"]):
+			item["mesh"].material_override = null
+			if item["mesh"].mesh:
+				for si in range(item["mesh"].mesh.get_surface_count()):
+					item["mesh"].set_surface_override_material(si, null)
+			item["mesh"].visible = false
+
 	var particles_node = get_node_or_null("DissolveParticles")
 	if particles_node:
 		var global_pos = particles_node.global_position
@@ -384,6 +468,7 @@ func _finish_dissolve():
 		)
 
 	current_state = State.DEAD
+	_cleanup_all_materials()
 	queue_free()
 
 func _create_dissolve_particles():
@@ -436,8 +521,13 @@ func _create_dissolve_particles():
 	sphere.material = part_mat
 
 	particles.draw_pass_1 = sphere
-	particles.position = particulas_posicion
 
 	add_child(particles)
+	# Posicionar en el centro del cuerpo (hueso Hips) en vez de offset fijo
+	var bone_pos = _get_hips_global_position()
+	if bone_pos != Vector3.ZERO:
+		particles.global_position = bone_pos
+	else:
+		particles.position = particulas_posicion
 	particles.emitting = true
 	dissolve_particles = particles

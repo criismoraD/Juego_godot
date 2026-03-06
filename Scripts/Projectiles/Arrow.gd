@@ -16,6 +16,7 @@ var velocity: Vector3 = Vector3.ZERO
 var power: float = 0.0
 var world_gravity: float = 0.0
 var is_stuck: bool = false
+var _destroying: bool = false
 
 func _ready():
 	world_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -94,16 +95,20 @@ func _check_off_screen():
 	var screen_pos = camera.unproject_position(global_position)
 	var viewport_size = get_viewport().get_visible_rect().size
 	
-	# Margen extra para dar tiempo a la flecha
-	var margin = 200.0
+	# Margen horizontal moderado
+	var margin_x = 400.0
+	# Margen vertical amplio arriba para permitir trayectorias parabólicas
+	var margin_top = 2000.0
+	var margin_bottom = 300.0
 	
-	if screen_pos.x < -margin or screen_pos.x > viewport_size.x + margin:
-		queue_free()
-	elif screen_pos.y < -margin or screen_pos.y > viewport_size.y + margin:
-		queue_free()
-	# También verificar si está muy lejos en el eje Y del mundo
+	if screen_pos.x < -margin_x or screen_pos.x > viewport_size.x + margin_x:
+		_safe_destroy()
+	elif screen_pos.y < -margin_top:
+		_safe_destroy()
+	elif screen_pos.y > viewport_size.y + margin_bottom:
+		_safe_destroy()
 	elif global_position.y < -20:
-		queue_free()
+		_safe_destroy()
 
 func _on_body_entered(body):
 	if is_stuck:
@@ -117,11 +122,15 @@ func _on_body_entered(body):
 	# Solo las flechas enemigas interactúan con escudos
 	if tipo_dueño == TipoFlecha.ENEMIGO and body.has_method("recibir_golpe"):
 		body.recibir_golpe()
-		queue_free()
+		_safe_destroy()
 		return
 	
 	# Si es flecha del jugador y encuentra un escudo, ignorarlo
 	if tipo_dueño == TipoFlecha.JUGADOR and body.is_in_group("escudos"):
+		return
+	
+	# Ignorar aliados (NPC) — las flechas los atraviesan
+	if body.is_in_group("allies"):
 		return
 	
 	# Verificar si es un suelo o plataforma (StaticBody3D o AnimatableBody3D)
@@ -138,12 +147,12 @@ func _on_body_entered(body):
 			if body.has_method("set") and "last_hit_position" in body:
 				body.last_hit_position = global_position
 			body.take_damage(1.0)
-			queue_free()
+			_safe_destroy()
 	elif tipo_dueño == TipoFlecha.ENEMIGO:
 		# Las flechas del enemigo dañan al jugador
 		if body.has_method("take_damage") and body.is_in_group("player"):
 			body.take_damage(1.0)
-			queue_free()
+			_safe_destroy()
 
 func _on_area_entered(area: Area3D):
 	if is_stuck:
@@ -173,6 +182,7 @@ func _stick_to_surface():
 	# Programar destrucción después de un tiempo
 	get_tree().create_timer(tiempo_pegada).timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
+			_cleanup_materials()
 			queue_free()
 	)
 
@@ -217,6 +227,7 @@ func _find_closest_bone(skeleton: Skeleton3D) -> int:
 
 func _attach_to_bone(enemy: Node3D, skeleton: Skeleton3D, bone_idx: int):
 	if not is_instance_valid(enemy) or not is_instance_valid(skeleton):
+		_cleanup_materials()
 		queue_free()
 		return
 	
@@ -242,7 +253,9 @@ func _attach_to_bone(enemy: Node3D, skeleton: Skeleton3D, bone_idx: int):
 	# Conectar señal de muerte del enemigo para auto-destruirse
 	if enemy.has_signal("died"):
 		enemy.died.connect(func():
-			if is_instance_valid(self): queue_free()
+			if is_instance_valid(self):
+				_cleanup_materials()
+				queue_free()
 		)
 	
 	# Timer de destrucción
@@ -250,11 +263,13 @@ func _attach_to_bone(enemy: Node3D, skeleton: Skeleton3D, bone_idx: int):
 		if is_instance_valid(attachment) and attachment.is_inside_tree():
 			attachment.queue_free()
 		if is_instance_valid(self) and is_inside_tree():
+			_cleanup_materials()
 			queue_free()
 	)
 
 func _reparent_to_enemy(enemy: Node3D, relative_pos: Vector3):
 	if not is_instance_valid(enemy):
+		_cleanup_materials()
 		queue_free()
 		return
 	
@@ -270,19 +285,61 @@ func _reparent_to_enemy(enemy: Node3D, relative_pos: Vector3):
 	# Conectar señal de muerte del enemigo
 	if enemy.has_signal("died"):
 		enemy.died.connect(func():
-			if is_instance_valid(self): queue_free()
+			if is_instance_valid(self):
+				_cleanup_materials()
+				queue_free()
 		)
 	
 	# Destruir después de un tiempo
 	get_tree().create_timer(tiempo_pegada).timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
+			_cleanup_materials()
 			queue_free()
 	)
+
+func _safe_destroy():
+	if _destroying:
+		return
+	_destroying = true
+	# Detener trail antes de liberar para evitar "Parameter material is null"
+	var trail = get_node_or_null("TrailParticles")
+	if trail:
+		trail.emitting = false
+		if trail.draw_pass_1 and trail.draw_pass_1 is Mesh:
+			trail.draw_pass_1.material = null
+		trail.draw_pass_1 = null
+	# Limpiar materiales de meshes
+	_cleanup_materials()
+	visible = false
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
+	set_physics_process(false)
+	get_tree().create_timer(0.3).timeout.connect(func():
+		if is_instance_valid(self) and is_inside_tree():
+			queue_free()
+	)
+
+func _cleanup_materials():
+	var meshes = find_children("*", "MeshInstance3D", true, false)
+	for mesh in meshes:
+		if is_instance_valid(mesh):
+			mesh.material_override = null
+			if mesh.mesh:
+				for si in range(mesh.mesh.get_surface_count()):
+					mesh.set_surface_override_material(si, null)
+			mesh.visible = false
+	var particles = find_children("*", "GPUParticles3D", true, false)
+	for p in particles:
+		if is_instance_valid(p):
+			p.emitting = false
+			if p.draw_pass_1 and p.draw_pass_1 is Mesh:
+				p.draw_pass_1.material = null
+			p.draw_pass_1 = null
 
 func _check_destroy():
 	# Solo destruir si no está pegada (las pegadas tienen su propio timer)
 	if not is_stuck:
-		queue_free()
+		_safe_destroy()
 
 # Llamar ANTES de añadir al árbol
 # IMPORTANTE: La velocidad se calcula y pasa desde Player.gd, no se usa internamente

@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Arrow of Anathema"
-run/main_scene="res://Scenes/UI/MainMenu.tscn"
+run/main_scene="res://Scenes/UI/SplashScreen.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 run/max_fps=60
 boot_splash/bg_color=Color(0, 0, 0, 1)
@@ -37,7 +37,7 @@ AudioManager="*res://Scripts/Core/AudioManager.gd"
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/mode=4
-window/stretch/mode="viewport"
+window/stretch/mode="canvas_items"
 
 [importer_defaults]
 
@@ -78,6 +78,10 @@ move_back={
 ]
 }
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://Translations/translations.es.translation", "res://Translations/translations.en.translation", "res://Translations/translations.pt.translation", "res://Translations/translations.fr.translation", "res://Translations/translations.zh.translation", "res://Translations/translations.ja.translation", "res://Translations/translations.ru.translation", "res://Translations/translations.de.translation", "res://Translations/translations.ko.translation", "res://Translations/translations.it.translation", "res://Translations/translations.pl.translation", "res://Translations/translations.ar.translation", "res://Translations/translations.qu.translation", "res://Translations/translations.binary.translation")
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
@@ -88,3 +92,5 @@ textures/vram_compression/import_etc2_astc=true
 lights_and_shadows/directional_shadow/size=8192
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=3
+anti_aliasing/quality/msaa_3d=2
+anti_aliasing/quality/screen_space_aa=1

@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dh7lsxa6fx1kb"]
+
+[ext_resource type="Texture2D" uid="uid://cfsjj5kf3pi7y" path="res://Assets/Environment/SpikeTrap/TEX_spike_trap_basecolor.png" id="1_g6sw1"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 2.5
+
+[resource]
+resource_name = "ST_Spike"
+next_pass = SubResource("ShaderMaterial_outline")
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_g6sw1")

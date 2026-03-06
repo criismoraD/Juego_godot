@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://devh4g84ip0l1"]
 
 [ext_resource type="Script" uid="uid://c86uwyp7215jm" path="res://Scripts/Projectiles/Arrow.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Assets/Models/Armas y Projectiles/FLECHA.fbx" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Assets/Projectiles/Arrow/FLECHA.fbx" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="collision_shape"]
 radius = 0.03
@@ -28,7 +28,7 @@ height = 0.02
 
 [node name="ArrowProjectile" type="Area3D"]
 collision_layer = 4
-collision_mask = 5
+collision_mask = 69
 script = ExtResource("1_script")
 
 [node name="FLECHA" parent="." instance=ExtResource("2_model")]

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cjqc5nvirpudr"
+path="res://.godot/imported/DISPARO_Ballesta 1.mp3-4344144455f31483a0b7852dc38e24eb.mp3str"
+
+[deps]
+
+source_file="res://Assets/Characters/Goblin/DISPARO_Ballesta 1.mp3"
+dest_files=["res://.godot/imported/DISPARO_Ballesta 1.mp3-4344144455f31483a0b7852dc38e24eb.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dg8akkqu2r5jd"]
+
+[ext_resource type="Script" uid="uid://c4pwpbeps05b3" path="res://Scripts/Projectiles/ImpTrident.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dx3m3ob2uudwr" path="res://Assets/Projectiles/ImpTrident/TRIDENTE PROYECTIL.fbx" id="2_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_trident"]
+radius = 0.063964844
+height = 0.5859623
+
+[node name="ImpTrident" type="Area3D" unique_id=501410120]
+collision_layer = 8
+collision_mask = 67
+monitorable = false
+script = ExtResource("1_script")
+color_proyectil = Color(0.5770977, 0.046046503, 1.4439226e-07, 1)
+
+[node name="TridentModel" parent="." unique_id=1930933731 instance=ExtResource("2_model")]
+transform = Transform3D(-1.7484555e-09, 0.04, 0, -0.04, -1.7484555e-09, 0, 0, 0, 0.04, 0.096959054, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1003780375]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0.023641601, 0.0023935866, 0)
+shape = SubResource("CapsuleShape_trident")

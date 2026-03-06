@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bj7vk2oi1hnt2"]
+
+[ext_resource type="Texture2D" uid="uid://c0iwdc6mgwtnd" path="res://Assets/Characters/ImpShieldGirl/TEX_IMP_SHIELDDIFUSO.jpg" id="1_ktwti"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_0xof7"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_r7eg0"]
+render_priority = 0
+shader = ExtResource("2_0xof7")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 2.0
+
+[resource]
+resource_name = "Material.001"
+next_pass = SubResource("ShaderMaterial_r7eg0")
+cull_mode = 2
+albedo_texture = ExtResource("1_ktwti")

@@ -13,6 +13,7 @@ extends CharacterBody3D
 @export var cadencia_disparo: float = 0.01 # Tiempo mínimo entre disparos (cooldown)
 @export var tiempo_tensar: float = 0.1 # Tiempo para tensar el arco
 @export var duracion_carga: float = 0.5 # Tiempo para cargar al máximo
+@export var velocidad_recarga: float = 2.0 # Multiplicador de velocidad de recarga (draw→aim→shoot)
 
 @export var velocidad_flecha_minima: float = 2.5 # Velocidad mínima de la flecha (clic rápido)
 @export var velocidad_flecha_maxima: float = 15.0 # Velocidad máxima de la flecha (carga completa)
@@ -31,6 +32,10 @@ extends CharacterBody3D
 
 # Eje de disparo interno (no expuesto)
 var eje_disparo: int = 0
+
+# === HITBOX / COLISIÓN ===
+@export_category("Hitbox")
+@export var mostrar_hitbox: bool = false ## Muestra la hitbox del jugador en tiempo real
 
 # === SISTEMA DE VIDA ===
 @export_category("Vida")
@@ -80,6 +85,13 @@ var is_inside_platform: bool = false # Bloquea movimiento lateral
 var charge_time = 0.0
 var last_charge_power = 0.0 # Potencia al momento de disparar (0.0 a 1.0)
 var charge_bar: ProgressBar
+var _bow_hold_timer: float = 0.0 # Timer para delay de sonido mantener arco
+
+# === HITBOX ===
+var collision_shape_node: CollisionShape3D
+var hitbox_altura_original: float = 1.8
+var hitbox_pos_y_original: float = 0.9
+var hitbox_debug_mesh: MeshInstance3D
 
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -122,8 +134,8 @@ func _ready():
 		anim_player = anim_tree.get_node(anim_tree.anim_player)
 		if anim_player:
 			var anims_to_loop = [
-				"Armature|IDLE", "Armature|CAMINAR_ADELANTE", "Armature|CAMINAR_ATRAS", "Armature|APUNTAR_IDLE",
-				"Armature|CORRER_ADELANTE", "Armature|SUBIR_ESCALERA"
+				"Armature|Armature|IDLE", "Armature|Armature|CAMINAR_ADELANTE", "Armature|Armature|CAMINAR_ATRAS", "Armature|Armature|APUNTAR_IDLE",
+				"Armature|Armature|CORRER_ADELANTE", "Armature|Armature|SUBIR_ESCALERA"
 			]
 			for anim_name in anims_to_loop:
 				if anim_player.has_animation(anim_name):
@@ -154,6 +166,13 @@ func _ready():
 		armature_original_rotation = armature_node.rotation
 
 	create_charge_bar()
+	
+	# === HITBOX: guardar referencia y valores originales ===
+	collision_shape_node = find_child("CollisionShape3D", true, false)
+	if collision_shape_node and collision_shape_node.shape is CapsuleShape3D:
+		hitbox_altura_original = collision_shape_node.shape.height
+		hitbox_pos_y_original = collision_shape_node.position.y
+	_setup_hitbox_debug()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTRUCCIÓN DINÁMICA DEL ÁRBOL DE ANIMACIÓN
@@ -165,40 +184,40 @@ func setup_animation_tree_dynamic():
 	# SECCIÓN 1: NODOS DE ANIMACIÓN BASE
 	# ───────────────────────────────────────────────────────────────────────────
 	var node_idle = AnimationNodeAnimation.new()
-	node_idle.animation = "Armature|IDLE"
+	node_idle.animation = "Armature|Armature|IDLE"
 	
 	var node_walk_fwd = AnimationNodeAnimation.new()
-	node_walk_fwd.animation = "Armature|CAMINAR_ADELANTE"
+	node_walk_fwd.animation = "Armature|Armature|CAMINAR_ADELANTE"
 	
 	var node_walk_back = AnimationNodeAnimation.new()
-	node_walk_back.animation = "Armature|CAMINAR_ATRAS"
+	node_walk_back.animation = "Armature|Armature|CAMINAR_ATRAS"
 	
 	var node_run_fwd = AnimationNodeAnimation.new()
-	node_run_fwd.animation = "Armature|CORRER_ADELANTE"
+	node_run_fwd.animation = "Armature|Armature|CORRER_ADELANTE"
 	
 	var node_aim = AnimationNodeAnimation.new()
-	node_aim.animation = "Armature|APUNTAR_IDLE"
+	node_aim.animation = "Armature|Armature|APUNTAR_IDLE"
 	
 	var node_shoot = AnimationNodeAnimation.new()
-	node_shoot.animation = "Armature|DISPARAR"
+	node_shoot.animation = "Armature|Armature|DISPARAR"
 	
 	var node_draw = AnimationNodeAnimation.new()
-	node_draw.animation = "Armature|TOMAR_FLECHA"
+	node_draw.animation = "Armature|Armature|TOMAR_FLECHA"
 	
 	var node_none = AnimationNodeAnimation.new()
-	node_none.animation = "Armature|IDLE"
+	node_none.animation = "Armature|Armature|IDLE"
 	
 	var node_jump_fall = AnimationNodeAnimation.new()
-	node_jump_fall.animation = "Armature|CAER_SALTAR"
+	node_jump_fall.animation = "Armature|Armature|CAER_SALTAR"
 	
 	var node_land = AnimationNodeAnimation.new()
-	node_land.animation = "Armature|ATERRIZAJE"
+	node_land.animation = "Armature|Armature|ATERRIZAJE"
 	
 	var node_climb = AnimationNodeAnimation.new()
-	node_climb.animation = "Armature|SUBIR_ESCALERA"
+	node_climb.animation = "Armature|Armature|SUBIR_ESCALERA"
 	
 	var node_death = AnimationNodeAnimation.new()
-	node_death.animation = "Armature|MUERTE"
+	node_death.animation = "Armature|Armature|MUERTE"
 	
 	# Agregar nodos al árbol
 	root.add_node("Idle", node_idle)
@@ -251,7 +270,7 @@ func setup_animation_tree_dynamic():
 	trans_upper.set_input_name(1, "aim")
 	trans_upper.set_input_name(2, "shoot")
 	trans_upper.set_input_name(3, "draw")
-	trans_upper.xfade_time = 0.2
+	trans_upper.xfade_time = 0.35
 	root.add_node("UpperBody", trans_upper)
 	
 	# ───────────────────────────────────────────────────────────────────────────
@@ -295,7 +314,7 @@ func setup_animation_tree_dynamic():
 		oneshot_hit.set_filter_path(NodePath(f), true)
 	
 	var node_hit = AnimationNodeAnimation.new()
-	node_hit.animation = "Armature|HIT"
+	node_hit.animation = "Armature|Armature|HIT"
 	
 	root.add_node("HitOneShot", oneshot_hit)
 	root.add_node("HitAnim", node_hit)
@@ -383,6 +402,39 @@ func _reset_armature_rotation():
 	if armature_node:
 		armature_node.rotation = armature_original_rotation
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# HITBOX - DEBUG Y AJUSTE AL AGACHARSE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _setup_hitbox_debug():
+	if not collision_shape_node:
+		return
+	# Crear mesh debug para visualizar la hitbox
+	hitbox_debug_mesh = MeshInstance3D.new()
+	hitbox_debug_mesh.name = "HitboxDebug"
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0, 1, 0, 0.3)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.no_depth_test = true
+	hitbox_debug_mesh.material_override = mat
+	collision_shape_node.add_child(hitbox_debug_mesh)
+	_update_hitbox_debug_mesh()
+
+func _update_hitbox_debug_mesh():
+	if not hitbox_debug_mesh or not collision_shape_node:
+		return
+	if not collision_shape_node.shape is CapsuleShape3D:
+		return
+	var capsule: CapsuleShape3D = collision_shape_node.shape
+	var mesh = CapsuleMesh.new()
+	mesh.radius = capsule.radius
+	mesh.height = capsule.height
+	hitbox_debug_mesh.mesh = mesh
+	hitbox_debug_mesh.visible = mostrar_hitbox
+
+
+
 func create_charge_bar():
 	var canvas = CanvasLayer.new()
 	canvas.name = "UI_Player"
@@ -407,6 +459,9 @@ func create_charge_bar():
 	canvas.add_child(charge_bar)
 
 func _process(delta):
+	# Actualizar visibilidad del debug de hitbox en tiempo real
+	if hitbox_debug_mesh:
+		hitbox_debug_mesh.visible = mostrar_hitbox
 	# Actualizar estados visuales y UI
 	_process_gameplay(delta)
 
@@ -569,6 +624,7 @@ func _physics_process(delta):
 			
 			if anim_tree:
 				set_motion_anim("land")
+		
 
 func apply_movement(input_dir):
 	var current_speed = velocidad_correr
@@ -590,13 +646,14 @@ func start_landing():
 	
 	# Calcular duracion real land
 	landing_anim_duration = 0.5
-	if anim_player and anim_player.has_animation("Armature|ATERRIZAJE"):
-		landing_anim_duration = anim_player.get_animation("Armature|ATERRIZAJE").length
+	if anim_player and anim_player.has_animation("Armature|Armature|ATERRIZAJE"):
+		landing_anim_duration = anim_player.get_animation("Armature|Armature|ATERRIZAJE").length
 	
 	# CANCELAR AIM / SHOOT
 	current_aim_state = AimState.NONE
 	charge_time = 0.0
 	charge_bar.visible = false
+	AudioManager.reset_bow_hold()
 	if anim_tree:
 		anim_tree.set("parameters/UpperBody/transition_request", "none")
 		anim_tree.set("parameters/AimBlend/blend_amount", 0.0)
@@ -688,7 +745,7 @@ func control_visual_state(delta):
 	# Si estamos aterrizando, NO permitimos aiming
 	if current_move_state == MoveState.LANDING:
 		return
-
+	
 	if not anim_tree: return
 	
 	var upper_path = "parameters/UpperBody/transition_request"
@@ -771,7 +828,7 @@ func control_visual_state(delta):
 				start_shooting()
 				return
 			
-			var adjusted_draw_time = tiempo_tensar / multiplicador_velocidad_disparo
+			var adjusted_draw_time = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
 			if state_timer >= adjusted_draw_time:
 				current_aim_state = AimState.AIMING
 				anim_tree.set(upper_path, "aim")
@@ -801,6 +858,14 @@ func control_visual_state(delta):
 			var charge_percent = (charge_time / adjusted_charge_dur) * 100
 			charge_bar.value = charge_percent
 			
+			# Sonido de mantener arco al máximo (con delay configurable)
+			if charge_percent >= 100:
+				_bow_hold_timer += delta
+				if _bow_hold_timer >= AudioManager.delay_mantener_arco:
+					AudioManager.play_bow_hold()
+			else:
+				_bow_hold_timer = 0.0
+			
 			charge_bar.modulate = Color.WHITE
 			if charge_bar.has_meta("original_position"):
 				charge_bar.position = charge_bar.get_meta("original_position")
@@ -819,16 +884,17 @@ func control_visual_state(delta):
 				start_shooting()
 		
 		AimState.SHOOTING:
-			if float(anim_tree.get(blend_path)) != 1.0:
-				anim_tree.set(blend_path, 1.0)
+			var current_blend = float(anim_tree.get(blend_path))
+			if current_blend < 1.0:
+				anim_tree.set(blend_path, move_toward(current_blend, 1.0, 4.0 * delta))
 				
 			actualizar_rotacion_torso_pitch()
 			
 			state_timer += delta
 			
 			# Usar la duración que guardamos al iniciar el disparo
-			# Ajustada por la velocidad de disparo
-			var current_shoot_dur = shoot_anim_duration / multiplicador_velocidad_disparo
+			# Ajustada por la velocidad de disparo y velocidad de recarga
+			var current_shoot_dur = shoot_anim_duration / (multiplicador_velocidad_disparo * velocidad_recarga)
 			
 			if state_timer >= current_shoot_dur:
 				current_aim_state = AimState.NONE
@@ -860,12 +926,12 @@ func start_shooting():
 		arrow_node.visible = false
 	
 	# Obtener duración real de la animación
-	if anim_player and anim_player.has_animation("Armature|DISPARAR"):
-		shoot_anim_duration = anim_player.get_animation("Armature|DISPARAR").length
+	if anim_player and anim_player.has_animation("Armature|Armature|DISPARAR"):
+		shoot_anim_duration = anim_player.get_animation("Armature|Armature|DISPARAR").length
 	
 	# Calcular potencia del disparo (0.0 a 1.0)
-	var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
-	var adjusted_draw_time = tiempo_tensar / multiplicador_velocidad_disparo
+	var adjusted_charge_dur = duracion_carga / (multiplicador_velocidad_disparo * velocidad_recarga)
+	var adjusted_draw_time = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
 	
 	# Si charge_time > 0, estamos en AIMING y usamos ese valor
 	# Si charge_time = 0 (soltamos durante DRAWING), usamos state_timer como potencia proporcional al tiempo de tensado
@@ -981,7 +1047,8 @@ func play_bow_animation(anim_name: String):
 	var possible_names = [
 		anim_name,
 		"Recurve Bow 2 Armature|" + anim_name,
-		"Armature|" + anim_name
+		"Armature|" + anim_name,
+		"Armature|Armature|" + anim_name
 	]
 	
 	for anim in possible_names:
@@ -1034,11 +1101,15 @@ func calculate_shoot_data() -> Dictionary:
 	# - Z = 0 siempre (2.5D)
 	var shoot_direction = Vector3(screen_dir.x, -screen_dir.y, 0)
 	
+	# Forzar dirección hacia la DERECHA siempre (evitar disparar hacia atrás)
+	if shoot_direction.x < 0:
+		shoot_direction.x = abs(shoot_direction.x)
+	
 	if shoot_direction.length_squared() > 0.01:
 		shoot_direction = shoot_direction.normalized()
 	else:
-		# Dirección por defecto: IZQUIERDA (hacia donde mira el personaje)
-		shoot_direction = Vector3.LEFT
+		# Dirección por defecto: DERECHA
+		shoot_direction = Vector3.RIGHT
 	
 	# Velocidad (usa los valores exportados)
 	var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
@@ -1063,6 +1134,8 @@ func _cancel_current_shot():
 		
 		# Detener el sonido de tensar cuerda si estaba sonando
 		AudioManager.stop_bow_tension()
+		AudioManager.reset_bow_hold()
+		_bow_hold_timer = 0.0
 		
 		current_aim_state = AimState.NONE
 		charge_time = 0.0

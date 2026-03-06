@@ -1,0 +1,38 @@
+keys,es,en,pt,fr,zh,ja,ru,de,ko,it,pl,ar,qu,binary
+INTRO_TITLE,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema,Arrow of Anathema
+INTRO_STORY,"La guerra ha comenzado en el este y los ejércitos de Vesara la maestra oscura se movilizan, El paso oculto de Medea ha protegido tu hogar por generaciones y como campeona has sido llamada a su defensa.
+
+Tu flecha debe ser certera, el cruce de un solo explorador significaría esclavitud y derrota…","The war has begun in the east and the armies of Vesara the dark mistress are mobilizing. The hidden pass of Medea has protected your home for generations and as champion you have been called to its defense.
+
+Your arrow must be true, the crossing of a single scout would mean slavery and defeat…","A guerra começou no leste e os exércitos de Vesara, a mestra sombria, estão se mobilizando. A passagem oculta de Medea protegeu seu lar por gerações e como campeã você foi chamada para sua defesa.
+
+Sua flecha deve ser certeira, a travessia de um único explorador significaria escravidão e derrota…","La guerre a commencé à l'est et les armées de Vesara la maîtresse obscure se mobilisent. Le passage caché de Médée a protégé votre foyer depuis des générations et en tant que championne vous avez été appelée à sa défense.
+
+Votre flèche doit être précise, le passage d'un seul éclaireur signifierait l'esclavage et la défaite…","战争已在东方爆发，黑暗女主维萨拉的军队正在集结。美狄亚的隐秘通道世代保护着你的家园，作为勇士你被召唤前来守护。
+
+你的箭矢必须精准，哪怕一个斥候的通过都意味着奴役与失败…","戦争は東方で始まり、闇の女主ヴェサラの軍勢が動き出した。メデアの隠された峠は何世代にもわたりあなたの故郷を守ってきた。勇者として、あなたはその防衛に召されている。
+
+あなたの矢は正確でなければならない。たった一人の偵察兵の通過さえも、隷属と敗北を意味する…","Война началась на востоке, и армии Весары, тёмной владычицы, мобилизуются. Скрытый перевал Медеи защищал ваш дом на протяжении поколений, и как чемпион вы были призваны на его защиту.
+
+Ваша стрела должна быть точной — переход даже одного разведчика будет означать рабство и поражение…","Der Krieg hat im Osten begonnen und die Armeen von Vesara, der dunklen Herrin, mobilisieren sich. Der verborgene Pass von Medea hat deine Heimat seit Generationen beschützt und als Champion wurdest du zu seiner Verteidigung gerufen.
+
+Dein Pfeil muss treffsicher sein — das Durchkommen eines einzigen Kundschafters würde Sklaverei und Niederlage bedeuten…","전쟁이 동쪽에서 시작되었고 어둠의 여주인 베사라의 군대가 동원되고 있습니다. 메데아의 숨겨진 고개는 수 세대에 걸쳐 당신의 고향을 지켜왔으며, 용사로서 당신은 그 방어에 소환되었습니다.
+
+당신의 화살은 정확해야 합니다. 단 한 명의 정찰병이라도 통과하면 노예화와 패배를 의미합니다…","La guerra è iniziata ad est e gli eserciti di Vesara, la signora oscura, si stanno mobilitando. Il passo nascosto di Medea ha protetto la tua casa per generazioni e come campionessa sei stata chiamata alla sua difesa.
+
+La tua freccia deve essere precisa, il passaggio di un solo esploratore significherebbe schiavitù e sconfitta…","Wojna rozpoczęła się na wschodzie, a armie Vesary, mrocznej władczyni, mobilizują się. Ukryty przełęcz Medei chroniła twój dom od pokoleń, a jako mistrzyni zostałaś wezwana do jego obrony.
+
+Twoja strzała musi być celna — przejście choćby jednego zwiadowcy oznaczałoby niewolę i klęskę…","بدأت الحرب في الشرق وجيوش فيسارا سيدة الظلام تتحرك. ممر ميديا الخفي حمى وطنك لأجيال وكبطلة تم استدعاؤك للدفاع عنه.
+
+يجب أن يكون سهمك دقيقاً، عبور كشاف واحد فقط يعني العبودية والهزيمة…","Awqanakuyqa qallarinña inti lluqsimuq ladumanta, Vesarapa yana yachachiq warmipa runankunanmi purichanku. Medeapa pakasqa ñanmi wasiykita unay watakunapaq waqaycharan, sinchi warmi kaspa qamtam waqyasunkiku paypa jark'ayninpaq.
+
+Wach'iyki chiqapuni kanan, huk qhawaqpa pasayninqa kamachisqa kaymanmi watukusqa kayman chayaykunman…","01010111 01000001 01010010 00100000 01001000 01000001 01010011 00100000 01000010 01000101 01000111 01010101 01001110 00101110 00101110 00101110
+
+01011001 01001111 01010101 01010010 00100000 01000001 01010010 01010010 01001111 01010111 00100000 01001101 01010101 01010011 01010100 00100000 01000010 01000101 00100000 01010100 01010010 01010101 01000101"
+BTN_SKIP,Saltar,Skip,Pular,Passer,跳过,スキップ,Пропустить,Überspringen,건너뛰기,Salta,Pomiń,تخطي,Pasay,01010011 01001011 01001001 01010000
+EMISARIO_NOMBRE,Imp Emisario,Imp Emissary,,,,インプの使者,Имп-Посланник,,,,,,,
+DIALOGO_PACIFISTA,"Mi señora Vesara no tiene interés en arrasar esta tierra, solo queremos negociar un paso seguro. Su cooperación será recompensada, ella satisface a los súbditos leales…","My lady Vesara has no interest in ravaging this land, we only wish to negotiate safe passage. Your cooperation will be rewarded, she satisfies loyal subjects…",,,,「我が主ヴェサラはこの地を蹂躙する気はない。安全な通行を交渉したいだけだ。協力すれば報われる、忠実な臣下には恩恵がある…」,"Моя госпожа Весара не заинтересована в разорении этой земли, мы лишь хотим договориться о безопасном проходе. Ваше сотрудничество будет вознаграждено, она щедра к верным подданным…",,,,,,,
+RESULTADO_PACIFISTA,"La diplomacia se impuso y la paz se logró sin disparar ninguna flecha… La maestra oscura Vesara triunfó en su campaña y tras haber saqueado ricas ciudades volvió a cruzar el paso de Medea dejando parte de su botín, desde animales de carga hasta prendas de lujo. Al parecer tu hogar dejará de ser una pequeña aldea oculta para convertirse en un próspero punto comercial.","Diplomacy prevailed and peace was achieved without firing a single arrow… The dark mistress Vesara triumphed in her campaign and after sacking rich cities crossed the pass of Medea again, leaving part of her plunder—from pack animals to luxury garments. It seems your home will no longer be a small hidden village but a prosperous trading post.",,,,「外交が勝利し、一本の矢も放たずに平和が達成された…闇の女主ヴェサラは遠征に勝利し、豊かな都市を略奪した後、メデアの峠を再び越えていった。荷馬から高級衣服まで戦利品の一部を残して。あなたの故郷は小さな隠れ村から繁栄する交易拠点へと変わるだろう。」,"Дипломатия восторжествовала, и мир был достигнут без единого выстрела… Тёмная владычица Весара одержала победу в своём походе, и после разграбления богатых городов вновь пересекла перевал Медеи, оставив часть своей добычи — от вьючных животных до роскошных одежд. Похоже, ваш дом перестанет быть маленькой скрытой деревней и станет процветающим торговым пунктом.",,,,,,,
+TEXTO_GUERRA,"La paz no es una opción, comenzará la verdadera oleada.","Peace is not an option, the true wave will begin.",,,,「平和は選択肢にない。真の襲撃が始まる。」,"Мир — не вариант, начнётся настоящая волна.",,,,,,,
+NIVEL_1_COMPLETADO,¡Nivel 1 completado!,Level 1 completed!,,,,レベル1クリア！,Уровень 1 пройден!,,,,,,,
+BOTON_CONTINUAR,Continuar,Continue,,,,続ける,Продолжить,,,,,,,

@@ -147,6 +147,7 @@ func _flash_dano():
 
 func _destruir():
 	destruido.emit()
+	AudioManager.play_shield_break()
 	
 	# Instanciar el escudo roto
 	if escena_escudo_roto:
@@ -193,13 +194,36 @@ func _destruir():
 			target_parent.add_child(escudo_roto)
 		else:
 			get_parent().add_child(escudo_roto)
-		escudo_roto.global_transform = global_transform
+		
+		# Posicionar el EscudoRoto en la posición del escudo
+		escudo_roto.global_position = global_position
+		
+		# Encontrar el nodo del modelo visual intacto y aplicar su transform EXACTA
+		# al modelo de partes rotas. Así las piezas tienen el mismo tamaño/posición/rotación.
+		var model_node: Node3D = null
+		for child in get_children():
+			if not (child is CollisionShape3D) and child is Node3D:
+				model_node = child
+				break
+		
+		var escudo_partes = escudo_roto.get_node_or_null("escudo_partes")
+		if escudo_partes and model_node:
+			escudo_partes.global_transform = model_node.global_transform
 	
 	# Desactivar colisión inmediatamente
 	for child in get_children():
 		if child is CollisionShape3D:
 			child.set_deferred("disabled", true)
 			
+	# Limpiar materiales antes de queue_free para evitar
+	# "Parameter 'material' is null" en el RenderingServer
+	if mesh_instance:
+		mesh_instance.material_override = null
+		if mesh_instance.mesh:
+			for si in range(mesh_instance.mesh.get_surface_count()):
+				mesh_instance.set_surface_override_material(si, null)
+		mesh_instance.visible = false
+	
 	# Ocultar visualmente este escudo
 	visible = false
 	

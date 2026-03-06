@@ -20,6 +20,36 @@ static var particle_amount_multiplier: float = 1.0
 static var vfx_enabled: bool = true
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# WARM-UP DE SHADERS (evita stutter en la primera aparición de partículas)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Crea partículas invisibles fuera de cámara para forzar la compilación
+## de shaders de GPU al inicio. Llamar una vez desde _ready() del nivel.
+static func warmup_shaders(world: Node) -> void:
+	# Posición fuera de vista (muy lejos y abajo)
+	var hidden_pos := Vector3(0, -1000, 0)
+	
+	# Crear una partícula de cada tipo para compilar sus shaders
+	var types: Array[Callable] = [
+		func(): return spawn_impact(world, hidden_pos),
+		func(): return spawn_muzzle_flash(world, hidden_pos, Vector3.UP),
+		func(): return spawn_blood(world, hidden_pos),
+		func(): return spawn_dust(world, hidden_pos),
+		func(): return spawn_jump(world, hidden_pos),
+		func(): return spawn_landing(world, hidden_pos),
+		func(): return spawn_death_explosion(world, hidden_pos),
+		func(): return spawn_sparks(world, hidden_pos),
+	]
+	
+	for creator in types:
+		var p = creator.call()
+		if p and is_instance_valid(p):
+			# Emitir un solo frame y destruir inmediatamente tras terminar
+			p.emitting = true
+	
+	print("[VFXFactory] Shader warm-up completado (%d tipos)" % types.size())
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # EFECTOS DE IMPACTO
 # ═══════════════════════════════════════════════════════════════════════════════
 

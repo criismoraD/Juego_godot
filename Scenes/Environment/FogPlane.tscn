@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://fog_plane_scene"]
 
-[ext_resource type="Material" path="res://Assets/Materials/MAT_fog_plane.tres" id="1_mat"]
+[ext_resource type="Material" path="res://Assets/Environment/FogPlane/MAT_fog_plane.tres" id="1_mat"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_fog"]
 size = Vector2(50, 20)

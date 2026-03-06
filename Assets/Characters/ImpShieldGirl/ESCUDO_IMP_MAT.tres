@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://ddu5ruihthdor"]
+
+[ext_resource type="Texture2D" uid="uid://sxukwir0h551" path="res://Assets/Characters/ImpShieldGirl/ESCUDO_IMP_TEX.jpg" id="1_1ogve"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_01qtd"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2rs7j"]
+render_priority = 0
+shader = ExtResource("2_01qtd")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 2.0
+
+[resource]
+resource_name = "M_NoviceHeroShield"
+next_pass = SubResource("ShaderMaterial_2rs7j")
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
+albedo_texture = ExtResource("1_1ogve")

@@ -33,8 +33,9 @@ var color_dano_heredado: Color = Color.WHITE
 var progreso_dano: float = 0.0
 var intensidad_tinte_heredado: float = 0.5
 
-# Material del escudo (fallback)
-var material_escudo = preload("res://Assets/Materials/MAT_shield.tres")
+# Materiales del escudo
+@export var material_escudo: Material = preload("res://Assets/Environment/Shield/MAT_shield.tres")
+@export var material_interior: Material = preload("res://Assets/Environment/Shield/ESCUDO_INT.tres")
 var dissolve_shader = preload("res://Assets/Shaders/dissolve.gdshader")
 
 # Estado interno
@@ -44,6 +45,10 @@ var _dissolve_materials: Array = []
 var _dissolve_particles: GPUParticles3D = null
 
 func _ready():
+	add_to_group("escudos_rotos")
+	# Ocultar inmediatamente para evitar flash visual del modelo completo
+	# antes de que las piezas se extraigan como RigidBody3D individuales
+	visible = false
 	call_deferred("_iniciar_conversion")
 
 func _iniciar_conversion():
@@ -51,6 +56,11 @@ func _iniciar_conversion():
 		return
 	
 	_procesar_hijos(self)
+	
+	# Mostrar todas las piezas de golpe (estaban invisibles durante la creación)
+	for rb in _rigid_bodies:
+		if is_instance_valid(rb):
+			rb.visible = true
 	
 	# Fase 1: Congelar piezas después de que caigan
 	await get_tree().create_timer(tiempo_congelar).timeout
@@ -99,60 +109,70 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 	var mesh_global_rot = mesh_instance.global_rotation
 	var mesh_global_scale = mesh_instance.global_transform.basis.get_scale()
 	
-	# Collision shape: usar la geometría real del mesh (ConvexPolygonShape3D)
-	# para que cada pieza colisione con su forma real, no como un cubo genérico.
+	# Collision shape: convex hull del mesh real para que cada pieza
+	# colisione con su forma natural (sin simplify para evitar lag).
 	var col_shape = CollisionShape3D.new()
-	var convex_shape = mesh_instance.mesh.create_convex_shape(true, true)
+	var convex_shape = mesh_instance.mesh.create_convex_shape(true, false)
 	if convex_shape and convex_shape is ConvexPolygonShape3D and convex_shape.points.size() >= 4:
-		# Escalar los puntos del convex hull para que coincidan con la escala visual del mesh
+		# Escalar los puntos para que coincidan con la escala visual
 		var scaled_points = PackedVector3Array()
 		for point in convex_shape.points:
 			scaled_points.append(point * mesh_global_scale)
 		convex_shape.points = scaled_points
 		col_shape.shape = convex_shape
 	else:
-		# Fallback: box pequeño si no se puede generar convex hull
-		var box = BoxShape3D.new()
-		box.size = Vector3(0.08, 0.08, 0.04) * mesh_global_scale
-		col_shape.shape = box
+		# Fallback: esfera pequeña que rueda de forma natural
+		var sphere = SphereShape3D.new()
+		sphere.radius = 0.06 * mesh_global_scale.x
+		col_shape.shape = sphere
 	rb.add_child(col_shape)
 	
-	# IMPORTANTE: Añadir el RB al ROOT de la escena (NO a un nodo padre escalado).
-	# Godot no maneja bien los RigidBody3D bajo transforms escalados:
-	# las collision shapes no escalan correctamente en el motor de física.
+	# Añadir el RB al ROOT de la escena (NO a un nodo padre escalado).
 	var scene_root = get_tree().current_scene
 	scene_root.add_child(rb)
-	# Empezar ligeramente por ENCIMA de la posición original para evitar overlap inicial
+	rb.visible = false  # Ocultar hasta que todas las piezas estén configuradas
 	rb.global_position = mesh_global_pos + Vector3.UP * 0.15
 	rb.global_rotation = mesh_global_rot
-	# RB.scale queda en (1,1,1) — correcto para el motor de física
 	
-	# Reparentar el mesh al RB, centrándolo pero preservando su escala visual
+	# Reparentar el mesh al RB, centrándolo con la escala visual correcta
 	mesh_instance.reparent(rb)
 	mesh_instance.position = Vector3.ZERO
 	mesh_instance.rotation = Vector3.ZERO
 	mesh_instance.scale = mesh_global_scale
 	
-	# Material: aplicar tinte de daño heredado (SIN transparencia)
-	var mat = StandardMaterial3D.new()
-	if material_escudo is StandardMaterial3D:
-		mat.albedo_texture = material_escudo.albedo_texture
-		mat.albedo_color = material_escudo.albedo_color
-	else:
-		mat.albedo_color = Color.WHITE
+	# Material: asignar por surface (no material_override) para respetar exterior e interior
+	if mesh_instance.mesh:
+		for surface_idx in range(mesh_instance.mesh.get_surface_count()):
+			var surf_mat = mesh_instance.get_surface_override_material(surface_idx)
+			if surf_mat == null:
+				surf_mat = mesh_instance.mesh.surface_get_material(surface_idx)
+
+			var es_interior = _es_material_interior(surf_mat)
+			var base_mat = material_interior if es_interior else material_escudo
+
+			var mat: StandardMaterial3D
+			if base_mat is StandardMaterial3D:
+				mat = base_mat.duplicate()
+			else:
+				mat = StandardMaterial3D.new()
+				mat.albedo_color = Color.WHITE
+
+			if progreso_dano > 0.0:
+				mat.albedo_color = mat.albedo_color.lerp(color_dano_heredado, progreso_dano * intensidad_tinte_heredado)
+
+			mesh_instance.set_surface_override_material(surface_idx, mat)
 	
-	if progreso_dano > 0.0:
-		mat.albedo_color = mat.albedo_color.lerp(color_dano_heredado, progreso_dano * intensidad_tinte_heredado)
-	
-	mesh_instance.material_override = mat
-	
-	# Física: explosión con impulso vertical y dispersión horizontal
-	var dispersion = Vector3(
-		randf_range(-fuerza_horizontal, fuerza_horizontal),
-		randf_range(0.3, 0.7),
-		randf_range(-fuerza_horizontal * 0.6, fuerza_horizontal * 0.6)
-	)
-	rb.apply_impulse(dispersion.normalized() * fuerza_explosion + Vector3.UP * fuerza_vertical, Vector3.ZERO)
+	# Física: impulso compuesto
+	# - fuerza_horizontal: dirección X directa (+ derecha, - izquierda)
+	# - fuerza_vertical: impulso hacia arriba directo
+	# - fuerza_explosion: magnitud de la dispersión aleatoria alrededor
+	var random_spread = Vector3(
+		randf_range(-0.3, 0.3),
+		randf_range(0.0, 0.3),
+		randf_range(-0.2, 0.2)
+	) * fuerza_explosion
+	var directional = Vector3(fuerza_horizontal, fuerza_vertical, 0)
+	rb.apply_impulse(directional + random_spread, Vector3.ZERO)
 	
 	rb.apply_torque_impulse(Vector3(
 		randf_range(torque_min, torque_max),
@@ -179,8 +199,10 @@ func _start_dissolve_effect():
 		shader_mat.set_shader_parameter("edge_thickness", 0.05)
 		shader_mat.set_shader_parameter("noise_scale", 20.0)
 		
-		# Copiar la textura y tinte del material actual
-		var current_mat = mesh.material_override
+		# Copiar la textura y tinte del material actual (leer desde surface override)
+		var current_mat = mesh.get_surface_override_material(0)
+		if current_mat == null and mesh.mesh and mesh.mesh.get_surface_count() > 0:
+			current_mat = mesh.mesh.surface_get_material(0)
 		if current_mat is StandardMaterial3D:
 			if current_mat.albedo_texture:
 				shader_mat.set_shader_parameter("albedo_texture", current_mat.albedo_texture)
@@ -226,6 +248,15 @@ func _finish_dissolve():
 	# Eliminar los RigidBody3D de los trozos (están en el scene root, no son hijos nuestros)
 	for rb in _rigid_bodies:
 		if is_instance_valid(rb):
+			# Limpiar materiales ANTES de queue_free para evitar
+			# "Parameter 'material' is null" en el RenderingServer
+			for child in rb.get_children():
+				if child is MeshInstance3D:
+					child.material_override = null
+					if child.mesh:
+						for si in range(child.mesh.get_surface_count()):
+							child.set_surface_override_material(si, null)
+					child.visible = false
 			rb.queue_free()
 	_rigid_bodies.clear()
 	
@@ -289,3 +320,24 @@ func _create_dissolve_particles():
 	add_child(particles)
 	particles.emitting = true
 	_dissolve_particles = particles
+
+# === DETECCIÓN DE MATERIAL INTERIOR ===
+
+func _es_material_interior(surf_mat) -> bool:
+	if not surf_mat:
+		return false
+	# Comparar por referencia directa
+	if surf_mat == material_interior:
+		return true
+	# Comparar por resource_path
+	if surf_mat.resource_path == material_interior.resource_path:
+		return true
+	# Comparar por nombre
+	var mat_name = surf_mat.resource_name if surf_mat.resource_name else ""
+	if "Inner" in mat_name or "inner" in mat_name or "INT" in mat_name:
+		return true
+	# Comparar por propiedades: ESCUDO_INT no tiene textura y tiene albedo oscuro
+	if surf_mat is StandardMaterial3D:
+		if not surf_mat.albedo_texture and surf_mat.albedo_color.r < 0.5:
+			return true
+	return false

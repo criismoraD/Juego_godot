@@ -12,6 +12,8 @@ var arrow_detector: Area3D = null
 func _ready():
 	# Layer 6 = debris/trozos - siempre activa para que los trozos colisionen
 	set_collision_layer_value(6, true)
+	# Layer 7 = superficie permanente para proyectiles (nunca se desactiva)
+	set_collision_layer_value(7, true)
 	
 	# Buscar el collision shape principal
 	for child in get_children():

@@ -1,32 +1,47 @@
-[gd_scene load_steps=5 format=3 uid="uid://bxq7yph3ael2h"]
+[gd_scene format=3 uid="uid://bxq7yph3ael2h"]
 
 [ext_resource type="Script" uid="uid://dshlvgshwhfhv" path="res://Scripts/Projectiles/GoblinArrow.gd" id="1_script"]
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_arrow"]
-top_radius = 0.02
-bottom_radius = 0.02
-height = 0.3
-
-[sub_resource type="StandardMaterial3D" id="Material_yellow"]
-albedo_color = Color(1, 0.85, 0, 1)
-emission_enabled = true
-emission = Color(1, 0.8, 0, 1)
-emission_energy_multiplier = 1.5
-
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_arrow"]
-radius = 0.03
-height = 0.3
+radius = 0.015625
+height = 0.18032226
 
-[node name="GoblinArrow" type="Area3D"]
+[sub_resource type="StandardMaterial3D" id="mat_preview_arrow"]
+shading_mode = 0
+albedo_color = Color(1, 0.5, 0, 1)
+
+[sub_resource type="CylinderMesh" id="mesh_body"]
+material = SubResource("mat_preview_arrow")
+top_radius = 0.015
+bottom_radius = 0.015
+height = 0.25
+radial_segments = 6
+rings = 1
+
+[sub_resource type="CylinderMesh" id="mesh_tip"]
+material = SubResource("mat_preview_arrow")
+top_radius = 0.0
+bottom_radius = 0.03
+height = 0.08
+radial_segments = 6
+rings = 1
+
+[node name="GoblinArrow" type="Area3D" unique_id=1918087389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06490025, 0, 0)
 collision_layer = 8
-collision_mask = 3
+collision_mask = 67
 script = ExtResource("1_script")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("CylinderMesh_arrow")
-surface_material_override/0 = SubResource("Material_yellow")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1955332522]
 transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
 shape = SubResource("CapsuleShape_arrow")
+
+[node name="ArrowModel" type="Node3D" parent="." unique_id=1131730384]
+
+[node name="Body" type="MeshInstance3D" parent="ArrowModel" unique_id=1105866138]
+transform = Transform3D(-2.2948479e-08, -0.61, 0, 0.525, -2.6663947e-08, 0, 0, 0, 0.525, 0.005743481, 0, 0)
+mesh = SubResource("mesh_body")
+
+[node name="Tip" type="MeshInstance3D" parent="ArrowModel" unique_id=1522693991]
+transform = Transform3D(-2.076291e-08, -0.475, 0, 0.475, -2.076291e-08, 0, 0, 0, 0.475, -0.0793409, 0, 0)
+mesh = SubResource("mesh_tip")

@@ -1,0 +1,133 @@
+[gd_scene load_steps=4 format=3 uid="uid://w01iohvi0aii"]
+
+[ext_resource type="Script" path="res://Scripts/UI/IntroScene.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cq7q4f5au4ep1" path="res://WIP.png" id="2_wip"]
+
+[sub_resource type="StyleBoxFlat" id="skip_btn_normal"]
+bg_color = Color(0.2, 0.15, 0.1, 0.7)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.7, 0.55, 0.3, 0.6)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="skip_btn_hover"]
+bg_color = Color(0.35, 0.25, 0.15, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.95, 0.8, 0.45, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="IntroScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.02, 0.06, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.0
+anchor_top = 0.02
+anchor_right = 1.0
+anchor_bottom = 0.12
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 52
+theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
+text = "Arrow of Anathema"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContentPanel" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.05
+anchor_top = 0.14
+anchor_right = 0.95
+anchor_bottom = 0.90
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+
+[node name="LeftPanel" type="PanelContainer" parent="ContentPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="WipImage" type="TextureRect" parent="ContentPanel/LeftPanel"]
+layout_mode = 2
+texture = ExtResource("2_wip")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightPanel" type="PanelContainer" parent="ContentPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="StoryClip" type="Control" parent="ContentPanel/RightPanel"]
+layout_mode = 2
+clip_contents = true
+
+[node name="StoryLabel" type="Label" parent="ContentPanel/RightPanel/StoryClip"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.05
+anchor_right = 0.95
+offset_top = 0.0
+offset_bottom = 800.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.85, 0.82, 0.75, 1)
+text = "..."
+autowrap_mode = 2
+horizontal_alignment = 1
+
+[node name="SkipButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.85
+anchor_top = 0.92
+anchor_right = 0.95
+anchor_bottom = 0.97
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.8, 0.75, 0.65, 0.8)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.7, 1)
+theme_override_styles/normal = SubResource("skip_btn_normal")
+theme_override_styles/hover = SubResource("skip_btn_hover")
+text = "BTN_SKIP"
+auto_translate_mode = 1
+
+[node name="FadeOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)

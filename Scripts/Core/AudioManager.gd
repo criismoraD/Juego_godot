@@ -19,17 +19,26 @@ var bgm_streams: Array[AudioStream] = []
 var sfx_volume_db: float = -5.0
 var music_volume_db: float = -15.0
 
+# === PITCH DITHERING (variación aleatoria de tono) ===
+var shoot_pitch_min: float = 0.85
+var shoot_pitch_max: float = 1.15
+var damage_pitch_min: float = 0.9
+var damage_pitch_max: float = 1.1
+
 # === VOLÚMENES ESPECÍFICOS (0-100) ===
 var player_hurt_volume: float = 100.0 # Volumen de daño recibido
 var enemy_damage_volume: float = 66.0 # Volumen de daño a enemigos
+
+# === CONTADORES ===
+var player_kill_count: int = 0
 
 
 func _ready():
 	_setup_players()
 	_load_all_sounds()
 	
-	# Iniciar música por defecto
-	play_music(1)
+	# La música se inicia desde la escena correspondiente
+	# (antes se auto-reproducía aquí)
 
 func _setup_players():
 	# Reproductor SFX 2D
@@ -58,70 +67,113 @@ func _load_all_sounds():
 	# SONIDOS DEL JUGADOR
 	# ═══════════════════════════════════════════════════════════════════════════════
 	sfx_streams["player_hurt"] = [
-		load("res://Assets/Audio/SFX/Player/DAÑO_PERSONAJE0.mp3"),
-		load("res://Assets/Audio/SFX/Player/DAÑO_PERSONAJE1.mp3")
+		load("res://Assets/Characters/Player/DAÑO_PERSONAJE0.mp3"),
+		load("res://Assets/Characters/Player/DAÑO_PERSONAJE1.mp3"),
+		load("res://Assets/Characters/Player/DAÑO_PERSONAJE3.mp3")
 	]
 	
 	sfx_streams["player_death"] = [
-		load("res://Assets/Audio/SFX/Player/SFX_player_death.mp3")
+		load("res://Assets/Characters/Player/SFX_player_death.mp3")
 	]
 	
 	sfx_streams["player_shoot"] = [
-		load("res://Assets/Audio/SFX/Player/DISPARO_FLECHA1.mp3"),
-		load("res://Assets/Audio/SFX/Player/DISPARO_FLECHA2.mp3")
+		load("res://Assets/Characters/Player/DISPARO_FLECHA1.mp3"),
+		load("res://Assets/Characters/Player/DISPARO_FLECHA2.mp3")
 	]
 	
 	sfx_streams["bow_tension"] = [
-		load("res://Assets/Audio/SFX/Player/TENSADO_CUERDA1.mp3"),
-		load("res://Assets/Audio/SFX/Player/TENSADO_CUERDA2.mp3")
+		load("res://Assets/Characters/Player/TENSADO_CUERDA1.mp3"),
+		load("res://Assets/Characters/Player/TENSADO_CUERDA2.mp3")
+	]
+	
+	sfx_streams["bow_hold"] = [
+		load("res://Assets/Characters/Player/MANTENER_ARCO.mp3")
+	]
+	
+	sfx_streams["player_laugh"] = [
+		load("res://Assets/Characters/Player/RISA_PERSONAJE.mp3")
 	]
 	
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
 	# ═══════════════════════════════════════════════════════════════════════════════
 	sfx_streams["goblin_shoot"] = [
-		load("res://Assets/Audio/SFX/Enemies/DISPARO_Ballesta 1.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/DISPARO_Ballesta 2.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/DISPARO_Ballesta 3.mp3")
+		load("res://Assets/Characters/Goblin/DISPARO_Ballesta 1.mp3"),
+		load("res://Assets/Characters/Goblin/DISPARO_Ballesta 2.mp3"),
+		load("res://Assets/Characters/Goblin/DISPARO_Ballesta 3.mp3")
 	]
 	
 	sfx_streams["goblin_death"] = [
-		load("res://Assets/Audio/SFX/Enemies/SFX_goblin_death01.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/SFX_goblin_death02.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/SFX_goblin_death03.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/MUERTE_GOBLING1.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/MUERTE_GOBLING2.mp3")
+		load("res://Assets/Characters/Goblin/MUERTE_GOBLING_1.mp3"),
+		load("res://Assets/Characters/Goblin/MUERTE_GOBLING_2.mp3"),
+		load("res://Assets/Characters/Goblin/MUERTE_GOBLING_3.mp3"),
+		load("res://Assets/Characters/Goblin/MUERTE_GOBLING_4.mp3")
+	]
+	
+	sfx_streams["goblin_laugh"] = [
+		load("res://Assets/Characters/Goblin/RISA_GOBLING_3.mp3")
 	]
 	
 	sfx_streams["goblin_girl_shoot"] = sfx_streams["player_shoot"] # Usa el mismo arco
 	
 	sfx_streams["goblin_girl_death"] = [
-		load("res://Assets/Audio/SFX/Enemies/SFX_goblin_girl_death1.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/SFX_goblin_girl_death2.mp3"),
-		load("res://Assets/Audio/SFX/Enemies/SFX_goblin_girl_death3.mp3")
+		load("res://Assets/Characters/GoblinGirl/SFX_goblin_girl_death1.mp3"),
+		load("res://Assets/Characters/GoblinGirl/SFX_goblin_girl_death2.mp3"),
+		load("res://Assets/Characters/GoblinGirl/SFX_goblin_girl_death3.mp3")
+	]
+	
+	sfx_streams["imp_death"] = [
+		load("res://Assets/Characters/Imp/MUERTE_IMP1.mp3"),
+		load("res://Assets/Characters/Imp/MUERTE_IMP2.mp3")
+	]
+	
+	sfx_streams["explosion_muerte"] = [
+		load("res://Assets/Characters/Imp/EXPLOCION_Muerte1.mp3"),
+		load("res://Assets/Characters/Imp/EXPLOCION_Muerte2.mp3"),
+		load("res://Assets/Characters/Imp/EXPLOCION_Muerte3.mp3")
+	]
+	
+	sfx_streams["trident_shot"] = [
+		load("res://Assets/Characters/Imp/TRIDENTE_SHOT.mp3")
+	]
+	
+	sfx_streams["shield_imp_impact"] = [
+		load("res://Assets/Characters/ImpShieldGirl/IMPACTO_IMP_ESCUDO_01.mp3"),
+		load("res://Assets/Characters/ImpShieldGirl/IMPACTO_IMP_ESCUDO_02.mp3")
+	]
+	
+	sfx_streams["shield_imp_death"] = [
+		load("res://Assets/Characters/ImpShieldGirl/MUERTE_IMP_ESCUDO_01.mp3"),
+		load("res://Assets/Characters/ImpShieldGirl/MUERTE_IMP_ESCUDO_2.mp3")
 	]
 	
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE AMBIENTE / ESCUDOS
 	# ═══════════════════════════════════════════════════════════════════════════════
 	sfx_streams["shield_hit_crossbow"] = [
-		load("res://Assets/Audio/SFX/Environment/IMPACTO_ESCUDO_BALLESTA.mp3")
+		load("res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3")
 	]
 	
 	sfx_streams["shield_hit_arrow"] = [
-		load("res://Assets/Audio/SFX/Environment/IMPACTO_ESCUDO_FLECHA.mp3")
+		load("res://Assets/Environment/Shield/IMPACTO_ESCUDO_FLECHA.mp3")
 	]
 	
 	# Alias genérico para compatibilidad
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
+	
+	sfx_streams["shield_break"] = [
+		load("res://Assets/Environment/Shield/ESCUDO_ROTO.mp3")
+	]
 	
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# MÚSICA
 	# ═══════════════════════════════════════════════════════════════════════════════
 	bgm_streams.append(null) # Índice 0 = silencio
-	bgm_streams.append(load("res://Assets/Audio/Music/BGM_main_theme.mp3"))
-	bgm_streams.append(load("res://Assets/Audio/Music/BGM_battle.mp3"))
+	bgm_streams.append(load("res://Assets/Audio/Music/BGM_main_theme.mp3")) # Índice 1
+	bgm_streams.append(load("res://Assets/Audio/Music/BGM_battle.mp3")) # Índice 2
+	bgm_streams.append(load("res://Assets/Audio/Music/SONIDO BOSQUE.mp3")) # Índice 3 - Nivel 0 pacifista
+	bgm_streams.append(load("res://Assets/Audio/Music/VICTORY.mp3")) # Índice 4 - Victoria
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # API PÚBLICA
@@ -129,7 +181,7 @@ func _load_all_sounds():
 
 ## Reproduce un efecto de sonido (selección aleatoria si hay variantes)
 ## Usa reproductores temporales para permitir sonidos simultáneos
-func play_sfx(sound_name: String):
+func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 	if not sfx_streams.has(sound_name):
 		push_warning("[AudioManager] Sonido no encontrado: " + sound_name)
 		return
@@ -152,9 +204,22 @@ func play_sfx(sound_name: String):
 		elif sound_name in ["goblin_death", "goblin_girl_death"]:
 			# Usar volumen de daño a enemigos
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume)
+		elif sound_name == "imp_death":
+			# Imp muerte al doble de volumen
+			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 6.0
+		elif sound_name == "explosion_muerte":
+			# Explosión 3x más fuerte
+			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 10.0
 		
-		temp_player.volume_db = volume_to_use
+		temp_player.volume_db = volume_to_use + volume_boost_db
 		temp_player.bus = "Master"
+		
+		# Pitch dithering
+		if "shoot" in sound_name:
+			temp_player.pitch_scale = randf_range(shoot_pitch_min, shoot_pitch_max)
+		elif "hurt" in sound_name or "death" in sound_name:
+			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
+		
 		add_child(temp_player)
 		temp_player.play()
 		# Auto-eliminar cuando termine (con verificación de seguridad)
@@ -182,6 +247,13 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 		temp_player.max_db = 6.0 # Aumentado para más volumen cercano
 		temp_player.volume_db = sfx_volume_db + 5.0 # Boost adicional
 		temp_player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED # Sin atenuación por distancia
+		
+		# Pitch dithering
+		if "shoot" in sound_name:
+			temp_player.pitch_scale = randf_range(shoot_pitch_min, shoot_pitch_max)
+		elif "hurt" in sound_name or "death" in sound_name:
+			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
+		
 		add_child(temp_player)
 		temp_player.global_position = position
 		temp_player.play()
@@ -192,7 +264,7 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 		)
 
 ## Reproduce música de fondo
-func play_music(index: int):
+func play_music(index: int, loop: bool = true, volume_boost_db: float = 0.0):
 	if index == 0:
 		music_player.stop()
 		return
@@ -203,6 +275,13 @@ func play_music(index: int):
 	
 	var stream = bgm_streams[index]
 	if stream:
+		if stream is AudioStreamMP3:
+			stream.loop = loop
+		elif stream is AudioStreamOggVorbis:
+			stream.loop = loop
+		elif stream is AudioStreamWAV:
+			stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if loop else AudioStreamWAV.LOOP_DISABLED
+		music_player.volume_db = music_volume_db + volume_boost_db
 		if music_player.stream != stream:
 			music_player.stream = stream
 			music_player.play()
@@ -231,9 +310,45 @@ func get_music_player() -> AudioStreamPlayer:
 func get_sfx_player() -> AudioStreamPlayer:
 	return sfx_player
 
-## Reproducir sonido de escudo estándar
+## Reproducir sonido de escudo estandar
 func play_shield_hit():
 	play_sfx("shield_hit")
+
+## Reproducir sonido de escudo roto (+5.0 dB)
+func play_shield_break():
+	play_sfx("shield_break", 5.0)
+
+## Reproducir sonido de mantener arco tensado
+@export_category("Probabilidades de Audio")
+@export var probabilidad_mantener_arco: float = 0.4 ## Probabilidad (0.0 - 1.0) de reproducir sonido al mantener arco al máximo
+@export var delay_mantener_arco: float = 0.3 ## Segundos esperando al máximo antes de reproducir
+var _bow_hold_played: bool = false
+
+func play_bow_hold():
+	if _bow_hold_played:
+		return
+	if randf() < probabilidad_mantener_arco:
+		play_sfx("bow_hold", 6.0) # +6 dB = doble de volumen
+		_bow_hold_played = true
+
+func reset_bow_hold():
+	_bow_hold_played = false
+
+## Registrar muerte de enemigo y reproducir risa cada N kills
+@export var kills_para_risa: int = 5 ## Cada cuántos kills evaluar la risa
+@export var probabilidad_risa: float = 0.1 ## Probabilidad (0.0 - 1.0) de risa al alcanzar el múltiplo
+@export var probabilidad_risa_goblin: float = 0.1 ## Probabilidad (0.0 - 1.0) de risa del goblin al acertar
+
+func on_enemy_killed():
+	player_kill_count += 1
+	if player_kill_count % kills_para_risa == 0:
+		if randf() < probabilidad_risa:
+			play_sfx("player_laugh")
+
+## Reproducir risa del goblin al acertar un objetivo (probabilidad configurable)
+func play_goblin_laugh():
+	if randf() < probabilidad_risa_goblin:
+		play_sfx("goblin_laugh")
 
 ## Reproducir sonido de tensar cuerda (usa sfx_player fijo para poder detenerlo)
 func play_bow_tension():
@@ -251,6 +366,21 @@ func play_bow_tension():
 func stop_bow_tension():
 	if sfx_player.playing:
 		sfx_player.stop()
+
+## Detener todos los sonidos (música + SFX + temporales)
+func stop_all():
+	music_player.stop()
+	sfx_player.stop()
+	if is_instance_valid(sfx_player_3d):
+		sfx_player_3d.stop()
+	# Eliminar reproductores temporales de SFX 3D
+	for child in get_children():
+		if child is AudioStreamPlayer3D and child != sfx_player_3d:
+			child.stop()
+			child.queue_free()
+		elif child is AudioStreamPlayer and child != sfx_player and child != music_player:
+			child.stop()
+			child.queue_free()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # VOLÚMENES ESPECÍFICOS

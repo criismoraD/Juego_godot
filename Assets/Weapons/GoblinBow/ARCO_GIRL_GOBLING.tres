@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://yc323txyoxut"]
+
+[ext_resource type="Texture2D" uid="uid://csb84bcbk522p" path="res://Assets/Weapons/GoblinBow/ARCO_GOBLING_GIRL_texture_20250901.png" id="1_j8h5r"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_cfhlj"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cj1h4"]
+render_priority = 0
+shader = ExtResource("2_cfhlj")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 2.5
+
+[resource]
+resource_name = "Material.002"
+next_pass = SubResource("ShaderMaterial_cj1h4")
+cull_mode = 2
+shading_mode = 0
+albedo_texture = ExtResource("1_j8h5r")

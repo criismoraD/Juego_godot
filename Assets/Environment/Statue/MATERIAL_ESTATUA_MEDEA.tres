@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bngq8bydynpk5"]
+
+[ext_resource type="Texture2D" uid="uid://dajxmf67slwcl" path="res://Assets/Environment/Statue/ESTAUTA_MEDEA_TEXTURA.png" id="1_1plts"]
+
+[resource]
+resource_name = "modddif_material_0"
+shading_mode = 0
+albedo_texture = ExtResource("1_1plts")
+texture_repeat = false

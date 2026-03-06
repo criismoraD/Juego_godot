@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://v8ci5ta3tkkr"]
 
-[ext_resource type="PackedScene" uid="uid://c8mp7piy23m4g" path="res://Assets/Models/Environment/MDL_platform.fbx" id="1_plataforma"]
+[ext_resource type="PackedScene" uid="uid://c8mp7piy23m4g" path="res://Assets/Environment/Platform/MDL_platform.fbx" id="1_plataforma"]
 [ext_resource type="Script" uid="uid://cda1siqoj1unx" path="res://Scripts/Environment/PlataformaOneway.gd" id="2_script"]
-[ext_resource type="Material" uid="uid://bvqsqxa01xudr" path="res://Assets/Materials/MAT_platform.tres" id="3_5jwyb"]
+[ext_resource type="Material" uid="uid://bvqsqxa01xudr" path="res://Assets/Environment/Platform/MAT_platform.tres" id="3_5jwyb"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
 size = Vector3(4.2819824, 0.18833008, 3.2474823)

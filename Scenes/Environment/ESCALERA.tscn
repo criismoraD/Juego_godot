@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://cr61kgfu7qhp0"]
 
 [ext_resource type="Script" uid="uid://1k454om2fo3" path="res://Scripts/Environment/ESCALERA.gd" id="1_ladder"]
-[ext_resource type="PackedScene" uid="uid://c3a82usvqjtvx" path="res://Assets/Models/Ladder/GEO_ESCALERA.fbx" id="2_bsldu"]
+[ext_resource type="PackedScene" uid="uid://c3a82usvqjtvx" path="res://Assets/Environment/Ladder/GEO_ESCALERA.fbx" id="2_bsldu"]
 [ext_resource type="Script" uid="uid://bs5huexvygdku" path="res://Scripts/Environment/BarreraEscalera_INFERIOR.gd" id="3_barrera_script"]
 [ext_resource type="Script" uid="uid://csd8576k2v1a0" path="res://Scripts/Environment/BarreraEscalera_SUPERIOR.gd" id="4_barrera_sup_script"]
 

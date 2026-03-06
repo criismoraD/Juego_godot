@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c6vhgautduyud"]
+
+[ext_resource type="Texture2D" uid="uid://53uso155no13" path="res://Assets/Characters/AllyArcher/ARQUERA_ALIADA_modddif_image_0.png" id="1_fqws2"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_2tjs0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cry0e"]
+render_priority = 0
+shader = ExtResource("2_2tjs0")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 2.5
+
+[resource]
+resource_name = "modddif_material_0.002"
+next_pass = SubResource("ShaderMaterial_cry0e")
+shading_mode = 0
+albedo_texture = ExtResource("1_fqws2")
+texture_repeat = false

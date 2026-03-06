@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://dcqn4obnv8xjm"]
+
+[ext_resource type="Script" uid="uid://e182j8ajvjx" path="res://Scripts/Characters/ImpShieldGirl.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://btconw6lyftg3" path="res://Assets/Characters/ImpShieldGirl/GIRL_IMP_ESCUDO.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://c2ljsyetfeom7" path="res://Assets/Characters/ImpShieldGirl/ESCUDO_IMP.glb" id="3_shield"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
+radius = 0.1274414
+height = 0.6161377
+
+[node name="ImpShieldGirl" type="CharacterBody3D" unique_id=1321773441]
+collision_layer = 4
+script = ExtResource("1_script")
+velocidad_caminar = 1.0
+rotacion_y_modelo = 270.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=261174301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.30806884, 0)
+shape = SubResource("CapsuleShape3D_col")
+
+[node name="GIRL_IMP_ESCUDO" parent="." unique_id=2243237 instance=ExtResource("2_model")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="GIRL_IMP_ESCUDO/Armature/Skeleton3D" parent_id_path=PackedInt32Array(2243237, 1035025305) index="1" unique_id=1278870673]
+transform = Transform3D(-0.42573446, 0.527554, 0.7351439, 0.8815247, 0.42509317, 0.20545082, -0.20411846, 0.73551476, -0.64602864, 25.243671, 11.471745, -45.244816)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 10
+
+[node name="ESCUDO_IMP" parent="GIRL_IMP_ESCUDO/Armature/Skeleton3D/BoneAttachment3D" unique_id=594179190 instance=ExtResource("3_shield")]
+transform = Transform3D(-0.24939322, 1.2160344, -0.08564904, 0.8647357, 0.35647607, 0.23842251, 0.24334721, -0.020491987, -0.9350123, 5.0968895, 1.8717413, -12.917179)
+
+[editable path="GIRL_IMP_ESCUDO"]
+[editable path="GIRL_IMP_ESCUDO/Armature/Skeleton3D/BoneAttachment3D/ESCUDO_IMP"]

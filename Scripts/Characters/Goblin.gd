@@ -6,10 +6,12 @@ class_name Goblin
 # === CONFIGURACIÓN ESPECÍFICA DEL GOBLIN ===
 @export_category("Combate - Goblin")
 @export var intervalo_disparo: float = 3.5
-@export var velocidad_flecha: float = 5.0
+@export var velocidad_flecha: float = 8.0
+@export var velocidad_recarga: float = 2.0 ## Multiplicador de velocidad de la animación de recarga (2.0 = doble de rápido)
 
 # === REFERENCIAS ESPECÍFICAS ===
 var goblin_arrow_scene = preload("res://Scenes/Projectiles/GoblinArrow.tscn")
+var is_reloading: bool = false
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOOKS DE ENEMYBASE
@@ -29,11 +31,12 @@ func _on_state_dying():
 	super._on_state_dying()
 	AudioManager.play_sfx("goblin_death")
 
-	var anim_length = 1.5
-	if anim_player and anim_player.has_animation("Armature|ENEMIGO_GOBLING_MUERTE"):
-		anim_length = anim_player.get_animation("Armature|ENEMIGO_GOBLING_MUERTE").length
+	# Elegir aleatoriamente entre las 3 animaciones de muerte
+	var death_anims = ["ENEMIGO_GOBLING_MUERTE_1", "ENEMIGO_GOBLING_MUERTE_2", "ENEMIGO_GOBLING_MUERTE_3"]
+	var chosen_death = death_anims[randi() % death_anims.size()]
 
-	_play_animation("ENEMIGO_GOBLING_MUERTE")
+	var anim_length = _get_animation_duration(chosen_death)
+	_play_animation(chosen_death)
 
 	get_tree().create_timer(anim_length + 0.5).timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
@@ -50,10 +53,14 @@ func _process_shooting(delta):
 	if rastrear_jugador:
 		_track_player()
 
+	# No contar timer mientras recarga
+	if is_reloading:
+		return
+
 	shoot_timer -= delta
 	if shoot_timer <= 0:
 		_shoot_arrow()
-		shoot_timer = intervalo_disparo
+		_start_reload()
 
 func _shoot_arrow():
 	if not goblin_arrow_scene:
@@ -80,3 +87,21 @@ func _shoot_arrow():
 
 	get_tree().root.add_child(arrow)
 	arrow.global_position = spawn_pos
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RECARGA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _start_reload():
+	is_reloading = true
+	# Reproducir recarga con blend suave desde disparo
+	_play_animation("ENEMIGO_GOBLING_RECARGA", 0.2, velocidad_recarga)
+
+	var reload_duration = _get_animation_duration("ENEMIGO_GOBLING_RECARGA") / velocidad_recarga
+	get_tree().create_timer(reload_duration - 0.2).timeout.connect(func():
+		if is_instance_valid(self) and is_inside_tree() and current_state == State.SHOOTING:
+			# Volver a disparo con blend largo para suavizar la transición
+			_play_animation("ENEMIGO_GOBLING_DISPARO", 0.3)
+			is_reloading = false
+			shoot_timer = intervalo_disparo
+	)

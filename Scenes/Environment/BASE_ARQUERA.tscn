@@ -2,11 +2,11 @@
 
 [ext_resource type="Shader" uid="uid://de3wwyo0wn04y" path="res://Assets/Shaders/Displacement.gdshader" id="1_m5mef"]
 [ext_resource type="Script" uid="uid://itw2ygw6damy" path="res://Scripts/CubeController.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://bw0cck2s50s42" path="res://Assets/Textures/Environment/DIFUSO01.jpeg" id="3_wogvb"]
-[ext_resource type="Texture2D" uid="uid://yj3xco1hlpxx" path="res://Assets/Textures/Environment/ALTURA01.jpeg" id="4_3gp70"]
-[ext_resource type="Texture2D" uid="uid://bms8q3e7impj2" path="res://Assets/Textures/Grass/GRASS_DIF.jpeg" id="5_wogvb"]
-[ext_resource type="Texture2D" uid="uid://dxdqf8g1q3unp" path="res://Assets/Textures/Grass/GRASS_DISPLACEMENT.jpeg" id="6_fwhho"]
-[ext_resource type="Texture2D" uid="uid://ywhx442wmw4d" path="res://Assets/Textures/Grass/GRASS_NORMAL.jpg" id="7_4k3e8"]
+[ext_resource type="Texture2D" uid="uid://bw0cck2s50s42" path="res://Assets/Environment/Floor/DIFUSO01.jpeg" id="3_wogvb"]
+[ext_resource type="Texture2D" uid="uid://yj3xco1hlpxx" path="res://Assets/Environment/Floor/ALTURA01.jpeg" id="4_3gp70"]
+[ext_resource type="Texture2D" uid="uid://bms8q3e7impj2" path="res://Assets/Environment/Grass/GRASS_DIF.jpeg" id="5_wogvb"]
+[ext_resource type="Texture2D" uid="uid://dxdqf8g1q3unp" path="res://Assets/Environment/Grass/GRASS_DISPLACEMENT.jpeg" id="6_fwhho"]
+[ext_resource type="Texture2D" uid="uid://ywhx442wmw4d" path="res://Assets/Environment/Grass/GRASS_NORMAL.jpg" id="7_4k3e8"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3gp70"]
 render_priority = 0

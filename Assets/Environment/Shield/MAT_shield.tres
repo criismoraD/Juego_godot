@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://buh2k2i7xhabt"]
+
+[ext_resource type="Texture2D" uid="uid://1m7pind2m8mc" path="res://Assets/Environment/Shield/TEX_shield_basecolor.png" id="1_eemcq"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_wnkfh"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wnkfh"]
+render_priority = 0
+shader = ExtResource("2_wnkfh")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 2.5
+
+[resource]
+resource_name = "default"
+next_pass = SubResource("ShaderMaterial_wnkfh")
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 0.5019608)
+albedo_texture = ExtResource("1_eemcq")

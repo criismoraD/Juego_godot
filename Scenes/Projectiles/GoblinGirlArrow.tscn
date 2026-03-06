@@ -1,32 +1,49 @@
-[gd_scene load_steps=5 format=3 uid="uid://dh6gp8m6qcofm"]
+[gd_scene format=3 uid="uid://dcri1fif5ky1b"]
 
-[ext_resource type="Script" uid="uid://i24sqemy5r1" path="res://Scripts/Projectiles/GoblinGirlArrow.gd" id="1_script"]
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_arrow"]
-top_radius = 0.02
-bottom_radius = 0.02
-height = 0.3
-
-[sub_resource type="StandardMaterial3D" id="Material_yellow"]
-albedo_color = Color(1, 0.20784314, 0, 1)
-emission_enabled = true
-emission = Color(1, 0.19607843, 0, 1)
-emission_energy_multiplier = 1.5
+[ext_resource type="Script" uid="uid://bygcsae7ly4dt" path="res://Scripts/Projectiles/GoblinGirlArrow.gd" id="2_script"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_arrow"]
-radius = 0.03
-height = 0.3
+radius = 0.025878906
+height = 0.2837158
 
-[node name="GoblinGirlArrow" type="Area3D"]
+[sub_resource type="StandardMaterial3D" id="mat_preview_girl_arrow"]
+albedo_color = Color(0.8, 0.2, 0.8, 1)
+emission_enabled = true
+emission = Color(0.8, 0.2, 0.8, 1)
+emission_energy_multiplier = 3.0
+shading_mode = 0
+
+[sub_resource type="CylinderMesh" id="mesh_girl_body"]
+top_radius = 0.015
+bottom_radius = 0.015
+height = 0.25
+radial_segments = 6
+rings = 1
+material = SubResource("mat_preview_girl_arrow")
+
+[sub_resource type="CylinderMesh" id="mesh_girl_tip"]
+top_radius = 0.0
+bottom_radius = 0.03
+height = 0.08
+radial_segments = 6
+rings = 1
+material = SubResource("mat_preview_girl_arrow")
+
+[node name="GoblinGirlArrow" type="Area3D" unique_id=1985371313]
 collision_layer = 8
-collision_mask = 3
-script = ExtResource("1_script")
+collision_mask = 67
+script = ExtResource("2_script")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("CylinderMesh_arrow")
-surface_material_override/0 = SubResource("Material_yellow")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1969468802]
+transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, -0.008142099, 3.5590247e-10, 0)
 shape = SubResource("CapsuleShape_arrow")
+
+[node name="ArrowModel" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="ArrowModel"]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("mesh_girl_body")
+
+[node name="Tip" type="MeshInstance3D" parent="ArrowModel"]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0.165, 0, 0)
+mesh = SubResource("mesh_girl_tip")

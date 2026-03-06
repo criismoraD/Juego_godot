@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bpjw6iexjsvay"
+
+[deps]
+
+files=["res://Translations/translations.es.translation", "res://Translations/translations.en.translation", "res://Translations/translations.pt.translation", "res://Translations/translations.fr.translation", "res://Translations/translations.zh.translation", "res://Translations/translations.ja.translation", "res://Translations/translations.ru.translation", "res://Translations/translations.de.translation", "res://Translations/translations.ko.translation", "res://Translations/translations.it.translation", "res://Translations/translations.pl.translation", "res://Translations/translations.ar.translation", "res://Translations/translations.qu.translation", "res://Translations/translations.binary.translation"]
+
+source_file="res://Translations/translations.csv"
+dest_files=["res://Translations/translations.es.translation", "res://Translations/translations.en.translation", "res://Translations/translations.pt.translation", "res://Translations/translations.fr.translation", "res://Translations/translations.zh.translation", "res://Translations/translations.ja.translation", "res://Translations/translations.ru.translation", "res://Translations/translations.de.translation", "res://Translations/translations.ko.translation", "res://Translations/translations.it.translation", "res://Translations/translations.pl.translation", "res://Translations/translations.ar.translation", "res://Translations/translations.qu.translation", "res://Translations/translations.binary.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

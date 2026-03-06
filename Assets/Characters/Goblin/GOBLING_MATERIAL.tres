@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cx8cwgkqemwry"]
+
+[ext_resource type="Texture2D" uid="uid://bpxotjefgvq8x" path="res://Assets/Characters/Goblin/GOBLING_REMASTER_ANIMACIONES_modddif_image_0.png" id="1_grvlx"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_g6iqf"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_h3br7"]
+render_priority = 0
+shader = ExtResource("2_g6iqf")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 2.5
+
+[resource]
+resource_name = "GOBLING_MATERIAL"
+next_pass = SubResource("ShaderMaterial_h3br7")
+shading_mode = 0
+albedo_texture = ExtResource("1_grvlx")
+texture_repeat = false
