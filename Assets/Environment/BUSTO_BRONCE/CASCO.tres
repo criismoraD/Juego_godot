@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dwmo2nmr1c8ug"]
+
+[ext_resource type="Texture2D" uid="uid://c7wnbkawtnvbk" path="res://Assets/Environment/CASCO_ESTANDARTE/CASCO_ESTANDARTE_modddif_image_0.png" id="1_e2cqr"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_ytdaj"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kiq4o"]
+render_priority = 0
+shader = ExtResource("2_ytdaj")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 4.0
+
+[resource]
+resource_name = "modddif_material_0"
+next_pass = SubResource("ShaderMaterial_kiq4o")
+shading_mode = 0
+albedo_texture = ExtResource("1_e2cqr")
+texture_repeat = false

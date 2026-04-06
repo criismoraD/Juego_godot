@@ -18,10 +18,10 @@
 [ext_resource type="PackedScene" uid="uid://c20j7pudi7arc" path="res://Scenes/Environment/BASE_ARQUERA.tscn" id="19_mbwsw"]
 [ext_resource type="PackedScene" uid="uid://dusffdtovx70" path="res://Scenes/Characters/AllyArcher.tscn" id="20_cayny"]
 [ext_resource type="PackedScene" uid="uid://c0scekxlsrtww" path="res://Assets/Environment/Helmet/Yelmo fachero.glb" id="22_swu5g"]
-[ext_resource type="PackedScene" uid="uid://srq15kiwvrl1" path="res://Assets/BUSTO_BRONCE.glb" id="23_il8hi"]
-[ext_resource type="PackedScene" uid="uid://bkgamcb2kf52v" path="res://Assets/MESHI_TORRE_FULL_DETALLE.glb" id="24_51i3t"]
+[ext_resource type="PackedScene" uid="uid://srq15kiwvrl1" path="res://Assets/Environment/BUSTO_BRONCE/BUSTO_BRONCE.glb" id="23_il8hi"]
+[ext_resource type="PackedScene" uid="uid://b1m5hf6x1q4nf" path="res://Assets/Environment/TORRE/TORRE.glb" id="24_51i3t"]
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Scenes/Environment/Tronco.tscn" id="25_cx8r4"]
-[ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Assets/Pilar.glb" id="25_koe3n"]
+[ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Assets/Environment/Pilar/Pilar.glb" id="25_koe3n"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Assets/Environment/SpikeTrap/PINCHO.glb" id="25_qcvbp"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
 
@@ -297,10 +297,15 @@ transform = Transform3D(1, 0, 0, 0, 0.8613521, -0.69244844, 0, 1.1728461, 0.5085
 [node name="BUSTO_BRONCE" parent="." unique_id=1776690446 instance=ExtResource("23_il8hi")]
 transform = Transform3D(4.3243847, 1.0009298, -2.3017027, -0.6074899, 4.866277, 0.97483546, 2.435293, -0.5634606, 4.3303423, 5.8222594, -2.15047, -35.00358)
 
-[node name="MESHI_TORRE_FULL_DETALLE" parent="." unique_id=199843829 instance=ExtResource("24_51i3t")]
-transform = Transform3D(5.7363396, 0, 0.89018536, 0, 5.805, 0, -0.89018536, 0, 5.7363396, -9.890089, -0.06750536, -3.3081484)
-
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=153904671]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.735461, 3.6315558, -3.5825245)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.735461, 3.6315558, -3.5144835)
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+
+[node name="TORRE2" parent="." unique_id=525258031 instance=ExtResource("24_51i3t")]
+transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707003, 0.20699981, -3.335857)
+
+[node name="OmniLight3D2" type="OmniLight3D" parent="." unique_id=1941825653]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.96842, 3.0480542, -0.8372054)
 light_color = Color(1, 0.85490197, 0.8, 1)
 light_energy = 1.5

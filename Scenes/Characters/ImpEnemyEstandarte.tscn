@@ -2,8 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://db57wrw5vlbsc" path="res://Scenes/Characters/ImpEnemy.tscn" id="1_base"]
 [ext_resource type="Script" uid="uid://q2sqnc42chlo" path="res://Scripts/Characters/ImpEstandarte.gd" id="2_script"]
-[ext_resource type="PackedScene" uid="uid://bqk483o6hoh86" path="res://Assets/Estandarte.glb" id="3_whoo0"]
-[ext_resource type="PackedScene" uid="uid://dww7qscysxm2" path="res://Assets/CASCO_ESTANDARTE.glb" id="4_14brj"]
+[ext_resource type="PackedScene" uid="uid://bqk483o6hoh86" path="res://Assets/Environment/Estandarte/Estandarte.glb" id="3_whoo0"]
 
 [node name="ImpEnemyEstandarte" unique_id=164796854 instance=ExtResource("1_base")]
 script = ExtResource("2_script")
@@ -73,8 +72,5 @@ transform = Transform3D(79.041565, -45.817917, -163.35045, 134.15662, -125.89132
 transform = Transform3D(1, 0, 0, 0, -1.8626449e-09, 0.9999993, 0, -0.9999993, -1.8626449e-09, 0, 9.999089, -102.31895)
 bone_name = "mixamorig_HeadTop_End"
 bone_idx = 6
-
-[node name="CASCO_ESTANDARTE" parent="ImpModel/Armature/Skeleton3D/BoneAttachment3D2" index="0" unique_id=147269816 instance=ExtResource("4_14brj")]
-transform = Transform3D(89.98966, -0.50686556, -1.2645416, -0.28431445, 74.71219, -50.179756, 1.3323451, 50.17801, 74.70201, 1.8820791, 35.628372, -19.7094)
 
 [editable path="ImpModel"]

@@ -1,7 +1,8 @@
 [gd_scene format=3 uid="uid://d36lv4hhnbipo"]
 
 [ext_resource type="Script" uid="uid://dm0adt5fj54wk" path="res://Scripts/Environment/Tronco.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cn2gib6i02abt" path="res://Assets/Environment/Log/TRONCO.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cn2gib6i02abt" path="res://Assets/Environment/TRONCO/TRONCO.glb" id="2_model"]
+
 
 [node name="Tronco" type="Node3D" unique_id=570608021]
 script = ExtResource("1_script")

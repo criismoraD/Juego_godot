@@ -70,14 +70,26 @@ class IMPORT_OT_fbx_actions(Operator, ImportHelper):
             # 1) Recordar las Actions que existen ANTES de importar
             actions_antes = set(bpy.data.actions)
             
-            # 2) Importar el FBX
-            bpy.ops.import_scene.fbx(
-                filepath=fbx_path,
-                use_anim=True,
-                ignore_leaf_bones=True,
-                automatic_bone_orientation=True,
-            )
-            print(f"   Importado OK")
+            # 2) Importar el FBX con manejo de errores
+            try:
+                bpy.ops.import_scene.fbx(
+                    filepath=fbx_path,
+                    use_anim=True,
+                    ignore_leaf_bones=True,
+                    automatic_bone_orientation=True,
+                    force_connect_children=False,
+                    use_custom_props=False,
+                    use_image_search=False,
+                    use_manual_orientation=False,
+                    global_scale=1.0,
+                    axis_forward='-Z',
+                    axis_up='Y'
+                )
+                print(f"   Importado OK")
+            except Exception as e:
+                print(f"   ⚠ Error al importar: {str(e)}")
+                print(f"   Continuando con siguiente archivo...")
+                continue
             
             # 3) Encontrar la Action NUEVA (la que no existía antes)
             actions_despues = set(bpy.data.actions)
@@ -144,6 +156,21 @@ class IMPORT_OT_fbx_actions(Operator, ImportHelper):
                 print(f"   Objetos temporales eliminados ({len(objetos_a_borrar)})")
         
         # ── Limpiar datos huérfanos ──
+        print("\n── Limpiando datos huérfanos ──")
+        
+        # Limpiar cámaras
+        for cam in list(bpy.data.cameras):
+            if cam.users == 0:
+                bpy.data.cameras.remove(cam)
+                print(f"   Cámara eliminada: {cam.name}")
+        
+        # Limpiar luces
+        for light in list(bpy.data.lights):
+            if light.users == 0:
+                bpy.data.lights.remove(light)
+                print(f"   Luz eliminada: {light.name}")
+        
+        # Limpiar armatures
         for arm_data in list(bpy.data.armatures):
             if arm_data.users == 0:
                 bpy.data.armatures.remove(arm_data)
