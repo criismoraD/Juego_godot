@@ -12,9 +12,16 @@ extends Node3D
 @export_category("Nivel 0 — Pacifista")
 @export var velocidad_pacificos: float = 0.5 ## Velocidad de caminata de los pacíficos
 @export var offset_entre_pacificos: float = 0.4 ## Separación X entre cada pacífico al spawnear
-@export var tamano_imagen_emisario: Vector2 = Vector2(150, 200) ## Tamaño de la imagen del emisario en el diálogo
+@export var tamano_imagen_emisario: Vector2 = Vector2(180, 180) ## Tamaño del icono del emisario en el diálogo
+@export var tamano_imagen_protagonista: Vector2 = Vector2(180, 180) ## Tamaño del icono de la protagonista en el diálogo inicial
 @export var retroceso_parada_arqueras: float = 0.2 ## Cada arquera se para 0.2u más adelante que la anterior
-@export var delay_dialogo_pacifico: float = 3.0 ## Segundos de espera antes de mostrar el diálogo
+@export var delay_dialogo_inicio: float = 1.0 ## Segundos antes de mostrar el mensaje inicial de protagonista
+@export var delay_dialogo_pacifico: float = 2.0 ## Segundos de espera antes de mostrar el diálogo pacifista
+@export_range(0.005, 0.08, 0.005) var velocidad_texto_novela: float = 0.02 ## Velocidad del reveal del texto (segundos por caracter)
+@export_range(0.9, 2.0, 0.05) var pitch_habla_protagonista: float = 1.1 ## Pitch del tecleo metálico del diálogo inicial
+@export var volumen_habla_protagonista_db: float = -16.0 ## Volumen del tecleo metálico en diálogo inicial
+@export_range(2, 20, 1) var chars_por_habla_protagonista: int = 7 ## Frecuencia del tecleo metálico
+@export_range(0.05, 0.5, 0.01) var intervalo_min_habla_protagonista: float = 0.18 ## Intervalo mínimo entre sonidos de habla
 
 # === ESTADO DEL NIVEL ===
 enum NivelEstado { NIVEL_0, TRANSICION, NIVEL_1, VICTORIA_PACIFISTA, VICTORIA_NIVEL1, OLEADAS_LIBRES }
@@ -29,6 +36,10 @@ var imp_estandarte: Node3D = null ## Referencia al imp que lleva el estandarte
 
 # === ESCENAS ===
 var escena_imp_estandarte: PackedScene = preload("res://Scenes/Characters/ImpEnemyEstandarte.tscn")
+var sfx_habla_dialogo: AudioStream = preload("res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3")
+var estados_proceso_jugador: Dictionary = {}
+var estados_proceso_dialogo: Dictionary = {}
+var estado_spawner_dialogo: Dictionary = {}
 
 func _ready():
 	# Ocultar TextureRect del SubViewport
@@ -41,11 +52,124 @@ func _ready():
 	# Esperar un frame para que todos los nodos estén listos
 	await get_tree().process_frame
 
-	# Detener el spawner automático
+	# Detener el spawner automático desde el inicio para evitar aparición previa al diálogo.
 	wave_spawner.detener_spawning()
+
+	# Espera inicial solicitada antes del cuadro de diálogo
+	await get_tree().create_timer(delay_dialogo_inicio).timeout
+
+	# Mensaje inicial de protagonista antes de iniciar el flujo pacifista
+	await _mostrar_dialogo_inicio_protagonista()
 
 	# Iniciar Nivel 0
 	_iniciar_nivel_0()
+
+func _mostrar_dialogo_inicio_protagonista():
+	_set_juego_pausado_dialogo(true)
+
+	var overlay = CanvasLayer.new()
+	overlay.layer = 190
+	overlay.name = "DialogoInicioProtagonista"
+	add_child(overlay)
+
+	var fondo = ColorRect.new()
+	fondo.color = Color(0, 0, 0, 0.0)
+	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(fondo)
+
+	var panel = PanelContainer.new()
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.07, 0.1, 0.92)
+	panel_style.border_color = Color(0.9, 0.8, 0.4)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel_style.set_content_margin_all(14)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	panel.anchor_left = 0.16
+	panel.anchor_right = 0.84
+	panel.anchor_top = 0.08
+	panel.anchor_bottom = 0.42
+	overlay.add_child(panel)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 14)
+	panel.add_child(hbox)
+
+	# Icono de protagonista a la izquierda
+	var textura = load("res://Assets/PROTA_ICON.png")
+	if textura:
+		var img = TextureRect.new()
+		img.texture = textura
+		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		img.custom_minimum_size = tamano_imagen_protagonista
+		img.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		img.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hbox.add_child(img)
+
+	var vbox_texto = VBoxContainer.new()
+	vbox_texto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox_texto.add_theme_constant_override("separation", 10)
+	hbox.add_child(vbox_texto)
+
+	var nombre = Label.new()
+	nombre.text = "Protagonista"
+	nombre.add_theme_font_size_override("font_size", 34)
+	nombre.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	vbox_texto.add_child(nombre)
+
+	var dialogo = RichTextLabel.new()
+	dialogo.bbcode_enabled = true
+	dialogo.text = "Veo una silueta en el horizonte preparen sus arcos, a mi señal"
+	dialogo.add_theme_font_size_override("normal_font_size", 26)
+	dialogo.add_theme_color_override("default_color", Color(0.9, 0.88, 0.82))
+	dialogo.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dialogo.fit_content = true
+	dialogo.scroll_active = false
+	vbox_texto.add_child(dialogo)
+
+	dialogo.visible_characters = 0
+	var total_chars: int = dialogo.get_total_character_count()
+	if total_chars > 0:
+		var tiempo_por_char: float = velocidad_texto_novela
+		var chars_por_sonido: int = chars_por_habla_protagonista
+		var ultimo_audio_ms: int = 0
+		for i in range(total_chars + 1):
+			if not is_instance_valid(dialogo) or not dialogo.is_inside_tree():
+				break
+			dialogo.visible_characters = i
+			if i > 0 and i % chars_por_sonido == 0:
+				var ahora_ms: int = Time.get_ticks_msec()
+				if ahora_ms - ultimo_audio_ms >= int(intervalo_min_habla_protagonista * 1000.0):
+					_reproducir_habla_femenina()
+					ultimo_audio_ms = ahora_ms
+			await get_tree().create_timer(tiempo_por_char).timeout
+
+	var boton_continuar = Button.new()
+	boton_continuar.text = tr("BOTON_CONTINUAR")
+	boton_continuar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox_texto.add_child(boton_continuar)
+
+	await boton_continuar.pressed
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	_set_juego_pausado_dialogo(false)
+
+func _reproducir_habla_femenina():
+	if not sfx_habla_dialogo:
+		return
+	var player_temp := AudioStreamPlayer.new()
+	player_temp.stream = sfx_habla_dialogo
+	player_temp.bus = "Master"
+	player_temp.volume_db = volumen_habla_protagonista_db
+	player_temp.pitch_scale = pitch_habla_protagonista
+	add_child(player_temp)
+	player_temp.play()
+	player_temp.finished.connect(func():
+		if is_instance_valid(player_temp):
+			player_temp.queue_free()
+	)
 
 func _process(_delta):
 	match estado_actual:
@@ -72,7 +196,7 @@ func _iniciar_nivel_0():
 	# Arqueras aliadas visibles pero sin disparar (solo pose IDLE)
 	_set_aliadas_modo_pacifico()
 
-	# Spawnear 3 enemigos pacíficos: 1 Imp con estandarte (adelante) + 2 GoblinGirl (detrás)
+	# Spawnear 3 enemigos pacíficos tras aceptar: 1 Imp con estandarte + 2 GoblinGirl.
 	var escenas: Array[PackedScene] = [
 		escena_imp_estandarte,
 		wave_spawner.escena_goblin_girl,
@@ -80,7 +204,7 @@ func _iniciar_nivel_0():
 	]
 	enemigos_pacificos = wave_spawner.spawn_pacificos(escenas, velocidad_pacificos, offset_entre_pacificos)
 
-	# Asignar límite de parada escalonado: Imp en -5.0, arqueras en -4.8 y -4.6
+	# Asignar límite de parada escalonado: Imp en -5.0, arqueras en -4.8 y -4.6.
 	for i in range(enemigos_pacificos.size()):
 		var enemigo = enemigos_pacificos[i]
 		if is_instance_valid(enemigo):
@@ -207,44 +331,53 @@ func _victoria_pacifista():
 	_mostrar_dialogo_pacifista()
 
 func _mostrar_dialogo_pacifista():
+	_set_juego_pausado_dialogo(true)
+
 	var overlay = CanvasLayer.new()
 	overlay.layer = 200
+	overlay.name = "DialogoPacifista"
 	add_child(overlay)
 
 	# Fondo semi-transparente
 	var fondo = ColorRect.new()
-	fondo.color = Color(0, 0, 0, 0.5)
+	fondo.color = Color(0, 0, 0, 0.0)
 	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(fondo)
 
-	# Panel principal del diálogo (centro-superior)
+	# Panel principal del emisario (compacto, solo texto superior)
 	var panel = PanelContainer.new()
 	var panel_style = StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.08, 0.06, 0.1, 0.92)
 	panel_style.border_color = Color(0.85, 0.65, 0.2)
 	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(8)
-	panel_style.set_content_margin_all(20)
+	panel_style.set_content_margin_all(14)
 	panel.add_theme_stylebox_override("panel", panel_style)
 
-	# Posicionar: centrado horizontal, parte superior
-	panel.anchor_left = 0.1
-	panel.anchor_right = 0.9
-	panel.anchor_top = 0.05
-	panel.anchor_bottom = 0.85
+	# Posicionar: centrado horizontal, recuadro más pequeño en parte superior
+	panel.anchor_left = 0.16
+	panel.anchor_right = 0.84
+	panel.anchor_top = 0.08
+	panel.anchor_bottom = 0.42
 	panel.offset_left = 0
 	panel.offset_right = 0
 	panel.offset_top = 0
 	panel.offset_bottom = 0
 	overlay.add_child(panel)
 
-	# Contenedor horizontal: imagen + texto
+	# Contenedor horizontal: texto + imagen (icono a la derecha)
 	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 20)
+	hbox.add_theme_constant_override("separation", 14)
 	panel.add_child(hbox)
 
-	# Imagen WIP.png (retrato del emisario)
-	var textura = load("res://WIP.png")
+	# Contenedor de texto
+	var vbox_texto = VBoxContainer.new()
+	vbox_texto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox_texto.add_theme_constant_override("separation", 10)
+	hbox.add_child(vbox_texto)
+
+	# Imagen IMP_ICON.png (retrato del emisario) a la derecha
+	var textura = load("res://Assets/IMP_ICON.png")
 	if textura:
 		var img = TextureRect.new()
 		img.texture = textura
@@ -255,16 +388,10 @@ func _mostrar_dialogo_pacifista():
 		img.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		hbox.add_child(img)
 
-	# Contenedor de texto
-	var vbox_texto = VBoxContainer.new()
-	vbox_texto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox_texto.add_theme_constant_override("separation", 15)
-	hbox.add_child(vbox_texto)
-
 	# Nombre del personaje
 	var nombre = Label.new()
 	nombre.text = tr("EMISARIO_NOMBRE")
-	nombre.add_theme_font_size_override("font_size", 28)
+	nombre.add_theme_font_size_override("font_size", 34)
 	nombre.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
 	vbox_texto.add_child(nombre)
 
@@ -272,20 +399,106 @@ func _mostrar_dialogo_pacifista():
 	var dialogo = RichTextLabel.new()
 	dialogo.bbcode_enabled = true
 	dialogo.text = tr("DIALOGO_PACIFISTA")
-	dialogo.add_theme_font_size_override("normal_font_size", 18)
+	dialogo.add_theme_font_size_override("normal_font_size", 26)
 	dialogo.add_theme_color_override("default_color", Color(0.9, 0.88, 0.82))
 	dialogo.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	dialogo.scroll_active = true
+	dialogo.fit_content = true
+	dialogo.scroll_active = false
 	vbox_texto.add_child(dialogo)
 
-	# Texto de resultado
+	# Efecto "novela ligera": revelar texto gradualmente
+	dialogo.visible_characters = 0
+	var total_chars: int = dialogo.get_total_character_count()
+	if total_chars > 0:
+		var tiempo_por_char: float = velocidad_texto_novela
+		var chars_por_sonido: int = 4
+		for i in range(total_chars + 1):
+			if not is_instance_valid(dialogo) or not dialogo.is_inside_tree():
+				break
+			dialogo.visible_characters = i
+			if i > 0 and i % chars_por_sonido == 0:
+				AudioManager.play_sfx("shield_hit_arrow", -18.0)
+			await get_tree().create_timer(tiempo_por_char).timeout
+
+	# Botón para pasar a la segunda pantalla (resultado)
+	var boton_continuar = Button.new()
+	boton_continuar.text = tr("BOTON_CONTINUAR")
+	boton_continuar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox_texto.add_child(boton_continuar)
+
+	boton_continuar.pressed.connect(func():
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+		_mostrar_resultado_pacifista_pantalla_negra()
+	)
+
+func _mostrar_resultado_pacifista_pantalla_negra():
+	var overlay = CanvasLayer.new()
+	overlay.layer = 210
+	overlay.name = "ResultadoPacifista"
+	add_child(overlay)
+
+	var fondo = ColorRect.new()
+	fondo.color = Color(0, 0, 0, 1)
+	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(fondo)
+
+	var contenedor = VBoxContainer.new()
+	contenedor.anchor_left = 0.08
+	contenedor.anchor_right = 0.92
+	contenedor.anchor_top = 0.2
+	contenedor.anchor_bottom = 0.8
+	contenedor.alignment = BoxContainer.ALIGNMENT_CENTER
+	contenedor.add_theme_constant_override("separation", 24)
+	overlay.add_child(contenedor)
+
 	var resultado = RichTextLabel.new()
 	resultado.bbcode_enabled = true
-	resultado.text = "[i]" + tr("RESULTADO_PACIFISTA") + "[/i]"
-	resultado.add_theme_font_size_override("normal_font_size", 16)
-	resultado.add_theme_color_override("default_color", Color(0.7, 0.85, 0.6))
+	resultado.text = tr("RESULTADO_PACIFISTA")
+	resultado.add_theme_font_size_override("normal_font_size", 30)
+	resultado.add_theme_color_override("default_color", Color(1, 1, 1))
+	resultado.fit_content = true
+	resultado.scroll_active = false
+	resultado.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	resultado.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox_texto.add_child(resultado)
+	contenedor.add_child(resultado)
+
+	var boton_cerrar = Button.new()
+	boton_cerrar.text = tr("BOTON_CONTINUAR")
+	boton_cerrar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	contenedor.add_child(boton_cerrar)
+
+	var boton_reiniciar = Button.new()
+	boton_reiniciar.text = "Reiniciar"
+	boton_reiniciar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	contenedor.add_child(boton_reiniciar)
+
+	boton_cerrar.pressed.connect(func():
+		_set_juego_pausado_dialogo(false)
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+	)
+
+	boton_reiniciar.pressed.connect(func():
+		_set_juego_pausado_dialogo(false)
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+		_reiniciar_nivel01_limpio()
+	)
+
+func _reiniciar_nivel01_limpio():
+	# Limpiar enemigos/proyectiles spawneados en root antes de recargar escena.
+	var grupos_a_limpiar: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
+	for grupo in grupos_a_limpiar:
+		for nodo in get_tree().get_nodes_in_group(grupo):
+			if is_instance_valid(nodo):
+				nodo.queue_free()
+
+	# Esperar a que queue_free se aplique para evitar residuos entre recargas.
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL01.tscn")
 
 func _mostrar_texto_guerra():
 	var overlay = CanvasLayer.new()
@@ -466,3 +679,69 @@ func _set_aliadas_modo_pacifico():
 			var hitbox = ally.get("hitbox_body")
 			if hitbox and is_instance_valid(hitbox):
 				hitbox.collision_layer = 0 # Sin colisión
+
+func _set_movimiento_jugador_bloqueado(bloqueado: bool):
+	for jugador in get_tree().get_nodes_in_group("player"):
+		if not is_instance_valid(jugador):
+			continue
+
+		var id_jugador: int = jugador.get_instance_id()
+		if bloqueado:
+			if not estados_proceso_jugador.has(id_jugador):
+				estados_proceso_jugador[id_jugador] = {
+					"process": jugador.is_processing(),
+					"physics": jugador.is_physics_processing()
+				}
+			jugador.set_process(false)
+			jugador.set_physics_process(false)
+		else:
+			var estado = estados_proceso_jugador.get(id_jugador, {"process": true, "physics": true})
+			jugador.set_process(bool(estado["process"]))
+			jugador.set_physics_process(bool(estado["physics"]))
+
+	if not bloqueado:
+		estados_proceso_jugador.clear()
+
+func _set_juego_pausado_dialogo(bloqueado: bool):
+	_set_movimiento_jugador_bloqueado(bloqueado)
+
+	if not is_instance_valid(wave_spawner):
+		return
+
+	var id_spawner: int = wave_spawner.get_instance_id()
+	if bloqueado:
+		if not estado_spawner_dialogo.has(id_spawner):
+			estado_spawner_dialogo[id_spawner] = {
+				"process": wave_spawner.is_processing(),
+				"physics": wave_spawner.is_physics_processing()
+			}
+		wave_spawner.set_process(false)
+		wave_spawner.set_physics_process(false)
+	else:
+		var estado_spawner = estado_spawner_dialogo.get(id_spawner, {"process": true, "physics": true})
+		wave_spawner.set_process(bool(estado_spawner["process"]))
+		wave_spawner.set_physics_process(bool(estado_spawner["physics"]))
+		estado_spawner_dialogo.clear()
+
+	var grupos_a_pausar: Array[String] = ["enemies", "enemy_projectiles", "allies", "shield_imps"]
+	for grupo in grupos_a_pausar:
+		for nodo in get_tree().get_nodes_in_group(grupo):
+			if not is_instance_valid(nodo):
+				continue
+
+			var id_nodo: int = nodo.get_instance_id()
+			if bloqueado:
+				if not estados_proceso_dialogo.has(id_nodo):
+					estados_proceso_dialogo[id_nodo] = {
+						"process": nodo.is_processing(),
+						"physics": nodo.is_physics_processing()
+					}
+				nodo.set_process(false)
+				nodo.set_physics_process(false)
+			else:
+				var estado_nodo = estados_proceso_dialogo.get(id_nodo, {"process": true, "physics": true})
+				nodo.set_process(bool(estado_nodo["process"]))
+				nodo.set_physics_process(bool(estado_nodo["physics"]))
+
+	if not bloqueado:
+		estados_proceso_dialogo.clear()

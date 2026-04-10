@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "Recurve Bow 2": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/Recurve Bow 2.tres",
+"use_external/fallback_path": "res://Assets/Weapons/PlayerBow/Recurve Bow 2.tres",
 "use_external/path": "uid://bxa1kaf5suqom"
 }
 }

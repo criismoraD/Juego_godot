@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "modddif_material_0": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/Hand Crossbow.tres",
+"use_external/fallback_path": "res://Assets/Projectiles/GoblinCrossbow/Hand Crossbow.tres",
 "use_external/path": "uid://4fxlfonkc6n0"
 }
 }

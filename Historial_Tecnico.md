@@ -1,0 +1,84 @@
+## Estado Actual
+- Flujo de trabajo separado en dos scripts de Blender: preparacion y exportacion.
+- La exportacion de textura esta configurada en formato JPG y solicita carpeta destino.
+- El addon Arquera Tools ahora expone tres botones de pipeline para modelos (1-5, 6-7 y 1-7).
+- El proceso de preparacion deja solo el mapa difuso conectado y elimina/desconecta mapas no difusos.
+- El script de exportacion ahora detecta armature vinculado y exporta GLB con rig/animaciones cuando existen, manteniendo textura JPG separada.
+- El addon tambien quedo sincronizado para exportar con la misma logica (mesh/armature, animaciones y skinning cuando aplica).
+- Se agrego un plugin de editor para Godot con boton para procesar GLB seleccionado (extraer materiales, asignar textura difusa y configurar TOON_LINEANEGRA en next_pass).
+- El plugin de Godot ahora trabaja sin .tscn intermedio: crea un material unico [GLB]_MAT.tres en la misma carpeta del GLB, en modo Unshaded, y activa Use External directamente en la importacion del GLB.
+- La escena del ImpEstandarte fue recreada y ahora usa el GLB en Assets/Characters/IMP_ESTANDARTE con comportamiento de disparo de flecha (arco) y animaciones IMP_*.
+- El flujo de victoria pacifista ahora está dividido en 2 pantallas: primero diálogo del emisario (icono IMP_ICON, recuadro superior compacto) y luego resultado en pantalla negra con texto blanco.
+- El diálogo pacifista fue refinado a estilo novela ligera: icono grande a la derecha, fondo más opaco, revelado progresivo del texto y botón de reiniciar en la pantalla final.
+- El revelado del diálogo pacifista ahora incluye sonido de habla ligero por bloques de caracteres y se corrigió el tipado explícito para evitar el error de Variant inferido (warnings tratados como error).
+- Se expusieron parámetros de ajuste en inspector para UX/gameplay: velocidad de texto novela y espera idle del ImpEstandarte; además el reinicio ahora recarga explícitamente NIVEL01 y el ImpEstandarte usa animaciones HIT + sonido de Imp al daño.
+- El primer panel del diálogo pacifista ya no oscurece el fondo, y el botón Reiniciar ahora hace limpieza previa de enemigos/proyectiles activos para reiniciar NIVEL01 como escena limpia.
+- El ImpEstandarte ahora reproduce su audio de muerte dedicado (IMP_ESTANDARTE_MUERTE.mpeg) y mantiene tracking activo en estado SHOOTING al estilo GoblinGirl.
+- El audio .mpeg del ImpEstandarte se carga en runtime como AudioStreamMP3 (bytes) para evitar errores de parser por extensión no reconocida en preload.
+- El ImpEstandarte ya no usa IMP_IDLE_ARCO en combate (solo IMP_DISPARO para disparar, con espera en IMP_IDLE_001) y se eliminó el override de material del Imp normal para evitar rotura de textura en runtime.
+- El ImpEstandarte ahora encadena ciclos continuos de IMP_DISPARO sin volver a idle entre disparos (disparo por timestamp dentro de la animación) y al entrar en combate cambia visualmente de estandarte a arco en la misma mano.
+- EnemyBase ahora selecciona el AnimationPlayer con mayor cantidad de animaciones para evitar capturar AnimationPlayers de accesorios (como el arco) y romper la reproducción de animaciones del enemigo.
+- Al entrar en ataque, el ImpEstandarte ahora suelta físicamente el estandarte (RigidBody3D con impulso/torque) para que caiga al suelo, y mantiene el swap visual al arco.
+- El estandarte caído ya no colisiona con el Imp (collision exception) y ahora se autodestruye con partículas tipo disolución en su posición final.
+- El estandarte ahora también se suelta en el primer daño recibido (sin esperar animación hit) y su caída fue ajustada para ser más seca: más gravedad, menos impulso y giro mínimo.
+- El estandarte caído quedó aislado de personajes: colisiona sólo hacia suelo (mask layer 1 con layer 0), agrega excepciones con enemies/player/allies y desactiva colisiones internas del visual instanciado.
+- En combate del ImpEstandarte se eliminó la espera con pose idle previa: al entrar a SHOOTING inicia directamente IMP_DISPARO para evitar cualquier transición tipo idle_arco.
+- Se actualizó la carga del retrato del emisario en NIVEL01 de IMP_ICON.jpeg a IMP_ICON.png.
+- Se añadió un diálogo inicial de protagonista al arrancar NIVEL01 (antes del Nivel 0), con icono PROTA_ICON.png a la izquierda y efecto de habla con pitch más agudo para voz femenina.
+- Se reforzó el diálogo inicial: el movimiento del jugador queda bloqueado durante cuadros de charla y se ajustó el audio para reducir efecto tecleo (menos frecuencia de disparo de SFX, pitch femenino más alto y timbre más vocal).
+- El arranque del nivel ahora respeta un delay previo al diálogo inicial y, tras aceptar, aparece solo el Imp Estandarte (sin oleada inicial de múltiples enemigos).
+- Flujo inicial recalibrado: delay de 1s antes del diálogo, pausa de gameplay durante cuadros de texto y restauración del spawn pacifista clásico (Imp Estandarte + 2 arqueras) tras aceptar.
+- El sonido del mensaje principal se cambió a timbre metálico (tecleo) y se ajustó su cadencia para que suene más natural.
+- La GameUI de debug ahora incluye botón de revivir aliadas: guarda plantillas iniciales de las arqueras y reinstancia solo las faltantes en su posición original, respetando el estado ON/OFF de aliadas.
+- Se añadió slider de debug para opacidad de CAPA001 (mapeado a FogPlane): ajusta en runtime el alpha de fog_color del shader de niebla.
+- Se corrigió el slider CAPA001 para que sí aplique visualmente: ahora usa instancia local de ShaderMaterial en FogPlane y actualiza correctamente fog_color.a sin mutar temporales.
+- Ajuste final solicitado: el slider CAPA001 ahora controla el nodo real CAPA001 (Sprite3D con CAPA1_V.png) vía modulate.a y se revirtió la intervención sobre FogPlane.
+- CAPA001 ahora inicia con opacidad 0.2 desde la escena NIVEL01 (modulate alpha), quedando semitransparente al arrancar.
+
+## Tareas Completadas
+- 2026-04-08 (resumen): separacion inicial de scripts (prepare_model_export.py y export_model_glb_jpg.py).
+- 2026-04-08 (resumen): addon actualizado a 3 botones y version 1.2.0.
+- 2026-04-08: Ajuste de limpieza en Prepare Model para conservar solo mapa difuso: reconecta Base Color al mapa difuso, desconecta entradas no difusas del Principled y elimina nodos sobrantes.
+- 2026-04-08: Validacion de sintaxis posterior al ajuste en prepare_model_export.py y arquera_tools_addon.py (sin errores).
+- 2026-04-09: Mejora en export_model_glb_jpg.py para detectar mesh/armature automaticamente, seleccionar mesh + armature al exportar GLB y habilitar opciones de animacion/skin cuando el exportador glTF las soporta.
+- 2026-04-09: Sincronizacion de arquera_tools_addon.py con la misma logica de exportacion animada (deteccion de mesh desde armature, seleccion mesh+armature, opciones de animacion glTF y validaciones UI).
+- 2026-04-09: Creacion del plugin de Godot addons/arquera_godot_tools con boton de procesamiento para GLB seleccionado: guarda materiales en carpeta Materiales_Extraidos, aplica textura difusa detectada en carpeta y asigna shader TOON_LINEANEGRA como next_pass.
+- 2026-04-09: Correccion de activacion del plugin de Godot: en plugin.cfg se cambio script a ruta relativa (plugin.gd) para evitar duplicacion de ruta res://addons/.../res://addons/... al habilitar el addon.
+- 2026-04-09: Ajuste de UX del plugin de Godot para no tapar paneles del editor: se movio la interfaz desde dock lateral a panel inferior (bottom panel).
+- 2026-04-09: Ajuste de logica del plugin de Godot segun flujo de import avanzado: material en modo Unshaded, guardado en la misma carpeta con nombre [GLB]_MAT.tres, sin generar _Procesado.tscn, y aplicacion automatica de Use External sobre el .glb.import con reimport.
+- 2026-04-09: Reimplementacion de ImpEstandarte para gameplay: reemplazo de tridente por flecha (GoblinGirlArrow), uso de animaciones IMP_IDLE/IMP_IDLE_001/IMP_IDLE_ARCO/IMP_DISPARO/IMP_MUERTE, y creacion de Scenes/Characters/ImpEnemyEstandarte.tscn para restaurar el preload del Nivel 0.
+- 2026-04-09: Ajuste fino solicitado por gameplay/UI: mapeo de animaciones del ImpEstandarte (IMP_IDLE para caminar e IMP_IDLE_001 para reposo), delay pacifista expuesto en 2.0s y rediseño del diálogo pacifista en dos pantallas separadas.
+- 2026-04-09: Pulido UX final del diálogo pacifista: icono IMP_ICON ampliado y movido a la derecha, efecto de revelado de texto tipo novela ligera, fondo más oscuro para foco visual y botón Reiniciar al final del resultado pacifista.
+- 2026-04-09: Corrección de compilación en NIVEL01.gd (tipado explícito en total_chars) e implementación de audio de habla durante el reveal del diálogo pacifista usando SFX de baja intensidad.
+- 2026-04-09: Ajustes solicitados de control fino: botón Reiniciar configurado para reiniciar NIVEL01 completo, export de velocidad_texto_novela en NIVEL01.gd y exports de espera_idle_arco_min/max en ImpEstandarte.gd. Además, se agregó lógica de daño para ImpEstandarte con IMP_HIT_01/02/03 y sonido de Imp en hits.
+- 2026-04-09: Corrección de reinicio limpio y UI: se eliminó el oscurecido del primer mensaje pacifista y se añadió función de reinicio robusto que limpia grupos runtime (enemies/enemy_projectiles/shield_imps) antes de recargar NIVEL01.
+- 2026-04-09: Ajuste de combate del ImpEstandarte: tracking continuo en SHOOTING (como GoblinGirl), mantenimiento de IMP_IDLE_ARCO para apuntado y IMP_DISPARO para disparo, y cambio de SFX de muerte a recurso dedicado IMP_ESTANDARTE_MUERTE.mpeg.
+- 2026-04-09: Fix crítico de parser en ImpEstandarte.gd: reemplazo de preload de .mpeg por carga manual de archivo (FileAccess + AudioStreamMP3.data) con fallback a imp_death si el archivo no está disponible.
+- 2026-04-09: Ajuste visual/gameplay solicitado: remoción de IMP_IDLE_ARCO del ciclo de ataque del ImpEstandarte y eliminación de _aplicar_material_imp() en _on_enemy_ready para preservar materiales/textura del GLB durante el juego.
+- 2026-04-09: Ajuste de feedback de daño en ImpEstandarte: se bloquea temporalmente _process_walking mientras hit_en_proceso para que la primera animación IMP_HIT sea visible y no quede sobreescrita por transición inmediata a SHOOTING.
+- 2026-04-10: Corrección de bucle de combate del ImpEstandarte: IMP_DISPARO ahora se reproduce en cadena continua (sin fallback a IMP_IDLE_001 entre tiros), se reinicia correctamente tras hit en estado SHOOTING y se agregó swap visual Estandarte->ArcoCombate al entrar en ataque.
+- 2026-04-10: Fix de regresión de animaciones tras añadir ArcoCombate: en EnemyBase._buscar_animation_player se prioriza el AnimationPlayer con más clips para usar el del personaje en vez del accesorio.
+- 2026-04-10: Implementación de “soltar estandarte al atacar”: en ImpEstandarte se agregó spawn físico del estandarte con caída real (impulso + torque + autodestrucción configurable) al entrar por primera vez en estado SHOOTING.
+- 2026-04-10: Ajuste de caída del estandarte: se evitó la colisión con el CharacterBody del Imp y se añadió efecto de partículas al desaparecer el estandarte tras el temporizador de autodestrucción.
+- 2026-04-10: Ajuste solicitado de timing/física: el estandarte cae inmediatamente al recibir daño y se recalibró la física para caída directa (menos vueltas y menor deriva).
+- 2026-04-10: Fix de colisiones del estandarte caído: se restringió a interacción con suelo y se eliminó interacción con enemigos/personajes mediante capas/máscaras + excepciones + limpieza de CollisionObject3D en el visual.
+- 2026-04-10: Ajuste de animación solicitado: en ImpEstandarte._on_state_shooting se forzó inicio inmediato de IMP_DISPARO sin fase idle intermedia.
+- 2026-04-10: Ajuste de assets UI: NIVEL01 ahora carga IMP_ICON.png (el icono fue migrado de .jpeg a .png).
+- 2026-04-10: Nuevo mensaje de arranque en NIVEL01: se implementó panel de protagonista con texto “Veo una silueta en el horizonte preparen sus arcos, a mi señal”, icono PROTA_ICON.png a la izquierda y reproducción de habla local con pitch configurable más agudo.
+- 2026-04-10: Ajuste UX de diálogos: bloqueo de controles del jugador mientras los overlays de charla están activos (inicio protagonista y flujo pacifista), con restauración de control al aceptar/cerrar.
+- 2026-04-10: Ajuste sonoro de protagonista: SFX de habla migrado a timbre menos "tecleo", menor cadencia por caracteres e intervalo mínimo entre disparos para sensación más orgánica.
+- 2026-04-10: Ajuste de flujo inicial solicitado: espera configurable de 2s antes del cuadro de charla de protagonista y spawn pacifista inicial reducido a solo ImpEstandarte tras aceptar.
+- 2026-04-10: Corrección de flujo solicitada: delay inicial cambiado a 1s, pausa explícita de sistemas gameplay durante diálogos, y reactivación del spawn de ImpEstandarte + 2 GoblinGirl después de aceptar.
+- 2026-04-10: Ajuste sonoro final del mensaje principal: reemplazo del SFX por impacto metálico de escudo y tuning de pitch/cadencia para efecto de tecleo metálico más legible.
+- 2026-04-10: Debug UI mejorada con botón “💚 REVIVIR ALIADAS” en GameUI.gd; se añadieron plantillas de aliadas al iniciar nivel y lógica para reinstanciar arqueras destruidas sin duplicar las vivas.
+- 2026-04-10: GameUI.gd actualizado con slider “CAPA001 α” en debug; controla la opacidad de la capa de niebla (FogPlane) modificando fog_color.a en el shader en tiempo real.
+- 2026-04-10: Fix del slider CAPA001 en GameUI.gd: ajuste robusto de material de FogPlane + corrección de escritura de alpha en Color, resolviendo que el slider no cambiara la opacidad.
+- 2026-04-10: Corrección de alcance del slider: se detectó nodo existente CAPA001 en NIVEL01.tscn y el control de opacidad pasó a ese Sprite3D (modulate alpha), descartando cambios sobre FogPlane.
+- 2026-04-10: Ajuste de inicio solicitado: CAPA001 en NIVEL01.tscn configurado con modulate.a = 0.2 para que arranque transparente por defecto.
+
+## Tareas Pendientes
+- Probar los tres botones del addon dentro de Blender con un modelo real y verificar el selector de carpeta en botones de exportacion.
+- Probar un modelo con rig y varias animaciones (Actions/NLA) para validar que el GLB exportado incluya todos los clips esperados.
+- Activar el plugin de Godot en Project Settings > Plugins y validar flujo con un GLB real desde FileSystem (creacion de [GLB]_MAT.tres en la misma carpeta, Use External en .glb.import y next_pass toon).
+- Si se desea, agregar un boton de "Solo JPG" o opciones avanzadas (calidad JPEG, prefijo de nombres, etc.).
+- Ajustar fino el transform local de ArcoCombate en la mano del ImpEstandarte dentro de la escena si se requiere mejorar encaje visual en runtime.

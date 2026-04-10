@@ -44,6 +44,8 @@ var escudo_scene: PackedScene = preload("res://Scenes/Environment/Escudo.tscn")
 var escudos_originales: Array = [] # [{transform, parent_path}]
 var btn_toggle_shields: Button
 var btn_toggle_allies: Button
+var btn_revive_allies: Button
+var plantillas_aliadas: Array = [] # [{name, parent_path, global_transform, template}]
 
 # === NODOS DE EFECTOS ===
 var world_environment: WorldEnvironment = null
@@ -52,12 +54,15 @@ var dof_slider: HSlider
 var dof_value_label: Label
 var fog_density_slider: HSlider
 var fog_density_value_label: Label
+var capa001_opacity_slider: HSlider
+var capa001_opacity_value_label: Label
 var layers_btn: Button
 var layers_enabled: bool = true
 
 # === PLANOS DE EFECTOS ===
 var fog_plane: Node3D = null
 var fog_material: ShaderMaterial = null
+var capa001_sprite: Sprite3D = null
 
 # === MATERIALES CON OUTLINE ===
 var materials_with_outline: Array = []
@@ -91,6 +96,7 @@ func _ready():
 	
 	# Buscar WorldEnvironment
 	_find_world_environment()
+	_find_capa001()
 	
 	# Escanear materiales con outline
 	_scan_outline_materials()
@@ -115,6 +121,7 @@ func _ready():
 	
 	# Guardar posiciones originales de escudos
 	_guardar_posiciones_escudos()
+	_guardar_plantillas_aliadas()
 	
 	# Conectar señales del player
 	if player:
@@ -142,6 +149,13 @@ func _find_world_environment():
 	# Obtener el material del fog plane para modificar fog_density
 	if fog_plane and fog_plane is MeshInstance3D:
 		fog_material = fog_plane.get_surface_override_material(0)
+
+func _find_capa001():
+	var nodo = get_tree().root.find_child("CAPA001", true, false)
+	if nodo and nodo is Sprite3D:
+		capa001_sprite = nodo
+	else:
+		capa001_sprite = null
 
 func _scan_outline_materials():
 	# Lista de materiales conocidos con outline
@@ -413,6 +427,14 @@ func _create_ui():
 	btn_toggle_allies.pressed.connect(_toggle_aliadas)
 	_style_button(btn_toggle_allies, Color(0.3, 0.6, 0.5))
 	hbox2.add_child(btn_toggle_allies)
+
+	# --- REVIVIR ALIADAS ---
+	btn_revive_allies = Button.new()
+	btn_revive_allies.text = "💚 REVIVIR ALIADAS"
+	btn_revive_allies.custom_minimum_size = Vector2(145, 32)
+	btn_revive_allies.pressed.connect(_revivir_aliadas)
+	_style_button(btn_revive_allies, Color(0.2, 0.55, 0.35))
+	hbox2.add_child(btn_revive_allies)
 	
 	# --- SEPARADOR ---
 	var sep_blood = VSeparator.new()
@@ -427,6 +449,28 @@ func _create_ui():
 	btn_blood_toggle.pressed.connect(_toggle_imp_blood_color)
 	_style_button(btn_blood_toggle, Color(0.4, 0.1, 0.5))
 	hbox2.add_child(btn_blood_toggle)
+
+	# --- OPACIDAD CAPA001 (FogPlane) ---
+	var sep_capa = VSeparator.new()
+	sep_capa.custom_minimum_size.x = 8
+	hbox2.add_child(sep_capa)
+
+	var lbl_capa = Label.new()
+	lbl_capa.text = "CAPA001 α:"
+	hbox2.add_child(lbl_capa)
+
+	capa001_opacity_slider = HSlider.new()
+	capa001_opacity_slider.min_value = 0.0
+	capa001_opacity_slider.max_value = 1.0
+	capa001_opacity_slider.step = 0.01
+	capa001_opacity_slider.custom_minimum_size = Vector2(90, 20)
+	capa001_opacity_slider.value = _obtener_opacidad_capa001_actual()
+	capa001_opacity_slider.value_changed.connect(_on_capa001_opacity_changed)
+	hbox2.add_child(capa001_opacity_slider)
+
+	capa001_opacity_value_label = Label.new()
+	capa001_opacity_value_label.text = "%.2f" % capa001_opacity_slider.value
+	hbox2.add_child(capa001_opacity_value_label)
 	
 	# ═══════════════════════════════════════════════════════════════════════════
 	# PANEL DE PAUSA (OCULTO POR DEFECTO)
@@ -799,6 +843,19 @@ func _on_fog_density_changed(value: float):
 	if fog_density_value_label:
 		fog_density_value_label.text = "%.2f" % value
 
+func _obtener_opacidad_capa001_actual() -> float:
+	if capa001_sprite and is_instance_valid(capa001_sprite):
+		return capa001_sprite.modulate.a
+	return 1.0
+
+func _on_capa001_opacity_changed(value: float):
+	if capa001_sprite and is_instance_valid(capa001_sprite):
+		var color_capa: Color = capa001_sprite.modulate
+		color_capa.a = value
+		capa001_sprite.modulate = color_capa
+	if capa001_opacity_value_label:
+		capa001_opacity_value_label.text = "%.2f" % value
+
 func _toggle_layers():
 	layers_enabled = not layers_enabled
 	
@@ -970,12 +1027,7 @@ func _toggle_aliadas():
 	allies_enabled = not allies_enabled
 	for ally in get_tree().get_nodes_in_group("allies"):
 		if ally is AllyArcher:
-			ally.visible = allies_enabled
-			ally.set_process(allies_enabled)
-			ally.set_physics_process(allies_enabled)
-			var hitbox = ally.get("hitbox_body")
-			if hitbox and is_instance_valid(hitbox):
-				hitbox.collision_layer = 2 if allies_enabled else 0
+			_aplicar_estado_aliada(ally)
 	
 	if allies_enabled:
 		btn_toggle_allies.text = "🏹 ALIADAS: ON"
@@ -983,6 +1035,98 @@ func _toggle_aliadas():
 	else:
 		btn_toggle_allies.text = "🏹 ALIADAS: OFF"
 		_style_button(btn_toggle_allies, Color(0.4, 0.4, 0.4))
+
+func _guardar_plantillas_aliadas():
+	"""Guarda una plantilla de cada aliada inicial para poder revivirla por debug."""
+	plantillas_aliadas.clear()
+	for ally in get_tree().get_nodes_in_group("allies"):
+		if not (ally is AllyArcher):
+			continue
+		var plantilla: Node = ally.duplicate()
+		if not plantilla:
+			continue
+		plantillas_aliadas.append({
+			"name": ally.name,
+			"parent_path": ally.get_parent().get_path(),
+			"global_transform": ally.global_transform,
+			"template": plantilla,
+		})
+
+func _buscar_aliada_por_nombre(nombre_aliada: String) -> AllyArcher:
+	for ally in get_tree().get_nodes_in_group("allies"):
+		if ally is AllyArcher and ally.name == nombre_aliada:
+			return ally
+	return null
+
+func _aplicar_estado_aliada(ally: AllyArcher):
+	if not ally or not is_instance_valid(ally):
+		return
+	ally.visible = allies_enabled
+	ally.set_process(allies_enabled)
+	ally.set_physics_process(allies_enabled)
+	var hitbox = ally.get("hitbox_body")
+	if hitbox and is_instance_valid(hitbox):
+		hitbox.collision_layer = 2 if allies_enabled else 0
+
+func _aliada_esta_revivible(ally: AllyArcher) -> bool:
+	if not ally or not is_instance_valid(ally):
+		return true
+	var estado_actual = ally.get("current_state")
+	if estado_actual != null and (int(estado_actual) == int(AllyArcher.State.DYING) or int(estado_actual) == int(AllyArcher.State.DEAD)):
+		return true
+	var vida_actual = ally.get("health")
+	if vida_actual != null and int(vida_actual) <= 0:
+		return true
+	return false
+
+func _revivir_aliadas():
+	"""Revive aliadas destruidas reinstanciandolas en su posicion original."""
+	if plantillas_aliadas.is_empty():
+		_guardar_plantillas_aliadas()
+
+	var revividas: int = 0
+	for data in plantillas_aliadas:
+		var nombre_aliada: String = str(data.get("name", ""))
+		if nombre_aliada == "":
+			continue
+
+		var existente: AllyArcher = _buscar_aliada_por_nombre(nombre_aliada)
+		if existente and is_instance_valid(existente):
+			if _aliada_esta_revivible(existente):
+				existente.name = "%s_DESCARTADA" % nombre_aliada
+				existente.queue_free()
+			else:
+				_aplicar_estado_aliada(existente)
+				continue
+
+		var plantilla: Node = data.get("template")
+		if not plantilla or not is_instance_valid(plantilla):
+			continue
+
+		var nueva_aliada: Node = plantilla.duplicate()
+		if not nueva_aliada:
+			continue
+
+		var parent_path: NodePath = data.get("parent_path", NodePath("."))
+		var parent = get_node_or_null(parent_path)
+		if not parent or not is_instance_valid(parent):
+			parent = get_tree().current_scene
+		if not parent:
+			continue
+
+		parent.add_child(nueva_aliada)
+		nueva_aliada.name = nombre_aliada
+
+		if nueva_aliada is Node3D:
+			var transform_original: Transform3D = data.get("global_transform", Transform3D.IDENTITY)
+			(nueva_aliada as Node3D).global_transform = transform_original
+
+		if nueva_aliada is AllyArcher:
+			_aplicar_estado_aliada(nueva_aliada)
+			revividas += 1
+
+	if revividas > 0:
+		print("[GameUI] Aliadas revividas: ", revividas)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MODO MÍNIMO (Solo corazones de vida)

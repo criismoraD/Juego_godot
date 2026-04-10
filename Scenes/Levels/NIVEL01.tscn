@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dgatsttvqixnc" path="res://Scenes/Characters/Goblin.tscn" id="6_goblin"]
 [ext_resource type="PackedScene" uid="uid://db57wrw5vlbsc" path="res://Scenes/Characters/ImpEnemy.tscn" id="7_i7crs"]
 [ext_resource type="PackedScene" uid="uid://cr61kgfu7qhp0" path="res://Scenes/Environment/ESCALERA.tscn" id="7_ladder"]
+[ext_resource type="PackedScene" uid="uid://dcqn4obnv8xjm" path="res://Scenes/Characters/ImpShieldGirl.tscn" id="8_qcvbp"]
 [ext_resource type="PackedScene" uid="uid://c7a4c82odgcle" path="res://Scenes/Environment/BarreraLimite.tscn" id="9_8uf3n"]
 [ext_resource type="PackedScene" uid="uid://d3e4f5g6h7i8j" path="res://Scenes/Environment/Escudo.tscn" id="10_j54d2"]
 [ext_resource type="PackedScene" uid="uid://v8ci5ta3tkkr" path="res://Scenes/Environment/PlataformaOneway.tscn" id="11_j5qtk"]
@@ -23,6 +24,7 @@
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Scenes/Environment/Tronco.tscn" id="25_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Assets/Environment/Pilar/Pilar.glb" id="25_koe3n"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Assets/Environment/SpikeTrap/PINCHO.glb" id="25_qcvbp"]
+[ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://Assets/CAPA1_V.png" id="26_cx8r4"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_jka67"]
@@ -71,7 +73,11 @@ viewport_path = NodePath("SubViewport")
 
 [node name="Node3D" type="Node3D" unique_id=615207129]
 script = ExtResource("Script_Level01")
+velocidad_pacificos = 0.6
 offset_entre_pacificos = 0.6
+tamano_imagen_emisario = Vector2(200, 200)
+retroceso_parada_arqueras = 0.5
+delay_dialogo_pacifico = 0.5
 
 [node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
 
@@ -118,6 +124,7 @@ goblins_por_oleada = 50
 probabilidad_goblin_girl = 0.0
 probabilidad_imp = 1.0
 probabilidad_igual = true
+escena_imp_escudo = ExtResource("8_qcvbp")
 
 [node name="SpawnMarker" type="Marker3D" parent="WaveSpawner" unique_id=1697843293]
 gizmo_extents = 0.5
@@ -175,7 +182,7 @@ texture = SubResource("ViewportTexture_gfe6n")
 transform = Transform3D(0.19913417, 0, 0, 0, 0.15469623, 0, 0, 0, 1.0000006, 1.680629, -0.25954807, -35.018787)
 
 [node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.904056, -0.1726765, -12.279569)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8948145, -0.17290789, -12.293223)
 
 [node name="TestCube-BASE_ALIADa" parent="." unique_id=1864087643 instance=ExtResource("19_mbwsw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.782, -0.843, -1.6083212)
@@ -309,3 +316,8 @@ transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707003, 0.2069
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.96842, 3.0480542, -0.8372054)
 light_color = Color(1, 0.85490197, 0.8, 1)
 light_energy = 1.5
+
+[node name="CAPA001" type="Sprite3D" parent="." unique_id=712228843]
+transform = Transform3D(0.33966187, 0, 0, 0, 0.44676116, 0, 0, 0, 0.267, -2.9680815, 2.7402468, 24.064978)
+modulate = Color(1, 1, 1, 0.15294118)
+texture = ExtResource("26_cx8r4")

@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "lambert1": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/ESCALERAS.tres",
+"use_external/fallback_path": "res://Assets/Environment/Ladder/ESCALERAS.tres",
 "use_external/path": "uid://b4sauxecq462h"
 }
 }

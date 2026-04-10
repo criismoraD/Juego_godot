@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "Material.002": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/ARCO_GIRL_GOBLING.tres",
+"use_external/fallback_path": "res://Assets/Weapons/GoblinBow/ARCO_GIRL_GOBLING.tres",
 "use_external/path": "uid://yc323txyoxut"
 }
 }

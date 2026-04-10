@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "Material.001": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/MAT_IMP.tres",
+"use_external/fallback_path": "res://Assets/Characters/Imp/MAT_IMP.tres",
 "use_external/path": "uid://c3vx31dcdct1e"
 }
 }

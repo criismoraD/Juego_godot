@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "M_NoviceHeroShield": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Models/IMP_ESCUDO_GIRL/ESCUDO_IMP_MAT.tres",
+"use_external/fallback_path": "res://Assets/Characters/ImpShieldGirl/ESCUDO_IMP_MAT.tres",
 "use_external/path": "uid://ddu5ruihthdor"
 }
 }

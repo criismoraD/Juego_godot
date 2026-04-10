@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "default": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/MAT_shield.tres",
+"use_external/fallback_path": "res://Assets/Environment/Shield/MAT_shield.tres",
 "use_external/path": "uid://buh2k2i7xhabt"
 }
 }

@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "Arrows": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/Arrows.tres",
+"use_external/fallback_path": "res://Assets/Projectiles/Arrow/Arrows.tres",
 "use_external/path": "uid://dvu0stwpdkpix"
 }
 }

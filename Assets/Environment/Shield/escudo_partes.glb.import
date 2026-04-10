@@ -41,12 +41,12 @@ _subresources={
 "materials": {
 "Escudo_Inner_mat": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/ESCUDO_INT.tres",
+"use_external/fallback_path": "res://Assets/Environment/Shield/ESCUDO_INT.tres",
 "use_external/path": "uid://dgxi4yeuc3pey"
 },
 "default.001": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/MAT_shield.tres",
+"use_external/fallback_path": "res://Assets/Environment/Shield/MAT_shield.tres",
 "use_external/path": "uid://buh2k2i7xhabt"
 }
 }

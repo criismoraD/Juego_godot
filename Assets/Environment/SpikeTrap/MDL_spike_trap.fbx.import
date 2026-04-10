@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "ST_Spike": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/MAT_spike_trap.tres",
+"use_external/fallback_path": "res://Assets/Environment/SpikeTrap/MAT_spike_trap.tres",
 "use_external/path": "uid://dh7lsxa6fx1kb"
 }
 }

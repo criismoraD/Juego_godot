@@ -101,7 +101,25 @@ func _desactivar_bones_fisicos():
 				child.set_physics_process(false)
 
 func _buscar_animation_player():
-	anim_player = find_child("AnimationPlayer", true, false)
+	var candidatos = find_children("*", "AnimationPlayer", true, false)
+	if candidatos.is_empty():
+		anim_player = null
+		return
+
+	# Cuando hay accesorios instanciados (por ejemplo, arco), elegir el
+	# AnimationPlayer con más animaciones evita capturar el del accesorio.
+	var mejor_player: AnimationPlayer = null
+	var max_anims := -1
+	for candidato in candidatos:
+		var player := candidato as AnimationPlayer
+		if not player:
+			continue
+		var total_anims := player.get_animation_list().size()
+		if total_anims > max_anims:
+			max_anims = total_anims
+			mejor_player = player
+
+	anim_player = mejor_player
 	if anim_player:
 		for anim_name in anim_player.get_animation_list():
 			if "CORRER" in anim_name or "CAMINAR" in anim_name or "CAMINA" in anim_name \

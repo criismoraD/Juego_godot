@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "modddif_material_1": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/PINCHO_MATERIAL.tres",
+"use_external/fallback_path": "res://Assets/Environment/SpikeTrap/PINCHO_MATERIAL.tres",
 "use_external/path": "uid://i4advh0tq6ty"
 }
 }

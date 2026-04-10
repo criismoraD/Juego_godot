@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://btconw6lyftg3"
-path="res://.godot/imported/GIRL_IMP_ESCUDO.glb-69b354f51117a29d1ea79fffaeacf43e.scn"
+uid="uid://buaa1ic8ykxrq"
+path="res://.godot/imported/IMP_ESTANDARTE.001.glb-823c41d9115761d5bc21edc37119573f.scn"
 
 [deps]
 
-source_file="res://Assets/Characters/ImpShieldGirl/GIRL_IMP_ESCUDO.glb"
-dest_files=["res://.godot/imported/GIRL_IMP_ESCUDO.glb-69b354f51117a29d1ea79fffaeacf43e.scn"]
+source_file="res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE.001.glb"
+dest_files=["res://.godot/imported/IMP_ESTANDARTE.001.glb-823c41d9115761d5bc21edc37119573f.scn"]
 
 [params]
 
@@ -39,10 +39,10 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "materials": {
-"Material.001": {
+"IMP_ESTANDARTE.001_M": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets/Characters/ImpShieldGirl/GIRL_IMP_ESCUDO.tres",
-"use_external/path": "uid://bj7vk2oi1hnt2"
+"use_external/fallback_path": "res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE.001_MAT.tres",
+"use_external/path": "uid://vwaalxbb186a"
 }
 }
 }

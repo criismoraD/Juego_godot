@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://vwaalxbb186a"]
+
+[ext_resource type="Texture2D" uid="uid://1wc0xtmb7txw" path="res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE.001_D.jpg" id="1_prop7"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_ply8g"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4tl0t"]
+render_priority = 0
+shader = ExtResource("2_ply8g")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 4.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_4tl0t")
+shading_mode = 0
+albedo_texture = ExtResource("1_prop7")

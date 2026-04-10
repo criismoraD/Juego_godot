@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "Material.002": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/MAT_GOBLIN_GIRL.tres",
+"use_external/fallback_path": "res://Assets/Characters/GoblinGirl/MAT_GOBLIN_GIRL.tres",
 "use_external/path": "uid://bpcfmhg61sn8w"
 }
 }

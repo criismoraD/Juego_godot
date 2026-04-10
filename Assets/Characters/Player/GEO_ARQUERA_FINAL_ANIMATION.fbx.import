@@ -41,7 +41,7 @@ _subresources={
 "materials": {
 "ARQUERA_MATERIAL": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets_Backup/Materials/ARQUERA_MATERIAL.tres",
+"use_external/fallback_path": "res://Assets/Characters/Player/ARQUERA_MATERIAL.tres",
 "use_external/path": "uid://crcl2un7te63e"
 }
 },
