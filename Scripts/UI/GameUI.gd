@@ -703,6 +703,7 @@ func _go_to_main_menu():
 	get_tree().change_scene_to_file("res://Scenes/UI/MainMenu.tscn")
 
 func _quit_game():
+	AudioManager.stop_all()
 	get_tree().quit()
 
 func _play_music(index: int):

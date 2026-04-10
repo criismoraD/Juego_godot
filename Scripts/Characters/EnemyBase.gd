@@ -229,8 +229,30 @@ func _process_dying(_delta):
 func _process_shooting(_delta):
 	velocity.x = 0
 
+var _cached_wave_spawner: Node = null
+
+func _get_cached_wave_spawner() -> Node:
+	if is_instance_valid(_cached_wave_spawner):
+		return _cached_wave_spawner
+	var wave_spawner = get_tree().root.find_child("WaveSpawner", true, false)
+	if wave_spawner:
+		_cached_wave_spawner = wave_spawner
+	return _cached_wave_spawner
+
 func _check_spacing() -> bool:
-	var enemies = get_tree().get_nodes_in_group("enemies")
+	# Intentar obtener listas cacheadas del WaveSpawner para mayor rendimiento
+	var enemies = []
+	var shield_imps = []
+
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
+		shield_imps = wave_spawner.get_active_shield_imps()
+	else:
+		# Fallback a llamadas costosas
+		enemies = get_tree().get_nodes_in_group("enemies")
+		shield_imps = get_tree().get_nodes_in_group("shield_imps")
+
 	for enemy in enemies:
 		if enemy == self or not is_instance_valid(enemy):
 			continue
@@ -238,8 +260,8 @@ func _check_spacing() -> bool:
 			var dist = abs(global_position.x - enemy.global_position.x)
 			if dist < distancia_minima_entre_enemigos:
 				return false
+
 	# Verificar distancia a ImpShieldGirls posicionadas
-	var shield_imps = get_tree().get_nodes_in_group("shield_imps")
 	for si in shield_imps:
 		if not is_instance_valid(si) or si == self:
 			continue
