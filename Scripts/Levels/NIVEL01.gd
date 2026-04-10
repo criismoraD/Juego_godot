@@ -40,8 +40,13 @@ var sfx_habla_dialogo: AudioStream = preload("res://Assets/Environment/Shield/IM
 var estados_proceso_jugador: Dictionary = {}
 var estados_proceso_dialogo: Dictionary = {}
 var estado_spawner_dialogo: Dictionary = {}
+var _dialogo_audio_player: AudioStreamPlayer
 
 func _ready():
+	_dialogo_audio_player = AudioStreamPlayer.new()
+	_dialogo_audio_player.bus = "Master"
+	add_child(_dialogo_audio_player)
+
 	# Ocultar TextureRect del SubViewport
 	if texture_rect:
 		texture_rect.visible = false
@@ -157,19 +162,12 @@ func _mostrar_dialogo_inicio_protagonista():
 	_set_juego_pausado_dialogo(false)
 
 func _reproducir_habla_femenina():
-	if not sfx_habla_dialogo:
+	if not sfx_habla_dialogo or not _dialogo_audio_player:
 		return
-	var player_temp := AudioStreamPlayer.new()
-	player_temp.stream = sfx_habla_dialogo
-	player_temp.bus = "Master"
-	player_temp.volume_db = volumen_habla_protagonista_db
-	player_temp.pitch_scale = pitch_habla_protagonista
-	add_child(player_temp)
-	player_temp.play()
-	player_temp.finished.connect(func():
-		if is_instance_valid(player_temp):
-			player_temp.queue_free()
-	)
+	_dialogo_audio_player.stream = sfx_habla_dialogo
+	_dialogo_audio_player.volume_db = volumen_habla_protagonista_db
+	_dialogo_audio_player.pitch_scale = pitch_habla_protagonista
+	_dialogo_audio_player.play()
 
 func _process(_delta):
 	match estado_actual:

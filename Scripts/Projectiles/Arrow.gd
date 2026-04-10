@@ -17,12 +17,14 @@ var power: float = 0.0
 var world_gravity: float = 0.0
 var is_stuck: bool = false
 var _destroying: bool = false
+var _ray_ccd: RayCast3D
 
 func _ready():
 	world_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 	
 	# Inicializar RayCast para detección continua (anti-tunneling)
 	var ray = RayCast3D.new()
+	_ray_ccd = ray
 	ray.name = "RayCastCCD"
 	ray.enabled = true
 	ray.target_position = Vector3.ZERO # Se actualiza cada frame
@@ -53,7 +55,7 @@ func _physics_process(delta):
 	velocity.z = 0
 	
 	# --- CCD Detection (RayCast) ---
-	var ray = get_node_or_null("RayCastCCD")
+	var ray = _ray_ccd
 	if ray:
 		# Convertir vector de velocidad (World) a local para el raycast
 		# Predecimos dónde estará en el siguiente frame

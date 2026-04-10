@@ -15,6 +15,7 @@ signal continuado
 
 var _revelando: bool = false
 var _indice_pagina: int = 0
+var _audio_player: AudioStreamPlayer
 
 func _obtener_dialogo_label() -> RichTextLabel:
 	var nodo := find_child("Dialogo", true, false)
@@ -39,6 +40,10 @@ func _obtener_boton_continuar() -> Button:
 	return null
 
 func _ready():
+	_audio_player = AudioStreamPlayer.new()
+	_audio_player.bus = "Master"
+	add_child(_audio_player)
+
 	if boton_continuar:
 		boton_continuar.visible = false
 		boton_continuar.focus_mode = Control.FOCUS_NONE
@@ -92,17 +97,12 @@ func _revelar_texto():
 	_revelando = false
 
 func _reproducir_audio():
-	var player_temp := AudioStreamPlayer.new()
-	player_temp.stream = audio_stream
-	player_temp.bus = "Master"
-	player_temp.volume_db = audio_volume_db
-	player_temp.pitch_scale = audio_pitch_scale
-	add_child(player_temp)
-	player_temp.play()
-	player_temp.finished.connect(func():
-		if is_instance_valid(player_temp):
-			player_temp.queue_free()
-	)
+	if not _audio_player:
+		return
+	_audio_player.stream = audio_stream
+	_audio_player.volume_db = audio_volume_db
+	_audio_player.pitch_scale = audio_pitch_scale
+	_audio_player.play()
 
 func _on_continue_pressed():
 	if _revelando:

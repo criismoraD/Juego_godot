@@ -171,6 +171,14 @@ func obtener_goblins_activos() -> int:
 	active_goblins = active_goblins.filter(func(g): return is_instance_valid(g))
 	return active_goblins.size()
 
+func get_active_enemies() -> Array:
+	active_goblins = active_goblins.filter(func(g): return is_instance_valid(g))
+	return active_goblins
+
+func get_active_shield_imps() -> Array:
+	shield_imps_activos = shield_imps_activos.filter(func(s): return is_instance_valid(s))
+	return shield_imps_activos
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # IMP SHIELD GIRL
 # ═══════════════════════════════════════════════════════════════════════════════
