@@ -73,11 +73,20 @@ viewport_path = NodePath("SubViewport")
 
 [node name="Node3D" type="Node3D" unique_id=615207129]
 script = ExtResource("Script_Level01")
+limite_fin_mapa_x = null
+total_enemigos_nivel1 = null
 velocidad_pacificos = 0.6
 offset_entre_pacificos = 0.6
 tamano_imagen_emisario = Vector2(200, 200)
+tamano_imagen_protagonista = null
 retroceso_parada_arqueras = 0.5
+delay_dialogo_inicio = null
 delay_dialogo_pacifico = 0.5
+velocidad_texto_novela = null
+pitch_habla_protagonista = null
+volumen_habla_protagonista_db = null
+chars_por_habla_protagonista = null
+intervalo_min_habla_protagonista = null
 
 [node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
 

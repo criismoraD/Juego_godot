@@ -42,6 +42,7 @@
 - Las escenas nuevas de diálogo recuperaron su audio de habla durante el reveal de texto: protagonista y emisario vuelven a reproducir SFX.
 
 ## Tareas Completadas
+- 2026-04-10: Sincronización con GitHub completada (fast-forward de 2 commits en main) y resolución manual de conflicto de merge en Scripts/Levels/NIVEL01.gd conservando cambios remotos y locales.
 - 2026-04-10: Fix del audio del ImpEstandarte en exportación: cambio de carga por filesystem a preload() para que Godot empaquete el archivo en el PCK sin depender de rutas absolutas en runtime.
 - 2026-04-10: Ajuste visual del diálogo de protagonista: el retrato de Erynn salió del flujo del HBox, se colocó como overlay sobre el panel y se amplió el margen izquierdo para despejar el texto.
 - 2026-04-10: Ajuste de layout para diálogos editables: DialogoComic.gd ahora localiza texto y botón por nombre, y las escenas de protagonista y emisario quedaron con retrato/título/texto/botón como nodos independientes para reposicionarlos manualmente.
