@@ -36,6 +36,9 @@ var imp_estandarte: Node3D = null ## Referencia al imp que lleva el estandarte
 
 # === ESCENAS ===
 var escena_imp_estandarte: PackedScene = preload("res://Scenes/Characters/ImpEnemyEstandarte.tscn")
+var escena_dialogo_inicio_protagonista: PackedScene = preload("res://Scenes/UI/Dialogo_Protagonista.tscn")
+var escena_dialogo_emisario_parte1: PackedScene = preload("res://Scenes/UI/Dialogo_Emisario_Parte1.tscn")
+var escena_resultado_pacifista: PackedScene = preload("res://Scenes/UI/Resultado_Pacifista.tscn")
 var sfx_habla_dialogo: AudioStream = preload("res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3")
 var estados_proceso_jugador: Dictionary = {}
 var estados_proceso_dialogo: Dictionary = {}
@@ -54,6 +57,9 @@ func _ready():
 	# Warm-up de shaders
 	VFXFactory.warmup_shaders(self)
 
+	# Sonido ambiente desde el arranque del juego
+	AudioManager.play_music(3, true, 12.0) # SONIDO BOSQUE.mp3
+
 	# Esperar un frame para que todos los nodos estén listos
 	await get_tree().process_frame
 
@@ -71,95 +77,17 @@ func _ready():
 
 func _mostrar_dialogo_inicio_protagonista():
 	_set_juego_pausado_dialogo(true)
-
-	var overlay = CanvasLayer.new()
-	overlay.layer = 190
-	overlay.name = "DialogoInicioProtagonista"
-	add_child(overlay)
-
-	var fondo = ColorRect.new()
-	fondo.color = Color(0, 0, 0, 0.0)
-	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(fondo)
-
-	var panel = PanelContainer.new()
-	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.08, 0.07, 0.1, 0.92)
-	panel_style.border_color = Color(0.9, 0.8, 0.4)
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(8)
-	panel_style.set_content_margin_all(14)
-	panel.add_theme_stylebox_override("panel", panel_style)
-
-	panel.anchor_left = 0.16
-	panel.anchor_right = 0.84
-	panel.anchor_top = 0.08
-	panel.anchor_bottom = 0.42
-	overlay.add_child(panel)
-
-	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14)
-	panel.add_child(hbox)
-
-	# Icono de protagonista a la izquierda
-	var textura = load("res://Assets/PROTA_ICON.png")
-	if textura:
-		var img = TextureRect.new()
-		img.texture = textura
-		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		img.custom_minimum_size = tamano_imagen_protagonista
-		img.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		img.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		hbox.add_child(img)
-
-	var vbox_texto = VBoxContainer.new()
-	vbox_texto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox_texto.add_theme_constant_override("separation", 10)
-	hbox.add_child(vbox_texto)
-
-	var nombre = Label.new()
-	nombre.text = "Protagonista"
-	nombre.add_theme_font_size_override("font_size", 34)
-	nombre.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-	vbox_texto.add_child(nombre)
-
-	var dialogo = RichTextLabel.new()
-	dialogo.bbcode_enabled = true
-	dialogo.text = "Veo una silueta en el horizonte preparen sus arcos, a mi señal"
-	dialogo.add_theme_font_size_override("normal_font_size", 26)
-	dialogo.add_theme_color_override("default_color", Color(0.9, 0.88, 0.82))
-	dialogo.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	dialogo.fit_content = true
-	dialogo.scroll_active = false
-	vbox_texto.add_child(dialogo)
-
-	dialogo.visible_characters = 0
-	var total_chars: int = dialogo.get_total_character_count()
-	if total_chars > 0:
-		var tiempo_por_char: float = velocidad_texto_novela
-		var chars_por_sonido: int = chars_por_habla_protagonista
-		var ultimo_audio_ms: int = 0
-		for i in range(total_chars + 1):
-			if not is_instance_valid(dialogo) or not dialogo.is_inside_tree():
-				break
-			dialogo.visible_characters = i
-			if i > 0 and i % chars_por_sonido == 0:
-				var ahora_ms: int = Time.get_ticks_msec()
-				if ahora_ms - ultimo_audio_ms >= int(intervalo_min_habla_protagonista * 1000.0):
-					_reproducir_habla_femenina()
-					ultimo_audio_ms = ahora_ms
-			await get_tree().create_timer(tiempo_por_char).timeout
-
-	var boton_continuar = Button.new()
-	boton_continuar.text = tr("BOTON_CONTINUAR")
-	boton_continuar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vbox_texto.add_child(boton_continuar)
-
-	await boton_continuar.pressed
-	if is_instance_valid(overlay):
-		overlay.queue_free()
+	await _mostrar_dialogo_escena(
+		escena_dialogo_inicio_protagonista,
+		velocidad_texto_novela,
+		chars_por_habla_protagonista,
+		intervalo_min_habla_protagonista,
+		sfx_habla_dialogo,
+		pitch_habla_protagonista,
+		volumen_habla_protagonista_db
+	)
 	_set_juego_pausado_dialogo(false)
+
 
 func _reproducir_habla_femenina():
 	if not sfx_habla_dialogo or not _dialogo_audio_player:
@@ -168,6 +96,32 @@ func _reproducir_habla_femenina():
 	_dialogo_audio_player.volume_db = volumen_habla_protagonista_db
 	_dialogo_audio_player.pitch_scale = pitch_habla_protagonista
 	_dialogo_audio_player.play()
+
+func _mostrar_dialogo_escena(escena: PackedScene, velocidad: float, chars_por_sonido: int, intervalo_min_sonido: float, audio_stream: AudioStream, pitch_scale: float, volumen_db: float) -> bool:
+	if not escena:
+		push_warning("[NIVEL01] No se encontró la escena de diálogo.")
+		return false
+
+	var dialogo_escena := escena.instantiate() as DialogoComic
+	if not dialogo_escena:
+		push_warning("[NIVEL01] La escena de diálogo no usa DialogoComic.")
+		return false
+
+	dialogo_escena.velocidad_texto = velocidad
+	dialogo_escena.chars_por_sonido = chars_por_sonido
+	dialogo_escena.intervalo_min_sonido = intervalo_min_sonido
+	if audio_stream != null:
+		dialogo_escena.audio_stream = audio_stream
+		dialogo_escena.audio_pitch_scale = pitch_scale
+		dialogo_escena.audio_volume_db = volumen_db
+	add_child(dialogo_escena)
+
+	await dialogo_escena.continuado
+
+	if is_instance_valid(dialogo_escena):
+		dialogo_escena.queue_free()
+
+	return true
 
 func _process(_delta):
 	match estado_actual:
@@ -182,9 +136,6 @@ func _process(_delta):
 
 func _iniciar_nivel_0():
 	estado_actual = NivelEstado.NIVEL_0
-
-	# Música de bosque (+12 dB = ~400% volumen)
-	AudioManager.play_music(3, true, 12.0) # SONIDO BOSQUE.mp3
 
 	# UI mínimo (solo corazones)
 	await get_tree().process_frame
@@ -330,159 +281,40 @@ func _victoria_pacifista():
 
 func _mostrar_dialogo_pacifista():
 	_set_juego_pausado_dialogo(true)
-
-	var overlay = CanvasLayer.new()
-	overlay.layer = 200
-	overlay.name = "DialogoPacifista"
-	add_child(overlay)
-
-	# Fondo semi-transparente
-	var fondo = ColorRect.new()
-	fondo.color = Color(0, 0, 0, 0.0)
-	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(fondo)
-
-	# Panel principal del emisario (compacto, solo texto superior)
-	var panel = PanelContainer.new()
-	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.08, 0.06, 0.1, 0.92)
-	panel_style.border_color = Color(0.85, 0.65, 0.2)
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(8)
-	panel_style.set_content_margin_all(14)
-	panel.add_theme_stylebox_override("panel", panel_style)
-
-	# Posicionar: centrado horizontal, recuadro más pequeño en parte superior
-	panel.anchor_left = 0.16
-	panel.anchor_right = 0.84
-	panel.anchor_top = 0.08
-	panel.anchor_bottom = 0.42
-	panel.offset_left = 0
-	panel.offset_right = 0
-	panel.offset_top = 0
-	panel.offset_bottom = 0
-	overlay.add_child(panel)
-
-	# Contenedor horizontal: texto + imagen (icono a la derecha)
-	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14)
-	panel.add_child(hbox)
-
-	# Contenedor de texto
-	var vbox_texto = VBoxContainer.new()
-	vbox_texto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox_texto.add_theme_constant_override("separation", 10)
-	hbox.add_child(vbox_texto)
-
-	# Imagen IMP_ICON.png (retrato del emisario) a la derecha
-	var textura = load("res://Assets/IMP_ICON.png")
-	if textura:
-		var img = TextureRect.new()
-		img.texture = textura
-		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		img.custom_minimum_size = tamano_imagen_emisario
-		img.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		img.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		hbox.add_child(img)
-
-	# Nombre del personaje
-	var nombre = Label.new()
-	nombre.text = tr("EMISARIO_NOMBRE")
-	nombre.add_theme_font_size_override("font_size", 34)
-	nombre.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-	vbox_texto.add_child(nombre)
-
-	# Texto del diálogo
-	var dialogo = RichTextLabel.new()
-	dialogo.bbcode_enabled = true
-	dialogo.text = tr("DIALOGO_PACIFISTA")
-	dialogo.add_theme_font_size_override("normal_font_size", 26)
-	dialogo.add_theme_color_override("default_color", Color(0.9, 0.88, 0.82))
-	dialogo.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	dialogo.fit_content = true
-	dialogo.scroll_active = false
-	vbox_texto.add_child(dialogo)
-
-	# Efecto "novela ligera": revelar texto gradualmente
-	dialogo.visible_characters = 0
-	var total_chars: int = dialogo.get_total_character_count()
-	if total_chars > 0:
-		var tiempo_por_char: float = velocidad_texto_novela
-		var chars_por_sonido: int = 4
-		for i in range(total_chars + 1):
-			if not is_instance_valid(dialogo) or not dialogo.is_inside_tree():
-				break
-			dialogo.visible_characters = i
-			if i > 0 and i % chars_por_sonido == 0:
-				AudioManager.play_sfx("shield_hit_arrow", -18.0)
-			await get_tree().create_timer(tiempo_por_char).timeout
-
-	# Botón para pasar a la segunda pantalla (resultado)
-	var boton_continuar = Button.new()
-	boton_continuar.text = tr("BOTON_CONTINUAR")
-	boton_continuar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vbox_texto.add_child(boton_continuar)
-
-	boton_continuar.pressed.connect(func():
-		if is_instance_valid(overlay):
-			overlay.queue_free()
-		_mostrar_resultado_pacifista_pantalla_negra()
+	await _mostrar_dialogo_escena(
+		escena_dialogo_emisario_parte1,
+		velocidad_texto_novela,
+		4,
+		0.18,
+		null,
+		1.0,
+		-18.0
 	)
+
+	_mostrar_resultado_pacifista_pantalla_negra()
 
 func _mostrar_resultado_pacifista_pantalla_negra():
-	var overlay = CanvasLayer.new()
-	overlay.layer = 210
-	overlay.name = "ResultadoPacifista"
-	add_child(overlay)
-
-	var fondo = ColorRect.new()
-	fondo.color = Color(0, 0, 0, 1)
-	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(fondo)
-
-	var contenedor = VBoxContainer.new()
-	contenedor.anchor_left = 0.08
-	contenedor.anchor_right = 0.92
-	contenedor.anchor_top = 0.2
-	contenedor.anchor_bottom = 0.8
-	contenedor.alignment = BoxContainer.ALIGNMENT_CENTER
-	contenedor.add_theme_constant_override("separation", 24)
-	overlay.add_child(contenedor)
-
-	var resultado = RichTextLabel.new()
-	resultado.bbcode_enabled = true
-	resultado.text = tr("RESULTADO_PACIFISTA")
-	resultado.add_theme_font_size_override("normal_font_size", 30)
-	resultado.add_theme_color_override("default_color", Color(1, 1, 1))
-	resultado.fit_content = true
-	resultado.scroll_active = false
-	resultado.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	resultado.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	contenedor.add_child(resultado)
-
-	var boton_cerrar = Button.new()
-	boton_cerrar.text = tr("BOTON_CONTINUAR")
-	boton_cerrar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	contenedor.add_child(boton_cerrar)
-
-	var boton_reiniciar = Button.new()
-	boton_reiniciar.text = "Reiniciar"
-	boton_reiniciar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	contenedor.add_child(boton_reiniciar)
-
-	boton_cerrar.pressed.connect(func():
+	if not escena_resultado_pacifista:
+		push_warning("[NIVEL01] No se encontró la escena del resultado pacifista.")
 		_set_juego_pausado_dialogo(false)
-		if is_instance_valid(overlay):
-			overlay.queue_free()
-	)
+		return
 
-	boton_reiniciar.pressed.connect(func():
+	var resultado_escena := escena_resultado_pacifista.instantiate() as ResultadoPacifista
+	if not resultado_escena:
+		push_warning("[NIVEL01] La escena del resultado pacifista no usa ResultadoPacifista.")
 		_set_juego_pausado_dialogo(false)
-		if is_instance_valid(overlay):
-			overlay.queue_free()
+		return
+
+	add_child(resultado_escena)
+	var opcion: String = await resultado_escena.opcion_elegida
+
+	if is_instance_valid(resultado_escena):
+		resultado_escena.queue_free()
+
+	_set_juego_pausado_dialogo(false)
+
+	if opcion == "reiniciar":
 		_reiniciar_nivel01_limpio()
-	)
 
 func _reiniciar_nivel01_limpio():
 	# Limpiar enemigos/proyectiles spawneados en root antes de recargar escena.
