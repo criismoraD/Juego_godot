@@ -25,8 +25,7 @@ class_name ImpEstandarte
 
 var escena_flecha_estandarte = preload("res://Scenes/Projectiles/GoblinGirlArrow.tscn")
 var escena_estandarte_caido = preload("res://Assets/Environment/Estandarte/Estandarte.glb")
-const RUTA_AUDIO_MUERTE_ESTANDARTE := "res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE_MUERTE.mpeg"
-var sonido_muerte_estandarte: AudioStreamMP3 = null
+var sonido_muerte_estandarte: AudioStreamMP3 = preload("res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE_MUERTE.mp3")
 
 var en_animacion_disparo: bool = false
 var disparo_realizado_en_ciclo: bool = false
@@ -48,7 +47,6 @@ func _on_enemy_ready():
 	_cachear_visuales_arma()
 	estandarte_ya_soltado = false
 	_actualizar_visual_arma(false)
-	_cargar_sonido_muerte_estandarte()
 
 	_play_animation("IMP_IDLE")
 
@@ -200,21 +198,7 @@ func _reproducir_sonido_muerte_estandarte():
 	)
 
 func _cargar_sonido_muerte_estandarte():
-	var ruta_abs := ProjectSettings.globalize_path(RUTA_AUDIO_MUERTE_ESTANDARTE)
-	if not FileAccess.file_exists(ruta_abs):
-		return
-
-	var archivo := FileAccess.open(ruta_abs, FileAccess.READ)
-	if archivo == null:
-		return
-
-	var bytes_audio: PackedByteArray = archivo.get_buffer(archivo.get_length())
-	if bytes_audio.is_empty():
-		return
-
-	var stream := AudioStreamMP3.new()
-	stream.data = bytes_audio
-	sonido_muerte_estandarte = stream
+	pass
 
 func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:

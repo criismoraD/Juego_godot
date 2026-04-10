@@ -1,5 +1,5 @@
 ## Estado Actual
-- Los diálogos de protagonista y emisario ahora exponen retrato, título, texto y botón como nodos móviles; DialogoComic.gd resuelve referencias por nombre para no depender del layout interno.
+- El audio de muerte del ImpEstandarte ahora se carga con preload() en lugar de FileAccess, lo que garantiza que se empaquete correctamente en la exportación .exe.
 - Flujo de trabajo separado en dos scripts de Blender: preparacion y exportacion.
 - La exportacion de textura esta configurada en formato JPG y solicita carpeta destino.
 - El addon Arquera Tools ahora expone tres botones de pipeline para modelos (1-5, 6-7 y 1-7).
@@ -42,6 +42,7 @@
 - Las escenas nuevas de diálogo recuperaron su audio de habla durante el reveal de texto: protagonista y emisario vuelven a reproducir SFX.
 
 ## Tareas Completadas
+- 2026-04-10: Fix del audio del ImpEstandarte en exportación: cambio de carga por filesystem a preload() para que Godot empaquete el archivo en el PCK sin depender de rutas absolutas en runtime.
 - 2026-04-10: Ajuste visual del diálogo de protagonista: el retrato de Erynn salió del flujo del HBox, se colocó como overlay sobre el panel y se amplió el margen izquierdo para despejar el texto.
 - 2026-04-10: Ajuste de layout para diálogos editables: DialogoComic.gd ahora localiza texto y botón por nombre, y las escenas de protagonista y emisario quedaron con retrato/título/texto/botón como nodos independientes para reposicionarlos manualmente.
 - 2026-04-10: Ajuste fino del retrato de Erynn: se bajó ligeramente el icono en la escena de protagonista para que salga más abajo del marco.
