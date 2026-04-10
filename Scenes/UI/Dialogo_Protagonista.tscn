@@ -1,0 +1,116 @@
+[gd_scene format=3 uid="uid://ch8tv0jcwn6vb"]
+
+[ext_resource type="Script" uid="uid://drxcxng0eisja" path="res://Scripts/UI/DialogoComic.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cxu6hbv3dwbet" path="res://Assets/PROTA_ICON.png" id="2_tex"]
+[ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]
+content_margin_left = 14.0
+content_margin_top = 14.0
+content_margin_right = 14.0
+content_margin_bottom = 14.0
+bg_color = Color(0.08, 0.07, 0.1, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9, 0.8, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="DialogoProtagonista" type="CanvasLayer" unique_id=2143446434]
+layer = 190
+script = ExtResource("1_script")
+chars_por_sonido = 7
+audio_stream = ExtResource("3_audio")
+audio_volume_db = -16.0
+audio_pitch_scale = 1.1
+
+[node name="Fondo" type="ColorRect" parent="." unique_id=1393562762]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0)
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=906600915]
+anchors_preset = -1
+anchor_left = 0.16
+anchor_top = 0.08
+anchor_right = 0.84
+anchor_bottom = 0.42
+offset_left = -2.1999817
+offset_top = 137.6
+offset_right = -2.1999512
+offset_bottom = 137.59998
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialogo")
+
+[node name="Icono" type="TextureRect" parent="." unique_id=1020486934]
+z_index = 1
+custom_minimum_size = Vector2(400, 430)
+anchors_preset = -1
+anchor_left = 0.16
+anchor_top = 0.08
+anchor_right = 0.16
+anchor_bottom = 0.08
+offset_left = -57.19998
+offset_top = -27.400002
+offset_right = 454.80002
+offset_bottom = 523.0
+mouse_filter = 2
+texture = ExtResource("2_tex")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Nombre" type="Label" parent="." unique_id=1518738217]
+z_index = 2
+anchors_preset = -1
+anchor_left = 0.16
+anchor_top = 0.08
+anchor_right = 0.16
+anchor_bottom = 0.08
+offset_left = 322.80002
+offset_top = 188.6
+offset_right = 562.80005
+offset_bottom = 235.6
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 34
+text = "Erynn"
+
+[node name="Dialogo" type="RichTextLabel" parent="." unique_id=1231851043]
+z_index = 2
+anchors_preset = -1
+anchor_left = 0.16
+anchor_top = 0.08
+anchor_right = 0.16
+anchor_bottom = 0.08
+offset_left = 326.80002
+offset_top = 234.6
+offset_right = 956.80005
+offset_bottom = 350.6
+theme_override_colors/default_color = Color(0.9, 0.88, 0.82, 1)
+theme_override_font_sizes/normal_font_size = 26
+bbcode_enabled = true
+text = "Veo una silueta en el horizonte preparen sus arcos, a mi señal"
+fit_content = true
+scroll_active = false
+visible_characters = 0
+visible_ratio = 0.0
+
+[node name="BotonContinuar" type="Button" parent="." unique_id=1132705129]
+z_index = 2
+custom_minimum_size = Vector2(180, 40)
+anchors_preset = -1
+anchor_left = 0.16
+anchor_top = 0.08
+anchor_right = 0.16
+anchor_bottom = 0.08
+offset_left = 1106.8
+offset_top = 437.6
+offset_right = 1286.8
+offset_bottom = 477.6
+size_flags_horizontal = 0
+text = "Continuar"

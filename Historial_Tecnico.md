@@ -1,4 +1,5 @@
 ## Estado Actual
+- Los diálogos de protagonista y emisario ahora exponen retrato, título, texto y botón como nodos móviles; DialogoComic.gd resuelve referencias por nombre para no depender del layout interno.
 - Flujo de trabajo separado en dos scripts de Blender: preparacion y exportacion.
 - La exportacion de textura esta configurada en formato JPG y solicita carpeta destino.
 - El addon Arquera Tools ahora expone tres botones de pipeline para modelos (1-5, 6-7 y 1-7).
@@ -34,8 +35,17 @@
 - Se corrigió el slider CAPA001 para que sí aplique visualmente: ahora usa instancia local de ShaderMaterial en FogPlane y actualiza correctamente fog_color.a sin mutar temporales.
 - Ajuste final solicitado: el slider CAPA001 ahora controla el nodo real CAPA001 (Sprite3D con CAPA1_V.png) vía modulate.a y se revirtió la intervención sobre FogPlane.
 - CAPA001 ahora inicia con opacidad 0.2 desde la escena NIVEL01 (modulate alpha), quedando semitransparente al arrancar.
+- Los cuadros de diálogo principales ahora viven en escenas editables: Dialogo_Protagonista.tscn, Dialogo_Emisario_Parte1.tscn (paginado interno) y Resultado_Pacifista.tscn.
+- El texto del emisario IMP se muestra en una sola escena con 2 páginas internas y botón Siguiente/Continuar, estilo novela visual.
+- El sonido ambiente ahora arranca al inicio del juego y los cuadros de diálogo quedaron sin audio de tecleo; el impacto sonoro queda ligado al daño del ImpEstandarte.
+- La muerte del ImpEstandarte quedó apuntando al archivo IMP_ESTANDARTE_MUERTE.mp3.
+- Las escenas nuevas de diálogo recuperaron su audio de habla durante el reveal de texto: protagonista y emisario vuelven a reproducir SFX.
 
 ## Tareas Completadas
+- 2026-04-10: Ajuste visual del diálogo de protagonista: el retrato de Erynn salió del flujo del HBox, se colocó como overlay sobre el panel y se amplió el margen izquierdo para despejar el texto.
+- 2026-04-10: Ajuste de layout para diálogos editables: DialogoComic.gd ahora localiza texto y botón por nombre, y las escenas de protagonista y emisario quedaron con retrato/título/texto/botón como nodos independientes para reposicionarlos manualmente.
+- 2026-04-10: Ajuste fino del retrato de Erynn: se bajó ligeramente el icono en la escena de protagonista para que salga más abajo del marco.
+- 2026-04-10: Ajuste fino del retrato del emisario: se bajó ligeramente el icono para igualar la altura de salida del marco con Erynn.
 - 2026-04-08 (resumen): separacion inicial de scripts (prepare_model_export.py y export_model_glb_jpg.py).
 - 2026-04-08 (resumen): addon actualizado a 3 botones y version 1.2.0.
 - 2026-04-08: Ajuste de limpieza en Prepare Model para conservar solo mapa difuso: reconecta Base Color al mapa difuso, desconecta entradas no difusas del Principled y elimina nodos sobrantes.
@@ -75,10 +85,11 @@
 - 2026-04-10: Fix del slider CAPA001 en GameUI.gd: ajuste robusto de material de FogPlane + corrección de escritura de alpha en Color, resolviendo que el slider no cambiara la opacidad.
 - 2026-04-10: Corrección de alcance del slider: se detectó nodo existente CAPA001 en NIVEL01.tscn y el control de opacidad pasó a ese Sprite3D (modulate alpha), descartando cambios sobre FogPlane.
 - 2026-04-10: Ajuste de inicio solicitado: CAPA001 en NIVEL01.tscn configurado con modulate.a = 0.2 para que arranque transparente por defecto.
+- 2026-04-10: Refactor de diálogos a escenas editables: se creó DialogoComic.gd y se conectó NIVEL01.gd a escenas de protagonista y emisario; el discurso del emisario quedó partido en dos cuadros secuenciales.
+- 2026-04-10: Ajuste de audio solicitado: sonido ambiente movido al arranque del juego, diálogos sin taque y muerte del ImpEstandarte actualizada a IMP_ESTANDARTE_MUERTE.mp3.
+- 2026-04-10: Ajuste de novela visual solicitado: Dialogo_Emisario_Parte2.tscn eliminado y Dialogo_Emisario_Parte1.tscn convertido a paginado interno de 2 partes usando un solo cuadro con botón Siguiente.
+- 2026-04-10: Restauración de audio en escenas de diálogo separadas: se asignó SFX de habla en Dialogo_Protagonista.tscn y Dialogo_Emisario_Parte1.tscn, y NIVEL01.gd dejó de sobrescribir a null el audio de escena cuando no se inyecta stream.
 
 ## Tareas Pendientes
-- Probar los tres botones del addon dentro de Blender con un modelo real y verificar el selector de carpeta en botones de exportacion.
-- Probar un modelo con rig y varias animaciones (Actions/NLA) para validar que el GLB exportado incluya todos los clips esperados.
-- Activar el plugin de Godot en Project Settings > Plugins y validar flujo con un GLB real desde FileSystem (creacion de [GLB]_MAT.tres en la misma carpeta, Use External en .glb.import y next_pass toon).
-- Si se desea, agregar un boton de "Solo JPG" o opciones avanzadas (calidad JPEG, prefijo de nombres, etc.).
-- Ajustar fino el transform local de ArcoCombate en la mano del ImpEstandarte dentro de la escena si se requiere mejorar encaje visual en runtime.
+- Validar en el editor la composición final de ambos diálogos y guardar una disposición base para Erynn y el emisario.
+
