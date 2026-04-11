@@ -37,7 +37,10 @@ var estandarte_visual: Node3D = null
 var arco_visual: Node3D = null
 var estandarte_ya_soltado: bool = false
 
+var game_feel: Node = null
+
 func _on_enemy_ready():
+	game_feel = get_node_or_null("/root/GameFeel")
 	# Configuración base del Imp (sin usar lógica de tridente)
 	color_borde_disolucion = Color(1.0, 0.15, 0.1)
 	rastrear_jugador = true
@@ -215,11 +218,13 @@ func take_damage(amount: float):
 	health -= int(amount)
 
 	if has_node("/root/GameFeel"):
-		get_node("/root/GameFeel").on_enemy_hurt()
+		if game_feel:
+			game_feel.on_enemy_hurt()
 
 	if health <= 0:
 		if has_node("/root/GameFeel"):
-			get_node("/root/GameFeel").on_enemy_death()
+			if game_feel:
+				game_feel.on_enemy_death()
 		_change_state(State.DYING)
 		died.emit()
 		return

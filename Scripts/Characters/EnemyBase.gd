@@ -76,11 +76,14 @@ var dissolve_particles: GPUParticles3D = null
 signal died
 signal pacifico_danado ## Emitida cuando un enemigo pacífico recibe daño
 
+var game_feel: Node = null
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _ready():
+	game_feel = get_node_or_null("/root/GameFeel")
 	add_to_group("enemies")
 	health = vida_maxima
 	target_walk_distance = randf_range(distancia_minima_caminar, distancia_maxima_caminar)
@@ -340,11 +343,13 @@ func take_damage(amount: float):
 	health -= int(amount)
 
 	if has_node("/root/GameFeel"):
-		get_node("/root/GameFeel").on_enemy_hurt()
+		if game_feel:
+			game_feel.on_enemy_hurt()
 
 	if health <= 0:
 		if has_node("/root/GameFeel"):
-			get_node("/root/GameFeel").on_enemy_death()
+			if game_feel:
+				game_feel.on_enemy_death()
 		_change_state(State.DYING)
 		died.emit()
 
