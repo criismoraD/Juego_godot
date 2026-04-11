@@ -15,9 +15,17 @@ var music_player: AudioStreamPlayer
 var sfx_streams: Dictionary = {}
 var bgm_streams: Array[AudioStream] = []
 
+
 # === CONFIGURACIÓN ===
 var sfx_volume_db: float = -5.0
 var music_volume_db: float = -15.0
+
+# === OBJECT POOLING PARA AUDIO ===
+var sfx_pool: Array[AudioStreamPlayer] = []
+var sfx_3d_pool: Array[AudioStreamPlayer3D] = []
+const MAX_POOL_SIZE = 16
+const MAX_3D_POOL_SIZE = 16
+
 
 # === PITCH DITHERING (variación aleatoria de tono) ===
 var shoot_pitch_min: float = 0.85
@@ -61,6 +69,22 @@ func _setup_players():
 	music_player.volume_db = music_volume_db
 	music_player.bus = "Master"
 	add_child(music_player)
+
+	# Inicializar pools
+	for i in range(MAX_POOL_SIZE):
+		var p = AudioStreamPlayer.new()
+		p.bus = "Master"
+		add_child(p)
+		sfx_pool.append(p)
+
+	for i in range(MAX_3D_POOL_SIZE):
+		var p3d = AudioStreamPlayer3D.new()
+		p3d.bus = "Master"
+		p3d.unit_size = 50.0
+		p3d.max_db = 6.0
+		p3d.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED
+		add_child(p3d)
+		sfx_3d_pool.append(p3d)
 
 func _load_all_sounds():
 	# ═══════════════════════════════════════════════════════════════════════════════
@@ -175,9 +199,43 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://Assets/Audio/Music/SONIDO BOSQUE.mp3")) # Índice 3 - Nivel 0 pacifista
 	bgm_streams.append(load("res://Assets/Audio/Music/VICTORY.mp3")) # Índice 4 - Victoria
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# POOL HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _get_available_sfx_player() -> AudioStreamPlayer:
+	for p in sfx_pool:
+		if not p.playing:
+			return p
+	# Si no hay disponibles, tomar el que esté más avanzado (o primero) y forzarlo
+	var oldest = sfx_pool[0]
+	var max_pos = 0.0
+	for p in sfx_pool:
+		var pos = p.get_playback_position()
+		if pos > max_pos:
+			max_pos = pos
+			oldest = p
+	return oldest
+
+func _get_available_sfx_3d_player() -> AudioStreamPlayer3D:
+	for p in sfx_3d_pool:
+		if not p.playing:
+			return p
+	# Si no hay disponibles, tomar el más avanzado
+	var oldest = sfx_3d_pool[0]
+	var max_pos = 0.0
+	for p in sfx_3d_pool:
+		var pos = p.get_playback_position()
+		if pos > max_pos:
+			max_pos = pos
+			oldest = p
+	return oldest
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # API PÚBLICA
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 ## Reproduce un efecto de sonido (selección aleatoria si hay variantes)
 ## Usa reproductores temporales para permitir sonidos simultáneos
@@ -192,8 +250,8 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 	
 	var sound = sounds[randi() % sounds.size()]
 	if sound:
-		# Crear reproductor temporal para permitir sonidos simultáneos
-		var temp_player = AudioStreamPlayer.new()
+		# Usar object pooling
+		var temp_player = _get_available_sfx_player()
 		temp_player.stream = sound
 		
 		# Determinar volumen según tipo de sonido
@@ -220,13 +278,9 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		elif "hurt" in sound_name or "death" in sound_name:
 			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
 		
-		add_child(temp_player)
+		if not temp_player.is_inside_tree():
+			add_child(temp_player)
 		temp_player.play()
-		# Auto-eliminar cuando termine (con verificación de seguridad)
-		temp_player.finished.connect(func():
-			if is_instance_valid(temp_player):
-				temp_player.queue_free()
-		)
 
 ## Reproduce un efecto de sonido en posición 3D
 func play_sfx_3d(sound_name: String, position: Vector3):
@@ -240,13 +294,10 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 	
 	var sound = sounds[randi() % sounds.size()]
 	if sound:
-		# Crear reproductor temporal para permitir sonidos simultáneos
-		var temp_player = AudioStreamPlayer3D.new()
+		# Usar object pooling
+		var temp_player = _get_available_sfx_3d_player()
 		temp_player.stream = sound
-		temp_player.unit_size = 50.0 # Aumentado para mayor alcance
-		temp_player.max_db = 6.0 # Aumentado para más volumen cercano
 		temp_player.volume_db = sfx_volume_db + 5.0 # Boost adicional
-		temp_player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED # Sin atenuación por distancia
 		
 		# Pitch dithering
 		if "shoot" in sound_name:
@@ -254,14 +305,10 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 		elif "hurt" in sound_name or "death" in sound_name:
 			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
 		
-		add_child(temp_player)
+		if not temp_player.is_inside_tree():
+			add_child(temp_player)
 		temp_player.global_position = position
 		temp_player.play()
-		# Auto-eliminar cuando termine (con verificación de seguridad)
-		temp_player.finished.connect(func():
-			if is_instance_valid(temp_player):
-				temp_player.queue_free()
-		)
 
 ## Reproduce música de fondo
 func play_music(index: int, loop: bool = true, volume_boost_db: float = 0.0):
@@ -373,14 +420,10 @@ func stop_all():
 	sfx_player.stop()
 	if is_instance_valid(sfx_player_3d):
 		sfx_player_3d.stop()
-	# Eliminar reproductores temporales de SFX 3D
-	for child in get_children():
-		if child is AudioStreamPlayer3D and child != sfx_player_3d:
-			child.stop()
-			child.queue_free()
-		elif child is AudioStreamPlayer and child != sfx_player and child != music_player:
-			child.stop()
-			child.queue_free()
+	for p in sfx_pool:
+		p.stop()
+	for p in sfx_3d_pool:
+		p.stop()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # VOLÚMENES ESPECÍFICOS

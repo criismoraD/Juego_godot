@@ -16,6 +16,8 @@ signal continuado
 var _revelando: bool = false
 var _indice_pagina: int = 0
 var _audio_player: AudioStreamPlayer
+var _tiempo_acumulado: float = 0.0
+var _ultimo_audio_ms: int = 0
 
 func _obtener_dialogo_label() -> RichTextLabel:
 	var nodo := find_child("Dialogo", true, false)
@@ -54,9 +56,47 @@ func _ready():
 		dialogo_label.text = paginas_texto[_indice_pagina]
 
 	_actualizar_texto_boton()
+	set_process(false)
 
 	await get_tree().process_frame
-	await _revelar_texto()
+	_revelar_texto()
+
+func _process(delta: float) -> void:
+	if not _revelando or not dialogo_label:
+		return
+
+	_tiempo_acumulado += delta
+	var espera = max(velocidad_texto, 0.005)
+
+	if _tiempo_acumulado >= espera:
+		var chars_a_mostrar = int(_tiempo_acumulado / espera)
+		_tiempo_acumulado -= chars_a_mostrar * espera
+
+		var chars_actuales = dialogo_label.visible_characters
+		var total_chars = dialogo_label.get_total_character_count()
+
+		if chars_actuales < total_chars:
+			var nuevos_chars = min(chars_actuales + chars_a_mostrar, total_chars)
+			dialogo_label.visible_characters = nuevos_chars
+
+			if nuevos_chars > 0 and nuevos_chars % max(chars_por_sonido, 1) == 0 and audio_stream:
+				var ahora_ms: int = Time.get_ticks_msec()
+				if ahora_ms - _ultimo_audio_ms >= int(intervalo_min_sonido * 1000.0):
+					_reproducir_audio()
+					_ultimo_audio_ms = ahora_ms
+
+			if nuevos_chars >= total_chars:
+				_terminar_revelado()
+		else:
+			_terminar_revelado()
+
+func _terminar_revelado() -> void:
+	_revelando = false
+	set_process(false)
+	if dialogo_label:
+		dialogo_label.visible_characters = dialogo_label.get_total_character_count()
+	if boton_continuar:
+		boton_continuar.visible = true
 
 func _actualizar_texto_boton():
 	if not boton_continuar:
@@ -72,29 +112,14 @@ func _revelar_texto():
 		return
 
 	_revelando = true
+	_tiempo_acumulado = 0.0
+	_ultimo_audio_ms = 0
 	dialogo_label.visible_characters = 0
 
-	var total_chars: int = dialogo_label.get_total_character_count()
-	if total_chars > 0:
-		var ultimo_audio_ms: int = 0
-		for i in range(total_chars + 1):
-			if not is_instance_valid(self) or not is_inside_tree():
-				return
-
-			dialogo_label.visible_characters = i
-
-			if i > 0 and i % max(chars_por_sonido, 1) == 0 and audio_stream:
-				var ahora_ms: int = Time.get_ticks_msec()
-				if ahora_ms - ultimo_audio_ms >= int(intervalo_min_sonido * 1000.0):
-					_reproducir_audio()
-					ultimo_audio_ms = ahora_ms
-
-			await get_tree().create_timer(max(velocidad_texto, 0.005)).timeout
-
-	if boton_continuar:
-		boton_continuar.visible = true
-
-	_revelando = false
+	if dialogo_label.get_total_character_count() > 0:
+		set_process(true)
+	else:
+		_terminar_revelado()
 
 func _reproducir_audio():
 	if not _audio_player:
@@ -113,7 +138,7 @@ func _on_continue_pressed():
 		dialogo_label.text = paginas_texto[_indice_pagina]
 		_actualizar_texto_boton()
 		boton_continuar.visible = false
-		await _revelar_texto()
+		_revelar_texto()
 		return
 
 	emit_signal("continuado")
