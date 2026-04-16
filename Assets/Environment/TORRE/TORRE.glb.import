@@ -44,6 +44,11 @@ _subresources={
 "use_external/fallback_path": "res://Assets/Environment/TORRE/TORRE_M.tres",
 "use_external/path": "uid://djjgbtutpuqm2"
 }
+},
+"nodes": {
+"PATH:TORRE": {
+"mesh_instance/layers": 2
+}
 }
 }
 gltf/naming_version=2

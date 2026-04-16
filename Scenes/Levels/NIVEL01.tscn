@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dr21pjnsniiir"]
 
+[ext_resource type="Environment" uid="uid://dla06m2nrcawf" path="res://Assets/new_environment.tres" id="2_qcvbp"]
 [ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Scenes/Characters/Player.tscn" id="4_1cr8j"]
-[ext_resource type="Texture2D" uid="uid://bgc5rl13dopuj" path="res://Assets/Environment/Background/sky_2.png" id="4_ln05h"]
 [ext_resource type="Script" uid="uid://dhksy0vksfyqc" path="res://Scripts/Core/WaveSpawner.gd" id="5_spawner"]
 [ext_resource type="PackedScene" uid="uid://dh6gp8m68vbd3" path="res://Scenes/Characters/GoblinGirl.tscn" id="6_an7ty"]
 [ext_resource type="PackedScene" uid="uid://dgatsttvqixnc" path="res://Scenes/Characters/Goblin.tscn" id="6_goblin"]
@@ -14,103 +14,74 @@
 [ext_resource type="PackedScene" uid="uid://c0gtu2yrqpnxw" path="res://Scenes/UI/GameUI.tscn" id="15_gameui"]
 [ext_resource type="Texture2D" uid="uid://bvx7egiurhae4" path="res://Assets/UI/1frame.png" id="16_gfe6n"]
 [ext_resource type="VideoStream" uid="uid://yaua7cp2sunt" path="res://Assets/Videos/FONDo.ogv" id="16_nmxfx"]
+[ext_resource type="PackedScene" uid="uid://cbygqy1b5iiw7" path="res://Scenes/torre_2.tscn" id="17_cx8r4"]
 [ext_resource type="PackedScene" path="res://Scenes/Environment/FogPlane.tscn" id="17_fogplane"]
+[ext_resource type="PackedScene" uid="uid://ca65fjxn6rl4a" path="res://Scenes/busto_bronce.tscn" id="17_qcvbp"]
 [ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Scenes/Environment/WaterPlane.tscn" id="18_gpjsk"]
 [ext_resource type="PackedScene" uid="uid://c20j7pudi7arc" path="res://Scenes/Environment/BASE_ARQUERA.tscn" id="19_mbwsw"]
 [ext_resource type="PackedScene" uid="uid://dusffdtovx70" path="res://Scenes/Characters/AllyArcher.tscn" id="20_cayny"]
-[ext_resource type="PackedScene" uid="uid://c0scekxlsrtww" path="res://Assets/Environment/Helmet/Yelmo fachero.glb" id="22_swu5g"]
-[ext_resource type="PackedScene" uid="uid://srq15kiwvrl1" path="res://Assets/Environment/BUSTO_BRONCE/BUSTO_BRONCE.glb" id="23_il8hi"]
-[ext_resource type="PackedScene" uid="uid://b1m5hf6x1q4nf" path="res://Assets/Environment/TORRE/TORRE.glb" id="24_51i3t"]
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Scenes/Environment/Tronco.tscn" id="25_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Assets/Environment/Pilar/Pilar.glb" id="25_koe3n"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Assets/Environment/SpikeTrap/PINCHO.glb" id="25_qcvbp"]
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://Assets/CAPA1_V.png" id="26_cx8r4"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
 
-[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_jka67"]
-panorama = ExtResource("4_ln05h")
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
+dof_blur_far_distance = 45.0
+dof_blur_far_transition = 1.0
 
-[sub_resource type="Sky" id="Sky_i5arm"]
-sky_material = SubResource("PanoramaSkyMaterial_jka67")
+[sub_resource type="ViewportTexture" id="ViewportTexture_gfe6n"]
+viewport_path = NodePath("SubViewportFondo3D/SubViewport")
 
-[sub_resource type="Environment" id="Environment_wc5p8"]
-background_mode = 2
-background_energy_multiplier = 1.25
-sky = SubResource("Sky_i5arm")
-sky_rotation = Vector3(0, 1.13446, 0)
-ambient_light_sky_contribution = 0.02
-tonemap_mode = 3
-tonemap_white = 1.2
-glow_enabled = true
-glow_intensity = 1.1
-glow_strength = 1.45
-fog_enabled = true
-fog_mode = 1
-fog_light_color = Color(0.5135, 0.73930836, 0.79, 1)
-fog_light_energy = 0.65
-fog_sun_scatter = 0.04
-fog_density = 1.064
-fog_aerial_perspective = 0.173
-fog_sky_affect = 0.0
-fog_height = 0.4
-fog_height_density = 0.1389
-fog_depth_curve = 0.9330333
-fog_depth_begin = 37.2
-fog_depth_end = 236.7
-volumetric_fog_density = 0.0145
-volumetric_fog_temporal_reprojection_enabled = false
-adjustment_enabled = true
-adjustment_contrast = 1.15
-
-[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_jpub6"]
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_cx8r4"]
 dof_blur_far_enabled = true
 dof_blur_far_distance = 45.0
 dof_blur_far_transition = 1.0
-dof_blur_amount = 0.03
+dof_blur_amount = 0.05
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_gfe6n"]
-viewport_path = NodePath("SubViewport")
+[sub_resource type="ViewportTexture" id="ViewportTexture_cx8r4"]
+viewport_path = NodePath("SubViewportFondo3D")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_frente_3d"]
+viewport_path = NodePath("SubViewportFrente3D")
 
 [node name="Node3D" type="Node3D" unique_id=615207129]
 script = ExtResource("Script_Level01")
-limite_fin_mapa_x = null
-total_enemigos_nivel1 = null
 velocidad_pacificos = 0.6
 offset_entre_pacificos = 0.6
 tamano_imagen_emisario = Vector2(200, 200)
-tamano_imagen_protagonista = null
 retroceso_parada_arqueras = 0.5
-delay_dialogo_inicio = null
 delay_dialogo_pacifico = 0.5
-velocidad_texto_novela = null
-pitch_habla_protagonista = null
-volumen_habla_protagonista_db = null
-chars_por_habla_protagonista = null
-intervalo_min_habla_protagonista = null
 
 [node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting" unique_id=1150657961]
 transform = Transform3D(0.94819623, 0.051700268, -0.31345022, 0, 0.9866689, 0.16274051, 0.3176853, -0.15430994, 0.9355557, -5.7785883, 2.29496, 2.7377172)
+layers = 7
 light_energy = 0.3
+light_cull_mask = 3
 shadow_enabled = true
 shadow_opacity = 0.5
 shadow_blur = 0.2
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=1266906329]
 transform = Transform3D(0.40658453, -0.30609614, 0.8608101, 0.19945472, 0.9492161, 0.24332443, -0.8915757, 0.072760716, 0.4469887, 11.101227, 3.2153306, -2.8423328)
+layers = 3
 light_energy = 0.8
+light_cull_mask = 3
 shadow_enabled = true
 shadow_opacity = 0.5
 shadow_blur = 0.2
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Lighting" unique_id=1658111597]
-environment = SubResource("Environment_wc5p8")
-camera_attributes = SubResource("CameraAttributesPractical_jpub6")
+environment = ExtResource("2_qcvbp")
 
 [node name="PRESPECTIVA" type="Camera3D" parent="Lighting" unique_id=61242936]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 3
+attributes = SubResource("CameraAttributesPractical_frente")
 projection = 2
+current = true
 fov = 5.0
 size = 0.01
 
@@ -121,6 +92,67 @@ escala_min_salto = 0.01
 escala_max_salto = 0.05
 velocidad_escalar_subir = 0.5
 velocidad_escalar_bajar = 0.5
+
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 297915049) index="0" unique_id=952254947]
+bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
+bones/0/rotation = Quaternion(0.20858404, -0.48332727, 0.08169286, 0.8462941)
+bones/1/rotation = Quaternion(-0.0072454643, 0, 0, 0.9999738)
+bones/2/rotation = Quaternion(-1.21059225e-08, 0, 0, 1)
+bones/3/rotation = Quaternion(6.5185737e-09, 0, 0, 1)
+bones/4/rotation = Quaternion(0.00724547, 0, 0, 0.9999738)
+bones/5/rotation = Quaternion(9.920278e-10, 0, 0, 1)
+bones/9/rotation = Quaternion(-0.5481294, -0.44651356, 0.5492433, -0.44554648)
+bones/10/rotation = Quaternion(0.021415744, 0.000231693, 0.010818494, 0.9997121)
+bones/11/rotation = Quaternion(-0.00829339, -0.00018537682, 0.022362763, 0.9997155)
+bones/12/rotation = Quaternion(-0.023772946, -0.027509194, -0.037094872, 0.99865013)
+bones/13/rotation = Quaternion(0.26973575, 0.08741812, 0.29564896, 0.9122458)
+bones/14/rotation = Quaternion(-0.06007481, -4.1471827e-07, -3.4985325e-07, 0.9981939)
+bones/15/rotation = Quaternion(-0.07364571, 8.149066e-07, 6.077343e-07, 0.9972845)
+bones/19/rotation = Quaternion(-0.020919463, -0.004013118, 0.18835752, 0.9818695)
+bones/20/rotation = Quaternion(0.066155985, 2.4243377e-07, 2.1113894e-07, 0.9978093)
+bones/21/rotation = Quaternion(-0.0047092075, -5.598934e-07, -5.185629e-07, 0.9999889)
+bones/25/rotation = Quaternion(-0.058063086, -0.0040365057, 0.06923531, 0.99590105)
+bones/26/rotation = Quaternion(0.09072343, -1.4928509e-07, -3.6194282e-07, 0.99587613)
+bones/27/rotation = Quaternion(-0.00942262, 2.3726135e-07, 3.863292e-07, 0.9999556)
+bones/31/rotation = Quaternion(-0.02606058, 0.0009926759, -0.038054876, 0.9989353)
+bones/32/rotation = Quaternion(0.05875753, 8.5994316e-08, -8.088413e-08, 0.9982723)
+bones/33/rotation = Quaternion(0.023438573, -1.2893534e-07, -6.763293e-08, 0.9997253)
+bones/37/rotation = Quaternion(0.012781171, -0.0021515498, -0.16599812, 0.9860409)
+bones/38/rotation = Quaternion(0.09296669, -4.2410906e-07, -2.3895495e-07, 0.99566925)
+bones/39/rotation = Quaternion(0.07227322, 2.4751836e-07, 2.3253718e-07, 0.9973849)
+bones/43/rotation = Quaternion(0.5476157, -0.44693244, 0.5497435, 0.44514114)
+bones/44/rotation = Quaternion(0.021438885, -0.00026024197, -0.01213792, 0.99969643)
+bones/45/rotation = Quaternion(-0.008277396, 0.0001895792, -0.022897704, 0.9997035)
+bones/46/rotation = Quaternion(-0.022522453, 0.030587053, 0.034737203, 0.9986744)
+bones/47/rotation = Quaternion(0.27374253, -0.0879723, -0.29303837, 0.9118412)
+bones/48/rotation = Quaternion(-0.06904456, -8.61776e-07, -5.5584195e-07, 0.99761355)
+bones/49/rotation = Quaternion(-0.0011320091, 6.850011e-07, 4.2300945e-07, 0.99999934)
+bones/53/rotation = Quaternion(-0.013493788, 0.0027066378, -0.196661, 0.98037493)
+bones/54/rotation = Quaternion(0.06330208, 2.981412e-07, -9.852963e-08, 0.9979944)
+bones/55/rotation = Quaternion(0.09216472, -9.534215e-08, -1.282547e-07, 0.99574375)
+bones/59/rotation = Quaternion(-0.0421584, 0.0031653713, -0.07480207, 0.99630183)
+bones/60/rotation = Quaternion(0.07334288, -4.3374817e-07, -1.6983543e-07, 0.99730676)
+bones/61/rotation = Quaternion(0.014149186, 6.797559e-08, -5.238197e-08, 0.99989986)
+bones/65/rotation = Quaternion(-0.05747355, -0.0029612232, 0.051369727, 0.9970202)
+bones/66/rotation = Quaternion(0.089709796, -2.3030488e-07, -1.9268327e-07, 0.995968)
+bones/67/rotation = Quaternion(0.13453335, 1.9692362e-07, 1.1326327e-07, 0.9909091)
+bones/71/rotation = Quaternion(-0.008238363, -0.0016768659, 0.1994669, 0.9798685)
+bones/72/rotation = Quaternion(0.12436842, 2.5106954e-07, 3.4042242e-07, 0.9922361)
+bones/73/rotation = Quaternion(0.07164645, -5.4248875e-07, -3.4938319e-07, 0.9974301)
+bones/77/rotation = Quaternion(-0.000114148694, -0.00957034, 0.9998838, -0.011868258)
+bones/78/rotation = Quaternion(-0.058542818, 0.0009706282, -0.016542234, 0.99814737)
+bones/79/rotation = Quaternion(0.55242866, -0.010337352, 0.0068516736, 0.8334679)
+bones/80/rotation = Quaternion(0.25234112, 0.067223445, -0.017575951, 0.9651404)
+bones/84/rotation = Quaternion(5.6047833e-05, -0.004705328, 0.99991846, 0.011870324)
+bones/85/rotation = Quaternion(-0.07090171, -0.0011755719, 0.016535468, 0.99734557)
+bones/86/rotation = Quaternion(0.5592251, 0.010226039, -0.0068988795, 0.82892406)
+bones/87/rotation = Quaternion(0.251852, -0.06658933, 0.017373264, 0.9653158)
+
+[node name="BoneAttach_Arco" parent="Player/ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
+transform = Transform3D(0.7939709, 0.58018094, 0.18165906, 0.37088796, -0.22548074, -0.9008886, -0.48171797, 0.78265435, -0.39420742, 0.08868073, 0.25188085, 0.22538188)
+
+[node name="BoneAttach_Flecha" parent="Player/ArqueraModel/Armature/Skeleton3D" index="2" unique_id=1617127062]
+transform = Transform3D(-0.8160166, -0.44470984, 0.36925605, -0.3613687, -0.10609962, -0.9263669, 0.45114252, -0.88936806, -0.07412496, -0.15205328, 0.28115964, -0.16927162)
 
 [node name="WaveSpawner" type="Node3D" parent="." unique_id=818768354]
 transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 4.746284, 0.9962306, 0)
@@ -166,10 +198,27 @@ transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.150
 
 [node name="GameUI" parent="." unique_id=370663490 instance=ExtResource("15_gameui")]
 
-[node name="SubViewport" type="SubViewport" parent="." unique_id=1162834119]
+[node name="SubViewportFondo3D" type="SubViewport" parent="." unique_id=209823411]
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+
+[node name="FogPlane" parent="SubViewportFondo3D" unique_id=1524639475 instance=ExtResource("17_fogplane")]
+transform = Transform3D(0.19913417, 0, 0, 0, 0.15469623, 0, 0, 0, 1.0000006, 1.680629, -0.25954807, -35.018787)
+layers = 2
+skeleton = NodePath("../../..")
+
+[node name="FONDO ANIMADO" type="Sprite3D" parent="SubViewportFondo3D" unique_id=625058086]
+transform = Transform3D(1.9454114, 0, 0, 0, 1.55, 0, 0, 0, 1.55, -3, 3, -39.5)
+layers = 2
+texture = SubResource("ViewportTexture_gfe6n")
+
+[node name="BUSTO_BRONCE2" parent="SubViewportFondo3D" unique_id=1905570369 instance=ExtResource("17_qcvbp")]
+transform = Transform3D(4.324531, 0.9981095, -2.3026528, -0.60623753, 4.8671656, 0.9711718, 2.4353456, -0.5607815, 4.33066, 5.822, -2.15, -35.004)
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportFondo3D" unique_id=1162834119]
 size = Vector2i(1505, 1080)
 
-[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="SubViewport" unique_id=763944868]
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="SubViewportFondo3D/SubViewport" unique_id=763944868]
 custom_minimum_size = Vector2(1504, 1080)
 offset_right = 40.0
 offset_bottom = 40.0
@@ -178,20 +227,67 @@ autoplay = true
 expand = true
 loop = true
 
-[node name="TextureRect" type="TextureRect" parent="SubViewport" unique_id=22287514]
+[node name="TextureRect" type="TextureRect" parent="SubViewportFondo3D/SubViewport" unique_id=22287514]
 offset_right = 40.0
 offset_bottom = 40.0
 texture = ExtResource("16_gfe6n")
 
-[node name="FONDO ANIMADO" type="Sprite3D" parent="." unique_id=625058086]
-transform = Transform3D(1.9454114, 0, 0, 0, 1.55, 0, 0, 0, 1.55, -3, 3, -39.5)
-texture = SubResource("ViewportTexture_gfe6n")
+[node name="CamaraFondoDOF" type="Camera3D" parent="SubViewportFondo3D" unique_id=130995211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 2
+attributes = SubResource("CameraAttributesPractical_cx8r4")
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
 
-[node name="FogPlane" parent="." unique_id=1524639475 instance=ExtResource("17_fogplane")]
-transform = Transform3D(0.19913417, 0, 0, 0, 0.15469623, 0, 0, 0, 1.0000006, 1.680629, -0.25954807, -35.018787)
+[node name="SubViewportFrente3D" type="SubViewport" parent="." unique_id=164925310]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+
+[node name="TORRE" parent="SubViewportFrente3D" unique_id=1701577270 instance=ExtResource("17_cx8r4")]
+transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
+
+[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1540983021]
+layers = 1
+
+[node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 1048573
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="Compositor3D" type="CanvasLayer" parent="." unique_id=1168423000]
+layer = 20
+
+[node name="Fondo3DRect" type="TextureRect" parent="Compositor3D" unique_id=1287558300]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_cx8r4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Frente3DRect" type="TextureRect" parent="Compositor3D" unique_id=1380745600]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_frente_3d")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8948145, -0.17290789, -12.293223)
+layers = 2
 
 [node name="TestCube-BASE_ALIADa" parent="." unique_id=1864087643 instance=ExtResource("19_mbwsw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.782, -0.843, -1.6083212)
@@ -274,32 +370,23 @@ enemigos_minimos = 2
 tiempo_carga_max = 2.0
 idle_max = 2.0
 
-[node name="Yelmo fachero" parent="." unique_id=1607878303 instance=ExtResource("22_swu5g")]
-transform = Transform3D(2.617212, 0, 2.323833, 0, 3.4999998, 0, -2.323833, 0, 2.617212, 7.5508537, -1.7120409, -35.765564)
-visible = false
-
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1883993, -0.20376292, 4.204008)
 
-[node name="PINCHO" parent="." unique_id=1916552211 instance=ExtResource("25_qcvbp")]
+[node name="PINCHO" parent="." unique_id=1272800596 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.5052033, 0.32352856, 0.009941371, -0.29118463, 0.46231574, -0.24794276, -0.14135437, 0.20394458, 0.54628336, -6.318142, 0.1362295, 0.826589)
-metadata/_edit_group_ = true
 
-[node name="PINCHO5" parent="." unique_id=1073331995 instance=ExtResource("25_qcvbp")]
+[node name="PINCHO5" parent="." unique_id=975363423 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.38889393, 0.3764421, 0.03367601, -0.16841969, 0.7789061, -0.17040402, -0.07277604, 0.20903748, 0.5743069, -6.480166, 0.006891027, 0.51001906)
-metadata/_edit_group_ = true
 
-[node name="PINCHO2" parent="." unique_id=1487522016 instance=ExtResource("25_qcvbp")]
+[node name="PINCHO2" parent="." unique_id=1487982446 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.44602785, 0.54782546, -0.019494671, -0.38826168, 0.57895917, -0.17260231, -0.10154799, 0.19259633, 0.57430685, -6.268942, 0.1362295, 0.46189582)
-metadata/_edit_group_ = true
 
-[node name="PINCHO3" parent="." unique_id=1997690283 instance=ExtResource("25_qcvbp")]
+[node name="PINCHO3" parent="." unique_id=2048260845 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.25721568, 0.4815443, 0.13402732, -0.3615131, 0.35619125, -0.12463923, -0.13918827, -0.03525476, 0.5714033, -6.33541, -0.011719421, 0.8468009)
-metadata/_edit_group_ = true
 
-[node name="PINCHO4" parent="." unique_id=1891900808 instance=ExtResource("25_qcvbp")]
+[node name="PINCHO4" parent="." unique_id=423758153 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.38059038, 0.41478068, 0.025668446, -0.1864259, 0.7647175, -0.17179276, -0.07277604, 0.21021195, 0.5743069, -6.2178087, 0.12612298, 0.17788735)
-metadata/_edit_group_ = true
 
 [node name="Pilar" parent="." unique_id=1553470682 instance=ExtResource("25_koe3n")]
 transform = Transform3D(1, 0, 0, 0, 1.1745448, 0, 0, 0, 1, -8.651207, 0.2131063, 0.22708756)
@@ -307,26 +394,27 @@ transform = Transform3D(1, 0, 0, 0, 1.1745448, 0, 0, 0, 1, -8.651207, 0.2131063,
 [node name="Pilar2" parent="." unique_id=1450324726 instance=ExtResource("25_koe3n")]
 transform = Transform3D(1, 0, 0, 0, 1.25827, 0, 0, 0, 1, -7.039701, 0.13212493, -1.0751619)
 
-[node name="Pilar3" parent="." unique_id=554405934 instance=ExtResource("25_koe3n")]
-transform = Transform3D(1, 0, 0, 0, 0.8613521, -0.69244844, 0, 1.1728461, 0.5085423, -9.3143835, 2.1370177, -2.1538658)
-
-[node name="BUSTO_BRONCE" parent="." unique_id=1776690446 instance=ExtResource("23_il8hi")]
-transform = Transform3D(4.3243847, 1.0009298, -2.3017027, -0.6074899, 4.866277, 0.97483546, 2.435293, -0.5634606, 4.3303423, 5.8222594, -2.15047, -35.00358)
-
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=153904671]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.735461, 3.6315558, -3.5144835)
+layers = 3
 light_color = Color(1, 0.85490197, 0.8, 1)
 light_energy = 1.5
-
-[node name="TORRE2" parent="." unique_id=525258031 instance=ExtResource("24_51i3t")]
-transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707003, 0.20699981, -3.335857)
+light_cull_mask = 3
 
 [node name="OmniLight3D2" type="OmniLight3D" parent="." unique_id=1941825653]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.96842, 3.0480542, -0.8372054)
+layers = 3
 light_color = Color(1, 0.85490197, 0.8, 1)
 light_energy = 1.5
+light_cull_mask = 3
 
 [node name="CAPA001" type="Sprite3D" parent="." unique_id=712228843]
 transform = Transform3D(0.33966187, 0, 0, 0, 0.44676116, 0, 0, 0, 0.267, -2.9680815, 2.7402468, 24.064978)
+visible = false
 modulate = Color(1, 1, 1, 0.15294118)
 texture = ExtResource("26_cx8r4")
+
+[editable path="Player"]
+[editable path="Player/ArqueraModel"]
+[editable path="SubViewportFondo3D/BUSTO_BRONCE2"]
+[editable path="SubViewportFrente3D/TORRE"]

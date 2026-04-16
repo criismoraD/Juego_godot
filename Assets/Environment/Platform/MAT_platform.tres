@@ -7,7 +7,7 @@
 render_priority = 0
 shader = ExtResource("2_outline")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 2.5
+shader_parameter/outline_width = 20.0
 
 [resource]
 resource_name = "Material #3"

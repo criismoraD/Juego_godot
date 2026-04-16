@@ -33,6 +33,10 @@ var imp_estandarte: Node3D = null ## Referencia al imp que lleva el estandarte
 @onready var wave_spawner: WaveSpawner = $WaveSpawner
 @onready var game_ui = $GameUI
 @onready var texture_rect = $SubViewport/TextureRect
+@onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
+@onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
+@onready var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
+@onready var torre2_fondo: Node3D = _buscar_nodo_fondo_multiple(["TORRE", "TORRE2", "TORRE3"])
 
 # === ESCENAS ===
 var escena_imp_estandarte: PackedScene = preload("res://Scenes/Characters/ImpEnemyEstandarte.tscn")
@@ -40,6 +44,9 @@ var escena_dialogo_inicio_protagonista: PackedScene = preload("res://Scenes/UI/D
 var escena_dialogo_emisario_parte1: PackedScene = preload("res://Scenes/UI/Dialogo_Emisario_Parte1.tscn")
 var escena_resultado_pacifista: PackedScene = preload("res://Scenes/UI/Resultado_Pacifista.tscn")
 var sfx_habla_dialogo: AudioStream = preload("res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3")
+const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
+const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
+const CAPA_VISUAL_FONDO_DOF := 2
 var estados_proceso_jugador: Dictionary = {}
 var estados_proceso_dialogo: Dictionary = {}
 var estado_spawner_dialogo: Dictionary = {}
@@ -49,10 +56,16 @@ func _ready():
 	_dialogo_audio_player = AudioStreamPlayer.new()
 	_dialogo_audio_player.bus = "Master"
 	add_child(_dialogo_audio_player)
+	_forzar_refresco_outline_global()
 
 	# Ocultar TextureRect del SubViewport
 	if texture_rect:
 		texture_rect.visible = false
+
+	_ajustar_subviewports_3d()
+	_configurar_capas_dof_fondo()
+	if not get_viewport().size_changed.is_connected(_ajustar_subviewports_3d):
+		get_viewport().size_changed.connect(_ajustar_subviewports_3d)
 
 	# Warm-up de shaders
 	VFXFactory.warmup_shaders(self)
@@ -74,6 +87,49 @@ func _ready():
 
 	# Iniciar Nivel 0
 	_iniciar_nivel_0()
+
+func _ajustar_subviewports_3d() -> void:
+	var tamano_viewport := get_viewport().get_visible_rect().size
+	var tamano_render := Vector2i(int(tamano_viewport.x), int(tamano_viewport.y))
+
+	if subviewport_fondo_3d:
+		subviewport_fondo_3d.size = tamano_render
+
+	if subviewport_frente_3d:
+		subviewport_frente_3d.size = tamano_render
+
+func _configurar_capas_dof_fondo() -> void:
+	_asignar_capa_visual_recursiva(busto_bronce_fondo, CAPA_VISUAL_FONDO_DOF)
+	_asignar_capa_visual_recursiva(torre2_fondo, CAPA_VISUAL_FONDO_DOF)
+
+func _buscar_nodo_fondo_multiple(nombres_nodo: Array[String]) -> Node3D:
+	for nombre_nodo in nombres_nodo:
+		var nodo := find_child(nombre_nodo, true, false)
+		if nodo is Node3D:
+			return nodo
+	return null
+
+func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
+	if nodo == null:
+		return
+
+	if nodo is VisualInstance3D:
+		(nodo as VisualInstance3D).layers = capa
+
+	for hijo in nodo.get_children():
+		_asignar_capa_visual_recursiva(hijo, capa)
+
+func _forzar_refresco_outline_global() -> void:
+	# Mantiene compatibilidad con versiones antiguas del shader que dependen de un global uniform.
+	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, true)
+
+	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
+		push_warning("[NIVEL01] No se encontró TOON_LINEANEGRA.gdshader para refresco.")
+		return
+
+	var shader_outline := ResourceLoader.load(RUTA_SHADER_OUTLINE, "Shader", ResourceLoader.CACHE_MODE_REPLACE)
+	if shader_outline == null:
+		push_warning("[NIVEL01] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
 
 func _mostrar_dialogo_inicio_protagonista():
 	_set_juego_pausado_dialogo(true)

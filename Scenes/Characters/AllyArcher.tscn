@@ -17,7 +17,7 @@ vida_maxima = 2
 [node name="ArqueraModel" parent="." unique_id=163697560 instance=ExtResource("2_fbx")]
 transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
 
-[node name="BoneAttachment3D" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" parent_id_path=PackedInt32Array(163697560, 1868693556) index="1" unique_id=2067083609]
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" parent_id_path=PackedInt32Array(163697560, 516653397) index="1" unique_id=2067083609]
 transform = Transform3D(0.18251485, 0.54995835, -0.8150057, -0.9776206, 0.18971601, -0.090912774, 0.10462141, 0.8133598, 0.5722765, 17.841194, 0.3339126, -49.83573)
 bone_name = "mixamorig_LeftHand"
 bone_idx = 10
@@ -25,7 +25,7 @@ bone_idx = 10
 [node name="GEO_ARCO_ANIMADO" parent="ArqueraModel/Armature/Skeleton3D/BoneAttachment3D" unique_id=639891813 instance=ExtResource("3_mijgs")]
 transform = Transform3D(-5.496115, 48.1111, -12.454512, -45.88165, -0.09737612, 19.871191, 19.096243, 13.612957, 44.15904, -1.9541588, 6.4092636, 0.17354393)
 
-[node name="BoneAttachment3D2" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" parent_id_path=PackedInt32Array(163697560, 1868693556) index="2" unique_id=1970405806]
+[node name="BoneAttachment3D2" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" parent_id_path=PackedInt32Array(163697560, 516653397) index="2" unique_id=1970405806]
 transform = Transform3D(0.14955026, -0.5400775, 0.8282213, 0.97926414, 0.19667661, -0.048572313, -0.13665903, 0.8183118, 0.55829185, -21.286573, 0.32847333, -49.83573)
 bone_name = "mixamorig_RightHand"
 bone_idx = 34

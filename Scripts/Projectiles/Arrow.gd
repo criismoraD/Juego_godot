@@ -1,5 +1,6 @@
 extends Area3D
 class_name ArrowProjectile
+const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 
 # === CONFIGURACIÓN (Español) ===
 @export_category("Física")
@@ -89,7 +90,7 @@ func _physics_process(delta):
 	_check_off_screen()
 
 func _check_off_screen():
-	var camera = get_viewport().get_camera_3d()
+	var camera = CameraUtilsRef.obtener_camara_juego(self)
 	if not camera:
 		return
 	

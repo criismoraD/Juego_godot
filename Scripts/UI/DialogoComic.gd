@@ -9,15 +9,18 @@ signal continuado
 @export var audio_volume_db: float = -18.0
 @export var audio_pitch_scale: float = 1.0
 @export var paginas_texto: PackedStringArray = PackedStringArray()
+@export var paginas_imagenes: Array[Texture2D] = []
 
 @onready var dialogo_label: RichTextLabel = _obtener_dialogo_label()
 @onready var boton_continuar: Button = _obtener_boton_continuar()
+@onready var icono_retrato: TextureRect = _obtener_icono_retrato()
 
 var _revelando: bool = false
 var _indice_pagina: int = 0
 var _audio_player: AudioStreamPlayer
-var _tiempo_acumulado: float = 0.0
+var _timer_revelado: Timer
 var _ultimo_audio_ms: int = 0
+var _total_chars_pagina: int = 0
 
 func _obtener_dialogo_label() -> RichTextLabel:
 	var nodo := find_child("Dialogo", true, false)
@@ -41,60 +44,81 @@ func _obtener_boton_continuar() -> Button:
 
 	return null
 
+func _obtener_icono_retrato() -> TextureRect:
+	var nodo := find_child("Icono", true, false)
+	if nodo is TextureRect:
+		return nodo
+
+	nodo = get_node_or_null("Panel/HBox/Icono")
+	if nodo is TextureRect:
+		return nodo
+
+	return null
+
 func _ready():
 	_audio_player = AudioStreamPlayer.new()
 	_audio_player.bus = "Master"
 	add_child(_audio_player)
+
+	_timer_revelado = Timer.new()
+	_timer_revelado.one_shot = false
+	_timer_revelado.autostart = false
+	_timer_revelado.timeout.connect(_on_reveal_timer_timeout)
+	add_child(_timer_revelado)
 
 	if boton_continuar:
 		boton_continuar.visible = false
 		boton_continuar.focus_mode = Control.FOCUS_NONE
 		boton_continuar.pressed.connect(_on_continue_pressed)
 
-	if dialogo_label and paginas_texto.size() > 0:
+	if paginas_texto.size() > 0:
 		_indice_pagina = 0
-		dialogo_label.text = paginas_texto[_indice_pagina]
+		_aplicar_pagina_actual()
 
+	_preparar_dialogo_label()
 	_actualizar_texto_boton()
-	set_process(false)
 
 	await get_tree().process_frame
 	_revelar_texto()
 
-func _process(delta: float) -> void:
+func _preparar_dialogo_label() -> void:
+	if not dialogo_label:
+		return
+
+	# Evita relayout por caracter durante el reveal para bajar carga de CPU.
+	dialogo_label.fit_content = false
+	dialogo_label.scroll_active = false
+
+func _on_reveal_timer_timeout() -> void:
 	if not _revelando or not dialogo_label:
 		return
 
-	_tiempo_acumulado += delta
-	var espera = max(velocidad_texto, 0.005)
+	var chars_actuales = dialogo_label.visible_characters
+	if chars_actuales >= _total_chars_pagina:
+		_terminar_revelado()
+		return
 
-	if _tiempo_acumulado >= espera:
-		var chars_a_mostrar = int(_tiempo_acumulado / espera)
-		_tiempo_acumulado -= chars_a_mostrar * espera
+	var nuevos_chars = min(chars_actuales + 1, _total_chars_pagina)
+	dialogo_label.visible_characters = nuevos_chars
 
-		var chars_actuales = dialogo_label.visible_characters
-		var total_chars = dialogo_label.get_total_character_count()
+	if nuevos_chars > 0 and nuevos_chars % max(chars_por_sonido, 1) == 0 and audio_stream:
+		var ahora_ms: int = Time.get_ticks_msec()
+		if ahora_ms - _ultimo_audio_ms >= int(intervalo_min_sonido * 1000.0):
+			_reproducir_audio()
+			_ultimo_audio_ms = ahora_ms
 
-		if chars_actuales < total_chars:
-			var nuevos_chars = min(chars_actuales + chars_a_mostrar, total_chars)
-			dialogo_label.visible_characters = nuevos_chars
+	if nuevos_chars >= _total_chars_pagina:
+		_terminar_revelado()
 
-			if nuevos_chars > 0 and nuevos_chars % max(chars_por_sonido, 1) == 0 and audio_stream:
-				var ahora_ms: int = Time.get_ticks_msec()
-				if ahora_ms - _ultimo_audio_ms >= int(intervalo_min_sonido * 1000.0):
-					_reproducir_audio()
-					_ultimo_audio_ms = ahora_ms
-
-			if nuevos_chars >= total_chars:
-				_terminar_revelado()
-		else:
-			_terminar_revelado()
 
 func _terminar_revelado() -> void:
 	_revelando = false
-	set_process(false)
+	if _timer_revelado:
+		_timer_revelado.stop()
 	if dialogo_label:
-		dialogo_label.visible_characters = dialogo_label.get_total_character_count()
+		if _total_chars_pagina <= 0:
+			_total_chars_pagina = dialogo_label.get_total_character_count()
+		dialogo_label.visible_characters = _total_chars_pagina
 	if boton_continuar:
 		boton_continuar.visible = true
 
@@ -107,26 +131,39 @@ func _actualizar_texto_boton():
 	else:
 		boton_continuar.text = "Continuar"
 
+func _aplicar_pagina_actual() -> void:
+	if dialogo_label and paginas_texto.size() > 0 and _indice_pagina < paginas_texto.size():
+		dialogo_label.text = paginas_texto[_indice_pagina]
+
+	if icono_retrato and _indice_pagina < paginas_imagenes.size() and paginas_imagenes[_indice_pagina]:
+		icono_retrato.texture = paginas_imagenes[_indice_pagina]
+
 func _revelar_texto():
 	if _revelando or not dialogo_label:
 		return
 
 	_revelando = true
-	_tiempo_acumulado = 0.0
 	_ultimo_audio_ms = 0
 	dialogo_label.visible_characters = 0
+	_total_chars_pagina = dialogo_label.get_total_character_count()
 
-	if dialogo_label.get_total_character_count() > 0:
-		set_process(true)
+	if _total_chars_pagina > 0:
+		if _timer_revelado:
+			_timer_revelado.wait_time = max(velocidad_texto, 0.01)
+			_timer_revelado.start()
 	else:
 		_terminar_revelado()
 
 func _reproducir_audio():
-	if not _audio_player:
+	if not _audio_player or not audio_stream:
 		return
-	_audio_player.stream = audio_stream
-	_audio_player.volume_db = audio_volume_db
-	_audio_player.pitch_scale = audio_pitch_scale
+
+	if _audio_player.stream != audio_stream:
+		_audio_player.stream = audio_stream
+	if _audio_player.volume_db != audio_volume_db:
+		_audio_player.volume_db = audio_volume_db
+	if _audio_player.pitch_scale != audio_pitch_scale:
+		_audio_player.pitch_scale = audio_pitch_scale
 	_audio_player.play()
 
 func _on_continue_pressed():
@@ -135,9 +172,10 @@ func _on_continue_pressed():
 
 	if paginas_texto.size() > 1 and _indice_pagina < paginas_texto.size() - 1:
 		_indice_pagina += 1
-		dialogo_label.text = paginas_texto[_indice_pagina]
+		_aplicar_pagina_actual()
 		_actualizar_texto_boton()
-		boton_continuar.visible = false
+		if boton_continuar:
+			boton_continuar.visible = false
 		_revelar_texto()
 		return
 

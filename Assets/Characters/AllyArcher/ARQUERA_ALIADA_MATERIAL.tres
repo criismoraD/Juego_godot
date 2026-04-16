@@ -7,11 +7,10 @@
 render_priority = 0
 shader = ExtResource("2_2tjs0")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 2.5
+shader_parameter/outline_width = 20.0
 
 [resource]
 resource_name = "modddif_material_0.002"
 next_pass = SubResource("ShaderMaterial_cry0e")
-shading_mode = 0
 albedo_texture = ExtResource("1_fqws2")
 texture_repeat = false

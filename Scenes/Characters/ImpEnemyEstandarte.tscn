@@ -26,9 +26,9 @@ particulas_velocidad_max = 0.5
 particulas_detener_emision = 0.5
 
 [node name="ImpModel" parent="." unique_id=1077982534 instance=ExtResource("2_model")]
-transform = Transform3D(-1.9670125e-08, 0, -0.45, 0, 0.45, 0, 0.45, 0, -1.9670125e-08, 0, 0, 0)
+transform = Transform3D(1.9670125e-08, 0, -0.45, 0, 0.45, 0, -0.45, 0, -1.9670125e-08, 0, 0, 0)
 
-[node name="Skeleton3D" parent="ImpModel/Armature" parent_id_path=PackedInt32Array(1077982534, 936097177) index="0" unique_id=490073520]
+[node name="Skeleton3D" parent="ImpModel/Armature" parent_id_path=PackedInt32Array(1077982534, 1332443702) index="0" unique_id=1501255457]
 bones/0/position = Vector3(0.24484706, -0.8448163, -31.629341)
 bones/0/rotation = Quaternion(-0.66365135, -0.10437005, 0.11961854, 0.7310029)
 bones/1/rotation = Quaternion(-0.012764314, -0.014500883, 0.012157159, 0.99973947)
@@ -98,7 +98,7 @@ bones/53/rotation = Quaternion(-0.46304885, 0.06327938, -0.046906933, 0.88282573
 bones/54/rotation = Quaternion(0.631586, 0.093265355, -0.10245322, 0.7628263)
 bones/55/rotation = Quaternion(0.31255725, 0.17409565, -0.049925428, 0.9324731)
 
-[node name="IMP_ESTANDARTE_001" parent="ImpModel/Armature/Skeleton3D" index="0" unique_id=1139636544]
+[node name="IMP_ESTANDARTE_001" parent="ImpModel/Armature/Skeleton3D" index="0" unique_id=396069237]
 transform = Transform3D(1, -8.7422784e-08, -8.742278e-08, 8.7422784e-08, 1, 0, 8.742278e-08, -7.642743e-15, 1, 0, 0, 0)
 
 [node name="BoneAttachment3D" type="BoneAttachment3D" parent="ImpModel/Armature/Skeleton3D" index="1" unique_id=1168374536]

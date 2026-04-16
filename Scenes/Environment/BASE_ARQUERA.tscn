@@ -1,12 +1,12 @@
-[gd_scene load_steps=11 format=3 uid="uid://c20j7pudi7arc"]
+[gd_scene format=3 uid="uid://c20j7pudi7arc"]
 
 [ext_resource type="Shader" uid="uid://de3wwyo0wn04y" path="res://Assets/Shaders/Displacement.gdshader" id="1_m5mef"]
-[ext_resource type="Script" uid="uid://itw2ygw6damy" path="res://Scripts/CubeController.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://bw0cck2s50s42" path="res://Assets/Environment/Floor/DIFUSO01.jpeg" id="3_wogvb"]
-[ext_resource type="Texture2D" uid="uid://yj3xco1hlpxx" path="res://Assets/Environment/Floor/ALTURA01.jpeg" id="4_3gp70"]
-[ext_resource type="Texture2D" uid="uid://bms8q3e7impj2" path="res://Assets/Environment/Grass/GRASS_DIF.jpeg" id="5_wogvb"]
-[ext_resource type="Texture2D" uid="uid://dxdqf8g1q3unp" path="res://Assets/Environment/Grass/GRASS_DISPLACEMENT.jpeg" id="6_fwhho"]
-[ext_resource type="Texture2D" uid="uid://ywhx442wmw4d" path="res://Assets/Environment/Grass/GRASS_NORMAL.jpg" id="7_4k3e8"]
+[ext_resource type="Script" uid="uid://itw2ygw6damy" path="res://Scripts/Environment/CubeController.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://8nkjq8841485" path="res://Assets/Environment/Floor/DIFUSO01.jpeg" id="3_wogvb"]
+[ext_resource type="Texture2D" uid="uid://dsvgy8gj8qsih" path="res://Assets/Environment/Floor/ALTURA01.jpeg" id="4_3gp70"]
+[ext_resource type="Texture2D" uid="uid://di2jlfi8ts61v" path="res://Assets/Environment/Grass/GRASS_DIF.jpeg" id="5_wogvb"]
+[ext_resource type="Texture2D" uid="uid://du52ab7xc1u32" path="res://Assets/Environment/Grass/GRASS_DISPLACEMENT.jpeg" id="6_fwhho"]
+[ext_resource type="Texture2D" uid="uid://cbac76balt8n1" path="res://Assets/Environment/Grass/GRASS_NORMAL.jpg" id="7_4k3e8"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3gp70"]
 render_priority = 0
@@ -17,7 +17,7 @@ shader_parameter/grass_albedo_texture = ExtResource("5_wogvb")
 shader_parameter/grass_normal_texture = ExtResource("7_4k3e8")
 shader_parameter/grass_displacement_texture = ExtResource("6_fwhho")
 
-[sub_resource type="BoxMesh" id="BoxMesh_nh0ry"]
+[sub_resource type="BoxMesh" id="BoxMesh_wogvb"]
 lightmap_size_hint = Vector2i(49, 51)
 material = SubResource("ShaderMaterial_3gp70")
 size = Vector3(5, 2, 4)
@@ -25,14 +25,15 @@ subdivide_width = 50
 subdivide_height = 50
 subdivide_depth = 50
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_qxupu"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_3gp70"]
 size = Vector3(5, 2, 4)
 
-[node name="BASE_ARQUERA" type="Node3D"]
+[node name="BASE_ARQUERA" type="Node3D" unique_id=298691095]
 script = ExtResource("1_script")
 mesh_size = Vector3(5, 2, 4)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=878176244]
+layers = 2
 instance_shader_parameters/bevel_radius = 0.0
 instance_shader_parameters/blend_sharpness = 5.0
 instance_shader_parameters/displacement_scale_xz = 0.1
@@ -45,10 +46,10 @@ instance_shader_parameters/uv_offset = Vector2(0, 0)
 instance_shader_parameters/uv_rotation_degrees = 0.0
 instance_shader_parameters/uv_scale_sides = Vector2(2, 2)
 instance_shader_parameters/uv_scale_top = Vector2(2, 2)
-mesh = SubResource("BoxMesh_nh0ry")
+mesh = SubResource("BoxMesh_wogvb")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="."]
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=2073872766]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1081928330]
 transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 0, 0, 0)
-shape = SubResource("BoxShape3D_qxupu")
+shape = SubResource("BoxShape3D_3gp70")
