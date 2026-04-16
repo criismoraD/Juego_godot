@@ -496,7 +496,6 @@ func _physics_process(delta):
 		# Mantener rotación estándar lateral (ej 90 grados) si no estamos escalando
 		# IMPORTANTE: Si es 2.5D lateral, el personaje en sí (Root) suele estar rotado 90 grados.
 		# No forzamos rotación aquí para dejar libertad, salvo resetear Armature si fuera necesario.
-		pass
 	
 	# Update cooldown
 	if ladder_cooldown > 0:
