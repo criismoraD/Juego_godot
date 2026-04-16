@@ -1,4 +1,5 @@
 extends CharacterBody3D
+class_name Player
 const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 
 # === CONFIGURACIÓN - MOVIMIENTO ===
