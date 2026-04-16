@@ -1,4 +1,5 @@
 extends CharacterBody3D
+class_name Player
 
 # === CONFIGURACIÓN - MOVIMIENTO ===
 @export_category("Movimiento")

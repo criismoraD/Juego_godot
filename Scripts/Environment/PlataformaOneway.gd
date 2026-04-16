@@ -108,7 +108,7 @@ func _on_body_entered(body):
 		body.is_inside_platform = true
 		
 		# Si el jugador está escalando, centrarlo suavemente en la escalera (prioridad) o plataforma
-		if body.get("current_move_state") == 3: # MoveState.CLIMBING
+		if body.get("current_move_state") == Player.MoveState.CLIMBING:
 			var tween = create_tween()
 			var target_x = global_position.x
 			
@@ -138,36 +138,33 @@ func _physics_process(_delta):
 	var platform_top_y = global_position.y + collision_shape.position.y + half_height
 	var platform_bottom_y = global_position.y + collision_shape.position.y - half_height
 	
-	# 1. Si el jugador está DEBAJO de esta plataforma - dejarlo pasar (subir)
-	if player_feet_y < platform_bottom_y:
+	# 1. Obtener estado del jugador
+	var current_state = player_ref.get("current_move_state")
+	var is_climbing = current_state == Player.MoveState.CLIMBING
+
+	# 2. Si el jugador está DEBAJO de esta plataforma o ESCALANDO - dejarlo pasar
+	# Esto previene teletransportes indeseados al escalar cerca de la plataforma.
+	if player_feet_y < platform_bottom_y or is_climbing:
 		set_collision_layer_value(1, false)
 		return
 	
-	# 2. Verificar si el jugador está CERCA del tope de ESTA plataforma específica
+	# 3. Verificar si el jugador está CERCA del tope de ESTA plataforma específica
 	# (dentro de 0.5 unidades del tope)
 	var near_this_platform_top = player_feet_y >= platform_top_y - 0.2 and player_feet_y <= platform_top_y + 0.5
 	
-	# 3. Obtener estado del jugador
-	var current_state = player_ref.get("current_move_state")
-	var is_climbing = current_state == 3 # MoveState.CLIMBING
-	
-	# FIX: Si estamos escalando, ignorar colisión de plataforma para evitar teletransportes
-	if is_climbing:
-		set_collision_layer_value(1, false)
-		return
 	var is_near_ladder = player_ref.get("is_near_ladder")
 	var pressing_down = Input.is_action_pressed("ui_down") or Input.is_action_pressed("move_back")
 	
-	# 4. Solo permitir atravesar si:
+	# 4. Solo permitir atravesar hacia abajo si:
 	#    - El jugador está CERCA del tope de ESTA plataforma
-	#    - Y está escalando O cerca de escalera
+	#    - Y está cerca de una escalera (para empezar a bajar)
 	#    - Y presiona abajo
 	#    - Y NO tiene cooldown de escalera (para evitar loops con barreras)
 	var cooldown_ok = true
 	if player_ref.get("ladder_cooldown") != null:
 		cooldown_ok = player_ref.ladder_cooldown <= 0
 		
-	if near_this_platform_top and (is_climbing or is_near_ladder) and pressing_down and cooldown_ok:
+	if near_this_platform_top and is_near_ladder and pressing_down and cooldown_ok:
 		set_collision_layer_value(1, false)
 	else:
 		# Mantener sólida para cualquier otra situación
