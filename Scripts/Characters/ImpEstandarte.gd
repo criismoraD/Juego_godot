@@ -37,8 +37,6 @@ var estandarte_visual: Node3D = null
 var arco_visual: Node3D = null
 var estandarte_ya_soltado: bool = false
 
-var game_feel: Node = null
-
 func _on_enemy_ready():
 	game_feel = get_node_or_null("/root/GameFeel")
 	# Configuración base del Imp (sin usar lógica de tridente)

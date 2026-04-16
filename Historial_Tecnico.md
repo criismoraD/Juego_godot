@@ -1,4 +1,32 @@
 ## Estado Actual
+- Composición de 2 SubViewports 3D corregida: SubViewportFondo3D (DOF activo, cull_mask 2) y SubViewportFrente3D (sin DOF, transparent_bg, cull_mask ~layer2).
+- TORRE movida a SubViewportFondo3D con `layers = 2` para recibir DOF blur junto con BUSTO_BRONCE2.
+- SubViewportFrente3D ahora usa un Environment propio con `background_mode = 3` (Canvas) asignado directamente a CamaraFrente, eliminando el Sky opaco que sobreescribía `transparent_bg`.
+- Se eliminaron los WorldEnvironment duplicados dentro de ambos SubViewports; el Environment principal en `Lighting/WorldEnvironment` cubre el mundo compartido (`own_world_3d = false`).
+- DirectionalLight3D corregida: `light_cull_mask = 3` (antes estaba en 1) para iluminar capas 1 y 2.
+- WaterPlane forzado a `layers = 1` para que solo sea visible desde CamaraFrente y no tape la TORRE en el fondo.
+- FONDO ANIMADO cambiado a `layers = 2` para que CamaraFondoDOF lo vea correctamente.
+- Luces principales (Directional/Omni) afectan capas 1 y 2 explícitamente.
+- NIVEL01.gd localiza BUSTO_BRONCE y TORRE por búsqueda recursiva (`find_child`).
+- La UI debug recuperó botón funcional para línea negra con ON/OFF real (antes estaba forzado en ON): ahora alterna outline global en runtime.
+- ResultadoPacifista.gd ya localiza botones por nombre real en escena (sin ruta $Contenedor/...), corrigiendo la falta de respuesta en Continuar/Reiniciar del final pacifista.
+- La composición Fondo/Frente de viewports se dejó con `texture_filter = nearest` en ambos TextureRect para evitar suavizado adicional del contorno en pantalla.
+- NIVEL01 quedó con composición de 2 SubViewports 3D: fondo (DOF activo) y frente (sin DOF, fondo transparente), apilados en CanvasLayer para desenfocar solo fondo.
+- BUSTO_BRONCE y TORRE2 fueron movidos a capa visual 2 para que solo entren al viewport de fondo desenfocado.
+- Se añadió compensación de grosor en runtime para outline (`outline_width = 20.0`) al re-binder de GameUI, de modo que la versión antigua del shader sea visible en gameplay sin editar TOON_LINEANEGRA.
+- GameUI ahora también fuerza la recarga/bind del shader TOON_LINEANEGRA sobre materiales activos con next_pass al iniciar, para evitar que en runtime se quede una versión en cache distinta al visor.
+- NIVEL01 ahora fuerza refresco del shader de outline en runtime (CACHE_MODE_REPLACE) y activa `Toon_LineaNegra_Activo = true` para compatibilidad con versiones antiguas de TOON_LINEANEGRA sin editar el shader.
+- El diálogo de protagonista ahora usa dos páginas con cambio automático de retrato por página (PROTA_NORMAL en la primera y PROTA_ENOJADA en la segunda) desde Dialogo_Protagonista.tscn + DialogoComic.gd.
+- Todos los materiales .tres con shader_parameter/outline_width en next_pass fueron normalizados automáticamente a 20.0 (17 materiales).
+- TOON_LINEANEGRA se mantiene sin edición directa por solicitud; la visibilidad del contorno en gameplay se corrige por refresco/rebind runtime.
+- Se recalibró el DOF en NIVEL01 (far_distance 65, far_transition 18, amount 0.08) para empujar el blur al fondo y reducir borrosidad en bordes del primer plano.
+- El botón de bordes en GameUI quedó bloqueado en "GLOBAL ON" como indicador visual para evitar apagados accidentales.
+- Se retiró el toggle global por uniform en shader/scripts para evitar estados inconsistentes del contorno.
+- El filtro de desenfoque ahora aplica blur gaussiano puro con slider (gaussian_blur), sin color/tinte y con opacidad solo del plano transparente.
+- El filtro de desenfoque ya está instanciado en NIVEL01 sobre la protagonista, con plano orientado a cámara para que se vea como overlay de blur en gameplay.
+- Se creó un filtro de desenfoque en plano horizontal listo para colocar manualmente: escena Plano_Filtro_Desenfoque con material y shader propios para efecto blur tipo overlay.
+- El shader TOON_LINEANEGRA quedó reforzado para contorno negro duro y ahora 3x más grueso en juego: mayor grosor efectivo, mejor visibilidad a distancia y fog desactivada en el pass del outline.
+- Se corrigió el parser error de ImpEstandarte al eliminar la redeclaración de `game_feel` en la subclase (ya existe en EnemyBase).
 - El audio de muerte del ImpEstandarte ahora se carga con preload() en lugar de FileAccess, lo que garantiza que se empaquete correctamente en la exportación .exe.
 - Flujo de trabajo separado en dos scripts de Blender: preparacion y exportacion.
 - La exportacion de textura esta configurada en formato JPG y solicita carpeta destino.
@@ -42,6 +70,45 @@
 - Las escenas nuevas de diálogo recuperaron su audio de habla durante el reveal de texto: protagonista y emisario vuelven a reproducir SFX.
 
 ## Tareas Completadas
+- 2026-04-11: Aplicada arquitectura recomendada para iluminación con SubViewport compartido: nodos de mundo fuera del SubViewportFondo3D + cull masks por cámara + lights con light_cull_mask explícito en capas 1/2.
+- 2026-04-11: Soporte de nombres alternativos en capa DOF: NIVEL01.gd ahora detecta BUSTO_BRONCE/BUSTO_BRONCE2 y TORRE2/TORRE3 para asignación recursiva de capas.
+- 2026-04-11: Hardening de jerarquía en NIVEL01.gd: referencias de BUSTO_BRONCE/TORRE2 cambiadas a búsqueda recursiva para tolerar reubicación de nodos en SubViewportFondo3D.
+- 2026-04-11: Fix de apuntado/UI tras quitar cámara principal: nuevo `Scripts/Utils/CameraUtils.gd` + reemplazo de `get_viewport().get_camera_3d()` en Player/Arrow/GoblinArrow/GoblinGirlArrow/ImpTrident para usar fallback a `CamaraFrente` o `PRESPECTIVA`.
+- 2026-04-11: Restauración de WorldEnvironment principal en NIVEL01 (con CameraAttributes de frente sin DOF) tras limpiar los WorldEnvironment duplicados de SubViewports.
+- 2026-04-11: Limpieza de configuración inválida: se retiraron WorldEnvironmentFondo/Frente de SubViewports por conflicto de world único, y FONDO ANIMADO se reubicó al root de NIVEL01 para evitar inconsistencias.
+- 2026-04-11: Fix de capas para DOF por viewport: NIVEL01.gd ahora asigna capa visual de fondo recursivamente a BUSTO_BRONCE y TORRE2 (incluyendo mallas hijas), resolviendo que Fondo3DRect apareciera vacío.
+- 2026-04-11: Intento intermedio de DOF por viewport con WorldEnvironment dentro de SubViewports (revertido por limitación de world único en Godot).
+- 2026-04-11: Fix de composición DOF en 2D: WorldEnvironment quedó con CameraAttributes de frente (sin DOF) para que el desenfoque no se aplique globalmente y quede controlado por el viewport de fondo.
+- 2026-04-11: Ajuste de DOF solicitado tras feedback: el CameraAttributes del viewport de fondo en NIVEL01 subió a `dof_blur_amount = 0.16` para recuperar desenfoque visible solo en fondo.
+- 2026-04-11: UI debug de bordes reactivada con toggle real ON/OFF en GameUI.gd: botón habilitado + aplicación runtime de outline (ancho/color) para encender o apagar línea negra globalmente.
+- 2026-04-11: Fix de botones en final pacifista: ResultadoPacifista.gd cambió a búsqueda robusta por nombre (`BotonContinuar`, `BotonReiniciar`) para que vuelvan a emitir señal y responder al click.
+- 2026-04-11: Ajuste de nitidez en compositor de viewports: Fondo3DRect y Frente3DRect pasaron a `texture_filter = 1 (nearest)` para reducir blur de borde por filtrado de textura.
+- 2026-04-11: Implementado pipeline de render separado en NIVEL01 para DOF selectivo: SubViewportFondo3D (capa 2 con DOF), SubViewportFrente3D (capa 1 sin DOF y transparent_bg), composición por CanvasLayer y ajuste automático de tamaño de ambos viewports.
+- 2026-04-11: Solicitud final aplicada: outline_width = 20.0 en todos los materiales .tres con next_pass (17 recursos) para un grosor uniforme en todos los elementos.
+- 2026-04-11: Ajuste de visibilidad para shader antiguo sin tocar TOON_LINEANEGRA: GameUI ahora fija `outline_width = 20.0` en runtime al re-binder de next_pass para recuperar presencia del borde en juego.
+- 2026-04-11: Refuerzo del fix de runtime en GameUI.gd: al aplicar “GLOBAL ON” ahora recarga TOON_LINEANEGRA con CACHE_MODE_REPLACE, reactiva `Toon_LineaNegra_Activo` y re-bindea el shader en materiales activos de escena con `next_pass`.
+- 2026-04-11: Fix de reflejo en runtime para TOON_LINEANEGRA sin tocar el shader: en NIVEL01.gd se añadió refresco por `ResourceLoader.CACHE_MODE_REPLACE` + activación de `RenderingServer.global_shader_parameter_set("Toon_LineaNegra_Activo", true)`.
+- 2026-04-11: Dialogo_Protagonista.tscn actualizado a flujo de 2 páginas con textos nuevos y retratos por página (PROTA_NORMAL -> PROTA_ENOJADA), y DialogoComic.gd extendido con `paginas_imagenes` para cambiar el icono automáticamente al avanzar.
+- 2026-04-11: Ajuste solicitado de grosor por defecto: shader TOON_LINEANEGRA y 17 materiales .tres con next_pass quedaron en outline_width = 5.0.
+- 2026-04-11: Ajuste de DOF para fondo: NIVEL01.tscn actualizó CameraAttributesPractical (far_distance 65, far_transition 18, dof_blur_amount 0.08) para minimizar blur en bordes de personajes.
+- 2026-04-11: Normalización masiva de grosor de contorno: 17 materiales .tres con next_pass de outline quedaron en shader_parameter/outline_width = 10.0.
+- 2026-04-11: Reemplazo total del algoritmo de outline: TOON_LINEANEGRA ahora usa cull_front + offset en clip space (grosor en píxeles), eliminando el relleno negro de siluetas y manteniendo compatibilidad con DOF.
+- 2026-04-11: Ajuste fino posterior al fix de contorno: se corrigió outline_width base a 2.5 en TOON_LINEANEGRA.gdshader para mantener un contorno visible sin expansión excesiva.
+- 2026-04-11: Fix definitivo de línea negra no visible: TOON_LINEANEGRA.gdshader pasó a render siempre activo (se eliminó dependencia de Toon_LineaNegra_Activo), cull_disabled y descarte en FRONT_FACING; además se retiraron llamadas global_shader_parameter_set en NIVEL01.gd y GameUI.gd.
+- 2026-04-11: Contorno global reforzado: GameUI y NIVEL01 fuerzan `Toon_LineaNegra_Activo = true` en runtime, el botón de bordes quedó bloqueado en ON y TOON_LINEANEGRA.gdshader ahora arranca con `outline_width = 2.5` como fallback.
+- 2026-04-11: Optimización de cuadros de diálogo: DialogoComic.gd migró el reveal de texto a `Timer` (eliminando trabajo por frame en `_process`), desactivó `fit_content` en RichTextLabel y redujo recomputaciones por carácter.
+- 2026-04-11: Mejora de contorno con DOF: en TOON_LINEANEGRA.gdshader se cambió a `render_mode ... blend_mix, depth_draw_never` y ALPHA explícito para mantener la línea negra más nítida cuando el desenfoque de profundidad está activo.
+- 2026-04-11: Implementado control global para TOON_LINEANEGRA: shader con `global uniform bool Toon_LineaNegra_Activo` + botón en GameUI (`✏️ BORDES`) que usa `RenderingServer.global_shader_parameter_set` para ON/OFF en toda la escena.
+- 2026-04-11: Refactor final de Filtro_Desenfoque.gdshader por fallo visual (plano blanco): se simplificó a blur gaussiano puro sobre SCREEN_UV con slider gaussian_blur y opacidad del plano vía opacidad_objeto, eliminando lógica previa redundante.
+- 2026-04-11: Ajuste de comportamiento visual del blur: se reintrodujo ALPHA solo para el plano (uniform opacidad_objeto) para que vuelva a verse el fondo detrás, manteniendo blur sin tinte y sin oscurecer la escena.
+- 2026-04-11: Ajuste final del blur solicitado: se eliminó la opacidad del filtro (sin salida ALPHA) y también el tinte, dejando únicamente desenfoque gaussiano sobre color en Filtro_Desenfoque.gdshader y limpieza de parámetros en MAT_filtro_desenfoque.tres.
+- 2026-04-11: Mejora del filtro blur de protagonista: Filtro_Desenfoque.gdshader actualizado a mezcla gaussiana más visible (blur cruz + mipmap), separación entre intensidad de blur y opacidad, y nuevos valores por defecto en MAT_filtro_desenfoque.tres para evitar que solo transparente el fondo.
+- 2026-04-10: Ajuste visual final de filtro blur: MAT_filtro_desenfoque con intensidad_filtro al 50% (0.29) para mayor transparencia sobre la protagonista.
+- 2026-04-10: Integración en nivel: Plano_Filtro_Desenfoque instanciado en NIVEL01 encima del Player y ajuste de orientación/tamaño del PlaneMesh para visibilidad correcta en cámara lateral.
+- 2026-04-10: Implementado filtro de desenfoque horizontal colocable por escena: nuevos recursos Plano_Filtro_Desenfoque.tscn + MAT_filtro_desenfoque.tres + Filtro_Desenfoque.gdshader.
+- 2026-04-10: Ajuste final solicitado de outline en juego: grosor efectivo del contorno negro incrementado 3x adicionales en TOON_LINEANEGRA.gdshader para que deje de verse delgado en runtime.
+- 2026-04-10: Ajuste visual de contorno: TOON_LINEANEGRA.gdshader actualizado para que la línea negra se vea más dura (outline_width base 5.0, multiplicador de offset más alto, rango de depth_scale ampliado y fog_disabled).
+- 2026-04-10: Fix de carga del juego: resuelto error de parser "The member game_feel already exists in parent class EnemyBase" eliminando la variable duplicada en ImpEstandarte.gd.
 - 2026-04-10: Sincronización con GitHub completada (fast-forward de 2 commits en main) y resolución manual de conflicto de merge en Scripts/Levels/NIVEL01.gd conservando cambios remotos y locales.
 - 2026-04-10: Fix del audio del ImpEstandarte en exportación: cambio de carga por filesystem a preload() para que Godot empaquete el archivo en el PCK sin depender de rutas absolutas en runtime.
 - 2026-04-10: Ajuste visual del diálogo de protagonista: el retrato de Erynn salió del flujo del HBox, se colocó como overlay sobre el panel y se amplió el margen izquierdo para despejar el texto.

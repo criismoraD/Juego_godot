@@ -1,4 +1,5 @@
 extends CharacterBody3D
+const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 
 # === CONFIGURACIÓN - MOVIMIENTO ===
 @export_category("Movimiento")
@@ -726,7 +727,7 @@ func _process_gameplay(delta):
 func update_charge_bar_position():
 	if not charge_bar.visible: return
 	
-	var camera = get_viewport().get_camera_3d()
+	var camera = CameraUtilsRef.obtener_camara_juego(self)
 	if not camera: return
 	
 	var head_pos = global_position + Vector3(0, altura_barra, 0)
@@ -992,7 +993,7 @@ func actualizar_rotacion_torso_pitch():
 	var idx = self.get_meta("bone_idx")
 	if idx == -1: return
 	
-	var camera = get_viewport().get_camera_3d()
+	var camera = CameraUtilsRef.obtener_camara_juego(self)
 	if not camera: return
 
 	skeleton.set_bone_global_pose_override(idx, Transform3D.IDENTITY, 0.0, false)
@@ -1078,7 +1079,7 @@ func calculate_shoot_data() -> Dictionary:
 		"valid": false
 	}
 	
-	var camera = get_viewport().get_camera_3d()
+	var camera = CameraUtilsRef.obtener_camara_juego(self)
 	if not camera: return result
 	
 	# Origen

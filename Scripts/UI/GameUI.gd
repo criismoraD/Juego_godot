@@ -86,9 +86,13 @@ var resolution_labels: Array = [
 	"2560×1440 (2K)",
 	"3840×2160 (4K)"
 ]
+const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
+const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
+const OUTLINE_WIDTH_RUNTIME := 20.0
 
 func _ready():
 	layer = 100
+	outlines_enabled = true
 	
 	# Buscar al player
 	await get_tree().process_frame
@@ -103,6 +107,7 @@ func _ready():
 	
 	# Crear la UI
 	_create_ui()
+	_aplicar_toggle_outline_global()
 	
 	# Buscar WaveSpawner
 	wave_spawner = get_tree().root.find_child("WaveSpawner", true, false)
@@ -411,6 +416,16 @@ func _create_ui():
 	var sep_toggles = VSeparator.new()
 	sep_toggles.custom_minimum_size.x = 8
 	hbox2.add_child(sep_toggles)
+
+	# --- TOGGLE OUTLINE GLOBAL ---
+	outline_btn = Button.new()
+	outline_btn.text = "✏️ BORDES: GLOBAL ON"
+	outline_btn.custom_minimum_size = Vector2(170, 32)
+	outline_btn.disabled = false
+	outline_btn.tooltip_text = "Activar/Desactivar contorno global"
+	outline_btn.pressed.connect(_toggle_outlines)
+	_style_button(outline_btn, Color(0.1, 0.6, 0.5))
+	hbox2.add_child(outline_btn)
 	
 	# --- TOGGLE ESCUDOS ---
 	btn_toggle_shields = Button.new()
@@ -799,19 +814,68 @@ func _update_spawn_buttons():
 
 func _toggle_outlines():
 	outlines_enabled = not outlines_enabled
-	
-	for data in materials_with_outline:
-		var mat = data["material"]
-		var outline = data["outline"]
-		
-		if outlines_enabled:
-			mat.next_pass = outline
-			outline_btn.text = "✏️ BORDES: ON"
-			_style_button(outline_btn, Color(0.1, 0.6, 0.5))
+	_aplicar_toggle_outline_global()
+
+func _aplicar_toggle_outline_global():
+	if not outline_btn:
+		return
+
+	outline_btn.disabled = false
+	if outlines_enabled:
+		outline_btn.text = "✏️ BORDES: GLOBAL ON"
+		outline_btn.tooltip_text = "Desactivar contorno global"
+		_style_button(outline_btn, Color(0.1, 0.6, 0.5))
+	else:
+		outline_btn.text = "✏️ BORDES: GLOBAL OFF"
+		outline_btn.tooltip_text = "Activar contorno global"
+		_style_button(outline_btn, Color(0.35, 0.35, 0.4))
+
+	_forzar_outline_en_runtime(outlines_enabled)
+
+func _forzar_outline_en_runtime(habilitado: bool) -> void:
+	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, habilitado)
+
+	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
+		push_warning("[GameUI] No se encontró TOON_LINEANEGRA.gdshader para refresco runtime.")
+		return
+
+	var shader_outline := ResourceLoader.load(RUTA_SHADER_OUTLINE, "Shader", ResourceLoader.CACHE_MODE_REPLACE) as Shader
+	if shader_outline == null:
+		push_warning("[GameUI] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
+		return
+
+	for item in materials_with_outline:
+		if not item is Dictionary:
+			continue
+		var material_base = item.get("material")
+		if material_base is StandardMaterial3D:
+			_aplicar_shader_outline_en_material(material_base as StandardMaterial3D, shader_outline, habilitado)
+
+	var meshes = get_tree().root.find_children("*", "MeshInstance3D", true, false)
+	for nodo in meshes:
+		var mesh_instance := nodo as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+
+		for i in range(mesh_instance.mesh.get_surface_count()):
+			var material_activo := mesh_instance.get_active_material(i)
+			if material_activo is StandardMaterial3D:
+				_aplicar_shader_outline_en_material(material_activo as StandardMaterial3D, shader_outline, habilitado)
+
+func _aplicar_shader_outline_en_material(material_base: StandardMaterial3D, shader_outline: Shader, habilitado: bool) -> void:
+	if material_base == null:
+		return
+
+	var outline = material_base.next_pass
+	if outline is ShaderMaterial:
+		var material_outline := outline as ShaderMaterial
+		material_outline.shader = shader_outline
+		if habilitado:
+			material_outline.set_shader_parameter("outline_width", OUTLINE_WIDTH_RUNTIME)
+			material_outline.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
 		else:
-			mat.next_pass = null
-			outline_btn.text = "✏️ BORDES: OFF"
-			_style_button(outline_btn, Color(0.4, 0.4, 0.4))
+			material_outline.set_shader_parameter("outline_width", 0.0)
+			material_outline.set_shader_parameter("outline_color", Color(0, 0, 0, 0))
 
 func _toggle_effects():
 	effects_enabled = not effects_enabled

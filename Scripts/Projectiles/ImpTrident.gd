@@ -1,5 +1,6 @@
 extends Area3D
 class_name ImpTridentProjectile
+const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 
 ## Tridente del Imp: Proyectil parabólico con modelo 3D.
 ## Color rojo incandescente, se clava en superficies.
@@ -246,7 +247,7 @@ func _check_destroy():
 		_safe_destroy()
 
 func _check_off_screen():
-	var camera = get_viewport().get_camera_3d()
+	var camera = CameraUtilsRef.obtener_camara_juego(self)
 	if not camera:
 		return
 	var screen_pos = camera.unproject_position(global_position)

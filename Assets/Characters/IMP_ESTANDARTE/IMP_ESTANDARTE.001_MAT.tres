@@ -7,9 +7,8 @@
 render_priority = 0
 shader = ExtResource("2_ply8g")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 4.0
+shader_parameter/outline_width = 20.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_4tl0t")
-shading_mode = 0
 albedo_texture = ExtResource("1_prop7")

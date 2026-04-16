@@ -7,11 +7,10 @@
 render_priority = 0
 shader = ExtResource("2_g6iqf")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 2.5
+shader_parameter/outline_width = 20.0
 
 [resource]
 resource_name = "GOBLING_MATERIAL"
 next_pass = SubResource("ShaderMaterial_h3br7")
-shading_mode = 0
 albedo_texture = ExtResource("1_grvlx")
 texture_repeat = false

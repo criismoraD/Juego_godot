@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://cbygqy1b5iiw7"]
+
+[ext_resource type="PackedScene" uid="uid://b1m5hf6x1q4nf" path="res://Assets/Environment/TORRE/TORRE.glb" id="1_ha2ma"]
+
+[node name="TORRE2" unique_id=1701577270 instance=ExtResource("1_ha2ma")]
+
+[node name="TORRE" parent="." index="0" unique_id=1540983021]
+layers = 3

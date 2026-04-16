@@ -3,8 +3,14 @@ extends CanvasLayer
 
 signal opcion_elegida(opcion: String)
 
-@onready var boton_continuar: Button = $Contenedor/BotonContinuar
-@onready var boton_reiniciar: Button = $Contenedor/BotonReiniciar
+@onready var boton_continuar: Button = _obtener_boton("BotonContinuar")
+@onready var boton_reiniciar: Button = _obtener_boton("BotonReiniciar")
+
+func _obtener_boton(nombre_boton: String) -> Button:
+	var nodo := find_child(nombre_boton, true, false)
+	if nodo is Button:
+		return nodo
+	return null
 
 func _ready():
 	if boton_continuar:
