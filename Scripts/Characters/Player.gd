@@ -684,9 +684,6 @@ func _perform_jump() -> void:
 	jump_buffer_timer = 0 # Consumir buffer
 	_spawn_jump_vfx()
 	
-	# GAME FEEL: Screen shake ligero opcional
-	# if has_node("/root/GameFeel"):
-	#     get_node("/root/GameFeel").shake(GameFeelManager.ShakePreset.LIGHT)
 
 func _can_jump() -> bool:
 	# Puede saltar si está en suelo O tiene coyote time
