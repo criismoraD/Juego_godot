@@ -5,3 +5,7 @@
 ## 2023-10-27 - [Headless GDScript Validation]
 **Learning:** [Since the standard Godot executable is missing in the sandbox, syntax and logic cannot be verified using standard `godot --headless` commands.]
 **Action:** [Install `gdtoolkit` via pip (`pip install gdtoolkit`) and use `gdlint` to catch syntax errors, spacing issues, and missing definitions.]
+
+## 2026-04-17 - [Static Caching for Recursive Node Searches]
+**Learning:** [Recursive searches like `find_child(..., true)` are O(N) and extremely costly when called every frame in `_process` or `_physics_process`. Static utility methods that perform these searches should implement caching.]
+**Action:** [Implement static variables in utility classes to cache results. Include logic to invalidate the cache when the scene changes (e.g., comparing `get_tree().current_scene`) and use `is_instance_valid()` to ensure cached node references are still safe to use.]
