@@ -231,18 +231,10 @@ func _process_walking(delta):
 	
 	# Verificar que el enemigo siga en SHOOTING (no haya muerto o se haya movido)
 	if enemigo_protegido is EnemyBase and enemigo_protegido.current_state != EnemyBase.State.SHOOTING:
-		# Enemigo ya no está disparando, buscar otro
-		_buscar_enemigo_a_proteger()
-		if not enemigo_protegido:
-			if posicion_libre_destino < 0:
-				posicion_libre_destino = randf_range(rango_posicion_libre.x, rango_posicion_libre.y)
-			var dist_to_free = global_position.x - posicion_libre_destino
-			if dist_to_free > 0.1:
-				velocity.x = -velocidad_caminar
-			else:
-				velocity.x = 0
-				_cambiar_estado(State.DEFENDING)
-			return
+		# Enemigo murió o cambió, nos plantamos aquí
+		velocity.x = 0
+		_cambiar_estado(State.DEFENDING)
+		return
 	
 	# Calcular posición objetivo: a la izquierda del enemigo protegido
 	var target_x = enemigo_protegido.global_position.x - distancia_proteccion
@@ -258,30 +250,13 @@ func _process_walking(delta):
 
 func _process_defending(_delta):
 	velocity.x = 0
-	
-	# Verificar que el enemigo protegido siga vivo
-	if not enemigo_protegido or not is_instance_valid(enemigo_protegido):
-		# Buscar otro enemigo
-		_buscar_enemigo_a_proteger()
-		if not enemigo_protegido:
-			# No hay nadie a quien proteger, huir
-			_cambiar_estado(State.ESCAPING)
-			return
-	
-	# Seguir la posición Y del enemigo protegido
-	# (mantener offset X a su izquierda)
-	if enemigo_protegido and is_instance_valid(enemigo_protegido):
-		var target_x = enemigo_protegido.global_position.x - distancia_proteccion
-		global_position.x = lerp(global_position.x, target_x, 0.1)
+	# Mantener posición estática, ya no persigue a otro enemigo si muere.
 
 func _process_shield_hit(delta):
 	velocity.x = 0
 	hit_anim_timer -= delta
 	if hit_anim_timer <= 0:
-		if escudo_vida_actual > 0:
-			_cambiar_estado(State.DEFENDING)
-		else:
-			_cambiar_estado(State.ESCAPING)
+		_cambiar_estado(State.DEFENDING)
 
 func _process_escaping(_delta):
 	velocity.x = 0
@@ -309,16 +284,7 @@ func _cambiar_estado(nuevo: State):
 			AudioManager.play_sfx("shield_imp_impact")
 			hit_anim_timer = _get_animation_duration(anim_impacto)
 		State.ESCAPING:
-			_play_animation(anim_escape)
-			# Ocultar el escudo (roto)
-			if escudo_node and is_instance_valid(escudo_node):
-				escudo_node.visible = false
-			# Tras la animación de escape, huir
-			var escape_dur = _get_animation_duration(anim_escape)
-			get_tree().create_timer(escape_dur).timeout.connect(func():
-				if is_instance_valid(self) and current_state == State.ESCAPING:
-					_cambiar_estado(State.FLEEING)
-			)
+			pass
 		State.FLEEING:
 			_play_animation(anim_huida)
 		State.DYING:
@@ -342,12 +308,10 @@ func take_damage(amount: float):
 		if escudo_vida_actual > 0:
 			_cambiar_estado(State.SHIELD_HIT)
 		else:
-			# Escudo roto
-			_cambiar_estado(State.ESCAPING)
-	else:
-		# Sin escudo, daño directo
-		health -= int(amount)
-		if health <= 0:
+			# Escudo roto -> Muere instantáneamente junto con el escudo
+			if escudo_node and is_instance_valid(escudo_node):
+				escudo_node.visible = false
+			health = 0
 			_cambiar_estado(State.DYING)
 
 func recibir_dano(amount: int):

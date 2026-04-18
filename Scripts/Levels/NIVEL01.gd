@@ -6,7 +6,7 @@ extends Node3D
 # === CONFIGURACIÓN GENERAL ===
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0 ## Posición X donde el Imp se detiene
-@export var total_enemigos_nivel1: int = 13 ## Enemigos totales en el Nivel 1
+@export var total_enemigos_nivel1: int = 15 ## Enemigos totales en el Nivel 1
 
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
 @export_category("Nivel 0 — Pacifista")
@@ -282,7 +282,8 @@ func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	# Configurar para spawnear los que faltan
 	var enemigos_a_spawnear = total_enemigos_nivel1 - supervivientes_pacificos
 
-	wave_spawner.goblins_por_oleada = enemigos_a_spawnear
+	wave_spawner.enemigos_por_oleada = enemigos_a_spawnear
+	wave_spawner.probabilidad_canonero = 0.0
 	wave_spawner.probabilidad_imp = 0.5
 	wave_spawner.probabilidad_goblin_girl = 0.5
 	wave_spawner.probabilidad_igual = false
@@ -305,7 +306,7 @@ func _monitorear_nivel_1():
 	# Verificar si todos los enemigos murieron (incluyendo supervivientes pacíficos)
 	wave_spawner.active_goblins = wave_spawner.active_goblins.filter(func(g): return is_instance_valid(g))
 
-	if wave_spawner.goblins_spawned_in_wave >= wave_spawner.goblins_por_oleada and wave_spawner.active_goblins.is_empty():
+	if wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada and wave_spawner.active_goblins.is_empty():
 		_on_nivel1_completado(1)
 
 func _on_nivel1_completado(_numero_oleada: int):
@@ -525,7 +526,8 @@ func _mostrar_victoria_con_continuar(mensaje: String):
 
 	boton.pressed.connect(func():
 		overlay.queue_free()
-		_iniciar_oleadas_libres()
+		AudioManager.stop_all()
+		get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL02.tscn")
 	)
 
 func _iniciar_oleadas_libres():
@@ -538,7 +540,7 @@ func _iniciar_oleadas_libres():
 	# Probabilidad igual: 33% cada tipo
 	wave_spawner.probabilidad_igual = true
 	wave_spawner.forzar_tipo_enemigo = -1
-	wave_spawner.goblins_por_oleada = 8
+	wave_spawner.enemigos_por_oleada = 8
 	wave_spawner.intervalo_aparicion = 4.0
 
 	# Reiniciar wave y arrancar

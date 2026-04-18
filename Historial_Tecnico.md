@@ -8,157 +8,36 @@
 - FONDO ANIMADO cambiado a `layers = 2` para que CamaraFondoDOF lo vea correctamente.
 - Luces principales (Directional/Omni) afectan capas 1 y 2 explícitamente.
 - NIVEL01.gd localiza BUSTO_BRONCE y TORRE por búsqueda recursiva (`find_child`).
-- La UI debug recuperó botón funcional para línea negra con ON/OFF real (antes estaba forzado en ON): ahora alterna outline global en runtime.
-- ResultadoPacifista.gd ya localiza botones por nombre real en escena (sin ruta $Contenedor/...), corrigiendo la falta de respuesta en Continuar/Reiniciar del final pacifista.
-- La composición Fondo/Frente de viewports se dejó con `texture_filter = nearest` en ambos TextureRect para evitar suavizado adicional del contorno en pantalla.
-- NIVEL01 quedó con composición de 2 SubViewports 3D: fondo (DOF activo) y frente (sin DOF, fondo transparente), apilados en CanvasLayer para desenfocar solo fondo.
-- BUSTO_BRONCE y TORRE2 fueron movidos a capa visual 2 para que solo entren al viewport de fondo desenfocado.
-- Se añadió compensación de grosor en runtime para outline (`outline_width = 20.0`) al re-binder de GameUI, de modo que la versión antigua del shader sea visible en gameplay sin editar TOON_LINEANEGRA.
-- GameUI ahora también fuerza la recarga/bind del shader TOON_LINEANEGRA sobre materiales activos con next_pass al iniciar, para evitar que en runtime se quede una versión en cache distinta al visor.
-- NIVEL01 ahora fuerza refresco del shader de outline en runtime (CACHE_MODE_REPLACE) y activa `Toon_LineaNegra_Activo = true` para compatibilidad con versiones antiguas de TOON_LINEANEGRA sin editar el shader.
-- El diálogo de protagonista ahora usa dos páginas con cambio automático de retrato por página (PROTA_NORMAL en la primera y PROTA_ENOJADA en la segunda) desde Dialogo_Protagonista.tscn + DialogoComic.gd.
-- Todos los materiales .tres con shader_parameter/outline_width en next_pass fueron normalizados automáticamente a 20.0 (17 materiales).
-- TOON_LINEANEGRA se mantiene sin edición directa por solicitud; la visibilidad del contorno en gameplay se corrige por refresco/rebind runtime.
-- Se recalibró el DOF en NIVEL01 (far_distance 65, far_transition 18, amount 0.08) para empujar el blur al fondo y reducir borrosidad en bordes del primer plano.
-- El botón de bordes en GameUI quedó bloqueado en "GLOBAL ON" como indicador visual para evitar apagados accidentales.
-- Se retiró el toggle global por uniform en shader/scripts para evitar estados inconsistentes del contorno.
-- El filtro de desenfoque ahora aplica blur gaussiano puro con slider (gaussian_blur), sin color/tinte y con opacidad solo del plano transparente.
-- El filtro de desenfoque ya está instanciado en NIVEL01 sobre la protagonista, con plano orientado a cámara para que se vea como overlay de blur en gameplay.
-- Se creó un filtro de desenfoque en plano horizontal listo para colocar manualmente: escena Plano_Filtro_Desenfoque con material y shader propios para efecto blur tipo overlay.
-- El shader TOON_LINEANEGRA quedó reforzado para contorno negro duro y ahora 3x más grueso en juego: mayor grosor efectivo, mejor visibilidad a distancia y fog desactivada en el pass del outline.
-- Se corrigió el parser error de ImpEstandarte al eliminar la redeclaración de `game_feel` en la subclase (ya existe en EnemyBase).
-- El audio de muerte del ImpEstandarte ahora se carga con preload() en lugar de FileAccess, lo que garantiza que se empaquete correctamente en la exportación .exe.
-- Flujo de trabajo separado en dos scripts de Blender: preparacion y exportacion.
-- La exportacion de textura esta configurada en formato JPG y solicita carpeta destino.
-- El addon Arquera Tools ahora expone tres botones de pipeline para modelos (1-5, 6-7 y 1-7).
-- El proceso de preparacion deja solo el mapa difuso conectado y elimina/desconecta mapas no difusos.
-- El script de exportacion ahora detecta armature vinculado y exporta GLB con rig/animaciones cuando existen, manteniendo textura JPG separada.
-- El addon tambien quedo sincronizado para exportar con la misma logica (mesh/armature, animaciones y skinning cuando aplica).
-- Se agrego un plugin de editor para Godot con boton para procesar GLB seleccionado (extraer materiales, asignar textura difusa y configurar TOON_LINEANEGRA en next_pass).
-- El plugin de Godot ahora trabaja sin .tscn intermedio: crea un material unico [GLB]_MAT.tres en la misma carpeta del GLB, en modo Unshaded, y activa Use External directamente en la importacion del GLB.
-- La escena del ImpEstandarte fue recreada y ahora usa el GLB en Assets/Characters/IMP_ESTANDARTE con comportamiento de disparo de flecha (arco) y animaciones IMP_*.
-- El flujo de victoria pacifista ahora está dividido en 2 pantallas: primero diálogo del emisario (icono IMP_ICON, recuadro superior compacto) y luego resultado en pantalla negra con texto blanco.
-- El diálogo pacifista fue refinado a estilo novela ligera: icono grande a la derecha, fondo más opaco, revelado progresivo del texto y botón de reiniciar en la pantalla final.
-- El revelado del diálogo pacifista ahora incluye sonido de habla ligero por bloques de caracteres y se corrigió el tipado explícito para evitar el error de Variant inferido (warnings tratados como error).
-- Se expusieron parámetros de ajuste en inspector para UX/gameplay: velocidad de texto novela y espera idle del ImpEstandarte; además el reinicio ahora recarga explícitamente NIVEL01 y el ImpEstandarte usa animaciones HIT + sonido de Imp al daño.
-- El primer panel del diálogo pacifista ya no oscurece el fondo, y el botón Reiniciar ahora hace limpieza previa de enemigos/proyectiles activos para reiniciar NIVEL01 como escena limpia.
-- El ImpEstandarte ahora reproduce su audio de muerte dedicado (IMP_ESTANDARTE_MUERTE.mpeg) y mantiene tracking activo en estado SHOOTING al estilo GoblinGirl.
-- El audio .mpeg del ImpEstandarte se carga en runtime como AudioStreamMP3 (bytes) para evitar errores de parser por extensión no reconocida en preload.
-- El ImpEstandarte ya no usa IMP_IDLE_ARCO en combate (solo IMP_DISPARO para disparar, con espera en IMP_IDLE_001) y se eliminó el override de material del Imp normal para evitar rotura de textura en runtime.
-- El ImpEstandarte ahora encadena ciclos continuos de IMP_DISPARO sin volver a idle entre disparos (disparo por timestamp dentro de la animación) y al entrar en combate cambia visualmente de estandarte a arco en la misma mano.
-- EnemyBase ahora selecciona el AnimationPlayer con mayor cantidad de animaciones para evitar capturar AnimationPlayers de accesorios (como el arco) y romper la reproducción de animaciones del enemigo.
-- Al entrar en ataque, el ImpEstandarte ahora suelta físicamente el estandarte (RigidBody3D con impulso/torque) para que caiga al suelo, y mantiene el swap visual al arco.
-- El estandarte caído ya no colisiona con el Imp (collision exception) y ahora se autodestruye con partículas tipo disolución en su posición final.
-- El estandarte ahora también se suelta en el primer daño recibido (sin esperar animación hit) y su caída fue ajustada para ser más seca: más gravedad, menos impulso y giro mínimo.
-- El estandarte caído quedó aislado de personajes: colisiona sólo hacia suelo (mask layer 1 con layer 0), agrega excepciones con enemies/player/allies y desactiva colisiones internas del visual instanciado.
-- En combate del ImpEstandarte se eliminó la espera con pose idle previa: al entrar a SHOOTING inicia directamente IMP_DISPARO para evitar cualquier transición tipo idle_arco.
-- Se actualizó la carga del retrato del emisario en NIVEL01 de IMP_ICON.jpeg a IMP_ICON.png.
-- Se añadió un diálogo inicial de protagonista al arrancar NIVEL01 (antes del Nivel 0), con icono PROTA_ICON.png a la izquierda y efecto de habla con pitch más agudo para voz femenina.
-- Se reforzó el diálogo inicial: el movimiento del jugador queda bloqueado durante cuadros de charla y se ajustó el audio para reducir efecto tecleo (menos frecuencia de disparo de SFX, pitch femenino más alto y timbre más vocal).
-- El arranque del nivel ahora respeta un delay previo al diálogo inicial y, tras aceptar, aparece solo el Imp Estandarte (sin oleada inicial de múltiples enemigos).
-- Flujo inicial recalibrado: delay de 1s antes del diálogo, pausa de gameplay durante cuadros de texto y restauración del spawn pacifista clásico (Imp Estandarte + 2 arqueras) tras aceptar.
-- El sonido del mensaje principal se cambió a timbre metálico (tecleo) y se ajustó su cadencia para que suene más natural.
-- La GameUI de debug ahora incluye botón de revivir aliadas: guarda plantillas iniciales de las arqueras y reinstancia solo las faltantes en su posición original, respetando el estado ON/OFF de aliadas.
-- Se añadió slider de debug para opacidad de CAPA001 (mapeado a FogPlane): ajusta en runtime el alpha de fog_color del shader de niebla.
-- Se corrigió el slider CAPA001 para que sí aplique visualmente: ahora usa instancia local de ShaderMaterial en FogPlane y actualiza correctamente fog_color.a sin mutar temporales.
-- Ajuste final solicitado: el slider CAPA001 ahora controla el nodo real CAPA001 (Sprite3D con CAPA1_V.png) vía modulate.a y se revirtió la intervención sobre FogPlane.
-- CAPA001 ahora inicia con opacidad 0.2 desde la escena NIVEL01 (modulate alpha), quedando semitransparente al arrancar.
-- Los cuadros de diálogo principales ahora viven en escenas editables: Dialogo_Protagonista.tscn, Dialogo_Emisario_Parte1.tscn (paginado interno) y Resultado_Pacifista.tscn.
-- El texto del emisario IMP se muestra en una sola escena con 2 páginas internas y botón Siguiente/Continuar, estilo novela visual.
-- El sonido ambiente ahora arranca al inicio del juego y los cuadros de diálogo quedaron sin audio de tecleo; el impacto sonoro queda ligado al daño del ImpEstandarte.
-- La muerte del ImpEstandarte quedó apuntando al archivo IMP_ESTANDARTE_MUERTE.mp3.
-- Las escenas nuevas de diálogo recuperaron su audio de habla durante el reveal de texto: protagonista y emisario vuelven a reproducir SFX.
+- La UI debug recuperó botón funcional para línea negra con ON/OFF real (ahora alterna outline global).
+- ResultadoPacifista.gd localiza botones por nombre real, corrigiendo respuestas en final pacifista.
+- Composición Fondo/Frente usa `texture_filter = nearest` para nitidez.
+- Se añadió compensación de grosor en runtime para outline (`20.0`) y carga forzada de shader TOON_LINEANEGRA.
+- Diálogo de protagonista usa dos páginas con cambio de retrato automático (NORMAL/ENOJADA).
+- Materiales .tres con next_pass normalizados a `outline_width = 10.0` (o 20.0 en runtime).
+- Filtro de desenfoque gaussiano instanciado como overlay para protagonista y plano horizontal.
+- ImpEstandarte recreado con lógica de arco, soltado de estandarte físico y animaciones encadenadas.
+- Flujo pacifista refinado con diálogos estilo novela ligera, iconos grandes y revelado progresivo de texto.
+- Diálogo inicial de protagonista bloquea movimiento y usa voz femenina (SFX pitch alto).
+- Spawn inicial reducido a ImpEstandarte + 2 GoblinGirl tras aceptar diálogo.
+- UI debug incluye botón "REVIVIR ALIADAS" y slider para opacidad de CAPA001 (0.2 inicio).
 
-## Tareas Completadas
-- 2026-04-11: Aplicada arquitectura recomendada para iluminación con SubViewport compartido: nodos de mundo fuera del SubViewportFondo3D + cull masks por cámara + lights con light_cull_mask explícito en capas 1/2.
-- 2026-04-11: Soporte de nombres alternativos en capa DOF: NIVEL01.gd ahora detecta BUSTO_BRONCE/BUSTO_BRONCE2 y TORRE2/TORRE3 para asignación recursiva de capas.
-- 2026-04-11: Hardening de jerarquía en NIVEL01.gd: referencias de BUSTO_BRONCE/TORRE2 cambiadas a búsqueda recursiva para tolerar reubicación de nodos en SubViewportFondo3D.
-- 2026-04-11: Fix de apuntado/UI tras quitar cámara principal: nuevo `Scripts/Utils/CameraUtils.gd` + reemplazo de `get_viewport().get_camera_3d()` en Player/Arrow/GoblinArrow/GoblinGirlArrow/ImpTrident para usar fallback a `CamaraFrente` o `PRESPECTIVA`.
-- 2026-04-11: Restauración de WorldEnvironment principal en NIVEL01 (con CameraAttributes de frente sin DOF) tras limpiar los WorldEnvironment duplicados de SubViewports.
-- 2026-04-11: Limpieza de configuración inválida: se retiraron WorldEnvironmentFondo/Frente de SubViewports por conflicto de world único, y FONDO ANIMADO se reubicó al root de NIVEL01 para evitar inconsistencias.
-- 2026-04-11: Fix de capas para DOF por viewport: NIVEL01.gd ahora asigna capa visual de fondo recursivamente a BUSTO_BRONCE y TORRE2 (incluyendo mallas hijas), resolviendo que Fondo3DRect apareciera vacío.
-- 2026-04-11: Intento intermedio de DOF por viewport con WorldEnvironment dentro de SubViewports (revertido por limitación de world único en Godot).
-- 2026-04-11: Fix de composición DOF en 2D: WorldEnvironment quedó con CameraAttributes de frente (sin DOF) para que el desenfoque no se aplique globalmente y quede controlado por el viewport de fondo.
-- 2026-04-11: Ajuste de DOF solicitado tras feedback: el CameraAttributes del viewport de fondo en NIVEL01 subió a `dof_blur_amount = 0.16` para recuperar desenfoque visible solo en fondo.
-- 2026-04-11: UI debug de bordes reactivada con toggle real ON/OFF en GameUI.gd: botón habilitado + aplicación runtime de outline (ancho/color) para encender o apagar línea negra globalmente.
-- 2026-04-11: Fix de botones en final pacifista: ResultadoPacifista.gd cambió a búsqueda robusta por nombre (`BotonContinuar`, `BotonReiniciar`) para que vuelvan a emitir señal y responder al click.
-- 2026-04-11: Ajuste de nitidez en compositor de viewports: Fondo3DRect y Frente3DRect pasaron a `texture_filter = 1 (nearest)` para reducir blur de borde por filtrado de textura.
-- 2026-04-11: Implementado pipeline de render separado en NIVEL01 para DOF selectivo: SubViewportFondo3D (capa 2 con DOF), SubViewportFrente3D (capa 1 sin DOF y transparent_bg), composición por CanvasLayer y ajuste automático de tamaño de ambos viewports.
-- 2026-04-11: Solicitud final aplicada: outline_width = 20.0 en todos los materiales .tres con next_pass (17 recursos) para un grosor uniforme en todos los elementos.
-- 2026-04-11: Ajuste de visibilidad para shader antiguo sin tocar TOON_LINEANEGRA: GameUI ahora fija `outline_width = 20.0` en runtime al re-binder de next_pass para recuperar presencia del borde en juego.
-- 2026-04-11: Refuerzo del fix de runtime en GameUI.gd: al aplicar “GLOBAL ON” ahora recarga TOON_LINEANEGRA con CACHE_MODE_REPLACE, reactiva `Toon_LineaNegra_Activo` y re-bindea el shader en materiales activos de escena con `next_pass`.
-- 2026-04-11: Fix de reflejo en runtime para TOON_LINEANEGRA sin tocar el shader: en NIVEL01.gd se añadió refresco por `ResourceLoader.CACHE_MODE_REPLACE` + activación de `RenderingServer.global_shader_parameter_set("Toon_LineaNegra_Activo", true)`.
-- 2026-04-11: Dialogo_Protagonista.tscn actualizado a flujo de 2 páginas con textos nuevos y retratos por página (PROTA_NORMAL -> PROTA_ENOJADA), y DialogoComic.gd extendido con `paginas_imagenes` para cambiar el icono automáticamente al avanzar.
-- 2026-04-11: Ajuste solicitado de grosor por defecto: shader TOON_LINEANEGRA y 17 materiales .tres con next_pass quedaron en outline_width = 5.0.
-- 2026-04-11: Ajuste de DOF para fondo: NIVEL01.tscn actualizó CameraAttributesPractical (far_distance 65, far_transition 18, dof_blur_amount 0.08) para minimizar blur en bordes de personajes.
-- 2026-04-11: Normalización masiva de grosor de contorno: 17 materiales .tres con next_pass de outline quedaron en shader_parameter/outline_width = 10.0.
-- 2026-04-11: Reemplazo total del algoritmo de outline: TOON_LINEANEGRA ahora usa cull_front + offset en clip space (grosor en píxeles), eliminando el relleno negro de siluetas y manteniendo compatibilidad con DOF.
-- 2026-04-11: Ajuste fino posterior al fix de contorno: se corrigió outline_width base a 2.5 en TOON_LINEANEGRA.gdshader para mantener un contorno visible sin expansión excesiva.
-- 2026-04-11: Fix definitivo de línea negra no visible: TOON_LINEANEGRA.gdshader pasó a render siempre activo (se eliminó dependencia de Toon_LineaNegra_Activo), cull_disabled y descarte en FRONT_FACING; además se retiraron llamadas global_shader_parameter_set en NIVEL01.gd y GameUI.gd.
-- 2026-04-11: Contorno global reforzado: GameUI y NIVEL01 fuerzan `Toon_LineaNegra_Activo = true` en runtime, el botón de bordes quedó bloqueado en ON y TOON_LINEANEGRA.gdshader ahora arranca con `outline_width = 2.5` como fallback.
-- 2026-04-11: Optimización de cuadros de diálogo: DialogoComic.gd migró el reveal de texto a `Timer` (eliminando trabajo por frame en `_process`), desactivó `fit_content` en RichTextLabel y redujo recomputaciones por carácter.
-- 2026-04-11: Mejora de contorno con DOF: en TOON_LINEANEGRA.gdshader se cambió a `render_mode ... blend_mix, depth_draw_never` y ALPHA explícito para mantener la línea negra más nítida cuando el desenfoque de profundidad está activo.
-- 2026-04-11: Implementado control global para TOON_LINEANEGRA: shader con `global uniform bool Toon_LineaNegra_Activo` + botón en GameUI (`✏️ BORDES`) que usa `RenderingServer.global_shader_parameter_set` para ON/OFF en toda la escena.
-- 2026-04-11: Refactor final de Filtro_Desenfoque.gdshader por fallo visual (plano blanco): se simplificó a blur gaussiano puro sobre SCREEN_UV con slider gaussian_blur y opacidad del plano vía opacidad_objeto, eliminando lógica previa redundante.
-- 2026-04-11: Ajuste de comportamiento visual del blur: se reintrodujo ALPHA solo para el plano (uniform opacidad_objeto) para que vuelva a verse el fondo detrás, manteniendo blur sin tinte y sin oscurecer la escena.
-- 2026-04-11: Ajuste final del blur solicitado: se eliminó la opacidad del filtro (sin salida ALPHA) y también el tinte, dejando únicamente desenfoque gaussiano sobre color en Filtro_Desenfoque.gdshader y limpieza de parámetros en MAT_filtro_desenfoque.tres.
-- 2026-04-11: Mejora del filtro blur de protagonista: Filtro_Desenfoque.gdshader actualizado a mezcla gaussiana más visible (blur cruz + mipmap), separación entre intensidad de blur y opacidad, y nuevos valores por defecto en MAT_filtro_desenfoque.tres para evitar que solo transparente el fondo.
-- 2026-04-10: Ajuste visual final de filtro blur: MAT_filtro_desenfoque con intensidad_filtro al 50% (0.29) para mayor transparencia sobre la protagonista.
-- 2026-04-10: Integración en nivel: Plano_Filtro_Desenfoque instanciado en NIVEL01 encima del Player y ajuste de orientación/tamaño del PlaneMesh para visibilidad correcta en cámara lateral.
-- 2026-04-10: Implementado filtro de desenfoque horizontal colocable por escena: nuevos recursos Plano_Filtro_Desenfoque.tscn + MAT_filtro_desenfoque.tres + Filtro_Desenfoque.gdshader.
-- 2026-04-10: Ajuste final solicitado de outline en juego: grosor efectivo del contorno negro incrementado 3x adicionales en TOON_LINEANEGRA.gdshader para que deje de verse delgado en runtime.
-- 2026-04-10: Ajuste visual de contorno: TOON_LINEANEGRA.gdshader actualizado para que la línea negra se vea más dura (outline_width base 5.0, multiplicador de offset más alto, rango de depth_scale ampliado y fog_disabled).
-- 2026-04-10: Fix de carga del juego: resuelto error de parser "The member game_feel already exists in parent class EnemyBase" eliminando la variable duplicada en ImpEstandarte.gd.
-- 2026-04-10: Sincronización con GitHub completada (fast-forward de 2 commits en main) y resolución manual de conflicto de merge en Scripts/Levels/NIVEL01.gd conservando cambios remotos y locales.
-- 2026-04-10: Fix del audio del ImpEstandarte en exportación: cambio de carga por filesystem a preload() para que Godot empaquete el archivo en el PCK sin depender de rutas absolutas en runtime.
-- 2026-04-10: Ajuste visual del diálogo de protagonista: el retrato de Erynn salió del flujo del HBox, se colocó como overlay sobre el panel y se amplió el margen izquierdo para despejar el texto.
-- 2026-04-10: Ajuste de layout para diálogos editables: DialogoComic.gd ahora localiza texto y botón por nombre, y las escenas de protagonista y emisario quedaron con retrato/título/texto/botón como nodos independientes para reposicionarlos manualmente.
-- 2026-04-10: Ajuste fino del retrato de Erynn: se bajó ligeramente el icono en la escena de protagonista para que salga más abajo del marco.
-- 2026-04-10: Ajuste fino del retrato del emisario: se bajó ligeramente el icono para igualar la altura de salida del marco con Erynn.
-- 2026-04-08 (resumen): separacion inicial de scripts (prepare_model_export.py y export_model_glb_jpg.py).
-- 2026-04-08 (resumen): addon actualizado a 3 botones y version 1.2.0.
-- 2026-04-08: Ajuste de limpieza en Prepare Model para conservar solo mapa difuso: reconecta Base Color al mapa difuso, desconecta entradas no difusas del Principled y elimina nodos sobrantes.
-- 2026-04-08: Validacion de sintaxis posterior al ajuste en prepare_model_export.py y arquera_tools_addon.py (sin errores).
-- 2026-04-09: Mejora en export_model_glb_jpg.py para detectar mesh/armature automaticamente, seleccionar mesh + armature al exportar GLB y habilitar opciones de animacion/skin cuando el exportador glTF las soporta.
-- 2026-04-09: Sincronizacion de arquera_tools_addon.py con la misma logica de exportacion animada (deteccion de mesh desde armature, seleccion mesh+armature, opciones de animacion glTF y validaciones UI).
-- 2026-04-09: Creacion del plugin de Godot addons/arquera_godot_tools con boton de procesamiento para GLB seleccionado: guarda materiales en carpeta Materiales_Extraidos, aplica textura difusa detectada en carpeta y asigna shader TOON_LINEANEGRA como next_pass.
-- 2026-04-09: Correccion de activacion del plugin de Godot: en plugin.cfg se cambio script a ruta relativa (plugin.gd) para evitar duplicacion de ruta res://addons/.../res://addons/... al habilitar el addon.
-- 2026-04-09: Ajuste de UX del plugin de Godot para no tapar paneles del editor: se movio la interfaz desde dock lateral a panel inferior (bottom panel).
-- 2026-04-09: Ajuste de logica del plugin de Godot segun flujo de import avanzado: material en modo Unshaded, guardado en la misma carpeta con nombre [GLB]_MAT.tres, sin generar _Procesado.tscn, y aplicacion automatica de Use External sobre el .glb.import con reimport.
-- 2026-04-09: Reimplementacion de ImpEstandarte para gameplay: reemplazo de tridente por flecha (GoblinGirlArrow), uso de animaciones IMP_IDLE/IMP_IDLE_001/IMP_IDLE_ARCO/IMP_DISPARO/IMP_MUERTE, y creacion de Scenes/Characters/ImpEnemyEstandarte.tscn para restaurar el preload del Nivel 0.
-- 2026-04-09: Ajuste fino solicitado por gameplay/UI: mapeo de animaciones del ImpEstandarte (IMP_IDLE para caminar e IMP_IDLE_001 para reposo), delay pacifista expuesto en 2.0s y rediseño del diálogo pacifista en dos pantallas separadas.
-- 2026-04-09: Pulido UX final del diálogo pacifista: icono IMP_ICON ampliado y movido a la derecha, efecto de revelado de texto tipo novela ligera, fondo más oscuro para foco visual y botón Reiniciar al final del resultado pacifista.
-- 2026-04-09: Corrección de compilación en NIVEL01.gd (tipado explícito en total_chars) e implementación de audio de habla durante el reveal del diálogo pacifista usando SFX de baja intensidad.
-- 2026-04-09: Ajustes solicitados de control fino: botón Reiniciar configurado para reiniciar NIVEL01 completo, export de velocidad_texto_novela en NIVEL01.gd y exports de espera_idle_arco_min/max en ImpEstandarte.gd. Además, se agregó lógica de daño para ImpEstandarte con IMP_HIT_01/02/03 y sonido de Imp en hits.
-- 2026-04-09: Corrección de reinicio limpio y UI: se eliminó el oscurecido del primer mensaje pacifista y se añadió función de reinicio robusto que limpia grupos runtime (enemies/enemy_projectiles/shield_imps) antes de recargar NIVEL01.
-- 2026-04-09: Ajuste de combate del ImpEstandarte: tracking continuo en SHOOTING (como GoblinGirl), mantenimiento de IMP_IDLE_ARCO para apuntado y IMP_DISPARO para disparo, y cambio de SFX de muerte a recurso dedicado IMP_ESTANDARTE_MUERTE.mpeg.
-- 2026-04-09: Fix crítico de parser en ImpEstandarte.gd: reemplazo de preload de .mpeg por carga manual de archivo (FileAccess + AudioStreamMP3.data) con fallback a imp_death si el archivo no está disponible.
-- 2026-04-09: Ajuste visual/gameplay solicitado: remoción de IMP_IDLE_ARCO del ciclo de ataque del ImpEstandarte y eliminación de _aplicar_material_imp() en _on_enemy_ready para preservar materiales/textura del GLB durante el juego.
-- 2026-04-09: Ajuste de feedback de daño en ImpEstandarte: se bloquea temporalmente _process_walking mientras hit_en_proceso para que la primera animación IMP_HIT sea visible y no quede sobreescrita por transición inmediata a SHOOTING.
-- 2026-04-10: Corrección de bucle de combate del ImpEstandarte: IMP_DISPARO ahora se reproduce en cadena continua (sin fallback a IMP_IDLE_001 entre tiros), se reinicia correctamente tras hit en estado SHOOTING y se agregó swap visual Estandarte->ArcoCombate al entrar en ataque.
-- 2026-04-10: Fix de regresión de animaciones tras añadir ArcoCombate: en EnemyBase._buscar_animation_player se prioriza el AnimationPlayer con más clips para usar el del personaje en vez del accesorio.
-- 2026-04-10: Implementación de “soltar estandarte al atacar”: en ImpEstandarte se agregó spawn físico del estandarte con caída real (impulso + torque + autodestrucción configurable) al entrar por primera vez en estado SHOOTING.
-- 2026-04-10: Ajuste de caída del estandarte: se evitó la colisión con el CharacterBody del Imp y se añadió efecto de partículas al desaparecer el estandarte tras el temporizador de autodestrucción.
-- 2026-04-10: Ajuste solicitado de timing/física: el estandarte cae inmediatamente al recibir daño y se recalibró la física para caída directa (menos vueltas y menor deriva).
-- 2026-04-10: Fix de colisiones del estandarte caído: se restringió a interacción con suelo y se eliminó interacción con enemigos/personajes mediante capas/máscaras + excepciones + limpieza de CollisionObject3D en el visual.
-- 2026-04-10: Ajuste de animación solicitado: en ImpEstandarte._on_state_shooting se forzó inicio inmediato de IMP_DISPARO sin fase idle intermedia.
-- 2026-04-10: Ajuste de assets UI: NIVEL01 ahora carga IMP_ICON.png (el icono fue migrado de .jpeg a .png).
-- 2026-04-10: Nuevo mensaje de arranque en NIVEL01: se implementó panel de protagonista con texto “Veo una silueta en el horizonte preparen sus arcos, a mi señal”, icono PROTA_ICON.png a la izquierda y reproducción de habla local con pitch configurable más agudo.
-- 2026-04-10: Ajuste UX de diálogos: bloqueo de controles del jugador mientras los overlays de charla están activos (inicio protagonista y flujo pacifista), con restauración de control al aceptar/cerrar.
-- 2026-04-10: Ajuste sonoro de protagonista: SFX de habla migrado a timbre menos "tecleo", menor cadencia por caracteres e intervalo mínimo entre disparos para sensación más orgánica.
-- 2026-04-10: Ajuste de flujo inicial solicitado: espera configurable de 2s antes del cuadro de charla de protagonista y spawn pacifista inicial reducido a solo ImpEstandarte tras aceptar.
-- 2026-04-10: Corrección de flujo solicitada: delay inicial cambiado a 1s, pausa explícita de sistemas gameplay durante diálogos, y reactivación del spawn de ImpEstandarte + 2 GoblinGirl después de aceptar.
-- 2026-04-10: Ajuste sonoro final del mensaje principal: reemplazo del SFX por impacto metálico de escudo y tuning de pitch/cadencia para efecto de tecleo metálico más legible.
-- 2026-04-10: Debug UI mejorada con botón “💚 REVIVIR ALIADAS” en GameUI.gd; se añadieron plantillas de aliadas al iniciar nivel y lógica para reinstanciar arqueras destruidas sin duplicar las vivas.
-- 2026-04-10: GameUI.gd actualizado con slider “CAPA001 α” en debug; controla la opacidad de la capa de niebla (FogPlane) modificando fog_color.a en el shader en tiempo real.
-- 2026-04-10: Fix del slider CAPA001 en GameUI.gd: ajuste robusto de material de FogPlane + corrección de escritura de alpha en Color, resolviendo que el slider no cambiara la opacidad.
-- 2026-04-10: Corrección de alcance del slider: se detectó nodo existente CAPA001 en NIVEL01.tscn y el control de opacidad pasó a ese Sprite3D (modulate alpha), descartando cambios sobre FogPlane.
-- 2026-04-10: Ajuste de inicio solicitado: CAPA001 en NIVEL01.tscn configurado con modulate.a = 0.2 para que arranque transparente por defecto.
-- 2026-04-10: Refactor de diálogos a escenas editables: se creó DialogoComic.gd y se conectó NIVEL01.gd a escenas de protagonista y emisario; el discurso del emisario quedó partido en dos cuadros secuenciales.
-- 2026-04-10: Ajuste de audio solicitado: sonido ambiente movido al arranque del juego, diálogos sin taque y muerte del ImpEstandarte actualizada a IMP_ESTANDARTE_MUERTE.mp3.
-- 2026-04-10: Ajuste de novela visual solicitado: Dialogo_Emisario_Parte2.tscn eliminado y Dialogo_Emisario_Parte1.tscn convertido a paginado interno de 2 partes usando un solo cuadro con botón Siguiente.
-- 2026-04-10: Restauración de audio en escenas de diálogo separadas: se asignó SFX de habla en Dialogo_Protagonista.tscn y Dialogo_Emisario_Parte1.tscn, y NIVEL01.gd dejó de sobrescribir a null el audio de escena cuando no se inyecta stream.
+- 2026-04-17: Configurada transición automática: al completar el Nivel 1, el botón "Continuar" ahora carga `NIVEL02.tscn`.
+- 2026-04-17: Solucionado error fatal en `NIVEL01.gd` al disparar al Imp Estandarte (desactualización de variable `enemigos_por_oleada`). Ajustado texto de victoria final a "¡Nivel 2 completado!" en `NIVEL02.gd`.
+- 2026-04-17: Añadido selector de niveles (Nivel 1 y Nivel 2) en el menú de pausa (GameUI) para iteración rápida.
+- 2026-04-17: Cañonero desactivado en Nivel 1.
+- 2026-04-17: El comportamiento de la Escudera Imp fue modificado final: ya no huye ni se teletransporta si el enemigo que defiende muere (se queda congelada en su posición defendiendo ese lugar) y muere instantáneamente al recibir el tercer impacto (junto con la rotura del escudo).
+- 2026-04-17: Añadida una barra e interfaz de progreso para las oleadas centrada arriba. Informa la cantidad de enemigos faltantes por eliminar.
+- 2026-04-17: Los valores totales de enemigos por nivel se han reescalado: 15 en Nivel 1 y 25 en Nivel 2.
+- 2026-04-17: Nivel 2 purgado y reconstruido desde Nivel 1. Eliminados diálogos iniciales y enemigos pacíficos. Combate arranca directamente con 20 enemigos desde el WaveSpawner ("enemigos_por_oleada"). Arqueras aliadas mantenidas.
+- 2026-04-17: Nuevo enemigo `Canonero` añadido: `Canonero.tscn` y `Canonero.gd` construidos usando `CANONERO.glb`. WaveSpawner integrado (15%). Integradas animaciones nativas del modelo (`CANON_IDLE`, `CANON_CAMINAR`, `CANON_DISPARO`, muertes aleatorias).
+- 2026-04-17: Creación de NIVEL02.tscn y NIVEL02.gd mediante duplicado de NIVEL01; retirado Imp Estandarte del flujo inicial.
+- 2026-04-17: Reparar test GUT: Solucionado error `ImpTridentProjectile` y arreglado borrado `AudioManager`.
+- 2026-04-16: Git Sync UI y diálogos.
+- 2026-04-11: Implementación de pipeline de render 3D dual (Fondo/Frente) para DOF selectivo y corrección masiva de materiales outline.
+- 2026-04-10: Refactor de diálogos a escenas editables, ajuste de IA ImpEstandarte (soltar estandarte) y controles de opacidad/niebla.
+- 2026-04-09: Reimplementación de ImpEstandarte, diálogo pacifista estilo novela visual y fix de carga de audio en exportación.
+- 2026-04-08: Pipeline de exportación Blender (scripts y addon) optimizado para Godot.
+- 2026-04-07: Documentación de flujo de bot de WhatsApp (referencia externa).
 
 ## Tareas Pendientes
-- Validar en el editor la composición final de ambos diálogos y guardar una disposición base para Erynn y el emisario.
-
+- Validar disposición final de retratos Erynn/Emisario en el editor.

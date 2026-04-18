@@ -9,6 +9,9 @@ var heart_icons: Array = []
 var pause_panel: Panel
 
 # === NODOS UI ===
+var wave_progress: ProgressBar
+var wave_progress_label: Label
+var wave_container: VBoxContainer
 var god_mode_btn: Button
 var restart_btn: Button
 var pause_btn: Button
@@ -197,6 +200,42 @@ func _create_ui():
 	add_child(health_container)
 	
 	_update_health_ui()
+	
+	# ═══════════════════════════════════════════════════════════════════════════
+	# PROGRESO DE OLEADA
+	# ═══════════════════════════════════════════════════════════════════════════
+	wave_container = VBoxContainer.new()
+	wave_container.name = "WaveProgressUI"
+	wave_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	wave_container.offset_top = 20
+	wave_container.visible = false
+	add_child(wave_container)
+	
+	wave_progress_label = Label.new()
+	wave_progress_label.text = "Oleada en progreso..."
+	wave_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	wave_progress_label.add_theme_font_size_override("font_size", 20)
+	var label_outline = LabelSettings.new()
+	label_outline.outline_size = 4
+	label_outline.outline_color = Color.BLACK
+	label_outline.font_size = 20
+	wave_progress_label.label_settings = label_outline
+	wave_container.add_child(wave_progress_label)
+	
+	wave_progress = ProgressBar.new()
+	wave_progress.custom_minimum_size = Vector2(400, 20)
+	wave_progress.show_percentage = false
+	var bg_style = StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.1, 0.1, 0.1, 0.7)
+	bg_style.set_border_width_all(2)
+	bg_style.border_color = Color.BLACK
+	var fg_style = StyleBoxFlat.new()
+	fg_style.bg_color = Color(0.8, 0.15, 0.15, 0.9)
+	fg_style.set_border_width_all(2)
+	fg_style.border_color = Color.BLACK
+	wave_progress.add_theme_stylebox_override("background", bg_style)
+	wave_progress.add_theme_stylebox_override("fill", fg_style)
+	wave_container.add_child(wave_progress)
 	
 	# ═══════════════════════════════════════════════════════════════════════════
 	# BOTÓN TOGGLE UI (ESQUINA SUPERIOR DERECHA)
@@ -548,6 +587,45 @@ func _create_pause_panel():
 	vbox.add_child(quit_pause_btn)
 	
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
+	var sep_lvl = HSeparator.new()
+	sep_lvl.custom_minimum_size = Vector2(200, 10)
+	vbox.add_child(sep_lvl)
+	
+	# ═══════════════ SELECTOR DE NIVELES (DEBUG) ═══════════════
+	var lvl_label = Label.new()
+	lvl_label.text = "🗺️ CAMBIAR NIVEL (DEBUG)"
+	lvl_label.add_theme_font_size_override("font_size", 22)
+	lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(lvl_label)
+
+	var hbox_levels = HBoxContainer.new()
+	hbox_levels.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox_levels.add_theme_constant_override("separation", 10)
+	vbox.add_child(hbox_levels)
+
+	var btn_lvl1 = Button.new()
+	btn_lvl1.text = "Nivel 1"
+	btn_lvl1.custom_minimum_size = Vector2(95, 40)
+	btn_lvl1.pressed.connect(func():
+		_toggle_pause()
+		AudioManager.stop_all()
+		get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL01.tscn")
+	)
+	_style_button(btn_lvl1, Color(0.1, 0.4, 0.6))
+	hbox_levels.add_child(btn_lvl1)
+
+	var btn_lvl2 = Button.new()
+	btn_lvl2.text = "Nivel 2"
+	btn_lvl2.custom_minimum_size = Vector2(95, 40)
+	btn_lvl2.pressed.connect(func():
+		_toggle_pause()
+		AudioManager.stop_all()
+		get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL02.tscn")
+	)
+	_style_button(btn_lvl2, Color(0.6, 0.2, 0.4))
+	hbox_levels.add_child(btn_lvl2)
+	
+	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_res = HSeparator.new()
 	sep_res.custom_minimum_size = Vector2(200, 10)
 	vbox.add_child(sep_res)
@@ -619,6 +697,31 @@ func _update_health_ui():
 
 func _on_health_changed(_new_health: int):
 	_update_health_ui()
+
+func _process(delta):
+	if wave_spawner and is_instance_valid(wave_spawner) and wave_spawner.get("is_wave_active"):
+		var vivos = 0
+		var lista_limpia = []
+		if wave_spawner.get("active_goblins") != null:
+			for e in wave_spawner.active_goblins:
+				if is_instance_valid(e) and not (e.get("current_state") in [5, 6]): # 5=DYING, 6=DEAD (En ImpShieldGirl y EnemyBase)
+					lista_limpia.append(e)
+					vivos += 1
+			wave_spawner.active_goblins = lista_limpia
+		
+		var total = wave_spawner.get("enemigos_por_oleada")
+		var spawneados = wave_spawner.get("goblins_spawned_in_wave")
+		if total != null and spawneados != null:
+			var faltan_por_spawnear = max(0, total - spawneados)
+			var restantes = faltan_por_spawnear + vivos
+			
+			wave_progress.max_value = total
+			wave_progress.value = max(0, total - restantes)
+			wave_progress_label.text = "ENEMIGOS RESTANTES: %d / %d" % [restantes, total]
+			wave_container.visible = true
+	else:
+		if wave_container:
+			wave_container.visible = false
 
 func _on_player_died():
 	# Mostrar todos los corazones vacíos

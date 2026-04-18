@@ -1,0 +1,639 @@
+extends Node3D
+
+## Script principal del nivel. Controla el flujo:
+## Nivel 0 (pacifista) → Nivel 1 (combate) → Nivel 2 (pendiente)
+
+# === CONFIGURACIÓN GENERAL ===
+@export_category("Configuración General")
+@export var limite_fin_mapa_x: float = -5.0 ## Posición X donde el Imp se detiene
+@export var total_enemigos_nivel1: int = 25 ## Enemigos totales en el Nivel 2
+
+# === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
+@export_category("Nivel 0 — Pacifista")
+@export var velocidad_pacificos: float = 0.5 ## Velocidad de caminata de los pacíficos
+@export var offset_entre_pacificos: float = 0.4 ## Separación X entre cada pacífico al spawnear
+@export var tamano_imagen_emisario: Vector2 = Vector2(180, 180) ## Tamaño del icono del emisario en el diálogo
+@export var tamano_imagen_protagonista: Vector2 = Vector2(180, 180) ## Tamaño del icono de la protagonista en el diálogo inicial
+@export var retroceso_parada_arqueras: float = 0.2 ## Cada arquera se para 0.2u más adelante que la anterior
+@export var delay_dialogo_inicio: float = 1.0 ## Segundos antes de mostrar el mensaje inicial de protagonista
+@export var delay_dialogo_pacifico: float = 2.0 ## Segundos de espera antes de mostrar el diálogo pacifista
+@export_range(0.005, 0.08, 0.005) var velocidad_texto_novela: float = 0.02 ## Velocidad del reveal del texto (segundos por caracter)
+@export_range(0.9, 2.0, 0.05) var pitch_habla_protagonista: float = 1.1 ## Pitch del tecleo metálico del diálogo inicial
+@export var volumen_habla_protagonista_db: float = -16.0 ## Volumen del tecleo metálico en diálogo inicial
+@export_range(2, 20, 1) var chars_por_habla_protagonista: int = 7 ## Frecuencia del tecleo metálico
+@export_range(0.05, 0.5, 0.01) var intervalo_min_habla_protagonista: float = 0.18 ## Intervalo mínimo entre sonidos de habla
+
+# === ESTADO DEL NIVEL ===
+enum NivelEstado { NIVEL_0, TRANSICION, NIVEL_1, VICTORIA_PACIFISTA, VICTORIA_NIVEL1, OLEADAS_LIBRES }
+var estado_actual: int = NivelEstado.NIVEL_0
+var enemigos_pacificos: Array = [] ## Los 3 enemigos del nivel 0
+var imp_estandarte: Node3D = null ## Referencia al imp que lleva el estandarte
+
+# === REFERENCIAS ===
+@onready var wave_spawner: WaveSpawner = $WaveSpawner
+@onready var game_ui = $GameUI
+@onready var texture_rect = $SubViewport/TextureRect
+@onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
+@onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
+@onready var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
+@onready var torre2_fondo: Node3D = _buscar_nodo_fondo_multiple(["TORRE", "TORRE2", "TORRE3"])
+
+# === ESCENAS ===
+var escena_imp_estandarte: PackedScene = preload("res://Scenes/Characters/ImpEnemyEstandarte.tscn")
+var escena_dialogo_inicio_protagonista: PackedScene = preload("res://Scenes/UI/Dialogo_Protagonista.tscn")
+var escena_dialogo_emisario_parte1: PackedScene = preload("res://Scenes/UI/Dialogo_Emisario_Parte1.tscn")
+var escena_resultado_pacifista: PackedScene = preload("res://Scenes/UI/Resultado_Pacifista.tscn")
+var sfx_habla_dialogo: AudioStream = preload("res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3")
+const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
+const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
+const CAPA_VISUAL_FONDO_DOF := 2
+var estados_proceso_jugador: Dictionary = {}
+var estados_proceso_dialogo: Dictionary = {}
+var estado_spawner_dialogo: Dictionary = {}
+var _dialogo_audio_player: AudioStreamPlayer
+
+func _ready():
+	_dialogo_audio_player = AudioStreamPlayer.new()
+	_dialogo_audio_player.bus = "Master"
+	add_child(_dialogo_audio_player)
+	_forzar_refresco_outline_global()
+
+	# Ocultar TextureRect del SubViewport
+	if texture_rect:
+		texture_rect.visible = false
+
+	_ajustar_subviewports_3d()
+	_configurar_capas_dof_fondo()
+	if not get_viewport().size_changed.is_connected(_ajustar_subviewports_3d):
+		get_viewport().size_changed.connect(_ajustar_subviewports_3d)
+
+	# Warm-up de shaders
+	VFXFactory.warmup_shaders(self)
+
+	# Sonido ambiente desde el arranque del juego
+	AudioManager.play_music(3, true, 12.0) # SONIDO BOSQUE.mp3
+
+	# Esperar un frame para que todos los nodos estén listos
+	await get_tree().process_frame
+
+	# Iniciar Nivel 1 directamente sin intro pacifista
+	_iniciar_nivel_1(0)
+
+func _ajustar_subviewports_3d() -> void:
+	var tamano_viewport := get_viewport().get_visible_rect().size
+	var tamano_render := Vector2i(int(tamano_viewport.x), int(tamano_viewport.y))
+
+	if subviewport_fondo_3d:
+		subviewport_fondo_3d.size = tamano_render
+
+	if subviewport_frente_3d:
+		subviewport_frente_3d.size = tamano_render
+
+func _configurar_capas_dof_fondo() -> void:
+	_asignar_capa_visual_recursiva(busto_bronce_fondo, CAPA_VISUAL_FONDO_DOF)
+	_asignar_capa_visual_recursiva(torre2_fondo, CAPA_VISUAL_FONDO_DOF)
+
+func _buscar_nodo_fondo_multiple(nombres_nodo: Array[String]) -> Node3D:
+	for nombre_nodo in nombres_nodo:
+		var nodo := find_child(nombre_nodo, true, false)
+		if nodo is Node3D:
+			return nodo
+	return null
+
+func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
+	if nodo == null:
+		return
+
+	if nodo is VisualInstance3D:
+		(nodo as VisualInstance3D).layers = capa
+
+	for hijo in nodo.get_children():
+		_asignar_capa_visual_recursiva(hijo, capa)
+
+func _forzar_refresco_outline_global() -> void:
+	# Mantiene compatibilidad con versiones antiguas del shader que dependen de un global uniform.
+	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, true)
+
+	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
+		push_warning("[NIVEL01] No se encontró TOON_LINEANEGRA.gdshader para refresco.")
+		return
+
+	var shader_outline := ResourceLoader.load(RUTA_SHADER_OUTLINE, "Shader", ResourceLoader.CACHE_MODE_REPLACE)
+	if shader_outline == null:
+		push_warning("[NIVEL01] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
+
+func _mostrar_dialogo_inicio_protagonista():
+	_set_juego_pausado_dialogo(true)
+	await _mostrar_dialogo_escena(
+		escena_dialogo_inicio_protagonista,
+		velocidad_texto_novela,
+		chars_por_habla_protagonista,
+		intervalo_min_habla_protagonista,
+		sfx_habla_dialogo,
+		pitch_habla_protagonista,
+		volumen_habla_protagonista_db
+	)
+	_set_juego_pausado_dialogo(false)
+
+
+func _reproducir_habla_femenina():
+	if not sfx_habla_dialogo or not _dialogo_audio_player:
+		return
+	_dialogo_audio_player.stream = sfx_habla_dialogo
+	_dialogo_audio_player.volume_db = volumen_habla_protagonista_db
+	_dialogo_audio_player.pitch_scale = pitch_habla_protagonista
+	_dialogo_audio_player.play()
+
+func _mostrar_dialogo_escena(escena: PackedScene, velocidad: float, chars_por_sonido: int, intervalo_min_sonido: float, audio_stream: AudioStream, pitch_scale: float, volumen_db: float) -> bool:
+	if not escena:
+		push_warning("[NIVEL01] No se encontró la escena de diálogo.")
+		return false
+
+	var dialogo_escena := escena.instantiate() as DialogoComic
+	if not dialogo_escena:
+		push_warning("[NIVEL01] La escena de diálogo no usa DialogoComic.")
+		return false
+
+	dialogo_escena.velocidad_texto = velocidad
+	dialogo_escena.chars_por_sonido = chars_por_sonido
+	dialogo_escena.intervalo_min_sonido = intervalo_min_sonido
+	if audio_stream != null:
+		dialogo_escena.audio_stream = audio_stream
+		dialogo_escena.audio_pitch_scale = pitch_scale
+		dialogo_escena.audio_volume_db = volumen_db
+	add_child(dialogo_escena)
+
+	await dialogo_escena.continuado
+
+	if is_instance_valid(dialogo_escena):
+		dialogo_escena.queue_free()
+
+	return true
+
+func _process(_delta):
+	match estado_actual:
+		NivelEstado.NIVEL_0:
+			_monitorear_nivel_0()
+		NivelEstado.NIVEL_1:
+			_monitorear_nivel_1()
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NIVEL 0 — PACIFISTA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _iniciar_nivel_0():
+	estado_actual = NivelEstado.NIVEL_0
+
+	# UI mínimo (solo corazones)
+	await get_tree().process_frame
+	if game_ui and game_ui.has_method("set_modo_minimo"):
+		game_ui.set_modo_minimo(true)
+
+	# Arqueras aliadas visibles pero sin disparar (solo pose IDLE)
+	_set_aliadas_modo_pacifico()
+
+	# Spawnear 3 enemigos pacíficos tras aceptar: 1 Imp con estandarte + 2 GoblinGirl.
+	var escenas: Array[PackedScene] = [
+		escena_imp_estandarte,
+		wave_spawner.escena_goblin_girl,
+		wave_spawner.escena_goblin_girl,
+	]
+	enemigos_pacificos = wave_spawner.spawn_pacificos(escenas, velocidad_pacificos, offset_entre_pacificos)
+
+	# Asignar límite de parada escalonado: Imp en -5.0, arqueras en -4.8 y -4.6.
+	for i in range(enemigos_pacificos.size()):
+		var enemigo = enemigos_pacificos[i]
+		if is_instance_valid(enemigo):
+			enemigo.limite_pacifico_x = limite_fin_mapa_x + (i * retroceso_parada_arqueras)
+
+	# Conectar señal de daño pacífico
+	for enemigo in enemigos_pacificos:
+		if is_instance_valid(enemigo) and enemigo.has_signal("pacifico_danado"):
+			enemigo.pacifico_danado.connect(_on_pacifico_danado, CONNECT_ONE_SHOT)
+
+	# Guardar referencia al imp del estandarte
+	imp_estandarte = enemigos_pacificos[0]
+
+func _monitorear_nivel_0():
+	# Limpiar enemigos inválidos
+	enemigos_pacificos = enemigos_pacificos.filter(func(e): return is_instance_valid(e))
+
+	if enemigos_pacificos.is_empty():
+		return
+
+	# Verificar si todos se detuvieron en el borde
+	var todos_detenidos := true
+	for enemigo in enemigos_pacificos:
+		if not enemigo.pacifico_detenido:
+			todos_detenidos = false
+			break
+
+	if todos_detenidos:
+		_victoria_pacifista()
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TRANSICIÓN: PACIFISTA → COMBATE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _on_pacifico_danado():
+	if estado_actual != NivelEstado.NIVEL_0:
+		return
+	estado_actual = NivelEstado.TRANSICION
+
+	# Convertir pacíficos supervivientes en hostiles
+	var supervivientes := 0
+	for enemigo in enemigos_pacificos:
+		if is_instance_valid(enemigo) and enemigo.current_state != EnemyBase.State.DYING and enemigo.current_state != EnemyBase.State.DEAD:
+			enemigo.modo_pacifico = false
+			# Forzar que se detengan y empiecen a atacar
+			enemigo.target_walk_distance = enemigo.walked_distance
+			supervivientes += 1
+
+	# Música de batalla
+	AudioManager.play_music(2) # BGM_battle.mp3
+
+	# Restaurar UI completo
+	if game_ui and game_ui.has_method("set_modo_minimo"):
+		game_ui.set_modo_minimo(false)
+
+	# Activar arqueras aliadas
+	_set_aliadas_activas(true)
+
+	# Iniciar Nivel 1: oleada de 13 enemigos (los supervivientes cuentan)
+	_iniciar_nivel_1(supervivientes)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NIVEL 1 — COMBATE (13 enemigos: Imp + GoblinGirl)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
+	estado_actual = NivelEstado.NIVEL_1
+	
+	AudioManager.play_music(2) # BGM_battle.mp3
+	if game_ui and game_ui.has_method("set_modo_minimo"):
+		game_ui.set_modo_minimo(false)
+	_set_aliadas_activas(true)
+
+	# Los supervivientes ya están en active_goblins del spawner
+	# Configurar para spawnear los que faltan
+	var enemigos_a_spawnear = total_enemigos_nivel1 - supervivientes_pacificos
+
+	wave_spawner.enemigos_por_oleada = enemigos_a_spawnear
+	wave_spawner.probabilidad_canonero = 0.0
+	wave_spawner.probabilidad_imp = 0.333
+	wave_spawner.probabilidad_goblin_girl = 0.333
+	wave_spawner.probabilidad_igual = false
+	wave_spawner.forzar_tipo_enemigo = -1 # Los 3 habilitados
+
+
+	# Conectar señal de oleada completada
+	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
+		wave_spawner.oleada_completada.connect(_on_nivel1_completado)
+
+	# Iniciar el spawning
+	wave_spawner.current_wave = 0
+	wave_spawner.goblins_spawned_in_wave = 0
+	wave_spawner.is_wave_active = false
+	wave_spawner.wave_cooldown = 2.0
+
+func _monitorear_nivel_1():
+	# Verificar si todos los enemigos murieron (incluyendo supervivientes pacíficos)
+	wave_spawner.active_goblins = wave_spawner.active_goblins.filter(func(g): return is_instance_valid(g))
+
+	if wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada and wave_spawner.active_goblins.is_empty():
+		_on_nivel1_completado(1)
+
+func _on_nivel1_completado(_numero_oleada: int):
+	if estado_actual != NivelEstado.NIVEL_1:
+		return
+	estado_actual = NivelEstado.VICTORIA_NIVEL1
+
+	wave_spawner.detener_spawning()
+	print("[NIVEL02] ¡Nivel 2 completado! Mostrando victoria con botón continuar...")
+	_mostrar_victoria_con_continuar(tr("NIVEL_2_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Nivel 2 completado!")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VICTORIA PACIFISTA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _victoria_pacifista():
+	if estado_actual != NivelEstado.NIVEL_0:
+		return
+	estado_actual = NivelEstado.VICTORIA_PACIFISTA
+
+	wave_spawner.detener_spawning()
+
+	# Reproducir música de victoria (sin loop)
+	AudioManager.play_music(4, false) # VICTORY.mp3
+
+	# Mostrar diálogo tipo novela visual tras un delay
+	await get_tree().create_timer(delay_dialogo_pacifico).timeout
+	_mostrar_dialogo_pacifista()
+
+func _mostrar_dialogo_pacifista():
+	_set_juego_pausado_dialogo(true)
+	await _mostrar_dialogo_escena(
+		escena_dialogo_emisario_parte1,
+		velocidad_texto_novela,
+		4,
+		0.18,
+		null,
+		1.0,
+		-18.0
+	)
+
+	_mostrar_resultado_pacifista_pantalla_negra()
+
+func _mostrar_resultado_pacifista_pantalla_negra():
+	if not escena_resultado_pacifista:
+		push_warning("[NIVEL01] No se encontró la escena del resultado pacifista.")
+		_set_juego_pausado_dialogo(false)
+		return
+
+	var resultado_escena := escena_resultado_pacifista.instantiate() as ResultadoPacifista
+	if not resultado_escena:
+		push_warning("[NIVEL01] La escena del resultado pacifista no usa ResultadoPacifista.")
+		_set_juego_pausado_dialogo(false)
+		return
+
+	add_child(resultado_escena)
+	var opcion: String = await resultado_escena.opcion_elegida
+
+	if is_instance_valid(resultado_escena):
+		resultado_escena.queue_free()
+
+	_set_juego_pausado_dialogo(false)
+
+	if opcion == "reiniciar":
+		_reiniciar_nivel01_limpio()
+
+func _reiniciar_nivel01_limpio():
+	# Limpiar enemigos/proyectiles spawneados en root antes de recargar escena.
+	var grupos_a_limpiar: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
+	var nodos_unicos: Dictionary = {}
+
+	for grupo in grupos_a_limpiar:
+		for nodo in get_tree().get_nodes_in_group(grupo):
+			if is_instance_valid(nodo):
+				nodos_unicos[nodo.get_instance_id()] = nodo
+
+	for nodo in nodos_unicos.values():
+		if is_instance_valid(nodo):
+			nodo.queue_free()
+
+	# Esperar a que queue_free se aplique para evitar residuos entre recargas.
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL01.tscn")
+
+func _mostrar_texto_guerra():
+	var overlay = CanvasLayer.new()
+	overlay.layer = 200
+	overlay.name = "TextoGuerra"
+	add_child(overlay)
+
+	# Panel centrado
+	var panel = PanelContainer.new()
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.15, 0.02, 0.02, 0.9)
+	panel_style.border_color = Color(0.9, 0.2, 0.1)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(6)
+	panel_style.set_content_margin_all(20)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	panel.anchor_left = 0.15
+	panel.anchor_right = 0.85
+	panel.anchor_top = 0.35
+	panel.anchor_bottom = 0.55
+	panel.offset_left = 0
+	panel.offset_right = 0
+	panel.offset_top = 0
+	panel.offset_bottom = 0
+	overlay.add_child(panel)
+
+	var label = Label.new()
+	label.text = tr("TEXTO_GUERRA")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_color_override("font_color", Color(1, 0.3, 0.2))
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	panel.add_child(label)
+
+	# Auto-destruir después de 3 segundos
+	get_tree().create_timer(3.0).timeout.connect(func():
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+	)
+
+func _mostrar_victoria(mensaje: String):
+	var overlay = CanvasLayer.new()
+	overlay.layer = 200
+	add_child(overlay)
+
+	var fondo = ColorRect.new()
+	fondo.color = Color(0, 0, 0, 0.7)
+	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(fondo)
+
+	var label = Label.new()
+	label.text = mensaje
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	# Centrado horizontal, mitad de alto centrado vertical
+	label.anchor_left = 0.0
+	label.anchor_right = 1.0
+	label.anchor_top = 0.25
+	label.anchor_bottom = 0.75
+	label.offset_left = 0
+	label.offset_right = 0
+	label.offset_top = 0
+	label.offset_bottom = 0
+	overlay.add_child(label)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OLEADAS LIBRES (post Nivel 1)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _mostrar_victoria_con_continuar(mensaje: String):
+	var overlay = CanvasLayer.new()
+	overlay.layer = 200
+	overlay.name = "VictoriaContinuar"
+	add_child(overlay)
+
+	var fondo = ColorRect.new()
+	fondo.color = Color(0, 0, 0, 0.7)
+	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(fondo)
+
+	# Contenedor centrado
+	var center = VBoxContainer.new()
+	center.anchor_left = 0.2
+	center.anchor_right = 0.8
+	center.anchor_top = 0.3
+	center.anchor_bottom = 0.7
+	center.offset_left = 0
+	center.offset_right = 0
+	center.offset_top = 0
+	center.offset_bottom = 0
+	center.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_theme_constant_override("separation", 30)
+	overlay.add_child(center)
+
+	# Texto de victoria
+	var label = Label.new()
+	label.text = mensaje
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	center.add_child(label)
+
+	# Botón "Continuar"
+	var boton = Button.new()
+	boton.text = tr("BOTON_CONTINUAR")
+	boton.add_theme_font_size_override("font_size", 24)
+
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.12, 0.08, 0.05, 0.95)
+	btn_style.border_color = Color(0.85, 0.65, 0.2)
+	btn_style.set_border_width_all(2)
+	btn_style.set_corner_radius_all(6)
+	btn_style.set_content_margin_all(12)
+	boton.add_theme_stylebox_override("normal", btn_style)
+
+	var btn_hover = btn_style.duplicate()
+	btn_hover.bg_color = Color(0.2, 0.14, 0.08, 0.95)
+	boton.add_theme_stylebox_override("hover", btn_hover)
+
+	var btn_pressed = btn_style.duplicate()
+	btn_pressed.bg_color = Color(0.08, 0.05, 0.02, 0.95)
+	boton.add_theme_stylebox_override("pressed", btn_pressed)
+
+	boton.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	boton.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.6))
+	boton.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	center.add_child(boton)
+
+	boton.pressed.connect(func():
+		overlay.queue_free()
+		_iniciar_oleadas_libres()
+	)
+
+func _iniciar_oleadas_libres():
+	estado_actual = NivelEstado.OLEADAS_LIBRES
+	print("[NIVEL01] Oleadas libres iniciadas — enemigos al azar")
+
+	# Restaurar goblin base para que aparezcan los 3 tipos
+	wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
+
+	# Probabilidad igual: 33% cada tipo
+	wave_spawner.probabilidad_igual = true
+	wave_spawner.forzar_tipo_enemigo = -1
+	wave_spawner.enemigos_por_oleada = 8
+	wave_spawner.intervalo_aparicion = 4.0
+
+	# Reiniciar wave y arrancar
+	wave_spawner.current_wave = 0
+	wave_spawner.goblins_spawned_in_wave = 0
+	wave_spawner.is_wave_active = false
+	wave_spawner.wave_cooldown = 1.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UTILIDADES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _set_aliadas_activas(activas: bool):
+	for ally in get_tree().get_nodes_in_group("allies"):
+		if ally is AllyArcher:
+			ally.visible = activas
+			ally.set_process(activas)
+			ally.set_physics_process(activas)
+			var hitbox = ally.get("hitbox_body")
+			if hitbox and is_instance_valid(hitbox):
+				hitbox.collision_layer = 2 if activas else 0
+
+## Arqueras visibles en pose IDLE pero sin disparar
+func _set_aliadas_modo_pacifico():
+	for ally in get_tree().get_nodes_in_group("allies"):
+		if ally is AllyArcher:
+			ally.visible = true
+			ally.set_process(false) # No disparan
+			ally.set_physics_process(false)
+			var hitbox = ally.get("hitbox_body")
+			if hitbox and is_instance_valid(hitbox):
+				hitbox.collision_layer = 0 # Sin colisión
+
+func _set_movimiento_jugador_bloqueado(bloqueado: bool):
+	for jugador in get_tree().get_nodes_in_group("player"):
+		if not is_instance_valid(jugador):
+			continue
+
+		var id_jugador: int = jugador.get_instance_id()
+		if bloqueado:
+			if not estados_proceso_jugador.has(id_jugador):
+				estados_proceso_jugador[id_jugador] = {
+					"process": jugador.is_processing(),
+					"physics": jugador.is_physics_processing()
+				}
+			jugador.set_process(false)
+			jugador.set_physics_process(false)
+		else:
+			var estado = estados_proceso_jugador.get(id_jugador, {"process": true, "physics": true})
+			jugador.set_process(bool(estado["process"]))
+			jugador.set_physics_process(bool(estado["physics"]))
+
+	if not bloqueado:
+		estados_proceso_jugador.clear()
+
+func _set_juego_pausado_dialogo(bloqueado: bool):
+	_set_movimiento_jugador_bloqueado(bloqueado)
+
+	if not is_instance_valid(wave_spawner):
+		return
+
+	var id_spawner: int = wave_spawner.get_instance_id()
+	if bloqueado:
+		if not estado_spawner_dialogo.has(id_spawner):
+			estado_spawner_dialogo[id_spawner] = {
+				"process": wave_spawner.is_processing(),
+				"physics": wave_spawner.is_physics_processing()
+			}
+		wave_spawner.set_process(false)
+		wave_spawner.set_physics_process(false)
+	else:
+		var estado_spawner = estado_spawner_dialogo.get(id_spawner, {"process": true, "physics": true})
+		wave_spawner.set_process(bool(estado_spawner["process"]))
+		wave_spawner.set_physics_process(bool(estado_spawner["physics"]))
+		estado_spawner_dialogo.clear()
+
+	if bloqueado:
+		var nodos_unicos: Dictionary = {}
+		var grupos_a_pausar: Array[String] = ["enemies", "enemy_projectiles", "allies", "shield_imps"]
+
+		for grupo in grupos_a_pausar:
+			for nodo in get_tree().get_nodes_in_group(grupo):
+				if is_instance_valid(nodo):
+					nodos_unicos[nodo.get_instance_id()] = nodo
+
+		for id_nodo in nodos_unicos.keys():
+			var nodo = nodos_unicos[id_nodo]
+			if not estados_proceso_dialogo.has(id_nodo):
+				estados_proceso_dialogo[id_nodo] = {
+					"process": nodo.is_processing(),
+					"physics": nodo.is_physics_processing()
+				}
+			nodo.set_process(false)
+			nodo.set_physics_process(false)
+	else:
+		for id_nodo in estados_proceso_dialogo.keys():
+			var nodo = instance_from_id(id_nodo)
+			if is_instance_valid(nodo):
+				var estado_nodo = estados_proceso_dialogo[id_nodo]
+				nodo.set_process(bool(estado_nodo["process"]))
+				nodo.set_physics_process(bool(estado_nodo["physics"]))
+
+		estados_proceso_dialogo.clear()

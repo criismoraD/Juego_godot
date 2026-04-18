@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dgatsttvqixnc" path="res://Scenes/Characters/Goblin.tscn" id="6_goblin"]
 [ext_resource type="PackedScene" uid="uid://db57wrw5vlbsc" path="res://Scenes/Characters/ImpEnemy.tscn" id="7_i7crs"]
 [ext_resource type="PackedScene" uid="uid://cr61kgfu7qhp0" path="res://Scenes/Environment/ESCALERA.tscn" id="7_ladder"]
+[ext_resource type="PackedScene" uid="uid://d3x1a2b3c4d5e" path="res://Scenes/Characters/Canonero.tscn" id="8_koe3n"]
 [ext_resource type="PackedScene" uid="uid://dcqn4obnv8xjm" path="res://Scenes/Characters/ImpShieldGirl.tscn" id="8_qcvbp"]
 [ext_resource type="PackedScene" uid="uid://c7a4c82odgcle" path="res://Scenes/Environment/BarreraLimite.tscn" id="9_8uf3n"]
 [ext_resource type="PackedScene" uid="uid://d3e4f5g6h7i8j" path="res://Scenes/Environment/Escudo.tscn" id="10_j54d2"]
@@ -24,6 +25,7 @@
 [ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Assets/Environment/Pilar/Pilar.glb" id="25_koe3n"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Assets/Environment/SpikeTrap/PINCHO.glb" id="25_qcvbp"]
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://Assets/CAPA1_V.png" id="26_cx8r4"]
+[ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Assets/PISO.glb" id="26_koe3n"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -160,6 +162,7 @@ script = ExtResource("5_spawner")
 escena_goblin = ExtResource("6_goblin")
 escena_goblin_girl = ExtResource("6_an7ty")
 escena_imp = ExtResource("7_i7crs")
+escena_canonero = ExtResource("8_koe3n")
 intervalo_aparicion = 3.0
 goblins_por_oleada = 50
 probabilidad_goblin_girl = 0.0
@@ -410,9 +413,21 @@ light_cull_mask = 3
 
 [node name="CAPA001" type="Sprite3D" parent="." unique_id=712228843]
 transform = Transform3D(0.33966187, 0, 0, 0, 0.44676116, 0, 0, 0, 0.267, -2.9680815, 2.7402468, 24.064978)
-visible = false
+layers = 7
 modulate = Color(1, 1, 1, 0.15294118)
 texture = ExtResource("26_cx8r4")
+
+[node name="PISO2" parent="." unique_id=835517437 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, -2.7538373, -0.8408709, -0.8788506)
+
+[node name="PISO3" parent="." unique_id=227306970 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 2.5800648, -0.8408709, -0.8788506)
+
+[node name="PISO4" parent="." unique_id=1396447181 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 8.0085745, -0.8408709, -0.8788506)
+
+[node name="PISO5" parent="." unique_id=842856292 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 8.905656, -9.03597, -0.8408709, -1.7162111)
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

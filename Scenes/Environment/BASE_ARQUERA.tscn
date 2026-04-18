@@ -25,7 +25,7 @@ subdivide_width = 50
 subdivide_height = 50
 subdivide_depth = 50
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_3gp70"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_0t1ua"]
 size = Vector3(5, 2, 4)
 
 [node name="BASE_ARQUERA" type="Node3D" unique_id=298691095]
@@ -33,6 +33,7 @@ script = ExtResource("1_script")
 mesh_size = Vector3(5, 2, 4)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=878176244]
+visible = false
 layers = 2
 instance_shader_parameters/bevel_radius = 0.0
 instance_shader_parameters/blend_sharpness = 5.0
@@ -52,4 +53,4 @@ mesh = SubResource("BoxMesh_wogvb")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1081928330]
 transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 0, 0, 0)
-shape = SubResource("BoxShape3D_3gp70")
+shape = SubResource("BoxShape3D_0t1ua")

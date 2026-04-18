@@ -6,12 +6,14 @@ class_name WaveSpawner
 @export var escena_goblin: PackedScene # Escena del goblin a instanciar
 @export var escena_goblin_girl: PackedScene # Escena de la goblin girl
 @export var escena_imp: PackedScene # Escena del imp enemigo
+@export var escena_canonero: PackedScene # Nueva escena del cañonero
 @export var intervalo_aparicion: float = 5.0 # Segundos entre spawns (más lento)
-@export var goblins_por_oleada: int = 6 # Cantidad de goblins por oleada
+@export var enemigos_por_oleada: int = 6 # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0 # Descanso entre oleadas
 @export var altura_spawn: float = 0.0 # Altura extra para spawnar sobre el suelo
 @export_range(0.0, 1.0, 0.05) var probabilidad_goblin_girl: float = 0.5 # Probabilidad de que aparezca una Goblin Girl
 @export_range(0.0, 1.0, 0.05) var probabilidad_imp: float = 0.2 # Probabilidad de que aparezca un Imp
+@export_range(0.0, 1.0, 0.05) var probabilidad_canonero: float = 0.15 # Probabilidad del canonero
 @export var probabilidad_igual: bool = false ## Todos los enemigos tienen la misma probabilidad (33.3%)
 
 @export_category("Imp Escudo")
@@ -21,7 +23,7 @@ class_name WaveSpawner
 @export var intervalo_check_escudo: float = 8.0 ## Segundos entre checks de spawn de escudo
 
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1 ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp
+var forzar_tipo_enemigo: int = -1 ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
@@ -44,6 +46,8 @@ func _ready():
 		escena_goblin_girl = preload("res://Scenes/Characters/GoblinGirl.tscn")
 	if not escena_imp:
 		escena_imp = preload("res://Scenes/Characters/ImpEnemy.tscn")
+	if not escena_canonero:
+		escena_canonero = preload("res://Scenes/Characters/Canonero.tscn")
 	
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Scenes/Characters/ImpShieldGirl.tscn")
@@ -58,7 +62,7 @@ func _process(delta):
 			_start_wave()
 	else:
 		spawn_timer -= delta
-		if spawn_timer <= 0 and goblins_spawned_in_wave < goblins_por_oleada:
+		if spawn_timer <= 0 and goblins_spawned_in_wave < enemigos_por_oleada:
 			_spawn_goblin()
 			spawn_timer = intervalo_aparicion
 		
@@ -87,21 +91,27 @@ func _spawn_goblin():
 		scene_to_spawn = escena_goblin_girl
 	elif forzar_tipo_enemigo == 2:
 		scene_to_spawn = escena_imp
+	elif forzar_tipo_enemigo == 3:
+		scene_to_spawn = escena_canonero
 	elif probabilidad_igual:
-		# Probabilidad igual: 33.3% cada uno
+		# Probabilidad igual: 25% cada tipo
 		var roll = randf()
-		if roll < 0.333:
+		if roll < 0.25:
+			scene_to_spawn = escena_canonero
+		elif roll < 0.50:
 			scene_to_spawn = escena_imp
-		elif roll < 0.666:
+		elif roll < 0.75:
 			scene_to_spawn = escena_goblin_girl
 		else:
 			scene_to_spawn = escena_goblin
 	else:
 		# Probabilidades configuradas
 		var roll = randf()
-		if roll < probabilidad_imp and escena_imp:
+		if roll < probabilidad_canonero and escena_canonero:
+			scene_to_spawn = escena_canonero
+		elif roll < probabilidad_canonero + probabilidad_imp and escena_imp:
 			scene_to_spawn = escena_imp
-		elif roll < probabilidad_imp + probabilidad_goblin_girl and escena_goblin_girl:
+		elif roll < probabilidad_canonero + probabilidad_imp + probabilidad_goblin_girl and escena_goblin_girl:
 			scene_to_spawn = escena_goblin_girl
 		else:
 			scene_to_spawn = escena_goblin
@@ -138,7 +148,7 @@ func _on_goblin_died(goblin):
 
 func _check_wave_complete():
 	# La oleada termina cuando todos los goblins spawnearon Y todos murieron
-	if goblins_spawned_in_wave >= goblins_por_oleada:
+	if goblins_spawned_in_wave >= enemigos_por_oleada:
 		# Limpiar referencias inválidas
 		active_goblins = active_goblins.filter(func(g): return is_instance_valid(g))
 		
@@ -275,7 +285,7 @@ func spawn_pacificos(escenas: Array[PackedScene], velocidad_uniforme: float = 0.
 
 ## Configura el spawner para una oleada custom y la inicia.
 func iniciar_oleada_custom(total_enemigos: int, prob_imp: float = 0.5, prob_girl: float = 0.5, _prob_goblin: float = 0.0):
-	goblins_por_oleada = total_enemigos
+	enemigos_por_oleada = total_enemigos
 	probabilidad_imp = prob_imp
 	probabilidad_goblin_girl = prob_girl
 	probabilidad_igual = false

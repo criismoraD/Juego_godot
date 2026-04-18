@@ -1,9 +1,9 @@
 extends "res://addons/gut/test.gd"
 
-var ImpTridentProjectile = preload("res://Scripts/Projectiles/ImpTrident.gd")
+var imp_trident_script = preload("res://Scripts/Projectiles/ImpTrident.gd")
 
 func test_create_material():
-	var trident = ImpTridentProjectile.new()
+	var trident = imp_trident_script.new()
 	# Call the method manually since it's called in _ready
 	trident._create_material()
 

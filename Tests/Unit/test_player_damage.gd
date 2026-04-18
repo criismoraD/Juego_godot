@@ -9,6 +9,8 @@ class MockAudioManager extends Node:
 	func stop_bow_tension(): pass
 	func reset_bow_hold(): pass
 
+var _mock_audio_created: bool = false
+
 func before_each():
 	# Crear instancia del jugador
 	_player = PlayerScript.new()
@@ -18,6 +20,7 @@ func before_each():
 		var mock_audio = MockAudioManager.new()
 		mock_audio.name = "AudioManager"
 		get_tree().root.add_child(mock_audio)
+		_mock_audio_created = true
 
 	# Añadir al tree para que _ready funcione parcialmente (aunque fallará AnimationTree)
 	# Pero para tests de lógica pura de recibir_dano, nos interesa evitar crashes
@@ -25,10 +28,11 @@ func before_each():
 
 func after_each():
 	_player.free()
-	if get_tree().root.has_node("AudioManager"):
+	if _mock_audio_created and get_tree().root.has_node("AudioManager"):
 		var mock_audio = get_tree().root.get_node("AudioManager")
 		get_tree().root.remove_child(mock_audio)
 		mock_audio.free()
+		_mock_audio_created = false
 
 func test_recibir_dano_reduces_health():
 	var initial_health = _player.health
