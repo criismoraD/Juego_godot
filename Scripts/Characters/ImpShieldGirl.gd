@@ -66,6 +66,29 @@ var dissolve_materials: Array = []
 var hit_anim_timer: float = 0.0 ## Timer para volver de SHIELD_HIT a DEFENDING
 var posicion_libre_destino: float = -1.0 ## Posición X destino cuando no hay enemigo
 
+static var _cached_wave_spawner: Node = null
+
+func _get_cached_wave_spawner() -> Node:
+	if is_instance_valid(_cached_wave_spawner):
+		return _cached_wave_spawner
+
+	if get_tree() == null:
+		return null
+
+	var wave_spawners = get_tree().get_nodes_in_group("wave_spawners")
+	if wave_spawners.size() > 0:
+		_cached_wave_spawner = wave_spawners[0]
+		return _cached_wave_spawner
+
+	var scene_root = get_tree().current_scene
+	if scene_root == null:
+		scene_root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+
+	var wave_spawner = scene_root.find_child("WaveSpawner", true, false)
+	if wave_spawner:
+		_cached_wave_spawner = wave_spawner
+	return _cached_wave_spawner
+
 # === SEÑALES ===
 signal died
 
@@ -79,14 +102,14 @@ func _ready():
 	escudo_vida_actual = escudo_vida
 	health = vida_maxima
 	spawn_position = global_position
-	
+
 	_setup_animation_player()
 	_buscar_escudo()
 	_aplicar_rotacion_modelo()
-	
+
 	# Iniciar caminando
 	_play_animation(anim_caminar)
-	
+
 	# Buscar enemigo a proteger después de un frame (para que todos estén listos)
 	call_deferred("_buscar_enemigo_a_proteger")
 
@@ -105,7 +128,7 @@ func _setup_animation_player():
 	var trees = find_children("*", "AnimationTree", true, false)
 	for tree in trees:
 		tree.active = false
-	
+
 	# Buscar AnimationPlayer con animaciones del personaje
 	var all_players = find_children("*", "AnimationPlayer", true, false)
 	for player in all_players:
@@ -116,11 +139,11 @@ func _setup_animation_player():
 				break
 		if anim_player:
 			break
-	
+
 	if not anim_player:
 		push_warning("[ImpShieldGirl] No se encontró AnimationPlayer!")
 		return
-	
+
 	# === DEBUG: Listar todas las animaciones ===
 	print("[ImpShieldGirl] ═══ ANIMACIONES ENCONTRADAS ═══")
 	for anim_name in anim_player.get_animation_list():
@@ -129,7 +152,7 @@ func _setup_animation_player():
 		var loop_txt = "LOOP" if anim and anim.loop_mode != Animation.LOOP_NONE else "ONCE"
 		print("  → ", anim_name, " (", "%.2f" % dur, "s, ", loop_txt, ")")
 	print("[ImpShieldGirl] ═══════════════════════════════")
-	
+
 	# Configurar loops en CAMINAR, IDLE, HUIDA
 	for anim_name in anim_player.get_animation_list():
 		if "CAMINAR" in anim_name or "IDLE" in anim_name or "HUIDA" in anim_name:
@@ -148,10 +171,16 @@ func _buscar_escudo():
 				break
 
 func _buscar_enemigo_a_proteger():
-	var enemies = get_tree().get_nodes_in_group("enemies")
+	var enemies = []
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
+	else:
+		enemies = get_tree().get_nodes_in_group("enemies")
+
 	var mejor_enemigo: Node3D = null
 	var menor_x: float = INF
-	
+
 	for enemy in enemies:
 		if enemy == self:
 			continue
@@ -159,19 +188,19 @@ func _buscar_enemigo_a_proteger():
 			continue
 		if enemy is ImpShieldGirl:
 			continue # No proteger a otras ImpShieldGirl
-		
+
 		# Solo proteger enemigos que estén en SHOOTING (parados/disparando)
 		if enemy is EnemyBase:
 			if enemy.current_state != EnemyBase.State.SHOOTING:
 				continue
 			if enemy.current_state == EnemyBase.State.DYING or enemy.current_state == EnemyBase.State.DEAD:
 				continue
-		
+
 		# Elegir el enemigo más a la izquierda (más cercano al jugador)
 		if enemy.global_position.x < menor_x:
 			menor_x = enemy.global_position.x
 			mejor_enemigo = enemy
-	
+
 	if mejor_enemigo:
 		enemigo_protegido = mejor_enemigo
 		posicion_libre_destino = -1.0 # Reset posición libre
@@ -186,7 +215,7 @@ func _physics_process(delta):
 	# Gravedad
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
-	
+
 	match current_state:
 		State.WALKING:
 			_process_walking(delta)
@@ -202,7 +231,7 @@ func _physics_process(delta):
 			velocity.x = 0
 		State.DEAD:
 			pass
-	
+
 	move_and_slide()
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -218,7 +247,7 @@ func _process_walking(delta):
 			if posicion_libre_destino < 0:
 				posicion_libre_destino = randf_range(rango_posicion_libre.x, rango_posicion_libre.y)
 				print("[ImpShieldGirl] Sin enemigo → posición libre X=", "%.1f" % posicion_libre_destino)
-			
+
 			var dist_to_free = global_position.x - posicion_libre_destino
 			if dist_to_free > 0.1:
 				velocity.x = -velocidad_caminar
@@ -228,18 +257,18 @@ func _process_walking(delta):
 			return
 		else:
 			posicion_libre_destino = -1.0 # Encontramos enemigo, reset
-	
+
 	# Verificar que el enemigo siga en SHOOTING (no haya muerto o se haya movido)
 	if enemigo_protegido is EnemyBase and enemigo_protegido.current_state != EnemyBase.State.SHOOTING:
 		# Enemigo murió o cambió, nos plantamos aquí
 		velocity.x = 0
 		_cambiar_estado(State.DEFENDING)
 		return
-	
+
 	# Calcular posición objetivo: a la izquierda del enemigo protegido
 	var target_x = enemigo_protegido.global_position.x - distancia_proteccion
 	var dist_to_target = global_position.x - target_x
-	
+
 	if dist_to_target > 0.1:
 		# Todavía no llegamos, seguir caminando
 		velocity.x = -velocidad_caminar
@@ -263,7 +292,7 @@ func _process_escaping(_delta):
 
 func _process_fleeing(_delta):
 	velocity.x = velocidad_huida # Huir hacia la derecha (X positivo)
-	
+
 	# Destruirse si sale de pantalla
 	if global_position.x > spawn_position.x + distancia_fuera_pantalla:
 		_limpiar_y_destruir()
@@ -299,12 +328,12 @@ func _cambiar_estado(nuevo: State):
 func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
-	
+
 	if escudo_vida_actual > 0:
 		# El escudo absorbe el daño
 		escudo_vida_actual -= 1
 		_flash_escudo()
-		
+
 		if escudo_vida_actual > 0:
 			_cambiar_estado(State.SHIELD_HIT)
 		else:
@@ -321,25 +350,25 @@ func _flash_escudo():
 	## Flash blanco rápido en el escudo al recibir impacto
 	if not escudo_node or not is_instance_valid(escudo_node):
 		return
-	
+
 	var meshes = []
 	if escudo_node is MeshInstance3D:
 		meshes.append(escudo_node)
 	else:
 		meshes = escudo_node.find_children("*", "MeshInstance3D", true, false)
-	
+
 	var flash_mat = StandardMaterial3D.new()
 	flash_mat.albedo_color = Color(1, 1, 1)
 	flash_mat.emission_enabled = true
 	flash_mat.emission = Color(1, 1, 1)
 	flash_mat.emission_energy_multiplier = 3.0
-	
+
 	var originals: Array = []
 	for mesh in meshes:
 		if is_instance_valid(mesh):
 			originals.append({"mesh": mesh, "mat": mesh.material_override})
 			mesh.material_override = flash_mat
-	
+
 	get_tree().create_timer(0.08).timeout.connect(func():
 		for item in originals:
 			if is_instance_valid(item["mesh"]):
@@ -354,13 +383,13 @@ func _on_dying():
 	collision_layer = 0
 	collision_mask = 0
 	set_physics_process(false)
-	
+
 	AudioManager.play_sfx("shield_imp_death")
-	
+
 	# Elegir muerte aleatoria de los exports
 	var chosen = anim_muertes[randi() % anim_muertes.size()]
 	_play_animation(chosen)
-	
+
 	var dur = _get_animation_duration(chosen)
 	get_tree().create_timer(dur + 0.5).timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
@@ -371,7 +400,7 @@ func _start_dissolve():
 	if is_dissolving:
 		return
 	is_dissolving = true
-	
+
 	var meshes = find_children("*", "MeshInstance3D", true, false)
 	for mesh in meshes:
 		if not is_instance_valid(mesh):
@@ -383,7 +412,7 @@ func _start_dissolve():
 		mat.set_shader_parameter("glow_intensity", 3.0)
 		mat.set_shader_parameter("edge_thickness", 0.05)
 		mat.set_shader_parameter("noise_scale", 20.0)
-		
+
 		var orig = mesh.material_override
 		if orig == null and mesh.mesh:
 			orig = mesh.mesh.surface_get_material(0)
@@ -393,10 +422,10 @@ func _start_dissolve():
 				mat.set_shader_parameter("albedo_texture", tex)
 			var col = orig.albedo_color
 			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
-		
+
 		mesh.material_override = mat
 		dissolve_materials.append({"mesh": mesh, "material": mat})
-	
+
 	var tween = create_tween()
 	tween.tween_method(_update_dissolve, 0.0, 1.0, duracion_disolucion)
 	tween.tween_callback(_finish_dissolve)
@@ -428,23 +457,23 @@ func _limpiar_y_destruir():
 func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float = 1.0):
 	if not anim_player:
 		return
-	
+
 	# Intentar con diferentes prefijos (por compatibilidad con distintos formatos de .glb)
 	var possible_names = [anim_name, "Armature|" + anim_name, "Armature|Armature|" + anim_name]
 	for possible_anim in possible_names:
 		if anim_player.has_animation(possible_anim):
 			anim_player.play(possible_anim, custom_blend, speed)
 			return
-	
+
 	push_warning("[ImpShieldGirl] Animación no encontrada: " + anim_name)
 
 func _get_animation_duration(anim_name: String) -> float:
 	if not anim_player:
 		return 2.0
-	
+
 	var possible_names = [anim_name, "Armature|" + anim_name, "Armature|Armature|" + anim_name]
 	for possible_anim in possible_names:
 		if anim_player.has_animation(possible_anim):
 			return anim_player.get_animation(possible_anim).length
-	
+
 	return 2.0

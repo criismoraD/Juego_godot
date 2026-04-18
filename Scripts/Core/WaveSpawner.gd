@@ -48,10 +48,10 @@ func _ready():
 		escena_imp = preload("res://Scenes/Characters/ImpEnemy.tscn")
 	if not escena_canonero:
 		escena_canonero = preload("res://Scenes/Characters/Canonero.tscn")
-	
+
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Scenes/Characters/ImpShieldGirl.tscn")
-	
+
 	# Iniciar primera oleada después de un delay
 	wave_cooldown = 2.0
 
@@ -65,10 +65,10 @@ func _process(delta):
 		if spawn_timer <= 0 and goblins_spawned_in_wave < enemigos_por_oleada:
 			_spawn_goblin()
 			spawn_timer = intervalo_aparicion
-		
+
 		# Verificar si la oleada terminó
 		_check_wave_complete()
-	
+
 	# Check de spawn de ImpShieldGirl (independiente de oleadas)
 	_check_shield_imp_spawn(delta)
 
@@ -77,13 +77,13 @@ func _start_wave():
 	goblins_spawned_in_wave = 0
 	is_wave_active = true
 	spawn_timer = 0.0 # Spawn inmediato al iniciar oleada
-	
+
 	oleada_iniciada.emit(current_wave)
 
 func _spawn_goblin():
 	# Elegir qué tipo de enemigo spawnear
 	var scene_to_spawn: PackedScene
-	
+
 	# Modo forzado: solo un tipo de enemigo
 	if forzar_tipo_enemigo == 0:
 		scene_to_spawn = escena_goblin
@@ -115,31 +115,31 @@ func _spawn_goblin():
 			scene_to_spawn = escena_goblin_girl
 		else:
 			scene_to_spawn = escena_goblin
-	
+
 	if not scene_to_spawn:
 		push_error("[WaveSpawner] No scene to spawn!")
 		return
-	
+
 	var goblin = scene_to_spawn.instantiate()
-	
+
 	# Posicionar en el punto de spawn (este nodo)
 	var spawn_pos = global_position
 	spawn_pos.y += altura_spawn
-	
+
 	# Añadir variación vertical aleatoria
 	spawn_pos.y += randf_range(-0.2, 0.2)
-	
+
 	# Añadir al mundo
 	get_tree().root.add_child(goblin)
 	goblin.global_position = spawn_pos
-	
+
 	# Conectar señal de muerte
 	if goblin.has_signal("died"):
 		goblin.died.connect(_on_goblin_died.bind(goblin))
-	
+
 	active_goblins.append(goblin)
 	goblins_spawned_in_wave += 1
-	
+
 	goblin_spawneado.emit(goblin)
 
 func _on_goblin_died(goblin):
@@ -151,7 +151,7 @@ func _check_wave_complete():
 	if goblins_spawned_in_wave >= enemigos_por_oleada:
 		# Limpiar referencias inválidas
 		active_goblins = active_goblins.filter(func(g): return is_instance_valid(g))
-		
+
 		if active_goblins.is_empty():
 			is_wave_active = false
 			wave_cooldown = tiempo_entre_oleadas
@@ -161,7 +161,7 @@ func _check_wave_complete():
 
 func iniciar_spawning():
 	wave_cooldown = 0.5
-	
+
 func toggle_pause_spawning():
 	if is_wave_active:
 		is_wave_active = false
@@ -198,18 +198,18 @@ func _check_shield_imp_spawn(delta):
 	if shield_spawn_timer > 0:
 		return
 	shield_spawn_timer = intervalo_check_escudo
-	
+
 	# Limpiar referencias inválidas
 	shield_imps_activos = shield_imps_activos.filter(func(s): return is_instance_valid(s))
-	
+
 	# Verificar condiciones
 	if shield_imps_activos.size() >= max_imp_escudo_activos:
 		return
-	
+
 	var enemigos_vivos = obtener_goblins_activos()
 	if enemigos_vivos < enemigos_minimos_para_escudo:
 		return
-	
+
 	# Verificar que hay al menos 1 enemigo en SHOOTING (parado)
 	var hay_enemigo_shooting = false
 	for enemy in active_goblins:
@@ -219,29 +219,29 @@ func _check_shield_imp_spawn(delta):
 				break
 	if not hay_enemigo_shooting:
 		return
-	
+
 	if not escena_imp_escudo:
 		return
-	
+
 	_spawn_shield_imp()
 
 func _spawn_shield_imp():
 	if not escena_imp_escudo:
 		return
-	
+
 	var shield_imp = escena_imp_escudo.instantiate()
-	
+
 	# Posicionar en el punto de spawn
 	var spawn_pos = global_position
 	spawn_pos.y += altura_spawn
-	
+
 	get_tree().root.add_child(shield_imp)
 	shield_imp.global_position = spawn_pos
-	
+
 	# Conectar señal de muerte
 	if shield_imp.has_signal("died"):
 		shield_imp.died.connect(_on_shield_imp_died.bind(shield_imp))
-	
+
 	shield_imps_activos.append(shield_imp)
 
 func _on_shield_imp_died(shield_imp):

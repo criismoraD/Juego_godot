@@ -96,22 +96,22 @@ const OUTLINE_WIDTH_RUNTIME := 20.0
 func _ready():
 	layer = 100
 	outlines_enabled = true
-	
+
 	# Buscar al player
 	await get_tree().process_frame
 	_find_player()
-	
+
 	# Buscar WorldEnvironment
 	_find_world_environment()
 	_find_capa001()
-	
+
 	# Escanear materiales con outline
 	_scan_outline_materials()
-	
+
 	# Crear la UI
 	_create_ui()
 	_aplicar_toggle_outline_global()
-	
+
 	# Buscar WaveSpawner
 	var wave_spawners = get_tree().get_nodes_in_group("wave_spawners")
 	if wave_spawners.size() > 0:
@@ -121,11 +121,11 @@ func _ready():
 	else:
 		var scene_root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
 		wave_spawner = scene_root.find_child("WaveSpawner", true, false)
-	
+
 	# Guardar posiciones originales de escudos
 	_guardar_posiciones_escudos()
 	_guardar_plantillas_aliadas()
-	
+
 	# Conectar señales del player
 	if player:
 		if player.has_signal("health_changed"):
@@ -152,10 +152,10 @@ func _find_world_environment():
 	var root_node = _get_scene_root()
 	# Buscar el WorldEnvironment en la escena
 	world_environment = root_node.find_child("WorldEnvironment", true, false)
-	
+
 	# Buscar plano de niebla
 	fog_plane = root_node.find_child("FogPlane", true, false)
-	
+
 	# Obtener el material del fog plane para modificar fog_density
 	if fog_plane and fog_plane is MeshInstance3D:
 		fog_material = fog_plane.get_surface_override_material(0)
@@ -182,7 +182,7 @@ func _scan_outline_materials():
 		"res://Assets/Environment/SpikeTrap/MAT_spike_trap.tres",
 		"res://Assets/Weapons/PlayerBow/Recurve Bow 2.tres"
 	]
-	
+
 	for path in material_paths:
 		if ResourceLoader.exists(path):
 			var mat = load(path)
@@ -201,9 +201,9 @@ func _create_ui():
 	health_container.position = Vector2(10, 10)
 	health_container.add_theme_constant_override("separation", 5)
 	add_child(health_container)
-	
+
 	_update_health_ui()
-	
+
 	# ═══════════════════════════════════════════════════════════════════════════
 	# PROGRESO DE OLEADA
 	# ═══════════════════════════════════════════════════════════════════════════
@@ -213,7 +213,7 @@ func _create_ui():
 	wave_container.offset_top = 20
 	wave_container.visible = false
 	add_child(wave_container)
-	
+
 	wave_progress_label = Label.new()
 	wave_progress_label.text = "Oleada en progreso..."
 	wave_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -224,7 +224,7 @@ func _create_ui():
 	label_outline.font_size = 20
 	wave_progress_label.label_settings = label_outline
 	wave_container.add_child(wave_progress_label)
-	
+
 	wave_progress = ProgressBar.new()
 	wave_progress.custom_minimum_size = Vector2(400, 20)
 	wave_progress.show_percentage = false
@@ -239,7 +239,7 @@ func _create_ui():
 	wave_progress.add_theme_stylebox_override("background", bg_style)
 	wave_progress.add_theme_stylebox_override("fill", fg_style)
 	wave_container.add_child(wave_progress)
-	
+
 	# ═══════════════════════════════════════════════════════════════════════════
 	# BOTÓN TOGGLE UI (ESQUINA SUPERIOR DERECHA)
 	# ═══════════════════════════════════════════════════════════════════════════
@@ -256,7 +256,7 @@ func _create_ui():
 	toggle_ui_btn.pressed.connect(_toggle_bottom_panel)
 	_style_button(toggle_ui_btn, Color(0.3, 0.3, 0.4))
 	add_child(toggle_ui_btn)
-	
+
 	# ═══════════════════════════════════════════════════════════════════════════
 	# PANEL INFERIOR - CONTROLES (2 FILAS)
 	# ═══════════════════════════════════════════════════════════════════════════
@@ -268,7 +268,7 @@ func _create_ui():
 	bottom_panel.offset_top = -100
 	bottom_panel.offset_bottom = -5
 	add_child(bottom_panel)
-	
+
 	var vbox_rows = VBoxContainer.new()
 	vbox_rows.name = "RowsContainer"
 	vbox_rows.add_theme_constant_override("separation", 4)
@@ -276,14 +276,14 @@ func _create_ui():
 	vbox_rows.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	vbox_rows.grow_vertical = Control.GROW_DIRECTION_BOTH
 	bottom_panel.add_child(vbox_rows)
-	
+
 	# ═══════════════ FILA 1: Controles principales ═══════════════
 	var hbox = HBoxContainer.new()
 	hbox.name = "Row1"
 	hbox.add_theme_constant_override("separation", 6)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox_rows.add_child(hbox)
-	
+
 	# --- PAUSA ---
 	pause_btn = Button.new()
 	pause_btn.text = "⏸️ PAUSA"
@@ -291,7 +291,7 @@ func _create_ui():
 	pause_btn.pressed.connect(_toggle_pause)
 	_style_button(pause_btn, Color(0.5, 0.3, 0.6))
 	hbox.add_child(pause_btn)
-	
+
 	# --- GOD MODE ---
 	god_mode_btn = Button.new()
 	god_mode_btn.text = "GOD: OFF"
@@ -299,12 +299,12 @@ func _create_ui():
 	god_mode_btn.pressed.connect(_toggle_god_mode)
 	_style_button(god_mode_btn, Color(0.2, 0.4, 0.8))
 	hbox.add_child(god_mode_btn)
-	
+
 	# Actualizar estado inicial
 	if player and player.get("modo_dios"):
 		god_mode_btn.text = "GOD: ON"
 		_style_button(god_mode_btn, Color(0.8, 0.6, 0.1))
-	
+
 	# --- REINICIAR ---
 	restart_btn = Button.new()
 	restart_btn.text = "🔄 REINICIAR"
@@ -320,48 +320,48 @@ func _create_ui():
 	quit_btn.pressed.connect(_quit_game)
 	_style_button(quit_btn, Color(0.8, 0.2, 0.2))
 	hbox.add_child(quit_btn)
-	
+
 	# --- SEPARADOR ---
 	var sep1 = VSeparator.new()
 	sep1.custom_minimum_size.x = 8
 	hbox.add_child(sep1)
-	
+
 	# --- BGM SELECTOR ---
 	var bgm_label = Label.new()
 	bgm_label.text = "BGM:"
 	hbox.add_child(bgm_label)
-	
+
 	var btn_m1 = Button.new()
 	btn_m1.text = "1"
 	btn_m1.custom_minimum_size = Vector2(28, 32)
 	btn_m1.pressed.connect(func(): _play_music(1))
 	_style_button(btn_m1, Color(0.3, 0.5, 0.3))
 	hbox.add_child(btn_m1)
-	
+
 	var btn_m2 = Button.new()
 	btn_m2.text = "2"
 	btn_m2.custom_minimum_size = Vector2(28, 32)
 	btn_m2.pressed.connect(func(): _play_music(2))
 	_style_button(btn_m2, Color(0.3, 0.5, 0.3))
 	hbox.add_child(btn_m2)
-	
+
 	var btn_mute = Button.new()
 	btn_mute.text = "🔇"
 	btn_mute.custom_minimum_size = Vector2(28, 32)
 	btn_mute.pressed.connect(func(): _play_music(0))
 	_style_button(btn_mute, Color(0.2, 0.2, 0.2))
 	hbox.add_child(btn_mute)
-	
+
 	# --- SEPARADOR ---
 	var sep2 = VSeparator.new()
 	sep2.custom_minimum_size.x = 8
 	hbox.add_child(sep2)
-	
+
 	# --- VOLUMEN BGM ---
 	var vol_bgm_label = Label.new()
 	vol_bgm_label.text = "🎵"
 	hbox.add_child(vol_bgm_label)
-	
+
 	bgm_slider = HSlider.new()
 	bgm_slider.min_value = 0
 	bgm_slider.max_value = 100
@@ -369,12 +369,12 @@ func _create_ui():
 	bgm_slider.custom_minimum_size = Vector2(55, 20)
 	bgm_slider.value_changed.connect(_on_bgm_volume_changed)
 	hbox.add_child(bgm_slider)
-	
+
 	# --- VOLUMEN SFX ---
 	var vol_sfx_label = Label.new()
 	vol_sfx_label.text = "🔊"
 	hbox.add_child(vol_sfx_label)
-	
+
 	sfx_slider = HSlider.new()
 	sfx_slider.min_value = 0
 	sfx_slider.max_value = 100
@@ -382,12 +382,12 @@ func _create_ui():
 	sfx_slider.custom_minimum_size = Vector2(55, 20)
 	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
 	hbox.add_child(sfx_slider)
-	
+
 	# --- SEPARADOR ---
 	var sep3 = VSeparator.new()
 	sep3.custom_minimum_size.x = 8
 	hbox.add_child(sep3)
-	
+
 	# --- BOTONES DE CONTROL DE SPAWN ---
 	btn_iguales = Button.new()
 	btn_iguales.text = "⚖️ IGUALES"
@@ -395,28 +395,28 @@ func _create_ui():
 	btn_iguales.pressed.connect(_toggle_equal_spawn)
 	_style_button(btn_iguales, Color(0.4, 0.4, 0.5))
 	hbox.add_child(btn_iguales)
-	
+
 	btn_solo_imp = Button.new()
 	btn_solo_imp.text = "👹 IMP"
 	btn_solo_imp.custom_minimum_size = Vector2(60, 32)
 	btn_solo_imp.pressed.connect(func(): _set_spawn_type(2))
 	_style_button(btn_solo_imp, Color(0.4, 0.4, 0.5))
 	hbox.add_child(btn_solo_imp)
-	
+
 	btn_solo_goblin = Button.new()
 	btn_solo_goblin.text = "🧟 GOBLIN"
 	btn_solo_goblin.custom_minimum_size = Vector2(75, 32)
 	btn_solo_goblin.pressed.connect(func(): _set_spawn_type(0))
 	_style_button(btn_solo_goblin, Color(0.4, 0.4, 0.5))
 	hbox.add_child(btn_solo_goblin)
-	
+
 	btn_solo_ggirl = Button.new()
 	btn_solo_ggirl.text = "🧝 G.GIRL"
 	btn_solo_ggirl.custom_minimum_size = Vector2(75, 32)
 	btn_solo_ggirl.pressed.connect(func(): _set_spawn_type(1))
 	_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
 	hbox.add_child(btn_solo_ggirl)
-	
+
 	# --- FORZAR SPAWN ESCUDO ---
 	btn_spawn_escudo = Button.new()
 	btn_spawn_escudo.text = "\U0001F6E1\uFE0F ESCUDO"
@@ -427,17 +427,17 @@ func _create_ui():
 	)
 	_style_button(btn_spawn_escudo, Color(0.5, 0.3, 0.6))
 	hbox.add_child(btn_spawn_escudo)
-	
+
 	# Sincronizar estado inicial
 	_update_spawn_buttons()
-	
+
 	# ═══════════════ FILA 2: Escudos, Aliadas, Toggles ═══════════════
 	var hbox2 = HBoxContainer.new()
 	hbox2.name = "Row2"
 	hbox2.add_theme_constant_override("separation", 6)
 	hbox2.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox_rows.add_child(hbox2)
-	
+
 	# --- DESTRUIR ESCUDOS ---
 	var btn_destroy_shields = Button.new()
 	btn_destroy_shields.text = "💥 DESTRUIR ESCUDOS"
@@ -445,7 +445,7 @@ func _create_ui():
 	btn_destroy_shields.pressed.connect(_destruir_todos_escudos)
 	_style_button(btn_destroy_shields, Color(0.7, 0.2, 0.2))
 	hbox2.add_child(btn_destroy_shields)
-	
+
 	# --- RECONSTRUIR ESCUDOS ---
 	var btn_rebuild_shields = Button.new()
 	btn_rebuild_shields.text = "🛡️ RECONSTRUIR ESCUDOS"
@@ -453,7 +453,7 @@ func _create_ui():
 	btn_rebuild_shields.pressed.connect(_reconstruir_todos_escudos)
 	_style_button(btn_rebuild_shields, Color(0.3, 0.6, 0.3))
 	hbox2.add_child(btn_rebuild_shields)
-	
+
 	# --- SEPARADOR ---
 	var sep_toggles = VSeparator.new()
 	sep_toggles.custom_minimum_size.x = 8
@@ -468,7 +468,7 @@ func _create_ui():
 	outline_btn.pressed.connect(_toggle_outlines)
 	_style_button(outline_btn, Color(0.1, 0.6, 0.5))
 	hbox2.add_child(outline_btn)
-	
+
 	# --- TOGGLE ESCUDOS ---
 	btn_toggle_shields = Button.new()
 	btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
@@ -476,7 +476,7 @@ func _create_ui():
 	btn_toggle_shields.pressed.connect(_toggle_escudos)
 	_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
 	hbox2.add_child(btn_toggle_shields)
-	
+
 	# --- TOGGLE ALIADAS ---
 	btn_toggle_allies = Button.new()
 	btn_toggle_allies.text = "🏹 ALIADAS: ON"
@@ -492,12 +492,12 @@ func _create_ui():
 	btn_revive_allies.pressed.connect(_revivir_aliadas)
 	_style_button(btn_revive_allies, Color(0.2, 0.55, 0.35))
 	hbox2.add_child(btn_revive_allies)
-	
+
 	# --- SEPARADOR ---
 	var sep_blood = VSeparator.new()
 	sep_blood.custom_minimum_size.x = 8
 	hbox2.add_child(sep_blood)
-	
+
 	# --- TOGGLE SANGRE IMP ---
 	var btn_blood_toggle = Button.new()
 	btn_blood_toggle.name = "BloodToggleBtn"
@@ -528,7 +528,7 @@ func _create_ui():
 	capa001_opacity_value_label = Label.new()
 	capa001_opacity_value_label.text = "%.2f" % capa001_opacity_slider.value
 	hbox2.add_child(capa001_opacity_value_label)
-	
+
 	# ═══════════════════════════════════════════════════════════════════════════
 	# PANEL DE PAUSA (OCULTO POR DEFECTO)
 	# ═══════════════════════════════════════════════════════════════════════════
@@ -540,31 +540,31 @@ func _create_pause_panel():
 	pause_panel.name = "PausePanel"
 	pause_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	pause_panel.visible = false
-	
+
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0.7)
 	pause_panel.add_theme_stylebox_override("panel", style)
-	
+
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_CENTER)
 	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
 	vbox.add_theme_constant_override("separation", 20)
 	pause_panel.add_child(vbox)
-	
+
 	var title = Label.new()
 	title.text = "⏸️ PAUSA"
 	title.add_theme_font_size_override("font_size", 48)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
-	
+
 	var resume_btn = Button.new()
 	resume_btn.text = "▶️ CONTINUAR"
 	resume_btn.custom_minimum_size = Vector2(200, 50)
 	resume_btn.pressed.connect(_toggle_pause)
 	_style_button(resume_btn, Color(0.2, 0.6, 0.3))
 	vbox.add_child(resume_btn)
-	
+
 	var restart_pause_btn = Button.new()
 	restart_pause_btn.text = "🔄 REINICIAR"
 	restart_pause_btn.custom_minimum_size = Vector2(200, 50)
@@ -588,12 +588,12 @@ func _create_pause_panel():
 	quit_pause_btn.pressed.connect(_quit_game)
 	_style_button(quit_pause_btn, Color(0.8, 0.2, 0.2))
 	vbox.add_child(quit_pause_btn)
-	
+
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_lvl = HSeparator.new()
 	sep_lvl.custom_minimum_size = Vector2(200, 10)
 	vbox.add_child(sep_lvl)
-	
+
 	# ═══════════════ SELECTOR DE NIVELES (DEBUG) ═══════════════
 	var lvl_label = Label.new()
 	lvl_label.text = "🗺️ CAMBIAR NIVEL (DEBUG)"
@@ -627,19 +627,19 @@ func _create_pause_panel():
 	)
 	_style_button(btn_lvl2, Color(0.6, 0.2, 0.4))
 	hbox_levels.add_child(btn_lvl2)
-	
+
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_res = HSeparator.new()
 	sep_res.custom_minimum_size = Vector2(200, 10)
 	vbox.add_child(sep_res)
-	
+
 	# ═══════════════ RESOLUCIÓN ═══════════════
 	var res_label = Label.new()
 	res_label.text = "🖥️ RESOLUCIÓN"
 	res_label.add_theme_font_size_override("font_size", 22)
 	res_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(res_label)
-	
+
 	resolution_option = OptionButton.new()
 	resolution_option.custom_minimum_size = Vector2(250, 40)
 	resolution_option.alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -656,7 +656,7 @@ func _create_pause_panel():
 			resolution_option.selected = i
 	resolution_option.item_selected.connect(_on_resolution_changed)
 	vbox.add_child(resolution_option)
-	
+
 	# ═══════════════ PANTALLA COMPLETA ═══════════════
 	fullscreen_check = CheckButton.new()
 	fullscreen_check.text = "Pantalla Completa"
@@ -665,7 +665,7 @@ func _create_pause_panel():
 	fullscreen_check.focus_mode = Control.FOCUS_NONE
 	fullscreen_check.toggled.connect(_on_fullscreen_toggled)
 	vbox.add_child(fullscreen_check)
-	
+
 	add_child(pause_panel)
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -678,13 +678,13 @@ func _update_health_ui():
 		if is_instance_valid(icon):
 			icon.queue_free()
 	heart_icons.clear()
-	
+
 	if not player:
 		return
-	
+
 	var max_hp = player.get("vida_maxima") if player.get("vida_maxima") else 5
 	var current_hp = player.get("health") if player.get("health") else max_hp
-	
+
 	# Crear nuevos corazones
 	for i in range(max_hp):
 		var heart = Label.new()
@@ -711,13 +711,13 @@ func _process(delta):
 					lista_limpia.append(e)
 					vivos += 1
 			wave_spawner.active_goblins = lista_limpia
-		
+
 		var total = wave_spawner.get("enemigos_por_oleada")
 		var spawneados = wave_spawner.get("goblins_spawned_in_wave")
 		if total != null and spawneados != null:
 			var faltan_por_spawnear = max(0, total - spawneados)
 			var restantes = faltan_por_spawnear + vivos
-			
+
 			wave_progress.max_value = total
 			wave_progress.value = max(0, total - restantes)
 			wave_progress_label.text = "ENEMIGOS RESTANTES: %d / %d" % [restantes, total]
@@ -745,15 +745,15 @@ func _style_button(btn: Button, color: Color):
 	style.content_margin_left = 8
 	style.content_margin_right = 8
 	btn.add_theme_stylebox_override("normal", style)
-	
+
 	var hover_style = style.duplicate()
 	hover_style.bg_color = color.lightened(0.2)
 	btn.add_theme_stylebox_override("hover", hover_style)
-	
+
 	var pressed_style = style.duplicate()
 	pressed_style.bg_color = color.darkened(0.2)
 	btn.add_theme_stylebox_override("pressed", pressed_style)
-	
+
 	btn.add_theme_color_override("font_color", Color.WHITE)
 	btn.add_theme_color_override("font_hover_color", Color.WHITE)
 
@@ -772,7 +772,7 @@ func _toggle_pause():
 	is_paused = not is_paused
 	get_tree().paused = is_paused
 	pause_panel.visible = is_paused
-	
+
 	if is_paused:
 		pause_btn.text = "▶️ PLAY"
 		_style_button(pause_btn, Color(0.2, 0.6, 0.3))
@@ -783,9 +783,9 @@ func _toggle_pause():
 func _toggle_god_mode():
 	if not player:
 		return
-	
+
 	player.modo_dios = not player.modo_dios
-	
+
 	if player.modo_dios:
 		god_mode_btn.text = "GOD: ON"
 		_style_button(god_mode_btn, Color(0.8, 0.6, 0.1))
@@ -798,19 +798,19 @@ func _restart_game():
 	if is_paused:
 		is_paused = false
 		get_tree().paused = false
-	
+
 	# Eliminar enemigos
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
-	
+
 	# Eliminar proyectiles enemigos
 	var projectiles = get_tree().get_nodes_in_group("enemy_projectiles")
 	for proj in projectiles:
 		if is_instance_valid(proj):
 			proj.queue_free()
-	
+
 	# Reiniciar escena
 	get_tree().reload_current_scene()
 
@@ -885,7 +885,7 @@ func _update_spawn_buttons():
 	var spawner = _find_wave_spawner()
 	var igual_on = spawner and spawner.probabilidad_igual
 	var tipo = spawner.forzar_tipo_enemigo if spawner else -1
-	
+
 	# Botón IGUALES
 	if igual_on:
 		btn_iguales.text = "⚖️ IGUALES: ON"
@@ -893,7 +893,7 @@ func _update_spawn_buttons():
 	else:
 		btn_iguales.text = "⚖️ IGUALES"
 		_style_button(btn_iguales, Color(0.4, 0.4, 0.5))
-	
+
 	# Botón IMP
 	if tipo == 2:
 		btn_solo_imp.text = "👹 IMP ✓"
@@ -901,7 +901,7 @@ func _update_spawn_buttons():
 	else:
 		btn_solo_imp.text = "👹 IMP"
 		_style_button(btn_solo_imp, Color(0.4, 0.4, 0.5))
-	
+
 	# Botón GOBLIN
 	if tipo == 0:
 		btn_solo_goblin.text = "🧟 GOBLIN ✓"
@@ -909,7 +909,7 @@ func _update_spawn_buttons():
 	else:
 		btn_solo_goblin.text = "🧟 GOBLIN"
 		_style_button(btn_solo_goblin, Color(0.4, 0.4, 0.5))
-	
+
 	# Botón G.GIRL
 	if tipo == 1:
 		btn_solo_ggirl.text = "🧝 G.GIRL ✓"
@@ -986,15 +986,15 @@ func _aplicar_shader_outline_en_material(material_base: StandardMaterial3D, shad
 
 func _toggle_effects():
 	effects_enabled = not effects_enabled
-	
+
 	if world_environment and world_environment.environment:
 		# Controlar FOG
 		world_environment.environment.fog_enabled = effects_enabled
-		
+
 		# Controlar DOF (Depth of Field)
 		if world_environment.camera_attributes:
 			world_environment.camera_attributes.dof_blur_far_enabled = effects_enabled
-	
+
 	# Actualizar botón
 	if effects_enabled:
 		effects_btn.text = "🌫️ EFECTOS: ON"
@@ -1030,11 +1030,11 @@ func _on_capa001_opacity_changed(value: float):
 
 func _toggle_layers():
 	layers_enabled = not layers_enabled
-	
+
 	# Mostrar/ocultar FogPlane
 	if fog_plane:
 		fog_plane.visible = layers_enabled
-	
+
 	# Actualizar botón
 	if layers_enabled:
 		layers_btn.text = "✨ NIEBLA: ON"
@@ -1102,12 +1102,12 @@ func _reconstruir_todos_escudos():
 	for roto in get_tree().get_nodes_in_group("escudos_rotos"):
 		if is_instance_valid(roto):
 			roto.queue_free()
-	
+
 	# Eliminar escudos existentes (por si quedan)
 	for escudo in get_tree().get_nodes_in_group("escudos"):
 		if is_instance_valid(escudo):
 			escudo.queue_free()
-	
+
 	# Recrear en las posiciones originales
 	for data in escudos_originales:
 		var nuevo_escudo = escudo_scene.instantiate()
@@ -1117,7 +1117,7 @@ func _reconstruir_todos_escudos():
 		else:
 			get_tree().current_scene.add_child(nuevo_escudo)
 		nuevo_escudo.global_transform = data["transform"]
-	
+
 	# Actualizar estado del toggle
 	shields_enabled = true
 	if btn_toggle_shields:
@@ -1134,7 +1134,7 @@ func _toggle_escudos():
 			for child in escudo.get_children():
 				if child is CollisionShape3D:
 					child.disabled = not shields_enabled
-					
+
 	if shields_enabled:
 		btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
 		_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
@@ -1200,7 +1200,7 @@ func _toggle_aliadas():
 	for ally in get_tree().get_nodes_in_group("allies"):
 		if ally is AllyArcher:
 			_aplicar_estado_aliada(ally)
-	
+
 	if allies_enabled:
 		btn_toggle_allies.text = "🏹 ALIADAS: ON"
 		_style_button(btn_toggle_allies, Color(0.3, 0.6, 0.5))
