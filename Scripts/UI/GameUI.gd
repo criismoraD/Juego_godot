@@ -113,19 +113,14 @@ func _ready():
 	_aplicar_toggle_outline_global()
 	
 	# Buscar WaveSpawner
-	wave_spawner = get_tree().root.find_child("WaveSpawner", true, false)
-	if not wave_spawner:
-		for node in get_tree().get_nodes_in_group("wave_spawners"):
-			wave_spawner = node
-			break
-	if not wave_spawner:
-		# Buscar por clase
-		var all_nodes = get_tree().root.get_children()
-		for n in all_nodes:
-			var found = n.find_child("*", true, false)
-			if found is WaveSpawner:
-				wave_spawner = found
-				break
+	var wave_spawners = get_tree().get_nodes_in_group("wave_spawners")
+	if wave_spawners.size() > 0:
+		wave_spawner = wave_spawners[0]
+	elif get_tree().current_scene:
+		wave_spawner = get_tree().current_scene.find_child("WaveSpawner", true, false)
+	else:
+		var scene_root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+		wave_spawner = scene_root.find_child("WaveSpawner", true, false)
 	
 	# Guardar posiciones originales de escudos
 	_guardar_posiciones_escudos()
@@ -139,27 +134,35 @@ func _ready():
 			player.died.connect(_on_player_died)
 
 
+func _get_scene_root() -> Node:
+	if get_tree().current_scene:
+		return get_tree().current_scene
+	return get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+
 func _find_player():
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		player = players[0]
 	else:
 		# Buscar por nombre
-		player = get_tree().root.find_child("Player", true, false)
+		var root_node = _get_scene_root()
+		player = root_node.find_child("Player", true, false)
 
 func _find_world_environment():
+	var root_node = _get_scene_root()
 	# Buscar el WorldEnvironment en la escena
-	world_environment = get_tree().root.find_child("WorldEnvironment", true, false)
+	world_environment = root_node.find_child("WorldEnvironment", true, false)
 	
 	# Buscar plano de niebla
-	fog_plane = get_tree().root.find_child("FogPlane", true, false)
+	fog_plane = root_node.find_child("FogPlane", true, false)
 	
 	# Obtener el material del fog plane para modificar fog_density
 	if fog_plane and fog_plane is MeshInstance3D:
 		fog_material = fog_plane.get_surface_override_material(0)
 
 func _find_capa001():
-	var nodo = get_tree().root.find_child("CAPA001", true, false)
+	var root_node = _get_scene_root()
+	var nodo = root_node.find_child("CAPA001", true, false)
 	if nodo and nodo is Sprite3D:
 		capa001_sprite = nodo
 	else:
@@ -954,7 +957,8 @@ func _forzar_outline_en_runtime(habilitado: bool) -> void:
 		if material_base is StandardMaterial3D:
 			_aplicar_shader_outline_en_material(material_base as StandardMaterial3D, shader_outline, habilitado)
 
-	var meshes = get_tree().root.find_children("*", "MeshInstance3D", true, false)
+	var root_node = _get_scene_root()
+	var meshes = root_node.find_children("*", "MeshInstance3D", true, false)
 	for nodo in meshes:
 		var mesh_instance := nodo as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:

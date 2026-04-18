@@ -9,3 +9,6 @@
 ## 2026-04-17 - [Static Caching for Recursive Node Searches]
 **Learning:** [Recursive searches like `find_child(..., true)` are O(N) and extremely costly when called every frame in `_process` or `_physics_process`. Static utility methods that perform these searches should implement caching.]
 **Action:** [Implement static variables in utility classes to cache results. Include logic to invalidate the cache when the scene changes (e.g., comparing `get_tree().current_scene`) and use `is_instance_valid()` to ensure cached node references are still safe to use.]
+## 2024-05-18 - Optimizing Tree Search Operations
+**Learning:** `get_tree().root.find_child(...)` iterates over the entire tree, including Global Autoloads. This can be extremely slow and cause bugs, notably when searching for objects initialized during transitions.
+**Action:** Always prefer `get_tree().get_nodes_in_group(...)` if available. If a traversal is necessary, scope it using `get_tree().current_scene.find_child(...)` or fallback correctly by resolving the scene root manually using `get_tree().root.get_child(get_tree().root.get_child_count() - 1)` to avoid null references when `current_scene` hasn't fully attached.
