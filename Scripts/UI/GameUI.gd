@@ -113,14 +113,7 @@ func _ready():
 	_aplicar_toggle_outline_global()
 
 	# Buscar WaveSpawner
-	var wave_spawners = get_tree().get_nodes_in_group("wave_spawners")
-	if wave_spawners.size() > 0:
-		wave_spawner = wave_spawners[0]
-	elif get_tree().current_scene:
-		wave_spawner = get_tree().current_scene.find_child("WaveSpawner", true, false)
-	else:
-		var scene_root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
-		wave_spawner = scene_root.find_child("WaveSpawner", true, false)
+	_find_wave_spawner()
 
 	# Guardar posiciones originales de escudos
 	_guardar_posiciones_escudos()
@@ -844,19 +837,18 @@ func _find_wave_spawner() -> Node:
 	"""Busca el WaveSpawner en la escena si aún no se tiene referencia"""
 	if wave_spawner and is_instance_valid(wave_spawner):
 		return wave_spawner
-	# Buscar en toda la escena
+
+	# Buscar mediante grupo (Optimizado)
+	var spawners = get_tree().get_nodes_in_group("wave_spawners")
+	if not spawners.is_empty():
+		wave_spawner = spawners[0]
+		return wave_spawner
+
+	# Fallback: Buscar por nombre en la raíz de la escena
 	var root = get_tree().current_scene
 	if root:
-		var found = root.find_child("*", true, false)
-		for child in root.get_children():
-			if child is WaveSpawner:
-				wave_spawner = child
-				return wave_spawner
-			var deep = child.find_child("*", true, false)
-			for sub in child.get_children():
-				if sub is WaveSpawner:
-					wave_spawner = sub
-					return wave_spawner
+		wave_spawner = root.find_child("WaveSpawner", true, false)
+
 	return wave_spawner
 
 func _toggle_equal_spawn():
