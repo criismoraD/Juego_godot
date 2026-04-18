@@ -39,6 +39,7 @@ signal oleada_completada(numero_oleada: int)
 signal goblin_spawneado(goblin: Node)
 
 func _ready():
+	add_to_group("wave_spawners")
 	# Cargar escenas si no están asignadas
 	if not escena_goblin:
 		escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
