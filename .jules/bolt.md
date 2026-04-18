@@ -12,3 +12,11 @@
 ## 2024-05-18 - Optimizing Tree Search Operations
 **Learning:** `get_tree().root.find_child(...)` iterates over the entire tree, including Global Autoloads. This can be extremely slow and cause bugs, notably when searching for objects initialized during transitions.
 **Action:** Always prefer `get_tree().get_nodes_in_group(...)` if available. If a traversal is necessary, scope it using `get_tree().current_scene.find_child(...)` or fallback correctly by resolving the scene root manually using `get_tree().root.get_child(get_tree().root.get_child_count() - 1)` to avoid null references when `current_scene` hasn't fully attached.
+
+## 2024-06-25 - [Array Allocation and GC Pressure]
+**Learning:** [Using `Array.filter()` or allocating new arrays inside `_process` loops creates severe Garbage Collection (GC) pressure in GDScript, leading to stuttering.]
+**Action:** [Avoid allocating new arrays or filtering every frame. Instead, iterate over existing arrays using simple loops to count matching items, or maintain cleanly updated lists asynchronously.]
+
+## 2024-06-25 - [Centralized Data Caching to Avoid Group Lookups]
+**Learning:** [Repeatedly calling `get_tree().get_nodes_in_group()` inside physics or process ticks for multiple entities (like `ImpShieldGirl` seeking an enemy) causes O(N) performance drops.]
+**Action:** [Utilize central managers (like `WaveSpawner`) to maintain authoritative arrays of active entities. Have individual actors cache a reference to the manager (using a `static var` strategy) and fetch the arrays directly instead of querying the scene tree.]
