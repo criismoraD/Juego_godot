@@ -216,7 +216,10 @@ func _iniciar_nivel_0():
 
 func _monitorear_nivel_0():
 	# Limpiar enemigos inválidos
-	enemigos_pacificos = enemigos_pacificos.filter(func(e): return is_instance_valid(e))
+	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar allocations de memoria/GC en _process
+	for i in range(enemigos_pacificos.size() - 1, -1, -1):
+		if not is_instance_valid(enemigos_pacificos[i]):
+			enemigos_pacificos.remove_at(i)
 
 	if enemigos_pacificos.is_empty():
 		return
@@ -268,7 +271,7 @@ func _on_pacifico_danado():
 
 func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	estado_actual = NivelEstado.NIVEL_1
-	
+
 	AudioManager.play_music(2) # BGM_battle.mp3
 	if game_ui and game_ui.has_method("set_modo_minimo"):
 		game_ui.set_modo_minimo(false)
@@ -298,7 +301,10 @@ func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 
 func _monitorear_nivel_1():
 	# Verificar si todos los enemigos murieron (incluyendo supervivientes pacíficos)
-	wave_spawner.active_goblins = wave_spawner.active_goblins.filter(func(g): return is_instance_valid(g))
+	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar allocations de memoria/GC en _process
+	for i in range(wave_spawner.active_goblins.size() - 1, -1, -1):
+		if not is_instance_valid(wave_spawner.active_goblins[i]):
+			wave_spawner.active_goblins.remove_at(i)
 
 	if wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada and wave_spawner.active_goblins.is_empty():
 		_on_nivel1_completado(1)
