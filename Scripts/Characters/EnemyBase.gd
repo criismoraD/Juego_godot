@@ -232,12 +232,25 @@ func _process_dying(_delta):
 func _process_shooting(_delta):
 	velocity.x = 0
 
-var _cached_wave_spawner: Node = null
+static var _cached_wave_spawner: Node = null
 
 func _get_cached_wave_spawner() -> Node:
 	if is_instance_valid(_cached_wave_spawner):
 		return _cached_wave_spawner
-	var wave_spawner = get_tree().root.find_child("WaveSpawner", true, false)
+
+	if get_tree() == null:
+		return null
+
+	var wave_spawners = get_tree().get_nodes_in_group("wave_spawners")
+	if wave_spawners.size() > 0:
+		_cached_wave_spawner = wave_spawners[0]
+		return _cached_wave_spawner
+
+	var scene_root = get_tree().current_scene
+	if scene_root == null:
+		scene_root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+
+	var wave_spawner = scene_root.find_child("WaveSpawner", true, false)
 	if wave_spawner:
 		_cached_wave_spawner = wave_spawner
 	return _cached_wave_spawner
@@ -252,7 +265,7 @@ func _check_spacing() -> bool:
 		enemies = wave_spawner.get_active_enemies()
 		shield_imps = wave_spawner.get_active_shield_imps()
 	else:
-		# Fallback a llamadas costosas
+		# Fallback a llamadas costosas pero usando grupo optimizado si no existe WaveSpawner
 		enemies = get_tree().get_nodes_in_group("enemies")
 		shield_imps = get_tree().get_nodes_in_group("shield_imps")
 

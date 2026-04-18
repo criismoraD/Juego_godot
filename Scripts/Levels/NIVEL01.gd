@@ -376,16 +376,15 @@ func _mostrar_resultado_pacifista_pantalla_negra():
 func _reiniciar_nivel01_limpio():
 	# Limpiar enemigos/proyectiles spawneados en root antes de recargar escena.
 	var grupos_a_limpiar: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
-	var nodos_unicos: Dictionary = {}
+	var nodos_limpiados: Dictionary = {}
 
 	for grupo in grupos_a_limpiar:
 		for nodo in get_tree().get_nodes_in_group(grupo):
 			if is_instance_valid(nodo):
-				nodos_unicos[nodo.get_instance_id()] = nodo
-
-	for nodo in nodos_unicos.values():
-		if is_instance_valid(nodo):
-			nodo.queue_free()
+				var id_nodo = nodo.get_instance_id()
+				if not nodos_limpiados.has(id_nodo):
+					nodos_limpiados[id_nodo] = true
+					nodo.queue_free()
 
 	# Esperar a que queue_free se aplique para evitar residuos entre recargas.
 	await get_tree().process_frame
@@ -618,23 +617,27 @@ func _set_juego_pausado_dialogo(bloqueado: bool):
 		estado_spawner_dialogo.clear()
 
 	if bloqueado:
-		var nodos_unicos: Dictionary = {}
 		var grupos_a_pausar: Array[String] = ["enemies", "enemy_projectiles", "allies", "shield_imps"]
+		var nodos_procesados: Dictionary = {}
 
 		for grupo in grupos_a_pausar:
 			for nodo in get_tree().get_nodes_in_group(grupo):
-				if is_instance_valid(nodo):
-					nodos_unicos[nodo.get_instance_id()] = nodo
+				if not is_instance_valid(nodo):
+					continue
 
-		for id_nodo in nodos_unicos.keys():
-			var nodo = nodos_unicos[id_nodo]
-			if not estados_proceso_dialogo.has(id_nodo):
-				estados_proceso_dialogo[id_nodo] = {
-					"process": nodo.is_processing(),
-					"physics": nodo.is_physics_processing()
-				}
-			nodo.set_process(false)
-			nodo.set_physics_process(false)
+				var id_nodo = nodo.get_instance_id()
+				if nodos_procesados.has(id_nodo):
+					continue
+
+				nodos_procesados[id_nodo] = true
+
+				if not estados_proceso_dialogo.has(id_nodo):
+					estados_proceso_dialogo[id_nodo] = {
+						"process": nodo.is_processing(),
+						"physics": nodo.is_physics_processing()
+					}
+				nodo.set_process(false)
+				nodo.set_physics_process(false)
 	else:
 		for id_nodo in estados_proceso_dialogo.keys():
 			var nodo = instance_from_id(id_nodo)
