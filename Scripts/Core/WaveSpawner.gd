@@ -150,7 +150,10 @@ func _check_wave_complete():
 	# La oleada termina cuando todos los goblins spawnearon Y todos murieron
 	if goblins_spawned_in_wave >= enemigos_por_oleada:
 		# Limpiar referencias inválidas
-		active_goblins = active_goblins.filter(func(g): return is_instance_valid(g))
+		# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar allocations de memoria/GC en comprobaciones frecuentes
+		for i in range(active_goblins.size() - 1, -1, -1):
+			if not is_instance_valid(active_goblins[i]):
+				active_goblins.remove_at(i)
 
 		if active_goblins.is_empty():
 			is_wave_active = false
@@ -178,15 +181,24 @@ func forzar_spawn():
 	_spawn_goblin()
 
 func obtener_goblins_activos() -> int:
-	active_goblins = active_goblins.filter(func(g): return is_instance_valid(g))
+	# Opt: Iteración inversa in-place en lugar de Array.filter()
+	for i in range(active_goblins.size() - 1, -1, -1):
+		if not is_instance_valid(active_goblins[i]):
+			active_goblins.remove_at(i)
 	return active_goblins.size()
 
 func get_active_enemies() -> Array:
-	active_goblins = active_goblins.filter(func(g): return is_instance_valid(g))
+	# Opt: Iteración inversa in-place en lugar de Array.filter()
+	for i in range(active_goblins.size() - 1, -1, -1):
+		if not is_instance_valid(active_goblins[i]):
+			active_goblins.remove_at(i)
 	return active_goblins
 
 func get_active_shield_imps() -> Array:
-	shield_imps_activos = shield_imps_activos.filter(func(s): return is_instance_valid(s))
+	# Opt: Iteración inversa in-place en lugar de Array.filter()
+	for i in range(shield_imps_activos.size() - 1, -1, -1):
+		if not is_instance_valid(shield_imps_activos[i]):
+			shield_imps_activos.remove_at(i)
 	return shield_imps_activos
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -200,7 +212,10 @@ func _check_shield_imp_spawn(delta):
 	shield_spawn_timer = intervalo_check_escudo
 
 	# Limpiar referencias inválidas
-	shield_imps_activos = shield_imps_activos.filter(func(s): return is_instance_valid(s))
+	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar GC
+	for i in range(shield_imps_activos.size() - 1, -1, -1):
+		if not is_instance_valid(shield_imps_activos[i]):
+			shield_imps_activos.remove_at(i)
 
 	# Verificar condiciones
 	if shield_imps_activos.size() >= max_imp_escudo_activos:
