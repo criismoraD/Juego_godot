@@ -23,3 +23,7 @@
 ## 2024-05-17 - Array.filter() allocations in _process loops
 **Learning:** In GDScript, using `Array.filter(func(x): ...)` allocates a new Array on the heap and creates overhead from lambda execution. When used in `_process` loops (e.g. tracking valid enemies in `WaveSpawner.gd`), this creates rapid Garbage Collection (GC) pressure causing micro-stuttering.
 **Action:** Replace `Array.filter` checks in frequent update loops with backward iteration: `for i in range(arr.size() - 1, -1, -1): if condition: arr.remove_at(i)`. This modifies the array in-place and completely eliminates the allocation and lambda overhead.
+
+## 2025-01-24 - [Performance] Node Group Caching in GDScript
+**Learning:** Calling `get_tree().get_nodes_in_group()` in Godot 4 triggers a SceneTree traversal and returns a fresh copy of the array on every call. In UI toggles or performance-sensitive loops, this leads to redundant allocations and CPU overhead.
+**Action:** Implement a local cache (e.g., `_escudos_cache`) to store group references. Use a helper method (e.g., `_get_valid_escudos`) to prune the cache using backward iteration and `is_instance_valid()` before accessing the nodes.

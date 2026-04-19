@@ -45,6 +45,7 @@ var allies_enabled: bool = true
 # === ESCUDOS ===
 var escudo_scene: PackedScene = preload("res://Scenes/Environment/Escudo.tscn")
 var escudos_originales: Array = [] # [{transform, parent_path}]
+var _escudos_cache: Array[Node] = []
 var btn_toggle_shields: Button
 var btn_toggle_allies: Button
 var btn_revive_allies: Button
@@ -1069,11 +1070,20 @@ func _input(event):
 # CONTROL DE ESCUDOS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+func _get_valid_escudos() -> Array[Node]:
+	"""Limpia el cache de nodos inválidos y retorna la lista actualizada"""
+	for i in range(_escudos_cache.size() - 1, -1, -1):
+		if not is_instance_valid(_escudos_cache[i]):
+			_escudos_cache.remove_at(i)
+	return _escudos_cache
+
 func _guardar_posiciones_escudos():
 	"""Guarda las posiciones originales de todos los escudos al inicio"""
 	await get_tree().process_frame
+	_escudos_cache.clear()
 	for escudo in get_tree().get_nodes_in_group("escudos"):
 		if is_instance_valid(escudo):
+			_escudos_cache.append(escudo)
 			escudos_originales.append({
 				"transform": escudo.global_transform,
 				"parent_path": escudo.get_parent().get_path()
@@ -1081,7 +1091,7 @@ func _guardar_posiciones_escudos():
 
 func _destruir_todos_escudos():
 	"""Destruye todos los escudos activos con efecto visual"""
-	var escudos = get_tree().get_nodes_in_group("escudos")
+	var escudos = _get_valid_escudos()
 	for escudo in escudos:
 		if is_instance_valid(escudo) and escudo.has_method("recibir_golpe"):
 			# Forzar destrucción inmediata: poner golpes al máximo y dar golpe final
@@ -1096,9 +1106,11 @@ func _reconstruir_todos_escudos():
 			roto.queue_free()
 
 	# Eliminar escudos existentes (por si quedan)
-	for escudo in get_tree().get_nodes_in_group("escudos"):
+	var escudos = _get_valid_escudos()
+	for escudo in escudos:
 		if is_instance_valid(escudo):
 			escudo.queue_free()
+	_escudos_cache.clear()
 
 	# Recrear en las posiciones originales
 	for data in escudos_originales:
@@ -1109,6 +1121,7 @@ func _reconstruir_todos_escudos():
 		else:
 			get_tree().current_scene.add_child(nuevo_escudo)
 		nuevo_escudo.global_transform = data["transform"]
+		_escudos_cache.append(nuevo_escudo)
 
 	# Actualizar estado del toggle
 	shields_enabled = true
@@ -1119,7 +1132,8 @@ func _reconstruir_todos_escudos():
 func _toggle_escudos():
 	"""Toggle ON/OFF de todos los escudos"""
 	shields_enabled = not shields_enabled
-	for escudo in get_tree().get_nodes_in_group("escudos"):
+	var escudos = _get_valid_escudos()
+	for escudo in escudos:
 		if is_instance_valid(escudo):
 			escudo.visible = shields_enabled
 			# Activar/desactivar colisión
