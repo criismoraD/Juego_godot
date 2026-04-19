@@ -1,4 +1,4 @@
-extends ImpEnemy
+extends EnemyBase
 class_name ImpEstandarte
 
 ## Imp con estandarte para el Nivel 0 (modo pacifista).
@@ -8,10 +8,16 @@ class_name ImpEstandarte
 @export_category("Combate - Imp Estandarte")
 @export var intervalo_disparo_arco: float = 0.0
 @export var tiempo_disparo_en_animacion_arco: float = 0.55
-@export var velocidad_flecha_arco: float = 8.0
+@export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_min: float = 15.0
+@export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_max: float = 20.0
+@export_range(0.25, 5.0, 0.05) var multiplicador_cadencia_arco: float = 1.0
 @export var elevacion_disparo_arco: float = 0.18
 @export var espera_idle_arco_min: float = 0.08
 @export var espera_idle_arco_max: float = 0.18
+
+@export_category("Proyectil - Imp Estandarte")
+@export var escala_proyectil_estandarte: float = 1.8
+@export var color_proyectil_estandarte: Color = Color(1.0, 0.06, 0.03, 1.0)
 
 @export_category("Visual - Estandarte")
 @export var soltar_estandarte_al_atacar: bool = true
@@ -19,11 +25,23 @@ class_name ImpEstandarte
 @export var torque_caida_estandarte: float = 0.04
 @export var tiempo_autodestruir_estandarte: float = 8.0
 
+@export_category("Visual - Flecha en Mano")
+@export var mostrar_flecha_en_mano: bool = true
+@export var tiempo_aparece_flecha_mano: float = 1.0
+@export var tiempo_desaparece_flecha_mano: float = 3.0
+@export var offset_flecha_mano: Vector3 = Vector3(0.0, 0.0, 0.0)
+@export var rotacion_flecha_mano_grados: Vector3 = Vector3(90.0, 0.0, 0.0)
+@export var escala_flecha_mano: Vector3 = Vector3(1.0, 1.0, 1.0)
+
 @export_category("Daño - Imp Estandarte")
 @export var usar_animacion_hit: bool = true
 @export var volumen_hit_imp_db: float = -7.0
 
+@export_category("Muerte - Imp Estandarte")
+@export var tiempo_antes_disolver: float = 1.8
+
 var escena_flecha_estandarte = preload("res://Scenes/Projectiles/GoblinGirlArrow.tscn")
+var escena_flecha_visual_mano = preload("res://Scenes/Projectiles/FlechaManoVisual.tscn")
 var escena_estandarte_caido = preload("res://Assets/Environment/Estandarte/Estandarte.glb")
 var sonido_muerte_estandarte: AudioStreamMP3 = preload("res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE_MUERTE.mp3")
 
@@ -36,6 +54,8 @@ var espera_entrada_disparo: float = 0.0
 var estandarte_visual: Node3D = null
 var arco_visual: Node3D = null
 var estandarte_ya_soltado: bool = false
+var attachment_flecha_mano: BoneAttachment3D = null
+var flecha_visual_mano: Node3D = null
 
 func _on_enemy_ready():
 	game_feel = get_node_or_null("/root/GameFeel")
@@ -46,8 +66,10 @@ func _on_enemy_ready():
 	# Restaurar materiales originales del casco y estandarte
 	_restaurar_materiales_accesorios()
 	_cachear_visuales_arma()
+	_configurar_flecha_visual_mano()
 	estandarte_ya_soltado = false
 	_actualizar_visual_arma(false)
+	_actualizar_visibilidad_flecha_mano(false)
 
 	_play_animation("IMP_IDLE")
 
@@ -58,10 +80,12 @@ func _process(delta):
 
 func _on_state_walking():
 	_actualizar_visual_arma(false)
+	_actualizar_visibilidad_flecha_mano(false)
 	_play_animation("IMP_IDLE")
 
 func _on_pacifico_detenido():
 	_actualizar_visual_arma(false)
+	_actualizar_visibilidad_flecha_mano(false)
 	_play_animation("IMP_IDLE_001")
 
 func _process_walking(delta):
@@ -79,9 +103,10 @@ func _on_state_shooting():
 	en_animacion_disparo = false
 	disparo_realizado_en_ciclo = false
 	timer_animacion_disparo = 0.0
-	duracion_animacion_disparo = max(0.05, _get_animation_duration("IMP_DISPARO"))
+	duracion_animacion_disparo = max(0.05, _get_animation_duration("IMP_DISPARO") / _obtener_multiplicador_cadencia())
 	shoot_timer = 0.0
 	espera_entrada_disparo = 0.0
+	_actualizar_visibilidad_flecha_mano(false)
 	_iniciar_ciclo_disparo()
 
 func _process_shooting(delta):
@@ -110,7 +135,8 @@ func _process_shooting(delta):
 		return
 
 	timer_animacion_disparo += delta
-	var tiempo_disparo_efectivo = clamp(tiempo_disparo_en_animacion_arco, 0.0, duracion_animacion_disparo)
+	_actualizar_flecha_mano_durante_animacion()
+	var tiempo_disparo_efectivo = clamp(tiempo_disparo_en_animacion_arco / _obtener_multiplicador_cadencia(), 0.0, duracion_animacion_disparo)
 
 	if not disparo_realizado_en_ciclo and timer_animacion_disparo >= tiempo_disparo_efectivo:
 		_throw_projectile()
@@ -122,17 +148,23 @@ func _process_shooting(delta):
 			disparo_realizado_en_ciclo = true
 
 		en_animacion_disparo = false
+		_actualizar_visibilidad_flecha_mano(false)
 		if intervalo_disparo_arco > 0.0:
-			shoot_timer = intervalo_disparo_arco
+			shoot_timer = intervalo_disparo_arco / _obtener_multiplicador_cadencia()
 		else:
 			_iniciar_ciclo_disparo()
 
 func _iniciar_ciclo_disparo():
+	var cadencia_actual: float = _obtener_multiplicador_cadencia()
 	en_animacion_disparo = true
 	disparo_realizado_en_ciclo = false
 	timer_animacion_disparo = 0.0
-	duracion_animacion_disparo = max(0.05, _get_animation_duration("IMP_DISPARO"))
-	_play_animation("IMP_DISPARO")
+	duracion_animacion_disparo = max(0.05, _get_animation_duration("IMP_DISPARO") / cadencia_actual)
+	_actualizar_visibilidad_flecha_mano(false)
+	_play_animation("IMP_DISPARO", -1.0, cadencia_actual)
+
+func _obtener_multiplicador_cadencia() -> float:
+	return max(0.25, multiplicador_cadencia_arco)
 
 func _throw_projectile():
 	if not escena_flecha_estandarte:
@@ -155,9 +187,21 @@ func _throw_projectile():
 	direction.y += elevacion_disparo_arco
 	direction = direction.normalized()
 
+	if "color_proyectil" in flecha:
+		flecha.color_proyectil = color_proyectil_estandarte
+
+	var escala_final: float = max(0.1, escala_proyectil_estandarte)
+	flecha.scale = Vector3(escala_final, escala_final, escala_final)
+	var velocidad_minima: float = min(velocidad_flecha_arco_min, velocidad_flecha_arco_max)
+	var velocidad_maxima: float = max(velocidad_flecha_arco_min, velocidad_flecha_arco_max)
+	var velocidad_final: float = randf_range(velocidad_minima, velocidad_maxima)
+
 	flecha.initialize(direction, 1.0)
 	if "velocidad" in flecha:
-		flecha.velocidad = velocidad_flecha_arco
+		flecha.velocidad = velocidad_final
+
+	# Cuando la flecha sale despedida, ocultamos la flecha visual de la mano.
+	_actualizar_visibilidad_flecha_mano(false)
 
 	get_tree().root.add_child(flecha)
 	flecha.global_position = spawn_pos
@@ -171,6 +215,7 @@ func _on_state_dying():
 	_reproducir_sonido_muerte_estandarte()
 	AudioManager.play_sfx("explosion_muerte")
 	_actualizar_visual_arma(true)
+	_actualizar_visibilidad_flecha_mano(false)
 
 	var anim_length = _get_animation_duration("IMP_MUERTE")
 	_play_animation("IMP_MUERTE")
@@ -256,11 +301,182 @@ func _reproducir_hit_aleatorio():
 			_iniciar_ciclo_disparo()
 	)
 
+func _crear_explosion_sangre():
+	var particles := GPUParticles3D.new()
+	particles.name = "BloodExplosion"
+	particles.amount = 60
+	particles.lifetime = 0.8
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.randomness = 0.5
+
+	var process_mat := ParticleProcessMaterial.new()
+	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process_mat.emission_sphere_radius = 0.2
+	process_mat.direction = Vector3(0, 1, 0)
+	process_mat.spread = 180.0
+	process_mat.initial_velocity_min = 2.0
+	process_mat.initial_velocity_max = 5.0
+	process_mat.gravity = Vector3(0, -6.0, 0)
+	process_mat.damping_min = 1.0
+	process_mat.damping_max = 3.0
+	process_mat.scale_min = 0.02
+	process_mat.scale_max = 0.06
+
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.7, 0.0, 0.0, 1.0))
+	gradient.add_point(0.3, Color(0.5, 0.0, 0.0, 0.9))
+	gradient.set_color(1, Color(0.2, 0.0, 0.0, 0.0))
+	var gradient_tex := GradientTexture1D.new()
+	gradient_tex.gradient = gradient
+	process_mat.color_ramp = gradient_tex
+
+	particles.process_material = process_mat
+
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.5
+	sphere.height = 1.0
+	var blood_mat := StandardMaterial3D.new()
+	blood_mat.albedo_color = Color(0.6, 0.0, 0.0)
+	blood_mat.emission_enabled = true
+	blood_mat.emission = Color(0.5, 0.0, 0.0)
+	blood_mat.emission_energy_multiplier = 1.5
+	blood_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material = blood_mat
+	particles.draw_pass_1 = sphere
+
+	add_child(particles)
+	var bone_pos = _get_hips_global_position()
+	if bone_pos != Vector3.ZERO:
+		particles.global_position = bone_pos
+	else:
+		particles.position = Vector3(0, 0.3, 0)
+	particles.emitting = true
+
+	var gpos = particles.global_position
+	remove_child(particles)
+	get_tree().root.add_child(particles)
+	particles.global_position = gpos
+
+	get_tree().create_timer(2.0).timeout.connect(func():
+		if is_instance_valid(particles) and particles.is_inside_tree():
+			particles.queue_free()
+	)
+
 func _cachear_visuales_arma():
 	estandarte_visual = find_child("Estandarte", true, false) as Node3D
 	arco_visual = find_child("ArcoCombate", true, false) as Node3D
 	if not arco_visual:
 		arco_visual = find_child("ARCO_GOBLING_GIRL", true, false) as Node3D
+
+func _configurar_flecha_visual_mano():
+	if not mostrar_flecha_en_mano:
+		return
+
+	var esqueleto_nodo: Skeleton3D = find_child("Skeleton3D", true, false) as Skeleton3D
+	if not esqueleto_nodo:
+		return
+
+	var nombre_hueso: String = _obtener_hueso_mano_derecha(esqueleto_nodo)
+	if nombre_hueso.is_empty():
+		return
+
+	attachment_flecha_mano = esqueleto_nodo.get_node_or_null("AttachmentFlechaMano") as BoneAttachment3D
+	if not attachment_flecha_mano:
+		attachment_flecha_mano = BoneAttachment3D.new()
+		attachment_flecha_mano.name = "AttachmentFlechaMano"
+		esqueleto_nodo.add_child(attachment_flecha_mano)
+
+	attachment_flecha_mano.bone_name = nombre_hueso
+	attachment_flecha_mano.position = Vector3.ZERO
+	attachment_flecha_mano.rotation = Vector3.ZERO
+	attachment_flecha_mano.scale = Vector3.ONE
+
+	flecha_visual_mano = attachment_flecha_mano.get_node_or_null("FlechaMano") as Node3D
+	if not flecha_visual_mano:
+		flecha_visual_mano = _crear_visual_flecha_mano()
+		attachment_flecha_mano.add_child(flecha_visual_mano)
+
+	flecha_visual_mano.position = offset_flecha_mano
+	flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
+	flecha_visual_mano.scale = escala_flecha_mano
+	flecha_visual_mano.visible = false
+
+func _crear_visual_flecha_mano() -> Node3D:
+	if escena_flecha_visual_mano:
+		var instancia_visual := escena_flecha_visual_mano.instantiate() as Node3D
+		if instancia_visual:
+			instancia_visual.name = "FlechaMano"
+			return instancia_visual
+
+	var raiz := Node3D.new()
+	raiz.name = "FlechaMano"
+
+	var material_flecha := StandardMaterial3D.new()
+	material_flecha.albedo_color = color_proyectil_estandarte
+	material_flecha.emission_enabled = true
+	material_flecha.emission = color_proyectil_estandarte
+	material_flecha.emission_energy_multiplier = 2.0
+	material_flecha.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	var cuerpo := MeshInstance3D.new()
+	cuerpo.name = "Body"
+	var mesh_cuerpo := CylinderMesh.new()
+	mesh_cuerpo.top_radius = 0.015
+	mesh_cuerpo.bottom_radius = 0.015
+	mesh_cuerpo.height = 0.25
+	mesh_cuerpo.radial_segments = 6
+	mesh_cuerpo.rings = 1
+	mesh_cuerpo.material = material_flecha
+	cuerpo.mesh = mesh_cuerpo
+	raiz.add_child(cuerpo)
+
+	var punta := MeshInstance3D.new()
+	punta.name = "Tip"
+	var mesh_punta := CylinderMesh.new()
+	mesh_punta.top_radius = 0.0
+	mesh_punta.bottom_radius = 0.03
+	mesh_punta.height = 0.08
+	mesh_punta.radial_segments = 6
+	mesh_punta.rings = 1
+	mesh_punta.material = material_flecha
+	punta.mesh = mesh_punta
+	punta.position = Vector3(0.165, 0.0, 0.0)
+	raiz.add_child(punta)
+
+	return raiz
+
+func _obtener_hueso_mano_derecha(esqueleto_nodo: Skeleton3D) -> String:
+	var candidatos := [
+		"mixamorig_RightHandIndex1",
+		"mixamorig_RightHand",
+		"RightHand",
+		"Hand_R"
+	]
+
+	for nombre in candidatos:
+		if esqueleto_nodo.find_bone(nombre) != -1:
+			return nombre
+
+	return ""
+
+func _actualizar_flecha_mano_durante_animacion():
+	if not en_animacion_disparo:
+		_actualizar_visibilidad_flecha_mano(false)
+		return
+
+	var multiplicador := _obtener_multiplicador_cadencia()
+	var tiempo_aparece: float = max(0.0, tiempo_aparece_flecha_mano / multiplicador)
+	var tiempo_desaparece: float = max(tiempo_aparece, tiempo_desaparece_flecha_mano / multiplicador)
+	var visible_en_ventana: bool = timer_animacion_disparo >= tiempo_aparece and timer_animacion_disparo < tiempo_desaparece
+
+	_actualizar_visibilidad_flecha_mano(visible_en_ventana and not disparo_realizado_en_ciclo)
+
+func _actualizar_visibilidad_flecha_mano(visible_flecha: bool):
+	if not flecha_visual_mano or not is_instance_valid(flecha_visual_mano):
+		return
+
+	flecha_visual_mano.visible = visible_flecha and mostrar_flecha_en_mano
 
 func _actualizar_visual_arma(usando_arco: bool):
 	if estandarte_visual and is_instance_valid(estandarte_visual):

@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://dkdhukog8g44"]
+
+[sub_resource type="StandardMaterial3D" id="mat_flecha_mano"]
+shading_mode = 0
+albedo_color = Color(1, 0.06, 0.03, 1)
+
+[sub_resource type="CylinderMesh" id="mesh_body"]
+material = SubResource("mat_flecha_mano")
+top_radius = 0.015
+bottom_radius = 0.015
+height = 0.25
+radial_segments = 6
+rings = 1
+
+[sub_resource type="CylinderMesh" id="mesh_tip"]
+material = SubResource("mat_flecha_mano")
+top_radius = 0.0
+bottom_radius = 0.03
+height = 0.08
+radial_segments = 6
+rings = 1
+
+[node name="FlechaMano" type="Node3D" unique_id=1101558563]
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=546590801]
+transform = Transform3D(-2.1855694e-08, -1, 0, 0.5, -4.371139e-08, 0, 0, 0, 0.5, 0, 0, 0)
+mesh = SubResource("mesh_body")
+
+[node name="Tip" type="MeshInstance3D" parent="." unique_id=2057554645]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, -0.1741174, 0, 0)
+mesh = SubResource("mesh_tip")

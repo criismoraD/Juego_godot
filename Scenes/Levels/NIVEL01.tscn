@@ -95,7 +95,7 @@ escala_max_salto = 0.05
 velocidad_escalar_subir = 0.5
 velocidad_escalar_bajar = 0.5
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 297915049) index="0" unique_id=952254947]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 428953253) index="0" unique_id=217156200]
 bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
 bones/0/rotation = Quaternion(0.20858404, -0.48332727, 0.08169286, 0.8462941)
 bones/1/rotation = Quaternion(-0.0072454643, 0, 0, 0.9999738)
@@ -164,7 +164,6 @@ escena_goblin_girl = ExtResource("6_an7ty")
 escena_imp = ExtResource("7_i7crs")
 escena_canonero = ExtResource("8_koe3n")
 intervalo_aparicion = 3.0
-goblins_por_oleada = 50
 probabilidad_goblin_girl = 0.0
 probabilidad_imp = 1.0
 probabilidad_igual = true
@@ -252,7 +251,7 @@ size = Vector2i(1920, 1080)
 [node name="TORRE" parent="SubViewportFrente3D" unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1540983021]
+[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1076700369]
 layers = 1
 
 [node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]

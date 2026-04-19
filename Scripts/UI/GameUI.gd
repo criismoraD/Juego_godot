@@ -587,9 +587,9 @@ func _create_pause_panel():
 	sep_lvl.custom_minimum_size = Vector2(200, 10)
 	vbox.add_child(sep_lvl)
 
-	# ═══════════════ SELECTOR DE NIVELES (DEBUG) ═══════════════
+	# ═══════════════ SELECTOR DE OLEADAS (DEBUG) ═══════════════
 	var lvl_label = Label.new()
-	lvl_label.text = "🗺️ CAMBIAR NIVEL (DEBUG)"
+	lvl_label.text = "⚔️ CAMBIAR OLEADA (DEBUG)"
 	lvl_label.add_theme_font_size_override("font_size", 22)
 	lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(lvl_label)
@@ -599,27 +599,25 @@ func _create_pause_panel():
 	hbox_levels.add_theme_constant_override("separation", 10)
 	vbox.add_child(hbox_levels)
 
-	var btn_lvl1 = Button.new()
-	btn_lvl1.text = "Nivel 1"
-	btn_lvl1.custom_minimum_size = Vector2(95, 40)
-	btn_lvl1.pressed.connect(func():
+	var btn_oleada_1 = Button.new()
+	btn_oleada_1.text = "Oleada 1"
+	btn_oleada_1.custom_minimum_size = Vector2(110, 40)
+	btn_oleada_1.pressed.connect(func():
 		_toggle_pause()
-		AudioManager.stop_all()
-		get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL01.tscn")
+		_ejecutar_cambio_oleada_debug(1)
 	)
-	_style_button(btn_lvl1, Color(0.1, 0.4, 0.6))
-	hbox_levels.add_child(btn_lvl1)
+	_style_button(btn_oleada_1, Color(0.1, 0.4, 0.6))
+	hbox_levels.add_child(btn_oleada_1)
 
-	var btn_lvl2 = Button.new()
-	btn_lvl2.text = "Nivel 2"
-	btn_lvl2.custom_minimum_size = Vector2(95, 40)
-	btn_lvl2.pressed.connect(func():
+	var btn_oleada_2 = Button.new()
+	btn_oleada_2.text = "Oleada 2"
+	btn_oleada_2.custom_minimum_size = Vector2(110, 40)
+	btn_oleada_2.pressed.connect(func():
 		_toggle_pause()
-		AudioManager.stop_all()
-		get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL02.tscn")
+		_ejecutar_cambio_oleada_debug(2)
 	)
-	_style_button(btn_lvl2, Color(0.6, 0.2, 0.4))
-	hbox_levels.add_child(btn_lvl2)
+	_style_button(btn_oleada_2, Color(0.6, 0.2, 0.4))
+	hbox_levels.add_child(btn_oleada_2)
 
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_res = HSeparator.new()
@@ -725,6 +723,18 @@ func _on_player_died():
 		if is_instance_valid(icon):
 			icon.text = "🖤"
 			icon.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3))
+
+func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
+	var root_node = _get_scene_root()
+	if not is_instance_valid(root_node):
+		return
+
+	if numero_oleada == 2:
+		if root_node.has_method("debug_ir_a_oleada_2"):
+			root_node.call("debug_ir_a_oleada_2")
+	else:
+		if root_node.has_method("debug_ir_a_oleada_1"):
+			root_node.call("debug_ir_a_oleada_1")
 
 func _style_button(btn: Button, color: Color):
 	# Desactivar foco para que Space/Enter no activen botones de la UI

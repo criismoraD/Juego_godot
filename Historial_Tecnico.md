@@ -1,4 +1,26 @@
 ## Estado Actual
+- 2026-04-19: Nueva escena reutilizable `Scenes/Projectiles/FlechaManoVisual.tscn` creada para la flecha en mano del Imp Estandarte; `ImpEstandarte.gd` ahora la instancia automáticamente (con fallback procedural).
+- 2026-04-19: Imp Estandarte ahora muestra una flecha visual en la mano derecha durante `IMP_DISPARO`: aparece en segundo 1 y se oculta en segundo 3 (tiempos exportables, escalados por cadencia).
+- 2026-04-19: `velocidad_flecha_arco` del Imp Estandarte pasó a rango real `min/max` (15.0–20.0): cada disparo ahora toma velocidad aleatoria dentro de ese intervalo.
+- 2026-04-19: Sincronizada la cadencia de disparo del Imp Estandarte con la animación `IMP_DISPARO` mediante `multiplicador_cadencia_arco` (acelera ritmo y playback de animación en conjunto).
+- 2026-04-19: Ajuste de escena `ImpEnemyEstandarte.tscn` para sincronía: `intervalo_disparo_arco = 0.1`, `tiempo_disparo_en_animacion_arco = 4.0`, `multiplicador_cadencia_arco = 2.0`, `velocidad_flecha_arco_min = 15.0`, `velocidad_flecha_arco_max = 20.0`.
+- 2026-04-19: Refactor de `ImpEstandarte.gd`: ahora hereda de `EnemyBase` (antes `ImpEnemy`) para eliminar del inspector los exports de combate del tridente que no aplican al estandarte.
+- 2026-04-19: Se incorporó en `ImpEstandarte.gd` una implementación propia de explosión de sangre y su propio `tiempo_antes_disolver`, manteniendo comportamiento de muerte sin depender de `ImpEnemy`.
+- 2026-04-19: ImpEnemyEstandarte ajustado al doble de cadencia/potencia de disparo en escena (`intervalo_disparo_arco = 0.05`, `tiempo_disparo_en_animacion_arco = 0.275`, `velocidad_flecha_arco = 16.0`).
+- 2026-04-19: Limpieza de overrides expuestos sin sentido en `ImpEnemyEstandarte.tscn` (se retiraron parámetros heredados del tridente: `velocidad_flecha_min/max`, `pausa_idle_min/max`).
+- 2026-04-19: Proyectil del Imp Estandarte ajustado: ahora sale más grande y rojo (escala y color configurables desde exports en `ImpEstandarte.gd`).
+- 2026-04-19: Corregido parser warning tratado como error en NIVEL01 (`Variant` inferido). Se tiparon variables explícitamente en el flujo de oleadas.
+- 2026-04-19: Menú ESC (debug) actualizado para cambiar entre Oleada 1 y Oleada 2 dentro de NIVEL01; ya no muestra selector de niveles.
+- 2026-04-19: NIVEL02 eliminado del flujo y del proyecto (se borraron `Scenes/Levels/NIVEL02.tscn`, `Scripts/Levels/NIVEL02.gd`, `Scripts/Levels/NIVEL02.gd.uid`).
+- 2026-04-19: NIVEL01 ahora contiene 2 oleadas consecutivas: Oleada 1 (15 enemigos) + cartel de transición + Oleada 2 (25 enemigos), todo en la misma escena.
+- 2026-04-19: GameUI removió el botón debug de "Nivel 2" para evitar saltos a una escena eliminada.
+- 2026-04-19: Fondo animado reactivado sin reintroducir ghosting: ruta de `TextureRect` corregida en scripts de NIVEL01/NIVEL02 y `TextureRect` fallback oculto en escenas NIVEL01/NIVEL02. Se mantiene fondo en capa 2.
+- 2026-04-19: Rollback solicitado por usuario: se revirtieron los cambios de fondo animado/ghosting (rutas en scripts NIVEL01/NIVEL02, ajustes de cámaras y composición en NIVEL01/NIVEL02) para volver al estado visual previo.
+- 2026-04-19: Debug fase 2 para ghosting: cámara raíz `PRESPECTIVA` mantiene `current = true` pero ahora no dibuja geometría (`cull_mask = 0`) en NIVEL01/NIVEL02 para evitar solape visual con el compositor de SubViewports.
+- 2026-04-19: Corregido ghosting/estela en elementos jugables de `SubViewportFrente3D` forzando limpieza y actualización continua del render target (`render_target_clear_mode = ALWAYS`, `render_target_update_mode = ALWAYS`) en NIVEL01/NIVEL02.
+- 2026-04-19: Corregidas rutas de nodos en `NIVEL01.gd` y `NIVEL02.gd` tras separar Fondo/Frente (`SubViewportFondo3D/SubViewport/TextureRect` y `VideoStreamPlayer`). Se fuerza reproducción del video en `_ready()` con loop activo.
+- 2026-04-19: `CamaraFrente` en NIVEL01/NIVEL02 ahora usa Environment local con `background_mode = 3` (Canvas) para evitar que el sky del entorno global opaque el `Fondo3DRect`.
+- 2026-04-19: `VideoStreamPlayer` del SubViewport interno quedó en full-rect y el `TextureRect` fallback quedó oculto por defecto para no tapar la animación.
 - Composición de 2 SubViewports 3D corregida: SubViewportFondo3D (DOF activo, cull_mask 2) y SubViewportFrente3D (sin DOF, transparent_bg, cull_mask ~layer2).
 - TORRE movida a SubViewportFondo3D con `layers = 2` para recibir DOF blur junto con BUSTO_BRONCE2.
 - SubViewportFrente3D ahora usa un Environment propio con `background_mode = 3` (Canvas) asignado directamente a CamaraFrente, eliminando el Sky opaco que sobreescribía `transparent_bg`.
@@ -21,6 +43,7 @@
 - Spawn inicial reducido a ImpEstandarte + 2 GoblinGirl tras aceptar diálogo.
 - UI debug incluye botón "REVIVIR ALIADAS" y slider para opacidad de CAPA001 (0.2 inicio).
 
+- 2026-04-19: Sincronización con repositorio remoto (git pull). Estado: Ya actualizado.
 - 2026-04-17: Configurada transición automática: al completar el Nivel 1, el botón "Continuar" ahora carga `NIVEL02.tscn`.
 - 2026-04-17: Solucionado error fatal en `NIVEL01.gd` al disparar al Imp Estandarte (desactualización de variable `enemigos_por_oleada`). Ajustado texto de victoria final a "¡Nivel 2 completado!" en `NIVEL02.gd`.
 - 2026-04-17: Añadido selector de niveles (Nivel 1 y Nivel 2) en el menú de pausa (GameUI) para iteración rápida.

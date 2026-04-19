@@ -1,12 +1,13 @@
 extends Node3D
 
 ## Script principal del nivel. Controla el flujo:
-## Nivel 0 (pacifista) → Nivel 1 (combate) → Nivel 2 (pendiente)
+## Nivel 0 (pacifista) → Nivel 1 (combate, 2 oleadas)
 
 # === CONFIGURACIÓN GENERAL ===
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0 ## Posición X donde el Imp se detiene
-@export var total_enemigos_nivel1: int = 15 ## Enemigos totales en el Nivel 1
+@export var total_enemigos_nivel1: int = 15 ## Enemigos totales en la Oleada 1
+@export var total_enemigos_oleada_2: int = 25 ## Enemigos totales en la Oleada 2
 
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
 @export_category("Nivel 0 — Pacifista")
@@ -28,11 +29,12 @@ enum NivelEstado { NIVEL_0, TRANSICION, NIVEL_1, VICTORIA_PACIFISTA, VICTORIA_NI
 var estado_actual: int = NivelEstado.NIVEL_0
 var enemigos_pacificos: Array = [] ## Los 3 enemigos del nivel 0
 var imp_estandarte: Node3D = null ## Referencia al imp que lleva el estandarte
+var oleada_combate_actual: int = 1
 
 # === REFERENCIAS ===
 @onready var wave_spawner: WaveSpawner = $WaveSpawner
 @onready var game_ui = $GameUI
-@onready var texture_rect = $SubViewport/TextureRect
+@onready var texture_rect: TextureRect = get_node_or_null("SubViewportFondo3D/SubViewport/TextureRect") as TextureRect
 @onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
 @onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
 @onready var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
@@ -279,13 +281,16 @@ func _on_pacifico_danado():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
+	oleada_combate_actual = 1
+	# Los supervivientes ya están en active_goblins del spawner.
+	# Solo se descuenta en la oleada 1.
+	var enemigos_a_spawnear: int = int(max(0, total_enemigos_nivel1 - supervivientes_pacificos))
+	_configurar_oleada_combate(enemigos_a_spawnear)
+
+func _configurar_oleada_combate(total_enemigos: int) -> void:
 	estado_actual = NivelEstado.NIVEL_1
 
-	# Los supervivientes ya están en active_goblins del spawner
-	# Configurar para spawnear los que faltan
-	var enemigos_a_spawnear = total_enemigos_nivel1 - supervivientes_pacificos
-
-	wave_spawner.enemigos_por_oleada = enemigos_a_spawnear
+	wave_spawner.enemigos_por_oleada = total_enemigos
 	wave_spawner.probabilidad_canonero = 0.0
 	wave_spawner.probabilidad_imp = 0.5
 	wave_spawner.probabilidad_goblin_girl = 0.5
@@ -303,7 +308,7 @@ func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	wave_spawner.current_wave = 0
 	wave_spawner.goblins_spawned_in_wave = 0
 	wave_spawner.is_wave_active = false
-	wave_spawner.wave_cooldown = 2.0
+	wave_spawner.wave_cooldown = 1.0
 
 func _monitorear_nivel_1():
 	# Verificar si todos los enemigos murieron (incluyendo supervivientes pacíficos)
@@ -318,11 +323,85 @@ func _monitorear_nivel_1():
 func _on_nivel1_completado(_numero_oleada: int):
 	if estado_actual != NivelEstado.NIVEL_1:
 		return
-	estado_actual = NivelEstado.VICTORIA_NIVEL1
 
 	wave_spawner.detener_spawning()
-	print("[NIVEL01] ¡Nivel 1 completado! Mostrando victoria con botón continuar...")
-	_mostrar_victoria_con_continuar(tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Nivel 1 completado!")
+
+	if oleada_combate_actual == 1:
+		oleada_combate_actual = 2
+		await _mostrar_cartel_oleada_2()
+		_configurar_oleada_combate(total_enemigos_oleada_2)
+		return
+
+	estado_actual = NivelEstado.VICTORIA_NIVEL1
+	print("[NIVEL01] ¡Oleada 2 completada! Mostrando victoria con botón continuar...")
+	_mostrar_victoria_con_continuar(tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleadas completadas!")
+
+func _mostrar_cartel_oleada_2() -> void:
+	var overlay: CanvasLayer = CanvasLayer.new()
+	overlay.layer = 205
+	overlay.name = "CartelOleada2"
+	add_child(overlay)
+
+	var fondo: ColorRect = ColorRect.new()
+	fondo.color = Color(0, 0, 0, 0.65)
+	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(fondo)
+
+	var label: Label = Label.new()
+	label.text = "OLEADA 2\n25 ENEMIGOS"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 52)
+	label.add_theme_color_override("font_color", Color(1, 0.88, 0.35))
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	label.offset_left = -320
+	label.offset_right = 320
+	label.offset_top = -80
+	label.offset_bottom = 80
+	overlay.add_child(label)
+
+	await get_tree().create_timer(1.8).timeout
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+
+func debug_ir_a_oleada_1() -> void:
+	_iniciar_oleada_debug(1)
+
+func debug_ir_a_oleada_2() -> void:
+	_iniciar_oleada_debug(2)
+
+func _iniciar_oleada_debug(numero_oleada: int) -> void:
+	if not is_instance_valid(wave_spawner):
+		return
+
+	# Limpiar enemigos y proyectiles previos para iniciar la oleada elegida en limpio.
+	var grupos_a_limpiar: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
+	var nodos_limpiados: Dictionary = {}
+	for grupo in grupos_a_limpiar:
+		for nodo in get_tree().get_nodes_in_group(grupo):
+			if is_instance_valid(nodo):
+				var id_nodo: int = nodo.get_instance_id()
+				if not nodos_limpiados.has(id_nodo):
+					nodos_limpiados[id_nodo] = true
+					nodo.queue_free()
+
+	enemigos_pacificos.clear()
+	imp_estandarte = null
+	wave_spawner.active_goblins.clear()
+	wave_spawner.shield_imps_activos.clear()
+
+	if game_ui and game_ui.has_method("set_modo_minimo"):
+		game_ui.set_modo_minimo(false)
+
+	_set_aliadas_activas(true)
+	AudioManager.play_music(2)
+
+	if numero_oleada == 2:
+		oleada_combate_actual = 2
+		_configurar_oleada_combate(total_enemigos_oleada_2)
+	else:
+		oleada_combate_actual = 1
+		_configurar_oleada_combate(total_enemigos_nivel1)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # VICTORIA PACIFISTA
@@ -531,8 +610,7 @@ func _mostrar_victoria_con_continuar(mensaje: String):
 
 	boton.pressed.connect(func():
 		overlay.queue_free()
-		AudioManager.stop_all()
-		get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL02.tscn")
+		_iniciar_oleadas_libres()
 	)
 
 func _iniciar_oleadas_libres():
