@@ -121,7 +121,6 @@ func _aplicar_rotacion_modelo():
 	var model = find_child("GIRL_IMP_ESCUDO", true, false)
 	if model:
 		model.rotation_degrees.y = rotacion_y_modelo
-		print("[ImpShieldGirl] Rotación Y aplicada: ", rotacion_y_modelo, "°")
 
 func _setup_animation_player():
 	# Desactivar AnimationTrees si existen
