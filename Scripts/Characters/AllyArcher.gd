@@ -129,8 +129,7 @@ func _setup_animation_player():
 			break
 	
 	if not anim_player:
-		push_warning("[AllyArcher] No se encontró AnimationPlayer!")
-		print("[AllyArcher] ⚠️ No se encontró AnimationPlayer con IDLE/DISPARO")
+		push_error("[AllyArcher] AnimationPlayer not found with IDLE/SHOOT animations")
 		return
 	
 	print("[AllyArcher] ✅ AnimationPlayer seleccionado: ", anim_player.name)
