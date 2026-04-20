@@ -164,11 +164,13 @@ func _get_hips_global_position() -> Vector3:
 
 ## Hook para que las subclases ejecuten lógica adicional en _ready()
 func _on_enemy_ready():
+	# Virtual method: override in subclasses to add initialization logic.
 	pass
 
 ## Hook para cuando el enemigo se detiene en modo pacífico.
 ## Las subclases pueden overridear para poses específicas.
 func _on_pacifico_detenido():
+	# Virtual method: override in subclasses if a specific stop animation is needed.
 	_play_animation("IDLE")
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -307,9 +309,11 @@ func _change_state(new_state: State):
 
 ## Hooks para subclases
 func _on_state_walking():
+	# Virtual method: override in subclasses to handle walking state transitions.
 	pass
 
 func _on_state_shooting():
+	# Virtual method: override in subclasses to handle shooting state transitions.
 	pass
 
 func _on_state_dying():

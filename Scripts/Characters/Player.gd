@@ -142,8 +142,10 @@ func _ready():
 			for anim_name in anims_to_loop:
 				if anim_player.has_animation(anim_name):
 					anim_player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
+		else:
+			push_error("[Player] AnimationPlayer not found in AnimationTree")
 	else:
-		pass # Error: No AnimationTree
+		push_error("[Player] AnimationTree not found")
 	
 	if skeleton:
 		var bone_name = "mixamorig_Spine1"
