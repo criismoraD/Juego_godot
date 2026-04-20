@@ -4,7 +4,7 @@ const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 
 # === CONFIGURACIÓN (Español) ===
 @export_category("Movimiento")
-@export var velocidad: float = 8.0 # Velocidad de la flecha
+@export var speed: float = 8.0 # Velocidad de la flecha
 @export var tiempo_vida: float = 10.0 # Tiempo antes de destruirse
 @export var tiempo_pegada: float = 5.0 # Tiempo antes de desaparecer cuando está pegada
 
@@ -62,7 +62,7 @@ func _physics_process(delta):
 		return
 	
 	# Movimiento recto (sin gravedad - es una ballesta)
-	global_position += direction * velocidad * delta
+	global_position += direction * speed * delta
 	
 	# Forzar Z = 0 (2.5D)
 	global_position.z = 0
@@ -223,14 +223,15 @@ func _check_destroy():
 		_safe_destroy()
 
 func initialize(shoot_direction: Vector3, power: float = 1.0):
+	# Garantizar que el proyectil se mueva en el plano XY (2.5D)
 	direction = Vector3(shoot_direction.x, shoot_direction.y, 0).normalized()
 	if direction.length_squared() < 0.01:
 		direction = Vector3.LEFT
 	
-	# Aplicar potencia a la velocidad
-	velocidad *= power
+	# Calcular velocidad usando la lógica solicitada (lerp de 10.0 a 30.0)
+	speed = lerp(10.0, 30.0, clamp(power, 0.0, 1.0))
 	
-	# Rotación inicial
+	# Rotación inicial para que el proyectil mire hacia donde viaja
 	var angle = atan2(direction.y, direction.x)
 	rotation = Vector3(0, 0, angle)
 

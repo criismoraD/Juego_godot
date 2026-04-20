@@ -82,8 +82,10 @@ func _shoot_arrow():
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
 	var direction = (target_pos - spawn_pos).normalized()
 
-	arrow.velocidad = velocidad_flecha
-	arrow.initialize(direction)
+	# Calcular power para que la velocidad sea la configurada (velocidad_flecha)
+	# velocidad = 10 + (30 - 10) * power  =>  power = (velocidad - 10) / 20
+	var power = (velocidad_flecha - 10.0) / 20.0
+	arrow.initialize(direction, power)
 
 	get_tree().root.add_child(arrow)
 	arrow.global_position = spawn_pos
