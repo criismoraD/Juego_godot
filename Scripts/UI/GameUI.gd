@@ -91,6 +91,7 @@ var resolution_labels: Array = [
 	"3840×2160 (4K)"
 ]
 const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
+const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
 const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
 const OUTLINE_WIDTH_RUNTIME := 20.0
 
@@ -163,28 +164,26 @@ func _find_capa001():
 		capa001_sprite = null
 
 func _scan_outline_materials():
-	# Lista de materiales conocidos con outline
-	var material_paths = [
-		"res://Assets/Characters/Player/ARQUERA_MATERIAL.tres",
-		"res://Assets/Projectiles/Arrow/Arrows.tres",
-		"res://Assets/Environment/Ladder/ESCALERAS.tres",
-		"res://Assets/Projectiles/GoblinCrossbow/Hand Crossbow.tres",
-		"res://Assets/Materials/MAT_GOBLING.tres",
-		"res://Assets/Characters/GoblinGirl/MAT_GOBLIN_GIRL.tres",
-		"res://Assets/Environment/Platform/MAT_platform.tres",
-		"res://Assets/Environment/Shield/MAT_shield.tres",
-		"res://Assets/Environment/SpikeTrap/MAT_spike_trap.tres",
-		"res://Assets/Weapons/PlayerBow/Recurve Bow 2.tres"
+	# Lista de materiales conocidos con outline (Preload para evitar E/S síncrona en runtime)
+	var materials = [
+		preload("res://Assets/Characters/Player/ARQUERA_MATERIAL.tres"),
+		preload("res://Assets/Projectiles/Arrow/Arrows.tres"),
+		preload("res://Assets/Environment/Ladder/ESCALERAS.tres"),
+		preload("res://Assets/Projectiles/GoblinCrossbow/Hand Crossbow.tres"),
+		preload("res://Assets/Characters/Goblin/GOBLING_MATERIAL.tres"),
+		preload("res://Assets/Characters/GoblinGirl/MAT_GOBLIN_GIRL.tres"),
+		preload("res://Assets/Environment/Platform/MAT_platform.tres"),
+		preload("res://Assets/Environment/Shield/MAT_shield.tres"),
+		preload("res://Assets/Environment/SpikeTrap/MAT_spike_trap.tres"),
+		preload("res://Assets/Weapons/PlayerBow/Recurve Bow 2.tres")
 	]
 
-	for path in material_paths:
-		if ResourceLoader.exists(path):
-			var mat = load(path)
-			if mat and mat.next_pass:
-				materials_with_outline.append({
-					"material": mat,
-					"outline": mat.next_pass
-				})
+	for mat in materials:
+		if mat and mat.next_pass:
+			materials_with_outline.append({
+				"material": mat,
+				"outline": mat.next_pass
+			})
 
 func _create_ui():
 	# ═══════════════════════════════════════════════════════════════════════════
@@ -944,14 +943,11 @@ func _aplicar_toggle_outline_global():
 func _forzar_outline_en_runtime(habilitado: bool) -> void:
 	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, habilitado)
 
-	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
-		push_warning("[GameUI] No se encontró TOON_LINEANEGRA.gdshader para refresco runtime.")
+	if SHADER_OUTLINE == null:
+		push_warning("[GameUI] No se pudo cargar SHADER_OUTLINE (TOON_LINEANEGRA.gdshader).")
 		return
 
-	var shader_outline := ResourceLoader.load(RUTA_SHADER_OUTLINE, "Shader", ResourceLoader.CACHE_MODE_REPLACE) as Shader
-	if shader_outline == null:
-		push_warning("[GameUI] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
-		return
+	var shader_outline := SHADER_OUTLINE
 
 	for item in materials_with_outline:
 		if not item is Dictionary:
