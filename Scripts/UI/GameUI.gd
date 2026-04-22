@@ -692,16 +692,18 @@ func _update_health_ui():
 func _on_health_changed(_new_health: int):
 	_update_health_ui()
 
-func _process(delta):
+func _process(_delta):
 	if wave_spawner and is_instance_valid(wave_spawner) and wave_spawner.get("is_wave_active"):
 		var vivos = 0
-		var lista_limpia = []
 		if wave_spawner.get("active_goblins") != null:
-			for e in wave_spawner.active_goblins:
+			var active_goblins: Array = wave_spawner.active_goblins
+			# Opt: Iteración inversa in-place en lugar de crear lista_limpia para evitar allocations de memoria/GC en _process
+			for i in range(active_goblins.size() - 1, -1, -1):
+				var e = active_goblins[i]
 				if is_instance_valid(e) and not (e.get("current_state") in [5, 6]): # 5=DYING, 6=DEAD (En ImpShieldGirl y EnemyBase)
-					lista_limpia.append(e)
 					vivos += 1
-			wave_spawner.active_goblins = lista_limpia
+				else:
+					active_goblins.remove_at(i)
 
 		var total = wave_spawner.get("enemigos_por_oleada")
 		var spawneados = wave_spawner.get("goblins_spawned_in_wave")

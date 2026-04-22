@@ -27,3 +27,7 @@
 ## 2025-01-24 - [Performance] Node Group Caching in GDScript
 **Learning:** Calling `get_tree().get_nodes_in_group()` in Godot 4 triggers a SceneTree traversal and returns a fresh copy of the array on every call. In UI toggles or performance-sensitive loops, this leads to redundant allocations and CPU overhead.
 **Action:** Implement a local cache (e.g., `_escudos_cache`) to store group references. Use a helper method (e.g., `_get_valid_escudos`) to prune the cache using backward iteration and `is_instance_valid()` before accessing the nodes.
+
+## 2026-04-22 - [In-Place Array Iteration over Creation in Hot Paths]
+**Learning:** [Allocating arrays (like `lista_limpia`) during `_process` to track active nodes creates unnecessary Garbage Collection (GC) overhead every single frame.]
+**Action:** [Use an in-place reverse iteration over existing arrays (`for i in range(arr.size() - 1, -1, -1):`) and remove invalid entries directly using `remove_at(i)`. This modifies the array without requiring new allocations, effectively eliminating GC stutters in tight loops.]
