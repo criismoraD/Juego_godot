@@ -55,6 +55,8 @@ var health: int = 1
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 
+static var _cached_wave_spawner: Node = null
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -267,9 +269,38 @@ func _cambiar_estado(nuevo: State):
 # CONTEO DE ENEMIGOS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+func _get_cached_wave_spawner() -> Node:
+	if is_instance_valid(_cached_wave_spawner):
+		return _cached_wave_spawner
+
+	if get_tree() == null:
+		return null
+
+	_cached_wave_spawner = get_tree().get_first_node_in_group("wave_spawners")
+	if _cached_wave_spawner:
+		return _cached_wave_spawner
+
+	var scene_root = get_tree().current_scene
+	if scene_root == null:
+		scene_root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+
+	var wave_spawner = scene_root.find_child("WaveSpawner", true, false)
+	if wave_spawner:
+		_cached_wave_spawner = wave_spawner
+	return _cached_wave_spawner
+
 func _contar_enemigos_vivos() -> int:
 	var count = 0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	var enemies = []
+
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
+	else:
+		# Fallback a búsqueda O(N) si no hay spawner (menos óptimo)
+		enemies = get_tree().get_nodes_in_group("enemies")
+
+	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
 		if enemy.get("current_state") != null:
