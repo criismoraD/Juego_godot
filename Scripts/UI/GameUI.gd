@@ -135,10 +135,8 @@ func _get_scene_root() -> Node:
 	return get_tree().root.get_child(get_tree().root.get_child_count() - 1)
 
 func _find_player():
-	var players = get_tree().get_nodes_in_group("player")
-	if players.size() > 0:
-		player = players[0]
-	else:
+	player = get_tree().get_first_node_in_group("player")
+	if not player:
 		# Buscar por nombre
 		var root_node = _get_scene_root()
 		player = root_node.find_child("Player", true, false)
@@ -851,9 +849,8 @@ func _find_wave_spawner() -> Node:
 		return wave_spawner
 
 	# Buscar mediante grupo (Optimizado)
-	var spawners = get_tree().get_nodes_in_group("wave_spawners")
-	if not spawners.is_empty():
-		wave_spawner = spawners[0]
+	wave_spawner = get_tree().get_first_node_in_group("wave_spawners")
+	if wave_spawner:
 		return wave_spawner
 
 	# Fallback: Buscar por nombre en la raíz de la escena

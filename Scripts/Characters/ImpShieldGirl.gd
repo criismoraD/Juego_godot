@@ -75,9 +75,8 @@ func _get_cached_wave_spawner() -> Node:
 	if get_tree() == null:
 		return null
 
-	var wave_spawners = get_tree().get_nodes_in_group("wave_spawners")
-	if wave_spawners.size() > 0:
-		_cached_wave_spawner = wave_spawners[0]
+	_cached_wave_spawner = get_tree().get_first_node_in_group("wave_spawners")
+	if _cached_wave_spawner:
 		return _cached_wave_spawner
 
 	var scene_root = get_tree().current_scene
