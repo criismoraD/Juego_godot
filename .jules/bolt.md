@@ -31,3 +31,7 @@
 ## 2026-04-22 - [In-Place Array Iteration over Creation in Hot Paths]
 **Learning:** [Allocating arrays (like `lista_limpia`) during `_process` to track active nodes creates unnecessary Garbage Collection (GC) overhead every single frame.]
 **Action:** [Use an in-place reverse iteration over existing arrays (`for i in range(arr.size() - 1, -1, -1):`) and remove invalid entries directly using `remove_at(i)`. This modifies the array without requiring new allocations, effectively eliminating GC stutters in tight loops.]
+
+## 2026-04-23 - [O(1) First Node Group Query]
+**Learning:** [Using `get_tree().get_nodes_in_group("group_name")` in GDScript allocates an array of all members. If you only need the first element (e.g. `get_nodes_in_group(...)[0]`), it creates unnecessary allocations and array copies.]
+**Action:** [Use `get_tree().get_first_node_in_group("group_name")` to retrieve the first matching node without array allocations. It provides O(1) indexed lookup instead of O(N) array generation.]
