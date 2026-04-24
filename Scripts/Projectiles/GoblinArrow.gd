@@ -335,8 +335,9 @@ func _create_trail_particles():
 	trail_particles.process_material = process_mat
 	
 	# Mesh de partícula (esfera pequeña)
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 	
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color_proyectil

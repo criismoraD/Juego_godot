@@ -1,4 +1,11 @@
 ## Estado Actual
+- 2026-04-24: **Optimización crítica de rendimiento en NIVEL01**: 
+  - `PRESPECTIVA` (cámara raíz): `cull_mask` cambiado de `3` → `0` para evitar renderizado triple de geometría.
+  - `TestCube2-BASE_ENEMIGA`: `subdivide_width/height/depth` reducido de `100` → `10` (de ~120k a ~1.2k triángulos).
+- 2026-04-24: Convertidas todas las partículas de `QuadMesh` a `SphereMesh` planas (`radius = 0.05`, `height = 0.01`) en `VFXFactory.gd`, `EnemyBase.gd`, `ImpEnemy.gd`, `ImpEstandarte.gd`, `EscudoRoto.gd`, `ImpTrident.gd`, `GoblinArrow.gd` y `GoblinGirlArrow.gd`. Corregido error de parser por falta de `var` en declaraciones de `sphere`/`esfera`.
+- 2026-04-24: Corregido error de asignación en `ImpEstandarte.gd`: `CapsuleShape3D` no tiene propiedad `size`; reemplazado `forma.size = Vector2(1.2, 1.2)` por `forma.radius = 0.6` y `forma.height = 1.2`.
+- 2026-04-24: Corregido error de parser en `ImpEstandarte.gd`: eliminada la variable `game_feel` duplicada (ya existe en `EnemyBase`). Refactorizado `take_damage` para usar `super.take_damage(amount)` en lugar de duplicar la lógica de daño/muerte del padre.
+- 2026-04-24: Revertido `Assets/Shaders/TOON_LINEANEGRA.gdshader` al método original **Inverted Hull** (`cull_front`, extrusión de vértices por normal en clip space). Se descartó el Screen Space Outline por solicitud del usuario.
 - 2026-04-19: Nueva escena reutilizable `Scenes/Projectiles/FlechaManoVisual.tscn` creada para la flecha en mano del Imp Estandarte; `ImpEstandarte.gd` ahora la instancia automáticamente (con fallback procedural).
 - 2026-04-19: Imp Estandarte ahora muestra una flecha visual en la mano derecha durante `IMP_DISPARO`: aparece en segundo 1 y se oculta en segundo 3 (tiempos exportables, escalados por cadencia).
 - 2026-04-19: `velocidad_flecha_arco` del Imp Estandarte pasó a rango real `min/max` (15.0–20.0): cada disparo ahora toma velocidad aleatoria dentro de ese intervalo.

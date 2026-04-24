@@ -59,11 +59,8 @@ var estandarte_ya_soltado: bool = false
 var attachment_flecha_mano: BoneAttachment3D = null
 var flecha_visual_mano: Node3D = null
 
-var game_feel: Node = null
-
 
 func _on_enemy_ready():
-	game_feel = get_node_or_null("/root/GameFeel")
 	# Configuración base del Imp (sin usar lógica de tridente)
 	color_borde_disolucion = Color(1.0, 0.15, 0.1)
 	rastrear_jugador = true
@@ -276,34 +273,19 @@ func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
-	if modo_pacifico:
-		pacifico_danado.emit()
-
 	if soltar_estandarte_al_atacar and not estandarte_ya_soltado:
 		_soltar_estandarte_fisico()
 		estandarte_ya_soltado = true
 		_actualizar_visual_arma(current_state == State.SHOOTING)
 
-	health -= int(amount)
+	super.take_damage(amount)
 
-	if has_node("/root/GameFeel"):
-		if game_feel:
-			game_feel.on_enemy_hurt()
-
-	if health <= 0:
-		if has_node("/root/GameFeel"):
-			if game_feel:
-				game_feel.on_enemy_death()
-		_change_state(State.DYING)
-		died.emit()
-		return
-
-	_flash_red()
-	if usar_animacion_hit:
-		_reproducir_hit_aleatorio()
-
-	# Reusar sonido del imp normal en daño (atenuado para no saturar)
-	AudioManager.play_sfx("imp_death", volumen_hit_imp_db)
+	if current_state != State.DYING and current_state != State.DEAD:
+		_flash_red()
+		if usar_animacion_hit:
+			_reproducir_hit_aleatorio()
+		# Reusar sonido del imp normal en daño (atenuado para no saturar)
+		AudioManager.play_sfx("imp_death", volumen_hit_imp_db)
 
 
 func _reproducir_hit_aleatorio():
@@ -366,8 +348,9 @@ func _crear_explosion_sangre():
 
 	particles.process_material = process_mat
 
-	var sphere := QuadMesh.new()
-	sphere.size = Vector2(1.0, 1.0)
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.05
+	sphere.height = 0.01
 	var blood_mat := StandardMaterial3D.new()
 	blood_mat.albedo_color = Color(0.6, 0.0, 0.0)
 	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
@@ -547,7 +530,8 @@ func _soltar_estandarte_fisico():
 
 	var colision := CollisionShape3D.new()
 	var forma := CapsuleShape3D.new()
-	forma.size = Vector2(1.2, 1.2)
+	forma.radius = 0.6
+	forma.height = 1.2
 	colision.shape = forma
 	cuerpo_caida.add_child(colision)
 
@@ -611,8 +595,9 @@ func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
 
 	particulas.process_material = proceso
 
-	var esfera := QuadMesh.new()
-	esfera.size = Vector2(1.0, 1.0)
+	var esfera := SphereMesh.new()
+	esfera.radius = 0.05
+	esfera.height = 0.01
 	var material_particula := StandardMaterial3D.new()
 	material_particula.albedo_color = color_borde_disolucion
 	material_particula.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES

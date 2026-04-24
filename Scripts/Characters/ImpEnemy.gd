@@ -163,8 +163,9 @@ func _crear_explosion_sangre():
 	particles.process_material = process_mat
 	
 	# Mesh esfera para cada gota
-	var sphere = QuadMesh.new()
-	sphere.size = Vector2(1.0, 1.0)
+	var sphere = SphereMesh.new()
+	sphere.radius = 0.05
+	sphere.height = 0.01
 	var blood_mat = StandardMaterial3D.new()
 	blood_mat.albedo_color = color_albedo
 	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES

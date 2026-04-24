@@ -95,8 +95,9 @@ static func spawn_impact(
 	particles.process_material = process_mat
 
 	# Mesh (pequeñas esferas)
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -150,8 +151,9 @@ static func spawn_muzzle_flash(
 
 	particles.process_material = process_mat
 
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -208,8 +210,9 @@ static func spawn_blood(
 
 	particles.process_material = process_mat
 
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -264,8 +267,9 @@ static func spawn_dust(
 
 	particles.process_material = process_mat
 
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -321,8 +325,9 @@ static func spawn_jump(
 
 	particles.process_material = process_mat
 
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -375,8 +380,9 @@ static func spawn_landing(world: Node, position: Vector3, intensity: float = 1.0
 
 	particles.process_material = process_mat
 
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -435,8 +441,9 @@ static func spawn_death_explosion(
 
 	particles.process_material = process_mat
 
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -555,8 +562,9 @@ static func create_arrow_trail(
 
 	particles.process_material = process_mat
 
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(1.0, 1.0)
+	var mesh = SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.01
 
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color

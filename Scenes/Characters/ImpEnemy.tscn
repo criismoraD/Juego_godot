@@ -23,7 +23,7 @@ particulas_detener_emision = 0.5
 [node name="ImpModel" parent="." unique_id=1610391679 instance=ExtResource("2_model")]
 transform = Transform3D(-1.9670125e-08, 0, -0.45, 0, 0.45, 0, 0.45, 0, -1.9670125e-08, 0, 0, 0)
 
-[node name="Skeleton3D" parent="ImpModel/Armature" parent_id_path=PackedInt32Array(1610391679, 1641017049) index="0" unique_id=581469959]
+[node name="Skeleton3D" parent="ImpModel/Armature" parent_id_path=PackedInt32Array(1610391679, 158923065) index="0" unique_id=488881511]
 bones/0/position = Vector3(0.41185173, -0.6366744, -38.424797)
 bones/0/rotation = Quaternion(-0.700773, 0.009704942, -0.022853578, 0.71295214)
 bones/1/rotation = Quaternion(-0.0036226069, 0.0036187181, -0.0015774323, 0.9999857)
