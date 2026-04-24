@@ -11,36 +11,38 @@ class_name ImpShieldGirl
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @export_category("Movimiento")
-@export var velocidad_caminar: float = 1.5 ## Velocidad al caminar hacia el enemigo
-@export var distancia_proteccion: float = 0.5 ## Distancia a la izquierda del enemigo protegido
+@export var velocidad_caminar: float = 1.5  ## Velocidad al caminar hacia el enemigo
+@export var distancia_proteccion: float = 0.5  ## Distancia a la izquierda del enemigo protegido
 
 @export_category("Escudo")
-@export var escudo_vida: int = 3 ## Impactos que aguanta el escudo antes de romperse
+@export var escudo_vida: int = 3  ## Impactos que aguanta el escudo antes de romperse
 
 @export_category("Huida")
-@export var velocidad_huida: float = 2.0 ## Velocidad al huir (sin escudo)
-@export var distancia_fuera_pantalla: float = 15.0 ## Posición X para destruirse al huir
+@export var velocidad_huida: float = 2.0  ## Velocidad al huir (sin escudo)
+@export var distancia_fuera_pantalla: float = 15.0  ## Posición X para destruirse al huir
 
 @export_category("Vida")
-@export var vida_maxima: int = 1 ## HP del personaje (cuando no tiene escudo)
+@export var vida_maxima: int = 1  ## HP del personaje (cuando no tiene escudo)
 
 @export_category("Efecto de Muerte")
 @export var duracion_disolucion: float = 1.0
-@export var color_borde_disolucion: Color = Color(0.8, 0.2, 0.8) ## Color púrpura del borde
+@export var color_borde_disolucion: Color = Color(0.8, 0.2, 0.8)  ## Color púrpura del borde
 
 @export_category("Modelo")
-@export var rotacion_y_modelo: float = 0.0 ## Rotación Y en grados para corregir orientación del modelo
+@export var rotacion_y_modelo: float = 0.0  ## Rotación Y en grados para corregir orientación del modelo
 
 @export_category("Animaciones")
-@export var anim_caminar: String = "CAMINAR_ESCUDO_IMP" ## Animación de caminar
-@export var anim_idle: String = "IMP_ESCUDO_IDLE" ## Animación de defender (idle)
-@export var anim_impacto: String = "IMP_ESCUDO_IMPACTO" ## Animación al recibir impacto en el escudo
-@export var anim_escape: String = "IMP_ESCUDO_ESCAPE" ## Animación de escape (escudo roto)
-@export var anim_huida: String = "IMP_ESCUDO_HUIDA" ## Animación de huida
-@export var anim_muertes: PackedStringArray = ["IMP_ESCUDO_MUERTE01", "IMP_ESCUDO_MUERTE02", "IMP_ESCUDO_MUERTE03"] ## Animaciones de muerte (aleatoria)
+@export var anim_caminar: String = "CAMINAR_ESCUDO_IMP"  ## Animación de caminar
+@export var anim_idle: String = "IMP_ESCUDO_IDLE"  ## Animación de defender (idle)
+@export var anim_impacto: String = "IMP_ESCUDO_IMPACTO"  ## Animación al recibir impacto en el escudo
+@export var anim_escape: String = "IMP_ESCUDO_ESCAPE"  ## Animación de escape (escudo roto)
+@export var anim_huida: String = "IMP_ESCUDO_HUIDA"  ## Animación de huida
+@export var anim_muertes: PackedStringArray = [
+	"IMP_ESCUDO_MUERTE01", "IMP_ESCUDO_MUERTE02", "IMP_ESCUDO_MUERTE03"
+]  ## Animaciones de muerte (aleatoria)
 
 @export_category("Posición Libre")
-@export var rango_posicion_libre: Vector2 = Vector2(1.0, 10.0) ## Rango X aleatorio si no hay enemigo
+@export var rango_posicion_libre: Vector2 = Vector2(1.0, 10.0)  ## Rango X aleatorio si no hay enemigo
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
@@ -48,8 +50,8 @@ class_name ImpShieldGirl
 
 var dissolve_shader = preload("res://Assets/Shaders/dissolve.gdshader")
 var anim_player: AnimationPlayer
-var escudo_node: Node3D ## Nodo del modelo del escudo
-var model_root: Node3D ## Nodo raíz del modelo del personaje
+var escudo_node: Node3D  ## Nodo del modelo del escudo
+var model_root: Node3D  ## Nodo raíz del modelo del personaje
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO
@@ -59,14 +61,18 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 var current_state: State = State.WALKING
 var escudo_vida_actual: int = 3
 var health: int = 1
-var enemigo_protegido: Node3D = null ## Referencia al enemigo que estamos protegiendo
-var spawn_position: Vector3 = Vector3.ZERO ## Posición de spawn original
+var enemigo_protegido: Node3D = null  ## Referencia al enemigo que estamos protegiendo
+var spawn_position: Vector3 = Vector3.ZERO  ## Posición de spawn original
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
-var hit_anim_timer: float = 0.0 ## Timer para volver de SHIELD_HIT a DEFENDING
-var posicion_libre_destino: float = -1.0 ## Posición X destino cuando no hay enemigo
+var hit_anim_timer: float = 0.0  ## Timer para volver de SHIELD_HIT a DEFENDING
+var posicion_libre_destino: float = -1.0  ## Posición X destino cuando no hay enemigo
+
+var _escudo_meshes: Array = []
+var _flash_mat: StandardMaterial3D
 
 static var _cached_wave_spawner: Node = null
+
 
 func _get_cached_wave_spawner() -> Node:
 	if is_instance_valid(_cached_wave_spawner):
@@ -88,6 +94,7 @@ func _get_cached_wave_spawner() -> Node:
 		_cached_wave_spawner = wave_spawner
 	return _cached_wave_spawner
 
+
 # === SEÑALES ===
 signal died
 
@@ -95,12 +102,19 @@ signal died
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 func _ready():
 	add_to_group("enemies")
 	add_to_group("shield_imps")
 	escudo_vida_actual = escudo_vida
 	health = vida_maxima
 	spawn_position = global_position
+
+	_flash_mat = StandardMaterial3D.new()
+	_flash_mat.albedo_color = Color(1, 1, 1)
+	_flash_mat.emission_enabled = true
+	_flash_mat.emission = Color(1, 1, 1)
+	_flash_mat.emission_energy_multiplier = 3.0
 
 	_setup_animation_player()
 	_buscar_escudo()
@@ -112,6 +126,7 @@ func _ready():
 	# Buscar enemigo a proteger después de un frame (para que todos estén listos)
 	call_deferred("_buscar_enemigo_a_proteger")
 
+
 func _aplicar_rotacion_modelo():
 	## Aplica rotación Y al modelo raíz para corregir orientación
 	if rotacion_y_modelo == 0.0:
@@ -120,6 +135,7 @@ func _aplicar_rotacion_modelo():
 	var model = find_child("GIRL_IMP_ESCUDO", true, false)
 	if model:
 		model.rotation_degrees.y = rotacion_y_modelo
+
 
 func _setup_animation_player():
 	# Desactivar AnimationTrees si existen
@@ -158,6 +174,7 @@ func _setup_animation_player():
 			if anim:
 				anim.loop_mode = Animation.LOOP_LINEAR
 
+
 func _buscar_escudo():
 	# Buscar el nodo del escudo (instancia de ESCUDO_IMP.glb)
 	escudo_node = find_child("ESCUDO_IMP", true, false)
@@ -167,6 +184,14 @@ func _buscar_escudo():
 			if "ESCUDO" in child.name.to_upper() and child is Node3D:
 				escudo_node = child
 				break
+
+	_escudo_meshes.clear()
+	if escudo_node:
+		if escudo_node is MeshInstance3D:
+			_escudo_meshes.append(escudo_node)
+		else:
+			_escudo_meshes = escudo_node.find_children("*", "MeshInstance3D", true, false)
+
 
 func _buscar_enemigo_a_proteger():
 	var enemies = []
@@ -185,13 +210,16 @@ func _buscar_enemigo_a_proteger():
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
 		if enemy is ImpShieldGirl:
-			continue # No proteger a otras ImpShieldGirl
+			continue  # No proteger a otras ImpShieldGirl
 
 		# Solo proteger enemigos que estén en SHOOTING (parados/disparando)
 		if enemy is EnemyBase:
 			if enemy.current_state != EnemyBase.State.SHOOTING:
 				continue
-			if enemy.current_state == EnemyBase.State.DYING or enemy.current_state == EnemyBase.State.DEAD:
+			if (
+				enemy.current_state == EnemyBase.State.DYING
+				or enemy.current_state == EnemyBase.State.DEAD
+			):
 				continue
 
 		# Elegir el enemigo más a la izquierda (más cercano al jugador)
@@ -201,13 +229,15 @@ func _buscar_enemigo_a_proteger():
 
 	if mejor_enemigo:
 		enemigo_protegido = mejor_enemigo
-		posicion_libre_destino = -1.0 # Reset posición libre
+		posicion_libre_destino = -1.0  # Reset posición libre
 	else:
 		enemigo_protegido = null
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROCESO PRINCIPAL
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _physics_process(delta):
 	# Gravedad
@@ -232,9 +262,11 @@ func _physics_process(delta):
 
 	move_and_slide()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADOS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _process_walking(delta):
 	# Si no hay enemigo a proteger, buscar uno
@@ -244,7 +276,10 @@ func _process_walking(delta):
 			# Sin enemigos: ir a posición libre aleatoria
 			if posicion_libre_destino < 0:
 				posicion_libre_destino = randf_range(rango_posicion_libre.x, rango_posicion_libre.y)
-				print("[ImpShieldGirl] Sin enemigo → posición libre X=", "%.1f" % posicion_libre_destino)
+				print(
+					"[ImpShieldGirl] Sin enemigo → posición libre X=",
+					"%.1f" % posicion_libre_destino
+				)
 
 			var dist_to_free = global_position.x - posicion_libre_destino
 			if dist_to_free > 0.1:
@@ -254,10 +289,13 @@ func _process_walking(delta):
 				_cambiar_estado(State.DEFENDING)
 			return
 		else:
-			posicion_libre_destino = -1.0 # Encontramos enemigo, reset
+			posicion_libre_destino = -1.0  # Encontramos enemigo, reset
 
 	# Verificar que el enemigo siga en SHOOTING (no haya muerto o se haya movido)
-	if enemigo_protegido is EnemyBase and enemigo_protegido.current_state != EnemyBase.State.SHOOTING:
+	if (
+		enemigo_protegido is EnemyBase
+		and enemigo_protegido.current_state != EnemyBase.State.SHOOTING
+	):
 		# Enemigo murió o cambió, nos plantamos aquí
 		velocity.x = 0
 		_cambiar_estado(State.DEFENDING)
@@ -275,9 +313,11 @@ func _process_walking(delta):
 		velocity.x = 0
 		_cambiar_estado(State.DEFENDING)
 
+
 func _process_defending(_delta):
 	velocity.x = 0
 	# Mantener posición estática, ya no persigue a otro enemigo si muere.
+
 
 func _process_shield_hit(delta):
 	velocity.x = 0
@@ -285,19 +325,23 @@ func _process_shield_hit(delta):
 	if hit_anim_timer <= 0:
 		_cambiar_estado(State.DEFENDING)
 
+
 func _process_escaping(_delta):
 	velocity.x = 0
 
+
 func _process_fleeing(_delta):
-	velocity.x = velocidad_huida # Huir hacia la derecha (X positivo)
+	velocity.x = velocidad_huida  # Huir hacia la derecha (X positivo)
 
 	# Destruirse si sale de pantalla
 	if global_position.x > spawn_position.x + distancia_fuera_pantalla:
 		_limpiar_y_destruir()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CAMBIO DE ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _cambiar_estado(nuevo: State):
 	current_state = nuevo
@@ -319,9 +363,11 @@ func _cambiar_estado(nuevo: State):
 		State.DEAD:
 			pass
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DAÑO
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
@@ -341,41 +387,34 @@ func take_damage(amount: float):
 			health = 0
 			_cambiar_estado(State.DYING)
 
+
 func recibir_dano(amount: int):
 	take_damage(float(amount))
+
 
 func _flash_escudo():
 	## Flash blanco rápido en el escudo al recibir impacto
 	if not escudo_node or not is_instance_valid(escudo_node):
 		return
 
-	var meshes = []
-	if escudo_node is MeshInstance3D:
-		meshes.append(escudo_node)
-	else:
-		meshes = escudo_node.find_children("*", "MeshInstance3D", true, false)
-
-	var flash_mat = StandardMaterial3D.new()
-	flash_mat.albedo_color = Color(1, 1, 1)
-	flash_mat.emission_enabled = true
-	flash_mat.emission = Color(1, 1, 1)
-	flash_mat.emission_energy_multiplier = 3.0
-
 	var originals: Array = []
-	for mesh in meshes:
+	for mesh in _escudo_meshes:
 		if is_instance_valid(mesh):
 			originals.append({"mesh": mesh, "mat": mesh.material_override})
-			mesh.material_override = flash_mat
+			mesh.material_override = _flash_mat
 
-	get_tree().create_timer(0.08).timeout.connect(func():
-		for item in originals:
-			if is_instance_valid(item["mesh"]):
-				item["mesh"].material_override = item["mat"]
+	get_tree().create_timer(0.08).timeout.connect(
+		func():
+			for item in originals:
+				if is_instance_valid(item["mesh"]):
+					item["mesh"].material_override = item["mat"]
 	)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MUERTE Y DISOLUCIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _on_dying():
 	collision_layer = 0
@@ -389,10 +428,12 @@ func _on_dying():
 	_play_animation(chosen)
 
 	var dur = _get_animation_duration(chosen)
-	get_tree().create_timer(dur + 0.5).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			_start_dissolve()
+	get_tree().create_timer(dur + 0.5).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_start_dissolve()
 	)
+
 
 func _start_dissolve():
 	if is_dissolving:
@@ -428,10 +469,12 @@ func _start_dissolve():
 	tween.tween_method(_update_dissolve, 0.0, 1.0, duracion_disolucion)
 	tween.tween_callback(_finish_dissolve)
 
+
 func _update_dissolve(value: float):
 	for item in dissolve_materials:
 		if is_instance_valid(item["mesh"]):
 			item["material"].set_shader_parameter("dissolve_amount", value)
+
 
 func _finish_dissolve():
 	for mesh in find_children("*", "MeshInstance3D", true, false):
@@ -443,14 +486,17 @@ func _finish_dissolve():
 	died.emit()
 	queue_free()
 
+
 func _limpiar_y_destruir():
 	current_state = State.DEAD
 	died.emit()
 	queue_free()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ANIMACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float = 1.0):
 	if not anim_player:
@@ -464,6 +510,7 @@ func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float
 			return
 
 	push_warning("[ImpShieldGirl] Animación no encontrada: " + anim_name)
+
 
 func _get_animation_duration(anim_name: String) -> float:
 	if not anim_player:
