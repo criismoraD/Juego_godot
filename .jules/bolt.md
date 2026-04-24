@@ -39,3 +39,6 @@
 ## 2026-04-24 - [Static Caching of Recursive Mesh Lookups]
 **Learning:** [Recursive searches like `find_children("*", "MeshInstance3D", true, false)` allocate a new array and execute an O(N) tree traversal. When executed frequently in gameplay events (like `_flash_damage` or projectile cleanup), they cause GC pressure and combat micro-stuttering.]
 **Action:** [Populate static arrays (e.g. `var _cached_mesh_instances: Array[Node] = []`) using `find_children` once during `_ready()` or initialization, and iterate over the cache directly during runtime events instead of querying the tree.]
+## 2024-04-24 - [ImpShieldGirl] Optimize Shield Hit Allocation
+**Learning:** Instantiating objects like `StandardMaterial3D.new()` and traversing the node tree using `find_children()` dynamically inside frequently called functions (like taking hits) causes severe GC pressure and potential frame drops.
+**Action:** Cache target arrays (e.g., `MeshInstance3D`) and objects (like materials) as class variables during initialization (`_ready` or custom init functions) to completely avoid dynamic instancing and string lookups during runtime combat loops.
