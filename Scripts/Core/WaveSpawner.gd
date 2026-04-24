@@ -3,40 +3,41 @@ class_name WaveSpawner
 
 # === CONFIGURACIÓN (Español) ===
 @export_category("Spawner")
-@export var escena_goblin: PackedScene # Escena del goblin a instanciar
-@export var escena_goblin_girl: PackedScene # Escena de la goblin girl
-@export var escena_imp: PackedScene # Escena del imp enemigo
-@export var escena_canonero: PackedScene # Nueva escena del cañonero
-@export var intervalo_aparicion: float = 5.0 # Segundos entre spawns (más lento)
-@export var enemigos_por_oleada: int = 6 # Cantidad de enemigos por oleada
-@export var tiempo_entre_oleadas: float = 5.0 # Descanso entre oleadas
-@export var altura_spawn: float = 0.0 # Altura extra para spawnar sobre el suelo
-@export_range(0.0, 1.0, 0.05) var probabilidad_goblin_girl: float = 0.5 # Probabilidad de que aparezca una Goblin Girl
-@export_range(0.0, 1.0, 0.05) var probabilidad_imp: float = 0.2 # Probabilidad de que aparezca un Imp
-@export_range(0.0, 1.0, 0.05) var probabilidad_canonero: float = 0.15 # Probabilidad del canonero
-@export var probabilidad_igual: bool = false ## Todos los enemigos tienen la misma probabilidad (33.3%)
+@export var escena_goblin: PackedScene  # Escena del goblin a instanciar
+@export var escena_goblin_girl: PackedScene  # Escena de la goblin girl
+@export var escena_imp: PackedScene  # Escena del imp enemigo
+@export var escena_canonero: PackedScene  # Nueva escena del cañonero
+@export var intervalo_aparicion: float = 5.0  # Segundos entre spawns (más lento)
+@export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
+@export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
+@export var altura_spawn: float = 0.0  # Altura extra para spawnar sobre el suelo
+@export_range(0.0, 1.0, 0.05) var probabilidad_goblin_girl: float = 0.5  # Probabilidad de que aparezca una Goblin Girl
+@export_range(0.0, 1.0, 0.05) var probabilidad_imp: float = 0.2  # Probabilidad de que aparezca un Imp
+@export_range(0.0, 1.0, 0.05) var probabilidad_canonero: float = 0.15  # Probabilidad del canonero
+@export var probabilidad_igual: bool = false  ## Todos los enemigos tienen la misma probabilidad (33.3%)
 
 @export_category("Imp Escudo")
-@export var escena_imp_escudo: PackedScene ## Escena de la ImpShieldGirl
-@export var max_imp_escudo_activos: int = 1 ## Máximo de ImpShieldGirl simultáneas
-@export var enemigos_minimos_para_escudo: int = 1 ## Enemigos vivos necesarios para spawnear escudo
-@export var intervalo_check_escudo: float = 8.0 ## Segundos entre checks de spawn de escudo
+@export var escena_imp_escudo: PackedScene  ## Escena de la ImpShieldGirl
+@export var max_imp_escudo_activos: int = 1  ## Máximo de ImpShieldGirl simultáneas
+@export var enemigos_minimos_para_escudo: int = 1  ## Enemigos vivos necesarios para spawnear escudo
+@export var intervalo_check_escudo: float = 8.0  ## Segundos entre checks de spawn de escudo
 
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1 ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero
+var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
 var wave_cooldown: float = 0.0
 var is_wave_active: bool = false
 var active_goblins: Array = []
-var shield_imps_activos: Array = [] ## Lista de ImpShieldGirls activas
-var shield_spawn_timer: float = 5.0 ## Timer para spawn de escudo
+var shield_imps_activos: Array = []  ## Lista de ImpShieldGirls activas
+var shield_spawn_timer: float = 5.0  ## Timer para spawn de escudo
 
 # === SEÑALES ===
 signal oleada_iniciada(numero_oleada: int)
 signal oleada_completada(numero_oleada: int)
 signal goblin_spawneado(goblin: Node)
+
 
 func _ready():
 	add_to_group("wave_spawners")
@@ -56,6 +57,7 @@ func _ready():
 	# Iniciar primera oleada después de un delay
 	wave_cooldown = 2.0
 
+
 func _process(delta):
 	if not is_wave_active:
 		wave_cooldown -= delta
@@ -73,15 +75,23 @@ func _process(delta):
 	# Check de spawn de ImpShieldGirl (independiente de oleadas)
 	_check_shield_imp_spawn(delta)
 
+
 func _start_wave():
 	current_wave += 1
 	goblins_spawned_in_wave = 0
 	is_wave_active = true
-	spawn_timer = 0.0 # Spawn inmediato al iniciar oleada
+	spawn_timer = 0.0  # Spawn inmediato al iniciar oleada
 
 	oleada_iniciada.emit(current_wave)
 
+
 func _spawn_goblin():
+	print(
+		"[WaveSpawner] Spawning goblin. Total spawned so far in wave: ",
+		goblins_spawned_in_wave,
+		" / ",
+		enemigos_por_oleada
+	)
 	# Elegir qué tipo de enemigo spawnear
 	var scene_to_spawn: PackedScene
 
@@ -112,7 +122,10 @@ func _spawn_goblin():
 			scene_to_spawn = escena_canonero
 		elif roll < probabilidad_canonero + probabilidad_imp and escena_imp:
 			scene_to_spawn = escena_imp
-		elif roll < probabilidad_canonero + probabilidad_imp + probabilidad_goblin_girl and escena_goblin_girl:
+		elif (
+			roll < probabilidad_canonero + probabilidad_imp + probabilidad_goblin_girl
+			and escena_goblin_girl
+		):
 			scene_to_spawn = escena_goblin_girl
 		else:
 			scene_to_spawn = escena_goblin
@@ -143,9 +156,11 @@ func _spawn_goblin():
 
 	goblin_spawneado.emit(goblin)
 
+
 func _on_goblin_died(goblin):
 	active_goblins.erase(goblin)
 	AudioManager.on_enemy_killed()
+
 
 func _check_wave_complete():
 	# La oleada termina cuando todos los goblins spawnearon Y todos murieron
@@ -161,10 +176,13 @@ func _check_wave_complete():
 			wave_cooldown = tiempo_entre_oleadas
 			oleada_completada.emit(current_wave)
 
+
 # === API PÚBLICA ===
+
 
 func iniciar_spawning():
 	wave_cooldown = 0.5
+
 
 func toggle_pause_spawning():
 	if is_wave_active:
@@ -174,12 +192,15 @@ func toggle_pause_spawning():
 		is_wave_active = true
 		print("Spawning REANUDADO")
 
+
 func detener_spawning():
 	is_wave_active = false
 	wave_cooldown = 999999
 
+
 func forzar_spawn():
 	_spawn_goblin()
+
 
 func obtener_goblins_activos() -> int:
 	# Opt: Iteración inversa in-place en lugar de Array.filter()
@@ -188,12 +209,14 @@ func obtener_goblins_activos() -> int:
 			active_goblins.remove_at(i)
 	return active_goblins.size()
 
+
 func get_active_enemies() -> Array:
 	# Opt: Iteración inversa in-place en lugar de Array.filter()
 	for i in range(active_goblins.size() - 1, -1, -1):
 		if not is_instance_valid(active_goblins[i]):
 			active_goblins.remove_at(i)
 	return active_goblins
+
 
 func get_active_shield_imps() -> Array:
 	# Opt: Iteración inversa in-place en lugar de Array.filter()
@@ -202,9 +225,11 @@ func get_active_shield_imps() -> Array:
 			shield_imps_activos.remove_at(i)
 	return shield_imps_activos
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # IMP SHIELD GIRL
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _check_shield_imp_spawn(delta):
 	shield_spawn_timer -= delta
@@ -241,6 +266,7 @@ func _check_shield_imp_spawn(delta):
 
 	_spawn_shield_imp()
 
+
 func _spawn_shield_imp():
 	if not escena_imp_escudo:
 		return
@@ -260,21 +286,27 @@ func _spawn_shield_imp():
 
 	shield_imps_activos.append(shield_imp)
 
+
 func _on_shield_imp_died(shield_imp):
 	shield_imps_activos.erase(shield_imp)
 
+
 func forzar_spawn_escudo():
 	_spawn_shield_imp()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MODO PACÍFICO (Nivel 0)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 ## Spawnea enemigos en modo pacífico (solo caminan, no atacan).
 ## El primero spawnea en la posición base, los siguientes más atrás.
 ## Todos reciben la misma velocidad para caminar sincronizados.
 ## Retorna el array de enemigos spawneados.
-func spawn_pacificos(escenas: Array[PackedScene], velocidad_uniforme: float = 0.5, offset_entre: float = 0.4) -> Array:
+func spawn_pacificos(
+	escenas: Array[PackedScene], velocidad_uniforme: float = 0.5, offset_entre: float = 0.4
+) -> Array:
 	var enemigos := []
 	for i in range(escenas.size()):
 		var escena = escenas[i]
@@ -299,8 +331,11 @@ func spawn_pacificos(escenas: Array[PackedScene], velocidad_uniforme: float = 0.
 		enemigos.append(enemigo)
 	return enemigos
 
+
 ## Configura el spawner para una oleada custom y la inicia.
-func iniciar_oleada_custom(total_enemigos: int, prob_imp: float = 0.5, prob_girl: float = 0.5, _prob_goblin: float = 0.0):
+func iniciar_oleada_custom(
+	total_enemigos: int, prob_imp: float = 0.5, prob_girl: float = 0.5, _prob_goblin: float = 0.0
+):
 	enemigos_por_oleada = total_enemigos
 	probabilidad_imp = prob_imp
 	probabilidad_goblin_girl = prob_girl

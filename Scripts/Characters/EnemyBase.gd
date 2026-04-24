@@ -35,7 +35,7 @@ class_name EnemyBase
 
 # === CONFIGURACIÓN - PARTÍCULAS DE DISOLUCIÓN ===
 @export_category("Partículas de Disolución")
-@export var particulas_cantidad: int = 100
+@export var particulas_cantidad: int = 25
 @export var particulas_vida: float = 2.0
 @export var particulas_posicion: Vector3 = Vector3(-0.5, 0.1, 0)
 @export var particulas_caja: Vector3 = Vector3(0.2, 0.5, 0.1)
@@ -55,12 +55,12 @@ var spine_bone_idx: int = -1
 var hips_bone_idx: int = -1
 
 # === ESTADO ===
-enum State {WALKING, SHOOTING, DYING, DEAD}
+enum State { WALKING, SHOOTING, DYING, DEAD }
 var current_state: State = State.WALKING
 var health: int = 2
-var modo_pacifico: bool = false ## Si true, el enemigo solo camina sin atacar
-var limite_pacifico_x: float = -10.0 ## Posición X donde se detiene en modo pacífico
-var pacifico_detenido: bool = false ## True cuando ya se detuvo en el borde
+var modo_pacifico: bool = false  ## Si true, el enemigo solo camina sin atacar
+var limite_pacifico_x: float = -10.0  ## Posición X donde se detiene en modo pacífico
+var pacifico_detenido: bool = false  ## True cuando ya se detuvo en el borde
 var walked_distance: float = 0.0
 var target_walk_distance: float = 0.0
 var shoot_timer: float = 0.0
@@ -74,13 +74,14 @@ var dissolve_particles: GPUParticles3D = null
 
 # === SEÑALES ===
 signal died
-signal pacifico_danado ## Emitida cuando un enemigo pacífico recibe daño
+signal pacifico_danado  ## Emitida cuando un enemigo pacífico recibe daño
 
 var game_feel: Node = null
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _ready():
 	game_feel = get_node_or_null("/root/GameFeel")
@@ -93,7 +94,8 @@ func _ready():
 	_store_original_materials()
 	_buscar_skeleton()
 	_buscar_jugador()
-	_on_enemy_ready() # Hook para subclases
+	_on_enemy_ready()  # Hook para subclases
+
 
 func _desactivar_bones_fisicos():
 	var bone_simulator = find_child("PhysicalBoneSimulat*", true, false)
@@ -102,6 +104,7 @@ func _desactivar_bones_fisicos():
 		for child in bone_simulator.get_children():
 			if child is PhysicalBone3D:
 				child.set_physics_process(false)
+
 
 func _buscar_animation_player():
 	var candidatos = find_children("*", "AnimationPlayer", true, false)
@@ -125,11 +128,18 @@ func _buscar_animation_player():
 	anim_player = mejor_player
 	if anim_player:
 		for anim_name in anim_player.get_animation_list():
-			if "CORRER" in anim_name or "CAMINAR" in anim_name or "CAMINA" in anim_name \
-				or "RUN" in anim_name or "WALK" in anim_name or "IDLE" in anim_name:
+			if (
+				"CORRER" in anim_name
+				or "CAMINAR" in anim_name
+				or "CAMINA" in anim_name
+				or "RUN" in anim_name
+				or "WALK" in anim_name
+				or "IDLE" in anim_name
+			):
 				var anim = anim_player.get_animation(anim_name)
 				if anim:
 					anim.loop_mode = Animation.LOOP_LINEAR
+
 
 func _buscar_skeleton():
 	skeleton = find_child("Skeleton3D", true, false)
@@ -141,9 +151,11 @@ func _buscar_skeleton():
 		if hips_bone_idx == -1:
 			hips_bone_idx = skeleton.find_bone("Hips")
 
+
 func _buscar_jugador():
 	await get_tree().process_frame
 	player_ref = get_tree().get_first_node_in_group("player")
+
 
 func _process(delta):
 	# Actualizar posición de partículas de disolución para seguir el centro del cuerpo
@@ -151,6 +163,7 @@ func _process(delta):
 		var bone_pos = _get_hips_global_position()
 		if bone_pos != Vector3.ZERO:
 			dissolve_particles.global_position = bone_pos
+
 
 func _get_hips_global_position() -> Vector3:
 	if skeleton and is_instance_valid(skeleton) and hips_bone_idx != -1:
@@ -162,10 +175,12 @@ func _get_hips_global_position() -> Vector3:
 		return skeleton.global_transform * bone_pose.origin
 	return Vector3.ZERO
 
+
 ## Hook para que las subclases ejecuten lógica adicional en _ready()
 func _on_enemy_ready():
 	# Virtual method: override in subclasses to add initialization logic.
 	pass
+
 
 ## Hook para cuando el enemigo se detiene en modo pacífico.
 ## Las subclases pueden overridear para poses específicas.
@@ -173,9 +188,11 @@ func _on_pacifico_detenido():
 	# Virtual method: override in subclasses if a specific stop animation is needed.
 	_play_animation("IDLE")
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MATERIALES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _store_original_materials():
 	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
@@ -183,15 +200,15 @@ func _store_original_materials():
 		mesh.add_to_group("outline_meshes")
 		if mesh.get_surface_override_material_count() > 0:
 			for i in range(mesh.get_surface_override_material_count()):
-				original_materials.append({
-					"mesh": mesh,
-					"index": i,
-					"material": mesh.get_surface_override_material(i)
-				})
+				original_materials.append(
+					{"mesh": mesh, "index": i, "material": mesh.get_surface_override_material(i)}
+				)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FÍSICA Y ESTADOS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _physics_process(delta):
 	if not is_on_floor():
@@ -208,6 +225,7 @@ func _physics_process(delta):
 			pass
 
 	move_and_slide()
+
 
 func _process_walking(delta):
 	velocity.x = -velocidad_caminar
@@ -228,14 +246,18 @@ func _process_walking(delta):
 		else:
 			target_walk_distance += 0.3
 
+
 func _process_dying(_delta):
 	velocity.x = 0
+
 
 ## Override en subclases para lógica de disparo específica
 func _process_shooting(_delta):
 	velocity.x = 0
 
+
 static var _cached_wave_spawner: Node = null
+
 
 func _get_cached_wave_spawner() -> Node:
 	if is_instance_valid(_cached_wave_spawner):
@@ -256,6 +278,7 @@ func _get_cached_wave_spawner() -> Node:
 	if wave_spawner:
 		_cached_wave_spawner = wave_spawner
 	return _cached_wave_spawner
+
 
 func _check_spacing() -> bool:
 	# Intentar obtener listas cacheadas del WaveSpawner para mayor rendimiento
@@ -289,9 +312,11 @@ func _check_spacing() -> bool:
 				return false
 	return true
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CAMBIO DE ESTADO (override parcial en subclases)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _change_state(new_state: State):
 	current_state = new_state
@@ -307,23 +332,28 @@ func _change_state(new_state: State):
 			_cleanup_all_materials()
 			queue_free()
 
+
 ## Hooks para subclases
 func _on_state_walking():
 	# Virtual method: override in subclasses to handle walking state transitions.
 	pass
 
+
 func _on_state_shooting():
 	# Virtual method: override in subclasses to handle shooting state transitions.
 	pass
+
 
 func _on_state_dying():
 	collision_layer = 0
 	collision_mask = 0
 	set_physics_process(false)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ANIMACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float = 1.0):
 	if not anim_player:
@@ -334,6 +364,7 @@ func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float
 		if anim_player.has_animation(possible_anim):
 			anim_player.play(possible_anim, custom_blend, speed)
 			return
+
 
 func _get_animation_duration(anim_name: String) -> float:
 	if not anim_player:
@@ -346,9 +377,11 @@ func _get_animation_duration(anim_name: String) -> float:
 
 	return 2.0
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DAÑO Y MUERTE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
@@ -370,6 +403,7 @@ func take_damage(amount: float):
 		_change_state(State.DYING)
 		died.emit()
 
+
 func _flash_red():
 	var red_material = StandardMaterial3D.new()
 	red_material.albedo_color = Color(1, 0, 0)
@@ -384,16 +418,19 @@ func _flash_red():
 		if mesh.get_surface_override_material_count() == 0:
 			mesh.material_override = red_material
 
-	get_tree().create_timer(0.08).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			_reset_materials()
+	get_tree().create_timer(0.08).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_reset_materials()
 	)
+
 
 func _reset_materials():
 	# Restaurar los materiales originales guardados en _store_original_materials()
 	for item in original_materials:
 		if is_instance_valid(item["mesh"]):
 			item["mesh"].set_surface_override_material(item["index"], item["material"])
+
 
 ## Limpia TODOS los materiales del nodo y sus hijos antes de queue_free()
 ## para evitar errores "Parameter 'material' is null" del RenderingServer.
@@ -406,7 +443,7 @@ func _cleanup_all_materials():
 				for si in range(mesh.mesh.get_surface_count()):
 					mesh.set_surface_override_material(si, null)
 			mesh.visible = false
-	
+
 	# Detener todas las partículas y limpiar sus materiales de draw_pass
 	var particles = find_children("*", "GPUParticles3D", true, false)
 	for p in particles:
@@ -415,13 +452,15 @@ func _cleanup_all_materials():
 			if p.draw_pass_1 and p.draw_pass_1 is Mesh:
 				p.draw_pass_1.material = null
 			p.draw_pass_1 = null
-	
+
 	dissolve_materials.clear()
 	original_materials.clear()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TRACKING DEL JUGADOR (Rotación de torso)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _track_player():
 	if not skeleton or spine_bone_idx == -1 or not player_ref:
@@ -436,7 +475,9 @@ func _track_player():
 	var direction = (target_pos - my_pos).normalized()
 
 	var pitch_angle = -asin(clamp(direction.y, -1.0, 1.0))
-	pitch_angle = clamp(pitch_angle, deg_to_rad(angulo_apuntado_minimo), deg_to_rad(angulo_apuntado_maximo))
+	pitch_angle = clamp(
+		pitch_angle, deg_to_rad(angulo_apuntado_minimo), deg_to_rad(angulo_apuntado_maximo)
+	)
 
 	skeleton.set_bone_global_pose_override(spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
 	var current_pose = skeleton.get_bone_global_pose(spine_bone_idx)
@@ -444,15 +485,20 @@ func _track_player():
 	var pitch_rotation = Quaternion(Vector3.FORWARD, pitch_angle)
 	var new_basis = current_pose.basis * Basis(pitch_rotation)
 
-	skeleton.set_bone_global_pose_override(spine_bone_idx, Transform3D(new_basis, current_pose.origin), 1.0, false)
+	skeleton.set_bone_global_pose_override(
+		spine_bone_idx, Transform3D(new_basis, current_pose.origin), 1.0, false
+	)
+
 
 func _reset_spine_rotation():
 	if skeleton and spine_bone_idx != -1:
 		skeleton.set_bone_global_pose_override(spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISOLUCIÓN Y MUERTE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _die():
 	for child in get_children():
@@ -460,6 +506,7 @@ func _die():
 			child.queue_free()
 
 	_start_dissolve_effect()
+
 
 func _start_dissolve_effect():
 	if is_dissolving:
@@ -492,19 +539,26 @@ func _start_dissolve_effect():
 
 	_create_dissolve_particles()
 
-	get_tree().create_timer(duracion_disolucion * particulas_detener_emision).timeout.connect(func():
-		if dissolve_particles and is_instance_valid(dissolve_particles) and is_instance_valid(self):
-			dissolve_particles.emitting = false
+	get_tree().create_timer(duracion_disolucion * particulas_detener_emision).timeout.connect(
+		func():
+			if (
+				dissolve_particles
+				and is_instance_valid(dissolve_particles)
+				and is_instance_valid(self)
+			):
+				dissolve_particles.emitting = false
 	)
 
 	var tween = create_tween()
 	tween.tween_method(_update_dissolve, 0.0, 1.0, duracion_disolucion)
 	tween.tween_callback(_finish_dissolve)
 
+
 func _update_dissolve(value: float):
 	for item in dissolve_materials:
 		if is_instance_valid(item["mesh"]):
 			item["material"].set_shader_parameter("dissolve_amount", value)
+
 
 func _finish_dissolve():
 	# Limpiar materiales de TODOS los meshes antes de queue_free
@@ -524,14 +578,16 @@ func _finish_dissolve():
 		get_tree().root.add_child(particles_node)
 		particles_node.global_position = global_pos
 		particles_node.emitting = false
-		get_tree().create_timer(particulas_vida + 0.5).timeout.connect(func():
-			if is_instance_valid(particles_node) and particles_node.is_inside_tree():
-				particles_node.queue_free()
+		get_tree().create_timer(particulas_vida + 0.5).timeout.connect(
+			func():
+				if is_instance_valid(particles_node) and particles_node.is_inside_tree():
+					particles_node.queue_free()
 		)
 
 	current_state = State.DEAD
 	_cleanup_all_materials()
 	queue_free()
+
 
 func _create_dissolve_particles():
 	var particles = GPUParticles3D.new()
@@ -555,7 +611,9 @@ func _create_dissolve_particles():
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, color_borde_disolucion)
-	gradient.set_color(1, Color(color_borde_disolucion.r, color_borde_disolucion.g, color_borde_disolucion.b, 0.0))
+	gradient.set_color(
+		1, Color(color_borde_disolucion.r, color_borde_disolucion.g, color_borde_disolucion.b, 0.0)
+	)
 	var gradient_tex = GradientTexture1D.new()
 	gradient_tex.gradient = gradient
 	process_mat.color_ramp = gradient_tex
@@ -570,12 +628,12 @@ func _create_dissolve_particles():
 
 	particles.process_material = process_mat
 
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.5
-	sphere.height = 1.0
+	var sphere = QuadMesh.new()
+	sphere.size = Vector2(1.0, 1.0)
 
 	var part_mat = StandardMaterial3D.new()
 	part_mat.albedo_color = color_borde_disolucion
+	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	part_mat.emission_enabled = true
 	part_mat.emission = color_borde_disolucion
 	part_mat.emission_energy_multiplier = intensidad_emision * 0.5
