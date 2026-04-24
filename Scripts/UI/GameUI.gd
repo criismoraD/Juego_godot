@@ -110,6 +110,11 @@ func _ready():
 	# Escanear materiales con outline
 	_scan_outline_materials()
 
+	# Escaneo inicial de mallas para el sistema de outlines optimizado
+	var scene_root = _get_scene_root()
+	for mesh in scene_root.find_children("*", "MeshInstance3D", true, false):
+		mesh.add_to_group("outline_meshes")
+
 	# Crear la UI
 	_create_ui()
 	_aplicar_toggle_outline_global()
@@ -955,8 +960,7 @@ func _forzar_outline_en_runtime(habilitado: bool) -> void:
 		if material_base is StandardMaterial3D:
 			_aplicar_shader_outline_en_material(material_base as StandardMaterial3D, shader_outline, habilitado)
 
-	var root_node = _get_scene_root()
-	var meshes = root_node.find_children("*", "MeshInstance3D", true, false)
+	var meshes = get_tree().get_nodes_in_group("outline_meshes")
 	for nodo in meshes:
 		var mesh_instance := nodo as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:

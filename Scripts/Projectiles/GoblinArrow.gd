@@ -276,6 +276,7 @@ func _create_procedural_arrow():
 	body_mesh.name = "Body"
 	body_mesh.mesh = body
 	body_mesh.material_override = projectile_material
+	body_mesh.add_to_group("outline_meshes")
 	# Rotar para que el eje Y (altura) apunte hacia X (dirección de movimiento)
 	body_mesh.rotation = Vector3(0, 0, -PI / 2.0)
 	
@@ -283,6 +284,7 @@ func _create_procedural_arrow():
 	tip_mesh.name = "Tip"
 	tip_mesh.mesh = tip
 	tip_mesh.material_override = projectile_material
+	tip_mesh.add_to_group("outline_meshes")
 	# Rotar y posicionar la punta al frente del cilindro
 	tip_mesh.rotation = Vector3(0, 0, -PI / 2.0)
 	tip_mesh.position = Vector3(0.165, 0, 0) # Medio cilindro + medio cono

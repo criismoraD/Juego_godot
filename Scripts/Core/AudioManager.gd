@@ -16,6 +16,7 @@ var sfx_streams: Dictionary = {}
 var bgm_streams: Array[AudioStream] = []
 
 
+
 # === CONFIGURACIÓN ===
 var sfx_volume_db: float = -5.0
 var music_volume_db: float = -15.0
@@ -235,6 +236,7 @@ func _get_available_sfx_3d_player() -> AudioStreamPlayer3D:
 # ═══════════════════════════════════════════════════════════════════════════════
 # API PÚBLICA
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 
 ## Reproduce un efecto de sonido (selección aleatoria si hay variantes)

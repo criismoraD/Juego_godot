@@ -23,6 +23,9 @@ var _ray_ccd: RayCast3D
 func _ready():
 	world_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 	
+	for mesh in find_children("*", "MeshInstance3D", true, false):
+		mesh.add_to_group("outline_meshes")
+
 	# Inicializar RayCast para detección continua (anti-tunneling)
 	var ray = RayCast3D.new()
 	_ray_ccd = ray

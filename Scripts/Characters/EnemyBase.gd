@@ -180,6 +180,7 @@ func _on_pacifico_detenido():
 func _store_original_materials():
 	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
 	for mesh in mesh_instances:
+		mesh.add_to_group("outline_meshes")
 		if mesh.get_surface_override_material_count() > 0:
 			for i in range(mesh.get_surface_override_material_count()):
 				original_materials.append({
