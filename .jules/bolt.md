@@ -35,3 +35,7 @@
 ## 2026-04-23 - [O(1) First Node Group Query]
 **Learning:** [Using `get_tree().get_nodes_in_group("group_name")` in GDScript allocates an array of all members. If you only need the first element (e.g. `get_nodes_in_group(...)[0]`), it creates unnecessary allocations and array copies.]
 **Action:** [Use `get_tree().get_first_node_in_group("group_name")` to retrieve the first matching node without array allocations. It provides O(1) indexed lookup instead of O(N) array generation.]
+
+## 2026-04-24 - [Static Caching of Recursive Mesh Lookups]
+**Learning:** [Recursive searches like `find_children("*", "MeshInstance3D", true, false)` allocate a new array and execute an O(N) tree traversal. When executed frequently in gameplay events (like `_flash_damage` or projectile cleanup), they cause GC pressure and combat micro-stuttering.]
+**Action:** [Populate static arrays (e.g. `var _cached_mesh_instances: Array[Node] = []`) using `find_children` once during `_ready()` or initialization, and iterate over the cache directly during runtime events instead of querying the tree.]
