@@ -43,7 +43,9 @@ class_name ImpEstandarte
 var escena_flecha_estandarte = preload("res://Scenes/Projectiles/GoblinGirlArrow.tscn")
 var escena_flecha_visual_mano = preload("res://Scenes/Projectiles/FlechaManoVisual.tscn")
 var escena_estandarte_caido = preload("res://Assets/Environment/Estandarte/Estandarte.glb")
-var sonido_muerte_estandarte: AudioStreamMP3 = preload("res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE_MUERTE.mp3")
+var sonido_muerte_estandarte: AudioStreamMP3 = preload(
+	"res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE_MUERTE.mp3"
+)
 
 var en_animacion_disparo: bool = false
 var disparo_realizado_en_ciclo: bool = false
@@ -58,6 +60,7 @@ var attachment_flecha_mano: BoneAttachment3D = null
 var flecha_visual_mano: Node3D = null
 
 var game_feel: Node = null
+
 
 func _on_enemy_ready():
 	game_feel = get_node_or_null("/root/GameFeel")
@@ -75,26 +78,31 @@ func _on_enemy_ready():
 
 	_play_animation("IMP_IDLE")
 
+
 func _process(delta):
 	super._process(delta)
 	if current_state == State.SHOOTING and rastrear_jugador:
 		_track_player()
+
 
 func _on_state_walking():
 	_actualizar_visual_arma(false)
 	_actualizar_visibilidad_flecha_mano(false)
 	_play_animation("IMP_IDLE")
 
+
 func _on_pacifico_detenido():
 	_actualizar_visual_arma(false)
 	_actualizar_visibilidad_flecha_mano(false)
 	_play_animation("IMP_IDLE_001")
+
 
 func _process_walking(delta):
 	if hit_en_proceso:
 		velocity.x = 0
 		return
 	super._process_walking(delta)
+
 
 func _on_state_shooting():
 	if soltar_estandarte_al_atacar and not estandarte_ya_soltado:
@@ -105,11 +113,14 @@ func _on_state_shooting():
 	en_animacion_disparo = false
 	disparo_realizado_en_ciclo = false
 	timer_animacion_disparo = 0.0
-	duracion_animacion_disparo = max(0.05, _get_animation_duration("IMP_DISPARO") / _obtener_multiplicador_cadencia())
+	duracion_animacion_disparo = max(
+		0.05, _get_animation_duration("IMP_DISPARO") / _obtener_multiplicador_cadencia()
+	)
 	shoot_timer = 0.0
 	espera_entrada_disparo = 0.0
 	_actualizar_visibilidad_flecha_mano(false)
 	_iniciar_ciclo_disparo()
+
 
 func _process_shooting(delta):
 	velocity.x = 0
@@ -138,7 +149,11 @@ func _process_shooting(delta):
 
 	timer_animacion_disparo += delta
 	_actualizar_flecha_mano_durante_animacion()
-	var tiempo_disparo_efectivo = clamp(tiempo_disparo_en_animacion_arco / _obtener_multiplicador_cadencia(), 0.0, duracion_animacion_disparo)
+	var tiempo_disparo_efectivo = clamp(
+		tiempo_disparo_en_animacion_arco / _obtener_multiplicador_cadencia(),
+		0.0,
+		duracion_animacion_disparo
+	)
 
 	if not disparo_realizado_en_ciclo and timer_animacion_disparo >= tiempo_disparo_efectivo:
 		_throw_projectile()
@@ -156,6 +171,7 @@ func _process_shooting(delta):
 		else:
 			_iniciar_ciclo_disparo()
 
+
 func _iniciar_ciclo_disparo():
 	var cadencia_actual: float = _obtener_multiplicador_cadencia()
 	en_animacion_disparo = true
@@ -165,8 +181,10 @@ func _iniciar_ciclo_disparo():
 	_actualizar_visibilidad_flecha_mano(false)
 	_play_animation("IMP_DISPARO", -1.0, cadencia_actual)
 
+
 func _obtener_multiplicador_cadencia() -> float:
 	return max(0.25, multiplicador_cadencia_arco)
+
 
 func _throw_projectile():
 	if not escena_flecha_estandarte:
@@ -208,6 +226,7 @@ func _throw_projectile():
 	get_tree().root.add_child(flecha)
 	flecha.global_position = spawn_pos
 
+
 func _on_state_dying():
 	# Base de EnemyBase: desactivar física/colisiones
 	collision_layer = 0
@@ -224,10 +243,12 @@ func _on_state_dying():
 	_crear_explosion_sangre()
 
 	var tiempo_total = max(anim_length, tiempo_antes_disolver)
-	get_tree().create_timer(tiempo_total).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			_die()
+	get_tree().create_timer(tiempo_total).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_die()
 	)
+
 
 func _reproducir_sonido_muerte_estandarte():
 	if not sonido_muerte_estandarte:
@@ -240,13 +261,16 @@ func _reproducir_sonido_muerte_estandarte():
 	temp_player.bus = "Master"
 	add_child(temp_player)
 	temp_player.play()
-	temp_player.finished.connect(func():
-		if is_instance_valid(temp_player):
-			temp_player.queue_free()
+	temp_player.finished.connect(
+		func():
+			if is_instance_valid(temp_player):
+				temp_player.queue_free()
 	)
+
 
 func _cargar_sonido_muerte_estandarte():
 	pass
+
 
 func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
@@ -281,6 +305,7 @@ func take_damage(amount: float):
 	# Reusar sonido del imp normal en daño (atenuado para no saturar)
 	AudioManager.play_sfx("imp_death", volumen_hit_imp_db)
 
+
 func _reproducir_hit_aleatorio():
 	if hit_en_proceso:
 		return
@@ -291,22 +316,28 @@ func _reproducir_hit_aleatorio():
 	_play_animation(anim_hit)
 
 	var dur_hit = _get_animation_duration(anim_hit)
-	get_tree().create_timer(max(0.15, dur_hit)).timeout.connect(func():
-		hit_en_proceso = false
-		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
-			return
-		if current_state == State.WALKING:
-			_on_state_walking()
-		elif current_state == State.SHOOTING:
-			espera_entrada_disparo = 0.0
-			shoot_timer = 0.0
-			_iniciar_ciclo_disparo()
+	get_tree().create_timer(max(0.15, dur_hit)).timeout.connect(
+		func():
+			hit_en_proceso = false
+			if (
+				not is_instance_valid(self)
+				or current_state == State.DYING
+				or current_state == State.DEAD
+			):
+				return
+			if current_state == State.WALKING:
+				_on_state_walking()
+			elif current_state == State.SHOOTING:
+				espera_entrada_disparo = 0.0
+				shoot_timer = 0.0
+				_iniciar_ciclo_disparo()
 	)
+
 
 func _crear_explosion_sangre():
 	var particles := GPUParticles3D.new()
 	particles.name = "BloodExplosion"
-	particles.amount = 60
+	particles.amount = 15
 	particles.lifetime = 0.8
 	particles.one_shot = true
 	particles.explosiveness = 1.0
@@ -335,11 +366,11 @@ func _crear_explosion_sangre():
 
 	particles.process_material = process_mat
 
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.5
-	sphere.height = 1.0
+	var sphere := QuadMesh.new()
+	sphere.size = Vector2(1.0, 1.0)
 	var blood_mat := StandardMaterial3D.new()
 	blood_mat.albedo_color = Color(0.6, 0.0, 0.0)
+	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	blood_mat.emission_enabled = true
 	blood_mat.emission = Color(0.5, 0.0, 0.0)
 	blood_mat.emission_energy_multiplier = 1.5
@@ -360,16 +391,19 @@ func _crear_explosion_sangre():
 	get_tree().root.add_child(particles)
 	particles.global_position = gpos
 
-	get_tree().create_timer(2.0).timeout.connect(func():
-		if is_instance_valid(particles) and particles.is_inside_tree():
-			particles.queue_free()
+	get_tree().create_timer(2.0).timeout.connect(
+		func():
+			if is_instance_valid(particles) and particles.is_inside_tree():
+				particles.queue_free()
 	)
+
 
 func _cachear_visuales_arma():
 	estandarte_visual = find_child("Estandarte", true, false) as Node3D
 	arco_visual = find_child("ArcoCombate", true, false) as Node3D
 	if not arco_visual:
 		arco_visual = find_child("ARCO_GOBLING_GIRL", true, false) as Node3D
+
 
 func _configurar_flecha_visual_mano():
 	if not mostrar_flecha_en_mano:
@@ -383,7 +417,9 @@ func _configurar_flecha_visual_mano():
 	if nombre_hueso.is_empty():
 		return
 
-	attachment_flecha_mano = esqueleto_nodo.get_node_or_null("AttachmentFlechaMano") as BoneAttachment3D
+	attachment_flecha_mano = (
+		esqueleto_nodo.get_node_or_null("AttachmentFlechaMano") as BoneAttachment3D
+	)
 	if not attachment_flecha_mano:
 		attachment_flecha_mano = BoneAttachment3D.new()
 		attachment_flecha_mano.name = "AttachmentFlechaMano"
@@ -403,6 +439,7 @@ func _configurar_flecha_visual_mano():
 	flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
 	flecha_visual_mano.scale = escala_flecha_mano
 	flecha_visual_mano.visible = false
+
 
 func _crear_visual_flecha_mano() -> Node3D:
 	if escena_flecha_visual_mano:
@@ -448,19 +485,16 @@ func _crear_visual_flecha_mano() -> Node3D:
 
 	return raiz
 
+
 func _obtener_hueso_mano_derecha(esqueleto_nodo: Skeleton3D) -> String:
-	var candidatos := [
-		"mixamorig_RightHandIndex1",
-		"mixamorig_RightHand",
-		"RightHand",
-		"Hand_R"
-	]
+	var candidatos := ["mixamorig_RightHandIndex1", "mixamorig_RightHand", "RightHand", "Hand_R"]
 
 	for nombre in candidatos:
 		if esqueleto_nodo.find_bone(nombre) != -1:
 			return nombre
 
 	return ""
+
 
 func _actualizar_flecha_mano_durante_animacion():
 	if not en_animacion_disparo:
@@ -469,10 +503,15 @@ func _actualizar_flecha_mano_durante_animacion():
 
 	var multiplicador := _obtener_multiplicador_cadencia()
 	var tiempo_aparece: float = max(0.0, tiempo_aparece_flecha_mano / multiplicador)
-	var tiempo_desaparece: float = max(tiempo_aparece, tiempo_desaparece_flecha_mano / multiplicador)
-	var visible_en_ventana: bool = timer_animacion_disparo >= tiempo_aparece and timer_animacion_disparo < tiempo_desaparece
+	var tiempo_desaparece: float = max(
+		tiempo_aparece, tiempo_desaparece_flecha_mano / multiplicador
+	)
+	var visible_en_ventana: bool = (
+		timer_animacion_disparo >= tiempo_aparece and timer_animacion_disparo < tiempo_desaparece
+	)
 
 	_actualizar_visibilidad_flecha_mano(visible_en_ventana and not disparo_realizado_en_ciclo)
+
 
 func _actualizar_visibilidad_flecha_mano(visible_flecha: bool):
 	if not flecha_visual_mano or not is_instance_valid(flecha_visual_mano):
@@ -480,11 +519,13 @@ func _actualizar_visibilidad_flecha_mano(visible_flecha: bool):
 
 	flecha_visual_mano.visible = visible_flecha and mostrar_flecha_en_mano
 
+
 func _actualizar_visual_arma(usando_arco: bool):
 	if estandarte_visual and is_instance_valid(estandarte_visual):
 		estandarte_visual.visible = (not usando_arco) and (not estandarte_ya_soltado)
 	if arco_visual and is_instance_valid(arco_visual):
 		arco_visual.visible = usando_arco
+
 
 func _soltar_estandarte_fisico():
 	if not estandarte_visual or not is_instance_valid(estandarte_visual):
@@ -506,8 +547,7 @@ func _soltar_estandarte_fisico():
 
 	var colision := CollisionShape3D.new()
 	var forma := CapsuleShape3D.new()
-	forma.radius = 0.12
-	forma.height = 1.2
+	forma.size = Vector2(1.2, 1.2)
 	colision.shape = forma
 	cuerpo_caida.add_child(colision)
 
@@ -532,16 +572,18 @@ func _soltar_estandarte_fisico():
 		cuerpo_caida.apply_torque_impulse(torque)
 
 	if tiempo_autodestruir_estandarte > 0.0:
-		get_tree().create_timer(tiempo_autodestruir_estandarte).timeout.connect(func():
-			if is_instance_valid(cuerpo_caida):
-				_crear_particulas_desaparicion_estandarte(cuerpo_caida.global_position)
-				cuerpo_caida.queue_free()
+		get_tree().create_timer(tiempo_autodestruir_estandarte).timeout.connect(
+			func():
+				if is_instance_valid(cuerpo_caida):
+					_crear_particulas_desaparicion_estandarte(cuerpo_caida.global_position)
+					cuerpo_caida.queue_free()
 		)
+
 
 func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
 	var particulas := GPUParticles3D.new()
 	particulas.name = "EstandarteDesaparece"
-	particulas.amount = 46
+	particulas.amount = 15
 	particulas.lifetime = 1.05
 	particulas.one_shot = true
 	particulas.explosiveness = 1.0
@@ -560,18 +602,20 @@ func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
 
 	var gradiente := Gradient.new()
 	gradiente.set_color(0, color_borde_disolucion)
-	gradiente.set_color(1, Color(color_borde_disolucion.r, color_borde_disolucion.g, color_borde_disolucion.b, 0.0))
+	gradiente.set_color(
+		1, Color(color_borde_disolucion.r, color_borde_disolucion.g, color_borde_disolucion.b, 0.0)
+	)
 	var textura_gradiente := GradientTexture1D.new()
 	textura_gradiente.gradient = gradiente
 	proceso.color_ramp = textura_gradiente
 
 	particulas.process_material = proceso
 
-	var esfera := SphereMesh.new()
-	esfera.radius = 0.5
-	esfera.height = 1.0
+	var esfera := QuadMesh.new()
+	esfera.size = Vector2(1.0, 1.0)
 	var material_particula := StandardMaterial3D.new()
 	material_particula.albedo_color = color_borde_disolucion
+	material_particula.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	material_particula.emission_enabled = true
 	material_particula.emission = color_borde_disolucion
 	material_particula.emission_energy_multiplier = intensidad_emision * 0.5
@@ -583,10 +627,12 @@ func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
 	particulas.global_position = posicion_global
 	particulas.emitting = true
 
-	get_tree().create_timer(2.0).timeout.connect(func():
-		if is_instance_valid(particulas):
-			particulas.queue_free()
+	get_tree().create_timer(2.0).timeout.connect(
+		func():
+			if is_instance_valid(particulas):
+				particulas.queue_free()
 	)
+
 
 func _agregar_excepciones_personajes_estandarte(cuerpo_caida: RigidBody3D):
 	if not is_instance_valid(cuerpo_caida):
@@ -603,6 +649,7 @@ func _agregar_excepciones_personajes_estandarte(cuerpo_caida: RigidBody3D):
 				if cuerpo.has_method("add_collision_exception_with"):
 					cuerpo.add_collision_exception_with(cuerpo_caida)
 
+
 func _desactivar_colisiones_visual_caida(nodo_visual: Node):
 	if not nodo_visual:
 		return
@@ -612,6 +659,7 @@ func _desactivar_colisiones_visual_caida(nodo_visual: Node):
 		if colision is CollisionObject3D:
 			colision.collision_layer = 0
 			colision.collision_mask = 0
+
 
 func _restaurar_materiales_accesorios():
 	# Buscar los nodos del estandarte y casco (definidos en la escena .tscn)
@@ -626,4 +674,4 @@ func _restaurar_materiales_accesorios():
 		if accesorio is MeshInstance3D:
 			meshes.append(accesorio)
 		for mesh in meshes:
-			mesh.material_override = null # Quitar override, usa material del GLB
+			mesh.material_override = null  # Quitar override, usa material del GLB

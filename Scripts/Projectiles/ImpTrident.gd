@@ -129,11 +129,11 @@ func _create_trail_particles():
 	
 	trail_particles.process_material = process_mat
 	
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.5
-	sphere.height = 1.0
+	var sphere = QuadMesh.new()
+	sphere.size = Vector2(1.0, 1.0)
 	var part_mat = StandardMaterial3D.new()
 	part_mat.albedo_color = Color(1.0, 0.3, 0.05)
+	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	part_mat.emission_enabled = true
 	part_mat.emission = Color(1.0, 0.3, 0.05)
 	part_mat.emission_energy_multiplier = 3.0

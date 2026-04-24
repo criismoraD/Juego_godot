@@ -114,7 +114,7 @@ func _on_state_dying():
 func _crear_explosion_sangre():
 	var particles = GPUParticles3D.new()
 	particles.name = "BloodExplosion"
-	particles.amount = 60
+	particles.amount = 15
 	particles.lifetime = 0.8
 	particles.one_shot = true
 	particles.explosiveness = 1.0
@@ -163,11 +163,11 @@ func _crear_explosion_sangre():
 	particles.process_material = process_mat
 	
 	# Mesh esfera para cada gota
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.5
-	sphere.height = 1.0
+	var sphere = QuadMesh.new()
+	sphere.size = Vector2(1.0, 1.0)
 	var blood_mat = StandardMaterial3D.new()
 	blood_mat.albedo_color = color_albedo
+	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	blood_mat.emission_enabled = true
 	blood_mat.emission = color_emission
 	blood_mat.emission_energy_multiplier = 1.5
