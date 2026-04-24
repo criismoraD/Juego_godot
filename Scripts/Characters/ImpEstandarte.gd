@@ -57,6 +57,8 @@ var estandarte_ya_soltado: bool = false
 var attachment_flecha_mano: BoneAttachment3D = null
 var flecha_visual_mano: Node3D = null
 
+var game_feel: Node = null
+
 func _on_enemy_ready():
 	game_feel = get_node_or_null("/root/GameFeel")
 	# Configuración base del Imp (sin usar lógica de tridente)

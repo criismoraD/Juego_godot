@@ -98,6 +98,7 @@ func _apply_material():
 	var meshes = find_children("*", "MeshInstance3D", true, false)
 	for mesh in meshes:
 		if is_instance_valid(mesh):
+			mesh.add_to_group("outline_meshes")
 			mesh.material_override = projectile_material
 
 func _create_trail_particles():
