@@ -1212,7 +1212,7 @@ func _toggle_imp_blood_color():
 func _toggle_aliadas():
 	"""Toggle ON/OFF de todas las arqueras aliadas"""
 	allies_enabled = not allies_enabled
-	for ally in get_tree().get_nodes_in_group("allies"):
+	for ally in AllyArcher.active_allies_cache:
 		if ally is AllyArcher:
 			_aplicar_estado_aliada(ally)
 
@@ -1226,7 +1226,7 @@ func _toggle_aliadas():
 func _guardar_plantillas_aliadas():
 	"""Guarda una plantilla de cada aliada inicial para poder revivirla por debug."""
 	plantillas_aliadas.clear()
-	for ally in get_tree().get_nodes_in_group("allies"):
+	for ally in AllyArcher.active_allies_cache:
 		if not (ally is AllyArcher):
 			continue
 		var plantilla: Node = ally.duplicate()
@@ -1240,7 +1240,7 @@ func _guardar_plantillas_aliadas():
 		})
 
 func _buscar_aliada_por_nombre(nombre_aliada: String) -> AllyArcher:
-	for ally in get_tree().get_nodes_in_group("allies"):
+	for ally in AllyArcher.active_allies_cache:
 		if ally is AllyArcher and ally.name == nombre_aliada:
 			return ally
 	return null

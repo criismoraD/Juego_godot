@@ -42,3 +42,11 @@
 ## 2024-04-24 - [ImpShieldGirl] Optimize Shield Hit Allocation
 **Learning:** Instantiating objects like `StandardMaterial3D.new()` and traversing the node tree using `find_children()` dynamically inside frequently called functions (like taking hits) causes severe GC pressure and potential frame drops.
 **Action:** Cache target arrays (e.g., `MeshInstance3D`) and objects (like materials) as class variables during initialization (`_ready` or custom init functions) to completely avoid dynamic instancing and string lookups during runtime combat loops.
+
+## 2024-05-18 - [Static Array Caching over Group Queries]
+**Learning:** Using `get_tree().get_nodes_in_group("enemies")` inside a fallback when `WaveSpawner` isn't available creates rapid Garbage Collection (GC) overhead and O(N) lookup.
+**Action:** Replace `get_tree().get_nodes_in_group(...)` fallback calls with a `static var` cache inside the base class. In `EnemyBase`, declare `static var active_enemies_cache: Array[Node] = []`, append `self` to it in `_ready()` and `erase(self)` in `_exit_tree()`. Other scripts can query it in O(1) time instead of making expensive tree calls.
+
+## 2024-05-18 - [Centralized Cache over Global Group Find for Allies]
+**Learning:** Functions like UI toggles and state blocks in `GameUI.gd` and `NIVEL01.gd` query `get_tree().get_nodes_in_group("allies")` repeatedly causing unnecessary tree traversals and array copies.
+**Action:** Created `static var active_allies_cache: Array[Node] = []` in `AllyArcher.gd` and updated its array directly in `_ready` and `_exit_tree`. Replaced `get_tree().get_nodes_in_group("allies")` with `AllyArcher.active_allies_cache` in all UI and Level scripts.

@@ -106,6 +106,8 @@ signal died
 func _ready():
 	add_to_group("enemies")
 	add_to_group("shield_imps")
+	EnemyBase.active_shield_imps_cache.append(self)
+	EnemyBase.active_enemies_cache.append(self)
 	escudo_vida_actual = escudo_vida
 	health = vida_maxima
 	spawn_position = global_position
@@ -199,7 +201,7 @@ func _buscar_enemigo_a_proteger():
 	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
 		enemies = wave_spawner.get_active_enemies()
 	else:
-		enemies = get_tree().get_nodes_in_group("enemies")
+		enemies = EnemyBase.active_enemies_cache
 
 	var mejor_enemigo: Node3D = null
 	var menor_x: float = INF
@@ -485,6 +487,11 @@ func _finish_dissolve():
 	current_state = State.DEAD
 	died.emit()
 	queue_free()
+
+
+func _exit_tree():
+	EnemyBase.active_shield_imps_cache.erase(self)
+	EnemyBase.active_enemies_cache.erase(self)
 
 
 func _limpiar_y_destruir():
