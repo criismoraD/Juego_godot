@@ -637,7 +637,7 @@ func _iniciar_oleadas_libres():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _set_aliadas_activas(activas: bool):
-	for ally in get_tree().get_nodes_in_group("allies"):
+	for ally in AllyArcher.active_allies_cache:
 		if ally is AllyArcher:
 			ally.visible = activas
 			ally.set_process(activas)
@@ -648,7 +648,7 @@ func _set_aliadas_activas(activas: bool):
 
 ## Arqueras visibles en pose IDLE pero sin disparar
 func _set_aliadas_modo_pacifico():
-	for ally in get_tree().get_nodes_in_group("allies"):
+	for ally in AllyArcher.active_allies_cache:
 		if ally is AllyArcher:
 			ally.visible = true
 			ally.set_process(false) # No disparan

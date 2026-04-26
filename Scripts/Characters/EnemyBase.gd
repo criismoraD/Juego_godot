@@ -86,6 +86,7 @@ var game_feel: Node = null
 func _ready():
 	game_feel = get_node_or_null("/root/GameFeel")
 	add_to_group("enemies")
+	active_enemies_cache.append(self)
 	health = vida_maxima
 	target_walk_distance = randf_range(distancia_minima_caminar, distancia_maxima_caminar)
 
@@ -257,6 +258,8 @@ func _process_shooting(_delta):
 
 
 static var _cached_wave_spawner: Node = null
+static var active_enemies_cache: Array[Node] = []
+static var active_shield_imps_cache: Array[Node] = []
 
 
 func _get_cached_wave_spawner() -> Node:
@@ -290,9 +293,9 @@ func _check_spacing() -> bool:
 		enemies = wave_spawner.get_active_enemies()
 		shield_imps = wave_spawner.get_active_shield_imps()
 	else:
-		# Fallback a llamadas costosas pero usando grupo optimizado si no existe WaveSpawner
-		enemies = get_tree().get_nodes_in_group("enemies")
-		shield_imps = get_tree().get_nodes_in_group("shield_imps")
+		# Fallback: Usar arrays estáticos O(1) si no existe WaveSpawner
+		enemies = active_enemies_cache
+		shield_imps = active_shield_imps_cache
 
 	for enemy in enemies:
 		if enemy == self or not is_instance_valid(enemy):
@@ -434,6 +437,10 @@ func _reset_materials():
 
 ## Limpia TODOS los materiales del nodo y sus hijos antes de queue_free()
 ## para evitar errores "Parameter 'material' is null" del RenderingServer.
+func _exit_tree():
+	active_enemies_cache.erase(self)
+
+
 func _cleanup_all_materials():
 	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
 	for mesh in mesh_instances:
