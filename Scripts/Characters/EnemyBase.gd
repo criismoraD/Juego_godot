@@ -43,8 +43,8 @@ class_name EnemyBase
 @export var particulas_velocidad_min: float = 0.1
 @export var particulas_velocidad_max: float = 1.0
 @export var particulas_gravedad: Vector3 = Vector3(0, 0.1, 0)
-@export var particulas_escala_min: float = 0.01
-@export var particulas_escala_max: float = 0.03
+@export var particulas_escala_min: float = 0.005
+@export var particulas_escala_max: float = 0.015
 @export_range(0.0, 1.0, 0.1) var particulas_detener_emision: float = 0.7
 
 # === REFERENCIAS ===
@@ -616,8 +616,8 @@ func _create_dissolve_particles():
 	process_mat.initial_velocity_min = particulas_velocidad_min
 	process_mat.initial_velocity_max = particulas_velocidad_max
 	process_mat.gravity = particulas_gravedad
-	process_mat.scale_min = particulas_escala_min
-	process_mat.scale_max = particulas_escala_max
+	process_mat.scale_min = particulas_escala_min * 0.5
+	process_mat.scale_max = particulas_escala_max * 0.5
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, color_borde_disolucion)
@@ -639,8 +639,8 @@ func _create_dissolve_particles():
 	particles.process_material = process_mat
 
 	var sphere = SphereMesh.new()
-	sphere.radius = 0.05
-	sphere.height = 0.01
+	sphere.radius = 0.025
+	sphere.height = 0.05
 
 	var part_mat = StandardMaterial3D.new()
 	part_mat.albedo_color = color_borde_disolucion

@@ -109,6 +109,7 @@ func _create_trail_particles():
 	trail_particles.one_shot = false
 	trail_particles.explosiveness = 0.0
 	trail_particles.randomness = 0.2
+	trail_particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
@@ -117,8 +118,8 @@ func _create_trail_particles():
 	process_mat.initial_velocity_min = 0.1
 	process_mat.initial_velocity_max = 0.3
 	process_mat.gravity = Vector3(0, -0.5, 0)
-	process_mat.scale_min = 0.005
-	process_mat.scale_max = 0.015
+	process_mat.scale_min = 0.00375
+	process_mat.scale_max = 0.0075
 	
 	var gradient = Gradient.new()
 	gradient.set_color(0, Color(1.0, 0.4, 0.1, 1.0))
@@ -130,14 +131,15 @@ func _create_trail_particles():
 	trail_particles.process_material = process_mat
 	
 	var sphere = SphereMesh.new()
-	sphere.radius = 0.05
-	sphere.height = 0.01
+	sphere.radius = 0.025
+	sphere.height = 0.05
 	var part_mat = StandardMaterial3D.new()
 	part_mat.albedo_color = Color(1.0, 0.3, 0.05)
 	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	part_mat.emission_enabled = true
 	part_mat.emission = Color(1.0, 0.3, 0.05)
 	part_mat.emission_energy_multiplier = 3.0
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sphere.material = part_mat
 	

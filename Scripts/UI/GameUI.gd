@@ -626,6 +626,16 @@ func _create_pause_panel():
 	_style_button(btn_oleada_2, Color(0.6, 0.2, 0.4))
 	hbox_levels.add_child(btn_oleada_2)
 
+	var btn_carteles = Button.new()
+	btn_carteles.text = "Carteles"
+	btn_carteles.custom_minimum_size = Vector2(110, 40)
+	btn_carteles.pressed.connect(func():
+		_toggle_pause()
+		_ejecutar_carteles_debug()
+	)
+	_style_button(btn_carteles, Color(0.45, 0.35, 0.1))
+	hbox_levels.add_child(btn_carteles)
+
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_res = HSeparator.new()
 	sep_res.custom_minimum_size = Vector2(200, 10)
@@ -754,6 +764,14 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 	else:
 		if root_node.has_method("debug_ir_a_oleada_1"):
 			root_node.call("debug_ir_a_oleada_1")
+
+func _ejecutar_carteles_debug() -> void:
+	var root_node = _get_scene_root()
+	if not is_instance_valid(root_node):
+		return
+
+	if root_node.has_method("debug_mostrar_carteles_transicion"):
+		root_node.call("debug_mostrar_carteles_transicion")
 
 func _style_button(btn: Button, color: Color):
 	# Desactivar foco para que Space/Enter no activen botones de la UI

@@ -305,6 +305,7 @@ func _create_trail_particles():
 	trail_particles.amount = 15
 	trail_particles.lifetime = 0.25
 	trail_particles.preprocess = 0.0
+	trail_particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
@@ -313,8 +314,8 @@ func _create_trail_particles():
 	process_mat.initial_velocity_min = 0.0
 	process_mat.initial_velocity_max = 0.2
 	process_mat.gravity = Vector3.ZERO
-	process_mat.scale_min = 0.02
-	process_mat.scale_max = 0.04
+	process_mat.scale_min = 0.005
+	process_mat.scale_max = 0.01
 	
 	# Color del trail = color del proyectil
 	var gradient = Gradient.new()
@@ -336,14 +337,15 @@ func _create_trail_particles():
 	
 	# Mesh de partícula (esfera pequeña)
 	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
+	mesh.radius = 0.0125
+	mesh.height = 0.025
 	
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color_proyectil
 	mat.emission_enabled = true
 	mat.emission = color_proyectil
 	mat.emission_energy_multiplier = 4.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mesh.material = mat
 	

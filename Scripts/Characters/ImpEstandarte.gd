@@ -273,8 +273,8 @@ func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
-	if soltar_estandarte_al_atacar and not estandarte_ya_soltado:
-		_soltar_estandarte_fisico()
+	if not estandarte_ya_soltado:
+		_desaparecer_estandarte_con_particulas()
 		estandarte_ya_soltado = true
 		_actualizar_visual_arma(current_state == State.SHOOTING)
 
@@ -286,6 +286,14 @@ func take_damage(amount: float):
 			_reproducir_hit_aleatorio()
 		# Reusar sonido del imp normal en daño (atenuado para no saturar)
 		AudioManager.play_sfx("imp_death", volumen_hit_imp_db)
+
+
+func _desaparecer_estandarte_con_particulas() -> void:
+	if not estandarte_visual or not is_instance_valid(estandarte_visual):
+		return
+
+	_crear_particulas_desaparicion_estandarte(estandarte_visual.global_position)
+	estandarte_visual.visible = false
 
 
 func _reproducir_hit_aleatorio():
@@ -324,6 +332,7 @@ func _crear_explosion_sangre():
 	particles.one_shot = true
 	particles.explosiveness = 1.0
 	particles.randomness = 0.5
+	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 	var process_mat := ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
@@ -335,8 +344,8 @@ func _crear_explosion_sangre():
 	process_mat.gravity = Vector3(0, -6.0, 0)
 	process_mat.damping_min = 1.0
 	process_mat.damping_max = 3.0
-	process_mat.scale_min = 0.02
-	process_mat.scale_max = 0.06
+	process_mat.scale_min = 0.015
+	process_mat.scale_max = 0.03
 
 	var gradient := Gradient.new()
 	gradient.set_color(0, Color(0.7, 0.0, 0.0, 1.0))
@@ -349,14 +358,15 @@ func _crear_explosion_sangre():
 	particles.process_material = process_mat
 
 	var sphere := SphereMesh.new()
-	sphere.radius = 0.05
-	sphere.height = 0.01
+	sphere.radius = 0.025
+	sphere.height = 0.05
 	var blood_mat := StandardMaterial3D.new()
 	blood_mat.albedo_color = Color(0.6, 0.0, 0.0)
 	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	blood_mat.emission_enabled = true
 	blood_mat.emission = Color(0.5, 0.0, 0.0)
 	blood_mat.emission_energy_multiplier = 1.5
+	blood_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	blood_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sphere.material = blood_mat
 	particles.draw_pass_1 = sphere
@@ -572,6 +582,7 @@ func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
 	particulas.one_shot = true
 	particulas.explosiveness = 1.0
 	particulas.randomness = 0.4
+	particulas.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 	var proceso := ParticleProcessMaterial.new()
 	proceso.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
@@ -581,8 +592,8 @@ func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
 	proceso.initial_velocity_min = 0.55
 	proceso.initial_velocity_max = 1.6
 	proceso.gravity = Vector3(0, -0.7, 0)
-	proceso.scale_min = 0.016
-	proceso.scale_max = 0.045
+	proceso.scale_min = 0.01125
+	proceso.scale_max = 0.0225
 
 	var gradiente := Gradient.new()
 	gradiente.set_color(0, color_borde_disolucion)
@@ -596,14 +607,15 @@ func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
 	particulas.process_material = proceso
 
 	var esfera := SphereMesh.new()
-	esfera.radius = 0.05
-	esfera.height = 0.01
+	esfera.radius = 0.025
+	esfera.height = 0.05
 	var material_particula := StandardMaterial3D.new()
 	material_particula.albedo_color = color_borde_disolucion
 	material_particula.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	material_particula.emission_enabled = true
 	material_particula.emission = color_borde_disolucion
 	material_particula.emission_energy_multiplier = intensidad_emision * 0.5
+	material_particula.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material_particula.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	esfera.material = material_particula
 	particulas.draw_pass_1 = esfera

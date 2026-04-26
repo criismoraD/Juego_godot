@@ -119,6 +119,7 @@ func _crear_explosion_sangre():
 	particles.one_shot = true
 	particles.explosiveness = 1.0
 	particles.randomness = 0.5
+	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
@@ -130,8 +131,8 @@ func _crear_explosion_sangre():
 	process_mat.gravity = Vector3(0, -6.0, 0)
 	process_mat.damping_min = 1.0
 	process_mat.damping_max = 3.0
-	process_mat.scale_min = 0.02
-	process_mat.scale_max = 0.06
+	process_mat.scale_min = 0.015
+	process_mat.scale_max = 0.03
 	
 	# Color de sangre: rojo o morado según toggle
 	var color_base: Color
@@ -164,14 +165,15 @@ func _crear_explosion_sangre():
 	
 	# Mesh esfera para cada gota
 	var sphere = SphereMesh.new()
-	sphere.radius = 0.05
-	sphere.height = 0.01
+	sphere.radius = 0.025
+	sphere.height = 0.05
 	var blood_mat = StandardMaterial3D.new()
 	blood_mat.albedo_color = color_albedo
 	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	blood_mat.emission_enabled = true
 	blood_mat.emission = color_emission
 	blood_mat.emission_energy_multiplier = 1.5
+	blood_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	blood_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sphere.material = blood_mat
 	particles.draw_pass_1 = sphere

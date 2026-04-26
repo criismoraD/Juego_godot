@@ -30,6 +30,7 @@ var estado_actual: int = NivelEstado.NIVEL_0
 var enemigos_pacificos: Array = [] ## Los 3 enemigos del nivel 0
 var imp_estandarte: Node3D = null ## Referencia al imp que lleva el estandarte
 var oleada_combate_actual: int = 1
+var transicion_carteles_en_progreso: bool = false
 
 # === REFERENCIAS ===
 @onready var wave_spawner: WaveSpawner = $WaveSpawner
@@ -337,42 +338,119 @@ func _on_nivel1_completado(_numero_oleada: int):
 	wave_spawner.detener_spawning()
 
 	if oleada_combate_actual == 1:
+		if transicion_carteles_en_progreso:
+			return
+		transicion_carteles_en_progreso = true
+		# Mostrar carteles de transición sin animación y luego pasar a oleada 2
+		await _mostrar_cartel_nivel1_completado()
+		await _mostrar_cartel_nivel_2()
 		oleada_combate_actual = 2
-		await _mostrar_cartel_oleada_2()
 		_configurar_oleada_combate(total_enemigos_oleada_2)
+		transicion_carteles_en_progreso = false
 		return
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
 	print("[NIVEL01] ¡Oleada 2 completada! Mostrando victoria con botón continuar...")
 	_mostrar_victoria_con_continuar(tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleadas completadas!")
 
-func _mostrar_cartel_oleada_2() -> void:
-	var overlay: CanvasLayer = CanvasLayer.new()
-	overlay.layer = 205
-	overlay.name = "CartelOleada2"
-	add_child(overlay)
+# ═══════════════════════════════════════════════════════════════════════════════
+# CARTELES DE TRANSICIÓN (SIN FONDO NEGRO — con contorno y animación)
+# ═══════════════════════════════════════════════════════════════════════════════
 
-	var fondo: ColorRect = ColorRect.new()
-	fondo.color = Color(0, 0, 0, 0.65)
-	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(fondo)
+func _crear_label_settings_contorno(tamano_contorno: int = 8, color_contorno: Color = Color(0, 0, 0, 1)) -> LabelSettings:
+	var ls := LabelSettings.new()
+	ls.outline_size = tamano_contorno
+	ls.outline_color = color_contorno
+	ls.font_size = 64
+	return ls
 
-	var label: Label = Label.new()
-	label.text = "OLEADA 2\n25 ENEMIGOS"
+func _crear_label_transicion(texto: String, color_texto: Color) -> Label:
+	var label := Label.new()
+	label.text = texto
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 52)
-	label.add_theme_color_override("font_color", Color(1, 0.88, 0.35))
-	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	label.offset_left = -320
-	label.offset_right = 320
-	label.offset_top = -80
-	label.offset_bottom = 80
-	overlay.add_child(label)
+	label.label_settings = _crear_label_settings_contorno(10, Color(0, 0, 0, 1))
+	label.add_theme_color_override("font_color", color_texto)
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return label
 
-	await get_tree().create_timer(1.8).timeout
+## Animación: fade-in + escala (de 0.5 a 1.0) durante `duracion_entrada` segundos
+func _animar_entrada(label: Label, duracion_entrada: float = 0.5) -> Tween:
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_BACK)
+	label.modulate = Color(1, 1, 1, 0)
+	label.pivot_offset = label.size / 2.0
+	label.scale = Vector2(0.5, 0.5)
+	tween.tween_property(label, "modulate:a", 1.0, duracion_entrada)
+	tween.tween_property(label, "scale", Vector2(1.0, 1.0), duracion_entrada)
+	return tween
+
+## Animación: fade-out + escala (de 1.0 a 1.3) durante `duracion_salida` segundos
+func _animar_salida(label: Label, duracion_salida: float = 0.4) -> Tween:
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.set_ease(Tween.EASE_IN)
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(label, "modulate:a", 0.0, duracion_salida)
+	tween.tween_property(label, "scale", Vector2(1.3, 1.3), duracion_salida)
+	return tween
+
+func _mostrar_cartel_nivel1_completado() -> void:
+	_limpiar_carteles_transicion()
+	var overlay := CanvasLayer.new()
+	overlay.layer = 205
+	overlay.name = "CartelNivel1Completado"
+	add_child(overlay)
+
+	var label := _crear_label_transicion(
+		tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "NIVEL 1\nCOMPLETADO",
+		Color(0.2, 1.0, 0.35)  # Verde brillante
+	)
+	overlay.add_child(label)
+	label.modulate = Color(1, 1, 1, 1)
+	label.scale = Vector2.ONE
+	await get_tree().create_timer(1.5).timeout
+
 	if is_instance_valid(overlay):
 		overlay.queue_free()
+	await get_tree().process_frame
+
+func _mostrar_cartel_nivel_2() -> void:
+	_limpiar_carteles_transicion()
+	var overlay := CanvasLayer.new()
+	overlay.layer = 205
+	overlay.name = "CartelNivel2"
+	add_child(overlay)
+
+	var label := _crear_label_transicion(
+		"Nivel 02",
+		Color(1.0, 0.85, 0.2)  # Dorado
+	)
+	overlay.add_child(label)
+	label.modulate = Color(1, 1, 1, 1)
+	label.scale = Vector2.ONE
+	await get_tree().create_timer(1.2).timeout
+
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+
+func _limpiar_carteles_transicion() -> void:
+	var cartel_1 = get_node_or_null("CartelNivel1Completado")
+	if is_instance_valid(cartel_1):
+		cartel_1.queue_free()
+	var cartel_2 = get_node_or_null("CartelNivel2")
+	if is_instance_valid(cartel_2):
+		cartel_2.queue_free()
+
+func debug_mostrar_carteles_transicion() -> void:
+	if transicion_carteles_en_progreso:
+		return
+	transicion_carteles_en_progreso = true
+	await _mostrar_cartel_nivel1_completado()
+	await _mostrar_cartel_nivel_2()
+	transicion_carteles_en_progreso = false
 
 func debug_ir_a_oleada_1() -> void:
 	_iniciar_oleada_debug(1)

@@ -279,8 +279,8 @@ func _create_dissolve_particles():
 	process_mat.initial_velocity_min = particulas_velocidad_min
 	process_mat.initial_velocity_max = particulas_velocidad_max
 	process_mat.gravity = particulas_gravedad
-	process_mat.scale_min = particulas_escala_min
-	process_mat.scale_max = particulas_escala_max
+	process_mat.scale_min = particulas_escala_min * 0.5
+	process_mat.scale_max = particulas_escala_max * 0.5
 	
 	# Gradiente de color: del color de borde a transparente
 	var gradient = Gradient.new()
@@ -303,8 +303,8 @@ func _create_dissolve_particles():
 	
 	# Mesh de partícula (esfera pequeña)
 	var sphere = SphereMesh.new()
-	sphere.radius = 0.05
-	sphere.height = 0.01
+	sphere.radius = 0.025
+	sphere.height = 0.05
 	
 	var part_mat = StandardMaterial3D.new()
 	part_mat.albedo_color = color_borde_disolucion
