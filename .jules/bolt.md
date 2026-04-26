@@ -50,3 +50,7 @@
 ## 2024-05-18 - [Centralized Cache over Global Group Find for Allies]
 **Learning:** Functions like UI toggles and state blocks in `GameUI.gd` and `NIVEL01.gd` query `get_tree().get_nodes_in_group("allies")` repeatedly causing unnecessary tree traversals and array copies.
 **Action:** Created `static var active_allies_cache: Array[Node] = []` in `AllyArcher.gd` and updated its array directly in `_ready` and `_exit_tree`. Replaced `get_tree().get_nodes_in_group("allies")` with `AllyArcher.active_allies_cache` in all UI and Level scripts.
+
+## 2024-05-18 - Caching Unique Child Nodes via Instance Variables
+**Learning:** While static variables are excellent for caching shared resources or groups, node collections unique to an instance (like the specific `MeshInstance3D` children forming a specific enemy's body) must be cached via instance variables (e.g., `var _cached_mesh_instances: Array[Node] = []`) populated in `_ready()`. Using a static array here would cause instances to share child node lists, leading to bugs where one enemy's damage flash affects all enemies.
+**Action:** Use instance variable arrays populated during `_ready()` to cache expensive recursive queries (like `find_children("*", "MeshInstance3D", true, false)`) for nodes that belong uniquely to that specific object instance.
