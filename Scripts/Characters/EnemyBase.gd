@@ -72,6 +72,11 @@ var is_dissolving: bool = false
 var dissolve_materials: Array = []
 var dissolve_particles: GPUParticles3D = null
 
+# === CACHÉ DE NODOS ===
+var _cached_mesh_instances: Array[Node] = []
+var _cached_particles: Array[Node] = []
+var _red_flash_material: StandardMaterial3D = null
+
 # === SEÑALES ===
 signal died
 signal pacifico_danado  ## Emitida cuando un enemigo pacífico recibe daño
@@ -89,6 +94,15 @@ func _ready():
 	active_enemies_cache.append(self)
 	health = vida_maxima
 	target_walk_distance = randf_range(distancia_minima_caminar, distancia_maxima_caminar)
+
+	_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
+	_cached_particles = find_children("*", "GPUParticles3D", true, false)
+
+	_red_flash_material = StandardMaterial3D.new()
+	_red_flash_material.albedo_color = Color(1, 0, 0)
+	_red_flash_material.emission_enabled = true
+	_red_flash_material.emission = Color(1, 0, 0)
+	_red_flash_material.emission_energy_multiplier = 2.0
 
 	_desactivar_bones_fisicos()
 	_buscar_animation_player()
@@ -196,8 +210,7 @@ func _on_pacifico_detenido():
 
 
 func _store_original_materials():
-	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
-	for mesh in mesh_instances:
+	for mesh in _cached_mesh_instances:
 		mesh.add_to_group("outline_meshes")
 		if mesh.get_surface_override_material_count() > 0:
 			for i in range(mesh.get_surface_override_material_count()):
@@ -408,18 +421,11 @@ func take_damage(amount: float):
 
 
 func _flash_red():
-	var red_material = StandardMaterial3D.new()
-	red_material.albedo_color = Color(1, 0, 0)
-	red_material.emission_enabled = true
-	red_material.emission = Color(1, 0, 0)
-	red_material.emission_energy_multiplier = 2.0
-
-	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
-	for mesh in mesh_instances:
+	for mesh in _cached_mesh_instances:
 		for i in range(mesh.get_surface_override_material_count()):
-			mesh.set_surface_override_material(i, red_material)
+			mesh.set_surface_override_material(i, _red_flash_material)
 		if mesh.get_surface_override_material_count() == 0:
-			mesh.material_override = red_material
+			mesh.material_override = _red_flash_material
 
 	get_tree().create_timer(0.08).timeout.connect(
 		func():
@@ -442,8 +448,7 @@ func _exit_tree():
 
 
 func _cleanup_all_materials():
-	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
-	for mesh in mesh_instances:
+	for mesh in _cached_mesh_instances:
 		if is_instance_valid(mesh):
 			mesh.material_override = null
 			if mesh.mesh:
@@ -452,8 +457,7 @@ func _cleanup_all_materials():
 			mesh.visible = false
 
 	# Detener todas las partículas y limpiar sus materiales de draw_pass
-	var particles = find_children("*", "GPUParticles3D", true, false)
-	for p in particles:
+	for p in _cached_particles:
 		if is_instance_valid(p):
 			p.emitting = false
 			if p.draw_pass_1 and p.draw_pass_1 is Mesh:
@@ -520,8 +524,7 @@ func _start_dissolve_effect():
 		return
 	is_dissolving = true
 
-	var mesh_instances = find_children("*", "MeshInstance3D", true, false)
-	for mesh in mesh_instances:
+	for mesh in _cached_mesh_instances:
 		if mesh is MeshInstance3D:
 			var material = ShaderMaterial.new()
 			material.shader = dissolve_shader
