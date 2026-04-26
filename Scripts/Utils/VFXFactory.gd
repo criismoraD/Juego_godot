@@ -9,6 +9,9 @@
 extends Node
 class_name VFXFactory
 
+static func _desactivar_sombra_particula(particles: GPUParticles3D) -> void:
+	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN GLOBAL
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -29,6 +32,7 @@ static func _get_shared_material(color: Color, emission: bool = false, emission_
 		return _mat_cache[key]
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	if emission:
 		mat.emission_enabled = true
 		mat.emission = color
@@ -38,7 +42,7 @@ static func _get_shared_material(color: Color, emission: bool = false, emission_
 	_mat_cache[key] = mat
 	return mat
 
-static func _get_shared_mesh(radius: float = 0.05, height: float = 0.01) -> SphereMesh:
+static func _get_shared_mesh(radius: float = 0.0125, height: float = 0.025) -> SphereMesh:
 	var key := "%s_%s" % [radius, height]
 	if _mesh_cache.has(key):
 		return _mesh_cache[key]
@@ -87,7 +91,7 @@ static func warmup_shaders(world: Node) -> void:
 
 ## Crear partículas de impacto (cuando la flecha golpea algo)
 static func spawn_impact(
-	world: Node, position: Vector3, color: Color = Color.WHITE, amount: int = 15, size: float = 0.05
+	world: Node, position: Vector3, color: Color = Color.WHITE, amount: int = 15, size: float = 0.0125
 ) -> GPUParticles3D:
 	if not vfx_enabled:
 		return null
@@ -98,6 +102,7 @@ static func spawn_impact(
 	particles.explosiveness = 0.9
 	particles.amount = int(amount * particle_amount_multiplier)
 	particles.lifetime = 0.4
+	_desactivar_sombra_particula(particles)
 
 	# Material de proceso
 	var process_mat = ParticleProcessMaterial.new()
@@ -152,6 +157,7 @@ static func spawn_muzzle_flash(
 	particles.explosiveness = 1.0
 	particles.amount = int(8 * particle_amount_multiplier)
 	particles.lifetime = 0.15
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
@@ -160,8 +166,8 @@ static func spawn_muzzle_flash(
 	process_mat.initial_velocity_min = 3.0
 	process_mat.initial_velocity_max = 6.0
 	process_mat.gravity = Vector3.ZERO
-	process_mat.scale_min = 0.02
-	process_mat.scale_max = 0.05
+	process_mat.scale_min = 0.00625
+	process_mat.scale_max = 0.0125
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, Color(1.0, 0.9, 0.3, 1.0))  # Amarillo brillante incandescente
@@ -202,6 +208,7 @@ static func spawn_blood(
 	particles.explosiveness = 0.8
 	particles.amount = int(20 * particle_amount_multiplier)
 	particles.lifetime = 0.6
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
@@ -211,8 +218,8 @@ static func spawn_blood(
 	process_mat.initial_velocity_min = 3.0
 	process_mat.initial_velocity_max = 7.0
 	process_mat.gravity = Vector3(0, -15, 0)
-	process_mat.scale_min = 0.02
-	process_mat.scale_max = 0.06
+	process_mat.scale_min = 0.0075
+	process_mat.scale_max = 0.015
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, color)
@@ -255,6 +262,7 @@ static func spawn_dust(
 	particles.explosiveness = 0.7
 	particles.amount = int(12 * particle_amount_multiplier)
 	particles.lifetime = 0.5
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
@@ -264,8 +272,8 @@ static func spawn_dust(
 	process_mat.initial_velocity_min = 0.5
 	process_mat.initial_velocity_max = 1.5
 	process_mat.gravity = Vector3(0, -1, 0)
-	process_mat.scale_min = 0.05
-	process_mat.scale_max = 0.15
+	process_mat.scale_min = 0.01875
+	process_mat.scale_max = 0.0375
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, color)
@@ -296,8 +304,8 @@ static func spawn_jump(
 	world: Node,
 	position: Vector3,
 	color: Color = Color(0.7, 0.65, 0.5, 0.5),
-	scale_min: float = 0.05,
-	scale_max: float = 0.15
+	scale_min: float = 0.0125,
+	scale_max: float = 0.0375
 ) -> GPUParticles3D:
 	if not vfx_enabled:
 		return null
@@ -308,6 +316,7 @@ static func spawn_jump(
 	particles.explosiveness = 0.7
 	particles.amount = int(12 * particle_amount_multiplier)
 	particles.lifetime = 0.5
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
@@ -354,6 +363,7 @@ static func spawn_landing(world: Node, position: Vector3, intensity: float = 1.0
 	particles.explosiveness = 0.9
 	particles.amount = int(20 * intensity * particle_amount_multiplier)
 	particles.lifetime = 0.6
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
@@ -366,8 +376,8 @@ static func spawn_landing(world: Node, position: Vector3, intensity: float = 1.0
 	process_mat.initial_velocity_min = 1.0 * intensity
 	process_mat.initial_velocity_max = 3.0 * intensity
 	process_mat.gravity = Vector3(0, -3, 0)
-	process_mat.scale_min = 0.03
-	process_mat.scale_max = 0.1
+	process_mat.scale_min = 0.0125
+	process_mat.scale_max = 0.025
 
 	var color = Color(0.6, 0.55, 0.45, 0.6)
 	var gradient = Gradient.new()
@@ -411,6 +421,7 @@ static func spawn_death_explosion(
 	particles.explosiveness = 1.0
 	particles.amount = int(50 * particle_amount_multiplier)
 	particles.lifetime = 1.0
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
@@ -422,8 +433,8 @@ static func spawn_death_explosion(
 	process_mat.gravity = Vector3(0, -5, 0)
 	process_mat.damping_min = 1.0
 	process_mat.damping_max = 3.0
-	process_mat.scale_min = 0.03
-	process_mat.scale_max = 0.08
+	process_mat.scale_min = 0.01
+	process_mat.scale_max = 0.02
 
 	var gradient = Gradient.new()
 	gradient.add_point(0.0, Color(1.0, 1.0, 0.8, 1.0))  # Centro brillante
@@ -465,6 +476,7 @@ static func spawn_sparks(
 	particles.explosiveness = 1.0
 	particles.amount = int(25 * particle_amount_multiplier)
 	particles.lifetime = 0.4
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
@@ -473,8 +485,8 @@ static func spawn_sparks(
 	process_mat.initial_velocity_min = 5.0
 	process_mat.initial_velocity_max = 12.0
 	process_mat.gravity = Vector3(0, -15, 0)
-	process_mat.scale_min = 0.01
-	process_mat.scale_max = 0.03
+	process_mat.scale_min = 0.00375
+	process_mat.scale_max = 0.0075
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
@@ -518,6 +530,7 @@ static func create_arrow_trail(
 	particles.amount = int(20 * particle_amount_multiplier)
 	particles.lifetime = 0.3
 	particles.preprocess = 0.0
+	_desactivar_sombra_particula(particles)
 
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
@@ -526,8 +539,8 @@ static func create_arrow_trail(
 	process_mat.initial_velocity_min = 0.0
 	process_mat.initial_velocity_max = 0.1
 	process_mat.gravity = Vector3.ZERO
-	process_mat.scale_min = 0.01
-	process_mat.scale_max = 0.02
+	process_mat.scale_min = 0.0025
+	process_mat.scale_max = 0.005
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, color)
