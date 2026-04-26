@@ -69,8 +69,9 @@ func _process(delta):
 			_spawn_goblin()
 			spawn_timer = intervalo_aparicion
 
-		# Verificar si la oleada terminó
-		_check_wave_complete()
+		# Verificar si la oleada terminó (OPT: solo si ya spawneamos todos)
+		if goblins_spawned_in_wave >= enemigos_por_oleada:
+			_check_wave_complete()
 
 	# Check de spawn de ImpShieldGirl (independiente de oleadas)
 	_check_shield_imp_spawn(delta)

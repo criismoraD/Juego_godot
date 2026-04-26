@@ -19,6 +19,35 @@ static var particle_amount_multiplier: float = 0.4
 ## Activar/desactivar VFX globalmente
 static var vfx_enabled: bool = true
 
+# === OPTIMIZACIÓN: Caché de materiales compartidos ===
+static var _mat_cache: Dictionary = {}
+static var _mesh_cache: Dictionary = {}
+
+static func _get_shared_material(color: Color, emission: bool = false, emission_energy: float = 2.0, transparency: bool = false) -> StandardMaterial3D:
+	var key := "%s_%s_%s_%s" % [color.to_html(), emission, emission_energy, transparency]
+	if _mat_cache.has(key):
+		return _mat_cache[key]
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	if emission:
+		mat.emission_enabled = true
+		mat.emission = color
+		mat.emission_energy_multiplier = emission_energy
+	if transparency:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_mat_cache[key] = mat
+	return mat
+
+static func _get_shared_mesh(radius: float = 0.05, height: float = 0.01) -> SphereMesh:
+	var key := "%s_%s" % [radius, height]
+	if _mesh_cache.has(key):
+		return _mesh_cache[key]
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = height
+	_mesh_cache[key] = mesh
+	return mesh
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # WARM-UP DE SHADERS (evita stutter en la primera aparición de partículas)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -94,17 +123,9 @@ static func spawn_impact(
 
 	particles.process_material = process_mat
 
-	# Mesh (pequeñas esferas)
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 2.0
-	mesh.material = mat
+	# Mesh compartido
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, true, 2.0, false)
 
 	particles.draw_pass_1 = mesh
 
@@ -151,17 +172,9 @@ static func spawn_muzzle_flash(
 
 	particles.process_material = process_mat
 
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 5.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh.material = mat
+	# Mesh compartido
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, true, 5.0, true)
 
 	particles.draw_pass_1 = mesh
 
@@ -210,13 +223,9 @@ static func spawn_blood(
 
 	particles.process_material = process_mat
 
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mesh.material = mat
+	# Mesh compartido
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, false, 0.0, false)
 
 	particles.draw_pass_1 = mesh
 
@@ -267,14 +276,9 @@ static func spawn_dust(
 
 	particles.process_material = process_mat
 
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh.material = mat
+	# Mesh compartido
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, false, 0.0, true)
 
 	particles.draw_pass_1 = mesh
 
@@ -325,14 +329,9 @@ static func spawn_jump(
 
 	particles.process_material = process_mat
 
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh.material = mat
+	# Mesh compartido
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, false, 0.0, true)
 
 	particles.draw_pass_1 = mesh
 
@@ -380,14 +379,9 @@ static func spawn_landing(world: Node, position: Vector3, intensity: float = 1.0
 
 	particles.process_material = process_mat
 
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh.material = mat
+	# Mesh compartido
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, false, 0.0, true)
 
 	particles.draw_pass_1 = mesh
 
@@ -441,17 +435,9 @@ static func spawn_death_explosion(
 
 	particles.process_material = process_mat
 
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 3.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh.material = mat
+	# Mesh compartido con emisión
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, true, 3.0, true)
 
 	particles.draw_pass_1 = mesh
 
@@ -499,16 +485,14 @@ static func spawn_sparks(
 
 	particles.process_material = process_mat
 
-	# Usar mesh alargado para simular líneas de chispa
-	var mesh = BoxMesh.new()
-	mesh.size = Vector3(0.01, 0.05, 0.01)
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 5.0
-	mesh.material = mat
+	# Usar BoxMesh alargado para chispas — crear uno compartido
+	var spark_key := "spark_box"
+	if not _mesh_cache.has(spark_key):
+		var spark_mesh := BoxMesh.new()
+		spark_mesh.size = Vector3(0.01, 0.05, 0.01)
+		_mesh_cache[spark_key] = spark_mesh
+	var mesh: BoxMesh = _mesh_cache[spark_key]
+	mesh.material = _get_shared_material(color, true, 5.0, false)
 
 	particles.draw_pass_1 = mesh
 
@@ -562,14 +546,9 @@ static func create_arrow_trail(
 
 	particles.process_material = process_mat
 
-	var mesh = SphereMesh.new()
-	mesh.radius = 0.05
-	mesh.height = 0.01
-
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh.material = mat
+	# Mesh compartido
+	var mesh = _get_shared_mesh()
+	mesh.material = _get_shared_material(color, false, 0.0, true)
 
 	particles.draw_pass_1 = mesh
 

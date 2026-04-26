@@ -54,6 +54,10 @@ var estados_proceso_dialogo: Dictionary = {}
 var estado_spawner_dialogo: Dictionary = {}
 var _dialogo_audio_player: AudioStreamPlayer
 
+# === OPTIMIZACIÓN: Monitoreo de oleadas con timer ===
+var _monitor_timer: float = 0.0
+const MONITOR_INTERVAL: float = 0.3 # Chequear estado de oleada ~3 veces por segundo
+
 func _ready():
 	_dialogo_audio_player = AudioStreamPlayer.new()
 	_dialogo_audio_player.bus = "Master"
@@ -181,7 +185,13 @@ func _mostrar_dialogo_escena(escena: PackedScene, velocidad: float, chars_por_so
 
 	return true
 
-func _process(_delta):
+func _process(delta):
+	# OPT: Monitoreo de oleadas con timer en vez de cada frame
+	_monitor_timer += delta
+	if _monitor_timer < MONITOR_INTERVAL:
+		return
+	_monitor_timer = 0.0
+
 	match estado_actual:
 		NivelEstado.NIVEL_0:
 			_monitorear_nivel_0()

@@ -26,6 +26,8 @@ var sfx_pool: Array[AudioStreamPlayer] = []
 var sfx_3d_pool: Array[AudioStreamPlayer3D] = []
 const MAX_POOL_SIZE = 16
 const MAX_3D_POOL_SIZE = 16
+var _sfx_pool_idx: int = 0 # OPT: Índice circular para O(1) en vez de scan lineal
+var _sfx_3d_pool_idx: int = 0
 
 
 # === PITCH DITHERING (variación aleatoria de tono) ===
@@ -206,32 +208,28 @@ func _load_all_sounds():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _get_available_sfx_player() -> AudioStreamPlayer:
-	for p in sfx_pool:
-		if not p.playing:
-			return p
-	# Si no hay disponibles, tomar el que esté más avanzado (o primero) y forzarlo
-	var oldest = sfx_pool[0]
-	var max_pos = 0.0
-	for p in sfx_pool:
-		var pos = p.get_playback_position()
-		if pos > max_pos:
-			max_pos = pos
-			oldest = p
-	return oldest
+	# OPT: Índice circular O(1) — buscar desde el último usado, máximo 1 vuelta
+	for i in range(MAX_POOL_SIZE):
+		var idx = (_sfx_pool_idx + i) % MAX_POOL_SIZE
+		if not sfx_pool[idx].playing:
+			_sfx_pool_idx = (idx + 1) % MAX_POOL_SIZE
+			return sfx_pool[idx]
+	# Todos ocupados: tomar el siguiente round-robin (fuerza reuso)
+	var player = sfx_pool[_sfx_pool_idx]
+	_sfx_pool_idx = (_sfx_pool_idx + 1) % MAX_POOL_SIZE
+	return player
 
 func _get_available_sfx_3d_player() -> AudioStreamPlayer3D:
-	for p in sfx_3d_pool:
-		if not p.playing:
-			return p
-	# Si no hay disponibles, tomar el más avanzado
-	var oldest = sfx_3d_pool[0]
-	var max_pos = 0.0
-	for p in sfx_3d_pool:
-		var pos = p.get_playback_position()
-		if pos > max_pos:
-			max_pos = pos
-			oldest = p
-	return oldest
+	# OPT: Índice circular O(1)
+	for i in range(MAX_3D_POOL_SIZE):
+		var idx = (_sfx_3d_pool_idx + i) % MAX_3D_POOL_SIZE
+		if not sfx_3d_pool[idx].playing:
+			_sfx_3d_pool_idx = (idx + 1) % MAX_3D_POOL_SIZE
+			return sfx_3d_pool[idx]
+	# Todos ocupados: round-robin
+	var player = sfx_3d_pool[_sfx_3d_pool_idx]
+	_sfx_3d_pool_idx = (_sfx_3d_pool_idx + 1) % MAX_3D_POOL_SIZE
+	return player
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # API PÚBLICA
