@@ -98,6 +98,9 @@ var _cached_mesh_instances: Array[Node] = []
 
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
+# === OPTIMIZACIÓN: Material de flash cacheado ===
+var _flash_material: StandardMaterial3D = null
+
 # === VIDA ===
 var health: int = 5
 var is_invulnerable: bool = false
@@ -1167,14 +1170,15 @@ func _play_hit_animation():
 	anim_tree.set("parameters/HitOneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 func _flash_damage():
-	# Crear un flash rojo temporal
-	# Utilizar caché en lugar de buscar cada vez
+	# OPT: Usar material cacheado en vez de crear uno nuevo cada daño
+	if not _flash_material:
+		_flash_material = StandardMaterial3D.new()
+		_flash_material.albedo_color = Color(1, 0.3, 0.3)
+
 	# Cambiar a rojo
 	for mesh in _cached_mesh_instances:
 		if mesh.material_override == null:
-			var flash_mat = StandardMaterial3D.new()
-			flash_mat.albedo_color = Color(1, 0.3, 0.3)
-			mesh.material_override = flash_mat
+			mesh.material_override = _flash_material
 
 	# Restaurar después de un tiempo
 	await get_tree().create_timer(0.1).timeout

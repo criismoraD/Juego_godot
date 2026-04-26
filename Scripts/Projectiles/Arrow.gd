@@ -19,6 +19,8 @@ var world_gravity: float = 0.0
 var is_stuck: bool = false
 var _destroying: bool = false
 var _ray_ccd: RayCast3D
+var _last_ccd_pos: Vector3 = Vector3.ZERO # OPT: Posición del último CCD check
+const CCD_MIN_MOVE: float = 0.05 # OPT: Distancia mínima antes de re-chequear CCD
 
 func _ready():
 	world_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -58,27 +60,30 @@ func _physics_process(delta):
 	# 2. Forzar Z = 0 (2.5D)
 	velocity.z = 0
 	
-	# --- CCD Detection (RayCast) ---
+	# --- CCD Detection (RayCast) — OPT: solo si nos movimos lo suficiente ---
 	var ray = _ray_ccd
 	if ray:
-		# Convertir vector de velocidad (World) a local para el raycast
-		# Predecimos dónde estará en el siguiente frame
-		var next_pos = global_position + velocity * delta
-		ray.target_position = to_local(next_pos)
-		ray.force_raycast_update()
-		
-		if ray.is_colliding():
-			var collider = ray.get_collider()
-			# Si detectamos colisión, nos movemos al punto de impacto
-			global_position = ray.get_collision_point()
+		var dist_moved = global_position.distance_to(_last_ccd_pos)
+		if dist_moved >= CCD_MIN_MOVE:
+			# Convertir vector de velocidad (World) a local para el raycast
+			# Predecimos dónde estará en el siguiente frame
+			var next_pos = global_position + velocity * delta
+			ray.target_position = to_local(next_pos)
+			ray.force_raycast_update()
+			_last_ccd_pos = global_position
 			
-			if collider is Area3D:
-				_on_area_entered(collider)
-			else:
-				_on_body_entered(collider)
-			
-			if is_stuck:
-				return
+			if ray.is_colliding():
+				var collider = ray.get_collider()
+				# Si detectamos colisión, nos movemos al punto de impacto
+				global_position = ray.get_collision_point()
+				
+				if collider is Area3D:
+					_on_area_entered(collider)
+				else:
+					_on_body_entered(collider)
+				
+				if is_stuck:
+					return
 	# -------------------------------
 	
 	# 3. Mover

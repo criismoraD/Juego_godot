@@ -42,6 +42,10 @@ var effects_enabled: bool = true # Fog y DOF habilitados por defecto
 var shields_enabled: bool = true
 var allies_enabled: bool = true
 
+# === OPTIMIZACIÓN ===
+var _wave_update_timer: float = 0.0
+const WAVE_UPDATE_INTERVAL: float = 0.25 # Actualizar progreso de oleada 4 veces por segundo en vez de cada frame
+
 # === ESCUDOS ===
 var escudo_scene: PackedScene = preload("res://Scenes/Environment/Escudo.tscn")
 var escudos_originales: Array = [] # [{transform, parent_path}]
@@ -695,18 +699,28 @@ func _update_health_ui():
 func _on_health_changed(_new_health: int):
 	_update_health_ui()
 
-func _process(_delta):
-	if wave_spawner and is_instance_valid(wave_spawner) and wave_spawner.get("is_wave_active"):
-		var vivos = 0
-		if wave_spawner.get("active_goblins") != null:
-			var active_goblins: Array = wave_spawner.active_goblins
-			# Opt: Iteración inversa in-place en lugar de crear lista_limpia para evitar allocations de memoria/GC en _process
-			for i in range(active_goblins.size() - 1, -1, -1):
-				var e = active_goblins[i]
-				if is_instance_valid(e) and not (e.get("current_state") in [5, 6]): # 5=DYING, 6=DEAD (En ImpShieldGirl y EnemyBase)
-					vivos += 1
-				else:
-					active_goblins.remove_at(i)
+func _process(delta):
+	if not wave_spawner or not is_instance_valid(wave_spawner):
+		if wave_container:
+			wave_container.visible = false
+		return
+
+	# OPT: Solo actualizar UI de oleada cada WAVE_UPDATE_INTERVAL en vez de cada frame
+	_wave_update_timer += delta
+	if _wave_update_timer < WAVE_UPDATE_INTERVAL:
+		return
+	_wave_update_timer = 0.0
+
+	if wave_spawner.get("is_wave_active"):
+		var active_goblins: Array = wave_spawner.active_goblins
+		var vivos := 0
+		# OPT: Iteración inversa in-place — limpiar refs inválidas y contar vivos en un solo pass
+		for i in range(active_goblins.size() - 1, -1, -1):
+			var e = active_goblins[i]
+			if is_instance_valid(e) and not (e.get("current_state") in [5, 6]): # 5=DYING, 6=DEAD
+				vivos += 1
+			else:
+				active_goblins.remove_at(i)
 
 		var total = wave_spawner.get("enemigos_por_oleada")
 		var spawneados = wave_spawner.get("goblins_spawned_in_wave")
