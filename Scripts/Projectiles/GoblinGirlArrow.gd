@@ -8,10 +8,10 @@ const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 
 # === CONFIGURACIÓN ===
 @export_category("Movimiento")
-@export var velocidad: float = 10.0 ## Velocidad inicial de la flecha
-@export var gravedad: float = 1.0 ## Gravedad aplicada a la trayectoria
-@export var tiempo_vida: float = 10.0 ## Tiempo antes de destruirse
-@export var tiempo_pegada: float = 5.0 ## Tiempo pegada antes de desaparecer
+@export var velocidad: float = 10.0  ## Velocidad inicial de la flecha
+@export var gravedad: float = 1.0  ## Gravedad aplicada a la trayectoria
+@export var tiempo_vida: float = 10.0  ## Tiempo antes de destruirse
+@export var tiempo_pegada: float = 5.0  ## Tiempo pegada antes de desaparecer
 
 @export_category("Visual")
 ## Color del proyectil (material + partículas). Púrpura = GoblinGirl
@@ -28,67 +28,76 @@ var projectile_material: StandardMaterial3D
 # === PARTÍCULAS ===
 var trail_particles: GPUParticles3D
 
+var _cached_mesh_instances: Array[Node] = []
+
+
 func _ready():
 	add_to_group("enemy_projectiles")
-	
+
 	# Eliminar cualquier modelo GLB que venga de la escena
 	_remove_glb_model()
-	
+
 	# Crear material incandescente con el color configurado
 	_create_material()
-	
+
 	# Crear mesh procedural (cilindro + cono = flecha)
 	_create_procedural_arrow()
-	
+
 	# Crear partículas de trail incandescente
 	_create_trail_particles()
-	
+
+	_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
+
 	# Desactivar brevemente para no chocar con la goblin que dispara
 	monitoring = false
-	get_tree().create_timer(0.1).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			monitoring = true
+	get_tree().create_timer(0.1).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				monitoring = true
 	)
-	
+
 	# Timer de destrucción
-	get_tree().create_timer(tiempo_vida).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			_check_destroy()
+	get_tree().create_timer(tiempo_vida).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_check_destroy()
 	)
-	
+
 	# Conectar colisiones
 	body_entered.connect(_on_body_entered)
+
 
 func _physics_process(delta):
 	if is_stuck:
 		return
-	
+
 	# Aplicar gravedad a la dirección (trayectoria parabólica)
 	direction.y -= gravedad * delta
-	
+
 	# Movimiento con gravedad
 	global_position += direction * velocidad * delta
-	
+
 	# Forzar Z = 0 (2.5D)
 	global_position.z = 0
-	
+
 	# Rotar para seguir la dirección de movimiento (arco visual)
 	if direction.length_squared() > 0.01:
 		var angle = atan2(direction.y, direction.x)
 		rotation = Vector3(0, 0, angle)
-	
+
 	# Verificar si está fuera de pantalla
 	_check_off_screen()
+
 
 func _check_off_screen():
 	var camera = CameraUtilsRef.obtener_camara_juego(self)
 	if not camera:
 		return
-	
+
 	var screen_pos = camera.unproject_position(global_position)
 	var viewport_size = get_viewport().get_visible_rect().size
 	var margin = 200.0
-	
+
 	if screen_pos.x < -margin or screen_pos.x > viewport_size.x + margin:
 		_safe_destroy()
 	elif screen_pos.y < -margin or screen_pos.y > viewport_size.y + margin:
@@ -96,20 +105,25 @@ func _check_off_screen():
 	elif global_position.y < -20:
 		_safe_destroy()
 
+
 func _on_body_entered(body):
 	if is_stuck:
 		return
-	
+
 	# Si es un aliado (NPC), hacer daño (verificar ANTES de StaticBody3D)
 	if body.is_in_group("allies"):
-		var target = body.get_parent() if body.get_parent() and body.get_parent().has_method("take_damage") else body
+		var target = (
+			body.get_parent()
+			if body.get_parent() and body.get_parent().has_method("take_damage")
+			else body
+		)
 		if target.has_method("take_damage"):
 			target.take_damage(1.0)
 		elif target.has_method("recibir_dano"):
 			target.recibir_dano(1)
 		_safe_destroy()
 		return
-	
+
 	# Si es suelo / plataforma, pegarse
 	if body is StaticBody3D or body is AnimatableBody3D:
 		# Verificar si es un escudo primero
@@ -119,7 +133,7 @@ func _on_body_entered(body):
 			return
 		_stick_to_surface()
 		return
-	
+
 	# Si es el jugador, hacer daño
 	if body.is_in_group("player"):
 		if body.has_method("recibir_dano"):
@@ -128,6 +142,7 @@ func _on_body_entered(body):
 			body.take_damage(1.0)
 		_safe_destroy()
 
+
 func _stick_to_surface():
 	is_stuck = true
 	direction = Vector3.ZERO
@@ -135,12 +150,14 @@ func _stick_to_surface():
 		trail_particles.emitting = false
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
-	
-	get_tree().create_timer(tiempo_pegada).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			_cleanup_materials()
-			queue_free()
+
+	get_tree().create_timer(tiempo_pegada).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_cleanup_materials()
+				queue_free()
 	)
+
 
 func _stick_to_shield(shield: Node3D):
 	"""Pegar la flecha al escudo visualmente"""
@@ -150,40 +167,44 @@ func _stick_to_shield(shield: Node3D):
 		trail_particles.emitting = false
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
-	
+
 	# Guardar transform global completa (incluye escala) antes de reparentar
 	var saved_global_transform = global_transform
-	
+
 	# Reparentar al escudo
 	call_deferred("_reparent_to_shield", shield, saved_global_transform)
-	
+
 	# Destruir después de un tiempo
-	get_tree().create_timer(tiempo_pegada).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			_cleanup_materials()
-			queue_free()
+	get_tree().create_timer(tiempo_pegada).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_cleanup_materials()
+				queue_free()
 	)
+
 
 func _reparent_to_shield(shield: Node3D, saved_transform: Transform3D):
 	if not is_instance_valid(shield):
 		_cleanup_materials()
 		queue_free()
 		return
-	
+
 	var current_parent = get_parent()
 	if current_parent:
 		current_parent.remove_child(self)
-	
+
 	shield.add_child(self)
 	global_transform = saved_transform
-	
+
 	# Conectar señal de destrucción del escudo
 	if shield.has_signal("destruido"):
-		shield.destruido.connect(func():
-			if is_instance_valid(self) and is_inside_tree():
-				_cleanup_materials()
-				queue_free()
+		shield.destruido.connect(
+			func():
+				if is_instance_valid(self) and is_inside_tree():
+					_cleanup_materials()
+					queue_free()
 		)
+
 
 func _safe_destroy():
 	if _destroying:
@@ -201,14 +222,15 @@ func _safe_destroy():
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 	set_physics_process(false)
-	get_tree().create_timer(0.3).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			queue_free()
+	get_tree().create_timer(0.3).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				queue_free()
 	)
 
+
 func _cleanup_materials():
-	var meshes = find_children("*", "MeshInstance3D", true, false)
-	for mesh in meshes:
+	for mesh in _cached_mesh_instances:
 		if is_instance_valid(mesh):
 			mesh.material_override = null
 			if mesh.mesh:
@@ -216,21 +238,24 @@ func _cleanup_materials():
 					mesh.set_surface_override_material(si, null)
 			mesh.visible = false
 
+
 func _check_destroy():
 	if not is_stuck:
 		_safe_destroy()
+
 
 func initialize(shoot_direction: Vector3, potencia: float = 1.0):
 	direction = Vector3(shoot_direction.x, shoot_direction.y, 0).normalized()
 	if direction.length_squared() < 0.01:
 		direction = Vector3.LEFT
-	
+
 	# Aplicar potencia a la velocidad
 	velocidad *= potencia
-	
+
 	# Rotación inicial
 	var angle = atan2(direction.y, direction.x)
 	rotation = Vector3(0, 0, angle)
+
 
 func _remove_glb_model():
 	# Eliminar nodo VIROTE_BALLESTA o Model del GLB
@@ -244,6 +269,7 @@ func _remove_glb_model():
 			if not (child is MeshInstance3D):
 				child.queue_free()
 
+
 func _create_material():
 	projectile_material = StandardMaterial3D.new()
 	projectile_material.albedo_color = color_proyectil
@@ -251,6 +277,7 @@ func _create_material():
 	projectile_material.emission = color_proyectil
 	projectile_material.emission_energy_multiplier = 3.0
 	projectile_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
 
 func _create_procedural_arrow():
 	# --- Cuerpo: Cilindro ---
@@ -260,7 +287,7 @@ func _create_procedural_arrow():
 	body.height = 0.25
 	body.radial_segments = 6
 	body.rings = 1
-	
+
 	# --- Punta: Cono ---
 	var tip = CylinderMesh.new()
 	tip.top_radius = 0.0
@@ -268,27 +295,28 @@ func _create_procedural_arrow():
 	tip.height = 0.08
 	tip.radial_segments = 6
 	tip.rings = 1
-	
+
 	# Nodos de mesh separados
 	var body_mesh = MeshInstance3D.new()
 	body_mesh.name = "Body"
 	body_mesh.mesh = body
 	body_mesh.material_override = projectile_material
 	body_mesh.rotation = Vector3(0, 0, -PI / 2.0)
-	
+
 	var tip_mesh = MeshInstance3D.new()
 	tip_mesh.name = "Tip"
 	tip_mesh.mesh = tip
 	tip_mesh.material_override = projectile_material
 	tip_mesh.rotation = Vector3(0, 0, -PI / 2.0)
 	tip_mesh.position = Vector3(0.165, 0, 0)
-	
+
 	var mesh_container = Node3D.new()
 	mesh_container.name = "ArrowModel"
 	mesh_container.add_child(body_mesh)
 	mesh_container.add_child(tip_mesh)
-	
+
 	add_child(mesh_container)
+
 
 func _create_trail_particles():
 	trail_particles = GPUParticles3D.new()
@@ -299,7 +327,7 @@ func _create_trail_particles():
 	trail_particles.lifetime = 0.25
 	trail_particles.preprocess = 0.0
 	trail_particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	
+
 	var process_mat = ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
 	process_mat.direction = Vector3(0, 0, 0)
@@ -309,15 +337,17 @@ func _create_trail_particles():
 	process_mat.gravity = Vector3.ZERO
 	process_mat.scale_min = 0.005
 	process_mat.scale_max = 0.01
-	
+
 	# Color del trail = color del proyectil
 	var gradient = Gradient.new()
 	gradient.set_color(0, Color(color_proyectil.r, color_proyectil.g, color_proyectil.b, 0.8))
-	gradient.set_color(1, Color(color_proyectil.r * 0.8, color_proyectil.g * 0.6, color_proyectil.b * 0.5, 0.0))
+	gradient.set_color(
+		1, Color(color_proyectil.r * 0.8, color_proyectil.g * 0.6, color_proyectil.b * 0.5, 0.0)
+	)
 	var gradient_tex = GradientTexture1D.new()
 	gradient_tex.gradient = gradient
 	process_mat.color_ramp = gradient_tex
-	
+
 	# Escala decreciente
 	var scale_curve = Curve.new()
 	scale_curve.add_point(Vector2(0, 1.0))
@@ -325,14 +355,14 @@ func _create_trail_particles():
 	var scale_tex = CurveTexture.new()
 	scale_tex.curve = scale_curve
 	process_mat.scale_curve = scale_tex
-	
+
 	trail_particles.process_material = process_mat
-	
+
 	# Mesh de partícula (esfera pequeña)
 	var mesh = SphereMesh.new()
 	mesh.radius = 0.0125
 	mesh.height = 0.025
-	
+
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = color_proyectil
 	mat.emission_enabled = true
@@ -341,7 +371,7 @@ func _create_trail_particles():
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mesh.material = mat
-	
+
 	trail_particles.draw_pass_1 = mesh
-	
+
 	add_child(trail_particles)
