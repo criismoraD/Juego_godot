@@ -54,3 +54,7 @@
 ## 2024-05-18 - Caching Unique Child Nodes via Instance Variables
 **Learning:** While static variables are excellent for caching shared resources or groups, node collections unique to an instance (like the specific `MeshInstance3D` children forming a specific enemy's body) must be cached via instance variables (e.g., `var _cached_mesh_instances: Array[Node] = []`) populated in `_ready()`. Using a static array here would cause instances to share child node lists, leading to bugs where one enemy's damage flash affects all enemies.
 **Action:** Use instance variable arrays populated during `_ready()` to cache expensive recursive queries (like `find_children("*", "MeshInstance3D", true, false)`) for nodes that belong uniquely to that specific object instance.
+
+## 2026-04-24 - [Procedural Node Caching Order]
+**Learning:** [When caching dynamically generated child nodes like MeshInstance3D in `_ready()`, using `find_children()` *before* procedural generation methods (like `_create_procedural_arrow()`) will result in empty arrays, causing subsequent lookups to fail.]
+**Action:** [Always call `find_children()` and populate caches at the very end of `_ready()` or after all procedural generation steps have been completed.]
