@@ -1,31 +1,24 @@
-extends Area3D
 class_name GoblinArrowProjectile
+extends Area3D
 const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
-
 # === CONFIGURACIÓN (Español) ===
 @export_category("Movimiento")
 @export var speed: float = 8.0  # Velocidad de la flecha
 @export var tiempo_vida: float = 10.0  # Tiempo antes de destruirse
 @export var tiempo_pegada: float = 5.0  # Tiempo antes de desaparecer cuando está pegada
-
 @export_category("Visual")
 ## Color del proyectil (material + partículas). Naranja = Goblin, Púrpura = GoblinGirl
 @export var color_proyectil: Color = Color(1.0, 0.5, 0.0)
-
 # === ESTADO ===
 var direction: Vector3 = Vector3.LEFT
 var is_stuck: bool = false
 var _destroying: bool = false
-
 # === MATERIAL ===
 var projectile_material: StandardMaterial3D
-
 # === PARTÍCULAS ===
 var trail_particles: GPUParticles3D
-
 # === MESH PROCEDURAL ===
 var arrow_mesh_instance: MeshInstance3D
-
 var _cached_mesh_instances: Array[Node] = []
 
 

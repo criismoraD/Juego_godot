@@ -1,39 +1,34 @@
-extends EnemyBase
 class_name GoblinGirl
-
+extends EnemyBase
 ## Goblin Girl: Camina, se detiene y dispara flechas parabólicas con arco.
 ## Se diferencia del Goblin en: proyectil parabólico, timing de disparo
 ## sincronizado con animación, potencia variable, y animaciones de arco.
 ## Algunas se agachan al disparar (animación AGACHADA).
-
 # === CONFIGURACIÓN ESPECÍFICA DE GOBLIN GIRL ===
 @export_category("Combate - GoblinGirl")
 @export var tiempo_disparo_en_animacion: float = 4.0
 @export var pausa_entre_disparos: float = 0.1
 @export var potencia_disparo_min: float = 1.0
 @export var potencia_disparo_max: float = 2.0
-
 @export_category("Agacharse")
 @export var probabilidad_agacharse: float = 0.3
 @export var tiempo_disparo_agachada: float = 4.0
-
 # === ESTADO ESPECÍFICO ===
 var anim_timer: float = 0.0
 var has_fired_this_cycle: bool = false
 var esta_agachada: bool = false
-
 # === REFERENCIAS ESPECÍFICAS ===
 var goblin_girl_arrow_scene = preload("res://Scenes/Projectiles/GoblinGirlArrow.tscn")
 var bow_anim_player: AnimationPlayer = null
 var girl_anim_tree: AnimationTree = null
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOOKS DE ENEMYBASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 func _on_enemy_ready():
 	# Valores por defecto distintos al Goblin base
-	color_borde_disolucion = Color(0.8, 0.2, 0.8) # Púrpura
+	color_borde_disolucion = Color(0.8, 0.2, 0.8)  # Púrpura
 
 	# Decidir aleatoriamente si esta GoblinGirl se agacha al disparar
 	esta_agachada = randf() < probabilidad_agacharse
@@ -68,11 +63,13 @@ func _on_enemy_ready():
 	# Crear AnimationTree para mezcla crouch + shoot (split-body)
 	_setup_animation_tree()
 
+
 func _on_state_walking():
 	if girl_anim_tree:
 		girl_anim_tree.active = false
 	_play_animation("GIRL_GOB_CAMINA")
 	_play_bow_animation("ARCO_IDLE")
+
 
 func _on_state_shooting():
 	if esta_agachada and girl_anim_tree:
@@ -87,6 +84,7 @@ func _on_state_shooting():
 	has_fired_this_cycle = false
 	shoot_timer = pausa_entre_disparos
 
+
 func _on_state_dying():
 	if girl_anim_tree:
 		girl_anim_tree.active = false
@@ -99,31 +97,37 @@ func _on_state_dying():
 	var anim_length = _get_animation_duration(chosen_death)
 	_play_animation(chosen_death)
 
-	get_tree().create_timer(anim_length + 0.5).timeout.connect(func():
-		if is_instance_valid(self) and is_inside_tree():
-			_die()
+	get_tree().create_timer(anim_length + 0.5).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_die()
 	)
+
 
 func _on_pacifico_detenido():
 	# Congelar en la pose de disparo (frame 1) al detenerse en modo pacífico
 	if girl_anim_tree:
 		girl_anim_tree.active = false
-	_play_animation("GIRL_GOB_DISPARO", -1.0, 0.0) # speed 0 = congelada
+	_play_animation("GIRL_GOB_DISPARO", -1.0, 0.0)  # speed 0 = congelada
 	if anim_player:
-		anim_player.seek(0.033, true) # Frame 1 (~1/30s)
+		anim_player.seek(0.033, true)  # Frame 1 (~1/30s)
 	_play_bow_animation("ARCO_TENSAR")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TRACKING (en _process para no ser sobrescrito por animación)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 func _process(_delta):
 	if current_state == State.SHOOTING and rastrear_jugador:
 		_track_player()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISPARO
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _process_shooting(delta):
 	velocity.x = 0
@@ -155,6 +159,7 @@ func _process_shooting(delta):
 				_play_animation("GIRL_GOB_DISPARO")
 			_play_bow_animation("ARCO_TENSAR")
 
+
 func _shoot_arrow():
 	if not goblin_girl_arrow_scene:
 		push_error("[GoblinGirl] No arrow scene!")
@@ -169,7 +174,7 @@ func _shoot_arrow():
 		return
 
 	var arrow = goblin_girl_arrow_scene.instantiate()
-	
+
 	# Usar el mismo color que las partículas de muerte (púrpura)
 	arrow.color_proyectil = color_borde_disolucion
 
@@ -193,9 +198,11 @@ func _shoot_arrow():
 
 	AudioManager.play_sfx("goblin_girl_shoot")
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ANIMACIÓN DEL ARCO
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _play_bow_animation(anim_name: String, custom_blend: float = -1.0):
 	if not bow_anim_player:
@@ -215,9 +222,11 @@ func _play_bow_animation(anim_name: String, custom_blend: float = -1.0):
 			bow_anim_player.play(a, custom_blend)
 			return
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # UTILIDADES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 ## Verifica si un AnimationPlayer tiene las animaciones principales de la GoblinGirl
 func _has_main_animation(player: AnimationPlayer) -> bool:
@@ -226,9 +235,11 @@ func _has_main_animation(player: AnimationPlayer) -> bool:
 			return true
 	return false
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ANIMATION TREE (Split-Body: Piernas agachadas + Torso disparando)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _setup_animation_tree():
 	if not anim_player or not skeleton:
@@ -267,12 +278,20 @@ func _setup_animation_tree():
 
 	# Huesos del torso superior (Mixamo rig)
 	var upper_bones: Array[String] = [
-		"mixamorig_Spine", "mixamorig_Spine1", "mixamorig_Spine2",
-		"mixamorig_Neck", "mixamorig_Head", "mixamorig_HeadTop_End",
-		"mixamorig_LeftShoulder", "mixamorig_RightShoulder",
-		"mixamorig_LeftArm", "mixamorig_RightArm",
-		"mixamorig_LeftForeArm", "mixamorig_RightForeArm",
-		"mixamorig_LeftHand", "mixamorig_RightHand",
+		"mixamorig_Spine",
+		"mixamorig_Spine1",
+		"mixamorig_Spine2",
+		"mixamorig_Neck",
+		"mixamorig_Head",
+		"mixamorig_HeadTop_End",
+		"mixamorig_LeftShoulder",
+		"mixamorig_RightShoulder",
+		"mixamorig_LeftArm",
+		"mixamorig_RightArm",
+		"mixamorig_LeftForeArm",
+		"mixamorig_RightForeArm",
+		"mixamorig_LeftHand",
+		"mixamorig_RightHand",
 	]
 
 	# Añadir huesos de dedos si existen en el rig
@@ -300,7 +319,8 @@ func _setup_animation_tree():
 
 	girl_anim_tree.tree_root = root
 	girl_anim_tree.set("parameters/UpperBlend/blend_amount", 1.0)
-	girl_anim_tree.active = false # Inactivo hasta que sea necesario
+	girl_anim_tree.active = false  # Inactivo hasta que sea necesario
+
 
 func _find_anim_name(base_name: String) -> StringName:
 	"""Busca el nombre real de la animación con posibles prefijos del FBX"""

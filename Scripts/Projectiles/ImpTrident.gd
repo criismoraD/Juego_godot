@@ -1,28 +1,22 @@
-extends Area3D
 class_name ImpTridentProjectile
+extends Area3D
 const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
-
 ## Tridente del Imp: Proyectil parabólico con modelo 3D.
 ## Color rojo incandescente, se clava en superficies.
-
 # === CONFIGURACIÓN ===
 @export_category("Movimiento")
 @export var velocidad: float = 8.0  ## Velocidad inicial
 @export var gravedad: float = 1.2  ## Gravedad aplicada (parábola)
 @export var tiempo_vida: float = 10.0
 @export var tiempo_pegada: float = 5.0
-
 @export_category("Visual")
 @export var color_proyectil: Color = Color(1.0, 0.15, 0.05)  ## Rojo incandescente
-
 # === ESTADO ===
 var direction: Vector3 = Vector3.LEFT
 var is_stuck: bool = false
 var _destroying: bool = false
-
 # === MATERIAL ===
 var projectile_material: StandardMaterial3D
-
 var _cached_mesh_instances: Array[Node] = []
 
 

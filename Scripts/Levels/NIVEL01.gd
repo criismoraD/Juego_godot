@@ -1,63 +1,66 @@
 extends Node3D
-
 ## Script principal del nivel. Controla el flujo:
 ## Nivel 0 (pacifista) → Nivel 1 (combate, 2 oleadas)
-
 # === CONFIGURACIÓN GENERAL ===
-@export_category("Configuración General")
-@export var limite_fin_mapa_x: float = -5.0 ## Posición X donde el Imp se detiene
-@export var total_enemigos_nivel1: int = 15 ## Enemigos totales en la Oleada 1
-@export var total_enemigos_oleada_2: int = 25 ## Enemigos totales en la Oleada 2
-
-# === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
-@export_category("Nivel 0 — Pacifista")
-@export var velocidad_pacificos: float = 0.5 ## Velocidad de caminata de los pacíficos
-@export var offset_entre_pacificos: float = 0.4 ## Separación X entre cada pacífico al spawnear
-@export var tamano_imagen_emisario: Vector2 = Vector2(180, 180) ## Tamaño del icono del emisario en el diálogo
-@export var tamano_imagen_protagonista: Vector2 = Vector2(180, 180) ## Tamaño del icono de la protagonista en el diálogo inicial
-@export var retroceso_parada_arqueras: float = 0.2 ## Cada arquera se para 0.2u más adelante que la anterior
-@export var delay_dialogo_inicio: float = 1.0 ## Segundos antes de mostrar el mensaje inicial de protagonista
-@export var delay_dialogo_pacifico: float = 2.0 ## Segundos de espera antes de mostrar el diálogo pacifista
-@export_range(0.005, 0.08, 0.005) var velocidad_texto_novela: float = 0.02 ## Velocidad del reveal del texto (segundos por caracter)
-@export_range(0.9, 2.0, 0.05) var pitch_habla_protagonista: float = 1.1 ## Pitch del tecleo metálico del diálogo inicial
-@export var volumen_habla_protagonista_db: float = -16.0 ## Volumen del tecleo metálico en diálogo inicial
-@export_range(2, 20, 1) var chars_por_habla_protagonista: int = 7 ## Frecuencia del tecleo metálico
-@export_range(0.05, 0.5, 0.01) var intervalo_min_habla_protagonista: float = 0.18 ## Intervalo mínimo entre sonidos de habla
-
-# === ESTADO DEL NIVEL ===
-enum NivelEstado { NIVEL_0, TRANSICION, NIVEL_1, VICTORIA_PACIFISTA, VICTORIA_NIVEL1, OLEADAS_LIBRES }
-var estado_actual: int = NivelEstado.NIVEL_0
-var enemigos_pacificos: Array = [] ## Los 3 enemigos del nivel 0
-var imp_estandarte: Node3D = null ## Referencia al imp que lleva el estandarte
-var oleada_combate_actual: int = 1
-var transicion_carteles_en_progreso: bool = false
-
-# === REFERENCIAS ===
-@onready var wave_spawner: WaveSpawner = $WaveSpawner
-@onready var game_ui = $GameUI
-@onready var texture_rect: TextureRect = get_node_or_null("SubViewportFondo3D/SubViewport/TextureRect") as TextureRect
-@onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
-@onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
-@onready var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
-@onready var torre2_fondo: Node3D = _buscar_nodo_fondo_multiple(["TORRE", "TORRE2", "TORRE3"])
-
-# === ESCENAS ===
-var escena_imp_estandarte: PackedScene = preload("res://Scenes/Characters/ImpEnemyEstandarte.tscn")
-var escena_dialogo_inicio_protagonista: PackedScene = preload("res://Scenes/UI/Dialogo_Protagonista.tscn")
-var escena_dialogo_emisario_parte1: PackedScene = preload("res://Scenes/UI/Dialogo_Emisario_Parte1.tscn")
-var escena_resultado_pacifista: PackedScene = preload("res://Scenes/UI/Resultado_Pacifista.tscn")
-var sfx_habla_dialogo: AudioStream = preload("res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3")
+enum NivelEstado {NIVEL_0, TRANSICION, NIVEL_1, VICTORIA_PACIFISTA, VICTORIA_NIVEL1, OLEADAS_LIBRES}
 const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
 const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
 const CAPA_VISUAL_FONDO_DOF := 2
+const MONITOR_INTERVAL: float = 0.3  # Chequear estado de oleada ~3 veces por segundo
+@export_category("Configuración General")
+@export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
+@export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
+@export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
+# === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
+@export_category("Nivel 0 — Pacifista")
+@export var velocidad_pacificos: float = 0.5  ## Velocidad de caminata de los pacíficos
+@export var offset_entre_pacificos: float = 0.4  ## Separación X entre cada pacífico al spawnear
+@export var tamano_imagen_emisario: Vector2 = Vector2(180, 180)  ## Tamaño del icono del emisario en el diálogo
+@export var tamano_imagen_protagonista: Vector2 = Vector2(180, 180)  ## Tamaño del icono de la protagonista en el diálogo inicial
+@export var retroceso_parada_arqueras: float = 0.2  ## Cada arquera se para 0.2u más adelante que la anterior
+@export var delay_dialogo_inicio: float = 1.0  ## Segundos antes de mostrar el mensaje inicial de protagonista
+@export var delay_dialogo_pacifico: float = 2.0  ## Segundos de espera antes de mostrar el diálogo pacifista
+@export_range(0.005, 0.08, 0.005) var velocidad_texto_novela: float = 0.02  ## Velocidad del reveal del texto (segundos por caracter)
+@export_range(0.9, 2.0, 0.05) var pitch_habla_protagonista: float = 1.1  ## Pitch del tecleo metálico del diálogo inicial
+@export var volumen_habla_protagonista_db: float = -16.0  ## Volumen del tecleo metálico en diálogo inicial
+@export_range(2, 20, 1) var chars_por_habla_protagonista: int = 7  ## Frecuencia del tecleo metálico
+@export_range(0.05, 0.5, 0.01) var intervalo_min_habla_protagonista: float = 0.18  ## Intervalo mínimo entre sonidos de habla
+# === ESTADO DEL NIVEL ===
+var estado_actual: int = NivelEstado.NIVEL_0
+var enemigos_pacificos: Array = []  ## Los 3 enemigos del nivel 0
+var imp_estandarte: Node3D = null  ## Referencia al imp que lleva el estandarte
+var oleada_combate_actual: int = 1
+var transicion_carteles_en_progreso: bool = false
+# === REFERENCIAS ===
+@onready
+var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
+var escena_imp_estandarte: PackedScene = preload("res://Scenes/Characters/ImpEnemyEstandarte.tscn")
+var escena_dialogo_inicio_protagonista: PackedScene = preload(
+	"res://Scenes/UI/Dialogo_Protagonista.tscn"
+)
+var escena_dialogo_emisario_parte1: PackedScene = preload(
+	"res://Scenes/UI/Dialogo_Emisario_Parte1.tscn"
+)
+var escena_resultado_pacifista: PackedScene = preload("res://Scenes/UI/Resultado_Pacifista.tscn")
+var sfx_habla_dialogo: AudioStream = preload(
+	"res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3"
+)
 var estados_proceso_jugador: Dictionary = {}
 var estados_proceso_dialogo: Dictionary = {}
 var estado_spawner_dialogo: Dictionary = {}
 var _dialogo_audio_player: AudioStreamPlayer
-
 # === OPTIMIZACIÓN: Monitoreo de oleadas con timer ===
 var _monitor_timer: float = 0.0
-const MONITOR_INTERVAL: float = 0.3 # Chequear estado de oleada ~3 veces por segundo
+@onready var wave_spawner: WaveSpawner = $WaveSpawner
+@onready var game_ui = $GameUI
+@onready var texture_rect: TextureRect = (
+	get_node_or_null("SubViewportFondo3D/SubViewport/TextureRect") as TextureRect
+)
+@onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
+@onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
+@onready var torre2_fondo: Node3D = _buscar_nodo_fondo_multiple(["TORRE", "TORRE2", "TORRE3"])
+# === ESCENAS ===
+
 
 func _ready():
 	_dialogo_audio_player = AudioStreamPlayer.new()
@@ -78,7 +81,7 @@ func _ready():
 	VFXFactory.warmup_shaders(self)
 
 	# Sonido ambiente desde el arranque del juego
-	AudioManager.play_music(3, true, 12.0) # SONIDO BOSQUE.mp3
+	AudioManager.play_music(3, true, 12.0)  # SONIDO BOSQUE.mp3
 
 	# Esperar un frame para que todos los nodos estén listos
 	await get_tree().process_frame
@@ -95,6 +98,7 @@ func _ready():
 	# Iniciar Nivel 0
 	_iniciar_nivel_0()
 
+
 func _ajustar_subviewports_3d() -> void:
 	var tamano_viewport := get_viewport().get_visible_rect().size
 	var tamano_render := Vector2i(int(tamano_viewport.x), int(tamano_viewport.y))
@@ -105,9 +109,11 @@ func _ajustar_subviewports_3d() -> void:
 	if subviewport_frente_3d:
 		subviewport_frente_3d.size = tamano_render
 
+
 func _configurar_capas_dof_fondo() -> void:
 	_asignar_capa_visual_recursiva(busto_bronce_fondo, CAPA_VISUAL_FONDO_DOF)
 	_asignar_capa_visual_recursiva(torre2_fondo, CAPA_VISUAL_FONDO_DOF)
+
 
 func _buscar_nodo_fondo_multiple(nombres_nodo: Array[String]) -> Node3D:
 	for nombre_nodo in nombres_nodo:
@@ -115,6 +121,7 @@ func _buscar_nodo_fondo_multiple(nombres_nodo: Array[String]) -> Node3D:
 		if nodo is Node3D:
 			return nodo
 	return null
+
 
 func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
 	if nodo == null:
@@ -126,6 +133,7 @@ func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
 	for hijo in nodo.get_children():
 		_asignar_capa_visual_recursiva(hijo, capa)
 
+
 func _forzar_refresco_outline_global() -> void:
 	# Mantiene compatibilidad con versiones antiguas del shader que dependen de un global uniform.
 	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, true)
@@ -134,9 +142,12 @@ func _forzar_refresco_outline_global() -> void:
 		push_warning("[NIVEL01] No se encontró TOON_LINEANEGRA.gdshader para refresco.")
 		return
 
-	var shader_outline := ResourceLoader.load(RUTA_SHADER_OUTLINE, "Shader", ResourceLoader.CACHE_MODE_REPLACE)
+	var shader_outline := ResourceLoader.load(
+		RUTA_SHADER_OUTLINE, "Shader", ResourceLoader.CACHE_MODE_REPLACE
+	)
 	if shader_outline == null:
 		push_warning("[NIVEL01] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
+
 
 func _mostrar_dialogo_inicio_protagonista():
 	_set_juego_pausado_dialogo(true)
@@ -160,7 +171,16 @@ func _reproducir_habla_femenina():
 	_dialogo_audio_player.pitch_scale = pitch_habla_protagonista
 	_dialogo_audio_player.play()
 
-func _mostrar_dialogo_escena(escena: PackedScene, velocidad: float, chars_por_sonido: int, intervalo_min_sonido: float, audio_stream: AudioStream, pitch_scale: float, volumen_db: float) -> bool:
+
+func _mostrar_dialogo_escena(
+	escena: PackedScene,
+	velocidad: float,
+	chars_por_sonido: int,
+	intervalo_min_sonido: float,
+	audio_stream: AudioStream,
+	pitch_scale: float,
+	volumen_db: float
+) -> bool:
 	if not escena:
 		push_warning("[NIVEL01] No se encontró la escena de diálogo.")
 		return false
@@ -186,6 +206,7 @@ func _mostrar_dialogo_escena(escena: PackedScene, velocidad: float, chars_por_so
 
 	return true
 
+
 func _process(delta):
 	# OPT: Monitoreo de oleadas con timer en vez de cada frame
 	_monitor_timer += delta
@@ -199,9 +220,11 @@ func _process(delta):
 		NivelEstado.NIVEL_1:
 			_monitorear_nivel_1()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # NIVEL 0 — PACIFISTA
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _iniciar_nivel_0():
 	estado_actual = NivelEstado.NIVEL_0
@@ -220,7 +243,9 @@ func _iniciar_nivel_0():
 		wave_spawner.escena_goblin_girl,
 		wave_spawner.escena_goblin_girl,
 	]
-	enemigos_pacificos = wave_spawner.spawn_pacificos(escenas, velocidad_pacificos, offset_entre_pacificos)
+	enemigos_pacificos = wave_spawner.spawn_pacificos(
+		escenas, velocidad_pacificos, offset_entre_pacificos
+	)
 
 	# Asignar límite de parada escalonado: Imp en -5.0, arqueras en -4.8 y -4.6.
 	for i in range(enemigos_pacificos.size()):
@@ -235,6 +260,7 @@ func _iniciar_nivel_0():
 
 	# Guardar referencia al imp del estandarte
 	imp_estandarte = enemigos_pacificos[0]
+
 
 func _monitorear_nivel_0():
 	# Limpiar enemigos inválidos
@@ -256,9 +282,11 @@ func _monitorear_nivel_0():
 	if todos_detenidos:
 		_victoria_pacifista()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # TRANSICIÓN: PACIFISTA → COMBATE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _on_pacifico_danado():
 	if estado_actual != NivelEstado.NIVEL_0:
@@ -266,20 +294,27 @@ func _on_pacifico_danado():
 	estado_actual = NivelEstado.TRANSICION
 
 	# Desintegrar estandarte del imp si aún existe (cualquier impacto en pacíficos lo destruye)
-	if is_instance_valid(imp_estandarte) and imp_estandarte.has_method("_desaparecer_estandarte_con_particulas"):
+	if (
+		is_instance_valid(imp_estandarte)
+		and imp_estandarte.has_method("_desaparecer_estandarte_con_particulas")
+	):
 		imp_estandarte._desaparecer_estandarte_con_particulas()
 
 	# Convertir pacíficos supervivientes en hostiles
 	var supervivientes := 0
 	for enemigo in enemigos_pacificos:
-		if is_instance_valid(enemigo) and enemigo.current_state != EnemyBase.State.DYING and enemigo.current_state != EnemyBase.State.DEAD:
+		if (
+			is_instance_valid(enemigo)
+			and enemigo.current_state != EnemyBase.State.DYING
+			and enemigo.current_state != EnemyBase.State.DEAD
+		):
 			enemigo.modo_pacifico = false
 			# Forzar que se detengan y empiecen a atacar
 			enemigo.target_walk_distance = enemigo.walked_distance
 			supervivientes += 1
 
 	# Música de batalla
-	AudioManager.play_music(2) # BGM_battle.mp3
+	AudioManager.play_music(2)  # BGM_battle.mp3
 
 	# Restaurar UI completo
 	if game_ui and game_ui.has_method("set_modo_minimo"):
@@ -294,9 +329,11 @@ func _on_pacifico_danado():
 	# Iniciar Nivel 1: oleada de 13 enemigos (los supervivientes cuentan)
 	_iniciar_nivel_1(supervivientes)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # NIVEL 1 — COMBATE (13 enemigos: Imp + GoblinGirl)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	oleada_combate_actual = 1
@@ -305,6 +342,7 @@ func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	var enemigos_a_spawnear: int = int(max(0, total_enemigos_nivel1 - supervivientes_pacificos))
 	_configurar_oleada_combate(enemigos_a_spawnear, 1)
 
+
 func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
 	estado_actual = NivelEstado.NIVEL_1
 
@@ -312,7 +350,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	wave_spawner.enemigos_por_oleada = total_enemigos + wave_spawner.active_goblins.size()
 	wave_spawner.probabilidad_canonero = 0.0
 	wave_spawner.probabilidad_igual = false
-	wave_spawner.forzar_tipo_enemigo = -1 # Normal
+	wave_spawner.forzar_tipo_enemigo = -1  # Normal
 
 	if numero_oleada == 1:
 		# Oleada 1: solo Imp + GoblinGirl
@@ -337,6 +375,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	wave_spawner.is_wave_active = false
 	wave_spawner.wave_cooldown = 1.0
 
+
 func _monitorear_nivel_1():
 	# Verificar si todos los enemigos murieron (incluyendo supervivientes pacíficos)
 	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar allocations de memoria/GC en _process
@@ -350,8 +389,12 @@ func _monitorear_nivel_1():
 		if is_instance_valid(enemy) and not wave_spawner.shield_imps_activos.has(enemy):
 			enemigos_normales_vivos += 1
 
-	if wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada and enemigos_normales_vivos == 0:
+	if (
+		wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada
+		and enemigos_normales_vivos == 0
+	):
 		_on_nivel1_completado(1)
+
 
 func _on_nivel1_completado(_numero_oleada: int):
 	if estado_actual != NivelEstado.NIVEL_1:
@@ -368,18 +411,29 @@ func _on_nivel1_completado(_numero_oleada: int):
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
 	print("[NIVEL01] ¡Oleada 2 completada! Mostrando victoria con botón continuar...")
-	_mostrar_victoria_con_continuar(tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleadas completadas!")
+	_mostrar_victoria_con_continuar(
+		(
+			tr("NIVEL_1_COMPLETADO")
+			if TranslationServer.get_locale() != ""
+			else "¡Oleadas completadas!"
+		)
+	)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CARTELES DE TRANSICIÓN (SIN FONDO NEGRO — con contorno y animación)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-func _crear_label_settings_contorno(tamano_contorno: int = 8, color_contorno: Color = Color(0, 0, 0, 1)) -> LabelSettings:
+
+func _crear_label_settings_contorno(
+	tamano_contorno: int = 8, color_contorno: Color = Color(0, 0, 0, 1)
+) -> LabelSettings:
 	var ls := LabelSettings.new()
 	ls.outline_size = tamano_contorno
 	ls.outline_color = color_contorno
 	ls.font_size = 64
 	return ls
+
 
 func _crear_label_transicion(texto: String, color_texto: Color) -> Label:
 	var label := Label.new()
@@ -390,6 +444,7 @@ func _crear_label_transicion(texto: String, color_texto: Color) -> Label:
 	label.add_theme_color_override("font_color", color_texto)
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	return label
+
 
 ## Animación: fade-in + escala (de 0.5 a 1.0) durante `duracion_entrada` segundos
 func _animar_entrada(label: Label, duracion_entrada: float = 0.5) -> Tween:
@@ -404,6 +459,7 @@ func _animar_entrada(label: Label, duracion_entrada: float = 0.5) -> Tween:
 	tween.tween_property(label, "scale", Vector2(1.0, 1.0), duracion_entrada)
 	return tween
 
+
 ## Animación: fade-out + escala (de 1.0 a 1.3) durante `duracion_salida` segundos
 func _animar_salida(label: Label, duracion_salida: float = 0.4) -> Tween:
 	var tween := create_tween()
@@ -413,6 +469,7 @@ func _animar_salida(label: Label, duracion_salida: float = 0.4) -> Tween:
 	tween.tween_property(label, "modulate:a", 0.0, duracion_salida)
 	tween.tween_property(label, "scale", Vector2(1.3, 1.3), duracion_salida)
 	return tween
+
 
 func _mostrar_cartel_nivel1_completado() -> void:
 	_limpiar_carteles_transicion()
@@ -434,6 +491,7 @@ func _mostrar_cartel_nivel1_completado() -> void:
 		overlay.queue_free()
 	await get_tree().process_frame
 
+
 func _mostrar_cartel_level_01() -> void:
 	_limpiar_carteles_transicion()
 	var overlay := CanvasLayer.new()
@@ -454,6 +512,7 @@ func _mostrar_cartel_level_01() -> void:
 	if is_instance_valid(overlay):
 		overlay.queue_free()
 
+
 func _mostrar_inter_nivel_continuar():
 	var overlay = CanvasLayer.new()
 	overlay.layer = 200
@@ -472,12 +531,12 @@ func _mostrar_inter_nivel_continuar():
 	var label = Label.new()
 	label.text = tr("NIVEL_1_COMPLETADO")
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	
+
 	# Usar LabelSettings para contorno y color blanco
 	label.label_settings = _crear_label_settings_contorno(10, Color(0, 0, 0, 1))
 	label.label_settings.font_size = 48
 	label.add_theme_color_override("font_color", Color(1, 1, 1))
-	
+
 	center.add_child(label)
 
 	var boton = Button.new()
@@ -505,13 +564,15 @@ func _mostrar_inter_nivel_continuar():
 	boton.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	center.add_child(boton)
 
-	boton.pressed.connect(func():
-		overlay.queue_free()
-		await _mostrar_cartel_nivel_2()
-		oleada_combate_actual = 2
-		_configurar_oleada_combate(total_enemigos_oleada_2, 2)
-		transicion_carteles_en_progreso = false
+	boton.pressed.connect(
+		func():
+			overlay.queue_free()
+			await _mostrar_cartel_nivel_2()
+			oleada_combate_actual = 2
+			_configurar_oleada_combate(total_enemigos_oleada_2, 2)
+			transicion_carteles_en_progreso = false
 	)
+
 
 func _mostrar_cartel_nivel_2() -> void:
 	_limpiar_carteles_transicion()
@@ -524,10 +585,7 @@ func _mostrar_cartel_nivel_2() -> void:
 	if texto == "CARTEL_LEVEL_02":
 		texto = "Level 02"
 
-	var label := _crear_label_transicion(
-		texto,
-		Color(1.0, 0.85, 0.2)  # Dorado
-	)
+	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
 	overlay.add_child(label)
 	label.modulate = Color(1, 1, 1, 1)
 	label.scale = Vector2.ONE
@@ -535,6 +593,7 @@ func _mostrar_cartel_nivel_2() -> void:
 
 	if is_instance_valid(overlay):
 		overlay.queue_free()
+
 
 func _limpiar_carteles_transicion() -> void:
 	var cartel_1 = get_node_or_null("CartelNivel1Completado")
@@ -544,6 +603,7 @@ func _limpiar_carteles_transicion() -> void:
 	if is_instance_valid(cartel_2):
 		cartel_2.queue_free()
 
+
 func debug_mostrar_carteles_transicion() -> void:
 	if transicion_carteles_en_progreso:
 		return
@@ -552,11 +612,14 @@ func debug_mostrar_carteles_transicion() -> void:
 	await _mostrar_cartel_nivel_2()
 	transicion_carteles_en_progreso = false
 
+
 func debug_ir_a_oleada_1() -> void:
 	_iniciar_oleada_debug(1)
 
+
 func debug_ir_a_oleada_2() -> void:
 	_iniciar_oleada_debug(2)
+
 
 func _iniciar_oleada_debug(numero_oleada: int) -> void:
 	if not is_instance_valid(wave_spawner):
@@ -591,9 +654,11 @@ func _iniciar_oleada_debug(numero_oleada: int) -> void:
 		oleada_combate_actual = 1
 		_configurar_oleada_combate(total_enemigos_nivel1, 1)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # VICTORIA PACIFISTA
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _victoria_pacifista():
 	if estado_actual != NivelEstado.NIVEL_0:
@@ -603,25 +668,21 @@ func _victoria_pacifista():
 	wave_spawner.detener_spawning()
 
 	# Reproducir música de victoria (sin loop)
-	AudioManager.play_music(4, false) # VICTORY.mp3
+	AudioManager.play_music(4, false)  # VICTORY.mp3
 
 	# Mostrar diálogo tipo novela visual tras un delay
 	await get_tree().create_timer(delay_dialogo_pacifico).timeout
 	_mostrar_dialogo_pacifista()
 
+
 func _mostrar_dialogo_pacifista():
 	_set_juego_pausado_dialogo(true)
 	await _mostrar_dialogo_escena(
-		escena_dialogo_emisario_parte1,
-		velocidad_texto_novela,
-		4,
-		0.18,
-		null,
-		1.0,
-		-18.0
+		escena_dialogo_emisario_parte1, velocidad_texto_novela, 4, 0.18, null, 1.0, -18.0
 	)
 
 	_mostrar_resultado_pacifista_pantalla_negra()
+
 
 func _mostrar_resultado_pacifista_pantalla_negra():
 	if not escena_resultado_pacifista:
@@ -646,6 +707,7 @@ func _mostrar_resultado_pacifista_pantalla_negra():
 	if opcion == "reiniciar":
 		_reiniciar_nivel01_limpio()
 
+
 func _reiniciar_nivel01_limpio():
 	# Limpiar enemigos/proyectiles spawneados en root antes de recargar escena.
 	var grupos_a_limpiar: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
@@ -664,6 +726,7 @@ func _reiniciar_nivel01_limpio():
 	await get_tree().process_frame
 
 	get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL01.tscn")
+
 
 func _mostrar_texto_guerra():
 	var overlay = CanvasLayer.new()
@@ -701,10 +764,12 @@ func _mostrar_texto_guerra():
 	panel.add_child(label)
 
 	# Auto-destruir después de 3 segundos
-	get_tree().create_timer(3.0).timeout.connect(func():
-		if is_instance_valid(overlay):
-			overlay.queue_free()
+	get_tree().create_timer(3.0).timeout.connect(
+		func():
+			if is_instance_valid(overlay):
+				overlay.queue_free()
 	)
+
 
 func _mostrar_victoria(mensaje: String):
 	var overlay = CanvasLayer.new()
@@ -733,9 +798,11 @@ func _mostrar_victoria(mensaje: String):
 	label.offset_bottom = 0
 	overlay.add_child(label)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # OLEADAS LIBRES (post Nivel 1)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _mostrar_victoria_con_continuar(mensaje: String):
 	var overlay = CanvasLayer.new()
@@ -796,17 +863,19 @@ func _mostrar_victoria_con_continuar(mensaje: String):
 	boton.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	center.add_child(boton)
 
-	boton.pressed.connect(func():
-		overlay.queue_free()
-		_iniciar_oleadas_libres()
+	boton.pressed.connect(
+		func():
+			overlay.queue_free()
+			_iniciar_oleadas_libres()
 	)
+
 
 func _iniciar_oleadas_libres():
 	estado_actual = NivelEstado.OLEADAS_LIBRES
 	print("[NIVEL01] Oleadas libres iniciadas — enemigos al azar")
 
 	# Restaurar goblin base para que aparezcan los 3 tipos
-	wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
+	wave_spawner.escena_goblin = load("res://Scenes/Characters/Goblin.tscn")
 
 	# Probabilidad igual: 33% cada tipo
 	wave_spawner.probabilidad_igual = true
@@ -820,9 +889,11 @@ func _iniciar_oleadas_libres():
 	wave_spawner.is_wave_active = false
 	wave_spawner.wave_cooldown = 1.0
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # UTILIDADES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _set_aliadas_activas(activas: bool):
 	for ally in AllyArcher.active_allies_cache:
@@ -834,16 +905,18 @@ func _set_aliadas_activas(activas: bool):
 			if hitbox and is_instance_valid(hitbox):
 				hitbox.collision_layer = 2 if activas else 0
 
+
 ## Arqueras visibles en pose IDLE pero sin disparar
 func _set_aliadas_modo_pacifico():
 	for ally in AllyArcher.active_allies_cache:
 		if ally is AllyArcher:
 			ally.visible = true
-			ally.set_process(false) # No disparan
+			ally.set_process(false)  # No disparan
 			ally.set_physics_process(false)
 			var hitbox = ally.get("hitbox_body")
 			if hitbox and is_instance_valid(hitbox):
-				hitbox.collision_layer = 0 # Sin colisión
+				hitbox.collision_layer = 0  # Sin colisión
+
 
 func _set_movimiento_jugador_bloqueado(bloqueado: bool):
 	for jugador in get_tree().get_nodes_in_group("player"):
@@ -854,8 +927,7 @@ func _set_movimiento_jugador_bloqueado(bloqueado: bool):
 		if bloqueado:
 			if not estados_proceso_jugador.has(id_jugador):
 				estados_proceso_jugador[id_jugador] = {
-					"process": jugador.is_processing(),
-					"physics": jugador.is_physics_processing()
+					"process": jugador.is_processing(), "physics": jugador.is_physics_processing()
 				}
 			jugador.set_process(false)
 			jugador.set_physics_process(false)
@@ -866,6 +938,7 @@ func _set_movimiento_jugador_bloqueado(bloqueado: bool):
 
 	if not bloqueado:
 		estados_proceso_jugador.clear()
+
 
 func _set_juego_pausado_dialogo(bloqueado: bool):
 	_set_movimiento_jugador_bloqueado(bloqueado)
@@ -883,13 +956,17 @@ func _set_juego_pausado_dialogo(bloqueado: bool):
 		wave_spawner.set_process(false)
 		wave_spawner.set_physics_process(false)
 	else:
-		var estado_spawner = estado_spawner_dialogo.get(id_spawner, {"process": true, "physics": true})
+		var estado_spawner = estado_spawner_dialogo.get(
+			id_spawner, {"process": true, "physics": true}
+		)
 		wave_spawner.set_process(bool(estado_spawner["process"]))
 		wave_spawner.set_physics_process(bool(estado_spawner["physics"]))
 		estado_spawner_dialogo.clear()
 
 	if bloqueado:
-		var grupos_a_pausar: Array[String] = ["enemies", "enemy_projectiles", "allies", "shield_imps"]
+		var grupos_a_pausar: Array[String] = [
+			"enemies", "enemy_projectiles", "allies", "shield_imps"
+		]
 		var nodos_procesados: Dictionary = {}
 
 		for grupo in grupos_a_pausar:
@@ -905,8 +982,7 @@ func _set_juego_pausado_dialogo(bloqueado: bool):
 
 				if not estados_proceso_dialogo.has(id_nodo):
 					estados_proceso_dialogo[id_nodo] = {
-						"process": nodo.is_processing(),
-						"physics": nodo.is_physics_processing()
+						"process": nodo.is_processing(), "physics": nodo.is_physics_processing()
 					}
 				nodo.set_process(false)
 				nodo.set_physics_process(false)

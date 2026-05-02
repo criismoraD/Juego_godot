@@ -8,19 +8,21 @@ class_name BarreraLimite
 		tamano = value
 		_actualizar_tamano()
 
-@export var solo_jugador: bool = true # Solo colisiona con el jugador
+@export var solo_jugador: bool = true  # Solo colisiona con el jugador
 
 var collision_shape: CollisionShape3D
 var mesh_instance: MeshInstance3D
+
 
 func _ready():
 	if solo_jugador:
 		# Layer 10: layer exclusivo para barreras (evita colisión con proyectiles)
 		collision_layer = 1 << 9
 		collision_mask = 0
-		
+
 	_buscar_componentes()
 	_actualizar_tamano()
+
 
 func _buscar_componentes():
 	for child in get_children():
@@ -32,12 +34,13 @@ func _buscar_componentes():
 					mesh_instance = subchild
 			break
 
+
 func _actualizar_tamano():
 	if not collision_shape:
 		_buscar_componentes()
-	
+
 	if collision_shape and collision_shape.shape is BoxShape3D:
 		collision_shape.shape.size = tamano
-	
+
 	if mesh_instance and mesh_instance.mesh is BoxMesh:
 		mesh_instance.mesh.size = tamano

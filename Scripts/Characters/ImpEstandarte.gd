@@ -1,10 +1,8 @@
-extends EnemyBase
 class_name ImpEstandarte
-
+extends EnemyBase
 ## Imp con estandarte para el Nivel 0 (modo pacifista).
 ## Usa su propio set de animaciones IMP_* y dispara flechas (arco),
 ## en lugar del tridente del Imp normal.
-
 @export_category("Combate - Imp Estandarte")
 @export var intervalo_disparo_arco: float = 0.0
 @export var tiempo_disparo_en_animacion_arco: float = 0.55
@@ -14,17 +12,14 @@ class_name ImpEstandarte
 @export var elevacion_disparo_arco: float = 0.18
 @export var espera_idle_arco_min: float = 0.08
 @export var espera_idle_arco_max: float = 0.18
-
 @export_category("Proyectil - Imp Estandarte")
 @export var escala_proyectil_estandarte: float = 1.8
 @export var color_proyectil_estandarte: Color = Color(1.0, 0.06, 0.03, 1.0)
-
 @export_category("Visual - Estandarte")
 @export var soltar_estandarte_al_atacar: bool = true
 @export var impulso_caida_estandarte: float = 0.32
 @export var torque_caida_estandarte: float = 0.04
 @export var tiempo_autodestruir_estandarte: float = 8.0
-
 @export_category("Visual - Flecha en Mano")
 @export var mostrar_flecha_en_mano: bool = true
 @export var tiempo_aparece_flecha_mano: float = 1.0
@@ -32,21 +27,17 @@ class_name ImpEstandarte
 @export var offset_flecha_mano: Vector3 = Vector3(0.0, 0.0, 0.0)
 @export var rotacion_flecha_mano_grados: Vector3 = Vector3(90.0, 0.0, 0.0)
 @export var escala_flecha_mano: Vector3 = Vector3(1.0, 1.0, 1.0)
-
 @export_category("Daño - Imp Estandarte")
 @export var usar_animacion_hit: bool = true
 @export var volumen_hit_imp_db: float = -7.0
-
 @export_category("Muerte - Imp Estandarte")
 @export var tiempo_antes_disolver: float = 1.8
-
 var escena_flecha_estandarte = preload("res://Scenes/Projectiles/GoblinGirlArrow.tscn")
 var escena_flecha_visual_mano = preload("res://Scenes/Projectiles/FlechaManoVisual.tscn")
 var escena_estandarte_caido = preload("res://Assets/Environment/Estandarte/Estandarte.glb")
 var sonido_muerte_estandarte: AudioStreamMP3 = preload(
 	"res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE_MUERTE.mp3"
 )
-
 var en_animacion_disparo: bool = false
 var disparo_realizado_en_ciclo: bool = false
 var timer_animacion_disparo: float = 0.0

@@ -1,36 +1,28 @@
-extends CharacterBody3D
 class_name ImpShieldGirl
-
+extends CharacterBody3D
 ## Imp femenino con escudo que protege a otros enemigos.
 ## Camina hasta posicionarse a la IZQUIERDA del enemigo más cercano
 ## (entre el jugador y el enemigo) y absorbe flechas con su escudo.
 ## Cuando el escudo se rompe (3 impactos), huye hacia la derecha.
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
-
+enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export_category("Movimiento")
 @export var velocidad_caminar: float = 1.5  ## Velocidad al caminar hacia el enemigo
 @export var distancia_proteccion: float = 0.5  ## Distancia a la izquierda del enemigo protegido
-
 @export_category("Escudo")
 @export var escudo_vida: int = 3  ## Impactos que aguanta el escudo antes de romperse
-
 @export_category("Huida")
 @export var velocidad_huida: float = 2.0  ## Velocidad al huir (sin escudo)
 @export var distancia_fuera_pantalla: float = 15.0  ## Posición X para destruirse al huir
-
 @export_category("Vida")
 @export var vida_maxima: int = 1  ## HP del personaje (cuando no tiene escudo)
-
 @export_category("Efecto de Muerte")
 @export var duracion_disolucion: float = 1.0
 @export var color_borde_disolucion: Color = Color(0.8, 0.2, 0.8)  ## Color púrpura del borde
-
 @export_category("Modelo")
 @export var rotacion_y_modelo: float = 0.0  ## Rotación Y en grados para corregir orientación del modelo
-
 @export_category("Animaciones")
 @export var anim_caminar: String = "CAMINAR_ESCUDO_IMP"  ## Animación de caminar
 @export var anim_idle: String = "IMP_ESCUDO_IDLE"  ## Animación de defender (idle)
@@ -40,24 +32,18 @@ class_name ImpShieldGirl
 @export var anim_muertes: PackedStringArray = [
 	"IMP_ESCUDO_MUERTE01", "IMP_ESCUDO_MUERTE02", "IMP_ESCUDO_MUERTE03"
 ]  ## Animaciones de muerte (aleatoria)
-
 @export_category("Posición Libre")
 @export var rango_posicion_libre: Vector2 = Vector2(1.0, 10.0)  ## Rango X aleatorio si no hay enemigo
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
-
 var dissolve_shader = preload("res://Assets/Shaders/dissolve.gdshader")
 var anim_player: AnimationPlayer
 var escudo_node: Node3D  ## Nodo del modelo del escudo
 var model_root: Node3D  ## Nodo raíz del modelo del personaje
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
-
-enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 var current_state: State = State.WALKING
 var escudo_vida_actual: int = 3
 var health: int = 1
@@ -67,10 +53,8 @@ var is_dissolving: bool = false
 var dissolve_materials: Array = []
 var hit_anim_timer: float = 0.0  ## Timer para volver de SHIELD_HIT a DEFENDING
 var posicion_libre_destino: float = -1.0  ## Posición X destino cuando no hay enemigo
-
 var _escudo_meshes: Array = []
 var _flash_mat: StandardMaterial3D
-
 static var _cached_wave_spawner: Node = null
 
 
@@ -290,8 +274,7 @@ func _process_walking(delta):
 				velocity.x = 0
 				_cambiar_estado(State.DEFENDING)
 			return
-		else:
-			posicion_libre_destino = -1.0  # Encontramos enemigo, reset
+		posicion_libre_destino = -1.0  # Encontramos enemigo, reset
 
 	# Verificar que el enemigo siga en SHOOTING (no haya muerto o se haya movido)
 	if (
