@@ -85,7 +85,11 @@ extends Node3D
 		bevel_radius = value
 		_sync_all()
 
+var _mesh_instance: MeshInstance3D
+var _collision_shape: CollisionShape3D
+
 func _ready():
+	_cache_nodes()
 	_make_resources_unique()
 	_sync_all()
 
@@ -93,12 +97,19 @@ func _process(_delta):
 	if Engine.is_editor_hint():
 		_sync_all()
 
+func _cache_nodes():
+	if _mesh_instance == null:
+		_mesh_instance = get_node_or_null("MeshInstance3D")
+	if _collision_shape == null:
+		_collision_shape = get_node_or_null("StaticBody3D/CollisionShape3D")
+
 func _make_resources_unique():
-	if not has_node("MeshInstance3D"):
+	_cache_nodes()
+	if _mesh_instance == null:
 		print_debug("Node MeshInstance3D not found")
 		return
 		
-	var mesh_inst = $MeshInstance3D
+	var mesh_inst = _mesh_instance
 	
 	# Duplicate Mesh to make it unique per instance (Required for resizing/subdividing)
 	if mesh_inst.mesh and mesh_inst.mesh is BoxMesh:
@@ -112,16 +123,17 @@ func _make_resources_unique():
 	# We use set_instance_shader_parameter instead.
 
 	# Duplicate Collision Shape (Cheap and necessary)
-	if has_node("StaticBody3D/CollisionShape3D"):
-		var col_shape = $StaticBody3D/CollisionShape3D
+	if _collision_shape:
+		var col_shape = _collision_shape
 		if col_shape.shape is BoxShape3D:
 			col_shape.shape = col_shape.shape.duplicate()
 
 func _sync_all():
-	if not has_node("MeshInstance3D"):
+	_cache_nodes()
+	if _mesh_instance == null:
 		return
 		
-	var mesh_inst = $MeshInstance3D
+	var mesh_inst = _mesh_instance
 	
 	if not mesh_inst.mesh is BoxMesh:
 		return
@@ -140,8 +152,8 @@ func _sync_all():
 		mesh_inst.mesh.subdivide_depth = subdivide_depth
 	
 	# 2. Sync Hitbox
-	if has_node("StaticBody3D/CollisionShape3D"):
-		var col_shape = $StaticBody3D/CollisionShape3D
+	if _collision_shape:
+		var col_shape = _collision_shape
 		if col_shape.shape is BoxShape3D:
 			if col_shape.shape.size != mesh_size:
 				col_shape.shape.size = mesh_size

@@ -58,3 +58,7 @@
 ## 2026-04-24 - [Procedural Node Caching Order]
 **Learning:** [When caching dynamically generated child nodes like MeshInstance3D in `_ready()`, using `find_children()` *before* procedural generation methods (like `_create_procedural_arrow()`) will result in empty arrays, causing subsequent lookups to fail.]
 **Action:** [Always call `find_children()` and populate caches at the very end of `_ready()` or after all procedural generation steps have been completed.]
+
+## 2026-05-01 - [Lazy Node Caching in Tool Scripts]
+**Learning:** In Godot `@tool` scripts, property setters can be triggered before the `_ready()` notification. If these setters call logic that performs node lookups (like `get_node()`), it can lead to redundant searches or errors if the tree is not fully initialized.
+**Action:** Implement lazy caching using a helper method (e.g., `_cache_nodes()`) that populates private node variables using `get_node_or_null()` only when they are null. Call this helper at the start of all synchronization methods and `_ready()` to ensure O(1) pointer access while maintaining editor-time reactivity.
