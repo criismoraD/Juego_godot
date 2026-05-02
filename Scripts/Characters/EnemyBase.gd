@@ -1,38 +1,34 @@
-extends CharacterBody3D
 class_name EnemyBase
-
+extends CharacterBody3D
 ## Clase base para todos los enemigos.
 ## Contiene la lógica compartida: vida, disolución, flash de daño,
 ## tracking de jugador, partículas, espaciado, etc.
 ## Los enemigos concretos (Goblin, GoblinGirl) heredan de esta clase.
-
 # === CONFIGURACIÓN - MOVIMIENTO ===
+signal died
+signal pacifico_danado  ## Emitida cuando un enemigo pacífico recibe daño
+enum State { WALKING, SHOOTING, DYING, DEAD }
 @export_category("Movimiento")
 @export var velocidad_caminar: float = 1.0
 @export var distancia_minima_caminar: float = 1.0
 @export var distancia_maxima_caminar: float = 6.0
-
 # === CONFIGURACIÓN - COMBATE ===
 @export_category("Combate")
 @export var vida_maxima: int = 1
 @export var altura_spawn_flecha: float = 0.5
-
 # === CONFIGURACIÓN - APUNTADO ===
 @export_category("Apuntado")
 @export var rastrear_jugador: bool = true
 @export_range(-90, 90, 1.0) var angulo_apuntado_minimo: float = -45.0
 @export_range(-90, 90, 1.0) var angulo_apuntado_maximo: float = 45.0
-
 # === CONFIGURACIÓN - ESPACIADO ===
 @export_category("Espaciado")
 @export var distancia_minima_entre_enemigos: float = 0.5
-
 # === CONFIGURACIÓN - EFECTO DE MUERTE ===
 @export_category("Efecto de Muerte")
 @export var duracion_disolucion: float = 1.0
 @export var color_borde_disolucion: Color = Color(1.0, 0.6, 0.2)
 @export var intensidad_emision: float = 3.0
-
 # === CONFIGURACIÓN - PARTÍCULAS DE DISOLUCIÓN ===
 @export_category("Partículas de Disolución")
 @export var particulas_cantidad: int = 25
@@ -46,16 +42,13 @@ class_name EnemyBase
 @export var particulas_escala_min: float = 0.005
 @export var particulas_escala_max: float = 0.015
 @export_range(0.0, 1.0, 0.1) var particulas_detener_emision: float = 0.7
-
 # === REFERENCIAS ===
 var anim_player: AnimationPlayer
 var player_ref: Node3D = null
 var skeleton: Skeleton3D = null
 var spine_bone_idx: int = -1
 var hips_bone_idx: int = -1
-
 # === ESTADO ===
-enum State { WALKING, SHOOTING, DYING, DEAD }
 var current_state: State = State.WALKING
 var health: int = 2
 var modo_pacifico: bool = false  ## Si true, el enemigo solo camina sin atacar
@@ -65,24 +58,17 @@ var walked_distance: float = 0.0
 var target_walk_distance: float = 0.0
 var shoot_timer: float = 0.0
 var original_materials: Array = []
-
 # === EFECTO DE DISOLUCIÓN ===
 var dissolve_shader = preload("res://Assets/Shaders/dissolve.gdshader")
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 var dissolve_particles: GPUParticles3D = null
-
 # === CACHÉ DE NODOS ===
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
 var _red_flash_material: StandardMaterial3D = null
-
 # === SEÑALES ===
-signal died
-signal pacifico_danado  ## Emitida cuando un enemigo pacífico recibe daño
-
 var game_feel: Node = null
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════

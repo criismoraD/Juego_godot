@@ -1,18 +1,14 @@
-extends Node3D
 class_name AllyArcher
-
+extends Node3D
 static var active_allies_cache: Array[Node] = []
-
 ## NO rastrea enemigos — dispara en arco hacia la derecha.
 ## Empieza a disparar cuando hay 2+ enemigos en pantalla.
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
-
+enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD }
 @export_category("Activación")
 @export var enemigos_minimos: int = 2  ## Cantidad mínima de enemigos vivos para empezar a disparar
-
 @export_category("Disparo")
 @export var tiempo_carga_min: float = 1.0  ## Carga mínima (potencia baja)
 @export var tiempo_carga_max: float = 2.0  ## Carga máxima (potencia alta)
@@ -21,18 +17,14 @@ static var active_allies_cache: Array[Node] = []
 @export var altura_spawn_flecha: float = 1.2
 @export_range(0.0, 30.0, 1.0) var angulo_disparo_min: float = 5.0  ## Ángulo mínimo de elevación (grados)
 @export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 35.0  ## Ángulo máximo de elevación (grados)
-
 @export_category("Tiempos")
 @export var idle_min: float = 1.0  ## Segundos mínimos en idle entre ciclos
 @export var idle_max: float = 2.0  ## Segundos máximos en idle entre ciclos
-
 @export_category("Vida")
 @export var vida_maxima: int = 1
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
-
 var arrow_scene = preload("res://Scenes/Projectiles/Arrow.tscn")
 var dissolve_shader = preload("res://Assets/Shaders/dissolve.gdshader")
 var anim_player: AnimationPlayer
@@ -41,21 +33,16 @@ var skeleton: Skeleton3D
 var arrow_node: Node3D
 var hitbox_body: StaticBody3D
 var model_root: Node3D
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
-
-enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD }
 var current_state: State = State.IDLE
 var state_timer: float = 0.0
 var charge_duration: float = 0.0
 var health: int = 1
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
-
 static var _cached_wave_spawner: Node = null
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════

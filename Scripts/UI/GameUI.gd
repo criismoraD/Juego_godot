@@ -1,13 +1,17 @@
 extends CanvasLayer
 ## UI del Juego - Separada del Player
 ## Contiene: Vida, God Mode, Reiniciar, BGM, Volumen, Pausa, Toggle Bordes
-
 # === REFERENCIAS ===
+const WAVE_UPDATE_INTERVAL: float = 0.25  # Actualizar progreso de oleada 4 veces por segundo en vez de cada frame
+# === ESCUDOS ===
+const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
+const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
+const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
+const OUTLINE_WIDTH_RUNTIME := 20.0
 var player: Node = null
 var health_container: HBoxContainer
 var heart_icons: Array = []
 var pause_panel: Panel
-
 # === NODOS UI ===
 var wave_progress: ProgressBar
 var wave_progress_label: Label
@@ -17,12 +21,9 @@ var restart_btn: Button
 var pause_btn: Button
 var outline_btn: Button
 var quit_btn: Button
-
-
 # === SLIDERS ===
 var bgm_slider: HSlider
 var sfx_slider: HSlider
-
 # === SPAWN CONTROL ===
 var wave_spawner: Node = null
 var btn_iguales: Button
@@ -30,31 +31,24 @@ var btn_solo_imp: Button
 var btn_solo_goblin: Button
 var btn_solo_ggirl: Button
 var btn_spawn_escudo: Button
-
 # === TOGGLE UI ===
 var bottom_panel: Control
 var toggle_ui_btn: Button
-
 # === ESTADO ===
 var outlines_enabled: bool = true
 var is_paused: bool = false
-var effects_enabled: bool = true # Fog y DOF habilitados por defecto
+var effects_enabled: bool = true  # Fog y DOF habilitados por defecto
 var shields_enabled: bool = true
 var allies_enabled: bool = true
-
 # === OPTIMIZACIÓN ===
 var _wave_update_timer: float = 0.0
-const WAVE_UPDATE_INTERVAL: float = 0.25 # Actualizar progreso de oleada 4 veces por segundo en vez de cada frame
-
-# === ESCUDOS ===
 var escudo_scene: PackedScene = preload("res://Scenes/Environment/Escudo.tscn")
-var escudos_originales: Array = [] # [{transform, parent_path}]
+var escudos_originales: Array = []  # [{transform, parent_path}]
 var _escudos_cache: Array[Node] = []
 var btn_toggle_shields: Button
 var btn_toggle_allies: Button
 var btn_revive_allies: Button
-var plantillas_aliadas: Array = [] # [{name, parent_path, global_transform, template}]
-
+var plantillas_aliadas: Array = []  # [{name, parent_path, global_transform, template}]
 # === NODOS DE EFECTOS ===
 var world_environment: WorldEnvironment = null
 var effects_btn: Button
@@ -66,15 +60,12 @@ var capa001_opacity_slider: HSlider
 var capa001_opacity_value_label: Label
 var layers_btn: Button
 var layers_enabled: bool = true
-
 # === PLANOS DE EFECTOS ===
 var fog_plane: Node3D = null
 var fog_material: ShaderMaterial = null
 var capa001_sprite: Sprite3D = null
-
 # === MATERIALES CON OUTLINE ===
 var materials_with_outline: Array = []
-
 # === RESOLUCIÓN ===
 var resolution_option: OptionButton
 var fullscreen_check: CheckButton
@@ -94,10 +85,7 @@ var resolution_labels: Array = [
 	"2560×1440 (2K)",
 	"3840×2160 (4K)"
 ]
-const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
-const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
-const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
-const OUTLINE_WIDTH_RUNTIME := 20.0
+
 
 func _ready():
 	layer = 100
@@ -143,12 +131,14 @@ func _get_scene_root() -> Node:
 		return get_tree().current_scene
 	return get_tree().root.get_child(get_tree().root.get_child_count() - 1)
 
+
 func _find_player():
 	player = get_tree().get_first_node_in_group("player")
 	if not player:
 		# Buscar por nombre
 		var root_node = _get_scene_root()
 		player = root_node.find_child("Player", true, false)
+
 
 func _find_world_environment():
 	var root_node = _get_scene_root()
@@ -162,6 +152,7 @@ func _find_world_environment():
 	if fog_plane and fog_plane is MeshInstance3D:
 		fog_material = fog_plane.get_surface_override_material(0)
 
+
 func _find_capa001():
 	var root_node = _get_scene_root()
 	var nodo = root_node.find_child("CAPA001", true, false)
@@ -169,6 +160,7 @@ func _find_capa001():
 		capa001_sprite = nodo
 	else:
 		capa001_sprite = null
+
 
 func _scan_outline_materials():
 	# Lista de materiales conocidos con outline (Preload para evitar E/S síncrona en runtime)
@@ -187,10 +179,8 @@ func _scan_outline_materials():
 
 	for mat in materials:
 		if mat and mat.next_pass:
-			materials_with_outline.append({
-				"material": mat,
-				"outline": mat.next_pass
-			})
+			materials_with_outline.append({"material": mat, "outline": mat.next_pass})
+
 
 func _create_ui():
 	# ═══════════════════════════════════════════════════════════════════════════
@@ -426,9 +416,10 @@ func _create_ui():
 	btn_spawn_escudo = Button.new()
 	btn_spawn_escudo.text = "\U0001F6E1\uFE0F ESCUDO"
 	btn_spawn_escudo.custom_minimum_size = Vector2(85, 32)
-	btn_spawn_escudo.pressed.connect(func():
-		if wave_spawner and wave_spawner.has_method("forzar_spawn_escudo"):
-			wave_spawner.forzar_spawn_escudo()
+	btn_spawn_escudo.pressed.connect(
+		func():
+			if wave_spawner and wave_spawner.has_method("forzar_spawn_escudo"):
+				wave_spawner.forzar_spawn_escudo()
 	)
 	_style_button(btn_spawn_escudo, Color(0.5, 0.3, 0.6))
 	hbox.add_child(btn_spawn_escudo)
@@ -573,9 +564,10 @@ func _create_pause_panel():
 	var restart_pause_btn = Button.new()
 	restart_pause_btn.text = "🔄 REINICIAR"
 	restart_pause_btn.custom_minimum_size = Vector2(200, 50)
-	restart_pause_btn.pressed.connect(func():
-		_toggle_pause()
-		_restart_game()
+	restart_pause_btn.pressed.connect(
+		func():
+			_toggle_pause()
+			_restart_game()
 	)
 	_style_button(restart_pause_btn, Color(0.7, 0.3, 0.2))
 	vbox.add_child(restart_pause_btn)
@@ -614,9 +606,10 @@ func _create_pause_panel():
 	var btn_oleada_1 = Button.new()
 	btn_oleada_1.text = "Oleada 1"
 	btn_oleada_1.custom_minimum_size = Vector2(110, 40)
-	btn_oleada_1.pressed.connect(func():
-		_toggle_pause()
-		_ejecutar_cambio_oleada_debug(1)
+	btn_oleada_1.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_cambio_oleada_debug(1)
 	)
 	_style_button(btn_oleada_1, Color(0.1, 0.4, 0.6))
 	hbox_levels.add_child(btn_oleada_1)
@@ -624,9 +617,10 @@ func _create_pause_panel():
 	var btn_oleada_2 = Button.new()
 	btn_oleada_2.text = "Oleada 2"
 	btn_oleada_2.custom_minimum_size = Vector2(110, 40)
-	btn_oleada_2.pressed.connect(func():
-		_toggle_pause()
-		_ejecutar_cambio_oleada_debug(2)
+	btn_oleada_2.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_cambio_oleada_debug(2)
 	)
 	_style_button(btn_oleada_2, Color(0.6, 0.2, 0.4))
 	hbox_levels.add_child(btn_oleada_2)
@@ -634,9 +628,10 @@ func _create_pause_panel():
 	var btn_carteles = Button.new()
 	btn_carteles.text = "Carteles"
 	btn_carteles.custom_minimum_size = Vector2(110, 40)
-	btn_carteles.pressed.connect(func():
-		_toggle_pause()
-		_ejecutar_carteles_debug()
+	btn_carteles.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_carteles_debug()
 	)
 	_style_button(btn_carteles, Color(0.45, 0.35, 0.1))
 	hbox_levels.add_child(btn_carteles)
@@ -673,7 +668,10 @@ func _create_pause_panel():
 	# ═══════════════ PANTALLA COMPLETA ═══════════════
 	fullscreen_check = CheckButton.new()
 	fullscreen_check.text = "Pantalla Completa"
-	fullscreen_check.button_pressed = (DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+	fullscreen_check.button_pressed = (
+		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	)
 	fullscreen_check.custom_minimum_size = Vector2(200, 40)
 	fullscreen_check.focus_mode = Control.FOCUS_NONE
 	fullscreen_check.toggled.connect(_on_fullscreen_toggled)
@@ -681,9 +679,11 @@ func _create_pause_panel():
 
 	add_child(pause_panel)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # FUNCIONES DE UI
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _update_health_ui():
 	# Limpiar corazones existentes
@@ -711,8 +711,10 @@ func _update_health_ui():
 		health_container.add_child(heart)
 		heart_icons.append(heart)
 
+
 func _on_health_changed(_new_health: int):
 	_update_health_ui()
+
 
 func _process(delta):
 	if not wave_spawner or not is_instance_valid(wave_spawner):
@@ -740,12 +742,14 @@ func _process(delta):
 		if wave_container:
 			wave_container.visible = false
 
+
 func _on_player_died():
 	# Mostrar todos los corazones vacíos
 	for icon in heart_icons:
 		if is_instance_valid(icon):
 			icon.text = "🖤"
 			icon.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3))
+
 
 func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 	var root_node = _get_scene_root()
@@ -759,6 +763,7 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 		if root_node.has_method("debug_ir_a_oleada_1"):
 			root_node.call("debug_ir_a_oleada_1")
 
+
 func _ejecutar_carteles_debug() -> void:
 	var root_node = _get_scene_root()
 	if not is_instance_valid(root_node):
@@ -766,6 +771,7 @@ func _ejecutar_carteles_debug() -> void:
 
 	if root_node.has_method("debug_mostrar_carteles_transicion"):
 		root_node.call("debug_mostrar_carteles_transicion")
+
 
 func _style_button(btn: Button, color: Color):
 	# Desactivar foco para que Space/Enter no activen botones de la UI
@@ -791,9 +797,11 @@ func _style_button(btn: Button, color: Color):
 	btn.add_theme_color_override("font_color", Color.WHITE)
 	btn.add_theme_color_override("font_hover_color", Color.WHITE)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ACCIONES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _toggle_bottom_panel():
 	bottom_panel.visible = not bottom_panel.visible
@@ -801,6 +809,7 @@ func _toggle_bottom_panel():
 		toggle_ui_btn.text = "🔽 UI"
 	else:
 		toggle_ui_btn.text = "🔼 UI"
+
 
 func _toggle_pause():
 	is_paused = not is_paused
@@ -814,6 +823,7 @@ func _toggle_pause():
 		pause_btn.text = "⏸️ PAUSA"
 		_style_button(pause_btn, Color(0.5, 0.3, 0.6))
 
+
 func _toggle_god_mode():
 	if not player:
 		return
@@ -826,6 +836,7 @@ func _toggle_god_mode():
 	else:
 		god_mode_btn.text = "GOD: OFF"
 		_style_button(god_mode_btn, Color(0.2, 0.4, 0.8))
+
 
 func _restart_game():
 	# Desactivar pausa si está activa
@@ -848,6 +859,7 @@ func _restart_game():
 	# Reiniciar escena
 	get_tree().reload_current_scene()
 
+
 func _go_to_main_menu():
 	# Desactivar pausa y volver al menú principal
 	if is_paused:
@@ -857,22 +869,28 @@ func _go_to_main_menu():
 	AudioManager.stop_all()
 	get_tree().change_scene_to_file("res://Scenes/UI/MainMenu.tscn")
 
+
 func _quit_game():
 	AudioManager.stop_all()
 	get_tree().quit()
 
+
 func _play_music(index: int):
 	AudioManager.play_music(index)
+
 
 func _on_bgm_volume_changed(value: float):
 	AudioManager.set_music_volume(value)
 
+
 func _on_sfx_volume_changed(value: float):
 	AudioManager.set_sfx_volume(value)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONTROL DE SPAWN
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 func _find_wave_spawner() -> Node:
 	"""Busca el WaveSpawner en la escena si aún no se tiene referencia"""
@@ -891,14 +909,16 @@ func _find_wave_spawner() -> Node:
 
 	return wave_spawner
 
+
 func _toggle_equal_spawn():
 	var spawner = _find_wave_spawner()
 	if not spawner:
 		push_warning("[GameUI] No se encontró WaveSpawner")
 		return
 	spawner.probabilidad_igual = not spawner.probabilidad_igual
-	spawner.forzar_tipo_enemigo = -1 # Desactivar forzado
+	spawner.forzar_tipo_enemigo = -1  # Desactivar forzado
 	_update_spawn_buttons()
+
 
 func _set_spawn_type(tipo: int):
 	var spawner = _find_wave_spawner()
@@ -912,6 +932,7 @@ func _set_spawn_type(tipo: int):
 		spawner.forzar_tipo_enemigo = tipo
 		spawner.probabilidad_igual = false
 	_update_spawn_buttons()
+
 
 func _update_spawn_buttons():
 	var spawner = _find_wave_spawner()
@@ -950,9 +971,11 @@ func _update_spawn_buttons():
 		btn_solo_ggirl.text = "🧝 G.GIRL"
 		_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
 
+
 func _toggle_outlines():
 	outlines_enabled = not outlines_enabled
 	_aplicar_toggle_outline_global()
+
 
 func _aplicar_toggle_outline_global():
 	if not outline_btn:
@@ -970,6 +993,7 @@ func _aplicar_toggle_outline_global():
 
 	_forzar_outline_en_runtime(outlines_enabled)
 
+
 func _forzar_outline_en_runtime(habilitado: bool) -> void:
 	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, habilitado)
 
@@ -984,7 +1008,9 @@ func _forzar_outline_en_runtime(habilitado: bool) -> void:
 			continue
 		var material_base = item.get("material")
 		if material_base is StandardMaterial3D:
-			_aplicar_shader_outline_en_material(material_base as StandardMaterial3D, shader_outline, habilitado)
+			_aplicar_shader_outline_en_material(
+				material_base as StandardMaterial3D, shader_outline, habilitado
+			)
 
 	var meshes = get_tree().get_nodes_in_group("outline_meshes")
 	for nodo in meshes:
@@ -995,9 +1021,14 @@ func _forzar_outline_en_runtime(habilitado: bool) -> void:
 		for i in range(mesh_instance.mesh.get_surface_count()):
 			var material_activo := mesh_instance.get_active_material(i)
 			if material_activo is StandardMaterial3D:
-				_aplicar_shader_outline_en_material(material_activo as StandardMaterial3D, shader_outline, habilitado)
+				_aplicar_shader_outline_en_material(
+					material_activo as StandardMaterial3D, shader_outline, habilitado
+				)
 
-func _aplicar_shader_outline_en_material(material_base: StandardMaterial3D, shader_outline: Shader, habilitado: bool) -> void:
+
+func _aplicar_shader_outline_en_material(
+	material_base: StandardMaterial3D, shader_outline: Shader, habilitado: bool
+) -> void:
 	if material_base == null:
 		return
 
@@ -1011,6 +1042,7 @@ func _aplicar_shader_outline_en_material(material_base: StandardMaterial3D, shad
 		else:
 			material_outline.set_shader_parameter("outline_width", 0.0)
 			material_outline.set_shader_parameter("outline_color", Color(0, 0, 0, 0))
+
 
 func _toggle_effects():
 	effects_enabled = not effects_enabled
@@ -1031,11 +1063,13 @@ func _toggle_effects():
 		effects_btn.text = "🌫️ EFECTOS: OFF"
 		_style_button(effects_btn, Color(0.3, 0.3, 0.4))
 
+
 func _on_dof_amount_changed(value: float):
 	if world_environment and world_environment.camera_attributes:
 		world_environment.camera_attributes.dof_blur_amount = value
 	if dof_value_label:
 		dof_value_label.text = "%.2f" % value
+
 
 func _on_fog_density_changed(value: float):
 	if fog_material:
@@ -1043,10 +1077,12 @@ func _on_fog_density_changed(value: float):
 	if fog_density_value_label:
 		fog_density_value_label.text = "%.2f" % value
 
+
 func _obtener_opacidad_capa001_actual() -> float:
 	if capa001_sprite and is_instance_valid(capa001_sprite):
 		return capa001_sprite.modulate.a
 	return 1.0
+
 
 func _on_capa001_opacity_changed(value: float):
 	if capa001_sprite and is_instance_valid(capa001_sprite):
@@ -1055,6 +1091,7 @@ func _on_capa001_opacity_changed(value: float):
 		capa001_sprite.modulate = color_capa
 	if capa001_opacity_value_label:
 		capa001_opacity_value_label.text = "%.2f" % value
+
 
 func _toggle_layers():
 	layers_enabled = not layers_enabled
@@ -1071,17 +1108,25 @@ func _toggle_layers():
 		layers_btn.text = "✨ NIEBLA: OFF"
 		_style_button(layers_btn, Color(0.3, 0.3, 0.4))
 
+
 func _toggle_shield_sound():
 	# Alternar entre sonido de ballesta y flecha para el escudo
 	if AudioManager.sfx_streams.has("shield_hit"):
-		if AudioManager.sfx_streams["shield_hit"] == AudioManager.sfx_streams.get("shield_hit_crossbow"):
-			AudioManager.sfx_streams["shield_hit"] = AudioManager.sfx_streams.get("shield_hit_arrow", [])
+		if (
+			AudioManager.sfx_streams["shield_hit"]
+			== AudioManager.sfx_streams.get("shield_hit_crossbow")
+		):
+			AudioManager.sfx_streams["shield_hit"] = AudioManager.sfx_streams.get(
+				"shield_hit_arrow", []
+			)
 			var btn = find_child("ShieldSfxBtn", true, false)
 			if btn:
 				btn.text = "🛡️ ESCUDO: B"
 				_style_button(btn, Color(0.5, 0.6, 0.4))
 		else:
-			AudioManager.sfx_streams["shield_hit"] = AudioManager.sfx_streams.get("shield_hit_crossbow", [])
+			AudioManager.sfx_streams["shield_hit"] = AudioManager.sfx_streams.get(
+				"shield_hit_crossbow", []
+			)
 			var btn = find_child("ShieldSfxBtn", true, false)
 			if btn:
 				btn.text = "🛡️ ESCUDO: A"
@@ -1092,10 +1137,12 @@ func _toggle_shield_sound():
 # INPUT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 func _input(event):
 	# ESC para pausar
 	if event.is_action_pressed("ui_cancel"):
 		_toggle_pause()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONTROL DE ALIADAS
@@ -1105,12 +1152,14 @@ func _input(event):
 # CONTROL DE ESCUDOS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 func _get_valid_escudos() -> Array[Node]:
 	"""Limpia el cache de nodos inválidos y retorna la lista actualizada"""
 	for i in range(_escudos_cache.size() - 1, -1, -1):
 		if not is_instance_valid(_escudos_cache[i]):
 			_escudos_cache.remove_at(i)
 	return _escudos_cache
+
 
 func _guardar_posiciones_escudos():
 	"""Guarda las posiciones originales de todos los escudos al inicio"""
@@ -1119,10 +1168,13 @@ func _guardar_posiciones_escudos():
 	for escudo in get_tree().get_nodes_in_group("escudos"):
 		if is_instance_valid(escudo):
 			_escudos_cache.append(escudo)
-			escudos_originales.append({
-				"transform": escudo.global_transform,
-				"parent_path": escudo.get_parent().get_path()
-			})
+			escudos_originales.append(
+				{
+					"transform": escudo.global_transform,
+					"parent_path": escudo.get_parent().get_path()
+				}
+			)
+
 
 func _destruir_todos_escudos():
 	"""Destruye todos los escudos activos con efecto visual"""
@@ -1132,6 +1184,7 @@ func _destruir_todos_escudos():
 			# Forzar destrucción inmediata: poner golpes al máximo y dar golpe final
 			escudo.golpes_recibidos = escudo.golpes_para_destruir - 1
 			escudo.recibir_golpe()
+
 
 func _reconstruir_todos_escudos():
 	"""Re-instancia los escudos en sus posiciones originales"""
@@ -1164,6 +1217,7 @@ func _reconstruir_todos_escudos():
 		btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
 		_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
 
+
 func _toggle_escudos():
 	"""Toggle ON/OFF de todos los escudos"""
 	shields_enabled = not shields_enabled
@@ -1183,6 +1237,7 @@ func _toggle_escudos():
 		btn_toggle_shields.text = "🛡️ ESCUDOS: OFF"
 		_style_button(btn_toggle_shields, Color(0.4, 0.4, 0.4))
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONTROL DE ALIADAS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1191,20 +1246,27 @@ func _toggle_escudos():
 # RESOLUCIÓN Y PANTALLA COMPLETA
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 func _on_resolution_changed(index: int):
 	var new_res = resolutions[index]
-	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
-		# En pantalla completa, cambiar tamaño del viewport
+	if (
+		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	):
+		# En pantalla completa, cambiar tamano del viewport
 		get_viewport().size = new_res
 		DisplayServer.window_set_size(new_res)
 	else:
 		DisplayServer.window_set_size(new_res)
-		# Centrar ventana tras un frame para que el tamaño se aplique
+		# Centrar ventana tras un frame para que el tamano se aplique
 		await get_tree().process_frame
 		var screen_size = DisplayServer.screen_get_size()
 		var actual_size = DisplayServer.window_get_size()
-		var win_pos = Vector2i((screen_size.x - actual_size.x) / 2, (screen_size.y - actual_size.y) / 2)
+		var win_pos = Vector2i(
+			(screen_size.x - actual_size.x) / 2, (screen_size.y - actual_size.y) / 2
+		)
 		DisplayServer.window_set_position(win_pos)
+
 
 func _on_fullscreen_toggled(toggled_on: bool):
 	if toggled_on:
@@ -1220,8 +1282,11 @@ func _on_fullscreen_toggled(toggled_on: bool):
 				await get_tree().process_frame
 				var screen_size = DisplayServer.screen_get_size()
 				var actual_size = DisplayServer.window_get_size()
-				var win_pos = Vector2i((screen_size.x - actual_size.x) / 2, (screen_size.y - actual_size.y) / 2)
+				var win_pos = Vector2i(
+					(screen_size.x - actual_size.x) / 2, (screen_size.y - actual_size.y) / 2
+				)
 				DisplayServer.window_set_position(win_pos)
+
 
 func _toggle_imp_blood_color():
 	"""Toggle entre sangre roja y morada para los Imps"""
@@ -1234,6 +1299,7 @@ func _toggle_imp_blood_color():
 		else:
 			btn.text = "🩸 SANGRE: ROJA"
 			_style_button(btn, Color(0.6, 0.15, 0.15))
+
 
 func _toggle_aliadas():
 	"""Toggle ON/OFF de todas las arqueras aliadas"""
@@ -1249,6 +1315,7 @@ func _toggle_aliadas():
 		btn_toggle_allies.text = "🏹 ALIADAS: OFF"
 		_style_button(btn_toggle_allies, Color(0.4, 0.4, 0.4))
 
+
 func _guardar_plantillas_aliadas():
 	"""Guarda una plantilla de cada aliada inicial para poder revivirla por debug."""
 	plantillas_aliadas.clear()
@@ -1258,18 +1325,25 @@ func _guardar_plantillas_aliadas():
 		var plantilla: Node = ally.duplicate()
 		if not plantilla:
 			continue
-		plantillas_aliadas.append({
-			"name": ally.name,
-			"parent_path": ally.get_parent().get_path(),
-			"global_transform": ally.global_transform,
-			"template": plantilla,
-		})
+		(
+			plantillas_aliadas
+			. append(
+				{
+					"name": ally.name,
+					"parent_path": ally.get_parent().get_path(),
+					"global_transform": ally.global_transform,
+					"template": plantilla,
+				}
+			)
+		)
+
 
 func _buscar_aliada_por_nombre(nombre_aliada: String) -> AllyArcher:
 	for ally in AllyArcher.active_allies_cache:
 		if ally is AllyArcher and ally.name == nombre_aliada:
 			return ally
 	return null
+
 
 func _aplicar_estado_aliada(ally: AllyArcher):
 	if not ally or not is_instance_valid(ally):
@@ -1281,16 +1355,24 @@ func _aplicar_estado_aliada(ally: AllyArcher):
 	if hitbox and is_instance_valid(hitbox):
 		hitbox.collision_layer = 2 if allies_enabled else 0
 
+
 func _aliada_esta_revivible(ally: AllyArcher) -> bool:
 	if not ally or not is_instance_valid(ally):
 		return true
 	var estado_actual = ally.get("current_state")
-	if estado_actual != null and (int(estado_actual) == int(AllyArcher.State.DYING) or int(estado_actual) == int(AllyArcher.State.DEAD)):
+	if (
+		estado_actual != null
+		and (
+			int(estado_actual) == int(AllyArcher.State.DYING)
+			or int(estado_actual) == int(AllyArcher.State.DEAD)
+		)
+	):
 		return true
 	var vida_actual = ally.get("health")
 	if vida_actual != null and int(vida_actual) <= 0:
 		return true
 	return false
+
 
 func _revivir_aliadas():
 	"""Revive aliadas destruidas reinstanciandolas en su posicion original."""
@@ -1341,9 +1423,11 @@ func _revivir_aliadas():
 	if revividas > 0:
 		print("[GameUI] Aliadas revividas: ", revividas)
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MODO MÍNIMO (Solo corazones de vida)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 ## Activa/desactiva el modo mínimo: oculta todo excepto los corazones de vida.
 func set_modo_minimo(activo: bool):

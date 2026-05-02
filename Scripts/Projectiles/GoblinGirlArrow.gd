@@ -1,33 +1,26 @@
-extends Area3D
 class_name GoblinGirlArrowProjectile
+extends Area3D
 const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
-
 ## Flecha parabólica de la Goblin Girl.
 ## A diferencia de GoblinArrow (trayectoria recta/ballesta),
 ## esta flecha tiene gravedad y sigue una curva parabólica.
-
 # === CONFIGURACIÓN ===
 @export_category("Movimiento")
 @export var velocidad: float = 10.0  ## Velocidad inicial de la flecha
 @export var gravedad: float = 1.0  ## Gravedad aplicada a la trayectoria
 @export var tiempo_vida: float = 10.0  ## Tiempo antes de destruirse
 @export var tiempo_pegada: float = 5.0  ## Tiempo pegada antes de desaparecer
-
 @export_category("Visual")
 ## Color del proyectil (material + partículas). Púrpura = GoblinGirl
 @export var color_proyectil: Color = Color(0.8, 0.2, 0.8)
-
 # === ESTADO ===
 var direction: Vector3 = Vector3.LEFT
 var is_stuck: bool = false
 var _destroying: bool = false
-
 # === MATERIAL ===
 var projectile_material: StandardMaterial3D
-
 # === PARTÍCULAS ===
 var trail_particles: GPUParticles3D
-
 var _cached_mesh_instances: Array[Node] = []
 
 

@@ -1,8 +1,8 @@
 class_name CameraUtils
 extends RefCounted
-
 static var _cached_camera: Camera3D = null
 static var _cached_scene: Node = null
+
 
 static func obtener_camara_juego(contexto: Node) -> Camera3D:
 	if contexto == null:

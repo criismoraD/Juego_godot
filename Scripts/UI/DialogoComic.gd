@@ -1,7 +1,6 @@
 class_name DialogoComic
 extends CanvasLayer
 signal continuado
-
 @export var velocidad_texto: float = 0.02
 @export var chars_por_sonido: int = 4
 @export var intervalo_min_sonido: float = 0.18
@@ -10,17 +9,16 @@ signal continuado
 @export var audio_pitch_scale: float = 1.0
 @export var paginas_texto: PackedStringArray = PackedStringArray()
 @export var paginas_imagenes: Array[Texture2D] = []
-
-@onready var dialogo_label: RichTextLabel = _obtener_dialogo_label()
-@onready var boton_continuar: Button = _obtener_boton_continuar()
-@onready var icono_retrato: TextureRect = _obtener_icono_retrato()
-
 var _revelando: bool = false
 var _indice_pagina: int = 0
 var _audio_player: AudioStreamPlayer
 var _timer_revelado: Timer
 var _ultimo_audio_ms: int = 0
 var _total_chars_pagina: int = 0
+@onready var dialogo_label: RichTextLabel = _obtener_dialogo_label()
+@onready var boton_continuar: Button = _obtener_boton_continuar()
+@onready var icono_retrato: TextureRect = _obtener_icono_retrato()
+
 
 func _obtener_dialogo_label() -> RichTextLabel:
 	var nodo := find_child("Dialogo", true, false)
@@ -33,6 +31,7 @@ func _obtener_dialogo_label() -> RichTextLabel:
 
 	return null
 
+
 func _obtener_boton_continuar() -> Button:
 	var nodo := find_child("BotonContinuar", true, false)
 	if nodo is Button:
@@ -44,6 +43,7 @@ func _obtener_boton_continuar() -> Button:
 
 	return null
 
+
 func _obtener_icono_retrato() -> TextureRect:
 	var nodo := find_child("Icono", true, false)
 	if nodo is TextureRect:
@@ -54,6 +54,7 @@ func _obtener_icono_retrato() -> TextureRect:
 		return nodo
 
 	return null
+
 
 func _ready():
 	_audio_player = AudioStreamPlayer.new()
@@ -81,6 +82,7 @@ func _ready():
 	await get_tree().process_frame
 	_revelar_texto()
 
+
 func _preparar_dialogo_label() -> void:
 	if not dialogo_label:
 		return
@@ -88,6 +90,7 @@ func _preparar_dialogo_label() -> void:
 	# Evita relayout por caracter durante el reveal para bajar carga de CPU.
 	dialogo_label.fit_content = false
 	dialogo_label.scroll_active = false
+
 
 func _on_reveal_timer_timeout() -> void:
 	if not _revelando or not dialogo_label:
@@ -122,6 +125,7 @@ func _terminar_revelado() -> void:
 	if boton_continuar:
 		boton_continuar.visible = true
 
+
 func _actualizar_texto_boton():
 	if not boton_continuar:
 		return
@@ -131,12 +135,18 @@ func _actualizar_texto_boton():
 	else:
 		boton_continuar.text = "Continuar"
 
+
 func _aplicar_pagina_actual() -> void:
 	if dialogo_label and paginas_texto.size() > 0 and _indice_pagina < paginas_texto.size():
 		dialogo_label.text = paginas_texto[_indice_pagina]
 
-	if icono_retrato and _indice_pagina < paginas_imagenes.size() and paginas_imagenes[_indice_pagina]:
+	if (
+		icono_retrato
+		and _indice_pagina < paginas_imagenes.size()
+		and paginas_imagenes[_indice_pagina]
+	):
 		icono_retrato.texture = paginas_imagenes[_indice_pagina]
+
 
 func _revelar_texto():
 	if _revelando or not dialogo_label:
@@ -154,6 +164,7 @@ func _revelar_texto():
 	else:
 		_terminar_revelado()
 
+
 func _reproducir_audio():
 	if not _audio_player or not audio_stream:
 		return
@@ -165,6 +176,7 @@ func _reproducir_audio():
 	if _audio_player.pitch_scale != audio_pitch_scale:
 		_audio_player.pitch_scale = audio_pitch_scale
 	_audio_player.play()
+
 
 func _on_continue_pressed():
 	if _revelando:

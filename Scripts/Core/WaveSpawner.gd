@@ -1,7 +1,9 @@
-extends Node3D
 class_name WaveSpawner
-
+extends Node3D
 # === CONFIGURACIÓN (Español) ===
+signal oleada_iniciada(numero_oleada: int)
+signal oleada_completada(numero_oleada: int)
+signal goblin_spawneado(goblin: Node)
 @export_category("Spawner")
 @export var escena_goblin: PackedScene  # Escena del goblin a instanciar
 @export var escena_goblin_girl: PackedScene  # Escena de la goblin girl
@@ -15,13 +17,11 @@ class_name WaveSpawner
 @export_range(0.0, 1.0, 0.05) var probabilidad_imp: float = 0.2  # Probabilidad de que aparezca un Imp
 @export_range(0.0, 1.0, 0.05) var probabilidad_canonero: float = 0.15  # Probabilidad del canonero
 @export var probabilidad_igual: bool = false  ## Todos los enemigos tienen la misma probabilidad (33.3%)
-
 @export_category("Imp Escudo")
 @export var escena_imp_escudo: PackedScene  ## Escena de la ImpShieldGirl
 @export var max_imp_escudo_activos: int = 1  ## Máximo de ImpShieldGirl simultáneas
 @export var enemigos_minimos_para_escudo: int = 1  ## Enemigos vivos necesarios para spawnear escudo
 @export var intervalo_check_escudo: float = 8.0  ## Segundos entre checks de spawn de escudo
-
 # === ESTADO ===
 var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero
 var current_wave: int = 0
@@ -33,11 +33,7 @@ var active_goblins: Array = []
 var shield_imps_activos: Array = []  ## Lista de ImpShieldGirls activas
 var shield_spawn_timer: float = 5.0  ## Timer para spawn de escudo
 var enemigos_muertos_en_oleada: int = 0  ## Contador de muertos para la UI
-
 # === SEÑALES ===
-signal oleada_iniciada(numero_oleada: int)
-signal oleada_completada(numero_oleada: int)
-signal goblin_spawneado(goblin: Node)
 
 
 func _ready():

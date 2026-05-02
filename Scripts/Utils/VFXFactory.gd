@@ -1,3 +1,5 @@
+class_name VFXFactory
+extends Node
 # ═══════════════════════════════════════════════════════════════════════════════
 #                         VFX FACTORY
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -6,11 +8,11 @@
 #
 # USO: VFXFactory.spawn_impact(position, Color.RED)
 # ═══════════════════════════════════════════════════════════════════════════════
-extends Node
-class_name VFXFactory
+
 
 static func _desactivar_sombra_particula(particles: GPUParticles3D) -> void:
 	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN GLOBAL
@@ -26,7 +28,10 @@ static var vfx_enabled: bool = true
 static var _mat_cache: Dictionary = {}
 static var _mesh_cache: Dictionary = {}
 
-static func _get_shared_material(color: Color, emission: bool = false, emission_energy: float = 2.0, transparency: bool = false) -> StandardMaterial3D:
+
+static func _get_shared_material(
+	color: Color, emission: bool = false, emission_energy: float = 2.0, transparency: bool = false
+) -> StandardMaterial3D:
 	var key := "%s_%s_%s_%s" % [color.to_html(), emission, emission_energy, transparency]
 	if _mat_cache.has(key):
 		return _mat_cache[key]
@@ -42,6 +47,7 @@ static func _get_shared_material(color: Color, emission: bool = false, emission_
 	_mat_cache[key] = mat
 	return mat
 
+
 static func _get_shared_mesh(radius: float = 0.0125, height: float = 0.025) -> SphereMesh:
 	var key := "%s_%s" % [radius, height]
 	if _mesh_cache.has(key):
@@ -51,6 +57,7 @@ static func _get_shared_mesh(radius: float = 0.0125, height: float = 0.025) -> S
 	mesh.height = height
 	_mesh_cache[key] = mesh
 	return mesh
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WARM-UP DE SHADERS (evita stutter en la primera aparición de partículas)
@@ -91,7 +98,11 @@ static func warmup_shaders(world: Node) -> void:
 
 ## Crear partículas de impacto (cuando la flecha golpea algo)
 static func spawn_impact(
-	world: Node, position: Vector3, color: Color = Color.WHITE, amount: int = 15, size: float = 0.0125
+	world: Node,
+	position: Vector3,
+	color: Color = Color.WHITE,
+	amount: int = 15,
+	size: float = 0.0125
 ) -> GPUParticles3D:
 	if not vfx_enabled:
 		return null
