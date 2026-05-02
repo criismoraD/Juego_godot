@@ -6,8 +6,6 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_h3br7"]
 render_priority = 0
 shader = ExtResource("2_g6iqf")
-shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 20.0
 
 [resource]
 resource_name = "GOBLING_MATERIAL"

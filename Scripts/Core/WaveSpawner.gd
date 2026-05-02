@@ -32,6 +32,7 @@ var is_wave_active: bool = false
 var active_goblins: Array = []
 var shield_imps_activos: Array = []  ## Lista de ImpShieldGirls activas
 var shield_spawn_timer: float = 5.0  ## Timer para spawn de escudo
+var enemigos_muertos_en_oleada: int = 0  ## Contador de muertos para la UI
 
 # === SEÑALES ===
 signal oleada_iniciada(numero_oleada: int)
@@ -79,7 +80,9 @@ func _process(delta):
 
 func _start_wave():
 	current_wave += 1
-	goblins_spawned_in_wave = 0
+	# Los enemigos ya presentes (pacíficos convertidos) cuentan como spawneados
+	goblins_spawned_in_wave = active_goblins.size()
+	enemigos_muertos_en_oleada = 0
 	is_wave_active = true
 	spawn_timer = 0.0  # Spawn inmediato al iniciar oleada
 
@@ -160,11 +163,12 @@ func _spawn_goblin():
 
 func _on_goblin_died(goblin):
 	active_goblins.erase(goblin)
+	enemigos_muertos_en_oleada += 1
 	AudioManager.on_enemy_killed()
 
 
 func _check_wave_complete():
-	# La oleada termina cuando todos los goblins spawnearon Y todos murieron
+	# La oleada termina cuando todos los goblins normales spawnearon Y todos murieron
 	if goblins_spawned_in_wave >= enemigos_por_oleada:
 		# Limpiar referencias inválidas
 		# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar allocations de memoria/GC en comprobaciones frecuentes
@@ -172,7 +176,13 @@ func _check_wave_complete():
 			if not is_instance_valid(active_goblins[i]):
 				active_goblins.remove_at(i)
 
-		if active_goblins.is_empty():
+		# Contar solo enemigos normales vivos (los escudos no bloquean la oleada)
+		var enemigos_normales_vivos := 0
+		for enemy in active_goblins:
+			if is_instance_valid(enemy) and not shield_imps_activos.has(enemy):
+				enemigos_normales_vivos += 1
+
+		if enemigos_normales_vivos == 0:
 			is_wave_active = false
 			wave_cooldown = tiempo_entre_oleadas
 			oleada_completada.emit(current_wave)
@@ -286,10 +296,14 @@ func _spawn_shield_imp():
 		shield_imp.died.connect(_on_shield_imp_died.bind(shield_imp))
 
 	shield_imps_activos.append(shield_imp)
+	active_goblins.append(shield_imp)
+	# NOTA: No incrementar goblins_spawned_in_wave — los escudos son spawns independientes
 
 
 func _on_shield_imp_died(shield_imp):
 	shield_imps_activos.erase(shield_imp)
+	active_goblins.erase(shield_imp)
+	enemigos_muertos_en_oleada += 1
 
 
 func forzar_spawn_escudo():

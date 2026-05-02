@@ -23,9 +23,6 @@ var _destroying: bool = false
 # === MATERIAL ===
 var projectile_material: StandardMaterial3D
 
-# === PARTÍCULAS ===
-var trail_particles: GPUParticles3D
-
 var _cached_mesh_instances: Array[Node] = []
 
 
@@ -37,9 +34,6 @@ func _ready():
 	# Material rojo incandescente
 	_create_material()
 	_apply_material()
-
-	# Crear trail de partículas
-	_create_trail_particles()
 
 	# Delay breve para no chocar con el Imp que lanza
 	monitoring = false
@@ -114,52 +108,6 @@ func _apply_material():
 			mesh.material_override = projectile_material
 
 
-func _create_trail_particles():
-	trail_particles = GPUParticles3D.new()
-	trail_particles.name = "TrailParticles"
-	trail_particles.amount = 20
-	trail_particles.lifetime = 0.4
-	trail_particles.one_shot = false
-	trail_particles.explosiveness = 0.0
-	trail_particles.randomness = 0.2
-	trail_particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-
-	var process_mat = ParticleProcessMaterial.new()
-	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
-	process_mat.direction = Vector3(0, 0, 0)
-	process_mat.spread = 30.0
-	process_mat.initial_velocity_min = 0.1
-	process_mat.initial_velocity_max = 0.3
-	process_mat.gravity = Vector3(0, -0.5, 0)
-	process_mat.scale_min = 0.00375
-	process_mat.scale_max = 0.0075
-
-	var gradient = Gradient.new()
-	gradient.set_color(0, Color(1.0, 0.4, 0.1, 1.0))
-	gradient.set_color(1, Color(1.0, 0.1, 0.0, 0.0))
-	var gradient_tex = GradientTexture1D.new()
-	gradient_tex.gradient = gradient
-	process_mat.color_ramp = gradient_tex
-
-	trail_particles.process_material = process_mat
-
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
-	var part_mat = StandardMaterial3D.new()
-	part_mat.albedo_color = Color(1.0, 0.3, 0.05)
-	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	part_mat.emission_enabled = true
-	part_mat.emission = Color(1.0, 0.3, 0.05)
-	part_mat.emission_energy_multiplier = 3.0
-	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sphere.material = part_mat
-
-	trail_particles.draw_pass_1 = sphere
-	add_child(trail_particles)
-
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # COLISIONES
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -209,8 +157,6 @@ func _on_body_entered(body):
 func _stick_to_surface():
 	is_stuck = true
 	direction = Vector3.ZERO
-	if trail_particles:
-		trail_particles.emitting = false
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 
@@ -225,8 +171,6 @@ func _stick_to_surface():
 func _stick_to_shield(shield_body):
 	is_stuck = true
 	direction = Vector3.ZERO
-	if trail_particles:
-		trail_particles.emitting = false
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 
@@ -250,8 +194,6 @@ func _safe_destroy():
 	if _destroying:
 		return
 	_destroying = true
-	if trail_particles:
-		trail_particles.emitting = false
 	_cleanup_materials()
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)

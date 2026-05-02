@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dg8akkqu2r5jd"]
 
 [ext_resource type="Script" uid="uid://c4pwpbeps05b3" path="res://Scripts/Projectiles/ImpTrident.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://dx3m3ob2uudwr" path="res://Assets/Projectiles/ImpTrident/TRIDENTE PROYECTIL.fbx" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://dx3m3ob2uudwr" path="res://Assets/Characters/Imp/TRIDENTE PROYECTIL.fbx" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_trident"]
 radius = 0.063964844

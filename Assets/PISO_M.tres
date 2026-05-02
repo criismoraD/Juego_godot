@@ -1,8 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bnpufauv07uav"]
-
-[ext_resource type="Texture2D" uid="uid://dbxdjkucn4y0" path="res://Assets/PISO_D.jpg" id="1_2oaqu"]
-
-[resource]
-resource_name = "PISO_M"
-albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
-albedo_texture = ExtResource("1_2oaqu")

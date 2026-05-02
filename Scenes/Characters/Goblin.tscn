@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://2udyb44rvi8h" path="res://Scripts/Characters/Goblin.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://k3nj0crucrl" path="res://Assets/Characters/Goblin/GOBLING_REMASTER_ANIMACIONES.glb" id="2_model"]
-[ext_resource type="PackedScene" uid="uid://dpa4oshmpaylm" path="res://Assets/Projectiles/GoblinCrossbow/BALLES_GOBLING.glb" id="3_088pw"]
+[ext_resource type="PackedScene" uid="uid://dpa4oshmpaylm" path="res://Assets/Characters/Goblin/BALLES_GOBLING.glb" id="3_088pw"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_goblin"]
 radius = 0.16748047

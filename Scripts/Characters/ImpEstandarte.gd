@@ -293,7 +293,8 @@ func _desaparecer_estandarte_con_particulas() -> void:
 		return
 
 	_crear_particulas_desaparicion_estandarte(estandarte_visual.global_position)
-	estandarte_visual.visible = false
+	estandarte_visual.queue_free()
+	estandarte_visual = null
 
 
 func _reproducir_hit_aleatorio():

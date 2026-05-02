@@ -1,13 +1,11 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://buh2k2i7xhabt"]
 
-[ext_resource type="Texture2D" uid="uid://1m7pind2m8mc" path="res://Assets/Environment/Shield/TEX_shield_basecolor.png" id="1_eemcq"]
+[ext_resource type="Texture2D" uid="uid://cvrgrrde6ak3f" path="res://Assets/Environment/Shield/escudo_partes_escudo_partes_TEX_shield_basecolor.png" id="1_eemcq"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_wnkfh"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wnkfh"]
 render_priority = 0
 shader = ExtResource("2_wnkfh")
-shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 20.0
 
 [resource]
 resource_name = "default"

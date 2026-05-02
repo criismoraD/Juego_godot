@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bu4wxu00nghsr" path="res://Scripts/Characters/AllyArcher.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://6o783pm488cs" path="res://Assets/Characters/AllyArcher/ARQUERA_ALIADA.glb" id="2_fbx"]
-[ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Assets/Weapons/PlayerBow/GEO_ARCO_ANIMADO.fbx" id="3_mijgs"]
-[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Assets/Projectiles/Arrow/FLECHA.fbx" id="4_0j5r4"]
+[ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Assets/Characters/Player/GEO_ARCO_ANIMADO.fbx" id="3_mijgs"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Assets/Characters/Player/FLECHA.fbx" id="4_0j5r4"]
 
 [node name="AllyArcher" type="Node3D" unique_id=606928033]
 script = ExtResource("1_script")

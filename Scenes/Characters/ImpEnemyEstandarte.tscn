@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://q2sqnc42chlo" path="res://Scripts/Characters/ImpEstandarte.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://buaa1ic8ykxrq" path="res://Assets/Characters/IMP_ESTANDARTE/IMP_ESTANDARTE.001.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://bqk483o6hoh86" path="res://Assets/Environment/Estandarte/Estandarte.glb" id="3_whoo0"]
-[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Assets/Weapons/GoblinBow/ARCO_GOBLING_GIRL.glb" id="4_bow"]
+[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Assets/Characters/GoblinGirl/ARCO_GOBLING_GIRL.glb" id="4_bow"]
 [ext_resource type="PackedScene" uid="uid://dkdhukog8g44" path="res://Scenes/Projectiles/FlechaManoVisual.tscn" id="5_hjqb6"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_imp_estandarte"]

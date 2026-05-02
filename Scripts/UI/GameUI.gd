@@ -174,15 +174,15 @@ func _scan_outline_materials():
 	# Lista de materiales conocidos con outline (Preload para evitar E/S síncrona en runtime)
 	var materials = [
 		preload("res://Assets/Characters/Player/ARQUERA_MATERIAL.tres"),
-		preload("res://Assets/Projectiles/Arrow/Arrows.tres"),
+		preload("res://Assets/Characters/Player/Arrows.tres"),
 		preload("res://Assets/Environment/Ladder/ESCALERAS.tres"),
-		preload("res://Assets/Projectiles/GoblinCrossbow/Hand Crossbow.tres"),
+		preload("res://Assets/Characters/Goblin/Hand Crossbow.tres"),
 		preload("res://Assets/Characters/Goblin/GOBLING_MATERIAL.tres"),
 		preload("res://Assets/Characters/GoblinGirl/MAT_GOBLIN_GIRL.tres"),
 		preload("res://Assets/Environment/Platform/MAT_platform.tres"),
 		preload("res://Assets/Environment/Shield/MAT_shield.tres"),
 		preload("res://Assets/Environment/SpikeTrap/MAT_spike_trap.tres"),
-		preload("res://Assets/Weapons/PlayerBow/Recurve Bow 2.tres")
+		preload("res://Assets/Characters/Player/Recurve Bow 2.tres")
 	]
 
 	for mat in materials:
@@ -211,6 +211,10 @@ func _create_ui():
 	wave_container.name = "WaveProgressUI"
 	wave_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	wave_container.offset_top = 20
+	wave_container.offset_left = -200
+	wave_container.offset_right = 200
+	wave_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	wave_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	wave_container.visible = false
 	add_child(wave_container)
 
@@ -245,7 +249,7 @@ func _create_ui():
 	# ═══════════════════════════════════════════════════════════════════════════
 	toggle_ui_btn = Button.new()
 	toggle_ui_btn.name = "ToggleUIBtn"
-	toggle_ui_btn.text = "🔽 UI"
+	toggle_ui_btn.text = "� UI"
 	toggle_ui_btn.custom_minimum_size = Vector2(60, 28)
 	toggle_ui_btn.anchor_left = 1.0
 	toggle_ui_btn.anchor_right = 1.0
@@ -267,6 +271,7 @@ func _create_ui():
 	bottom_panel.anchor_bottom = 1.0
 	bottom_panel.offset_top = -100
 	bottom_panel.offset_bottom = -5
+	bottom_panel.visible = false
 	add_child(bottom_panel)
 
 	var vbox_rows = VBoxContainer.new()
@@ -722,21 +727,10 @@ func _process(delta):
 	_wave_update_timer = 0.0
 
 	if wave_spawner.get("is_wave_active"):
-		var active_goblins: Array = wave_spawner.active_goblins
-		var vivos := 0
-		# OPT: Iteración inversa in-place — limpiar refs inválidas y contar vivos en un solo pass
-		for i in range(active_goblins.size() - 1, -1, -1):
-			var e = active_goblins[i]
-			if is_instance_valid(e) and not (e.get("current_state") in [5, 6]): # 5=DYING, 6=DEAD
-				vivos += 1
-			else:
-				active_goblins.remove_at(i)
-
 		var total = wave_spawner.get("enemigos_por_oleada")
-		var spawneados = wave_spawner.get("goblins_spawned_in_wave")
-		if total != null and spawneados != null:
-			var faltan_por_spawnear = max(0, total - spawneados)
-			var restantes = faltan_por_spawnear + vivos
+		var muertos = wave_spawner.get("enemigos_muertos_en_oleada")
+		if total != null and muertos != null:
+			var restantes = max(0, total - muertos)
 
 			wave_progress.max_value = total
 			wave_progress.value = max(0, total - restantes)
@@ -1353,7 +1347,5 @@ func _revivir_aliadas():
 
 ## Activa/desactiva el modo mínimo: oculta todo excepto los corazones de vida.
 func set_modo_minimo(activo: bool):
-	if bottom_panel:
-		bottom_panel.visible = not activo
 	if toggle_ui_btn:
 		toggle_ui_btn.visible = not activo

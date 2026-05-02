@@ -180,3 +180,11 @@ func _on_continue_pressed():
 		return
 
 	emit_signal("continuado")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if _revelando:
+			_terminar_revelado()
+		else:
+			_on_continue_pressed()

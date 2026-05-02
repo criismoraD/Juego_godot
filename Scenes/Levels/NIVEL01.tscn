@@ -24,8 +24,9 @@
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Scenes/Environment/Tronco.tscn" id="25_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Assets/Environment/Pilar/Pilar.glb" id="25_koe3n"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Assets/Environment/SpikeTrap/PINCHO.glb" id="25_qcvbp"]
-[ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://Assets/CAPA1_V.png" id="26_cx8r4"]
-[ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Assets/PISO.glb" id="26_koe3n"]
+[ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://Assets/Protagonista/CAPA1_V.png" id="26_cx8r4"]
+[ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Assets/Piso/PISO.glb" id="26_koe3n"]
+[ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Assets/PISO ALIADO.glb" id="28_072lj"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -95,7 +96,7 @@ escala_max_salto = 0.05
 velocidad_escalar_subir = 0.5
 velocidad_escalar_bajar = 0.5
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 428953253) index="0" unique_id=217156200]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1427852555) index="0" unique_id=893577587]
 bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
 bones/0/rotation = Quaternion(0.20858404, -0.48332727, 0.08169286, 0.8462941)
 bones/1/rotation = Quaternion(-0.0072454643, 0, 0, 0.9999738)
@@ -243,6 +244,9 @@ current = true
 fov = 5.0
 size = 0.01
 
+[node name="PISO ALIADO2" parent="SubViewportFondo3D" unique_id=130398847 instance=ExtResource("28_072lj")]
+transform = Transform3D(5.8257546, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -9.008362, -0.60681725, -1.4656932)
+
 [node name="SubViewportFrente3D" type="SubViewport" parent="." unique_id=164925310]
 transparent_bg = true
 handle_input_locally = false
@@ -251,7 +255,7 @@ size = Vector2i(1920, 1080)
 [node name="TORRE" parent="SubViewportFrente3D" unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1076700369]
+[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1407819338]
 layers = 1
 
 [node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]
@@ -424,9 +428,6 @@ transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 2.5800648, -0.840870
 
 [node name="PISO4" parent="." unique_id=1396447181 instance=ExtResource("26_koe3n")]
 transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 8.0085745, -0.8408709, -0.8788506)
-
-[node name="PISO5" parent="." unique_id=842856292 instance=ExtResource("26_koe3n")]
-transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 8.905656, -9.03597, -0.8408709, -1.7162111)
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

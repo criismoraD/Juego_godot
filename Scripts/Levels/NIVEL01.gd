@@ -265,6 +265,10 @@ func _on_pacifico_danado():
 		return
 	estado_actual = NivelEstado.TRANSICION
 
+	# Desintegrar estandarte del imp si aún existe (cualquier impacto en pacíficos lo destruye)
+	if is_instance_valid(imp_estandarte) and imp_estandarte.has_method("_desaparecer_estandarte_con_particulas"):
+		imp_estandarte._desaparecer_estandarte_con_particulas()
+
 	# Convertir pacíficos supervivientes en hostiles
 	var supervivientes := 0
 	for enemigo in enemigos_pacificos:
@@ -284,6 +288,9 @@ func _on_pacifico_danado():
 	# Activar arqueras aliadas
 	_set_aliadas_activas(true)
 
+	# Mostrar cartel Level 01
+	await _mostrar_cartel_level_01()
+
 	# Iniciar Nivel 1: oleada de 13 enemigos (los supervivientes cuentan)
 	_iniciar_nivel_1(supervivientes)
 
@@ -296,28 +303,37 @@ func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	# Los supervivientes ya están en active_goblins del spawner.
 	# Solo se descuenta en la oleada 1.
 	var enemigos_a_spawnear: int = int(max(0, total_enemigos_nivel1 - supervivientes_pacificos))
-	_configurar_oleada_combate(enemigos_a_spawnear)
+	_configurar_oleada_combate(enemigos_a_spawnear, 1)
 
-func _configurar_oleada_combate(total_enemigos: int) -> void:
+func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
 	estado_actual = NivelEstado.NIVEL_1
 
-	wave_spawner.enemigos_por_oleada = total_enemigos
+	# El total incluye los enemigos pacíficos supervivientes ya presentes
+	wave_spawner.enemigos_por_oleada = total_enemigos + wave_spawner.active_goblins.size()
 	wave_spawner.probabilidad_canonero = 0.0
-	wave_spawner.probabilidad_imp = 0.5
-	wave_spawner.probabilidad_goblin_girl = 0.5
 	wave_spawner.probabilidad_igual = false
-	wave_spawner.forzar_tipo_enemigo = -1 # Normal (imp + goblin girl, sin goblin base)
+	wave_spawner.forzar_tipo_enemigo = -1 # Normal
 
-	# Desactivar goblin base (solo imp + goblin girl)
-	wave_spawner.escena_goblin = wave_spawner.escena_goblin_girl # Redirigir goblin → goblin_girl
+	if numero_oleada == 1:
+		# Oleada 1: solo Imp + GoblinGirl
+		wave_spawner.probabilidad_imp = 0.5
+		wave_spawner.probabilidad_goblin_girl = 0.5
+		# Desactivar goblin base (redirigir a goblin_girl)
+		wave_spawner.escena_goblin = wave_spawner.escena_goblin_girl
+	else:
+		# Oleada 2: Imp + GoblinGirl + Goblin (ballesta)
+		wave_spawner.probabilidad_imp = 0.33
+		wave_spawner.probabilidad_goblin_girl = 0.33
+		# Restaurar goblin base (ballesta)
+		wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
 		wave_spawner.oleada_completada.connect(_on_nivel1_completado)
 
-	# Iniciar el spawning
+	# Iniciar el spawning (los enemigos pacíficos supervivientes ya cuentan)
 	wave_spawner.current_wave = 0
-	wave_spawner.goblins_spawned_in_wave = 0
+	wave_spawner.goblins_spawned_in_wave = wave_spawner.active_goblins.size()
 	wave_spawner.is_wave_active = false
 	wave_spawner.wave_cooldown = 1.0
 
@@ -328,7 +344,13 @@ func _monitorear_nivel_1():
 		if not is_instance_valid(wave_spawner.active_goblins[i]):
 			wave_spawner.active_goblins.remove_at(i)
 
-	if wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada and wave_spawner.active_goblins.is_empty():
+	# Verificar si todos los enemigos normales murieron (los escudos no bloquean)
+	var enemigos_normales_vivos := 0
+	for enemy in wave_spawner.active_goblins:
+		if is_instance_valid(enemy) and not wave_spawner.shield_imps_activos.has(enemy):
+			enemigos_normales_vivos += 1
+
+	if wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada and enemigos_normales_vivos == 0:
 		_on_nivel1_completado(1)
 
 func _on_nivel1_completado(_numero_oleada: int):
@@ -341,12 +363,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 		if transicion_carteles_en_progreso:
 			return
 		transicion_carteles_en_progreso = true
-		# Mostrar carteles de transición sin animación y luego pasar a oleada 2
-		await _mostrar_cartel_nivel1_completado()
-		await _mostrar_cartel_nivel_2()
-		oleada_combate_actual = 2
-		_configurar_oleada_combate(total_enemigos_oleada_2)
-		transicion_carteles_en_progreso = false
+		_mostrar_inter_nivel_continuar()
 		return
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
@@ -417,6 +434,85 @@ func _mostrar_cartel_nivel1_completado() -> void:
 		overlay.queue_free()
 	await get_tree().process_frame
 
+func _mostrar_cartel_level_01() -> void:
+	_limpiar_carteles_transicion()
+	var overlay := CanvasLayer.new()
+	overlay.layer = 205
+	overlay.name = "CartelNivel1"
+	add_child(overlay)
+
+	var texto = tr("CARTEL_LEVEL_01")
+	if texto == "CARTEL_LEVEL_01":
+		texto = "Level 01"
+
+	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))
+	overlay.add_child(label)
+	label.modulate = Color(1, 1, 1, 1)
+	label.scale = Vector2.ONE
+	await get_tree().create_timer(1.2).timeout
+
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+
+func _mostrar_inter_nivel_continuar():
+	var overlay = CanvasLayer.new()
+	overlay.layer = 200
+	overlay.name = "InterNivelContinuar"
+	add_child(overlay)
+
+	var center = VBoxContainer.new()
+	center.anchor_left = 0.2
+	center.anchor_right = 0.8
+	center.anchor_top = 0.3
+	center.anchor_bottom = 0.7
+	center.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_theme_constant_override("separation", 30)
+	overlay.add_child(center)
+
+	var label = Label.new()
+	label.text = tr("NIVEL_1_COMPLETADO")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	# Usar LabelSettings para contorno y color blanco
+	label.label_settings = _crear_label_settings_contorno(10, Color(0, 0, 0, 1))
+	label.label_settings.font_size = 48
+	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	
+	center.add_child(label)
+
+	var boton = Button.new()
+	boton.text = tr("BOTON_CONTINUAR")
+	boton.add_theme_font_size_override("font_size", 24)
+
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.12, 0.08, 0.05, 0.95)
+	btn_style.border_color = Color(0.85, 0.65, 0.2)
+	btn_style.set_border_width_all(2)
+	btn_style.set_corner_radius_all(6)
+	btn_style.set_content_margin_all(12)
+	boton.add_theme_stylebox_override("normal", btn_style)
+
+	var btn_hover = btn_style.duplicate()
+	btn_hover.bg_color = Color(0.2, 0.14, 0.08, 0.95)
+	boton.add_theme_stylebox_override("hover", btn_hover)
+
+	var btn_pressed = btn_style.duplicate()
+	btn_pressed.bg_color = Color(0.08, 0.05, 0.02, 0.95)
+	boton.add_theme_stylebox_override("pressed", btn_pressed)
+
+	boton.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	boton.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.6))
+	boton.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	center.add_child(boton)
+
+	boton.pressed.connect(func():
+		overlay.queue_free()
+		await _mostrar_cartel_nivel_2()
+		oleada_combate_actual = 2
+		_configurar_oleada_combate(total_enemigos_oleada_2, 2)
+		transicion_carteles_en_progreso = false
+	)
+
 func _mostrar_cartel_nivel_2() -> void:
 	_limpiar_carteles_transicion()
 	var overlay := CanvasLayer.new()
@@ -424,8 +520,12 @@ func _mostrar_cartel_nivel_2() -> void:
 	overlay.name = "CartelNivel2"
 	add_child(overlay)
 
+	var texto = tr("CARTEL_LEVEL_02")
+	if texto == "CARTEL_LEVEL_02":
+		texto = "Level 02"
+
 	var label := _crear_label_transicion(
-		"Nivel 02",
+		texto,
 		Color(1.0, 0.85, 0.2)  # Dorado
 	)
 	overlay.add_child(label)
@@ -486,10 +586,10 @@ func _iniciar_oleada_debug(numero_oleada: int) -> void:
 
 	if numero_oleada == 2:
 		oleada_combate_actual = 2
-		_configurar_oleada_combate(total_enemigos_oleada_2)
+		_configurar_oleada_combate(total_enemigos_oleada_2, 2)
 	else:
 		oleada_combate_actual = 1
-		_configurar_oleada_combate(total_enemigos_nivel1)
+		_configurar_oleada_combate(total_enemigos_nivel1, 1)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # VICTORIA PACIFISTA

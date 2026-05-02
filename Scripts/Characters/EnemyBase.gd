@@ -422,6 +422,8 @@ func take_damage(amount: float):
 
 func _flash_red():
 	for mesh in _cached_mesh_instances:
+		if not is_instance_valid(mesh):
+			continue
 		for i in range(mesh.get_surface_override_material_count()):
 			mesh.set_surface_override_material(i, _red_flash_material)
 		if mesh.get_surface_override_material_count() == 0:
@@ -525,6 +527,8 @@ func _start_dissolve_effect():
 	is_dissolving = true
 
 	for mesh in _cached_mesh_instances:
+		if not is_instance_valid(mesh):
+			continue
 		if mesh is MeshInstance3D:
 			var material = ShaderMaterial.new()
 			material.shader = dissolve_shader

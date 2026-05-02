@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dualxct8nv4di" path="res://Scripts/Characters/GoblinGirl.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://oi50n8vycsh3" path="res://Assets/Characters/GoblinGirl/GEO_GOBLIN_GIRL.fbx" id="2_model"]
-[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Assets/Weapons/GoblinBow/ARCO_GOBLING_GIRL.glb" id="3_5uu34"]
+[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Assets/Characters/GoblinGirl/ARCO_GOBLING_GIRL.glb" id="3_5uu34"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_goblingirl"]
 radius = 0.1665039

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bl3oxi6dcn2ft"]
 
 [ext_resource type="Script" uid="uid://byw7cdv07kt3f" path="res://Scripts/UI/ResultadoPacifista.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://b1f72q7bfw53k" path="res://Assets/PASIFISTA.jpeg" id="2_ul0p8"]
+[ext_resource type="Texture2D" uid="uid://b1f72q7bfw53k" path="res://Assets/Protagonista/PASIFISTA.jpeg" id="2_ul0p8"]
 
 [node name="ResultadoPacifista" type="CanvasLayer" unique_id=843615441]
 layer = 210

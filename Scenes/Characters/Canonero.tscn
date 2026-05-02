@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://d3x1a2b3c4d5e"]
 
 [ext_resource type="Script" uid="uid://djs4g3cscohfx" path="res://Scripts/Characters/Canonero.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://wtqxxa2i2xkd" path="res://Assets/CANONERO.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://wtqxxa2i2xkd" path="res://Assets/Canonero/CANONERO.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_canonero"]
 radius = 0.26757813

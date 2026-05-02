@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://i4advh0tq6ty"]
 
-[ext_resource type="Texture2D" uid="uid://drsqsbojo8hsh" path="res://Assets/Environment/SpikeTrap/PINCHO_modddif_image_2.png" id="1_kmoof"]
+[ext_resource type="Texture2D" uid="uid://b4ca034aknly" path="res://Assets/Environment/SpikeTrap/PINCHO_modddif_image_2_mdl.png" id="1_kmoof"]
 
 [resource]
 resource_name = "modddif_material_1"

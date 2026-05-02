@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://vsxrv3xyhbnp" path="res://Scripts/Characters/Player.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dfrf7l5pnbfk4" path="res://Assets/Characters/Player/GEO_ARQUERA_FINAL_ANIMATION.fbx" id="2_fbx"]
-[ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Assets/Weapons/PlayerBow/GEO_ARCO_ANIMADO.fbx" id="3_o5en2"]
-[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Assets/Projectiles/Arrow/FLECHA.fbx" id="4_7pt4t"]
+[ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Assets/Characters/Player/GEO_ARCO_ANIMADO.fbx" id="3_o5en2"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Assets/Characters/Player/FLECHA.fbx" id="4_7pt4t"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.4

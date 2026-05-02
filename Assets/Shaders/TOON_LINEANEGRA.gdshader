@@ -1,7 +1,7 @@
 shader_type spatial;
 render_mode cull_front, unshaded;
 
-
+global uniform bool Toon_LineaNegra_Activo = true;
 
 uniform vec4 outline_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform float outline_width = 20; // Grosor en píxeles de pantalla (uniforme a cualquier distancia)

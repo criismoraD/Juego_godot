@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://ch8tv0jcwn6vb"]
 
 [ext_resource type="Script" uid="uid://drxcxng0eisja" path="res://Scripts/UI/DialogoComic.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://Assets/PROTA_NORMAL.png" id="2_tex_normal"]
+[ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://Assets/Protagonista/PROTA_NORMAL.png" id="2_tex_normal"]
 [ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Assets/Environment/Shield/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
-[ext_resource type="Texture2D" uid="uid://qgmhf0dv4kf4" path="res://Assets/PROTA_ENOJADA.png" id="4_tex_enojada"]
+[ext_resource type="Texture2D" uid="uid://qgmhf0dv4kf4" path="res://Assets/Protagonista/PROTA_ENOJADA.png" id="4_tex_enojada"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]
 content_margin_left = 14.0
