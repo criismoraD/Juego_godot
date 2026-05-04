@@ -845,12 +845,14 @@ func _restart_game():
 		get_tree().paused = false
 
 	# Eliminar enemigos
+	# OPT: Cachear el grupo para evitar múltiples accesos al tree
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 
 	# Eliminar proyectiles enemigos
+	# OPT: Cachear el grupo para evitar múltiples accesos al tree
 	var projectiles = get_tree().get_nodes_in_group("enemy_projectiles")
 	for proj in projectiles:
 		if is_instance_valid(proj):
@@ -1012,6 +1014,7 @@ func _forzar_outline_en_runtime(habilitado: bool) -> void:
 				material_base as StandardMaterial3D, shader_outline, habilitado
 			)
 
+	# OPT: Cachear el grupo para evitar múltiples accesos al tree
 	var meshes = get_tree().get_nodes_in_group("outline_meshes")
 	for nodo in meshes:
 		var mesh_instance := nodo as MeshInstance3D
@@ -1165,7 +1168,12 @@ func _guardar_posiciones_escudos():
 	"""Guarda las posiciones originales de todos los escudos al inicio"""
 	await get_tree().process_frame
 	_escudos_cache.clear()
-	for escudo in get_tree().get_nodes_in_group("escudos"):
+	escudos_originales.clear()
+
+	# OPT: Cachear el grupo primero para evitar N llamadas a get_nodes_in_group si se expandiera en el futuro
+	# y asegurar que iteramos sobre una copia estable
+	var nodos_escudo = get_tree().get_nodes_in_group("escudos")
+	for escudo in nodos_escudo:
 		if is_instance_valid(escudo):
 			_escudos_cache.append(escudo)
 			escudos_originales.append(
@@ -1189,7 +1197,9 @@ func _destruir_todos_escudos():
 func _reconstruir_todos_escudos():
 	"""Re-instancia los escudos en sus posiciones originales"""
 	# Primero eliminar cualquier escudo roto que quede
-	for roto in get_tree().get_nodes_in_group("escudos_rotos"):
+	# OPT: Cachear el grupo para evitar múltiples accesos al tree
+	var escudos_rotos = get_tree().get_nodes_in_group("escudos_rotos")
+	for roto in escudos_rotos:
 		if is_instance_valid(roto):
 			roto.queue_free()
 
