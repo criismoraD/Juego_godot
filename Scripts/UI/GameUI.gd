@@ -1379,7 +1379,6 @@ func _revivir_aliadas():
 	if plantillas_aliadas.is_empty():
 		_guardar_plantillas_aliadas()
 
-	var revividas: int = 0
 	for data in plantillas_aliadas:
 		var nombre_aliada: String = str(data.get("name", ""))
 		if nombre_aliada == "":
@@ -1418,10 +1417,6 @@ func _revivir_aliadas():
 
 		if nueva_aliada is AllyArcher:
 			_aplicar_estado_aliada(nueva_aliada)
-			revividas += 1
-
-	if revividas > 0:
-		print("[GameUI] Aliadas revividas: ", revividas)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
