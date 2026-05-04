@@ -49,6 +49,7 @@ var estados_proceso_jugador: Dictionary = {}
 var estados_proceso_dialogo: Dictionary = {}
 var estado_spawner_dialogo: Dictionary = {}
 var _dialogo_audio_player: AudioStreamPlayer
+var _cached_players: Array[Node] = []
 # === OPTIMIZACIÓN: Monitoreo de oleadas con timer ===
 var _monitor_timer: float = 0.0
 @onready var wave_spawner: WaveSpawner = $WaveSpawner
@@ -918,8 +919,18 @@ func _set_aliadas_modo_pacifico():
 				hitbox.collision_layer = 0  # Sin colisión
 
 
+func _get_players_cached() -> Array[Node]:
+	if _cached_players.is_empty():
+		_cached_players.append_array(get_tree().get_nodes_in_group("player"))
+	else:
+		for i in range(_cached_players.size() - 1, -1, -1):
+			if not is_instance_valid(_cached_players[i]):
+				_cached_players.remove_at(i)
+	return _cached_players
+
+
 func _set_movimiento_jugador_bloqueado(bloqueado: bool):
-	for jugador in get_tree().get_nodes_in_group("player"):
+	for jugador in _get_players_cached():
 		if not is_instance_valid(jugador):
 			continue
 
