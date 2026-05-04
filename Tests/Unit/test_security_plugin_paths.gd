@@ -10,9 +10,9 @@ func _init():
 		{"ruta": "res://Assets/Models/test.glb", "esperado": true, "desc": "Ruta valida en res://"},
 		{"ruta": "res://test.png", "esperado": true, "desc": "Ruta raiz en res://"},
 		{"ruta": "user://config.cfg", "esperado": false, "desc": "Ruta en user:// (debe fallar)"},
-		{"ruta": "/etc/passwd", "esperado": false, "desc": "Ruta absoluta (debe fallar)"},
+		{"ruta": "/tmp/test_file", "esperado": false, "desc": "Ruta absoluta (debe fallar)"},
 		{"ruta": "res://../fuera.txt", "esperado": false, "desc": "Path traversal con .. (debe fallar)"},
-		{"ruta": "C:\\Windows\\system32", "esperado": false, "desc": "Ruta Windows (debe fallar)"},
+		{"ruta": "C:\\fake_system_path", "esperado": false, "desc": "Ruta Windows (debe fallar)"},
 		{"ruta": "res://subdir/../../evildat", "esperado": false, "desc": "Path traversal complejo (debe fallar)"}
 	]
 
