@@ -82,6 +82,12 @@ func _obtener_ruta_glb_seleccionada(rutas: PackedStringArray) -> String:
 
 
 func _procesar_glb_seleccionado(ruta_glb: String) -> Dictionary:
+	if not _es_ruta_segura(ruta_glb):
+		return {
+			"error": ERR_INVALID_PARAMETER,
+			"mensaje": "Ruta no segura detectada: %s" % ruta_glb
+		}
+
 	var shader_toon := ResourceLoader.load(RUTA_SHADER_TOON)
 	if not (shader_toon is Shader):
 		return {
@@ -195,6 +201,10 @@ func _forzar_reimport_glb(ruta_glb: String) -> void:
 
 func _buscar_textura_difusa_en_carpeta(ruta_glb: String) -> Texture2D:
 	var carpeta := ruta_glb.get_base_dir()
+
+	if not _es_ruta_segura(carpeta):
+		return null
+
 	var nombre_base := ruta_glb.get_file().get_basename()
 
 	var candidatos := [
@@ -246,3 +256,16 @@ func _mostrar_estado(mensaje: String, es_error: bool) -> void:
 		return
 	Etiqueta_Estado.text = mensaje
 	Etiqueta_Estado.modulate = Color(1, 0.5, 0.5) if es_error else Color(0.7, 1, 0.7)
+
+
+func _es_ruta_segura(ruta: String) -> bool:
+	# Solo permitir rutas dentro de res:// (el sistema de archivos del proyecto)
+	if not ruta.begins_with("res://"):
+		return false
+
+	# Evitar ataques de path traversal bloqueando secuencias ".."
+	# Godot generalmente las normaliza, pero es mejor prevenir explicitamente
+	if ".." in ruta or "\\" in ruta:
+		return false
+
+	return true
