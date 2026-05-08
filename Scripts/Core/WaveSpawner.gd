@@ -33,6 +33,12 @@ var active_goblins: Array = []
 var shield_imps_activos: Array = []  ## Lista de ImpShieldGirls activas
 var shield_spawn_timer: float = 5.0  ## Timer para spawn de escudo
 var enemigos_muertos_en_oleada: int = 0  ## Contador de muertos para la UI
+
+var current_level_data: Resource = null
+var is_data_driven: bool = false
+var _queued_enemies: Array = []  ## Enemigos ordenados por tiempo para data-driven
+var _elapsed_wave_time: float = 0.0
+
 # === SEÑALES ===
 
 
@@ -61,10 +67,16 @@ func _process(delta):
 		if wave_cooldown <= 0:
 			_start_wave()
 	else:
-		spawn_timer -= delta
-		if spawn_timer <= 0 and goblins_spawned_in_wave < enemigos_por_oleada:
-			_spawn_goblin()
-			spawn_timer = intervalo_aparicion
+		if is_data_driven:
+			_elapsed_wave_time += delta
+			while _queued_enemies.size() > 0 and _elapsed_wave_time >= _queued_enemies[0].spawn_time:
+				var enemy_data = _queued_enemies.pop_front()
+				_spawn_from_data(enemy_data)
+		else:
+			spawn_timer -= delta
+			if spawn_timer <= 0 and goblins_spawned_in_wave < enemigos_por_oleada:
+				_spawn_goblin()
+				spawn_timer = intervalo_aparicion
 
 		# Verificar si la oleada terminó (OPT: solo si ya spawneamos todos)
 		if goblins_spawned_in_wave >= enemigos_por_oleada:
@@ -73,14 +85,48 @@ func _process(delta):
 	# Check de spawn de ImpShieldGirl (independiente de oleadas)
 	_check_shield_imp_spawn(delta)
 
+func _spawn_from_data(enemy_data: Resource):
+	var scene = load(enemy_data.escena_path)
+	if not scene: return
+
+	for i in range(enemy_data.quantity):
+		var enemy = scene.instantiate()
+
+		# Offset slightly if spawning multiple at exact same frame/pos
+		var offset = Vector3(randf_range(-0.5, 0.5), randf_range(-0.2, 0.2), 0) if enemy_data.quantity > 1 else Vector3.ZERO
+
+		get_tree().root.add_child(enemy)
+		enemy.global_position = enemy_data.spawn_position + offset
+
+		if enemy.has_signal("died"):
+			enemy.died.connect(_on_goblin_died.bind(enemy))
+
+		active_goblins.append(enemy)
+		goblins_spawned_in_wave += 1
+
+		goblin_spawneado.emit(enemy)
+
 
 func _start_wave():
 	current_wave += 1
+
+	if is_data_driven and current_level_data:
+		var w_idx = current_wave - 1
+		if w_idx < current_level_data.oleadas.size():
+			var oleada = current_level_data.oleadas[w_idx]
+			_queued_enemies = oleada.enemigos.duplicate()
+			_queued_enemies.sort_custom(func(a, b): return a.spawn_time < b.spawn_time)
+			enemigos_por_oleada = _queued_enemies.size()
+		else:
+			is_wave_active = false
+			return
+
 	# Los enemigos ya presentes (pacíficos convertidos) cuentan como spawneados
 	goblins_spawned_in_wave = active_goblins.size()
 	enemigos_muertos_en_oleada = 0
 	is_wave_active = true
 	spawn_timer = 0.0  # Spawn inmediato al iniciar oleada
+	_elapsed_wave_time = 0.0
 
 	oleada_iniciada.emit(current_wave)
 
@@ -185,6 +231,17 @@ func _check_wave_complete():
 
 
 # === API PÚBLICA ===
+
+
+func iniciar_desde_data(level_data: Resource):
+	current_level_data = level_data
+	if level_data and level_data.oleadas.size() > 0:
+		is_data_driven = true
+		current_wave = 0
+		wave_cooldown = 0.5
+		is_wave_active = false
+	else:
+		push_error("[WaveSpawner] Nivel data invalido o sin oleadas.")
 
 
 func iniciar_spawning():
