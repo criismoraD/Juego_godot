@@ -6,7 +6,7 @@ extends Resource
 @export var nivel_numero: int = 1
 @export var nombre_nivel: String = ""
 @export var oleadas: Array = []
-@export var elementos_escenario: Array[String] = []  # Rutas de escenas (.tscn o .glb)
+@export var elementos_escenario: Array = []  # Array of ElementoData
 @export var escena_fondo: String = ""  # Ruta de la escena de fondo
 @export var escena_fondo_3d: String = ""  # Ruta del SubViewport de fondo
 @export var musica_index: int = -1  # Índice de AudioManager (-1 = default)
@@ -27,15 +27,15 @@ func eliminar_oleada(index: int) -> void:
 			oleadas[i].numero = i + 1
 
 
-func agregar_enemigo_a_oleada(oleada_idx: int, escena_path: String, probabilidad: float = 0.0) -> void:
+func agregar_enemigo_a_oleada(oleada_idx: int, escena_path: String, spawn_time: float = 0.0, spawn_pos: Vector3 = Vector3.ZERO) -> void:
 	if oleada_idx < 0 or oleada_idx >= oleadas.size():
 		return
-	oleadas[oleada_idx].agregar_enemigo(escena_path, probabilidad)
+	oleadas[oleada_idx].agregar_enemigo(escena_path, spawn_time, spawn_pos)
 
 
-func agregar_elemento(escena_path: String) -> void:
-	if not elementos_escenario.has(escena_path):
-		elementos_escenario.append(escena_path)
+func agregar_elemento(escena_path: String, pos: Vector3 = Vector3.ZERO, rot: Vector3 = Vector3.ZERO, esc: Vector3 = Vector3.ONE) -> void:
+	var nuevo = load("res://addons/level_designer/elemento_data.gd").new(escena_path, pos, rot, esc)
+	elementos_escenario.append(nuevo)
 
 
 func eliminar_elemento(index: int) -> void:
