@@ -48,6 +48,8 @@ var _escudos_cache: Array[Node] = []
 var btn_toggle_shields: Button
 var btn_toggle_allies: Button
 var btn_revive_allies: Button
+var btn_blood_toggle: Button
+var btn_shield_sfx: Button
 var plantillas_aliadas: Array = []  # [{name, parent_path, global_transform, template}]
 # === NODOS DE EFECTOS ===
 var world_environment: WorldEnvironment = null
@@ -495,7 +497,7 @@ func _create_ui():
 	hbox2.add_child(sep_blood)
 
 	# --- TOGGLE SANGRE IMP ---
-	var btn_blood_toggle = Button.new()
+	btn_blood_toggle = Button.new()
 	btn_blood_toggle.name = "BloodToggleBtn"
 	btn_blood_toggle.text = "🩸 SANGRE: MORADA"
 	btn_blood_toggle.custom_minimum_size = Vector2(130, 32)
@@ -1115,6 +1117,10 @@ func _toggle_layers():
 func _toggle_shield_sound():
 	# Alternar entre sonido de ballesta y flecha para el escudo
 	if AudioManager.sfx_streams.has("shield_hit"):
+		# Lazy-cache del botón si no existe
+		if not btn_shield_sfx:
+			btn_shield_sfx = find_child("ShieldSfxBtn", true, false)
+
 		if (
 			AudioManager.sfx_streams["shield_hit"]
 			== AudioManager.sfx_streams.get("shield_hit_crossbow")
@@ -1122,18 +1128,16 @@ func _toggle_shield_sound():
 			AudioManager.sfx_streams["shield_hit"] = AudioManager.sfx_streams.get(
 				"shield_hit_arrow", []
 			)
-			var btn = find_child("ShieldSfxBtn", true, false)
-			if btn:
-				btn.text = "🛡️ ESCUDO: B"
-				_style_button(btn, Color(0.5, 0.6, 0.4))
+			if btn_shield_sfx:
+				btn_shield_sfx.text = "🛡️ ESCUDO: B"
+				_style_button(btn_shield_sfx, Color(0.5, 0.6, 0.4))
 		else:
 			AudioManager.sfx_streams["shield_hit"] = AudioManager.sfx_streams.get(
 				"shield_hit_crossbow", []
 			)
-			var btn = find_child("ShieldSfxBtn", true, false)
-			if btn:
-				btn.text = "🛡️ ESCUDO: A"
-				_style_button(btn, Color(0.4, 0.5, 0.6))
+			if btn_shield_sfx:
+				btn_shield_sfx.text = "🛡️ ESCUDO: A"
+				_style_button(btn_shield_sfx, Color(0.4, 0.5, 0.6))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1301,14 +1305,13 @@ func _on_fullscreen_toggled(toggled_on: bool):
 func _toggle_imp_blood_color():
 	"""Toggle entre sangre roja y morada para los Imps"""
 	ImpEnemy.sangre_morada = not ImpEnemy.sangre_morada
-	var btn = find_child("BloodToggleBtn", true, false)
-	if btn:
+	if btn_blood_toggle:
 		if ImpEnemy.sangre_morada:
-			btn.text = "🩸 SANGRE: MORADA"
-			_style_button(btn, Color(0.4, 0.1, 0.5))
+			btn_blood_toggle.text = "🩸 SANGRE: MORADA"
+			_style_button(btn_blood_toggle, Color(0.4, 0.1, 0.5))
 		else:
-			btn.text = "🩸 SANGRE: ROJA"
-			_style_button(btn, Color(0.6, 0.15, 0.15))
+			btn_blood_toggle.text = "🩸 SANGRE: ROJA"
+			_style_button(btn_blood_toggle, Color(0.6, 0.15, 0.15))
 
 
 func _toggle_aliadas():
