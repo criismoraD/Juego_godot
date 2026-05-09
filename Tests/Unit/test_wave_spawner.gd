@@ -137,7 +137,7 @@ func test_filtering_null_values():
 
 	node.free()
 
-func test_forzar_spawn():
+func test_forzar_spawn_default():
 	watch_signals(_spawner)
 	var initial_count = _spawner.active_goblins.size()
 	var initial_spawned = _spawner.goblins_spawned_in_wave
@@ -147,30 +147,6 @@ func test_forzar_spawn():
 	assert_eq(_spawner.active_goblins.size(), initial_count + 1, "Should increment active_goblins")
 	assert_eq(_spawner.goblins_spawned_in_wave, initial_spawned + 1, "Should increment goblins_spawned_in_wave")
 	assert_signal_emitted(_spawner, "goblin_spawneado", "Should emit goblin_spawneado signal")
-
-func test_forzar_tipo_enemigo_goblin():
-	_spawner.forzar_tipo_enemigo = 0
-	_spawner.forzar_spawn()
-	var spawned = _spawner.active_goblins.back()
-	assert_eq(spawned.name, "GoblinNode", "Should spawn a goblin")
-
-func test_forzar_tipo_enemigo_goblin_girl():
-	_spawner.forzar_tipo_enemigo = 1
-	_spawner.forzar_spawn()
-	var spawned = _spawner.active_goblins.back()
-	assert_eq(spawned.name, "GoblinGirlNode", "Should spawn a goblin girl")
-
-func test_forzar_tipo_enemigo_imp():
-	_spawner.forzar_tipo_enemigo = 2
-	_spawner.forzar_spawn()
-	var spawned = _spawner.active_goblins.back()
-	assert_eq(spawned.name, "ImpNode", "Should spawn an imp")
-
-func test_forzar_tipo_enemigo_canonero():
-	_spawner.forzar_tipo_enemigo = 3
-	_spawner.forzar_spawn()
-	var spawned = _spawner.active_goblins.back()
-	assert_eq(spawned.name, "CanoneroNode", "Should spawn a canonero")
 
 func test_forzar_spawn_escudo():
 	var initial_spawned_in_wave = _spawner.goblins_spawned_in_wave
@@ -185,3 +161,19 @@ func test_forzar_spawn_escudo():
 
 	var spawned = _spawner.active_goblins.back()
 	assert_eq(spawned.name, "ImpShieldNode", "Should spawn an imp shield girl")
+
+func test_iniciar_desde_data():
+	var level_data = LevelData.new()
+	level_data.nivel_numero = 1
+	level_data.nombre_nivel = "Test Level"
+
+	var oleada = OleadaData.new()
+	oleada.numero = 1
+	oleada.tiempo_entre_spawns = 1.0
+	oleada.tiempo_entre_oleadas = 2.0
+	level_data.oleadas.append(oleada)
+
+	_spawner.iniciar_desde_data(level_data)
+
+	assert_eq(_spawner.current_level_data, level_data, "Should store level data")
+	assert_false(_spawner.is_wave_active, "Should not be active yet")

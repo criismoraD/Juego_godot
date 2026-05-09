@@ -31,6 +31,8 @@ buses/default_bus_layout="uid://dcled5jpi5lun"
 [autoload]
 
 AudioManager="*res://Scripts/Core/AudioManager.gd"
+LevelDataStore="*res://Scripts/Core/LevelDataStore.gd"
+LevelBuilder="*res://Scenes/UI/LevelBuilder.tscn"
 
 [display]
 
@@ -41,7 +43,7 @@ window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/arquera_godot_tools/plugin.cfg", "res://addons/level_designer/plugin.cfg")
+enabled=PackedStringArray("res://addons/arquera_godot_tools/plugin.cfg")
 
 [importer_defaults]
 
@@ -79,6 +81,11 @@ move_forward={
 move_back={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":83,"key_label":0,"unicode":115,"location":0,"echo":false,"script":null)
+]
+}
+toggle_level_builder={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194338,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
 ]
 }
 

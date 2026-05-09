@@ -1,20 +1,28 @@
+class_name EnemigoData
 extends Resource
 
 ## Datos de un enemigo dentro de una oleada.
 
 @export var escena_path: String = ""
 @export var nombre: String = ""
-
-# Propiedades para el nuevo Spawner Data-Driven
 @export var spawn_position: Vector3 = Vector3.ZERO
 @export var spawn_time: float = 0.0
 @export var quantity: int = 1
+@export var es_escudo: bool = false  ## Si es ImpShieldGirl (spawn independiente)
 
 
-func _init(path: String = "", s_time: float = 0.0, s_pos: Vector3 = Vector3.ZERO) -> void:
+func _init(
+	path: String = "",
+	s_time: float = 0.0,
+	s_pos: Vector3 = Vector3.ZERO,
+	qty: int = 1,
+	escudo: bool = false
+) -> void:
 	escena_path = path
 	spawn_time = s_time
 	spawn_position = s_pos
+	quantity = qty
+	es_escudo = escudo
 	if path != "":
 		var partes: PackedStringArray = path.split("/")
 		nombre = partes[-1].replace(".tscn", "").replace(".glb", "")

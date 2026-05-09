@@ -1,0 +1,238 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/LevelBuilder.gd" id="1_builder"]
+
+[node name="LevelBuilder" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_builder")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="PanelPrincipal" type="VBoxContainer" parent="Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="HBoxContainer" parent="PanelPrincipal"]
+layout_mode = 2
+
+[node name="LabelNivel" type="Label" parent="PanelPrincipal/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Nivel 00"
+
+[node name="BtnGuardar" type="Button" parent="PanelPrincipal/Header"]
+layout_mode = 2
+text = "Guardar"
+
+[node name="BtnGuardarTodo" type="Button" parent="PanelPrincipal/Header"]
+layout_mode = 2
+text = "Guardar Todo"
+
+[node name="BtnProbar" type="Button" parent="PanelPrincipal/Header"]
+layout_mode = 2
+text = "Probar"
+
+[node name="BtnCerrar" type="Button" parent="PanelPrincipal/Header"]
+layout_mode = 2
+text = "X"
+
+[node name="GridNiveles" type="GridContainer" parent="PanelPrincipal"]
+layout_mode = 2
+columns = 6
+
+[node name="TabContainer" type="TabContainer" parent="PanelPrincipal"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Oleadas" type="VBoxContainer" parent="PanelPrincipal/TabContainer"]
+layout_mode = 2
+
+[node name="BtnOleadas" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Oleadas"]
+layout_mode = 2
+
+[node name="BtnAgregarOleada" type="Button" parent="PanelPrincipal/TabContainer/Oleadas/BtnOleadas"]
+layout_mode = 2
+text = "+ Oleada"
+
+[node name="BtnEliminarOleada" type="Button" parent="PanelPrincipal/TabContainer/Oleadas/BtnOleadas"]
+layout_mode = 2
+text = "- Oleada"
+
+[node name="ListaOleadas" type="ItemList" parent="PanelPrincipal/TabContainer/Oleadas"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ConfigOleada" type="VBoxContainer" parent="PanelPrincipal/TabContainer/Oleadas"]
+layout_mode = 2
+
+[node name="HBoxTiempoSpawn" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Oleadas/ConfigOleada"]
+layout_mode = 2
+
+[node name="LabelTiempoSpawn" type="Label" parent="PanelPrincipal/TabContainer/Oleadas/ConfigOleada/HBoxTiempoSpawn"]
+layout_mode = 2
+text = "T. Spawn:"
+
+[node name="SpinTiempoSpawn" type="SpinBox" parent="PanelPrincipal/TabContainer/Oleadas/ConfigOleada/HBoxTiempoSpawn"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.5
+max_value = 30.0
+step = 0.5
+value = 3.0
+
+[node name="HBoxTiempoOleada" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Oleadas/ConfigOleada"]
+layout_mode = 2
+
+[node name="LabelTiempoOleada" type="Label" parent="PanelPrincipal/TabContainer/Oleadas/ConfigOleada/HBoxTiempoOleada"]
+layout_mode = 2
+text = "T. Oleada:"
+
+[node name="SpinTiempoOleada" type="SpinBox" parent="PanelPrincipal/TabContainer/Oleadas/ConfigOleada/HBoxTiempoOleada"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 60.0
+step = 1.0
+value = 5.0
+
+[node name="Enemigos" type="VBoxContainer" parent="PanelPrincipal/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="BtnEnemigos" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Enemigos"]
+layout_mode = 2
+
+[node name="BtnAgregarEnemigo" type="Button" parent="PanelPrincipal/TabContainer/Enemigos/BtnEnemigos"]
+layout_mode = 2
+text = "+ Enemigo"
+
+[node name="BtnEliminarEnemigo" type="Button" parent="PanelPrincipal/TabContainer/Enemigos/BtnEnemigos"]
+layout_mode = 2
+text = "- Enemigo"
+
+[node name="ListaEnemigos" type="ItemList" parent="PanelPrincipal/TabContainer/Enemigos"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ConfigEnemigo" type="VBoxContainer" parent="PanelPrincipal/TabContainer/Enemigos"]
+layout_mode = 2
+
+[node name="HBoxTipo" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo"]
+layout_mode = 2
+
+[node name="LabelTipo" type="Label" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo/HBoxTipo"]
+layout_mode = 2
+text = "Tipo:"
+
+[node name="OptionEnemigo" type="OptionButton" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo/HBoxTipo"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxCantidad" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo"]
+layout_mode = 2
+
+[node name="LabelCantidad" type="Label" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo/HBoxCantidad"]
+layout_mode = 2
+text = "Cantidad:"
+
+[node name="SpinCantidad" type="SpinBox" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo/HBoxCantidad"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1
+max_value = 50
+step = 1
+value = 1
+
+[node name="HBoxSpawnTime" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo"]
+layout_mode = 2
+
+[node name="LabelSpawnTime" type="Label" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo/HBoxSpawnTime"]
+layout_mode = 2
+text = "Spawn Time:"
+
+[node name="SpinSpawnTime" type="SpinBox" parent="PanelPrincipal/TabContainer/Enemigos/ConfigEnemigo/HBoxSpawnTime"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 120.0
+step = 0.5
+value = 0.0
+
+[node name="Objetos" type="VBoxContainer" parent="PanelPrincipal/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="BtnObjetos" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Objetos"]
+layout_mode = 2
+
+[node name="BtnAgregarObjeto" type="Button" parent="PanelPrincipal/TabContainer/Objetos/BtnObjetos"]
+layout_mode = 2
+text = "+ Objeto"
+
+[node name="BtnEliminarObjeto" type="Button" parent="PanelPrincipal/TabContainer/Objetos/BtnObjetos"]
+layout_mode = 2
+text = "- Objeto"
+
+[node name="BtnColocarObjeto" type="Button" parent="PanelPrincipal/TabContainer/Objetos/BtnObjetos"]
+layout_mode = 2
+text = "Colocar"
+
+[node name="ListaObjetos" type="ItemList" parent="PanelPrincipal/TabContainer/Objetos"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ConfigObjeto" type="VBoxContainer" parent="PanelPrincipal/TabContainer/Objetos"]
+layout_mode = 2
+
+[node name="HBoxTipo" type="HBoxContainer" parent="PanelPrincipal/TabContainer/Objetos/ConfigObjeto"]
+layout_mode = 2
+
+[node name="LabelTipo" type="Label" parent="PanelPrincipal/TabContainer/Objetos/ConfigObjeto/HBoxTipo"]
+layout_mode = 2
+text = "Tipo:"
+
+[node name="OptionObjeto" type="OptionButton" parent="PanelPrincipal/TabContainer/Objetos/ConfigObjeto/HBoxTipo"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Footer" type="HBoxContainer" parent="PanelPrincipal"]
+layout_mode = 2
+
+[node name="LabelInfo" type="Label" parent="PanelPrincipal/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Listo"
+
+[connection signal="pressed" from="Control/PanelPrincipal/Header/BtnGuardar" to="." method="_on_btn_guardar_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/Header/BtnGuardarTodo" to="." method="_on_btn_guardar_todo_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/Header/BtnProbar" to="." method="_on_btn_probar_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/Header/BtnCerrar" to="." method="_on_btn_cerrar_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/TabContainer/Oleadas/BtnOleadas/BtnAgregarOleada" to="." method="_on_btn_agregar_oleada_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/TabContainer/Oleadas/BtnOleadas/BtnEliminarOleada" to="." method="_on_btn_eliminar_oleada_pressed"]
+[connection signal="item_selected" from="Control/PanelPrincipal/TabContainer/Oleadas/ListaOleadas" to="." method="_on_lista_oleadas_item_selected"]
+[connection signal="value_changed" from="Control/PanelPrincipal/TabContainer/Oleadas/ConfigOleada/HBoxTiempoSpawn/SpinTiempoSpawn" to="." method="_on_spin_tiempo_spawn_value_changed"]
+[connection signal="value_changed" from="Control/PanelPrincipal/TabContainer/Oleadas/ConfigOleada/HBoxTiempoOleada/SpinTiempoOleada" to="." method="_on_spin_tiempo_oleada_value_changed"]
+[connection signal="pressed" from="Control/PanelPrincipal/TabContainer/Enemigos/BtnEnemigos/BtnAgregarEnemigo" to="." method="_on_btn_agregar_enemigo_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/TabContainer/Enemigos/BtnEnemigos/BtnEliminarEnemigo" to="." method="_on_btn_eliminar_enemigo_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/TabContainer/Objetos/BtnObjetos/BtnAgregarObjeto" to="." method="_on_btn_agregar_objeto_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/TabContainer/Objetos/BtnObjetos/BtnEliminarObjeto" to="." method="_on_btn_eliminar_objeto_pressed"]
+[connection signal="pressed" from="Control/PanelPrincipal/TabContainer/Objetos/BtnObjetos/BtnColocarObjeto" to="." method="_on_btn_colocar_objeto_pressed"]

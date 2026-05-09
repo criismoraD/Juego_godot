@@ -424,6 +424,24 @@ func _create_ui():
 	_style_button(btn_spawn_escudo, Color(0.5, 0.3, 0.6))
 	hbox.add_child(btn_spawn_escudo)
 
+	# --- SEPARADOR ---
+	var sep4 = VSeparator.new()
+	sep4.custom_minimum_size.x = 8
+	hbox.add_child(sep4)
+
+	# --- BOTÓN LEVEL BUILDER ---
+	var btn_level_builder = Button.new()
+	btn_level_builder.text = "🔧 BUILDER (F1)"
+	btn_level_builder.custom_minimum_size = Vector2(120, 32)
+	btn_level_builder.pressed.connect(
+		func():
+			var builder = get_node_or_null("/root/LevelBuilder")
+			if builder:
+				builder.abrir()
+	)
+	_style_button(btn_level_builder, Color(0.2, 0.5, 0.7))
+	hbox.add_child(btn_level_builder)
+
 	# Sincronizar estado inicial
 	_update_spawn_buttons()
 
@@ -913,65 +931,27 @@ func _find_wave_spawner() -> Node:
 
 
 func _toggle_equal_spawn():
-	var spawner = _find_wave_spawner()
-	if not spawner:
-		push_warning("[GameUI] No se encontró WaveSpawner")
-		return
-	spawner.probabilidad_igual = not spawner.probabilidad_igual
-	spawner.forzar_tipo_enemigo = -1  # Desactivar forzado
-	_update_spawn_buttons()
+	push_warning("[GameUI] _toggle_equal_spawn deprecated — usar LevelBuilder para configurar oleadas")
 
 
 func _set_spawn_type(tipo: int):
-	var spawner = _find_wave_spawner()
-	if not spawner:
-		push_warning("[GameUI] No se encontró WaveSpawner")
-		return
-	# Toggle: si ya está forzado al mismo tipo, volver a normal
-	if spawner.forzar_tipo_enemigo == tipo:
-		spawner.forzar_tipo_enemigo = -1
-	else:
-		spawner.forzar_tipo_enemigo = tipo
-		spawner.probabilidad_igual = false
-	_update_spawn_buttons()
+	push_warning("[GameUI] _set_spawn_type deprecated — usar LevelBuilder para configurar oleadas")
 
 
 func _update_spawn_buttons():
-	var spawner = _find_wave_spawner()
-	var igual_on = spawner and spawner.probabilidad_igual
-	var tipo = spawner.forzar_tipo_enemigo if spawner else -1
-
-	# Botón IGUALES
-	if igual_on:
-		btn_iguales.text = "⚖️ IGUALES: ON"
-		_style_button(btn_iguales, Color(0.2, 0.7, 0.3))
-	else:
+	# Botones de spawn desactivados — sistema data-driven
+	if btn_iguales:
 		btn_iguales.text = "⚖️ IGUALES"
-		_style_button(btn_iguales, Color(0.4, 0.4, 0.5))
-
-	# Botón IMP
-	if tipo == 2:
-		btn_solo_imp.text = "👹 IMP ✓"
-		_style_button(btn_solo_imp, Color(0.7, 0.2, 0.2))
-	else:
+		_style_button(btn_iguales, Color(0.3, 0.3, 0.3))
+	if btn_solo_imp:
 		btn_solo_imp.text = "👹 IMP"
-		_style_button(btn_solo_imp, Color(0.4, 0.4, 0.5))
-
-	# Botón GOBLIN
-	if tipo == 0:
-		btn_solo_goblin.text = "🧟 GOBLIN ✓"
-		_style_button(btn_solo_goblin, Color(0.3, 0.6, 0.2))
-	else:
+		_style_button(btn_solo_imp, Color(0.3, 0.3, 0.3))
+	if btn_solo_goblin:
 		btn_solo_goblin.text = "🧟 GOBLIN"
-		_style_button(btn_solo_goblin, Color(0.4, 0.4, 0.5))
-
-	# Botón G.GIRL
-	if tipo == 1:
-		btn_solo_ggirl.text = "🧝 G.GIRL ✓"
-		_style_button(btn_solo_ggirl, Color(0.6, 0.2, 0.6))
-	else:
+		_style_button(btn_solo_goblin, Color(0.3, 0.3, 0.3))
+	if btn_solo_ggirl:
 		btn_solo_ggirl.text = "🧝 G.GIRL"
-		_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
+		_style_button(btn_solo_ggirl, Color(0.3, 0.3, 0.3))
 
 
 func _toggle_outlines():

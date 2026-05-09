@@ -1,34 +1,26 @@
-[gd_resource type="Resource" script_class="LevelData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="LevelData" format=3 uid="uid://mgf5rnfy0pm4"]
 
-[ext_resource type="Script" path="res://addons/level_designer/level_data.gd" id="1_data"]
-[ext_resource type="Script" path="res://addons/level_designer/oleada_data.gd" id="2_oleada"]
-[ext_resource type="Script" path="res://addons/level_designer/enemigo_data.gd" id="3_enemigo"]
+[ext_resource type="Script" uid="uid://u0k1w1hdrge1" path="res://Scripts/Data/LevelData.gd" id="1_data"]
+[ext_resource type="Script" uid="uid://bgur53hk0fcdk" path="res://Scripts/Data/ObjetoData.gd" id="1_vumh6"]
+[ext_resource type="Script" uid="uid://bsly4g6qvs7dm" path="res://Scripts/Data/OleadaData.gd" id="2_oleada"]
+[ext_resource type="Script" uid="uid://bsnjaq4oe0bph" path="res://Scripts/Data/EnemigoData.gd" id="3_enemigo"]
 
 [sub_resource type="Resource" id="enemigo_1"]
 script = ExtResource("3_enemigo")
 escena_path = "res://Scenes/Characters/ImpEnemy.tscn"
-probabilidad = 0.5
 nombre = "ImpEnemy"
 
 [sub_resource type="Resource" id="enemigo_2"]
 script = ExtResource("3_enemigo")
 escena_path = "res://Scenes/Characters/GoblinGirl.tscn"
-probabilidad = 0.5
 nombre = "GoblinGirl"
+spawn_time = 2.0
 
 [sub_resource type="Resource" id="oleada_1"]
 script = ExtResource("2_oleada")
-numero = 1
-enemigos = [SubResource("enemigo_1"), SubResource("enemigo_2")]
-tiempo_entre_spawns = 3.0
-tiempo_entre_oleadas = 5.0
+enemigos = Array[ExtResource("3_enemigo")]([SubResource("enemigo_1"), SubResource("enemigo_2")])
 
 [resource]
 script = ExtResource("1_data")
-nivel_numero = 1
 nombre_nivel = "Nivel 01"
-oleadas = [SubResource("oleada_1")]
-elementos_escenario = []
-escena_fondo = ""
-escena_fondo_3d = ""
-musica_index = -1
+oleadas = Array[ExtResource("2_oleada")]([SubResource("oleada_1")])

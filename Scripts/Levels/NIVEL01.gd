@@ -9,8 +9,6 @@ const CAPA_VISUAL_FONDO_DOF := 2
 const MONITOR_INTERVAL: float = 0.3  # Chequear estado de oleada ~3 veces por segundo
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
-@export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
-@export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
 @export_category("Nivel 0 — Pacifista")
 @export var velocidad_pacificos: float = 0.5  ## Velocidad de caminata de los pacíficos
@@ -338,43 +336,77 @@ func _on_pacifico_danado():
 
 func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	oleada_combate_actual = 1
-	# Los supervivientes ya están en active_goblins del spawner.
-	# Solo se descuenta en la oleada 1.
-	var enemigos_a_spawnear: int = int(max(0, total_enemigos_nivel1 - supervivientes_pacificos))
-	_configurar_oleada_combate(enemigos_a_spawnear, 1)
-
-
-func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
 	estado_actual = NivelEstado.NIVEL_1
 
-	# El total incluye los enemigos pacíficos supervivientes ya presentes
-	wave_spawner.enemigos_por_oleada = total_enemigos + wave_spawner.active_goblins.size()
-	wave_spawner.probabilidad_canonero = 0.0
-	wave_spawner.probabilidad_igual = false
-	wave_spawner.forzar_tipo_enemigo = -1  # Normal
+	var level_data: LevelData = _crear_level_data_combate_1()
+	wave_spawner.iniciar_desde_data(level_data)
 
-	if numero_oleada == 1:
-		# Oleada 1: solo Imp + GoblinGirl
-		wave_spawner.probabilidad_imp = 0.5
-		wave_spawner.probabilidad_goblin_girl = 0.5
-		# Desactivar goblin base (redirigir a goblin_girl)
-		wave_spawner.escena_goblin = wave_spawner.escena_goblin_girl
-	else:
-		# Oleada 2: Imp + GoblinGirl + Goblin (ballesta)
-		wave_spawner.probabilidad_imp = 0.33
-		wave_spawner.probabilidad_goblin_girl = 0.33
-		# Restaurar goblin base (ballesta)
-		wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
+	# Los supervivientes pacíficos ya están en active_goblins
+	wave_spawner.goblins_spawned_in_wave = wave_spawner.active_goblins.size()
 
-	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
 		wave_spawner.oleada_completada.connect(_on_nivel1_completado)
 
-	# Iniciar el spawning (los enemigos pacíficos supervivientes ya cuentan)
-	wave_spawner.current_wave = 0
-	wave_spawner.goblins_spawned_in_wave = wave_spawner.active_goblins.size()
-	wave_spawner.is_wave_active = false
-	wave_spawner.wave_cooldown = 1.0
+
+func _crear_level_data_combate_1() -> LevelData:
+	var data := LevelData.new()
+	data.nivel_numero = 1
+	data.nombre_nivel = "Nivel 01 - Combate"
+
+	# Oleada 1: Imp + GoblinGirl (15 enemigos)
+	var oleada1 := OleadaData.new()
+	oleada1.numero = 1
+	oleada1.tiempo_entre_spawns = 3.0
+	oleada1.tiempo_entre_oleadas = 5.0
+	for i: int in range(8):
+		oleada1.agregar_enemigo("res://Scenes/Characters/ImpEnemy.tscn", i * 3.0, Vector3.ZERO, 1)
+		oleada1.agregar_enemigo("res://Scenes/Characters/GoblinGirl.tscn", i * 3.0 + 1.5, Vector3.ZERO, 1)
+	data.oleadas.append(oleada1)
+
+	return data
+
+
+func _crear_level_data_combate_2() -> LevelData:
+	var data := LevelData.new()
+	data.nivel_numero = 2
+	data.nombre_nivel = "Nivel 02 - Combate"
+
+	# Oleada 1: Imp + GoblinGirl + Goblin (25 enemigos)
+	var oleada1 := OleadaData.new()
+	oleada1.numero = 1
+	oleada1.tiempo_entre_spawns = 2.5
+	oleada1.tiempo_entre_oleadas = 5.0
+	for i: int in range(9):
+		oleada1.agregar_enemigo("res://Scenes/Characters/ImpEnemy.tscn", i * 2.5, Vector3.ZERO, 1)
+		oleada1.agregar_enemigo("res://Scenes/Characters/GoblinGirl.tscn", i * 2.5 + 1.2, Vector3.ZERO, 1)
+		oleada1.agregar_enemigo("res://Scenes/Characters/Goblin.tscn", i * 2.5 + 1.8, Vector3.ZERO, 1)
+	data.oleadas.append(oleada1)
+
+	return data
+
+
+func _crear_level_data_oleadas_libres() -> LevelData:
+	var data := LevelData.new()
+	data.nivel_numero = 99
+	data.nombre_nivel = "Oleadas Libres"
+
+	# Oleada infinita: todos los tipos con probabilidad igual
+	var oleada1 := OleadaData.new()
+	oleada1.numero = 1
+	oleada1.tiempo_entre_spawns = 4.0
+	oleada1.tiempo_entre_oleadas = 5.0
+	var tipos: Array[String] = [
+		"res://Scenes/Characters/Goblin.tscn",
+		"res://Scenes/Characters/GoblinGirl.tscn",
+		"res://Scenes/Characters/ImpEnemy.tscn",
+		"res://Scenes/Characters/Canonero.tscn",
+	]
+	for i: int in range(8):
+		var tipo: String = tipos[i % tipos.size()]
+		oleada1.agregar_enemigo(tipo, i * 4.0, Vector3.ZERO, 1)
+	data.oleadas.append(oleada1)
+
+	return data
 
 
 func _monitorear_nivel_1():
@@ -570,7 +602,11 @@ func _mostrar_inter_nivel_continuar():
 			overlay.queue_free()
 			await _mostrar_cartel_nivel_2()
 			oleada_combate_actual = 2
-			_configurar_oleada_combate(total_enemigos_oleada_2, 2)
+			estado_actual = NivelEstado.NIVEL_1
+			var level_data: LevelData = _crear_level_data_combate_2()
+			wave_spawner.iniciar_desde_data(level_data)
+			if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
+				wave_spawner.oleada_completada.connect(_on_nivel1_completado)
 			transicion_carteles_en_progreso = false
 	)
 
@@ -650,10 +686,15 @@ func _iniciar_oleada_debug(numero_oleada: int) -> void:
 
 	if numero_oleada == 2:
 		oleada_combate_actual = 2
-		_configurar_oleada_combate(total_enemigos_oleada_2, 2)
+		var level_data: LevelData = _crear_level_data_combate_2()
+		wave_spawner.iniciar_desde_data(level_data)
 	else:
 		oleada_combate_actual = 1
-		_configurar_oleada_combate(total_enemigos_nivel1, 1)
+		var level_data: LevelData = _crear_level_data_combate_1()
+		wave_spawner.iniciar_desde_data(level_data)
+
+	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
+		wave_spawner.oleada_completada.connect(_on_nivel1_completado)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -875,20 +916,8 @@ func _iniciar_oleadas_libres():
 	estado_actual = NivelEstado.OLEADAS_LIBRES
 	print("[NIVEL01] Oleadas libres iniciadas — enemigos al azar")
 
-	# Restaurar goblin base para que aparezcan los 3 tipos
-	wave_spawner.escena_goblin = load("res://Scenes/Characters/Goblin.tscn")
-
-	# Probabilidad igual: 33% cada tipo
-	wave_spawner.probabilidad_igual = true
-	wave_spawner.forzar_tipo_enemigo = -1
-	wave_spawner.enemigos_por_oleada = 8
-	wave_spawner.intervalo_aparicion = 4.0
-
-	# Reiniciar wave y arrancar
-	wave_spawner.current_wave = 0
-	wave_spawner.goblins_spawned_in_wave = 0
-	wave_spawner.is_wave_active = false
-	wave_spawner.wave_cooldown = 1.0
+	var level_data: LevelData = _crear_level_data_oleadas_libres()
+	wave_spawner.iniciar_desde_data(level_data)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
