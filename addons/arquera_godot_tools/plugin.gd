@@ -88,7 +88,13 @@ func _procesar_glb_seleccionado(ruta_glb: String) -> Dictionary:
 			"mensaje": "Ruta no segura detectada: %s" % ruta_glb
 		}
 
-	var shader_toon := ResourceLoader.load(RUTA_SHADER_TOON)
+	if not _es_ruta_segura(RUTA_SHADER_TOON):
+		return {
+			"error": ERR_INVALID_PARAMETER,
+			"mensaje": "Ruta de shader no segura: %s" % RUTA_SHADER_TOON
+		}
+
+	var shader_toon := ResourceLoader.load(RUTA_SHADER_TOON, "Shader")
 	if not (shader_toon is Shader):
 		return {
 			"error": ERR_FILE_NOT_FOUND,
@@ -218,8 +224,8 @@ func _buscar_textura_difusa_en_carpeta(ruta_glb: String) -> Texture2D:
 
 	for archivo in candidatos:
 		var ruta_candidata := carpeta.path_join(archivo)
-		if ResourceLoader.exists(ruta_candidata):
-			var textura := ResourceLoader.load(ruta_candidata)
+		if _es_ruta_segura(ruta_candidata) and ResourceLoader.exists(ruta_candidata, "Texture2D"):
+			var textura := ResourceLoader.load(ruta_candidata, "Texture2D")
 			if textura is Texture2D:
 				return textura
 
@@ -234,10 +240,11 @@ func _buscar_textura_difusa_en_carpeta(ruta_glb: String) -> Texture2D:
 			var nombre_minus := archivo_actual.to_lower()
 			if nombre_minus.ends_with(".png") or nombre_minus.ends_with(".jpg") or nombre_minus.ends_with(".jpeg") or nombre_minus.ends_with(".webp"):
 				var ruta_textura := carpeta.path_join(archivo_actual)
-				var textura_encontrada := ResourceLoader.load(ruta_textura)
-				if textura_encontrada is Texture2D:
-					dir.list_dir_end()
-					return textura_encontrada
+				if _es_ruta_segura(ruta_textura) and ResourceLoader.exists(ruta_textura, "Texture2D"):
+					var textura_encontrada := ResourceLoader.load(ruta_textura, "Texture2D")
+					if textura_encontrada is Texture2D:
+						dir.list_dir_end()
+						return textura_encontrada
 		archivo_actual = dir.get_next()
 	dir.list_dir_end()
 
@@ -259,13 +266,15 @@ func _mostrar_estado(mensaje: String, es_error: bool) -> void:
 
 
 func _es_ruta_segura(ruta: String) -> bool:
+	var ruta_normalizada := ruta.simplify_path()
+
 	# Solo permitir rutas dentro de res:// (el sistema de archivos del proyecto)
-	if not ruta.begins_with("res://"):
+	if not ruta_normalizada.begins_with("res://"):
 		return false
 
-	# Evitar ataques de path traversal bloqueando secuencias ".."
-	# Godot generalmente las normaliza, pero es mejor prevenir explicitamente
-	if ".." in ruta or "\\" in ruta:
+	# Evitar ataques de path traversal bloqueando secuencias ".." y separadores Windows
+	# Incluso después de simplificar, verificamos que no existan secuencias maliciosas
+	if ".." in ruta or ".." in ruta_normalizada or "\\" in ruta:
 		return false
 
 	return true
