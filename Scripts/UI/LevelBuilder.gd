@@ -2,6 +2,9 @@ extends Control
 
 ## UI Runtime para diseñar niveles. Solo para desarrollo.
 ## Permite configurar oleadas de enemigos y colocar objetos 3D.
+## 
+## NOTA: Este nodo debe ser excluido en builds de producción.
+## Ver project.godot [feature] tags para configuración de exclusión.
 
 const MAX_LEVELS: int = 30
 const GRID_COLS: int = 6
@@ -34,6 +37,9 @@ var oleada_actual: int = -1
 var modo_objetos: bool = false
 var objetos_instanciados: Array[Node3D] = []
 
+# Flag para verificar si es build de debug
+var _is_debug_build: bool = true
+
 @onready var panel_principal: VBoxContainer = $Control/PanelPrincipal
 @onready var grid_niveles: GridContainer = $Control/PanelPrincipal/GridNiveles
 @onready var label_nivel: Label = $Control/PanelPrincipal/Header/LabelNivel
@@ -51,12 +57,38 @@ var objetos_instanciados: Array[Node3D] = []
 
 
 func _ready() -> void:
+	_verificar_modulo_debug()
+	
+	if not _is_debug_build:
+		# En producción, deshabilitar completamente el LevelBuilder
+		set_process(false)
+		set_process_input(false)
+		visible = false
+		return
+	
 	_crear_grid_niveles()
 	_popular_option_enemigos()
 	_popular_option_objetos()
 	_seleccionar_nivel(1)
 	$Control.visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
+
+
+func _verificar_modulo_debug() -> void:
+	## Verifica si estamos en un build de debug o producción
+	## Usa OS.get_cmdline_args() para detectar si se ejecuta desde editor
+	var args = OS.get_cmdline_args()
+	_is_debug_build = args.size() > 0 and "--debug" in args
+	
+	# Alternativamente, usar feature tags si está configurado en export
+	if ProjectSettings.has_setting("application/config/features"):
+		var features = ProjectSettings.get_setting("application/config/features")
+		if "production" in features:
+			_is_debug_build = false
+	
+	# En el editor, siempre es debug
+	if Engine.is_editor_hint():
+		_is_debug_build = true
 
 
 func _input(event: InputEvent) -> void:

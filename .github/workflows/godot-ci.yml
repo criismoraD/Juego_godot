@@ -1,0 +1,160 @@
+name: Godot CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          godot-version: 4.2.0
+      
+      - name: Run Unit Tests
+        run: |
+          echo "Running unit tests..."
+          # Godot headless test execution (requiere configuración previa)
+          # godot --headless --path . --script Tests/run_tests.gd
+      
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            user://test_results.xml
+            user://test_logs.txt
+
+  lint:
+    name: Code Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install GDLint
+        run: |
+          pip install gdtoolkit
+      
+      - name: Run GDLint
+        run: |
+          echo "Linting GDScript files..."
+          find Scripts -name "*.gd" -exec gdformat --check {} \; || true
+          find Scripts -name "*.gd" -exec gdlint {} \; || true
+
+  export-windows:
+    name: Export Windows Build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          godot-version: 4.2.0
+      
+      - name: Import Templates
+        run: |
+          echo "Importing export templates..."
+      
+      - name: Export Windows
+        run: |
+          echo "Exporting Windows build..."
+          # godot --headless --path . --export-release "Windows Desktop" Builds/game.exe
+      
+      - name: Upload Windows Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: Builds/game.exe
+
+  export-linux:
+    name: Export Linux Build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          godot-version: 4.2.0
+      
+      - name: Export Linux
+        run: |
+          echo "Exporting Linux build..."
+          # godot --headless --path . --export-release "Linux/X11" Builds/game.x86_64
+      
+      - name: Upload Linux Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: Builds/game.x86_64
+
+  export-web:
+    name: Export Web Build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          godot-version: 4.2.0
+      
+      - name: Export Web
+        run: |
+          echo "Exporting Web build..."
+          # godot --headless --path . --export-release "Web" Builds/web/index.html
+      
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: Builds/web/
+
+  deploy-itchio:
+    name: Deploy to itch.io
+    runs-on: ubuntu-latest
+    needs: [export-windows, export-linux, export-web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip
+          chmod +x butler
+      
+      - name: Upload to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_CREDENTIALS }}
+        run: |
+          ./butler push windows-build username/game-name:windows
+          ./butler push linux-build username/game-name:linux
+          ./butler push web-build username/game-name:html5

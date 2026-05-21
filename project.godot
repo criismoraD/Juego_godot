@@ -33,6 +33,12 @@ buses/default_bus_layout="uid://dcled5jpi5lun"
 AudioManager="*res://Scripts/Core/AudioManager.gd"
 LevelDataStore="*res://Scripts/Core/LevelDataStore.gd"
 LevelBuilder="*res://Scenes/UI/LevelBuilder.tscn"
+EventBus="*res://Scripts/Core/EventBus.gd"
+ProjectilePool="*res://Scripts/Core/ProjectilePool.gd"
+Logger="*res://Scripts/Core/Logging/Logger.gd"
+EnemyPool="*res://Scripts/Core/EnemyPool.gd"
+AccessibilityManager="*res://Scripts/UX/AccessibilityManager.gd"
+ContextualTutorial="*res://Scripts/UX/ContextualTutorial.gd"
 
 [display]
 

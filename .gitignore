@@ -1,11 +1,42 @@
-# Godot 4+ specific ignores
-.godot/
-/android/
-
-# Common ignores
-*.tmp
-*.build
-*.log
+```
+# Godot-specific ignores
+*.import
+*.remap
 export_presets.cfg
-.vs/
+.user
+.autoload_singleton_nodes
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+target/
+.gradle/
+
+# Editors/IDEs
 .vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+*.env.*
+```
