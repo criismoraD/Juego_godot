@@ -293,7 +293,7 @@ func _create_dissolve_particles():
 	process_mat.scale_min = particulas_escala_min * 0.5
 	process_mat.scale_max = particulas_escala_max * 0.5
 
-	# Gradiente de color: del color de borde a transparente
+	# gradiente de color: del color de borde a transparente
 	var gradient = Gradient.new()
 	gradient.set_color(0, color_borde_disolucion)
 	gradient.set_color(
