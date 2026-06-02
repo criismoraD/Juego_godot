@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://ca65fjxn6rl4a"]
+
+[ext_resource type="PackedScene" uid="uid://srq15kiwvrl1" path="res://Assets/Environment/BUSTO_BRONCE/BUSTO_BRONCE.glb" id="1_t6fir"]
+
+[node name="BUSTO_BRONCE" unique_id=1905570369 instance=ExtResource("1_t6fir")]
+
+[node name="BONCE_BUSTO" parent="." index="0" unique_id=1308501443]
+layers = 2

@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://djjgbtutpuqm2"]
+
+[ext_resource type="Texture2D" uid="uid://xqv70ady1mtd" path="res://Assets/Environment/TORRE/TORRE_D.jpg" id="1_wrw76"]
+
+[resource]
+resource_name = "TORRE_M"
+albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
+albedo_texture = ExtResource("1_wrw76")

@@ -1,0 +1,11 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Common ignores
+*.tmp
+*.build
+*.log
+export_presets.cfg
+.vs/
+.vscode/

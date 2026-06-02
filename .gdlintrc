@@ -1,0 +1,9 @@
+max-line-length: 250
+disable:
+  - max-returns
+  - max-file-lines
+  - class-definitions-order
+  - unused-argument
+  - no-else-return
+  - duplicated-load
+  - class-variable-name

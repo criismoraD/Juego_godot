@@ -1,0 +1,16 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://c8gerwfavknfw"]
+
+[ext_resource type="Shader" uid="uid://b8ou2v2hg0skl" path="res://Assets/Shaders/fog_plane.gdshader" id="1_fog"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_fog")
+shader_parameter/fog_color = Color(0.6523959, 0.7393646, 0.87488854, 1)
+shader_parameter/fog_density = 0.9230000438425
+shader_parameter/scroll_speed_x = 0.7210000579975
+shader_parameter/scroll_speed_y = 0.6700000555750001
+shader_parameter/noise_scale = 10.02000047269012
+shader_parameter/noise_detail = 1.0
+shader_parameter/smoothness = 2.0
+shader_parameter/vignette_radius = 0.542000025745
+shader_parameter/vignette_softness = 0.5550000263625

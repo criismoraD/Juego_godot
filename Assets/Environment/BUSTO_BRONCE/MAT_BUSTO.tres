@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bdw3qwj2jkldh"]
+
+[ext_resource type="Texture2D" uid="uid://cx4ikmm86c5r2" path="res://Assets/Environment/BUSTO_BRONCE/BUSTO_BRONCE_modddif_image_6.png" id="1_y5vt0"]
+
+[resource]
+resource_name = "modddif_material_5"
+albedo_texture = ExtResource("1_y5vt0")
+texture_repeat = false

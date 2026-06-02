@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dvu0stwpdkpix"]
+
+[ext_resource type="Texture2D" uid="uid://50ejbphynn2t" path="res://Assets/Characters/Player/Arrows_Base_color.jpg" id="1_0flyc"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://Assets/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p68e4"]
+render_priority = 0
+shader = ExtResource("2_outline")
+
+[resource]
+resource_name = "Arrows"
+next_pass = SubResource("ShaderMaterial_p68e4")
+shading_mode = 0
+albedo_texture = ExtResource("1_0flyc")

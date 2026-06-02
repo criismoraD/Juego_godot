@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cokani123hvge"]
+
+[ext_resource type="Texture2D" uid="uid://d2lgsejoff3k2" path="res://Assets/PISO ALIADO_D.jpg" id="1_2recb"]
+
+[resource]
+resource_name = "PISO ALIADO_M"
+albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
+albedo_texture = ExtResource("1_2recb")
