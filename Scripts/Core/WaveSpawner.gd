@@ -22,6 +22,8 @@ signal goblin_spawneado(goblin: Node)
 @export var max_imp_escudo_activos: int = 1  ## Máximo de ImpShieldGirl simultáneas
 @export var enemigos_minimos_para_escudo: int = 1  ## Enemigos vivos necesarios para spawnear escudo
 @export var intervalo_check_escudo: float = 8.0  ## Segundos entre checks de spawn de escudo
+@export_category("Debug")
+@export var debug_logs_enabled: bool = false
 # === ESTADO ===
 var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero
 var current_wave: int = 0
@@ -86,11 +88,9 @@ func _start_wave():
 
 
 func _spawn_goblin():
-	print(
-		"[WaveSpawner] Spawning goblin. Total spawned so far in wave: ",
-		goblins_spawned_in_wave,
-		" / ",
-		enemigos_por_oleada
+	_log_debug(
+		"[WaveSpawner] Spawning enemy. Total spawned so far in wave: %d / %d"
+		% [goblins_spawned_in_wave, enemigos_por_oleada]
 	)
 	# Elegir qué tipo de enemigo spawnear
 	var scene_to_spawn: PackedScene
@@ -194,10 +194,10 @@ func iniciar_spawning():
 func toggle_pause_spawning():
 	if is_wave_active:
 		is_wave_active = false
-		print("Spawning PAUSADO")
+		_log_debug("Spawning PAUSADO")
 	else:
 		is_wave_active = true
-		print("Spawning REANUDADO")
+		_log_debug("Spawning REANUDADO")
 
 
 func detener_spawning():
@@ -355,3 +355,10 @@ func iniciar_oleada_custom(
 	current_wave = 0
 	wave_cooldown = 1.0
 	is_wave_active = false
+
+
+func _log_debug(message: String) -> void:
+	if not debug_logs_enabled:
+		return
+
+	print(message)

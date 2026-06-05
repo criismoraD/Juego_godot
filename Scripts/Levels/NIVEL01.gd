@@ -4,13 +4,25 @@ extends Node3D
 # === CONFIGURACIÓN GENERAL ===
 enum NivelEstado {NIVEL_0, TRANSICION, NIVEL_1, VICTORIA_PACIFISTA, VICTORIA_NIVEL1, OLEADAS_LIBRES}
 const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
-const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
 const CAPA_VISUAL_FONDO_DOF := 2
 const MONITOR_INTERVAL: float = 0.3  # Chequear estado de oleada ~3 veces por segundo
+const TAMANO_MINIMO_SUBVIEWPORT: int = 1
+const TAMANO_MINIMO_TEXTURA_FONDO: float = 1.0
+const PROFUNDIDAD_MINIMA_FONDO: float = 0.01
+const PIXEL_SIZE_MINIMO_FONDO: float = 0.0001
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
 @export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
 @export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
+@export_category("Rendimiento")
+@export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
+@export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
+@export_range(1.0, 1.4, 0.01) var escala_cobertura_fondo_animado: float = 1.18
+@export var limitar_fps_subviewport_fondo_3d: bool = true
+@export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
+@export var pausar_video_fondo_en_combate: bool = false
+@export_category("Debug")
+@export var debug_logs_enabled: bool = false
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
 @export_category("Nivel 0 — Pacifista")
 @export var velocidad_pacificos: float = 0.5  ## Velocidad de caminata de los pacíficos
@@ -50,15 +62,35 @@ var estados_proceso_dialogo: Dictionary = {}
 var estado_spawner_dialogo: Dictionary = {}
 var _dialogo_audio_player: AudioStreamPlayer
 var _cached_players: Array[Node] = []
+var _fondo_render_timer: float = 0.0
+var _escala_base_fondo_animado: Vector3 = Vector3.ONE
 # === OPTIMIZACIÓN: Monitoreo de oleadas con timer ===
 var _monitor_timer: float = 0.0
 @onready var wave_spawner: WaveSpawner = $WaveSpawner
 @onready var game_ui = $GameUI
+@onready var fondo_3d_rect: TextureRect = (
+	get_node_or_null("Compositor3D/Fondo3DRect") as TextureRect
+)
+@onready var frente_3d_rect: TextureRect = (
+	get_node_or_null("Compositor3D/Frente3DRect") as TextureRect
+)
 @onready var texture_rect: TextureRect = (
 	get_node_or_null("SubViewportFondo3D/SubViewport/TextureRect") as TextureRect
 )
 @onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
 @onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
+@onready var fondo_animado_sprite: Sprite3D = (
+	get_node_or_null("SubViewportFondo3D/FONDO ANIMADO") as Sprite3D
+)
+@onready var camara_fondo_3d: Camera3D = (
+	get_node_or_null("SubViewportFondo3D/CamaraFondoDOF") as Camera3D
+)
+@onready var subviewport_video_fondo: SubViewport = (
+	get_node_or_null("SubViewportFondo3D/SubViewport") as SubViewport
+)
+@onready var video_fondo: VideoStreamPlayer = (
+	get_node_or_null("SubViewportFondo3D/SubViewport/VideoStreamPlayer") as VideoStreamPlayer
+)
 @onready var torre2_fondo: Node3D = _buscar_nodo_fondo_multiple(["TORRE", "TORRE2", "TORRE3"])
 # === ESCENAS ===
 
@@ -68,6 +100,9 @@ func _ready():
 	_dialogo_audio_player.bus = "Master"
 	add_child(_dialogo_audio_player)
 	_forzar_refresco_outline_global()
+	_configurar_compositor_3d()
+	_configurar_render_subviewports()
+	_configurar_fondo_3d()
 
 	# Ocultar TextureRect del SubViewport
 	if texture_rect:
@@ -102,13 +137,173 @@ func _ready():
 
 func _ajustar_subviewports_3d() -> void:
 	var tamano_viewport := get_viewport().get_visible_rect().size
-	var tamano_render := Vector2i(int(tamano_viewport.x), int(tamano_viewport.y))
+	var tamano_render_fondo := _calcular_tamano_render(
+		tamano_viewport, escala_render_subviewport_fondo_3d
+	)
+	var tamano_render_frente := _calcular_tamano_render(
+		tamano_viewport, escala_render_subviewport_frente_3d
+	)
 
 	if subviewport_fondo_3d:
-		subviewport_fondo_3d.size = tamano_render
+		subviewport_fondo_3d.size = tamano_render_fondo
 
 	if subviewport_frente_3d:
-		subviewport_frente_3d.size = tamano_render
+		subviewport_frente_3d.size = tamano_render_frente
+		subviewport_frente_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+
+	_ajustar_subviewport_video_fondo(tamano_render_fondo)
+	_aplicar_cobertura_fondo_animado()
+
+
+func _calcular_tamano_render(tamano_viewport: Vector2, escala_render: float) -> Vector2i:
+	var escala_clampeada: float = clamp(escala_render, 0.5, 1.0)
+	return Vector2i(
+		max(TAMANO_MINIMO_SUBVIEWPORT, int(tamano_viewport.x * escala_clampeada)),
+		max(TAMANO_MINIMO_SUBVIEWPORT, int(tamano_viewport.y * escala_clampeada))
+	)
+
+
+func _configurar_render_subviewports() -> void:
+	if subviewport_fondo_3d:
+		subviewport_fondo_3d.render_target_update_mode = (
+			SubViewport.UPDATE_ONCE if limitar_fps_subviewport_fondo_3d else SubViewport.UPDATE_ALWAYS
+		)
+
+	if subviewport_video_fondo:
+		subviewport_video_fondo.render_target_update_mode = (
+			SubViewport.UPDATE_ONCE if limitar_fps_subviewport_fondo_3d else SubViewport.UPDATE_ALWAYS
+		)
+
+	if subviewport_frente_3d:
+		subviewport_frente_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+
+
+func _configurar_compositor_3d() -> void:
+	_configurar_texture_rect_fullscreen(fondo_3d_rect)
+	_configurar_texture_rect_fullscreen(frente_3d_rect)
+
+
+func _configurar_texture_rect_fullscreen(rect: TextureRect) -> void:
+	if rect == null:
+		return
+
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+
+func _configurar_fondo_3d() -> void:
+	if fondo_animado_sprite:
+		_escala_base_fondo_animado = fondo_animado_sprite.scale
+		_aplicar_cobertura_fondo_animado()
+
+	_desactivar_sombras_recursivas(subviewport_fondo_3d)
+
+
+func _aplicar_cobertura_fondo_animado() -> void:
+	if not fondo_animado_sprite:
+		return
+
+	var tamano_visible := _obtener_tamano_visible_fondo_en_mundo()
+	var tamano_textura := _obtener_tamano_textura_fondo()
+	if tamano_visible == Vector2.ZERO or tamano_textura == Vector2.ZERO:
+		fondo_animado_sprite.scale = Vector3(
+			_escala_base_fondo_animado.x * escala_cobertura_fondo_animado,
+			_escala_base_fondo_animado.y * escala_cobertura_fondo_animado,
+			_escala_base_fondo_animado.z
+		)
+		return
+
+	var pixel_size: float = max(PIXEL_SIZE_MINIMO_FONDO, fondo_animado_sprite.pixel_size)
+	var ancho_base: float = max(TAMANO_MINIMO_TEXTURA_FONDO, tamano_textura.x * pixel_size)
+	var alto_base: float = max(TAMANO_MINIMO_TEXTURA_FONDO, tamano_textura.y * pixel_size)
+	var escala_x: float = (tamano_visible.x * escala_cobertura_fondo_animado) / ancho_base
+	var escala_y: float = (tamano_visible.y * escala_cobertura_fondo_animado) / alto_base
+
+	fondo_animado_sprite.scale = Vector3(
+		max(_escala_base_fondo_animado.x, escala_x),
+		max(_escala_base_fondo_animado.y, escala_y),
+		_escala_base_fondo_animado.z
+	)
+
+
+func _obtener_tamano_visible_fondo_en_mundo() -> Vector2:
+	if not camara_fondo_3d or not fondo_animado_sprite or not subviewport_fondo_3d:
+		return Vector2.ZERO
+
+	var direccion_camara := -camara_fondo_3d.global_transform.basis.z.normalized()
+	var distancia_a_fondo := (
+		fondo_animado_sprite.global_position - camara_fondo_3d.global_position
+	).dot(direccion_camara)
+	if distancia_a_fondo <= PROFUNDIDAD_MINIMA_FONDO:
+		return Vector2.ZERO
+
+	var tamano_viewport := Vector2(subviewport_fondo_3d.size)
+	var esquina_superior_izquierda := camara_fondo_3d.project_position(
+		Vector2.ZERO, distancia_a_fondo
+	)
+	var esquina_superior_derecha := camara_fondo_3d.project_position(
+		Vector2(tamano_viewport.x, 0.0), distancia_a_fondo
+	)
+	var esquina_inferior_izquierda := camara_fondo_3d.project_position(
+		Vector2(0.0, tamano_viewport.y), distancia_a_fondo
+	)
+
+	return Vector2(
+		esquina_superior_izquierda.distance_to(esquina_superior_derecha),
+		esquina_superior_izquierda.distance_to(esquina_inferior_izquierda)
+	)
+
+
+func _obtener_tamano_textura_fondo() -> Vector2:
+	if fondo_animado_sprite.texture:
+		var tamano_textura := fondo_animado_sprite.texture.get_size()
+		if (
+			tamano_textura.x >= TAMANO_MINIMO_TEXTURA_FONDO
+			and tamano_textura.y >= TAMANO_MINIMO_TEXTURA_FONDO
+		):
+			return tamano_textura
+
+	if subviewport_video_fondo:
+		return Vector2(subviewport_video_fondo.size)
+
+	return Vector2.ZERO
+
+
+func _log_debug(message: String) -> void:
+	if not debug_logs_enabled:
+		return
+
+	print(message)
+
+
+func _desactivar_sombras_recursivas(nodo: Node) -> void:
+	if nodo == null:
+		return
+
+	if nodo is GeometryInstance3D:
+		(nodo as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	for hijo in nodo.get_children():
+		_desactivar_sombras_recursivas(hijo)
+
+
+func _ajustar_subviewport_video_fondo(tamano_base: Vector2i) -> void:
+	if not subviewport_video_fondo:
+		return
+
+	var relacion_video: float = 1505.0 / 1080.0
+	var alto_video: int = max(TAMANO_MINIMO_SUBVIEWPORT, tamano_base.y)
+	var ancho_video: int = max(TAMANO_MINIMO_SUBVIEWPORT, int(float(alto_video) * relacion_video))
+	var tamano_video := Vector2i(ancho_video, alto_video)
+
+	subviewport_video_fondo.size = tamano_video
+
+	for hijo in subviewport_video_fondo.get_children():
+		if hijo is Control:
+			var control := hijo as Control
+			control.custom_minimum_size = Vector2(tamano_video)
+			control.size = Vector2(tamano_video)
 
 
 func _configurar_capas_dof_fondo() -> void:
@@ -137,7 +332,7 @@ func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
 
 func _forzar_refresco_outline_global() -> void:
 	# Mantiene compatibilidad con versiones antiguas del shader que dependen de un global uniform.
-	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, true)
+	ShaderGlobals.asegurar_outline_global(true)
 
 	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
 		push_warning("[NIVEL01] No se encontró TOON_LINEANEGRA.gdshader para refresco.")
@@ -209,6 +404,8 @@ func _mostrar_dialogo_escena(
 
 
 func _process(delta):
+	_actualizar_render_subviewport_fondo(delta)
+
 	# OPT: Monitoreo de oleadas con timer en vez de cada frame
 	_monitor_timer += delta
 	if _monitor_timer < MONITOR_INTERVAL:
@@ -220,6 +417,23 @@ func _process(delta):
 			_monitorear_nivel_0()
 		NivelEstado.NIVEL_1:
 			_monitorear_nivel_1()
+
+
+func _actualizar_render_subviewport_fondo(delta: float) -> void:
+	if not limitar_fps_subviewport_fondo_3d:
+		return
+
+	_fondo_render_timer -= delta
+	if _fondo_render_timer > 0.0:
+		return
+
+	var fps_objetivo: float = max(1.0, float(fps_subviewport_fondo_3d))
+	_fondo_render_timer = 1.0 / fps_objetivo
+
+	if subviewport_video_fondo:
+		subviewport_video_fondo.render_target_update_mode = SubViewport.UPDATE_ONCE
+	if subviewport_fondo_3d:
+		subviewport_fondo_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -338,10 +552,16 @@ func _on_pacifico_danado():
 
 func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	oleada_combate_actual = 1
+	_aplicar_perfil_render_combate()
 	# Los supervivientes ya están en active_goblins del spawner.
 	# Solo se descuenta en la oleada 1.
 	var enemigos_a_spawnear: int = int(max(0, total_enemigos_nivel1 - supervivientes_pacificos))
 	_configurar_oleada_combate(enemigos_a_spawnear, 1)
+
+
+func _aplicar_perfil_render_combate() -> void:
+	if video_fondo and pausar_video_fondo_en_combate:
+		video_fondo.paused = true
 
 
 func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
@@ -411,7 +631,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 		return
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
-	print("[NIVEL01] ¡Oleada 2 completada! Mostrando victoria con botón continuar...")
+	_log_debug("[NIVEL01] ¡Oleada 2 completada! Mostrando victoria con botón continuar...")
 	_mostrar_victoria_con_continuar(
 		(
 			tr("NIVEL_1_COMPLETADO")
@@ -873,7 +1093,7 @@ func _mostrar_victoria_con_continuar(mensaje: String):
 
 func _iniciar_oleadas_libres():
 	estado_actual = NivelEstado.OLEADAS_LIBRES
-	print("[NIVEL01] Oleadas libres iniciadas — enemigos al azar")
+	_log_debug("[NIVEL01] Oleadas libres iniciadas — enemigos al azar")
 
 	# Restaurar goblin base para que aparezcan los 3 tipos
 	wave_spawner.escena_goblin = load("res://Scenes/Characters/Goblin.tscn")

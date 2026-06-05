@@ -158,7 +158,7 @@ func _buscar_jugador():
 	player_ref = get_tree().get_first_node_in_group("player")
 
 
-func _process(delta):
+func _process(_delta):
 	# Actualizar posición de partículas de disolución para seguir el centro del cuerpo
 	if is_dissolving and dissolve_particles and is_instance_valid(dissolve_particles):
 		var bone_pos = _get_hips_global_position()

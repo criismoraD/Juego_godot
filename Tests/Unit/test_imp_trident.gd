@@ -16,3 +16,25 @@ func test_create_material():
 	assert_eq(mat.emission, trident.color_proyectil, "emission should match color_proyectil")
 
 	trident.free()
+
+func test_create_material_reuses_shared_resource_for_same_color():
+	# Arrange
+	var trident_a = imp_trident_script.new()
+	var trident_b = imp_trident_script.new()
+	var shared_color := Color(1.0, 0.15, 0.05)
+	trident_a.color_proyectil = shared_color
+	trident_b.color_proyectil = shared_color
+
+	# Act
+	trident_a._create_material()
+	trident_b._create_material()
+
+	# Assert
+	assert_same(
+		trident_a.projectile_material,
+		trident_b.projectile_material,
+		"Tridents with same color should reuse the same material resource"
+	)
+
+	trident_a.free()
+	trident_b.free()

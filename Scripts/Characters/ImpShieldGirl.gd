@@ -34,6 +34,8 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 ]  ## Animaciones de muerte (aleatoria)
 @export_category("Posición Libre")
 @export var rango_posicion_libre: Vector2 = Vector2(1.0, 10.0)  ## Rango X aleatorio si no hay enemigo
+@export_category("Debug")
+@export var debug_logs_enabled: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -144,14 +146,13 @@ func _setup_animation_player():
 		push_warning("[ImpShieldGirl] No se encontró AnimationPlayer!")
 		return
 
-	# === DEBUG: Listar todas las animaciones ===
-	print("[ImpShieldGirl] ═══ ANIMACIONES ENCONTRADAS ═══")
+	_log_debug(["[ImpShieldGirl] ═══ ANIMACIONES ENCONTRADAS ═══"])
 	for anim_name in anim_player.get_animation_list():
 		var anim = anim_player.get_animation(anim_name)
 		var dur = anim.length if anim else 0.0
 		var loop_txt = "LOOP" if anim and anim.loop_mode != Animation.LOOP_NONE else "ONCE"
-		print("  → ", anim_name, " (", "%.2f" % dur, "s, ", loop_txt, ")")
-	print("[ImpShieldGirl] ═══════════════════════════════")
+		_log_debug(["  → ", anim_name, " (", "%.2f" % dur, "s, ", loop_txt, ")"])
+	_log_debug(["[ImpShieldGirl] ═══════════════════════════════"])
 
 	# Configurar loops en CAMINAR, IDLE, HUIDA
 	for anim_name in anim_player.get_animation_list():
@@ -254,7 +255,7 @@ func _physics_process(delta):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _process_walking(delta):
+func _process_walking(_delta):
 	# Si no hay enemigo a proteger, buscar uno
 	if not enemigo_protegido or not is_instance_valid(enemigo_protegido):
 		_buscar_enemigo_a_proteger()
@@ -262,10 +263,10 @@ func _process_walking(delta):
 			# Sin enemigos: ir a posición libre aleatoria
 			if posicion_libre_destino < 0:
 				posicion_libre_destino = randf_range(rango_posicion_libre.x, rango_posicion_libre.y)
-				print(
+				_log_debug([
 					"[ImpShieldGirl] Sin enemigo → posición libre X=",
-					"%.1f" % posicion_libre_destino
-				)
+					"%.1f" % posicion_libre_destino,
+				])
 
 			var dist_to_free = global_position.x - posicion_libre_destino
 			if dist_to_free > 0.1:
@@ -354,7 +355,7 @@ func _cambiar_estado(nuevo: State):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func take_damage(amount: float):
+func take_damage(_amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
@@ -512,3 +513,13 @@ func _get_animation_duration(anim_name: String) -> float:
 			return anim_player.get_animation(possible_anim).length
 
 	return 2.0
+
+
+func _log_debug(parts: Array) -> void:
+	if not debug_logs_enabled:
+		return
+
+	var message := ""
+	for part in parts:
+		message += str(part)
+	print(message)

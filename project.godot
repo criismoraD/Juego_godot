@@ -90,11 +90,18 @@ locale/translations=PackedStringArray("res://Translations/translations.es.transl
 
 3d/physics_engine="Jolt Physics"
 
+[shader_globals]
+
+Toon_LineaNegra_Activo={
+"type": "bool",
+"value": true
+}
+
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
-lights_and_shadows/directional_shadow/size=8192
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=3
-anti_aliasing/quality/msaa_3d=2
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=2
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=2
+anti_aliasing/quality/msaa_3d=1
 anti_aliasing/quality/screen_space_aa=1

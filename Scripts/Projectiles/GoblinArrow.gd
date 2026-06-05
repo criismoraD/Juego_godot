@@ -20,6 +20,11 @@ var trail_particles: GPUParticles3D
 # === MESH PROCEDURAL ===
 var arrow_mesh_instance: MeshInstance3D
 var _cached_mesh_instances: Array[Node] = []
+static var _projectile_material_cache: Dictionary = {}
+static var _trail_process_material_cache: Dictionary = {}
+static var _trail_mesh_cache: Dictionary = {}
+static var _body_mesh: CylinderMesh = null
+static var _tip_mesh: CylinderMesh = null
 
 
 func _ready():
@@ -208,8 +213,6 @@ func _safe_destroy():
 	# Detener trail antes de liberar para evitar "Parameter material is null"
 	if trail_particles:
 		trail_particles.emitting = false
-		if trail_particles.draw_pass_1 and trail_particles.draw_pass_1 is Mesh:
-			trail_particles.draw_pass_1.material = null
 		trail_particles.draw_pass_1 = null
 	# Limpiar materiales de meshes procedurales
 	_cleanup_materials()
@@ -266,30 +269,15 @@ func _remove_glb_model():
 
 
 func _create_material():
-	projectile_material = StandardMaterial3D.new()
-	projectile_material.albedo_color = color_proyectil
-	projectile_material.emission_enabled = true
-	projectile_material.emission = color_proyectil
-	projectile_material.emission_energy_multiplier = 3.0
-	projectile_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	projectile_material = _get_shared_projectile_material(color_proyectil)
 
 
 func _create_procedural_arrow():
 	# --- Cuerpo: Cilindro ---
-	var body = CylinderMesh.new()
-	body.top_radius = 0.015
-	body.bottom_radius = 0.015
-	body.height = 0.25
-	body.radial_segments = 6
-	body.rings = 1
+	var body := _get_shared_body_mesh()
 
 	# --- Punta: Cono ---
-	var tip = CylinderMesh.new()
-	tip.top_radius = 0.0
-	tip.bottom_radius = 0.03
-	tip.height = 0.08
-	tip.radial_segments = 6
-	tip.rings = 1
+	var tip := _get_shared_tip_mesh()
 
 	# Crear nodos separados para posicionarlos
 	var body_mesh = MeshInstance3D.new()
@@ -328,9 +316,65 @@ func _create_trail_particles():
 	trail_particles.preprocess = 0.0
 	trail_particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	var process_mat = ParticleProcessMaterial.new()
+	trail_particles.process_material = _get_shared_trail_process_material(color_proyectil)
+	trail_particles.draw_pass_1 = _get_shared_trail_mesh(color_proyectil)
+
+	add_child(trail_particles)
+
+
+static func _get_color_key(color: Color) -> String:
+	return "%.3f_%.3f_%.3f_%.3f" % [color.r, color.g, color.b, color.a]
+
+
+static func _get_shared_projectile_material(color: Color) -> StandardMaterial3D:
+	var key := _get_color_key(color)
+	if _projectile_material_cache.has(key):
+		return _projectile_material_cache[key]
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 3.0
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_projectile_material_cache[key] = material
+	return material
+
+
+static func _get_shared_body_mesh() -> CylinderMesh:
+	if _body_mesh:
+		return _body_mesh
+
+	_body_mesh = CylinderMesh.new()
+	_body_mesh.top_radius = 0.015
+	_body_mesh.bottom_radius = 0.015
+	_body_mesh.height = 0.25
+	_body_mesh.radial_segments = 6
+	_body_mesh.rings = 1
+	return _body_mesh
+
+
+static func _get_shared_tip_mesh() -> CylinderMesh:
+	if _tip_mesh:
+		return _tip_mesh
+
+	_tip_mesh = CylinderMesh.new()
+	_tip_mesh.top_radius = 0.0
+	_tip_mesh.bottom_radius = 0.03
+	_tip_mesh.height = 0.08
+	_tip_mesh.radial_segments = 6
+	_tip_mesh.rings = 1
+	return _tip_mesh
+
+
+static func _get_shared_trail_process_material(color: Color) -> ParticleProcessMaterial:
+	var key := _get_color_key(color)
+	if _trail_process_material_cache.has(key):
+		return _trail_process_material_cache[key]
+
+	var process_mat := ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
-	process_mat.direction = Vector3(0, 0, 0)
+	process_mat.direction = Vector3.ZERO
 	process_mat.spread = 10.0
 	process_mat.initial_velocity_min = 0.0
 	process_mat.initial_velocity_max = 0.2
@@ -338,40 +382,41 @@ func _create_trail_particles():
 	process_mat.scale_min = 0.005
 	process_mat.scale_max = 0.01
 
-	# Color del trail = color del proyectil
-	var gradient = Gradient.new()
-	gradient.set_color(0, Color(color_proyectil.r, color_proyectil.g, color_proyectil.b, 0.8))
-	gradient.set_color(
-		1, Color(color_proyectil.r * 0.8, color_proyectil.g * 0.6, color_proyectil.b * 0.5, 0.0)
-	)
-	var gradient_tex = GradientTexture1D.new()
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	gradient.set_color(1, Color(color.r * 0.8, color.g * 0.6, color.b * 0.5, 0.0))
+	var gradient_tex := GradientTexture1D.new()
 	gradient_tex.gradient = gradient
 	process_mat.color_ramp = gradient_tex
 
-	# Escala decreciente
-	var scale_curve = Curve.new()
+	var scale_curve := Curve.new()
 	scale_curve.add_point(Vector2(0, 1.0))
 	scale_curve.add_point(Vector2(1, 0.0))
-	var scale_tex = CurveTexture.new()
+	var scale_tex := CurveTexture.new()
 	scale_tex.curve = scale_curve
 	process_mat.scale_curve = scale_tex
 
-	trail_particles.process_material = process_mat
+	_trail_process_material_cache[key] = process_mat
+	return process_mat
 
-	# Mesh de partícula (esfera pequeña)
-	var mesh = SphereMesh.new()
+
+static func _get_shared_trail_mesh(color: Color) -> SphereMesh:
+	var key := _get_color_key(color)
+	if _trail_mesh_cache.has(key):
+		return _trail_mesh_cache[key]
+
+	var mesh := SphereMesh.new()
 	mesh.radius = 0.0125
 	mesh.height = 0.025
 
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = color_proyectil
-	mat.emission_enabled = true
-	mat.emission = color_proyectil
-	mat.emission_energy_multiplier = 4.0
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh.material = mat
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 4.0
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mesh.material = material
 
-	trail_particles.draw_pass_1 = mesh
-
-	add_child(trail_particles)
+	_trail_mesh_cache[key] = mesh
+	return mesh

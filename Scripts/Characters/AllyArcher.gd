@@ -22,6 +22,8 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD }
 @export var idle_max: float = 2.0  ## Segundos máximos en idle entre ciclos
 @export_category("Vida")
 @export var vida_maxima: int = 1
+@export_category("Debug")
+@export var debug_logs_enabled: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -68,17 +70,17 @@ func _ready():
 
 
 func _iniciar():
-	print("[AllyArcher] _iniciar() llamado")
-	print("[AllyArcher] anim_player: ", anim_player)
-	print("[AllyArcher] bow_anim_player: ", bow_anim_player)
+	_log_debug(["[AllyArcher] _iniciar() llamado"])
+	_log_debug(["[AllyArcher] anim_player: ", anim_player])
+	_log_debug(["[AllyArcher] bow_anim_player: ", bow_anim_player])
 	if anim_player:
 		anim_player.active = true
-		print("[AllyArcher] Animaciones disponibles: ", anim_player.get_animation_list())
+		_log_debug(["[AllyArcher] Animaciones disponibles: ", anim_player.get_animation_list()])
 	else:
-		print("[AllyArcher] ⚠️ anim_player es NULL!")
+		_log_debug(["[AllyArcher] anim_player es NULL"])
 	if bow_anim_player:
 		bow_anim_player.active = true
-		print("[AllyArcher] Anims arco: ", bow_anim_player.get_animation_list())
+		_log_debug(["[AllyArcher] Anims arco: ", bow_anim_player.get_animation_list()])
 	_cambiar_estado(State.IDLE)
 	set_process(true)
 
@@ -88,22 +90,24 @@ func _setup_animation_player():
 	var trees = find_children("*", "AnimationTree", true, false)
 	for tree in trees:
 		tree.active = false
-		print("[AllyArcher] AnimationTree desactivado: ", tree.name)
+		_log_debug(["[AllyArcher] AnimationTree desactivado: ", tree.name])
 
 	# 2. Buscar AnimationPlayer principal (con IDLE, DISPARO, etc.)
 	#    Acepta nombres con prefijo (Armature|Armature|IDLE) o sin prefijo (IDLE)
 	var all_players = find_children("*", "AnimationPlayer", true, false)
-	print("[AllyArcher] AnimationPlayers encontrados: ", all_players.size())
+	_log_debug(["[AllyArcher] AnimationPlayers encontrados: ", all_players.size()])
 
 	# Primero imprimir TODOS los players para debug
 	for player in all_players:
-		print(
-			"[AllyArcher] Player '",
-			player.name,
-			"' path=",
-			player.get_path(),
-			" - Anims: ",
-			player.get_animation_list()
+		_log_debug(
+			[
+				"[AllyArcher] Player '",
+				player.name,
+				"' path=",
+				player.get_path(),
+				" - Anims: ",
+				player.get_animation_list()
+			]
 		)
 
 	for player in all_players:
@@ -124,11 +128,13 @@ func _setup_animation_player():
 
 		if is_character:
 			anim_player = player
-			print(
-				"[AllyArcher] ✅ AnimationPlayer de PERSONAJE seleccionado: ",
-				player.name,
-				" path=",
-				player.get_path()
+			_log_debug(
+				[
+					"[AllyArcher] AnimationPlayer de PERSONAJE seleccionado: ",
+					player.name,
+					" path=",
+					player.get_path()
+				]
 			)
 			break
 
@@ -136,7 +142,7 @@ func _setup_animation_player():
 		push_error("[AllyArcher] AnimationPlayer not found with IDLE/SHOOT animations")
 		return
 
-	print("[AllyArcher] ✅ AnimationPlayer seleccionado: ", anim_player.name)
+	_log_debug(["[AllyArcher] AnimationPlayer seleccionado: ", anim_player.name])
 
 	# 3. Configurar loops en IDLE y APUNTAR
 	for anim_name in anim_player.get_animation_list():
@@ -490,36 +496,38 @@ func _finish_dissolve():
 
 func _play_anim(anim_name: String, blend: float = -1.0, speed: float = 1.0):
 	if not anim_player:
-		print("[AllyArcher] _play_anim('", anim_name, "') - anim_player es NULL")
+		_log_debug(["[AllyArcher] _play_anim('", anim_name, "') - anim_player es NULL"])
 		return
 	anim_player.active = true
 
 	var full_name = "Armature|Armature|" + anim_name
 	if anim_player.has_animation(full_name):
-		print("[AllyArcher] ▶ Reproduciendo: ", full_name)
+		_log_debug(["[AllyArcher] Reproduciendo: ", full_name])
 		anim_player.play(full_name, blend, speed)
 		return
 
 	var alt_name = "Armature|" + anim_name
 	if anim_player.has_animation(alt_name):
-		print("[AllyArcher] ▶ Reproduciendo: ", alt_name)
+		_log_debug(["[AllyArcher] Reproduciendo: ", alt_name])
 		anim_player.play(alt_name, blend, speed)
 		return
 
 	if anim_player.has_animation(anim_name):
-		print("[AllyArcher] ▶ Reproduciendo: ", anim_name)
+		_log_debug(["[AllyArcher] Reproduciendo: ", anim_name])
 		anim_player.play(anim_name, blend, speed)
 	else:
-		print(
-			"[AllyArcher] ❌ Animación NO encontrada: ",
-			anim_name,
-			" (intentado: ",
-			full_name,
-			", ",
-			alt_name,
-			", ",
-			anim_name,
-			")"
+		_log_debug(
+			[
+				"[AllyArcher] Animación NO encontrada: ",
+				anim_name,
+				" (intentado: ",
+				full_name,
+				", ",
+				alt_name,
+				", ",
+				anim_name,
+				")"
+			]
 		)
 
 
@@ -553,6 +561,16 @@ func _get_anim_length(anim_name: String) -> float:
 		if anim_player.has_animation(full):
 			return anim_player.get_animation(full).length
 	return 2.0
+
+
+func _log_debug(parts: Array) -> void:
+	if not debug_logs_enabled:
+		return
+
+	var message := ""
+	for part in parts:
+		message += str(part)
+	print(message)
 
 
 func _exit_tree():

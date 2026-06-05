@@ -24,6 +24,9 @@ static var particle_amount_multiplier: float = 0.4
 ## Activar/desactivar VFX globalmente
 static var vfx_enabled: bool = true
 
+## Mostrar logs de diagnóstico de la fábrica de VFX
+static var debug_logs_enabled: bool = false
+
 # === OPTIMIZACIÓN: Caché de materiales compartidos ===
 static var _mat_cache: Dictionary = {}
 static var _mesh_cache: Dictionary = {}
@@ -88,7 +91,8 @@ static func warmup_shaders(world: Node) -> void:
 			# Emitir un solo frame y destruir inmediatamente tras terminar
 			p.emitting = true
 
-	print("[VFXFactory] Shader warm-up completado (%d tipos)" % types.size())
+	if debug_logs_enabled:
+		print("[VFXFactory] Shader warm-up completado (%d tipos)" % types.size())
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

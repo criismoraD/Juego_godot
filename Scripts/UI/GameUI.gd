@@ -6,7 +6,6 @@ const WAVE_UPDATE_INTERVAL: float = 0.25  # Actualizar progreso de oleada 4 vece
 # === ESCUDOS ===
 const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
 const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
-const PARAMETRO_OUTLINE_GLOBAL := "Toon_LineaNegra_Activo"
 const OUTLINE_WIDTH_RUNTIME := 20.0
 var player: Node = null
 var health_container: HBoxContainer
@@ -90,6 +89,7 @@ var resolution_labels: Array = [
 func _ready():
 	layer = 100
 	outlines_enabled = true
+	ShaderGlobals.asegurar_outline_global(outlines_enabled)
 
 	# Buscar al player
 	await get_tree().process_frame
@@ -997,7 +997,7 @@ func _aplicar_toggle_outline_global():
 
 
 func _forzar_outline_en_runtime(habilitado: bool) -> void:
-	RenderingServer.global_shader_parameter_set(PARAMETRO_OUTLINE_GLOBAL, habilitado)
+	ShaderGlobals.asegurar_outline_global(habilitado)
 
 	if SHADER_OUTLINE == null:
 		push_warning("[GameUI] No se pudo cargar SHADER_OUTLINE (TOON_LINEANEGRA.gdshader).")

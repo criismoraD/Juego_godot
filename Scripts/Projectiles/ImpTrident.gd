@@ -18,6 +18,7 @@ var _destroying: bool = false
 # === MATERIAL ===
 var projectile_material: StandardMaterial3D
 var _cached_mesh_instances: Array[Node] = []
+static var _projectile_material_cache: Dictionary = {}
 
 
 func _ready():
@@ -87,12 +88,26 @@ func initialize(shoot_direction: Vector3, potencia: float = 1.0):
 
 
 func _create_material():
-	projectile_material = StandardMaterial3D.new()
-	projectile_material.albedo_color = color_proyectil
-	projectile_material.emission_enabled = true
-	projectile_material.emission = color_proyectil
-	projectile_material.emission_energy_multiplier = 4.0
-	projectile_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	projectile_material = _get_shared_projectile_material(color_proyectil)
+
+
+static func _get_color_key(color: Color) -> String:
+	return "%.3f_%.3f_%.3f_%.3f" % [color.r, color.g, color.b, color.a]
+
+
+static func _get_shared_projectile_material(color: Color) -> StandardMaterial3D:
+	var key := _get_color_key(color)
+	if _projectile_material_cache.has(key):
+		return _projectile_material_cache[key]
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 4.0
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_projectile_material_cache[key] = material
+	return material
 
 
 func _apply_material():
