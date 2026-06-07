@@ -508,147 +508,90 @@ func _die():
 
 
 func _start_dissolve_effect():
-	if is_dissolving:
-		return
+	if is_dissolving: return
 	is_dissolving = true
-
-	for mesh in _cached_mesh_instances:
-		if not is_instance_valid(mesh):
-			continue
-		if mesh is MeshInstance3D:
-			var material = ShaderMaterial.new()
-			material.shader = dissolve_shader
-			material.set_shader_parameter("dissolve_amount", 0.0)
-			material.set_shader_parameter("glow_color", color_borde_disolucion)
-			material.set_shader_parameter("glow_intensity", intensidad_emision)
-			material.set_shader_parameter("edge_thickness", 0.05)
-			material.set_shader_parameter("noise_scale", 20.0)
-
-			var original_mat = mesh.get_surface_override_material(0)
-			if original_mat == null and mesh.mesh:
-				original_mat = mesh.mesh.surface_get_material(0)
-			if original_mat and original_mat is StandardMaterial3D:
-				var tex = original_mat.albedo_texture
-				if tex:
-					material.set_shader_parameter("albedo_texture", tex)
-				var col = original_mat.albedo_color
-				material.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
-
-			mesh.material_override = material
-			dissolve_materials.append({"mesh": mesh, "material": material})
-
-	_create_dissolve_particles()
-
-	get_tree().create_timer(duracion_disolucion * particulas_detener_emision).timeout.connect(
-		func():
-			if (
-				dissolve_particles
-				and is_instance_valid(dissolve_particles)
-				and is_instance_valid(self)
-			):
-				dissolve_particles.emitting = false
+	var result = GestorDeMuerte.iniciar_disolucion(
+		self, dissolve_shader, color_borde_disolucion, intensidad_emision,
+		duracion_disolucion, particulas_detener_emision, _cached_mesh_instances,
+		dissolve_materials, {
+		"cantidad": particulas_cantidad,
+		"vida": particulas_vida,
+		"caja": particulas_caja,
+		"dispersion": particulas_dispersion,
+		"vel_min": particulas_velocidad_min,
+		"vel_max": particulas_velocidad_max,
+		"gravedad": particulas_gravedad,
+		"esc_min": particulas_escala_min,
+		"esc_max": particulas_escala_max,
+		"posicion": particulas_posicion
+	}
 	)
-
-	var tween = create_tween()
-	tween.tween_method(_update_dissolve, 0.0, 1.0, duracion_disolucion)
-	tween.tween_callback(_finish_dissolve)
-
-
-func _update_dissolve(value: float):
-	for item in dissolve_materials:
-		if is_instance_valid(item["mesh"]):
-			item["material"].set_shader_parameter("dissolve_amount", value)
+	if result.has("particles"): dissolve_particles = result["particles"]
+	if result.has("tween"): result["tween"].tween_callback(_finish_dissolve)
 
 
 func _finish_dissolve():
-	# Limpiar materiales de TODOS los meshes antes de queue_free
-	# para evitar "Parameter 'material' is null" en el RenderingServer
-	for item in dissolve_materials:
-		if is_instance_valid(item["mesh"]):
-			item["mesh"].material_override = null
-			if item["mesh"].mesh:
-				for si in range(item["mesh"].mesh.get_surface_count()):
-					item["mesh"].set_surface_override_material(si, null)
-			item["mesh"].visible = false
-
-	var particles_node = get_node_or_null("DissolveParticles")
-	if particles_node:
-		var global_pos = particles_node.global_position
-		remove_child(particles_node)
-		get_tree().root.add_child(particles_node)
-		particles_node.global_position = global_pos
-		particles_node.emitting = false
-		get_tree().create_timer(particulas_vida + 0.5).timeout.connect(
-			func():
-				if is_instance_valid(particles_node) and particles_node.is_inside_tree():
-					particles_node.queue_free()
-		)
-
 	current_state = State.DEAD
 	_cleanup_all_materials()
-	queue_free()
+	GestorDeMuerte.finalizar_disolucion(self, dissolve_materials, dissolve_particles, particulas_vida)
 
 
-func _create_dissolve_particles():
-	var particles = GPUParticles3D.new()
-	particles.name = "DissolveParticles"
-	particles.amount = particulas_cantidad
-	particles.lifetime = particulas_vida
-	particles.one_shot = false
-	particles.explosiveness = 0.0
-	particles.randomness = 0.3
 
-	var process_mat = ParticleProcessMaterial.new()
-	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	process_mat.emission_box_extents = particulas_caja
+func _crear_explosion_sangre(pos_offset: Vector3 = Vector3(0, 0.5, 0)):
+	var particles := GPUParticles3D.new()
+	particles.name = "BloodExplosion"
+	particles.amount = 15
+	particles.lifetime = 0.8
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.randomness = 0.5
+	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var process_mat := ParticleProcessMaterial.new()
+	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process_mat.emission_sphere_radius = 0.2
 	process_mat.direction = Vector3(0, 1, 0)
-	process_mat.spread = particulas_dispersion
-	process_mat.initial_velocity_min = particulas_velocidad_min
-	process_mat.initial_velocity_max = particulas_velocidad_max
-	process_mat.gravity = particulas_gravedad
-	process_mat.scale_min = particulas_escala_min * 0.5
-	process_mat.scale_max = particulas_escala_max * 0.5
+	process_mat.spread = 180.0
+	process_mat.initial_velocity_min = 2.0
+	process_mat.initial_velocity_max = 5.0
+	process_mat.gravity = Vector3(0, -6.0, 0)
+	process_mat.damping_min = 1.0
+	process_mat.damping_max = 3.0
+	process_mat.scale_min = 0.015
+	process_mat.scale_max = 0.04
 
-	var gradient = Gradient.new()
-	gradient.set_color(0, color_borde_disolucion)
-	gradient.set_color(
-		1, Color(color_borde_disolucion.r, color_borde_disolucion.g, color_borde_disolucion.b, 0.0)
-	)
-	var gradient_tex = GradientTexture1D.new()
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.8, 0.0, 0.0, 1.0))
+	gradient.set_color(1, Color(0.3, 0.0, 0.0, 0.0))
+
+	var gradient_tex := GradientTexture1D.new()
 	gradient_tex.gradient = gradient
 	process_mat.color_ramp = gradient_tex
 
-	var scale_curve = Curve.new()
-	scale_curve.add_point(Vector2(0, 0.2))
-	scale_curve.add_point(Vector2(0.3, 1.0))
-	scale_curve.add_point(Vector2(1.0, 0.0))
-	var scale_tex = CurveTexture.new()
-	scale_tex.curve = scale_curve
-	process_mat.scale_curve = scale_tex
-
 	particles.process_material = process_mat
 
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 2.0
+	sphere.radial_segments = 8
+	sphere.rings = 4
 
-	var part_mat = StandardMaterial3D.new()
-	part_mat.albedo_color = color_borde_disolucion
-	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	part_mat.emission_enabled = true
-	part_mat.emission = color_borde_disolucion
-	part_mat.emission_energy_multiplier = intensidad_emision * 0.5
-	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sphere.material = part_mat
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.6, 0.0, 0.0)
+	mat.roughness = 0.3
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	sphere.material = mat
 
 	particles.draw_pass_1 = sphere
 
-	add_child(particles)
-	# Posicionar en el centro del cuerpo (hueso Hips) en vez de offset fijo
-	var bone_pos = _get_hips_global_position()
-	if bone_pos != Vector3.ZERO:
-		particles.global_position = bone_pos
-	else:
-		particles.position = particulas_posicion
+	get_tree().root.add_child(particles)
+	particles.global_position = global_position + pos_offset
 	particles.emitting = true
-	dissolve_particles = particles
+
+	get_tree().create_timer(1.0).timeout.connect(
+		func():
+			if is_instance_valid(particles):
+				particles.queue_free()
+	)

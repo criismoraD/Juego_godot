@@ -357,8 +357,4 @@ func iniciar_oleada_custom(
 	is_wave_active = false
 
 
-func _log_debug(message: String) -> void:
-	if not debug_logs_enabled:
-		return
 
-	print(message)

@@ -84,20 +84,8 @@ func _physics_process(delta):
 
 func _check_off_screen():
 	var camera = CameraUtilsRef.obtener_camara_juego(self)
-	if not camera:
-		return
-
-	var screen_pos = camera.unproject_position(global_position)
-	var viewport_size = get_viewport().get_visible_rect().size
-	var margin = 200.0
-
-	if screen_pos.x < -margin or screen_pos.x > viewport_size.x + margin:
+	if _check_off_screen_base(camera, global_position):
 		_safe_destroy()
-	elif screen_pos.y < -margin or screen_pos.y > viewport_size.y + margin:
-		_safe_destroy()
-	elif global_position.y < -20:
-		_safe_destroy()
-
 
 func _on_body_entered(body):
 	if is_stuck:
@@ -177,27 +165,7 @@ func _stick_to_shield(shield: Node3D):
 
 
 func _reparent_to_shield(shield: Node3D, saved_transform: Transform3D):
-	if not is_instance_valid(shield):
-		_cleanup_materials()
-		queue_free()
-		return
-
-	var current_parent = get_parent()
-	if current_parent:
-		current_parent.remove_child(self)
-
-	shield.add_child(self)
-	global_transform = saved_transform
-
-	# Conectar señal de destrucción del escudo
-	if shield.has_signal("destruido"):
-		shield.destruido.connect(
-			func():
-				if is_instance_valid(self) and is_inside_tree():
-					_cleanup_materials()
-					queue_free()
-		)
-
+	_reparent_to_shield_base(self, shield, saved_transform, _cleanup_materials)
 
 func _safe_destroy():
 	if _destroying:
@@ -223,14 +191,7 @@ func _safe_destroy():
 
 
 func _cleanup_materials():
-	for mesh in _cached_mesh_instances:
-		if is_instance_valid(mesh):
-			mesh.material_override = null
-			if mesh.mesh:
-				for si in range(mesh.mesh.get_surface_count()):
-					mesh.set_surface_override_material(si, null)
-			mesh.visible = false
-
+	_cleanup_materials_base(_cached_mesh_instances, [self.get("_trail_particles")] if self.get("_trail_particles") != null else [])
 
 func _check_destroy():
 	if not is_stuck:

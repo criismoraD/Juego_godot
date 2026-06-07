@@ -43,8 +43,8 @@ var state_timer: float = 0.0
 var charge_duration: float = 0.0
 var health: int = 1
 var is_dissolving: bool = false
+var dissolve_particles: GPUParticles3D = null
 var dissolve_materials: Array = []
-static var _cached_wave_spawner: Node = null
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -289,26 +289,6 @@ func _cambiar_estado(nuevo: State):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _get_cached_wave_spawner() -> Node:
-	if is_instance_valid(_cached_wave_spawner):
-		return _cached_wave_spawner
-
-	if get_tree() == null:
-		return null
-
-	_cached_wave_spawner = get_tree().get_first_node_in_group("wave_spawners")
-	if _cached_wave_spawner:
-		return _cached_wave_spawner
-
-	var scene_root = get_tree().current_scene
-	if scene_root == null:
-		scene_root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
-
-	var wave_spawner = scene_root.find_child("WaveSpawner", true, false)
-	if wave_spawner:
-		_cached_wave_spawner = wave_spawner
-	return _cached_wave_spawner
-
 
 func _contar_enemigos_vivos() -> int:
 	var count = 0
@@ -439,60 +419,31 @@ func _on_dying():
 
 
 func _start_dissolve():
-	if is_dissolving:
-		return
+	if is_dissolving: return
 	is_dissolving = true
-
-	var meshes = find_children("*", "MeshInstance3D", true, false)
-	for mesh in meshes:
-		if not is_instance_valid(mesh):
-			continue
-		var mat = ShaderMaterial.new()
-		mat.shader = dissolve_shader
-		mat.set_shader_parameter("dissolve_amount", 0.0)
-		mat.set_shader_parameter("glow_color", Color(0.2, 0.6, 1.0))
-		mat.set_shader_parameter("glow_intensity", 3.0)
-		mat.set_shader_parameter("edge_thickness", 0.05)
-		mat.set_shader_parameter("noise_scale", 20.0)
-
-		var orig = mesh.material_override
-		if orig == null and mesh.mesh:
-			orig = mesh.mesh.surface_get_material(0)
-		if orig and orig is StandardMaterial3D:
-			var tex = orig.albedo_texture
-			if tex:
-				mat.set_shader_parameter("albedo_texture", tex)
-			var col = orig.albedo_color
-			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
-
-		mesh.material_override = mat
-		dissolve_materials.append({"mesh": mesh, "material": mat})
-
-	var tween = create_tween()
-	tween.tween_method(_update_dissolve, 0.0, 1.0, 1.0)
-	tween.tween_callback(_finish_dissolve)
-
-
-func _update_dissolve(value: float):
-	for item in dissolve_materials:
-		if is_instance_valid(item["mesh"]):
-			item["material"].set_shader_parameter("dissolve_amount", value)
+	var result = GestorDeMuerte.iniciar_disolucion(
+		self, dissolve_shader, Color(0.2, 0.6, 1.0), 3.0,
+		1.0, 0.8, find_children("*", "MeshInstance3D", true, false),
+		dissolve_materials, {
+		"cantidad": 20,
+		"vida": 1.5,
+		"caja": Vector3(0.5, 0.5, 0.5),
+		"dispersion": 45.0,
+		"vel_min": 0.5,
+		"vel_max": 1.5,
+		"gravedad": Vector3(0, 1, 0),
+		"esc_min": 0.5,
+		"esc_max": 1.5,
+		"posicion": Vector3(0, 1, 0)
+	}
+	)
+	if result.has("particles"): dissolve_particles = result["particles"]
+	if result.has("tween"): result["tween"].tween_callback(_finish_dissolve)
 
 
 func _finish_dissolve():
-	for mesh in find_children("*", "MeshInstance3D", true, false):
-		if is_instance_valid(mesh):
-			mesh.material_override = null
-			mesh.visible = false
-	dissolve_materials.clear()
 	current_state = State.DEAD
-	queue_free()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# ANIMACIÓN
-# ═══════════════════════════════════════════════════════════════════════════════
-
+	GestorDeMuerte.finalizar_disolucion(self, dissolve_materials, dissolve_particles, 1.5)
 
 func _play_anim(anim_name: String, blend: float = -1.0, speed: float = 1.0):
 	if not anim_player:
@@ -562,15 +513,6 @@ func _get_anim_length(anim_name: String) -> float:
 			return anim_player.get_animation(full).length
 	return 2.0
 
-
-func _log_debug(parts: Array) -> void:
-	if not debug_logs_enabled:
-		return
-
-	var message := ""
-	for part in parts:
-		message += str(part)
-	print(message)
 
 
 func _exit_tree():

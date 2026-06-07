@@ -1,5 +1,5 @@
 class_name ImpTridentProjectile
-extends Area3D
+extends ProjectileBase
 const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 ## Tridente del Imp: Proyectil parabólico con modelo 3D.
 ## Color rojo incandescente, se clava en superficies.
@@ -215,14 +215,7 @@ func _safe_destroy():
 
 
 func _cleanup_materials():
-	for mesh in _cached_mesh_instances:
-		if is_instance_valid(mesh):
-			mesh.material_override = null
-			if mesh.mesh:
-				for si in range(mesh.mesh.get_surface_count()):
-					mesh.set_surface_override_material(si, null)
-			mesh.visible = false
-
+	_cleanup_materials_base(_cached_mesh_instances, [self.get("_trail_particles")] if self.get("_trail_particles") != null else [])
 
 func _check_destroy():
 	if not is_stuck:
@@ -231,19 +224,5 @@ func _check_destroy():
 
 func _check_off_screen():
 	var camera = CameraUtilsRef.obtener_camara_juego(self)
-	if not camera:
-		return
-	var screen_pos = camera.unproject_position(global_position)
-	var viewport_size = get_viewport().get_visible_rect().size
-	var margin_x = 400.0
-	var margin_top = 2000.0
-	var margin_bottom = 300.0
-
-	if screen_pos.x < -margin_x or screen_pos.x > viewport_size.x + margin_x:
-		_safe_destroy()
-	elif screen_pos.y < -margin_top:
-		_safe_destroy()
-	elif screen_pos.y > viewport_size.y + margin_bottom:
-		_safe_destroy()
-	elif global_position.y < -20:
+	if _check_off_screen_base(camera, global_position):
 		_safe_destroy()

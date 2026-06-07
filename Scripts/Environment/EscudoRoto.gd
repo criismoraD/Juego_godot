@@ -188,155 +188,35 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 
 
 func _start_dissolve_effect():
-	# Aplicar dissolve shader a cada pieza
-	for mesh in _meshes:
-		if not is_instance_valid(mesh):
-			continue
-
-		var shader_mat = ShaderMaterial.new()
-		shader_mat.shader = dissolve_shader
-		shader_mat.set_shader_parameter("dissolve_amount", 0.0)
-		shader_mat.set_shader_parameter("glow_color", color_borde_disolucion)
-		shader_mat.set_shader_parameter("glow_intensity", intensidad_emision)
-		shader_mat.set_shader_parameter("edge_thickness", 0.05)
-		shader_mat.set_shader_parameter("noise_scale", 20.0)
-
-		# Copiar la textura y tinte del material actual (leer desde surface override)
-		var current_mat = mesh.get_surface_override_material(0)
-		if current_mat == null and mesh.mesh and mesh.mesh.get_surface_count() > 0:
-			current_mat = mesh.mesh.surface_get_material(0)
-		if current_mat is StandardMaterial3D:
-			if current_mat.albedo_texture:
-				shader_mat.set_shader_parameter("albedo_texture", current_mat.albedo_texture)
-			var col = current_mat.albedo_color
-			shader_mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
-
-		mesh.material_override = shader_mat
-		_dissolve_materials.append({"mesh": mesh, "material": shader_mat})
-
-	# Crear partículas de disolución
-	_create_dissolve_particles()
-
-	# Detener emisión de partículas al 70% de la disolución
-	get_tree().create_timer(duracion_disolucion * 0.7).timeout.connect(
-		func():
-			if (
-				_dissolve_particles
-				and is_instance_valid(_dissolve_particles)
-				and is_instance_valid(self)
-			):
-				_dissolve_particles.emitting = false
+	if is_dissolving: return
+	is_dissolving = true
+	var result = GestorDeMuerte.iniciar_disolucion(
+		self, dissolve_shader, color_borde_disolucion, intensidad_emision,
+		duracion_disolucion, particulas_detener_emision, _meshes,
+		_dissolve_materials, {
+		"cantidad": particulas_cantidad,
+		"vida": particulas_vida,
+		"caja": particulas_caja,
+		"dispersion": particulas_dispersion,
+		"vel_min": particulas_velocidad_min,
+		"vel_max": particulas_velocidad_max,
+		"gravedad": particulas_gravedad,
+		"esc_min": particulas_escala_min,
+		"esc_max": particulas_escala_max,
+		"posicion": particulas_posicion
+	}
 	)
-
-	# Animar la disolución de 0 a 1
-	var tween = create_tween()
-	tween.tween_method(_update_dissolve, 0.0, 1.0, duracion_disolucion)
-	tween.tween_callback(_finish_dissolve)
-
-
-func _update_dissolve(value: float):
-	for item in _dissolve_materials:
-		if is_instance_valid(item["mesh"]):
-			item["material"].set_shader_parameter("dissolve_amount", value)
+	if result.has("particles"): _dissolve_particles = result["particles"]
+	if result.has("tween"): result["tween"].tween_callback(_finish_dissolve)
 
 
 func _finish_dissolve():
-	# Mover partículas al root para que no se destruyan con nosotros
-	if _dissolve_particles and is_instance_valid(_dissolve_particles):
-		var global_pos = _dissolve_particles.global_position
-		remove_child(_dissolve_particles)
-		get_tree().root.add_child(_dissolve_particles)
-		_dissolve_particles.global_position = global_pos
-		_dissolve_particles.emitting = false
-		var particles_ref = _dissolve_particles
-		get_tree().create_timer(particulas_vida + 0.5).timeout.connect(
-			func():
-				if is_instance_valid(particles_ref) and particles_ref.is_inside_tree():
-					particles_ref.queue_free()
-		)
-
-	# Eliminar los RigidBody3D de los trozos (están en el scene root, no son hijos nuestros)
+	_cleanup_all_materials()
 	for rb in _rigid_bodies:
 		if is_instance_valid(rb):
-			# Limpiar materiales ANTES de queue_free para evitar
-			# "Parameter 'material' is null" en el RenderingServer
-			for child in rb.get_children():
-				if child is MeshInstance3D:
-					child.material_override = null
-					if child.mesh:
-						for si in range(child.mesh.get_surface_count()):
-							child.set_surface_override_material(si, null)
-					child.visible = false
 			rb.queue_free()
 	_rigid_bodies.clear()
-
-	queue_free()
-
-
-func _create_dissolve_particles():
-	var particles = GPUParticles3D.new()
-	particles.name = "DissolveParticles"
-	particles.amount = particulas_cantidad
-	particles.lifetime = particulas_vida
-	particles.one_shot = false
-	particles.explosiveness = 0.0
-	particles.randomness = 0.3
-
-	var process_mat = ParticleProcessMaterial.new()
-	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	process_mat.emission_box_extents = particulas_caja
-	process_mat.direction = Vector3(0, 1, 0)
-	process_mat.spread = particulas_dispersion
-	process_mat.initial_velocity_min = particulas_velocidad_min
-	process_mat.initial_velocity_max = particulas_velocidad_max
-	process_mat.gravity = particulas_gravedad
-	process_mat.scale_min = particulas_escala_min * 0.5
-	process_mat.scale_max = particulas_escala_max * 0.5
-
-	# Gradiente de color: del color de borde a transparente
-	var gradient = Gradient.new()
-	gradient.set_color(0, color_borde_disolucion)
-	gradient.set_color(
-		1, Color(color_borde_disolucion.r, color_borde_disolucion.g, color_borde_disolucion.b, 0.0)
-	)
-	var gradient_tex = GradientTexture1D.new()
-	gradient_tex.gradient = gradient
-	process_mat.color_ramp = gradient_tex
-
-	# Curva de escala
-	var scale_curve = Curve.new()
-	scale_curve.add_point(Vector2(0, 0.2))
-	scale_curve.add_point(Vector2(0.3, 1.0))
-	scale_curve.add_point(Vector2(1.0, 0.0))
-	var scale_tex = CurveTexture.new()
-	scale_tex.curve = scale_curve
-	process_mat.scale_curve = scale_tex
-
-	particles.process_material = process_mat
-
-	# Mesh de partícula (esfera pequeña)
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
-
-	var part_mat = StandardMaterial3D.new()
-	part_mat.albedo_color = color_borde_disolucion
-	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	part_mat.emission_enabled = true
-	part_mat.emission = color_borde_disolucion
-	part_mat.emission_energy_multiplier = intensidad_emision * 0.5
-	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sphere.material = part_mat
-
-	particles.draw_pass_1 = sphere
-	particles.position = Vector3(0, 0.3, 0)
-
-	add_child(particles)
-	particles.emitting = true
-	_dissolve_particles = particles
-
-
-# === DETECCIÓN DE MATERIAL INTERIOR ===
+	GestorDeMuerte.finalizar_disolucion(self, _dissolve_materials, _dissolve_particles, particulas_vida)
 
 
 func _es_material_interior(surf_mat) -> bool:
@@ -357,3 +237,13 @@ func _es_material_interior(surf_mat) -> bool:
 		if not surf_mat.albedo_texture and surf_mat.albedo_color.r < 0.5:
 			return true
 	return false
+
+func _cleanup_all_materials():
+	for rb in _rigid_bodies:
+		if is_instance_valid(rb):
+			var mesh = rb.get_node_or_null("MeshInstance3D")
+			if is_instance_valid(mesh):
+				mesh.material_override = null
+				if mesh.mesh:
+					for si in range(mesh.mesh.get_surface_count()):
+						mesh.set_surface_override_material(si, null)

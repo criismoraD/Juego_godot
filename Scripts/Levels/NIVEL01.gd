@@ -270,12 +270,6 @@ func _obtener_tamano_textura_fondo() -> Vector2:
 	return Vector2.ZERO
 
 
-func _log_debug(message: String) -> void:
-	if not debug_logs_enabled:
-		return
-
-	print(message)
-
 
 func _desactivar_sombras_recursivas(nodo: Node) -> void:
 	if nodo == null:

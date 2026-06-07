@@ -1,4 +1,4 @@
-extends Area3D
+extends ProjectileBase
 class_name ArrowProjectile
 const CameraUtilsRef = preload("res://Scripts/Utils/CameraUtils.gd")
 
@@ -109,28 +109,8 @@ func _physics_process(delta):
 
 func _check_off_screen():
 	var camera = CameraUtilsRef.obtener_camara_juego(self)
-	if not camera:
-		return
-
-	# Obtener posición en pantalla
-	var screen_pos = camera.unproject_position(global_position)
-	var viewport_size = get_viewport().get_visible_rect().size
-
-	# Margen horizontal moderado
-	var margin_x = 400.0
-	# Margen vertical amplio arriba para permitir trayectorias parabólicas
-	var margin_top = 2000.0
-	var margin_bottom = 300.0
-
-	if screen_pos.x < -margin_x or screen_pos.x > viewport_size.x + margin_x:
+	if _check_off_screen_base(camera, global_position):
 		_safe_destroy()
-	elif screen_pos.y < -margin_top:
-		_safe_destroy()
-	elif screen_pos.y > viewport_size.y + margin_bottom:
-		_safe_destroy()
-	elif global_position.y < -20:
-		_safe_destroy()
-
 
 func _on_body_entered(body):
 	if is_stuck:
@@ -356,20 +336,7 @@ func _safe_destroy():
 
 
 func _cleanup_materials():
-	for mesh in _cached_mesh_instances:
-		if is_instance_valid(mesh):
-			mesh.material_override = null
-			if mesh.mesh:
-				for si in range(mesh.mesh.get_surface_count()):
-					mesh.set_surface_override_material(si, null)
-			mesh.visible = false
-	for p in _cached_particles:
-		if is_instance_valid(p):
-			p.emitting = false
-			if p.draw_pass_1 and p.draw_pass_1 is Mesh:
-				p.draw_pass_1.material = null
-			p.draw_pass_1 = null
-
+	_cleanup_materials_base(_cached_mesh_instances, _cached_particles)
 
 func _check_destroy():
 	# Solo destruir si no está pegada (las pegadas tienen su propio timer)
