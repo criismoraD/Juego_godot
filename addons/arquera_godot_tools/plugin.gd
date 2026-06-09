@@ -2,6 +2,7 @@
 extends EditorPlugin
 
 const RUTA_SHADER_TOON := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
+const RutaSegura := preload("res://addons/arquera_godot_tools/ruta_segura.gd")
 
 var Panel_Principal: VBoxContainer
 var Etiqueta_Estado: Label
@@ -259,13 +260,4 @@ func _mostrar_estado(mensaje: String, es_error: bool) -> void:
 
 
 func _es_ruta_segura(ruta: String) -> bool:
-	# Solo permitir rutas dentro de res:// (el sistema de archivos del proyecto)
-	if not ruta.begins_with("res://"):
-		return false
-
-	# Evitar ataques de path traversal bloqueando secuencias ".."
-	# Godot generalmente las normaliza, pero es mejor prevenir explicitamente
-	if ".." in ruta or "\\" in ruta:
-		return false
-
-	return true
+	return RutaSegura.es_ruta_segura(ruta)

@@ -14,6 +14,7 @@ var _mock_audio_created: bool = false
 func before_each():
 	# Crear instancia del jugador
 	_player = PlayerScript.new()
+	_agregar_animacion_minima(_player)
 
 	# Inyectar MockAudioManager si es necesario (o añadir al tree como autoload mock)
 	if not get_tree().root.has_node("AudioManager"):
@@ -68,3 +69,14 @@ func test_recibir_dano_cancels_shot():
 	_player.recibir_dano(1)
 	assert_eq(_player.current_aim_state, _player.AimState.NONE, "El disparo debería cancelarse al recibir daño")
 	assert_true(_player.shot_cancelled, "shot_cancelled debería ser true")
+
+
+func _agregar_animacion_minima(player: Player) -> void:
+	var anim_player := AnimationPlayer.new()
+	anim_player.name = "AnimationPlayer"
+	player.add_child(anim_player)
+
+	var anim_tree := AnimationTree.new()
+	anim_tree.name = "AnimationTree"
+	anim_tree.anim_player = NodePath("../AnimationPlayer")
+	player.add_child(anim_tree)

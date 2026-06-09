@@ -1,5 +1,9 @@
 class_name ImpEnemy
 extends EnemyBase
+
+const PROJECTILE_POOL_REF = preload("res://Scripts/Core/ProjectilePool.gd")
+const PROJECTILE_SCALE: Vector3 = Vector3.ONE
+
 ## Imp enemigo: Camina hacia la izquierda, se detiene y lanza proyectiles.
 ## Usa animaciones CAMINAR, LANZAR01/LANZAR2. Partículas de muerte ROJAS.
 # === CONFIGURACIÓN ESPECÍFICA DEL IMP ===
@@ -284,8 +288,11 @@ func _throw_projectile():
 	if player_ref.get("is_dead"):
 		return
 
-	var trident = imp_arrow_scene.instantiate()
+	var trident := PROJECTILE_POOL_REF.acquire(imp_arrow_scene) as ImpTridentProjectile
+	if not trident:
+		return
 
+	trident.scale = PROJECTILE_SCALE
 	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
 	var direction = (target_pos - spawn_pos).normalized()
@@ -299,5 +306,4 @@ func _throw_projectile():
 	trident.initialize(direction, potencia / 8.0)
 	# Aplicar gravedad personalizada al tridente
 	trident.gravedad = gravedad_tridente
-	get_tree().root.add_child(trident)
-	trident.global_position = spawn_pos
+	PROJECTILE_POOL_REF.activate(trident, get_tree().root, spawn_pos)

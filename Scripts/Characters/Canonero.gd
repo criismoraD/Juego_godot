@@ -1,5 +1,9 @@
 class_name Canonero
 extends EnemyBase
+
+const PROJECTILE_POOL_REF = preload("res://Scripts/Core/ProjectilePool.gd")
+const PROJECTILE_SCALE: Vector3 = Vector3.ONE
+
 @export_category("Combate - Canonero")
 @export var intervalo_disparo: float = 4.0
 @export var velocidad_proyectil: float = 10.0
@@ -55,19 +59,21 @@ func _shoot_cannon():
 	if not canon_bola_scene or not player_ref or player_ref.get("is_dead"):
 		return
 
-	var proyectil = canon_bola_scene.instantiate()
+	var proyectil := PROJECTILE_POOL_REF.acquire(canon_bola_scene) as GoblinArrowProjectile
+	if not proyectil:
+		return
+
+	proyectil.scale = PROJECTILE_SCALE
 	AudioManager.play_sfx("goblin_shoot")
 
 	var spawn_pos = global_position + Vector3(-0.5, altura_spawn_flecha, 0)
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
 	var direction = (target_pos - spawn_pos).normalized()
 
-	if proyectil.has_method("initialize"):
-		proyectil.velocidad = velocidad_proyectil
-		proyectil.initialize(direction)
+	var power: float = (velocidad_proyectil - 10.0) / 20.0
+	proyectil.initialize(direction, power)
 
-	get_tree().root.add_child(proyectil)
-	proyectil.global_position = spawn_pos
+	PROJECTILE_POOL_REF.activate(proyectil, get_tree().root, spawn_pos)
 
 
 func _start_reload():

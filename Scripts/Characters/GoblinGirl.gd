@@ -1,5 +1,9 @@
 class_name GoblinGirl
 extends EnemyBase
+
+const PROJECTILE_POOL_REF = preload("res://Scripts/Core/ProjectilePool.gd")
+const PROJECTILE_SCALE: Vector3 = Vector3.ONE
+
 ## Goblin Girl: Camina, se detiene y dispara flechas parabólicas con arco.
 ## Se diferencia del Goblin en: proyectil parabólico, timing de disparo
 ## sincronizado con animación, potencia variable, y animaciones de arco.
@@ -173,8 +177,11 @@ func _shoot_arrow():
 	if player_ref.get("is_dead"):
 		return
 
-	var arrow = goblin_girl_arrow_scene.instantiate()
+	var arrow := PROJECTILE_POOL_REF.acquire(goblin_girl_arrow_scene) as GoblinGirlArrowProjectile
+	if not arrow:
+		return
 
+	arrow.scale = PROJECTILE_SCALE
 	# Usar el mismo color que las partículas de muerte (púrpura)
 	arrow.color_proyectil = color_borde_disolucion
 
@@ -193,8 +200,7 @@ func _shoot_arrow():
 	arrow.initialize(direction, potencia)
 	arrow.set_meta("shooter", self)
 
-	get_tree().root.add_child(arrow)
-	arrow.global_position = spawn_pos
+	PROJECTILE_POOL_REF.activate(arrow, get_tree().root, spawn_pos)
 
 	AudioManager.play_sfx("goblin_girl_shoot")
 

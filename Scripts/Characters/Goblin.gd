@@ -1,5 +1,9 @@
 class_name Goblin
 extends EnemyBase
+
+const PROJECTILE_POOL_REF = preload("res://Scripts/Core/ProjectilePool.gd")
+const PROJECTILE_SCALE: Vector3 = Vector3.ONE
+
 ## Goblin estándar: Camina, se detiene y dispara flechas rectas con ballesta.
 # === CONFIGURACIÓN ESPECÍFICA DEL GOBLIN ===
 @export_category("Combate - Goblin")
@@ -81,7 +85,11 @@ func _shoot_arrow():
 	if player_ref.get("is_dead"):
 		return
 
-	var arrow = goblin_arrow_scene.instantiate()
+	var arrow := PROJECTILE_POOL_REF.acquire(goblin_arrow_scene) as GoblinArrowProjectile
+	if not arrow:
+		return
+
+	arrow.scale = PROJECTILE_SCALE
 	AudioManager.play_sfx("goblin_shoot")
 
 	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
@@ -93,8 +101,7 @@ func _shoot_arrow():
 	var power = (velocidad_flecha - 10.0) / 20.0
 	arrow.initialize(direction, power)
 
-	get_tree().root.add_child(arrow)
-	arrow.global_position = spawn_pos
+	PROJECTILE_POOL_REF.activate(arrow, get_tree().root, spawn_pos)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

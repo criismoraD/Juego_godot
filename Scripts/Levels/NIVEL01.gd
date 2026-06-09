@@ -10,6 +10,7 @@ const TAMANO_MINIMO_SUBVIEWPORT: int = 1
 const TAMANO_MINIMO_TEXTURA_FONDO: float = 1.0
 const PROFUNDIDAD_MINIMA_FONDO: float = 0.01
 const PIXEL_SIZE_MINIMO_FONDO: float = 0.0001
+const GRUPOS_LIMPIEZA_COMBATE: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
 @export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
@@ -667,31 +668,6 @@ func _crear_label_transicion(texto: String, color_texto: Color) -> Label:
 	return label
 
 
-## Animación: fade-in + escala (de 0.5 a 1.0) durante `duracion_entrada` segundos
-func _animar_entrada(label: Label, duracion_entrada: float = 0.5) -> Tween:
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.set_ease(Tween.EASE_OUT)
-	tween.set_trans(Tween.TRANS_BACK)
-	label.modulate = Color(1, 1, 1, 0)
-	label.pivot_offset = label.size / 2.0
-	label.scale = Vector2(0.5, 0.5)
-	tween.tween_property(label, "modulate:a", 1.0, duracion_entrada)
-	tween.tween_property(label, "scale", Vector2(1.0, 1.0), duracion_entrada)
-	return tween
-
-
-## Animación: fade-out + escala (de 1.0 a 1.3) durante `duracion_salida` segundos
-func _animar_salida(label: Label, duracion_salida: float = 0.4) -> Tween:
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.set_ease(Tween.EASE_IN)
-	tween.set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(label, "modulate:a", 0.0, duracion_salida)
-	tween.tween_property(label, "scale", Vector2(1.3, 1.3), duracion_salida)
-	return tween
-
-
 func _mostrar_cartel_nivel1_completado() -> void:
 	_limpiar_carteles_transicion()
 	var overlay := CanvasLayer.new()
@@ -846,16 +822,7 @@ func _iniciar_oleada_debug(numero_oleada: int) -> void:
 	if not is_instance_valid(wave_spawner):
 		return
 
-	# Limpiar enemigos y proyectiles previos para iniciar la oleada elegida en limpio.
-	var grupos_a_limpiar: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
-	var nodos_limpiados: Dictionary = {}
-	for grupo in grupos_a_limpiar:
-		for nodo in get_tree().get_nodes_in_group(grupo):
-			if is_instance_valid(nodo):
-				var id_nodo: int = nodo.get_instance_id()
-				if not nodos_limpiados.has(id_nodo):
-					nodos_limpiados[id_nodo] = true
-					nodo.queue_free()
+	_limpiar_nodos_combate_spawneados()
 
 	enemigos_pacificos.clear()
 	imp_estandarte = null
@@ -930,94 +897,13 @@ func _mostrar_resultado_pacifista_pantalla_negra():
 
 
 func _reiniciar_nivel01_limpio():
-	# Limpiar enemigos/proyectiles spawneados en root antes de recargar escena.
-	var grupos_a_limpiar: Array[String] = ["enemy_projectiles", "enemies", "shield_imps"]
-	var nodos_limpiados: Dictionary = {}
-
-	for grupo in grupos_a_limpiar:
-		for nodo in get_tree().get_nodes_in_group(grupo):
-			if is_instance_valid(nodo):
-				var id_nodo = nodo.get_instance_id()
-				if not nodos_limpiados.has(id_nodo):
-					nodos_limpiados[id_nodo] = true
-					nodo.queue_free()
+	_limpiar_nodos_combate_spawneados()
 
 	# Esperar a que queue_free se aplique para evitar residuos entre recargas.
 	await get_tree().process_frame
 	await get_tree().process_frame
 
 	get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL01.tscn")
-
-
-func _mostrar_texto_guerra():
-	var overlay = CanvasLayer.new()
-	overlay.layer = 200
-	overlay.name = "TextoGuerra"
-	add_child(overlay)
-
-	# Panel centrado
-	var panel = PanelContainer.new()
-	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.15, 0.02, 0.02, 0.9)
-	panel_style.border_color = Color(0.9, 0.2, 0.1)
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(6)
-	panel_style.set_content_margin_all(20)
-	panel.add_theme_stylebox_override("panel", panel_style)
-
-	panel.anchor_left = 0.15
-	panel.anchor_right = 0.85
-	panel.anchor_top = 0.35
-	panel.anchor_bottom = 0.55
-	panel.offset_left = 0
-	panel.offset_right = 0
-	panel.offset_top = 0
-	panel.offset_bottom = 0
-	overlay.add_child(panel)
-
-	var label = Label.new()
-	label.text = tr("TEXTO_GUERRA")
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 28)
-	label.add_theme_color_override("font_color", Color(1, 0.3, 0.2))
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	panel.add_child(label)
-
-	# Auto-destruir después de 3 segundos
-	get_tree().create_timer(3.0).timeout.connect(
-		func():
-			if is_instance_valid(overlay):
-				overlay.queue_free()
-	)
-
-
-func _mostrar_victoria(mensaje: String):
-	var overlay = CanvasLayer.new()
-	overlay.layer = 200
-	add_child(overlay)
-
-	var fondo = ColorRect.new()
-	fondo.color = Color(0, 0, 0, 0.7)
-	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(fondo)
-
-	var label = Label.new()
-	label.text = mensaje
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 48)
-	label.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-	# Centrado horizontal, mitad de alto centrado vertical
-	label.anchor_left = 0.0
-	label.anchor_right = 1.0
-	label.anchor_top = 0.25
-	label.anchor_bottom = 0.75
-	label.offset_left = 0
-	label.offset_right = 0
-	label.offset_top = 0
-	label.offset_bottom = 0
-	overlay.add_child(label)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1137,6 +1023,21 @@ func _set_aliadas_modo_pacifico():
 			var hitbox = ally.get("hitbox_body")
 			if hitbox and is_instance_valid(hitbox):
 				hitbox.collision_layer = 0  # Sin colisión
+
+
+func _limpiar_nodos_combate_spawneados() -> void:
+	var nodos_limpiados: Dictionary = {}
+	for grupo in GRUPOS_LIMPIEZA_COMBATE:
+		for nodo in get_tree().get_nodes_in_group(grupo):
+			if not is_instance_valid(nodo):
+				continue
+
+			var id_nodo: int = nodo.get_instance_id()
+			if nodos_limpiados.has(id_nodo):
+				continue
+
+			nodos_limpiados[id_nodo] = true
+			nodo.queue_free()
 
 
 func _get_players_cached() -> Array[Node]:

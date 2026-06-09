@@ -1,5 +1,8 @@
 class_name ImpEstandarte
 extends EnemyBase
+
+const PROJECTILE_POOL_REF = preload("res://Scripts/Core/ProjectilePool.gd")
+
 ## Imp con estandarte para el Nivel 0 (modo pacifista).
 ## Usa su propio set de animaciones IMP_* y dispara flechas (arco),
 ## en lugar del tridente del Imp normal.
@@ -188,15 +191,17 @@ func _throw_projectile():
 
 	AudioManager.play_sfx("goblin_girl_shoot")
 
-	var flecha = escena_flecha_estandarte.instantiate()
+	var flecha := PROJECTILE_POOL_REF.acquire(escena_flecha_estandarte) as GoblinGirlArrowProjectile
+	if not flecha:
+		return
+
 	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
 	var direction = (target_pos - spawn_pos).normalized()
 	direction.y += elevacion_disparo_arco
 	direction = direction.normalized()
 
-	if "color_proyectil" in flecha:
-		flecha.color_proyectil = color_proyectil_estandarte
+	flecha.color_proyectil = color_proyectil_estandarte
 
 	var escala_final: float = max(0.1, escala_proyectil_estandarte)
 	flecha.scale = Vector3(escala_final, escala_final, escala_final)
@@ -205,14 +210,12 @@ func _throw_projectile():
 	var velocidad_final: float = randf_range(velocidad_minima, velocidad_maxima)
 
 	flecha.initialize(direction, 1.0)
-	if "velocidad" in flecha:
-		flecha.velocidad = velocidad_final
+	flecha.velocidad = velocidad_final
 
 	# Cuando la flecha sale despedida, ocultamos la flecha visual de la mano.
 	_actualizar_visibilidad_flecha_mano(false)
 
-	get_tree().root.add_child(flecha)
-	flecha.global_position = spawn_pos
+	PROJECTILE_POOL_REF.activate(flecha, get_tree().root, spawn_pos)
 
 
 func _on_state_dying():
@@ -254,10 +257,6 @@ func _reproducir_sonido_muerte_estandarte():
 			if is_instance_valid(temp_player):
 				temp_player.queue_free()
 	)
-
-
-func _cargar_sonido_muerte_estandarte():
-	pass
 
 
 func take_damage(amount: float):
