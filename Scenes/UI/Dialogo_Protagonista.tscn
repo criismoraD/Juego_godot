@@ -119,3 +119,15 @@ offset_right = 1286.8
 offset_bottom = 477.6
 size_flags_horizontal = 0
 text = "Continuar"
+
+[node name="BotonSaltar" type="Button" parent="." unique_id=1132705130]
+z_index = 2
+custom_minimum_size = Vector2(180, 40)
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -711.0
+offset_top = 524.0
+offset_right = -531.0
+offset_bottom = 564.0
+text = "Saltar Diálogo"

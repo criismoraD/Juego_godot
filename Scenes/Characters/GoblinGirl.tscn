@@ -12,12 +12,12 @@ height = 0.64101565
 collision_layer = 4
 script = ExtResource("1_script")
 velocidad_caminar = 0.7
-distancia_minima_caminar = 0.5
+distancia_minima_caminar = 0.8
 
 [node name="GOBLING_GIRL" parent="." unique_id=1820795102 instance=ExtResource("2_model")]
 transform = Transform3D(-2.8412401e-08, 0, -0.65, 0, 0.65, 0, 0.65, 0, -2.8412401e-08, 0, 0, 0)
 
-[node name="Skeleton3D" parent="GOBLING_GIRL/Armature" parent_id_path=PackedInt32Array(1820795102, 719959528) index="0" unique_id=691895413]
+[node name="Skeleton3D" parent="GOBLING_GIRL/Armature" parent_id_path=PackedInt32Array(1820795102, 384763070) index="0" unique_id=618613090]
 bones/0/position = Vector3(-0.015064955, 0.5197886, -0.005977899)
 bones/0/rotation = Quaternion(-0.015362168, -0.784993, -0.032174382, 0.61847794)
 bones/1/position = Vector3(0, 0.031699456, -0.0030554584)

@@ -9,12 +9,18 @@ extends CharacterBody3D
 # ═══════════════════════════════════════════════════════════════════════════════
 enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export_category("Movimiento")
-@export var velocidad_caminar: float = 1.5  ## Velocidad al caminar hacia el enemigo
+@export var velocidad_caminar: float = 0.6  ## Velocidad al caminar hacia el enemigo
 @export var distancia_proteccion: float = 0.5  ## Distancia a la izquierda del enemigo protegido
 @export_category("Escudo")
 @export var escudo_vida: int = 3  ## Impactos que aguanta el escudo antes de romperse
+@export var escena_escudo_roto: PackedScene = preload("res://Scenes/Characters/EscudoImpRoto.tscn")
+@export var fuerza_explosion: float = 1.5
+@export var fuerza_horizontal: float = 1.2
+@export var fuerza_vertical: float = 1.0
+@export var torque_min: float = -4.0
+@export var torque_max: float = 4.0
 @export_category("Huida")
-@export var velocidad_huida: float = 2.0  ## Velocidad al huir (sin escudo)
+@export var velocidad_huida: float = 1.4  ## Velocidad al huir (sin escudo)
 @export var distancia_fuera_pantalla: float = 15.0  ## Posición X para destruirse al huir
 @export_category("Vida")
 @export var vida_maxima: int = 1  ## HP del personaje (cuando no tiene escudo)
@@ -58,6 +64,9 @@ var posicion_libre_destino: float = -1.0  ## Posición X destino cuando no hay e
 var _escudo_meshes: Array = []
 var _flash_mat: StandardMaterial3D
 static var _cached_wave_spawner: Node = null
+var Duracion_Escape_Total: float = 1.0
+var Tiempo_Flee_Acumulado: float = 0.0
+var rotation_tween: Tween
 
 
 func _get_cached_wave_spawner() -> Node:
@@ -160,6 +169,10 @@ func _setup_animation_player():
 			var anim = anim_player.get_animation(anim_name)
 			if anim:
 				anim.loop_mode = Animation.LOOP_LINEAR
+		elif "ESCAPE" in anim_name:
+			var anim = anim_player.get_animation(anim_name)
+			if anim:
+				anim.loop_mode = Animation.LOOP_NONE
 
 
 func _buscar_escudo():
@@ -289,6 +302,47 @@ func _process_walking(_delta):
 
 	# Calcular posición objetivo: a la izquierda del enemigo protegido
 	var target_x = enemigo_protegido.global_position.x - distancia_proteccion
+
+	# Si la posición está ocupada por otro enemigo activo, desplazarse más a la izquierda
+	var posicion_ocupada := true
+	var iteraciones := 0
+	var offset_acumulado := 0.0
+	
+	var active_enemies = []
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		active_enemies = wave_spawner.get_active_enemies()
+	else:
+		active_enemies = EnemyBase.active_enemies_cache
+
+	while posicion_ocupada and iteraciones < 10:
+		posicion_ocupada = false
+		var x_evaluar = target_x - offset_acumulado
+		
+		for enemy in active_enemies:
+			if enemy == self or enemy == enemigo_protegido:
+				continue
+			if not is_instance_valid(enemy) or not enemy.is_inside_tree():
+				continue
+			
+			# Si el enemigo está en la misma posición X aproximada (umbral de 0.45 unidades)
+			if abs(enemy.global_position.x - x_evaluar) < 0.45:
+				var esta_activo = true
+				if enemy is EnemyBase:
+					if enemy.current_state == EnemyBase.State.DYING or enemy.current_state == EnemyBase.State.DEAD:
+						esta_activo = false
+				elif enemy is ImpShieldGirl:
+					if enemy.current_state == State.DYING or enemy.current_state == State.DEAD or enemy.current_state == State.FLEEING or enemy.current_state == State.ESCAPING:
+						esta_activo = false
+						
+				if esta_activo:
+					posicion_ocupada = true
+					offset_acumulado += 0.5  # Desplazar a la izquierda
+					break
+		
+		iteraciones += 1
+		
+	target_x -= offset_acumulado
 	var dist_to_target = global_position.x - target_x
 
 	if dist_to_target > 0.1:
@@ -313,15 +367,17 @@ func _process_shield_hit(delta):
 
 
 func _process_escaping(_delta):
-	velocity.x = 0
-
-
-func _process_fleeing(_delta):
-	velocity.x = velocidad_huida  # Huir hacia la derecha (X positivo)
+	velocity.x = velocidad_huida  # Sigue huyendo hacia la derecha
 
 	# Destruirse si sale de pantalla
 	if global_position.x > spawn_position.x + distancia_fuera_pantalla:
 		_limpiar_y_destruir()
+
+
+func _process_fleeing(delta):
+	Tiempo_Flee_Acumulado += delta
+	var T: float = clamp(Tiempo_Flee_Acumulado / Duracion_Escape_Total, 0.0, 1.0)
+	velocity.x = lerp(0.0, velocidad_huida, T)  # Acelera de 0 a velocidad_huida hacia la derecha
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -341,9 +397,23 @@ func _cambiar_estado(nuevo: State):
 			AudioManager.play_sfx("shield_imp_impact")
 			hit_anim_timer = _get_animation_duration(anim_impacto)
 		State.ESCAPING:
-			pass
+			_play_animation(anim_huida, 0.25)
+			var model = find_child("GIRL_IMP_ESCUDO", true, false)
+			if model:
+				if rotation_tween and rotation_tween.is_valid():
+					rotation_tween.kill()
+				rotation_tween = create_tween()
+				rotation_tween.tween_property(model, "rotation_degrees:y", rotacion_y_modelo - 180.0, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		State.FLEEING:
-			_play_animation(anim_huida)
+			_play_animation(anim_escape)
+			Duracion_Escape_Total = _get_animation_duration(anim_escape)
+			Tiempo_Flee_Acumulado = 0.0
+			var Duracion_Animacion: float = Duracion_Escape_Total
+			get_tree().create_timer(Duracion_Animacion).timeout.connect(
+				func():
+					if current_state == State.FLEEING:
+						_cambiar_estado(State.ESCAPING)
+			)
 		State.DYING:
 			_on_dying()
 		State.DEAD:
@@ -367,10 +437,46 @@ func take_damage(_amount: float):
 		if escudo_vida_actual > 0:
 			_cambiar_estado(State.SHIELD_HIT)
 		else:
-			# Escudo roto -> Muere instantáneamente junto con el escudo
+			# Escudo roto -> Huye hacia la derecha
 			if escudo_node and is_instance_valid(escudo_node):
 				escudo_node.visible = false
-			health = 0
+				
+				# Instanciar el escudo roto
+				if escena_escudo_roto:
+					var escudo_roto = escena_escudo_roto.instantiate()
+					
+					# Pasar parámetros de física
+					escudo_roto.fuerza_explosion = fuerza_explosion
+					escudo_roto.fuerza_horizontal = fuerza_horizontal
+					escudo_roto.fuerza_vertical = fuerza_vertical
+					escudo_roto.torque_min = torque_min
+					escudo_roto.torque_max = torque_max
+					
+					# Añadir al root de la escena
+					var target_parent = get_tree().current_scene
+					if target_parent:
+						target_parent.add_child(escudo_roto)
+					else:
+						get_parent().add_child(escudo_roto)
+					
+					# Posicionar (con offset ligero a la derecha) y alinear transform
+					escudo_roto.global_position = escudo_node.global_position + Vector3(0.15, 0.0, 0.0)
+					var escudo_partes = escudo_roto.get_node_or_null("escudo_partes")
+					if escudo_partes:
+						escudo_partes.global_transform = escudo_node.global_transform
+				
+				# Añadir destello visual (sparks + impact)
+				var scene_root = get_tree().current_scene
+				if scene_root:
+					VFXFactory.spawn_impact(scene_root, escudo_node.global_position, Color(1.0, 0.9, 0.7), 25, 0.02)
+					VFXFactory.spawn_sparks(scene_root, escudo_node.global_position, Vector3.UP, Color(1.0, 0.8, 0.4))
+						
+			AudioManager.play_shield_break()
+			_cambiar_estado(State.FLEEING)
+	else:
+		# Daño directo a la vida si no tiene escudo
+		health -= int(_amount)
+		if health <= 0:
 			_cambiar_estado(State.DYING)
 
 
@@ -408,6 +514,14 @@ func _on_dying():
 	set_physics_process(false)
 
 	AudioManager.play_sfx("shield_imp_death")
+
+	# Si murió sin escudo (huyendo), asegurar que mire hacia la derecha
+	if escudo_vida_actual <= 0:
+		if rotation_tween and rotation_tween.is_valid():
+			rotation_tween.kill()
+		var model = find_child("GIRL_IMP_ESCUDO", true, false)
+		if model:
+			model.rotation_degrees.y = rotacion_y_modelo - 180.0
 
 	# Elegir muerte aleatoria de los exports
 	var chosen = anim_muertes[randi() % anim_muertes.size()]

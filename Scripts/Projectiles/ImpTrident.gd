@@ -34,6 +34,7 @@ func _aplicar_visuales_cacheados() -> void:
 			continue
 
 		if mesh is MeshInstance3D:
+			mesh.visible = true
 			mesh.add_to_group("outline_meshes")
 			mesh.material_override = projectile_material
 

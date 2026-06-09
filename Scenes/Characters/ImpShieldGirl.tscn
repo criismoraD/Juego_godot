@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://e182j8ajvjx" path="res://Scripts/Characters/ImpShieldGirl.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://btconw6lyftg3" path="res://Assets/Characters/ImpShieldGirl/GIRL_IMP_ESCUDO.glb" id="2_model"]
-[ext_resource type="PackedScene" uid="uid://c2ljsyetfeom7" path="res://Assets/Characters/ImpShieldGirl/ESCUDO_IMP.glb" id="3_shield"]
+[ext_resource type="PackedScene" uid="uid://c6j2y8jxvg1v" path="res://Scenes/Characters/EscudoImp.tscn" id="3_shield"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
 radius = 0.1274414
@@ -11,7 +11,7 @@ height = 0.6161377
 [node name="ImpShieldGirl" type="CharacterBody3D" unique_id=1321773441]
 collision_layer = 4
 script = ExtResource("1_script")
-velocidad_caminar = 1.0
+velocidad_caminar = 0.6
 rotacion_y_modelo = 270.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=261174301]

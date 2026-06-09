@@ -79,6 +79,36 @@ func _ready():
 	_preparar_dialogo_label()
 	_actualizar_texto_boton()
 
+	var boton_saltar = find_child("BotonSaltar", true, false)
+	if boton_saltar and boton_saltar is Button:
+		boton_saltar.focus_mode = Control.FOCUS_NONE
+		
+		# Estilos premium (oscuro con borde dorado)
+		var estilo_saltar = StyleBoxFlat.new()
+		estilo_saltar.bg_color = Color(0.12, 0.08, 0.05, 0.8)
+		estilo_saltar.border_color = Color(0.85, 0.65, 0.2)
+		estilo_saltar.set_border_width_all(2)
+		estilo_saltar.set_corner_radius_all(6)
+		estilo_saltar.set_content_margin_all(8)
+		boton_saltar.add_theme_stylebox_override("normal", estilo_saltar)
+		
+		var estilo_hover = estilo_saltar.duplicate()
+		estilo_hover.bg_color = Color(0.2, 0.14, 0.08, 0.9)
+		boton_saltar.add_theme_stylebox_override("hover", estilo_hover)
+		
+		var estilo_pressed = estilo_saltar.duplicate()
+		estilo_pressed.bg_color = Color(0.08, 0.05, 0.02, 0.9)
+		boton_saltar.add_theme_stylebox_override("pressed", estilo_pressed)
+		
+		boton_saltar.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+		boton_saltar.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.6))
+		boton_saltar.add_theme_font_size_override("font_size", 16)
+		
+		boton_saltar.pressed.connect(
+			func():
+				emit_signal("continuado")
+		)
+
 	await get_tree().process_frame
 	_revelar_texto()
 
