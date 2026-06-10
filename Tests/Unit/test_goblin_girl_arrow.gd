@@ -21,6 +21,30 @@ func test_initialize_sets_direction_and_scales_velocity() -> void:
 	arrow.free()
 
 
+func test_initialize_does_not_accumulate_velocity_between_reuses() -> void:
+	# Arrange
+	var arrow = goblin_girl_arrow_script.new()
+
+	# Act
+	arrow.initialize(Vector3.LEFT, 2.0)
+	arrow.initialize(Vector3.LEFT, 2.0)
+
+	# Assert
+	assert_almost_eq(arrow.velocidad, 20.0, 0.001, "Velocity should be based on the base value every shot")
+
+	arrow.free()
+
+
+func test_default_color_is_magenta() -> void:
+	# Arrange
+	var arrow = goblin_girl_arrow_script.new()
+
+	# Assert
+	assert_eq(arrow.color_proyectil, GoblinGirlArrowProjectile.GOBLIN_GIRL_ARROW_MAGENTA)
+
+	arrow.free()
+
+
 func test_initialize_defaults_on_zero_direction() -> void:
 	# Arrange
 	var arrow = goblin_girl_arrow_script.new()

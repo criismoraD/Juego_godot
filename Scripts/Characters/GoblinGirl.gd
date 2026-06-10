@@ -182,8 +182,7 @@ func _shoot_arrow():
 		return
 
 	arrow.scale = PROJECTILE_SCALE
-	# Usar el mismo color que las partículas de muerte (púrpura)
-	arrow.color_proyectil = color_borde_disolucion
+	arrow.color_proyectil = GoblinGirlArrowProjectile.GOBLIN_GIRL_ARROW_MAGENTA
 
 	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)

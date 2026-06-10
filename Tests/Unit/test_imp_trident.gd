@@ -38,3 +38,21 @@ func test_create_material_reuses_shared_resource_for_same_color():
 
 	trident_a.free()
 	trident_b.free()
+
+func test_initialize_does_not_accumulate_velocity_between_reuses():
+	# Arrange
+	var trident = imp_trident_script.new()
+
+	# Act
+	trident.initialize(Vector3.LEFT, 1.5)
+	trident.initialize(Vector3.LEFT, 1.5)
+
+	# Assert
+	assert_almost_eq(
+		trident.velocidad,
+		12.0,
+		0.001,
+		"Trident velocity should be based on the base value every shot"
+	)
+
+	trident.free()

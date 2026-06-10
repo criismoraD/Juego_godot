@@ -54,6 +54,7 @@ func test_set_modo_minimo_true():
 
 func test_set_modo_minimo_false():
 	# Preparar: UI oculta
+	_game_ui.debug_ui_enabled = true
 	_game_ui.bottom_panel.visible = false
 	_game_ui.toggle_ui_btn.visible = false
 
@@ -61,8 +62,21 @@ func test_set_modo_minimo_false():
 	_game_ui.set_modo_minimo(false)
 
 	# Verificar
-	assert_true(_game_ui.bottom_panel.visible, "bottom_panel debería estar visible si no es modo mínimo")
+	assert_false(_game_ui.bottom_panel.visible, "bottom_panel debería permanecer oculto si no es modo mínimo")
 	assert_true(_game_ui.toggle_ui_btn.visible, "toggle_ui_btn debería estar visible si no es modo mínimo")
+
+func test_set_modo_minimo_false_keeps_debug_ui_hidden_by_default():
+	# Preparar: debug UI desactivada por defecto
+	_game_ui.debug_ui_enabled = false
+	_game_ui.bottom_panel.visible = true
+	_game_ui.toggle_ui_btn.visible = true
+
+	# Ejecutar
+	_game_ui.set_modo_minimo(false)
+
+	# Verificar
+	assert_false(_game_ui.bottom_panel.visible, "bottom_panel debe seguir oculto si debug_ui_enabled es false")
+	assert_false(_game_ui.toggle_ui_btn.visible, "toggle_ui_btn debe seguir oculto si debug_ui_enabled es false")
 
 func test_set_modo_minimo_null_safe():
 	# Liberar los nodos para probar seguridad ante nulos

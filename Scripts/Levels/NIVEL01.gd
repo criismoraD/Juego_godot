@@ -605,15 +605,9 @@ func _monitorear_nivel_1():
 		if not is_instance_valid(wave_spawner.active_goblins[i]):
 			wave_spawner.active_goblins.remove_at(i)
 
-	# Verificar si todos los enemigos normales murieron (los escudos no bloquean)
-	var enemigos_normales_vivos := 0
-	for enemy in wave_spawner.active_goblins:
-		if is_instance_valid(enemy) and not wave_spawner.shield_imps_activos.has(enemy):
-			enemigos_normales_vivos += 1
-
 	if (
 		wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada
-		and enemigos_normales_vivos == 0
+		and wave_spawner.active_goblins.is_empty()
 	):
 		_on_nivel1_completado(1)
 

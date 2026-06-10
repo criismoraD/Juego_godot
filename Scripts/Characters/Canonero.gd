@@ -72,6 +72,7 @@ func _shoot_cannon():
 
 	var power: float = (velocidad_proyectil - 10.0) / 20.0
 	proyectil.initialize(direction, power)
+	proyectil.speed = velocidad_proyectil
 
 	PROJECTILE_POOL_REF.activate(proyectil, get_tree().root, spawn_pos)
 

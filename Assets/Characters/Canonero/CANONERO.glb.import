@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://wtqxxa2i2xkd"
-path="res://.godot/imported/CANONERO.glb-41a2e7b820b83915b195a6f804d6a9dc.scn"
+path="res://.godot/imported/CANONERO.glb-d8fc3d8dad65ae39b7aa21b9d0a9df93.scn"
 
 [deps]
 
-source_file="res://Assets/Canonero/CANONERO.glb"
-dest_files=["res://.godot/imported/CANONERO.glb-41a2e7b820b83915b195a6f804d6a9dc.scn"]
+source_file="res://Assets/Characters/Canonero/CANONERO.glb"
+dest_files=["res://.godot/imported/CANONERO.glb-d8fc3d8dad65ae39b7aa21b9d0a9df93.scn"]
 
 [params]
 

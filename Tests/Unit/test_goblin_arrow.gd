@@ -23,6 +23,13 @@ func test_initialize_sets_direction_and_speed():
 
 	arrow.free()
 
+func test_default_color_is_orange():
+	var arrow = goblin_arrow_script.new()
+
+	assert_eq(arrow.color_proyectil, GoblinArrowProjectile.GOBLIN_ARROW_ORANGE)
+
+	arrow.free()
+
 func test_initialize_clamped_power():
 	var arrow = goblin_arrow_script.new()
 

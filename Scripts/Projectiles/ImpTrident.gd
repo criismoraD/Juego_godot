@@ -7,6 +7,9 @@ const TRIDENT_EMISSION_ENERGY: float = 4.0
 @export var velocidad: float = 8.0
 @export var gravedad: float = 1.2
 
+var _velocidad_base: float = 8.0
+var _velocidad_base_capturada: bool = false
+
 
 func _init() -> void:
 	color_proyectil = Color(1.0, 0.15, 0.05)
@@ -15,9 +18,15 @@ func _init() -> void:
 	offscreen_margin_bottom = 300.0
 
 
+func _ready() -> void:
+	_capturar_velocidad_base_si_necesario()
+	super._ready()
+
+
 func initialize(shoot_direction: Vector3, potencia: float = 1.0) -> void:
+	_capturar_velocidad_base_si_necesario()
 	_inicializar_direccion(shoot_direction)
-	velocidad *= potencia
+	velocidad = _velocidad_base * max(0.0, potencia)
 
 
 func _actualizar_movimiento(delta: float) -> void:
@@ -42,3 +51,11 @@ func _aplicar_visuales_cacheados() -> void:
 func _restaurar_visuales_desde_pool() -> void:
 	_create_material(TRIDENT_EMISSION_ENERGY)
 	_aplicar_visuales_cacheados()
+
+
+func _capturar_velocidad_base_si_necesario() -> void:
+	if _velocidad_base_capturada:
+		return
+
+	_velocidad_base = velocidad
+	_velocidad_base_capturada = true

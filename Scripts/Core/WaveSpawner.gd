@@ -172,13 +172,7 @@ func _check_wave_complete():
 			if not is_instance_valid(active_goblins[i]):
 				active_goblins.remove_at(i)
 
-		# Contar solo enemigos normales vivos (los escudos no bloquean la oleada)
-		var enemigos_normales_vivos := 0
-		for enemy in active_goblins:
-			if is_instance_valid(enemy) and not shield_imps_activos.has(enemy):
-				enemigos_normales_vivos += 1
-
-		if enemigos_normales_vivos == 0:
+		if active_goblins.is_empty():
 			is_wave_active = false
 			wave_cooldown = tiempo_entre_oleadas
 			oleada_completada.emit(current_wave)
@@ -293,7 +287,9 @@ func _spawn_shield_imp():
 
 	shield_imps_activos.append(shield_imp)
 	active_goblins.append(shield_imp)
-	# NOTA: No incrementar goblins_spawned_in_wave — los escudos son spawns independientes
+
+	if is_wave_active:
+		goblins_spawned_in_wave += 1
 
 
 func _on_shield_imp_died(shield_imp):

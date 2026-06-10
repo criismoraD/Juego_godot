@@ -8,7 +8,7 @@ const PROJECTILE_POOL_REF = preload("res://Scripts/Core/ProjectilePool.gd")
 ## en lugar del tridente del Imp normal.
 @export_category("Combate - Imp Estandarte")
 @export var intervalo_disparo_arco: float = 0.0
-@export var tiempo_disparo_en_animacion_arco: float = 0.55
+@export var tiempo_disparo_en_animacion_arco: float = 4.0
 @export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_min: float = 15.0
 @export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_max: float = 20.0
 @export_range(0.25, 5.0, 0.05) var multiplicador_cadencia_arco: float = 1.0
@@ -24,9 +24,9 @@ const PROJECTILE_POOL_REF = preload("res://Scripts/Core/ProjectilePool.gd")
 @export var torque_caida_estandarte: float = 0.04
 @export var tiempo_autodestruir_estandarte: float = 8.0
 @export_category("Visual - Flecha en Mano")
-@export var mostrar_flecha_en_mano: bool = true
-@export var tiempo_aparece_flecha_mano: float = 1.0
-@export var tiempo_desaparece_flecha_mano: float = 3.0
+@export var mostrar_flecha_en_mano: bool = false
+@export var tiempo_aparece_flecha_mano: float = 0.0
+@export var tiempo_desaparece_flecha_mano: float = 4.0
 @export var offset_flecha_mano: Vector3 = Vector3(0.0, 0.0, 0.0)
 @export var rotacion_flecha_mano_grados: Vector3 = Vector3(90.0, 0.0, 0.0)
 @export var escala_flecha_mano: Vector3 = Vector3(1.0, 1.0, 1.0)
@@ -390,20 +390,33 @@ func _cachear_visuales_arma():
 
 
 func _configurar_flecha_visual_mano():
-	if not mostrar_flecha_en_mano:
-		return
-
 	var esqueleto_nodo: Skeleton3D = find_child("Skeleton3D", true, false) as Skeleton3D
 	if not esqueleto_nodo:
+		return
+
+	if not mostrar_flecha_en_mano:
+		# Ocultar cualquier flecha visual de mano preexistente en la escena
+		var node = esqueleto_nodo.find_child("FlechaMano", true, false) as Node3D
+		if node:
+			node.visible = false
 		return
 
 	var nombre_hueso: String = _obtener_hueso_mano_derecha(esqueleto_nodo)
 	if nombre_hueso.is_empty():
 		return
 
+	var es_reutilizado := false
 	attachment_flecha_mano = (
 		esqueleto_nodo.get_node_or_null("AttachmentFlechaMano") as BoneAttachment3D
 	)
+	if not attachment_flecha_mano:
+		# Buscar si ya existe algún BoneAttachment3D con una FlechaMano de escena
+		for child in esqueleto_nodo.get_children():
+			if child is BoneAttachment3D and child.has_node("FlechaMano"):
+				attachment_flecha_mano = child
+				es_reutilizado = true
+				break
+
 	if not attachment_flecha_mano:
 		attachment_flecha_mano = BoneAttachment3D.new()
 		attachment_flecha_mano.name = "AttachmentFlechaMano"
@@ -419,9 +432,12 @@ func _configurar_flecha_visual_mano():
 		flecha_visual_mano = _crear_visual_flecha_mano()
 		attachment_flecha_mano.add_child(flecha_visual_mano)
 
-	flecha_visual_mano.position = offset_flecha_mano
-	flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
-	flecha_visual_mano.scale = escala_flecha_mano
+	# Solo configurar transform si NO es reutilizado del editor/escena
+	if not es_reutilizado:
+		flecha_visual_mano.position = offset_flecha_mano
+		flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
+		flecha_visual_mano.scale = escala_flecha_mano
+	
 	flecha_visual_mano.visible = false
 
 

@@ -96,7 +96,7 @@ escala_max_salto = 0.05
 velocidad_escalar_subir = 0.5
 velocidad_escalar_bajar = 0.5
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1427852555) index="0" unique_id=893577587]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 203741057) index="0" unique_id=1418335897]
 bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
 bones/0/rotation = Quaternion(0.20858404, -0.48332727, 0.08169286, 0.8462941)
 bones/1/rotation = Quaternion(-0.0072454643, 0, 0, 0.9999738)
@@ -255,7 +255,7 @@ size = Vector2i(1920, 1080)
 [node name="TORRE" parent="SubViewportFrente3D" unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1407819338]
+[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1542131552]
 layers = 1
 
 [node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]

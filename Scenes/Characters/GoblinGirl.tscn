@@ -11,6 +11,8 @@ height = 0.64101565
 [node name="GoblinGirl" type="CharacterBody3D" unique_id=1271437514]
 collision_layer = 4
 script = ExtResource("1_script")
+potencia_disparo_min = 0.8
+potencia_disparo_max = 1.8
 velocidad_caminar = 0.7
 distancia_minima_caminar = 0.8
 

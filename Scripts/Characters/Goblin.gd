@@ -100,6 +100,7 @@ func _shoot_arrow():
 	# velocidad = 10 + (30 - 10) * power  =>  power = (velocidad - 10) / 20
 	var power = (velocidad_flecha - 10.0) / 20.0
 	arrow.initialize(direction, power)
+	arrow.speed = velocidad_flecha
 
 	PROJECTILE_POOL_REF.activate(arrow, get_tree().root, spawn_pos)
 

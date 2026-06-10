@@ -39,7 +39,7 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 	"IMP_ESCUDO_MUERTE01", "IMP_ESCUDO_MUERTE02", "IMP_ESCUDO_MUERTE03"
 ]  ## Animaciones de muerte (aleatoria)
 @export_category("Posición Libre")
-@export var rango_posicion_libre: Vector2 = Vector2(1.0, 10.0)  ## Rango X aleatorio si no hay enemigo
+@export var rango_posicion_libre: Vector2 = Vector2(-5.0, 1.0)  ## Rango X aleatorio si no hay enemigo
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -67,6 +67,8 @@ static var _cached_wave_spawner: Node = null
 var Duracion_Escape_Total: float = 1.0
 var Tiempo_Flee_Acumulado: float = 0.0
 var rotation_tween: Tween
+var _died_emitted: bool = false
+var _estado_previo: State = State.WALKING
 
 
 func _get_cached_wave_spawner() -> Node:
@@ -363,7 +365,7 @@ func _process_shield_hit(delta):
 	velocity.x = 0
 	hit_anim_timer -= delta
 	if hit_anim_timer <= 0:
-		_cambiar_estado(State.DEFENDING)
+		_cambiar_estado(_estado_previo)
 
 
 func _process_escaping(_delta):
@@ -386,6 +388,8 @@ func _process_fleeing(delta):
 
 
 func _cambiar_estado(nuevo: State):
+	if nuevo == State.SHIELD_HIT and current_state != State.SHIELD_HIT:
+		_estado_previo = current_state
 	current_state = nuevo
 	match nuevo:
 		State.WALKING:
@@ -473,6 +477,7 @@ func take_damage(_amount: float):
 						
 			AudioManager.play_shield_break()
 			_cambiar_estado(State.FLEEING)
+			_emitir_muerte_por_escudo_roto()
 	else:
 		# Daño directo a la vida si no tiene escudo
 		health -= int(_amount)
@@ -583,7 +588,9 @@ func _finish_dissolve():
 			mesh.visible = false
 	dissolve_materials.clear()
 	current_state = State.DEAD
-	died.emit()
+	if not _died_emitted:
+		_died_emitted = true
+		died.emit()
 	queue_free()
 
 
@@ -594,7 +601,9 @@ func _exit_tree():
 
 func _limpiar_y_destruir():
 	current_state = State.DEAD
-	died.emit()
+	if not _died_emitted:
+		_died_emitted = true
+		died.emit()
 	queue_free()
 
 
@@ -637,3 +646,10 @@ func _log_debug(parts: Array) -> void:
 	for part in parts:
 		message += str(part)
 	print(message)
+
+
+func _emitir_muerte_por_escudo_roto() -> void:
+	if _died_emitted:
+		return
+	_died_emitted = true
+	died.emit()

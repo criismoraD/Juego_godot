@@ -19,10 +19,10 @@ particulas_detener_emision = 0.5
 [node name="GOBLING_REMASTER_ANIMACIONES" parent="." unique_id=1321542946 instance=ExtResource("2_model")]
 transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
 
-[node name="Armature" parent="GOBLING_REMASTER_ANIMACIONES" index="0" unique_id=1014375720]
+[node name="Armature" parent="GOBLING_REMASTER_ANIMACIONES" index="0" unique_id=1920315718]
 transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
 
-[node name="Skeleton3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature" index="0" unique_id=836578801]
+[node name="Skeleton3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature" index="0" unique_id=1890746250]
 bones/0/position = Vector3(0.74351466, -1.3425565, -69.56555)
 bones/0/rotation = Quaternion(-0.738634, -0.2595966, 0.2218845, 0.58120286)
 bones/1/rotation = Quaternion(-0.019537956, -0.0002559158, -0.0021345024, 0.9998069)

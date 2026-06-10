@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bexms5mooba8q"
-path="res://.godot/imported/CANONERO_D.jpg-c5c1e0373d842783524d2a5edf7ce890.ctex"
+path="res://.godot/imported/CANONERO_D.jpg-ff3755699ae27f6c48037398c749fa6d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Canonero/CANONERO_D.jpg"
-dest_files=["res://.godot/imported/CANONERO_D.jpg-c5c1e0373d842783524d2a5edf7ce890.ctex"]
+source_file="res://Assets/Characters/Canonero/CANONERO_D.jpg"
+dest_files=["res://.godot/imported/CANONERO_D.jpg-ff3755699ae27f6c48037398c749fa6d.ctex"]
 
 [params]
 

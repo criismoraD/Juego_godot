@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://cmk6lngwsul7m"]
+
+[ext_resource type="PackedScene" uid="uid://dgatsttvqixnc" path="res://Scenes/Characters/Goblin.tscn" id="1_7nkvu"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_7nkvu"]
+
+[node name="Ejemplo" type="Node3D" unique_id=1042530971]
+
+[node name="Goblin" parent="." unique_id=1152949305 instance=ExtResource("1_7nkvu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.39741087, 0.47661692, 0.56992984)
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1296296143]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3012042, 1.6337823)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1635126650]
+transform = Transform3D(48.802166, 0, 0, 0, 0.05190736, 0, 0, 0, -3.1778793, 0, 0, 0)
+mesh = SubResource("BoxMesh_7nkvu")

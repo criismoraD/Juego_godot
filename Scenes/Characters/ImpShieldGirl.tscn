@@ -11,7 +11,8 @@ height = 0.6161377
 [node name="ImpShieldGirl" type="CharacterBody3D" unique_id=1321773441]
 collision_layer = 4
 script = ExtResource("1_script")
-velocidad_caminar = 0.6
+velocidad_caminar = 0.65
+fuerza_horizontal = 2.0
 rotacion_y_modelo = 270.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=261174301]
@@ -21,7 +22,7 @@ shape = SubResource("CapsuleShape3D_col")
 [node name="GIRL_IMP_ESCUDO" parent="." unique_id=2243237 instance=ExtResource("2_model")]
 transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
 
-[node name="Skeleton3D" parent="GIRL_IMP_ESCUDO/Armature" parent_id_path=PackedInt32Array(2243237, 882323811) index="0" unique_id=1035025305]
+[node name="Skeleton3D" parent="GIRL_IMP_ESCUDO/Armature" parent_id_path=PackedInt32Array(2243237, 229051577) index="0" unique_id=1222405878]
 bones/0/position = Vector3(-6.4355664, 9.441302, -41.312744)
 bones/0/rotation = Quaternion(-0.7486003, -0.2167869, 0.2292905, 0.58311826)
 bones/1/rotation = Quaternion(-0.07564612, 0.037216045, 0.030092785, 0.9959855)
@@ -118,15 +119,12 @@ bones/62/rotation = Quaternion(0.6503409, 0.027523264, -0.03358441, 0.7584005)
 bones/63/rotation = Quaternion(0.41150415, 0.17360622, -0.011937189, 0.8946412)
 
 [node name="BoneAttachment3D" type="BoneAttachment3D" parent="GIRL_IMP_ESCUDO/Armature/Skeleton3D" index="1" unique_id=1278870673]
-transform = Transform3D(-0.41943365, -0.0614936, -0.9057005, 0.5300733, 0.7933564, -0.29934517, 0.73695105, -0.60564315, -0.30016446, 6.346632, 17.021585, -53.961422)
+transform = Transform3D(-0.41943365, -0.061493464, -0.9057002, 0.5300731, 0.79335624, -0.29934505, 0.73695105, -0.6056431, -0.3001644, 6.3466163, 17.021591, -53.961395)
 bone_name = "mixamorig_LeftHand"
 bone_idx = 10
 
 [node name="ESCUDO_IMP" parent="GIRL_IMP_ESCUDO/Armature/Skeleton3D/BoneAttachment3D" unique_id=594179190 instance=ExtResource("3_shield")]
 transform = Transform3D(-0.24939322, 1.2160344, -0.08564904, 0.8647357, 0.35647607, 0.23842251, 0.24334721, -0.020491987, -0.9350123, 5.0968895, 1.8717413, -12.917179)
-
-[node name="ShieldOfNoviceHero_M_NoviceHeroShield_0" parent="GIRL_IMP_ESCUDO/Armature/Skeleton3D/BoneAttachment3D/ESCUDO_IMP/ShieldOfNoviceHero" parent_id_path=PackedInt32Array(594179190, 144867123) index="0" unique_id=745362022]
-transform = Transform3D(0.9459017, -0.31510568, 0.07732074, 0.31491083, 0.9490028, 0.015019327, -0.0781102, 0.010142297, 0.9968933, -15.079666, 19.322346, -5.045429)
 
 [editable path="GIRL_IMP_ESCUDO"]
 [editable path="GIRL_IMP_ESCUDO/Armature/Skeleton3D/BoneAttachment3D/ESCUDO_IMP"]

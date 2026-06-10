@@ -3,13 +3,14 @@ extends "res://Scripts/Projectiles/EnemyProjectileBase.gd"
 
 const MIN_ARROW_SPEED: float = 10.0
 const MAX_ARROW_SPEED: float = 30.0
+const GOBLIN_ARROW_ORANGE: Color = Color(1.0, 0.28, 0.0)
 
 @export_category("Movimiento")
 @export var speed: float = 8.0
 
 
 func _init() -> void:
-	color_proyectil = Color(1.0, 0.5, 0.0)
+	color_proyectil = GOBLIN_ARROW_ORANGE
 
 
 func initialize(shoot_direction: Vector3, power: float = 1.0) -> void:

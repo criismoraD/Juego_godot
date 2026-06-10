@@ -7,6 +7,10 @@ const WAVE_UPDATE_INTERVAL: float = 0.25  # Actualizar progreso de oleada 4 vece
 const RUTA_SHADER_OUTLINE := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
 const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
 const OUTLINE_WIDTH_RUNTIME := 20.0
+
+@export_category("Debug")
+@export var debug_ui_enabled: bool = true
+
 var player: Node = null
 var health_container: HBoxContainer
 var heart_icons: Array = []
@@ -239,7 +243,7 @@ func _create_ui():
 	# ═══════════════════════════════════════════════════════════════════════════
 	toggle_ui_btn = Button.new()
 	toggle_ui_btn.name = "ToggleUIBtn"
-	toggle_ui_btn.text = "� UI"
+	toggle_ui_btn.text = "🔼 UI"
 	toggle_ui_btn.custom_minimum_size = Vector2(60, 28)
 	toggle_ui_btn.anchor_left = 1.0
 	toggle_ui_btn.anchor_right = 1.0
@@ -247,6 +251,7 @@ func _create_ui():
 	toggle_ui_btn.offset_right = -10
 	toggle_ui_btn.offset_top = 10
 	toggle_ui_btn.offset_bottom = 38
+	toggle_ui_btn.visible = debug_ui_enabled
 	toggle_ui_btn.pressed.connect(_toggle_bottom_panel)
 	_style_button(toggle_ui_btn, Color(0.3, 0.3, 0.4))
 	add_child(toggle_ui_btn)
@@ -589,6 +594,7 @@ func _create_pause_panel():
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_lvl = HSeparator.new()
 	sep_lvl.custom_minimum_size = Vector2(200, 10)
+	sep_lvl.visible = debug_ui_enabled
 	vbox.add_child(sep_lvl)
 
 	# ═══════════════ SELECTOR DE OLEADAS (DEBUG) ═══════════════
@@ -596,11 +602,13 @@ func _create_pause_panel():
 	lvl_label.text = "⚔️ CAMBIAR OLEADA (DEBUG)"
 	lvl_label.add_theme_font_size_override("font_size", 22)
 	lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lvl_label.visible = debug_ui_enabled
 	vbox.add_child(lvl_label)
 
 	var hbox_levels = HBoxContainer.new()
 	hbox_levels.alignment = BoxContainer.ALIGNMENT_CENTER
 	hbox_levels.add_theme_constant_override("separation", 10)
+	hbox_levels.visible = debug_ui_enabled
 	vbox.add_child(hbox_levels)
 
 	var btn_oleada_1 = Button.new()
@@ -804,6 +812,9 @@ func _style_button(btn: Button, color: Color):
 
 
 func _toggle_bottom_panel():
+	if not debug_ui_enabled:
+		return
+
 	bottom_panel.visible = not bottom_panel.visible
 	if bottom_panel.visible:
 		toggle_ui_btn.text = "🔽 UI"
@@ -1437,6 +1448,6 @@ func _revivir_aliadas():
 ## Activa/desactiva el modo mínimo: oculta todo excepto los corazones de vida.
 func set_modo_minimo(activo: bool):
 	if toggle_ui_btn:
-		toggle_ui_btn.visible = not activo
+		toggle_ui_btn.visible = debug_ui_enabled and not activo
 	if bottom_panel:
-		bottom_panel.visible = not activo
+		bottom_panel.visible = false
