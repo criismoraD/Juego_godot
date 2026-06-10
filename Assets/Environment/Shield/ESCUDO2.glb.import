@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://coaicf4rwl7v4"
-path="res://.godot/imported/escudo_partes.glb-62f4b6a93a0657ffe141b619f99db5a5.scn"
+uid="uid://ycl1ro422pd1"
+path="res://.godot/imported/ESCUDO2.glb-6dd7472b0b53569edcab79b0068b4f67.scn"
 
 [deps]
 
-source_file="res://Assets/Environment/Shield/escudo_partes.glb"
-dest_files=["res://.godot/imported/escudo_partes.glb-62f4b6a93a0657ffe141b619f99db5a5.scn"]
+source_file="res://Assets/Environment/Shield/ESCUDO2.glb"
+dest_files=["res://.godot/imported/ESCUDO2.glb-6dd7472b0b53569edcab79b0068b4f67.scn"]
 
 [params]
 

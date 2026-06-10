@@ -27,6 +27,8 @@
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://Assets/Protagonista/CAPA1_V.png" id="26_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Assets/Piso/PISO.glb" id="26_koe3n"]
 [ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Assets/PISO ALIADO.glb" id="28_072lj"]
+[ext_resource type="PackedScene" uid="uid://bmei2xlho4of8" path="res://Assets/Environment/PLATAFORMA_MURO_NIVEL03/Muro_Plataforma.tscn" id="29_ecyc1"]
+[ext_resource type="PackedScene" uid="uid://boae4yg408kxa" path="res://Assets/Environment/RAMPA_SUBIDA_NIVEL03/Escena_rampa_nivel3.tscn" id="30_qlcu2"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -428,6 +430,18 @@ transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 2.5800648, -0.840870
 
 [node name="PISO4" parent="." unique_id=1396447181 instance=ExtResource("26_koe3n")]
 transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 8.0085745, -0.8408709, -0.8788506)
+
+[node name="Muro_Plataforma" parent="." unique_id=919155994 instance=ExtResource("29_ecyc1")]
+transform = Transform3D(1.74, 0, 0, 0, 1.74, 0, 0, 0, 1.74, -1.958669, 0.13557607, -0.21495867)
+metadata/_edit_group_ = true
+
+[node name="Muro_Plataforma2" parent="Muro_Plataforma" unique_id=97763987 instance=ExtResource("29_ecyc1")]
+transform = Transform3D(-0.9978987, 0, 0.06479362, 0, 1, 0, -0.06479362, 0, -0.9978987, -0.92689073, 0, 0)
+metadata/_edit_group_ = true
+
+[node name="EscenaRampaNivel3" parent="Muro_Plataforma/Muro_Plataforma2" unique_id=866737437 instance=ExtResource("30_qlcu2")]
+transform = Transform3D(-1.1740283, -0.4135238, -0.04318855, -0.5490093, 0.8513194, -0.10696773, 0.1645194, -0.11005592, -0.6651549, -1.8976738, 0.26314393, 0.18242873)
+metadata/_edit_group_ = true
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

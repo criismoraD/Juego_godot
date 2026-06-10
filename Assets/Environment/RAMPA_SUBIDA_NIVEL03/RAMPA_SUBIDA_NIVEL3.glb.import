@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://coaicf4rwl7v4"
-path="res://.godot/imported/escudo_partes.glb-62f4b6a93a0657ffe141b619f99db5a5.scn"
+uid="uid://7oliq7q2w4q0"
+path="res://.godot/imported/RAMPA_SUBIDA_NIVEL3.glb-b4af5208ddd9a3aa221a420525eb8558.scn"
 
 [deps]
 
-source_file="res://Assets/Environment/Shield/escudo_partes.glb"
-dest_files=["res://.godot/imported/escudo_partes.glb-62f4b6a93a0657ffe141b619f99db5a5.scn"]
+source_file="res://Assets/Environment/RAMPA_SUBIDA_NIVEL03/RAMPA_SUBIDA_NIVEL3.glb"
+dest_files=["res://.godot/imported/RAMPA_SUBIDA_NIVEL3.glb-b4af5208ddd9a3aa221a420525eb8558.scn"]
 
 [params]
 
@@ -39,10 +39,10 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "materials": {
-"ESCUDO2_M": {
+"RAMPA_SUBIDA_NIVEL3_M": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Assets/Environment/Shield/ESCUDO2_MAT.tres",
-"use_external/path": "uid://bner43n6goist"
+"use_external/fallback_path": "res://Assets/Environment/RAMPA_SUBIDA_NIVEL03/RAMPA_SUBIDA_NIVEL3_MAT.tres",
+"use_external/path": "uid://btlkmk65effag"
 }
 }
 }

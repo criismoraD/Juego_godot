@@ -69,6 +69,15 @@ var fog_material: ShaderMaterial = null
 var capa001_sprite: Sprite3D = null
 # === MATERIALES CON OUTLINE ===
 var materials_with_outline: Array = []
+# === CALIDAD ===
+var Opcion_Calidad: OptionButton
+var Indice_Calidad_Actual: int = 0
+var Etiquetas_Calidad: Array = [
+	"Bajo (Mínimo - 30 FPS)",
+	"Medio (60 FPS)",
+	"Alto (Sin Límite)"
+]
+
 # === RESOLUCIÓN ===
 var resolution_option: OptionButton
 var fullscreen_check: CheckButton
@@ -92,6 +101,7 @@ var resolution_labels: Array = [
 
 func _ready():
 	layer = 100
+	_Aplicar_Calidad(0)
 	outlines_enabled = true
 	ShaderGlobals.asegurar_outline_global(outlines_enabled)
 
@@ -643,6 +653,27 @@ func _create_pause_panel():
 	)
 	_style_button(btn_carteles, Color(0.45, 0.35, 0.1))
 	hbox_levels.add_child(btn_carteles)
+
+	# ═══════════════ CALIDAD GRÁFICA ═══════════════
+	var sep_calidad = HSeparator.new()
+	sep_calidad.custom_minimum_size = Vector2(200, 10)
+	vbox.add_child(sep_calidad)
+
+	var qual_label = Label.new()
+	qual_label.text = "⚙️ CALIDAD GRÁFICA"
+	qual_label.add_theme_font_size_override("font_size", 22)
+	qual_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(qual_label)
+
+	Opcion_Calidad = OptionButton.new()
+	Opcion_Calidad.custom_minimum_size = Vector2(250, 40)
+	Opcion_Calidad.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	Opcion_Calidad.focus_mode = Control.FOCUS_NONE
+	for i in range(Etiquetas_Calidad.size()):
+		Opcion_Calidad.add_item(Etiquetas_Calidad[i], i)
+	Opcion_Calidad.selected = Indice_Calidad_Actual
+	Opcion_Calidad.item_selected.connect(_Al_Cambiar_Calidad)
+	vbox.add_child(Opcion_Calidad)
 
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_res = HSeparator.new()
@@ -1262,6 +1293,45 @@ func _toggle_escudos():
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONTROL DE ALIADAS
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTROL DE CALIDAD GRÁFICA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+func _Aplicar_Calidad(indice: int) -> void:
+	Indice_Calidad_Actual = indice
+	var vp := get_viewport()
+	if not vp:
+		return
+
+	match indice:
+		0:  # Bajo (Mínimo)
+			Engine.max_fps = 30
+			vp.msaa_3d = Viewport.MSAA_DISABLED
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+			vp.scaling_3d_scale = 0.5
+			vp.positional_shadow_atlas_size = 512
+			RenderingServer.directional_shadow_atlas_set_size(512, true)
+		1:  # Medio
+			Engine.max_fps = 60
+			vp.msaa_3d = Viewport.MSAA_DISABLED
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+			vp.scaling_3d_scale = 0.75
+			vp.positional_shadow_atlas_size = 1024
+			RenderingServer.directional_shadow_atlas_set_size(1024, true)
+		2:  # Alto
+			Engine.max_fps = 0  # Sin límite
+			vp.msaa_3d = Viewport.MSAA_2X
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+			vp.scaling_3d_scale = 1.0
+			vp.positional_shadow_atlas_size = 2048
+			RenderingServer.directional_shadow_atlas_set_size(2048, true)
+
+
+func _Al_Cambiar_Calidad(indice: int) -> void:
+	_Aplicar_Calidad(indice)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RESOLUCIÓN Y PANTALLA COMPLETA

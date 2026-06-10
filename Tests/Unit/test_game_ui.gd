@@ -90,3 +90,27 @@ func test_set_modo_minimo_null_safe():
 	_game_ui.set_modo_minimo(false)
 
 	assert_true(true, "La función es segura ante nulos")
+
+
+func test_aplicar_calidad_bajo():
+	add_child(_game_ui)
+	_game_ui._Aplicar_Calidad(0)
+	assert_eq(_game_ui.Indice_Calidad_Actual, 0, "El índice de calidad actual debería ser 0 (Bajo)")
+	assert_eq(Engine.max_fps, 30, "Engine.max_fps debería ser 30 para calidad Baja")
+	remove_child(_game_ui)
+
+
+func test_aplicar_calidad_medio():
+	add_child(_game_ui)
+	_game_ui._Aplicar_Calidad(1)
+	assert_eq(_game_ui.Indice_Calidad_Actual, 1, "El índice de calidad actual debería ser 1 (Medio)")
+	assert_eq(Engine.max_fps, 60, "Engine.max_fps debería ser 60 para calidad Media")
+	remove_child(_game_ui)
+
+
+func test_aplicar_calidad_alto():
+	add_child(_game_ui)
+	_game_ui._Aplicar_Calidad(2)
+	assert_eq(_game_ui.Indice_Calidad_Actual, 2, "El índice de calidad actual debería ser 2 (Alto)")
+	assert_eq(Engine.max_fps, 0, "Engine.max_fps debería ser 0 (Sin límite) para calidad Alta")
+	remove_child(_game_ui)
