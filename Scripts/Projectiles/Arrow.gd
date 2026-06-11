@@ -140,19 +140,37 @@ func _on_body_entered(body):
 	if tipo_dueño == TipoFlecha.JUGADOR and body.is_in_group("player"):
 		return
 
-	# Las flechas del JUGADOR ignoran escudos (los atraviesan)
-	# Solo las flechas enemigas interactúan con escudos
-	if tipo_dueño == TipoFlecha.ENEMIGO and body.has_method("recibir_golpe"):
-		body.recibir_golpe()
-		_safe_destroy()
-		return
+	# Interacción con escudos
+	if body.has_method("recibir_golpe"):
+		var es_enemigo = false
+		if "es_escudo_enemigo" in body:
+			es_enemigo = body.es_escudo_enemigo
 
-	# Si es flecha del jugador y encuentra un escudo, ignorarlo
-	if tipo_dueño == TipoFlecha.JUGADOR and body.is_in_group("escudos"):
+		if tipo_dueño == TipoFlecha.ENEMIGO:
+			if es_enemigo:
+				if _ray_ccd: _ray_ccd.add_exception(body)
+				return # Ignora el escudo enemigo y pasa de largo
+			else:
+				body.recibir_golpe()
+				_safe_destroy()
+				return
+		elif tipo_dueño == TipoFlecha.JUGADOR:
+			if es_enemigo:
+				body.recibir_golpe()
+				_safe_destroy()
+				return
+			else:
+				if _ray_ccd: _ray_ccd.add_exception(body)
+				return # Ignora el escudo aliado y pasa de largo
+	
+	# Por si acaso, si es un escudo sin el método (no debería pasar)
+	if body.is_in_group("escudos"):
+		if _ray_ccd: _ray_ccd.add_exception(body)
 		return
 
 	# Ignorar aliados (NPC) — las flechas los atraviesan
 	if body.is_in_group("allies"):
+		if _ray_ccd: _ray_ccd.add_exception(body)
 		return
 
 	# Verificar si es un suelo o plataforma (StaticBody3D o AnimatableBody3D)

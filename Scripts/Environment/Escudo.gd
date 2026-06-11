@@ -9,6 +9,8 @@ signal destruido
 @export var intensidad_tinte_dano: float = 0.5
 @export var duracion_flash: float = 0.1
 @export var intensidad_flash: float = 3.0
+@export_category("Bando")
+@export var es_escudo_enemigo: bool = false
 @export_category("Colisión")
 @export var bloquear_jugador: bool = false
 @export var bloquear_flechas_jugador: bool = false
@@ -204,7 +206,12 @@ func _destruir():
 				model_node = child
 				break
 
-		var escudo_partes = escudo_roto.get_node_or_null("escudo_partes")
+		var escudo_partes: Node3D = null
+		for child in escudo_roto.get_children():
+			if child is Node3D:
+				escudo_partes = child
+				break
+		
 		if escudo_partes and model_node:
 			escudo_partes.global_transform = model_node.global_transform
 

@@ -29,6 +29,7 @@
 [ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Assets/PISO ALIADO.glb" id="28_072lj"]
 [ext_resource type="PackedScene" uid="uid://bmei2xlho4of8" path="res://Assets/Environment/PLATAFORMA_MURO_NIVEL03/Muro_Plataforma.tscn" id="29_ecyc1"]
 [ext_resource type="PackedScene" uid="uid://boae4yg408kxa" path="res://Assets/Environment/RAMPA_SUBIDA_NIVEL03/Escena_rampa_nivel3.tscn" id="30_qlcu2"]
+[ext_resource type="PackedScene" path="res://Assets/Environment/Escudo_enemigo/Escudo_enemigo.tscn" id="31_lhtjo"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Scripts/Levels/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -98,7 +99,7 @@ escala_max_salto = 0.05
 velocidad_escalar_subir = 0.5
 velocidad_escalar_bajar = 0.5
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 203741057) index="0" unique_id=1418335897]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 295572687) index="0" unique_id=1531221273]
 bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
 bones/0/rotation = Quaternion(0.20858404, -0.48332727, 0.08169286, 0.8462941)
 bones/1/rotation = Quaternion(-0.0072454643, 0, 0, 0.9999738)
@@ -257,7 +258,7 @@ size = Vector2i(1920, 1080)
 [node name="TORRE" parent="SubViewportFrente3D" unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=1542131552]
+[node name="TORRE" parent="SubViewportFrente3D/TORRE" index="0" unique_id=579818858]
 layers = 1
 
 [node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]
@@ -442,6 +443,12 @@ metadata/_edit_group_ = true
 [node name="EscenaRampaNivel3" parent="Muro_Plataforma/Muro_Plataforma2" unique_id=866737437 instance=ExtResource("30_qlcu2")]
 transform = Transform3D(-1.1740283, -0.4135238, -0.04318855, -0.5490093, 0.8513194, -0.10696773, 0.1645194, -0.11005592, -0.6651549, -1.8976738, 0.26314393, 0.18242873)
 metadata/_edit_group_ = true
+
+[node name="Escudo_enemigo" parent="." unique_id=967318067 instance=ExtResource("31_lhtjo")]
+transform = Transform3D(-0.051633213, 0, -0.7314366, 0, 1, 0, 1.5873997, 0, -0.023791377, -3.8160882, 1.1350093, -0.22680807)
+
+[node name="Escudo_enemigo2" parent="." unique_id=1551086782 instance=ExtResource("31_lhtjo")]
+transform = Transform3D(-0.10236953, 0, -0.97709984, 0, 1, 0, 1.2304173, 0, -0.08129376, -1.8797896, 1.1068735, -0.24325174)
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

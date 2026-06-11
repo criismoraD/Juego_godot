@@ -7,6 +7,7 @@ const RutaSegura := preload("res://addons/arquera_godot_tools/ruta_segura.gd")
 var Panel_Principal: VBoxContainer
 var Etiqueta_Estado: Label
 var Boton_Procesar_Glb: Button
+var Boton_Procesar_Glb_Sin_Outline: Button
 var Boton_Panel_Inferior: Button
 
 
@@ -41,6 +42,11 @@ func _crear_ui() -> void:
 	Boton_Procesar_Glb.pressed.connect(_on_boton_procesar_glb_presionado)
 	Panel_Principal.add_child(Boton_Procesar_Glb)
 
+	Boton_Procesar_Glb_Sin_Outline = Button.new()
+	Boton_Procesar_Glb_Sin_Outline.text = "Extraer material + difuso (Sin next_pass)"
+	Boton_Procesar_Glb_Sin_Outline.pressed.connect(_on_boton_procesar_glb_sin_outline_presionado)
+	Panel_Principal.add_child(Boton_Procesar_Glb_Sin_Outline)
+
 	Etiqueta_Estado = Label.new()
 	Etiqueta_Estado.text = "Estado: esperando seleccion."
 	Etiqueta_Estado.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -48,6 +54,14 @@ func _crear_ui() -> void:
 
 
 func _on_boton_procesar_glb_presionado() -> void:
+	_ejecutar_procesamiento(true)
+
+
+func _on_boton_procesar_glb_sin_outline_presionado() -> void:
+	_ejecutar_procesamiento(false)
+
+
+func _ejecutar_procesamiento(con_outline: bool) -> void:
 	var rutas_seleccionadas := PackedStringArray()
 	var interfaz := get_editor_interface()
 
@@ -64,7 +78,7 @@ func _on_boton_procesar_glb_presionado() -> void:
 		_mostrar_estado("Error: selecciona un archivo .glb en FileSystem.", true)
 		return
 
-	var resultado := _procesar_glb_seleccionado(ruta_glb)
+	var resultado := _procesar_glb_seleccionado(ruta_glb, con_outline)
 	if resultado["error"] != OK:
 		_mostrar_estado("Error: %s" % resultado["mensaje"], true)
 		return
@@ -82,7 +96,7 @@ func _obtener_ruta_glb_seleccionada(rutas: PackedStringArray) -> String:
 	return ""
 
 
-func _procesar_glb_seleccionado(ruta_glb: String) -> Dictionary:
+func _procesar_glb_seleccionado(ruta_glb: String, con_outline: bool = true) -> Dictionary:
 	if not _es_ruta_segura(ruta_glb):
 		return {
 			"error": ERR_INVALID_PARAMETER,
@@ -97,7 +111,7 @@ func _procesar_glb_seleccionado(ruta_glb: String) -> Dictionary:
 		}
 
 	var textura_difusa := _buscar_textura_difusa_en_carpeta(ruta_glb)
-	var material_final := _crear_material_final(textura_difusa, shader_toon)
+	var material_final := _crear_material_final(textura_difusa, shader_toon, con_outline)
 	var ruta_material := _generar_ruta_material(ruta_glb)
 	var error_guardado_material := ResourceSaver.save(material_final, ruta_material)
 	if error_guardado_material != OK:
@@ -123,16 +137,17 @@ func _procesar_glb_seleccionado(ruta_glb: String) -> Dictionary:
 	}
 
 
-func _crear_material_final(textura_difusa: Texture2D, shader_toon: Shader) -> StandardMaterial3D:
+func _crear_material_final(textura_difusa: Texture2D, shader_toon: Shader, con_outline: bool = true) -> StandardMaterial3D:
 	var material_base := StandardMaterial3D.new()
 	material_base.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 	if textura_difusa:
 		material_base.albedo_texture = textura_difusa
 
-	var material_outline := ShaderMaterial.new()
-	material_outline.shader = shader_toon
-	material_base.next_pass = material_outline
+	if con_outline:
+		var material_outline := ShaderMaterial.new()
+		material_outline.shader = shader_toon
+		material_base.next_pass = material_outline
 
 	return material_base
 
@@ -156,10 +171,23 @@ func _aplicar_material_externo_en_import(ruta_glb: String, ruta_material: String
 
 	var materiales = subrecursos.get("materials", {})
 	if not (materiales is Dictionary) or materiales.is_empty():
-		return {
-			"error": ERR_UNAVAILABLE,
-			"mensaje": "No se encontraron materiales en _subresources del GLB."
-		}
+		if not (materiales is Dictionary):
+			materiales = {}
+		var doc := GLTFDocument.new()
+		var state := GLTFState.new()
+		if doc.append_from_file(ruta_glb, state) == OK:
+			var mats = state.materials
+			if mats:
+				for i in range(mats.size()):
+					var mat = mats[i]
+					if mat and not mat.name.is_empty():
+						materiales[mat.name] = {}
+		
+		if materiales.is_empty():
+			return {
+				"error": ERR_UNAVAILABLE,
+				"mensaje": "No se encontraron materiales en _subresources del GLB ni leyendo con GLTFDocument."
+			}
 
 	var uid_material := ResourceLoader.get_resource_uid(ruta_material)
 	var uid_texto := ""
@@ -194,10 +222,13 @@ func _aplicar_material_externo_en_import(ruta_glb: String, ruta_material: String
 
 func _forzar_reimport_glb(ruta_glb: String) -> void:
 	var fs = get_editor_interface().get_resource_filesystem()
-	if fs and fs.has_method("reimport_files"):
-		fs.reimport_files(PackedStringArray([ruta_glb]))
-	elif fs:
-		fs.scan()
+	if fs:
+		fs.update_file(ruta_glb + ".import")
+		fs.update_file(ruta_glb)
+		if fs.has_method("reimport_files"):
+			fs.reimport_files(PackedStringArray([ruta_glb]))
+		else:
+			fs.scan()
 
 
 func _buscar_textura_difusa_en_carpeta(ruta_glb: String) -> Texture2D:

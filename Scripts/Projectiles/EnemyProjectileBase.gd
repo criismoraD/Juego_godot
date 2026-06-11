@@ -179,6 +179,9 @@ func _on_body_entered(body: Node) -> void:
 
 	if body is StaticBody3D or body is AnimatableBody3D:
 		if body.has_method("recibir_golpe"):
+			if "es_escudo_enemigo" in body and body.es_escudo_enemigo:
+				return # Pasa a través del escudo enemigo
+			
 			body.recibir_golpe()
 			_on_impacto_con_escudo(body)
 			_stick_to_shield(body)

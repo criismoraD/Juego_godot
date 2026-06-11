@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://b4365tp1donxq" path="res://Scripts/Environment/Escudo.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://b0qmrhuhl2n7i" path="res://Assets/Environment/Escudo_enemigo/Escudonivel3.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://Assets/Environment/Escudo_enemigo/EscudoRoto_enemigo.tscn" id="3_roto"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.5, 2.0, 1.5)
+
+[node name="Escudo_enemigo" type="StaticBody3D"]
+script = ExtResource("1_script")
+es_escudo_enemigo = true
+color_borde_disolucion = Color(0.436917, 0.862681, 0.956321, 1)
+escena_escudo_roto = ExtResource("3_roto")
+
+[node name="Modelo" parent="." instance=ExtResource("2_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+shape = SubResource("BoxShape3D_1")
