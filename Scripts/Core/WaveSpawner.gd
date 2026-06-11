@@ -35,6 +35,9 @@ var active_goblins: Array = []
 var shield_imps_activos: Array = []  ## Lista de ImpShieldGirls activas
 var shield_spawn_timer: float = 5.0  ## Timer para spawn de escudo
 var enemigos_muertos_en_oleada: int = 0  ## Contador de muertos para la UI
+var max_shield_imps_to_spawn_this_wave: int = 0
+var shield_imps_spawned_this_wave: int = 0
+
 # === SEÑALES ===
 
 
@@ -83,6 +86,8 @@ func _start_wave():
 	enemigos_muertos_en_oleada = 0
 	is_wave_active = true
 	spawn_timer = 0.0  # Spawn inmediato al iniciar oleada
+	
+	shield_imps_spawned_this_wave = 0
 
 	oleada_iniciada.emit(current_wave)
 
@@ -95,40 +100,60 @@ func _spawn_goblin():
 	# Elegir qué tipo de enemigo spawnear
 	var scene_to_spawn: PackedScene
 
-	# Modo forzado: solo un tipo de enemigo
-	if forzar_tipo_enemigo == 0:
-		scene_to_spawn = escena_goblin
-	elif forzar_tipo_enemigo == 1:
-		scene_to_spawn = escena_goblin_girl
-	elif forzar_tipo_enemigo == 2:
-		scene_to_spawn = escena_imp
-	elif forzar_tipo_enemigo == 3:
-		scene_to_spawn = escena_canonero
-	elif probabilidad_igual:
-		# Probabilidad igual: 25% cada tipo
-		var roll = randf()
-		if roll < 0.25:
-			scene_to_spawn = escena_canonero
-		elif roll < 0.50:
-			scene_to_spawn = escena_imp
-		elif roll < 0.75:
-			scene_to_spawn = escena_goblin_girl
+	# Lógica para obligar/calcular el spawn de shield imps en la oleada
+	if max_shield_imps_to_spawn_this_wave > 0:
+		var remaining_shield_imps = max_shield_imps_to_spawn_this_wave - shield_imps_spawned_this_wave
+		var remaining_total_spawns = enemigos_por_oleada - goblins_spawned_in_wave
+		
+		if remaining_total_spawns <= remaining_shield_imps and remaining_shield_imps > 0:
+			scene_to_spawn = escena_imp_escudo
+			shield_imps_spawned_this_wave += 1
+		elif remaining_shield_imps > 0 and randf() < (float(remaining_shield_imps) / float(remaining_total_spawns)):
+			scene_to_spawn = escena_imp_escudo
+			shield_imps_spawned_this_wave += 1
 		else:
-			scene_to_spawn = escena_goblin
+			# El resto entre gobling ballesta y gobling girl (50/50)
+			if forzar_tipo_enemigo == 0:
+				scene_to_spawn = escena_goblin
+			elif forzar_tipo_enemigo == 1:
+				scene_to_spawn = escena_goblin_girl
+			else:
+				scene_to_spawn = escena_goblin_girl if randf() < 0.5 else escena_goblin
 	else:
-		# Probabilidades configuradas
-		var roll = randf()
-		if roll < probabilidad_canonero and escena_canonero:
-			scene_to_spawn = escena_canonero
-		elif roll < probabilidad_canonero + probabilidad_imp and escena_imp:
-			scene_to_spawn = escena_imp
-		elif (
-			roll < probabilidad_canonero + probabilidad_imp + probabilidad_goblin_girl
-			and escena_goblin_girl
-		):
-			scene_to_spawn = escena_goblin_girl
-		else:
+		# Modo forzado: solo un tipo de enemigo
+		if forzar_tipo_enemigo == 0:
 			scene_to_spawn = escena_goblin
+		elif forzar_tipo_enemigo == 1:
+			scene_to_spawn = escena_goblin_girl
+		elif forzar_tipo_enemigo == 2:
+			scene_to_spawn = escena_imp
+		elif forzar_tipo_enemigo == 3:
+			scene_to_spawn = escena_canonero
+		elif probabilidad_igual:
+			# Probabilidad igual: 25% cada tipo
+			var roll = randf()
+			if roll < 0.25:
+				scene_to_spawn = escena_canonero
+			elif roll < 0.50:
+				scene_to_spawn = escena_imp
+			elif roll < 0.75:
+				scene_to_spawn = escena_goblin_girl
+			else:
+				scene_to_spawn = escena_goblin
+		else:
+			# Probabilidades configuradas
+			var roll = randf()
+			if roll < probabilidad_canonero and escena_canonero:
+				scene_to_spawn = escena_canonero
+			elif roll < probabilidad_canonero + probabilidad_imp and escena_imp:
+				scene_to_spawn = escena_imp
+			elif (
+				roll < probabilidad_canonero + probabilidad_imp + probabilidad_goblin_girl
+				and escena_goblin_girl
+			):
+				scene_to_spawn = escena_goblin_girl
+			else:
+				scene_to_spawn = escena_goblin
 
 	if not scene_to_spawn:
 		push_error("[WaveSpawner] No scene to spawn!")
@@ -149,7 +174,11 @@ func _spawn_goblin():
 
 	# Conectar señal de muerte
 	if goblin.has_signal("died"):
-		goblin.died.connect(_on_goblin_died.bind(goblin))
+		if scene_to_spawn == escena_imp_escudo:
+			goblin.died.connect(_on_shield_imp_died.bind(goblin))
+			shield_imps_activos.append(goblin)
+		else:
+			goblin.died.connect(_on_goblin_died.bind(goblin))
 
 	active_goblins.append(goblin)
 	goblins_spawned_in_wave += 1
@@ -233,6 +262,8 @@ func get_active_shield_imps() -> Array:
 
 
 func _check_shield_imp_spawn(delta):
+	if max_shield_imps_to_spawn_this_wave > 0:
+		return
 	shield_spawn_timer -= delta
 	if shield_spawn_timer > 0:
 		return

@@ -157,7 +157,7 @@ func _on_body_entered(body):
 		elif tipo_dueño == TipoFlecha.JUGADOR:
 			if es_enemigo:
 				body.recibir_golpe()
-				_safe_destroy()
+				_stick_to_shield(body)
 				return
 			else:
 				if _ray_ccd: _ray_ccd.add_exception(body)
@@ -220,6 +220,53 @@ func _stick_to_surface():
 	var trail = get_node_or_null("TrailParticles")
 	if trail:
 		trail.emitting = false
+
+	# Programar destrucción después de un tiempo
+	get_tree().create_timer(tiempo_pegada).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_cleanup_materials()
+				queue_free()
+	)
+
+
+func _stick_to_shield(shield: Node3D):
+	is_stuck = true
+	velocity = Vector3.ZERO
+
+	# Desactivar colisiones para no seguir detectando
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
+
+	# Detener partículas de estela si existen
+	var trail = get_node_or_null("TrailParticles")
+	if trail:
+		trail.emitting = false
+
+	var glob_trans = global_transform
+	call_deferred("_reparent_to_shield", shield, glob_trans)
+
+
+func _reparent_to_shield(shield: Node3D, glob_trans: Transform3D):
+	if not is_instance_valid(shield):
+		_cleanup_materials()
+		queue_free()
+		return
+
+	var current_parent = get_parent()
+	if current_parent:
+		current_parent.remove_child(self)
+	shield.add_child(self)
+	global_transform = glob_trans
+
+	# Conectar señal de destrucción del escudo para auto-destruirse
+	if shield.has_signal("destruido"):
+		shield.destruido.connect(
+			func():
+				if is_instance_valid(self):
+					_cleanup_materials()
+					queue_free()
+		)
 
 	# Programar destrucción después de un tiempo
 	get_tree().create_timer(tiempo_pegada).timeout.connect(

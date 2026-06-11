@@ -643,6 +643,17 @@ func _create_pause_panel():
 	_style_button(btn_oleada_2, Color(0.6, 0.2, 0.4))
 	hbox_levels.add_child(btn_oleada_2)
 
+	var btn_oleada_3 = Button.new()
+	btn_oleada_3.text = "Oleada 3"
+	btn_oleada_3.custom_minimum_size = Vector2(110, 40)
+	btn_oleada_3.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_cambio_oleada_debug(3)
+	)
+	_style_button(btn_oleada_3, Color(0.5, 0.3, 0.6))
+	hbox_levels.add_child(btn_oleada_3)
+
 	var btn_carteles = Button.new()
 	btn_carteles.text = "Carteles"
 	btn_carteles.custom_minimum_size = Vector2(110, 40)
@@ -795,7 +806,10 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 	if not is_instance_valid(root_node):
 		return
 
-	if numero_oleada == 2:
+	if numero_oleada == 3:
+		if root_node.has_method("debug_ir_a_oleada_3"):
+			root_node.call("debug_ir_a_oleada_3")
+	elif numero_oleada == 2:
 		if root_node.has_method("debug_ir_a_oleada_2"):
 			root_node.call("debug_ir_a_oleada_2")
 	else:

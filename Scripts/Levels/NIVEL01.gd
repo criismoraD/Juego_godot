@@ -15,6 +15,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = ["enemy_projectiles", "enemies", 
 @export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
 @export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
 @export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
+@export var total_enemigos_oleada_3: int = 25  ## Enemigos totales en la Oleada 3
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
@@ -93,6 +94,10 @@ var _monitor_timer: float = 0.0
 	get_node_or_null("SubViewportFondo3D/SubViewport/VideoStreamPlayer") as VideoStreamPlayer
 )
 @onready var torre2_fondo: Node3D = _buscar_nodo_fondo_multiple(["TORRE", "TORRE2", "TORRE3"])
+@onready var escena_rampa_nivel3: Node3D = $EscenaRampaNivel3
+@onready var muro_plataforma: StaticBody3D = $Muro_Plataforma
+@onready var muro_plataforma2: StaticBody3D = $Muro_Plataforma2
+@onready var escudo_enemigo: EscudoDestruible = $Escudo_enemigo
 # === ESCENAS ===
 
 
@@ -100,6 +105,14 @@ func _ready():
 	_dialogo_audio_player = AudioStreamPlayer.new()
 	_dialogo_audio_player.bus = "Master"
 	add_child(_dialogo_audio_player)
+	
+	# Ocultar elementos de la oleada 3 al inicio
+	_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
+	_set_elemento_nivel3_activo(muro_plataforma, false)
+	_set_elemento_nivel3_activo(muro_plataforma2, false)
+	if is_instance_valid(escudo_enemigo):
+		_set_elemento_nivel3_activo(escudo_enemigo, false)
+
 	_forzar_refresco_outline_global()
 	_configurar_compositor_3d()
 	_configurar_render_subviewports()
@@ -574,18 +587,35 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	wave_spawner.probabilidad_igual = false
 	wave_spawner.forzar_tipo_enemigo = -1  # Normal
 
+	# Ocultar o mostrar elementos de la oleada 3
+	var activa_nivel3 := (numero_oleada == 3)
+	_set_elemento_nivel3_activo(escena_rampa_nivel3, activa_nivel3)
+	_set_elemento_nivel3_activo(muro_plataforma, activa_nivel3)
+	_set_elemento_nivel3_activo(muro_plataforma2, activa_nivel3)
+	if is_instance_valid(escudo_enemigo):
+		_set_elemento_nivel3_activo(escudo_enemigo, activa_nivel3)
+
 	if numero_oleada == 1:
 		# Oleada 1: solo Imp + GoblinGirl
 		wave_spawner.probabilidad_imp = 0.5
 		wave_spawner.probabilidad_goblin_girl = 0.5
 		# Desactivar goblin base (redirigir a goblin_girl)
 		wave_spawner.escena_goblin = wave_spawner.escena_goblin_girl
-	else:
+		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+	elif numero_oleada == 2:
 		# Oleada 2: Imp + GoblinGirl + Goblin (ballesta)
 		wave_spawner.probabilidad_imp = 0.33
 		wave_spawner.probabilidad_goblin_girl = 0.33
 		# Restaurar goblin base (ballesta)
 		wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
+		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+	elif numero_oleada == 3:
+		# Oleada 3: 7 imp escudos (ImpShieldGirl), y el resto entre gobling ballesta y gobling girl (el resto). Los otros no van aquí.
+		wave_spawner.probabilidad_imp = 0.0
+		wave_spawner.probabilidad_canonero = 0.0
+		wave_spawner.probabilidad_goblin_girl = 0.5
+		wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
+		wave_spawner.max_shield_imps_to_spawn_this_wave = 7
 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
@@ -618,7 +648,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 
 	wave_spawner.detener_spawning()
 
-	if oleada_combate_actual == 1:
+	if oleada_combate_actual == 1 or oleada_combate_actual == 2:
 		if transicion_carteles_en_progreso:
 			return
 		transicion_carteles_en_progreso = true
@@ -626,7 +656,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 		return
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
-	_log_debug("[NIVEL01] ¡Oleada 2 completada! Mostrando victoria con botón continuar...")
+	_log_debug("[NIVEL01] ¡Oleada 3 completada! Mostrando victoria con botón continuar...")
 	_mostrar_victoria_con_continuar(
 		(
 			tr("NIVEL_1_COMPLETADO")
@@ -720,7 +750,10 @@ func _mostrar_inter_nivel_continuar():
 	overlay.add_child(center)
 
 	var label = Label.new()
-	label.text = tr("NIVEL_1_COMPLETADO")
+	if oleada_combate_actual == 1:
+		label.text = tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleada 1 completada!"
+	else:
+		label.text = "¡Oleada 2 completada!"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	# Usar LabelSettings para contorno y color blanco
@@ -758,9 +791,14 @@ func _mostrar_inter_nivel_continuar():
 	boton.pressed.connect(
 		func():
 			overlay.queue_free()
-			await _mostrar_cartel_nivel_2()
-			oleada_combate_actual = 2
-			_configurar_oleada_combate(total_enemigos_oleada_2, 2)
+			if oleada_combate_actual == 1:
+				await _mostrar_cartel_nivel_2()
+				oleada_combate_actual = 2
+				_configurar_oleada_combate(total_enemigos_oleada_2, 2)
+			elif oleada_combate_actual == 2:
+				await _mostrar_cartel_nivel_3()
+				oleada_combate_actual = 3
+				_configurar_oleada_combate(total_enemigos_oleada_3, 3)
 			transicion_carteles_en_progreso = false
 	)
 
@@ -786,6 +824,25 @@ func _mostrar_cartel_nivel_2() -> void:
 		overlay.queue_free()
 
 
+func _mostrar_cartel_nivel_3() -> void:
+	_limpiar_carteles_transicion()
+	var overlay := CanvasLayer.new()
+	overlay.layer = 205
+	overlay.name = "CartelNivel3"
+	add_child(overlay)
+
+	var texto = "Level 03"
+
+	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
+	overlay.add_child(label)
+	label.modulate = Color(1, 1, 1, 1)
+	label.scale = Vector2.ONE
+	await get_tree().create_timer(1.2).timeout
+
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+
+
 func _limpiar_carteles_transicion() -> void:
 	var cartel_1 = get_node_or_null("CartelNivel1Completado")
 	if is_instance_valid(cartel_1):
@@ -793,6 +850,9 @@ func _limpiar_carteles_transicion() -> void:
 	var cartel_2 = get_node_or_null("CartelNivel2")
 	if is_instance_valid(cartel_2):
 		cartel_2.queue_free()
+	var cartel_3 = get_node_or_null("CartelNivel3")
+	if is_instance_valid(cartel_3):
+		cartel_3.queue_free()
 
 
 func debug_mostrar_carteles_transicion() -> void:
@@ -801,6 +861,7 @@ func debug_mostrar_carteles_transicion() -> void:
 	transicion_carteles_en_progreso = true
 	await _mostrar_cartel_nivel1_completado()
 	await _mostrar_cartel_nivel_2()
+	await _mostrar_cartel_nivel_3()
 	transicion_carteles_en_progreso = false
 
 
@@ -810,6 +871,10 @@ func debug_ir_a_oleada_1() -> void:
 
 func debug_ir_a_oleada_2() -> void:
 	_iniciar_oleada_debug(2)
+
+
+func debug_ir_a_oleada_3() -> void:
+	_iniciar_oleada_debug(3)
 
 
 func _iniciar_oleada_debug(numero_oleada: int) -> void:
@@ -829,7 +894,10 @@ func _iniciar_oleada_debug(numero_oleada: int) -> void:
 	_set_aliadas_activas(true)
 	AudioManager.play_music(2)
 
-	if numero_oleada == 2:
+	if numero_oleada == 3:
+		oleada_combate_actual = 3
+		_configurar_oleada_combate(total_enemigos_oleada_3, 3)
+	elif numero_oleada == 2:
 		oleada_combate_actual = 2
 		_configurar_oleada_combate(total_enemigos_oleada_2, 2)
 	else:
@@ -1121,3 +1189,17 @@ func _set_juego_pausado_dialogo(bloqueado: bool):
 				nodo.set_physics_process(bool(estado_nodo["physics"]))
 
 		estados_proceso_dialogo.clear()
+
+
+func _set_elemento_nivel3_activo(nodo: Node, activo: bool) -> void:
+	if not is_instance_valid(nodo):
+		return
+	nodo.visible = activo
+	_set_collision_recursivo(nodo, activo)
+
+
+func _set_collision_recursivo(nodo: Node, activo: bool) -> void:
+	if nodo is CollisionShape3D:
+		nodo.set_deferred("disabled", not activo)
+	for child in nodo.get_children():
+		_set_collision_recursivo(child, activo)
