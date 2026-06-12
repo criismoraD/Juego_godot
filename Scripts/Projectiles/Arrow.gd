@@ -21,6 +21,7 @@ var _destroying: bool = false
 var _ray_ccd: RayCast3D
 var _last_ccd_pos: Vector3 = Vector3.ZERO  # OPT: Posición del último CCD check
 const CCD_MIN_MOVE: float = 0.05  # OPT: Distancia mínima antes de re-chequear CCD
+var gameplay_z_plane: float = 0.0
 
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
@@ -28,6 +29,12 @@ var _cached_particles: Array[Node] = []
 
 func _ready():
 	world_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		gameplay_z_plane = player.global_position.z
+	else:
+		gameplay_z_plane = 0.0
 
 	_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
 	_cached_particles = find_children("*", "GPUParticles3D", true, false)
@@ -66,8 +73,9 @@ func _physics_process(delta):
 	# 1. Aplicar gravedad
 	velocity.y -= world_gravity * escala_gravedad * delta
 
-	# 2. Forzar Z = 0 (2.5D)
+	# 2. Forzar Z (2.5D dinámico)
 	velocity.z = 0
+	global_position.z = gameplay_z_plane
 
 	# --- CCD Detection (RayCast) — OPT: solo si nos movimos lo suficiente ---
 	var ray = _ray_ccd

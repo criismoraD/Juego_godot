@@ -31,6 +31,7 @@ var offscreen_margin_bottom: float = DEFAULT_OFFSCREEN_MARGIN_BOTTOM
 var _cached_mesh_instances: Array[Node] = []
 var _destroying: bool = false
 var _lifecycle_id: int = 0
+var gameplay_z_plane: float = 0.0
 
 static var _projectile_material_cache: Dictionary = {}
 static var _trail_process_material_cache: Dictionary = {}
@@ -41,6 +42,12 @@ static var _tip_mesh: CylinderMesh = null
 
 func _ready() -> void:
 	add_to_group("enemy_projectiles")
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		gameplay_z_plane = player.global_position.z
+	else:
+		gameplay_z_plane = 0.0
+
 	_preparar_visuales()
 	_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
 	_aplicar_visuales_cacheados()
@@ -115,7 +122,7 @@ func _aplicar_movimiento_parabolico(delta: float, velocidad_actual: float, grave
 
 
 func _forzar_plano_y_rotacion() -> void:
-	global_position.z = 0.0
+	global_position.z = gameplay_z_plane
 	_actualizar_rotacion_por_direccion()
 
 
@@ -127,6 +134,12 @@ func _actualizar_rotacion_por_direccion() -> void:
 
 
 func _activar_desde_pool() -> void:
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		gameplay_z_plane = player.global_position.z
+	else:
+		gameplay_z_plane = 0.0
+
 	_lifecycle_id += 1
 	_destroying = false
 	is_stuck = false

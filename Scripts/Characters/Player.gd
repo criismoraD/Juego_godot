@@ -105,9 +105,9 @@ func _ready():
 	skeleton = find_child("Skeleton3D", true, false)
 	_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
 
-	# Añadir layer 10 al collision_mask para colisionar con BarreraLimite
-	# Layer 10 = bit 9 (los layers son 1-indexed pero los bits son 0-indexed)
-	collision_mask = collision_mask | (1 << 9)  # Añadir layer 10
+	# Añadir layer 10 al collision_mask para colisionar con BarreraLimite (bit 9)
+	# y remover layer 4 (Enemy Projectiles, bit 3) para no colisionar físicamente con proyectiles enemigos
+	collision_mask = (collision_mask | (1 << 9)) & ~(1 << 3)
 
 	if anim_tree:
 		# CONSTRUIR ÁRBOL DINÁMICAMENTE (Para evitar corrupciones del editor)

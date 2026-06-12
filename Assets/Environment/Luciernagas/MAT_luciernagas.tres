@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://6xrl54gs2c32"]
+
+[ext_resource type="Shader" uid="uid://vstq6prep6tn" path="res://Assets/Shaders/luciernagas.gdshader" id="1_luciernagas"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_luciernagas")
+shader_parameter/firefly_color = Color(0.99579245, 0.9579304, 0.8732861, 0.3137255)
+shader_parameter/grid_size = 28.13600128896
+shader_parameter/firefly_size = 0.051000002422499996
+shader_parameter/glow_strength = 2.0
+shader_parameter/drift_speed = 0.4
+shader_parameter/blink_speed = 3.1510001259225
+shader_parameter/drift_amplitude = 0.22200000891506

@@ -118,9 +118,9 @@ func _ready():
 	_configurar_render_subviewports()
 	_configurar_fondo_3d()
 
-	# Ocultar TextureRect del SubViewport
+	# Ocultar TextureRect del SubViewport solo si hay un video de fondo activo
 	if texture_rect:
-		texture_rect.visible = false
+		texture_rect.visible = (video_fondo == null)
 
 	_ajustar_subviewports_3d()
 	_configurar_capas_dof_fondo()
@@ -212,6 +212,10 @@ func _configurar_fondo_3d() -> void:
 		_aplicar_cobertura_fondo_animado()
 
 	_desactivar_sombras_recursivas(subviewport_fondo_3d)
+
+	if texture_rect:
+		texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		texture_rect.stretch_mode = TextureRect.STRETCH_SCALE
 
 
 func _aplicar_cobertura_fondo_animado() -> void:
@@ -965,7 +969,7 @@ func _reiniciar_nivel01_limpio():
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	get_tree().change_scene_to_file("res://Scenes/Levels/NIVEL01.tscn")
+	get_tree().change_scene_to_file(scene_file_path)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://ggp2woixujed"]
+
+[ext_resource type="Texture2D" uid="uid://byqemdexfu56q" path="res://Assets/Environment/GEAMA_NIVEL_06/GEMA_NIVEL06_D.jpg" id="1_vepog"]
+
+[resource]
+albedo_texture = ExtResource("1_vepog")

@@ -434,18 +434,22 @@ transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 8.0085745, -0.840870
 
 [node name="EscenaRampaNivel3" parent="." unique_id=866737437 instance=ExtResource("30_qlcu2")]
 transform = Transform3D(2.0570645, 0.7056116, 1.6840472e-08, -0.964515, 1.4956216, -0.09218207, -0.075925976, 0.117734276, 1.1710234, -0.2558775, 0.5603584, -0.3177722)
+visible = false
 metadata/_edit_group_ = true
 
 [node name="Muro_Plataforma2" parent="." unique_id=97763987 instance=ExtResource("29_ecyc1")]
 transform = Transform3D(-1.7363437, 0, 0.1127409, 0, 1.74, 0, -0.1127409, 0, -1.7363437, -3.5714588, 0.13557607, -0.21495867)
+visible = false
 metadata/_edit_group_ = true
 
 [node name="Muro_Plataforma" parent="." unique_id=919155994 instance=ExtResource("29_ecyc1")]
 transform = Transform3D(1.74, 0, 0, 0, 1.74, 0, 0, 0, 1.74, -1.958669, 0.13557607, -0.21495867)
+visible = false
 metadata/_edit_group_ = true
 
 [node name="Escudo_enemigo" parent="." unique_id=967318067 instance=ExtResource("31_lhtjo")]
 transform = Transform3D(0.25374106, 0, -0.9672722, 0, 1, 0, 0.9672722, 0, 0.25374106, -4.0877814, 1.1350093, -0.22680807)
+visible = false
 fuerza_explosion = 1.0
 fuerza_horizontal = 2.0
 torque_min = -2.0
