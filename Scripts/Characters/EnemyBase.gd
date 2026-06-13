@@ -42,6 +42,12 @@ enum State { WALKING, SHOOTING, DYING, DEAD }
 @export var particulas_escala_min: float = 0.005
 @export var particulas_escala_max: float = 0.015
 @export_range(0.0, 1.0, 0.1) var particulas_detener_emision: float = 0.7
+# === CONFIGURACIÓN - SOMBRA ===
+@export_category("Sombra")
+@export var sombra_opacidad: float = 1.0
+@export var sombra_tamano: Vector2 = Vector2(0.6, 0.6)
+@export var sombra_suavizado: float = 0.8
+@export var sombra_altura_max: float = 0.2 ## Altura donde la sombra desaparece al saltar
 # === REFERENCIAS ===
 var anim_player: AnimationPlayer
 var player_ref: Node3D = null
@@ -96,6 +102,14 @@ func _ready():
 	_buscar_skeleton()
 	_buscar_jugador()
 	_on_enemy_ready()  # Hook para subclases
+
+	# Sombra procedural debajo del personaje
+	var _sombra := SombraPersonaje.new()
+	_sombra.opacidad = sombra_opacidad
+	_sombra.tamano = sombra_tamano
+	_sombra.suavizado = sombra_suavizado
+	_sombra.altura_max_desvanecimiento = sombra_altura_max
+	add_child(_sombra)
 
 
 func _desactivar_bones_fisicos():

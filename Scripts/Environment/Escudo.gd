@@ -60,6 +60,7 @@ func _ready():
 		collision_layer = 2  # Layer del escudo
 		collision_mask = 0  # No detecta nada activamente
 
+
 	# Buscar el MeshInstance3D
 	_find_mesh_instance(self)
 

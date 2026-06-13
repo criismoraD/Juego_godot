@@ -1,15 +1,15 @@
 [gd_scene format=3 uid="uid://bmei2xlho4of8"]
 
-[ext_resource type="PackedScene" uid="uid://27nb2ytheeof" path="res://Assets/Environment/PLATAFORMA_MURO_NIVEL03/MURO_PLATAFORMA.glb" id="1_muro_model"]
+[ext_resource type="PackedScene" uid="uid://60upbrdfcjj8" path="res://Assets/Environment/PLATAFORMA_MURO_NIVEL03/MURO_PLATAFORMA.glb" id="1_muro_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_muro"]
-size = Vector3(0.9744873, 0.6403656, 0.5782318)
+size = Vector3(1.0332336, 0.57221174, 4)
 
 [node name="Muro_Plataforma" type="StaticBody3D" unique_id=919155994]
 
 [node name="MURO_PLATAFORMA" parent="." unique_id=851018342 instance=ExtResource("1_muro_model")]
-transform = Transform3D(1, 0, 0, 0, 0.93705297, 0, 0, 0, 1.7154539, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.89126253, 0, 0, 0, 1.7154539, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1194914070]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04888916, 0.2542038, -0.0060043335)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.006881714, 0.22012687, -0.006000042)
 shape = SubResource("BoxShape3D_muro")

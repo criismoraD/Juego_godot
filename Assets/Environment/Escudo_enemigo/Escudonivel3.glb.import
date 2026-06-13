@@ -44,6 +44,11 @@ _subresources={
 "use_external/fallback_path": "res://Assets/Environment/Escudo_enemigo/Escudonivel3_MAT.tres",
 "use_external/path": "uid://bi75w45xtwdd5"
 }
+},
+"nodes": {
+"PATH:Escudonivel3": {
+"mesh_instance/layers": 2
+}
 }
 }
 gltf/naming_version=2

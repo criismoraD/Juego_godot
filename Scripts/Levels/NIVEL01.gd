@@ -606,6 +606,8 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# Desactivar goblin base (redirigir a goblin_girl)
 		wave_spawner.escena_goblin = wave_spawner.escena_goblin_girl
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+		wave_spawner.max_imp_escudo_activos = 1
+		wave_spawner.intervalo_check_escudo = 8.0
 	elif numero_oleada == 2:
 		# Oleada 2: Imp + GoblinGirl + Goblin (ballesta)
 		wave_spawner.probabilidad_imp = 0.33
@@ -613,13 +615,17 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# Restaurar goblin base (ballesta)
 		wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+		wave_spawner.max_imp_escudo_activos = 1
+		wave_spawner.intervalo_check_escudo = 8.0
 	elif numero_oleada == 3:
-		# Oleada 3: 7 imp escudos (ImpShieldGirl), y el resto entre gobling ballesta y gobling girl (el resto). Los otros no van aquí.
+		# Oleada 3: 2 imp escudos activos a la vez, spawneados dinámicamente cada 6 seg
 		wave_spawner.probabilidad_imp = 0.0
 		wave_spawner.probabilidad_canonero = 0.0
 		wave_spawner.probabilidad_goblin_girl = 0.5
 		wave_spawner.escena_goblin = preload("res://Scenes/Characters/Goblin.tscn")
-		wave_spawner.max_shield_imps_to_spawn_this_wave = 7
+		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+		wave_spawner.max_imp_escudo_activos = 2
+		wave_spawner.intervalo_check_escudo = 6.0
 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):

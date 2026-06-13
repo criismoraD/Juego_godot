@@ -44,6 +44,11 @@ _subresources={
 "use_external/fallback_path": "res://Assets/Environment/RAMPA_SUBIDA_NIVEL03/RAMPA_SUBIDA_NIVEL3_MAT.tres",
 "use_external/path": "uid://btlkmk65effag"
 }
+},
+"nodes": {
+"PATH:RAMPA_SUBIDA_NIVEL3": {
+"mesh_instance/layers": 2
+}
 }
 }
 gltf/naming_version=2

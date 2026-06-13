@@ -99,5 +99,5 @@ lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=2
 
 Toon_LineaNegra_Activo={
 "type": "bool",
-"value": true
+"value": false
 }

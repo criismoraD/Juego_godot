@@ -62,11 +62,10 @@ delay_dialogo_pacifico = 0.5
 [node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting" unique_id=1150657961]
-transform = Transform3D(0.94819623, 0.051700268, -0.31345022, 0, 0.9866689, 0.16274051, 0.3176853, -0.15430994, 0.9355557, -5.7785883, 2.29496, 2.7377172)
+transform = Transform3D(0.9658404, -0.10534774, -0.23675792, 0.13902485, 0.981674, 0.13033843, 0.21868823, -0.15880133, 0.9627863, -5.7785883, 2.29496, 2.7377172)
 layers = 7
 light_energy = 0.3
 light_cull_mask = 3
-shadow_enabled = true
 shadow_opacity = 0.5
 shadow_blur = 0.2
 
@@ -98,6 +97,9 @@ escala_min_salto = 0.01
 escala_max_salto = 0.05
 velocidad_escalar_subir = 0.5
 velocidad_escalar_bajar = 0.5
+
+[node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
+transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
 [node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 203741057) index="0" unique_id=1418335897]
 bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
@@ -174,6 +176,7 @@ probabilidad_igual = true
 escena_imp_escudo = ExtResource("8_qcvbp")
 
 [node name="SpawnMarker" type="Marker3D" parent="WaveSpawner" unique_id=1697843293]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.861023e-06, 0)
 gizmo_extents = 0.5
 
 [node name="LIMITZONE" parent="." unique_id=2108357977 instance=ExtResource("9_8uf3n")]
@@ -433,28 +436,21 @@ transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 2.5800648, -0.840870
 transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 8.0085745, -0.8408709, -0.8788506)
 
 [node name="EscenaRampaNivel3" parent="." unique_id=866737437 instance=ExtResource("30_qlcu2")]
-transform = Transform3D(2.0570645, 0.7056116, 1.6840472e-08, -0.964515, 1.4956216, -0.09218207, -0.075925976, 0.117734276, 1.1710234, -0.2558775, 0.5603584, -0.3177722)
-visible = false
-metadata/_edit_group_ = true
-
-[node name="Muro_Plataforma2" parent="." unique_id=97763987 instance=ExtResource("29_ecyc1")]
-transform = Transform3D(-1.7363437, 0, 0.1127409, 0, 1.74, 0, -0.1127409, 0, -1.7363437, -3.5714588, 0.13557607, -0.21495867)
-visible = false
-metadata/_edit_group_ = true
+transform = Transform3D(2.0570645, 0.7056116, 1.6840472e-08, -0.964515, 1.4956216, -0.09218207, -0.075925976, 0.117734276, 1.1710234, -0.58331776, 0.42464143, -0.3177722)
 
 [node name="Muro_Plataforma" parent="." unique_id=919155994 instance=ExtResource("29_ecyc1")]
-transform = Transform3D(1.74, 0, 0, 0, 1.74, 0, 0, 0, 1.74, -1.958669, 0.13557607, -0.21495867)
-visible = false
-metadata/_edit_group_ = true
+transform = Transform3D(1.74, 0, 0, 0, 1.74, 0, 0, 0, 1.74, -2.4091039, 0.12527376, -0.9258966)
+
+[node name="Muro_Plataforma2" parent="." unique_id=1676189083 instance=ExtResource("29_ecyc1")]
+transform = Transform3D(1.74, 0, 0, 0, 1.74, 0, 0, 0, 1.74, -4.1019354, 0.12527376, -0.9258966)
 
 [node name="Escudo_enemigo" parent="." unique_id=967318067 instance=ExtResource("31_lhtjo")]
-transform = Transform3D(0.25374106, 0, -0.9672722, 0, 1, 0, 0.9672722, 0, 0.25374106, -4.0877814, 1.1350093, -0.22680807)
-visible = false
+transform = Transform3D(0.25374106, 0, -0.9672722, 0, 1, 0, 0.9672722, 0, 0.25374106, -4.5382166, 0.9809667, -0.37353668)
 fuerza_explosion = 1.0
 fuerza_horizontal = 2.0
-torque_min = -2.0
-torque_max = 2.0
-tiempo_congelar = 3.0
+torque_min = -1.0
+torque_max = 1.0
+tiempo_congelar = 5.0
 color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
 
 [editable path="Player"]

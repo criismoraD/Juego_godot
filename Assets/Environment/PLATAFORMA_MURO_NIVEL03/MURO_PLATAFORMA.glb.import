@@ -3,7 +3,7 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://27nb2ytheeof"
+uid="uid://60upbrdfcjj8"
 path="res://.godot/imported/MURO_PLATAFORMA.glb-ff80d78e1a0337c2fa418a78db86f916.scn"
 
 [deps]
@@ -43,6 +43,11 @@ _subresources={
 "use_external/enabled": true,
 "use_external/fallback_path": "res://Assets/Environment/PLATAFORMA_MURO_NIVEL03/MURO_PLATAFORMA_MAT.tres",
 "use_external/path": "uid://haea1cv8sf4t"
+}
+},
+"nodes": {
+"PATH:MURO_PLATAFORMA": {
+"mesh_instance/layers": 2
 }
 }
 }

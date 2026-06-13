@@ -165,17 +165,17 @@ func _configurar_ciclo_de_vida(lifecycle_id: int) -> void:
 	monitoring = false
 	get_tree().create_timer(SPAWN_COLLISION_DELAY).timeout.connect(
 		func() -> void:
-			if is_instance_valid(self) and is_inside_tree() and _lifecycle_id == lifecycle_id:
+			if is_instance_valid(self ) and is_inside_tree() and _lifecycle_id == lifecycle_id:
 				monitoring = true
 	)
 
 	get_tree().create_timer(tiempo_vida).timeout.connect(
 		func() -> void:
-			if is_instance_valid(self) and is_inside_tree() and _lifecycle_id == lifecycle_id:
+			if is_instance_valid(self ) and is_inside_tree() and _lifecycle_id == lifecycle_id:
 				_check_destroy()
 	)
 
-	var collision_callback := Callable(self, "_on_body_entered")
+	var collision_callback := Callable(self , "_on_body_entered")
 	if not body_entered.is_connected(collision_callback):
 		body_entered.connect(collision_callback)
 
@@ -251,7 +251,7 @@ func _programar_destruccion_pegada() -> void:
 	var lifecycle_id := _lifecycle_id
 	get_tree().create_timer(tiempo_pegada).timeout.connect(
 		func() -> void:
-			if is_instance_valid(self) and is_inside_tree() and _lifecycle_id == lifecycle_id:
+			if is_instance_valid(self ) and is_inside_tree() and _lifecycle_id == lifecycle_id:
 				_devolver_o_liberar()
 	)
 
@@ -263,16 +263,16 @@ func _reparent_to_shield(shield: Node3D, saved_transform: Transform3D) -> void:
 
 	var current_parent := get_parent()
 	if current_parent:
-		current_parent.remove_child(self)
+		current_parent.remove_child(self )
 
-	shield.add_child(self)
+	shield.add_child(self )
 	global_transform = saved_transform
 
 	if shield.has_signal("destruido"):
 		var lifecycle_id := _lifecycle_id
 		shield.destruido.connect(
 			func() -> void:
-				if is_instance_valid(self) and is_inside_tree() and _lifecycle_id == lifecycle_id:
+				if is_instance_valid(self ) and is_inside_tree() and _lifecycle_id == lifecycle_id:
 					_devolver_o_liberar()
 		)
 
@@ -291,14 +291,14 @@ func _safe_destroy() -> void:
 	var lifecycle_id := _lifecycle_id
 	get_tree().create_timer(DESTROY_DELAY).timeout.connect(
 		func() -> void:
-			if is_instance_valid(self) and is_inside_tree() and _lifecycle_id == lifecycle_id:
+			if is_instance_valid(self ) and is_inside_tree() and _lifecycle_id == lifecycle_id:
 				_devolver_o_liberar()
 	)
 
 
 func _devolver_o_liberar() -> void:
 	if has_meta(PROJECTILE_POOL_REF.META_SCENE_PATH):
-		PROJECTILE_POOL_REF.release(self)
+		PROJECTILE_POOL_REF.release(self )
 		return
 
 	_cleanup_materials()
@@ -332,7 +332,7 @@ func _check_destroy() -> void:
 
 
 func _check_off_screen() -> void:
-	var camera := CAMERA_UTILS_REF.obtener_camara_juego(self)
+	var camera := CAMERA_UTILS_REF.obtener_camara_juego(self )
 	if not camera:
 		return
 
@@ -424,6 +424,15 @@ static func _get_shared_projectile_material(
 	material.emission = color
 	material.emission_energy_multiplier = emission_energy
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	var shader = load("res://Assets/Shaders/TOON_PROYECTIL_LINEA.gdshader") as Shader
+	if shader:
+		var outline_mat = ShaderMaterial.new()
+		outline_mat.shader = shader
+		outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+		outline_mat.set_shader_parameter("outline_width", 20.0)
+		material.next_pass = outline_mat
+
 	_projectile_material_cache[key] = material
 	return material
 
@@ -433,8 +442,8 @@ static func _get_shared_body_mesh() -> CylinderMesh:
 		return _body_mesh
 
 	_body_mesh = CylinderMesh.new()
-	_body_mesh.top_radius = 0.015
-	_body_mesh.bottom_radius = 0.015
+	_body_mesh.top_radius = 0.025
+	_body_mesh.bottom_radius = 0.025
 	_body_mesh.height = 0.25
 	_body_mesh.radial_segments = 6
 	_body_mesh.rings = 1

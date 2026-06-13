@@ -23,6 +23,7 @@ var god_mode_btn: Button
 var restart_btn: Button
 var pause_btn: Button
 var outline_btn: Button
+var outline_proy_btn: Button
 var quit_btn: Button
 # === SLIDERS ===
 var bgm_slider: HSlider
@@ -39,6 +40,7 @@ var bottom_panel: Control
 var toggle_ui_btn: Button
 # === ESTADO ===
 var outlines_enabled: bool = true
+var outline_proy_enabled: bool = true
 var is_paused: bool = false
 var effects_enabled: bool = true  # Fog y DOF habilitados por defecto
 var shields_enabled: bool = true
@@ -103,7 +105,9 @@ func _ready():
 	layer = 100
 	_Aplicar_Calidad(0)
 	outlines_enabled = true
+	outline_proy_enabled = true
 	ShaderGlobals.asegurar_outline_global(outlines_enabled)
+	ShaderGlobals.asegurar_outline_proyectiles(outline_proy_enabled)
 
 	# Buscar al player
 	await get_tree().process_frame
@@ -124,6 +128,7 @@ func _ready():
 	# Crear la UI
 	_create_ui()
 	_aplicar_toggle_outline_global()
+	_aplicar_toggle_outline_proyectiles()
 
 	# Buscar WaveSpawner
 	_find_wave_spawner()
@@ -479,6 +484,16 @@ func _create_ui():
 	outline_btn.pressed.connect(_toggle_outlines)
 	_style_button(outline_btn, Color(0.1, 0.6, 0.5))
 	hbox2.add_child(outline_btn)
+
+	# --- TOGGLE OUTLINE PROYECTILES ---
+	outline_proy_btn = Button.new()
+	outline_proy_btn.text = "✏️ BORDES PROY: ON"
+	outline_proy_btn.custom_minimum_size = Vector2(170, 32)
+	outline_proy_btn.disabled = false
+	outline_proy_btn.tooltip_text = "Activar/Desactivar contorno en proyectiles enemigos"
+	outline_proy_btn.pressed.connect(_toggle_outlines_proyectiles)
+	_style_button(outline_proy_btn, Color(0.15, 0.55, 0.6))
+	hbox2.add_child(outline_proy_btn)
 
 	# --- TOGGLE ESCUDOS ---
 	btn_toggle_shields = Button.new()
@@ -1033,6 +1048,28 @@ func _update_spawn_buttons():
 func _toggle_outlines():
 	outlines_enabled = not outlines_enabled
 	_aplicar_toggle_outline_global()
+
+
+func _toggle_outlines_proyectiles():
+	outline_proy_enabled = not outline_proy_enabled
+	_aplicar_toggle_outline_proyectiles()
+
+
+func _aplicar_toggle_outline_proyectiles():
+	if not outline_proy_btn:
+		return
+
+	outline_proy_btn.disabled = false
+	if outline_proy_enabled:
+		outline_proy_btn.text = "✏️ BORDES PROY: ON"
+		outline_proy_btn.tooltip_text = "Desactivar contorno en proyectiles enemigos"
+		_style_button(outline_proy_btn, Color(0.15, 0.55, 0.6))
+	else:
+		outline_proy_btn.text = "✏️ BORDES PROY: OFF"
+		outline_proy_btn.tooltip_text = "Activar contorno en proyectiles enemigos"
+		_style_button(outline_proy_btn, Color(0.35, 0.35, 0.4))
+
+	ShaderGlobals.asegurar_outline_proyectiles(outline_proy_enabled)
 
 
 func _aplicar_toggle_outline_global():

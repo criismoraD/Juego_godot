@@ -30,7 +30,7 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="ArqueraModel" parent="." unique_id=1511312856 instance=ExtResource("2_fbx")]
 transform = Transform3D(-1.2807438e-07, 0, 2.93, 0, 2.93, 0, -2.93, 0, -1.2807438e-07, 0, 0, 0)
 
-[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 1243331645) index="0" unique_id=608991186]
+[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 203741057) index="0" unique_id=1418335897]
 bones/0/position = Vector3(0.017202642, 0.37265685, -0.00041715265)
 bones/0/rotation = Quaternion(0.019107139, -0.7145761, 0.011846915, 0.69919634)
 bones/1/position = Vector3(0, 0.02738903, -0.00039692313)

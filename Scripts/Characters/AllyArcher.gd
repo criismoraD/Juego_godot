@@ -66,6 +66,10 @@ func _ready():
 	if arrow_node and is_instance_valid(arrow_node):
 		arrow_node.visible = false
 
+	# Sombra procedural debajo del personaje
+	var _sombra := SombraPersonaje.new()
+	add_child(_sombra)
+
 	call_deferred("_iniciar")
 
 

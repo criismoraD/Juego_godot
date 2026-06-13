@@ -122,6 +122,10 @@ func _ready():
 	# Iniciar caminando
 	_play_animation(anim_caminar)
 
+	# Sombra procedural debajo del personaje
+	var _sombra := SombraPersonaje.new()
+	add_child(_sombra)
+
 	# Buscar enemigo a proteger después de un frame (para que todos estén listos)
 	call_deferred("_buscar_enemigo_a_proteger")
 

@@ -52,6 +52,12 @@ const JUMP_BUFFER_TIME: float = 0.12
 @export var color_particulas_salto: Color = Color(0.7, 0.65, 0.5, 0.5)  # Color de las partículas
 @export_range(0.01, 0.5, 0.01) var escala_min_salto: float = 0.05  # Tamaño mínimo
 @export_range(0.01, 0.5, 0.01) var escala_max_salto: float = 0.15  # Tamaño máximo
+# === CONFIGURACIÓN - SOMBRA ===
+@export_category("Sombra")
+@export var sombra_opacidad: float = 1.0
+@export var sombra_tamano: Vector2 = Vector2(0.6, 0.6)
+@export var sombra_suavizado: float = 0.8
+@export var sombra_altura_max: float = 0.2 ## Altura donde la sombra desaparece al saltar
 # Escena del proyectil flecha
 var eje_disparo: int = 0
 # === HITBOX / COLISIÓN ===
@@ -163,6 +169,14 @@ func _ready():
 		hitbox_altura_original = collision_shape_node.shape.height
 		hitbox_pos_y_original = collision_shape_node.position.y
 	_setup_hitbox_debug()
+
+	# Sombra procedural debajo del personaje
+	var _sombra := SombraPersonaje.new()
+	_sombra.opacidad = sombra_opacidad
+	_sombra.tamano = sombra_tamano
+	_sombra.suavizado = sombra_suavizado
+	_sombra.altura_max_desvanecimiento = sombra_altura_max
+	add_child(_sombra)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

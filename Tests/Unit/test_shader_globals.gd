@@ -16,4 +16,4 @@ func test_asegurar_outline_global_registra_parametro_bool() -> void:
 		"bool",
 		"El parametro global de outline debe estar registrado como bool"
 	)
-	assert_true(shader_global.get("value", false), "El outline global debe iniciar activo")
+	assert_false(shader_global.get("value", true), "El outline global debe iniciar inactivo para el editor")
