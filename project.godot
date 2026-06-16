@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Arrow of Anathema"
-run/main_scene="res://Scenes/UI/SplashScreen.tscn"
+run/main_scene="res://UI/SplashScreen.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 run/max_fps=30
 boot_splash/bg_color=Color(0, 0, 0, 1)
@@ -30,7 +30,7 @@ buses/default_bus_layout="uid://dcled5jpi5lun"
 
 [autoload]
 
-AudioManager="*res://Scripts/Core/AudioManager.gd"
+AudioManager="*res://System/Core/AudioManager.gd"
 
 [display]
 
@@ -98,6 +98,10 @@ lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=2
 [shader_globals]
 
 Toon_LineaNegra_Activo={
+"type": "bool",
+"value": false
+}
+Toon_Proyectiles_Enemigos_Activo={
 "type": "bool",
 "value": false
 }

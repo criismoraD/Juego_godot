@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Material" path="res://Entities/Environment/Luciernagas/MAT_luciernagas.tres" id="1_luciernagas_mat"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_luciernagas"]
+size = Vector2(50, 20)
+subdivide_width = 2
+subdivide_depth = 2
+orientation = 2
+
+[node name="LuciernagasPlane" type="MeshInstance3D"]
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_luciernagas")
+surface_material_override/0 = ExtResource("1_luciernagas_mat")

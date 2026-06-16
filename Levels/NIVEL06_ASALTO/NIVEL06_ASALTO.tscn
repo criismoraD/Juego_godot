@@ -1,0 +1,349 @@
+[gd_scene format=3 uid="uid://8f3m4e2ljiox"]
+
+[ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="1_ngt14"]
+[ext_resource type="Environment" uid="uid://dla06m2nrcawf" path="res://Entities/Environment/new_environment.tres" id="2_1ect1"]
+[ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Entities/Player/Player.tscn" id="3_4555i"]
+[ext_resource type="Script" uid="uid://dhksy0vksfyqc" path="res://System/Core/WaveSpawner.gd" id="4_bdpp7"]
+[ext_resource type="PackedScene" uid="uid://dgatsttvqixnc" path="res://Entities/Enemies/Goblin/Goblin.tscn" id="5_ca8va"]
+[ext_resource type="PackedScene" uid="uid://dh6gp8m68vbd3" path="res://Entities/Enemies/GoblinGirl/GoblinGirl.tscn" id="6_0ds13"]
+[ext_resource type="PackedScene" uid="uid://db57wrw5vlbsc" path="res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn" id="7_v1y8e"]
+[ext_resource type="PackedScene" uid="uid://d3x1a2b3c4d5e" path="res://Entities/Enemies/Canonero/Canonero.tscn" id="8_kybae"]
+[ext_resource type="PackedScene" uid="uid://dcqn4obnv8xjm" path="res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn" id="9_rpwsg"]
+[ext_resource type="PackedScene" uid="uid://c7a4c82odgcle" path="res://Entities/Environment/BarreraLimite/BarreraLimite.tscn" id="10_d2j4l"]
+[ext_resource type="Texture2D" uid="uid://5xc768bu5og5" path="res://Levels/NIVEL06_ASALTO/FONDO_NIVEL06_.png" id="13_gbsqo"]
+[ext_resource type="PackedScene" uid="uid://c0gtu2yrqpnxw" path="res://UI/GameUI.tscn" id="13_hlfi1"]
+[ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Entities/Environment/Floor/PISO ALIADO.glb" id="18_d05gx"]
+[ext_resource type="PackedScene" uid="uid://bgart4lvvsl43" path="res://Entities/Environment/GEAMA_NIVEL_06/GEMA_NIVEL06.glb" id="19_kj7nn"]
+[ext_resource type="PackedScene" uid="uid://b1iim2cocmmmp" path="res://Entities/Environment/ESTATUA_NIVEL06/ESTATUA_NIVEL06.glb" id="20_hy63g"]
+[ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Entities/Environment/Water/WaterPlane.tscn" id="20_teecx"]
+[ext_resource type="PackedScene" uid="uid://c20j7pudi7arc" path="res://Entities/Environment/BASE_ARQUERA/BASE_ARQUERA.tscn" id="21_4ihtv"]
+[ext_resource type="PackedScene" uid="uid://yx5kcwysxdn6" path="res://Entities/Environment/TRONO_NIVEL_06/TRONO_NIVEL06.glb" id="21_vwinx"]
+[ext_resource type="PackedScene" uid="uid://bu66x144x50gy" path="res://Entities/Environment/CARNE_NIVEL06/CARNE_NIVEL_06.glb" id="22_vo0hm"]
+[ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Entities/Environment/Tronco/Tronco.tscn" id="24_efwy6"]
+[ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="27_50kgx"]
+[ext_resource type="PackedScene" path="res://Entities/Environment/Luciernagas/LuciernagasPlane.tscn" id="28_luciernagas"]
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
+dof_blur_far_distance = 45.0
+dof_blur_far_transition = 1.0
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_gfe6n"]
+viewport_path = NodePath("SubViewportFondo3D/SubViewport")
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_cx8r4"]
+dof_blur_far_enabled = true
+dof_blur_far_distance = 45.9
+dof_blur_far_transition = 1.0
+dof_blur_amount = 0.11
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_cx8r4"]
+viewport_path = NodePath("SubViewportFondo3D")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_frente_3d"]
+viewport_path = NodePath("SubViewportFrente3D")
+
+[node name="Node3D" type="Node3D" unique_id=615207129]
+script = ExtResource("1_ngt14")
+velocidad_pacificos = 0.6
+offset_entre_pacificos = 0.6
+tamano_imagen_emisario = Vector2(200, 200)
+retroceso_parada_arqueras = 0.5
+delay_dialogo_pacifico = 0.5
+
+[node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting" unique_id=1150657961]
+transform = Transform3D(0.94819623, 0.051700268, -0.31345022, 0, 0.9866689, 0.16274051, 0.3176853, -0.15430994, 0.9355557, -5.7785883, 2.29496, 2.7377172)
+layers = 7
+light_energy = 0.15
+light_cull_mask = 3
+shadow_enabled = true
+shadow_opacity = 0.5
+shadow_blur = 0.2
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=1266906329]
+transform = Transform3D(0.40658453, -0.30609614, 0.8608101, 0.19945472, 0.9492161, 0.24332443, -0.8915757, 0.072760716, 0.4469887, 11.101227, 3.2153306, -2.8423328)
+visible = false
+layers = 3
+light_energy = 0.8
+light_cull_mask = 3
+shadow_enabled = true
+shadow_opacity = 0.5
+shadow_blur = 0.2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Lighting" unique_id=1658111597]
+environment = ExtResource("2_1ect1")
+
+[node name="PRESPECTIVA" type="Camera3D" parent="Lighting" unique_id=61242936]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 0
+attributes = SubResource("CameraAttributesPractical_frente")
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="Player" parent="." unique_id=1974804789 instance=ExtResource("3_4555i")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 3)
+color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
+escala_min_salto = 0.01
+escala_max_salto = 0.05
+velocidad_escalar_subir = 0.5
+velocidad_escalar_bajar = 0.5
+
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 203741057) index="0" unique_id=1418335897]
+bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
+bones/0/rotation = Quaternion(0.20858404, -0.48332727, 0.08169286, 0.8462941)
+bones/1/rotation = Quaternion(-0.0072454643, 0, 0, 0.9999738)
+bones/2/rotation = Quaternion(-1.21059225e-08, 0, 0, 1)
+bones/3/rotation = Quaternion(6.5185737e-09, 0, 0, 1)
+bones/4/rotation = Quaternion(0.00724547, 0, 0, 0.9999738)
+bones/5/rotation = Quaternion(9.920278e-10, 0, 0, 1)
+bones/9/rotation = Quaternion(-0.5481294, -0.44651356, 0.5492433, -0.44554648)
+bones/10/rotation = Quaternion(0.021415744, 0.000231693, 0.010818494, 0.9997121)
+bones/11/rotation = Quaternion(-0.00829339, -0.00018537682, 0.022362763, 0.9997155)
+bones/12/rotation = Quaternion(-0.023772946, -0.027509194, -0.037094872, 0.99865013)
+bones/13/rotation = Quaternion(0.26973575, 0.08741812, 0.29564896, 0.9122458)
+bones/14/rotation = Quaternion(-0.06007481, -4.1471827e-07, -3.4985325e-07, 0.9981939)
+bones/15/rotation = Quaternion(-0.07364571, 8.149066e-07, 6.077343e-07, 0.9972845)
+bones/19/rotation = Quaternion(-0.020919463, -0.004013118, 0.18835752, 0.9818695)
+bones/20/rotation = Quaternion(0.066155985, 2.4243377e-07, 2.1113894e-07, 0.9978093)
+bones/21/rotation = Quaternion(-0.0047092075, -5.598934e-07, -5.185629e-07, 0.9999889)
+bones/25/rotation = Quaternion(-0.058063086, -0.0040365057, 0.06923531, 0.99590105)
+bones/26/rotation = Quaternion(0.09072343, -1.4928509e-07, -3.6194282e-07, 0.99587613)
+bones/27/rotation = Quaternion(-0.00942262, 2.3726135e-07, 3.863292e-07, 0.9999556)
+bones/31/rotation = Quaternion(-0.02606058, 0.0009926759, -0.038054876, 0.9989353)
+bones/32/rotation = Quaternion(0.05875753, 8.5994316e-08, -8.088413e-08, 0.9982723)
+bones/33/rotation = Quaternion(0.023438573, -1.2893534e-07, -6.763293e-08, 0.9997253)
+bones/37/rotation = Quaternion(0.012781171, -0.0021515498, -0.16599812, 0.9860409)
+bones/38/rotation = Quaternion(0.09296669, -4.2410906e-07, -2.3895495e-07, 0.99566925)
+bones/39/rotation = Quaternion(0.07227322, 2.4751836e-07, 2.3253718e-07, 0.9973849)
+bones/43/rotation = Quaternion(0.5476157, -0.44693244, 0.5497435, 0.44514114)
+bones/44/rotation = Quaternion(0.021438885, -0.00026024197, -0.01213792, 0.99969643)
+bones/45/rotation = Quaternion(-0.008277396, 0.0001895792, -0.022897704, 0.9997035)
+bones/46/rotation = Quaternion(-0.022522453, 0.030587053, 0.034737203, 0.9986744)
+bones/47/rotation = Quaternion(0.27374253, -0.0879723, -0.29303837, 0.9118412)
+bones/48/rotation = Quaternion(-0.06904456, -8.61776e-07, -5.5584195e-07, 0.99761355)
+bones/49/rotation = Quaternion(-0.0011320091, 6.850011e-07, 4.2300945e-07, 0.99999934)
+bones/53/rotation = Quaternion(-0.013493788, 0.0027066378, -0.196661, 0.98037493)
+bones/54/rotation = Quaternion(0.06330208, 2.981412e-07, -9.852963e-08, 0.9979944)
+bones/55/rotation = Quaternion(0.09216472, -9.534215e-08, -1.282547e-07, 0.99574375)
+bones/59/rotation = Quaternion(-0.0421584, 0.0031653713, -0.07480207, 0.99630183)
+bones/60/rotation = Quaternion(0.07334288, -4.3374817e-07, -1.6983543e-07, 0.99730676)
+bones/61/rotation = Quaternion(0.014149186, 6.797559e-08, -5.238197e-08, 0.99989986)
+bones/65/rotation = Quaternion(-0.05747355, -0.0029612232, 0.051369727, 0.9970202)
+bones/66/rotation = Quaternion(0.089709796, -2.3030488e-07, -1.9268327e-07, 0.995968)
+bones/67/rotation = Quaternion(0.13453335, 1.9692362e-07, 1.1326327e-07, 0.9909091)
+bones/71/rotation = Quaternion(-0.008238363, -0.0016768659, 0.1994669, 0.9798685)
+bones/72/rotation = Quaternion(0.12436842, 2.5106954e-07, 3.4042242e-07, 0.9922361)
+bones/73/rotation = Quaternion(0.07164645, -5.4248875e-07, -3.4938319e-07, 0.9974301)
+bones/77/rotation = Quaternion(-0.000114148694, -0.00957034, 0.9998838, -0.011868258)
+bones/78/rotation = Quaternion(-0.058542818, 0.0009706282, -0.016542234, 0.99814737)
+bones/79/rotation = Quaternion(0.55242866, -0.010337352, 0.0068516736, 0.8334679)
+bones/80/rotation = Quaternion(0.25234112, 0.067223445, -0.017575951, 0.9651404)
+bones/84/rotation = Quaternion(5.6047833e-05, -0.004705328, 0.99991846, 0.011870324)
+bones/85/rotation = Quaternion(-0.07090171, -0.0011755719, 0.016535468, 0.99734557)
+bones/86/rotation = Quaternion(0.5592251, 0.010226039, -0.0068988795, 0.82892406)
+bones/87/rotation = Quaternion(0.251852, -0.06658933, 0.017373264, 0.9653158)
+
+[node name="BoneAttach_Arco" parent="Player/ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
+transform = Transform3D(0.7939709, 0.58018094, 0.18165906, 0.37088796, -0.22548074, -0.9008886, -0.48171797, 0.78265435, -0.39420742, 0.08868073, 0.25188085, 0.22538188)
+
+[node name="BoneAttach_Flecha" parent="Player/ArqueraModel/Armature/Skeleton3D" index="2" unique_id=1617127062]
+transform = Transform3D(-0.8160166, -0.44470984, 0.36925605, -0.3613687, -0.10609962, -0.9263669, 0.45114252, -0.88936806, -0.07412496, -0.15205328, 0.28115964, -0.16927162)
+
+[node name="WaveSpawner" type="Node3D" parent="." unique_id=818768354]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 4.746, 0.996, 3)
+script = ExtResource("4_bdpp7")
+escena_goblin = ExtResource("5_ca8va")
+escena_goblin_girl = ExtResource("6_0ds13")
+escena_imp = ExtResource("7_v1y8e")
+escena_canonero = ExtResource("8_kybae")
+intervalo_aparicion = 3.0
+probabilidad_goblin_girl = 0.0
+probabilidad_imp = 1.0
+probabilidad_igual = true
+escena_imp_escudo = ExtResource("9_rpwsg")
+
+[node name="SpawnMarker" type="Marker3D" parent="WaveSpawner" unique_id=1697843293]
+gizmo_extents = 0.5
+
+[node name="LIMITZONE" parent="." unique_id=2108357977 instance=ExtResource("10_d2j4l")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4137244, 0.157, 3)
+collision_layer = 512
+
+[node name="LIMITZONE2" parent="." unique_id=1939650596 instance=ExtResource("10_d2j4l")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.998, 1.331, 3)
+collision_layer = 512
+
+[node name="GameUI" parent="." unique_id=370663490 instance=ExtResource("13_hlfi1")]
+
+[node name="SubViewportFondo3D" type="SubViewport" parent="." unique_id=209823411]
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+
+[node name="FONDO ANIMADO" type="Sprite3D" parent="SubViewportFondo3D" unique_id=625058086]
+transform = Transform3D(1.9454114, 0, 0, 0, 1.55, 0, 0, 0, 1.55, -3, 3, -40.0256)
+layers = 2
+texture = SubResource("ViewportTexture_gfe6n")
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportFondo3D" unique_id=1162834119]
+size = Vector2i(1505, 1080)
+
+[node name="TextureRect" type="TextureRect" parent="SubViewportFondo3D/SubViewport" unique_id=22287514]
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("13_gbsqo")
+
+[node name="CamaraFondoDOF" type="Camera3D" parent="SubViewportFondo3D" unique_id=130995211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 2
+attributes = SubResource("CameraAttributesPractical_cx8r4")
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="PISO ALIADO2" parent="SubViewportFondo3D" unique_id=130398847 instance=ExtResource("18_d05gx")]
+transform = Transform3D(5.8257546, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -9.008362, -0.60681725, 1.9319737)
+
+[node name="PISO ALIADO3" parent="SubViewportFondo3D" unique_id=363751134 instance=ExtResource("18_d05gx")]
+transform = Transform3D(5.8257546, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -3.5785744, -0.60681725, 1.9319737)
+
+[node name="PISO ALIADO4" parent="SubViewportFondo3D" unique_id=10705687 instance=ExtResource("18_d05gx")]
+transform = Transform3D(6.312741, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, 2.0213656, -0.60681725, 1.9319737)
+
+[node name="PISO ALIADO6" parent="SubViewportFondo3D" unique_id=823273892 instance=ExtResource("18_d05gx")]
+transform = Transform3D(6.312741, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, 0.56291294, -0.14502954, -0.9489536)
+
+[node name="PISO ALIADO5" parent="SubViewportFondo3D" unique_id=1799504420 instance=ExtResource("18_d05gx")]
+transform = Transform3D(6.312741, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, 8.011137, -0.60681725, 1.9319737)
+
+[node name="SubViewportFrente3D" type="SubViewport" parent="." unique_id=164925310]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+
+[node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 1048573
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="Compositor3D" type="CanvasLayer" parent="." unique_id=1168423000]
+layer = 20
+
+[node name="Fondo3DRect" type="TextureRect" parent="Compositor3D" unique_id=1287558300]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_cx8r4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Frente3DRect" type="TextureRect" parent="Compositor3D" unique_id=1380745600]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_frente_3d")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("20_teecx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8948145, -0.17290789, -12.293223)
+layers = 2
+
+[node name="LuciernagasPlane" parent="." unique_id=20260612 instance=ExtResource("28_luciernagas")]
+transform = Transform3D(0.46957362, 0, 0, 0, 0.4591892, 0, 0, 0, 1, -2, -2.7711232, -13.379387)
+layers = 2
+
+[node name="LuciernagasPlane2" parent="." unique_id=1965515808 instance=ExtResource("28_luciernagas")]
+transform = Transform3D(0.15934308, 0, 0, 0, 0.4591892, 0, 0, 0, 1, 1.2830696, -2.7711232, 8.212326)
+layers = 2
+
+[node name="LuciernagasPlane3" parent="." unique_id=1887348996 instance=ExtResource("28_luciernagas")]
+transform = Transform3D(0.15934308, 0, 0, 0, 0.4591892, 0, 0, 0, 1, -9.841349, -2.7711232, 8.212326)
+layers = 2
+
+[node name="TestCube2-BASE_ENEMIGA" parent="." unique_id=1680604205 instance=ExtResource("21_4ihtv")]
+transform = Transform3D(1.7245237, 0, 0, 0, 1, 0, 0, 0, 1, -1.2776604, -0.843, 2.4402382)
+mesh_size = Vector3(17, 2, 3.855)
+subdivide_width = 10
+subdivide_height = 10
+subdivide_depth = 10
+uv_scale_sides = Vector2(0.2, 0.4)
+uv_scale_top = Vector2(0.2, 0.5)
+blend_sharpness = 4.0
+normal_intensity = 0.2
+displacement_scale_y = 0.0
+displacement_scale_xz = 0.166
+bevel_radius = 0.15
+
+[node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("24_efwy6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1883993, -0.20376292, 4.204008)
+
+[node name="CAPA001" type="Sprite3D" parent="." unique_id=712228843]
+transform = Transform3D(0.33966187, 0, 0, 0, 0.44676116, 0, 0, 0, 0.267, -2.9680815, 2.7402468, 24.064978)
+layers = 7
+modulate = Color(1, 1, 1, 0.15294118)
+texture = ExtResource("27_50kgx")
+
+[node name="GEMA_NIVEL062" parent="." unique_id=1934896155 instance=ExtResource("19_kj7nn")]
+transform = Transform3D(2.1623502, 0.5550364, 1.9890391, -0.74338067, 2.8961155, -9.4258105e-08, -1.9265842, -0.49451935, 2.232448, -11.694674, -1.9237406, -20.387981)
+
+[node name="GEMA_NIVEL063" parent="." unique_id=344547787 instance=ExtResource("19_kj7nn")]
+transform = Transform3D(0.637489, 0.0050218636, 0.27678075, 0.16559972, 0.5499222, -0.3913914, -0.22183229, 0.42495325, 0.5032198, -3.0781112, -0.1637423, 4.546225)
+
+[node name="GEMA_NIVEL064" parent="." unique_id=1663957148 instance=ExtResource("19_kj7nn")]
+transform = Transform3D(0.24923007, 0.02498588, -0.3617459, -0.22673526, 0.3532947, -0.1318104, 0.28297615, 0.26107198, 0.21299282, -1.0148644, -0.059753656, 4.640911)
+
+[node name="GEMA_NIVEL065" parent="." unique_id=1189882297 instance=ExtResource("19_kj7nn")]
+transform = Transform3D(0.31468156, -0.12212286, 0.36205876, 0.35907587, 0.2548702, -0.22612101, -0.13063323, 0.4063893, 0.25061482, 3.605948, -0.059753656, 4.640911)
+
+[node name="GEMA_NIVEL066" parent="." unique_id=431154523 instance=ExtResource("19_kj7nn")]
+transform = Transform3D(0.31468156, -0.12212286, 0.36205876, 0.35907587, 0.2548702, -0.22612101, -0.13063323, 0.4063893, 0.25061482, 1.4295285, -0.059753656, 4.640911)
+
+[node name="ESTATUA_NIVEL062" parent="." unique_id=771958599 instance=ExtResource("20_hy63g")]
+transform = Transform3D(3.373567, 0.7221832, 0, -0.7221832, 3.373567, 0, 0, 0, 3.4500005, -7.7878294, -1.1555169, -18.954636)
+
+[node name="SpotLight3D" type="SpotLight3D" parent="ESTATUA_NIVEL062" unique_id=1390077270]
+transform = Transform3D(0.2898551, 0, 0, 0, -0.2023704, 0.20751433, 0, -0.20751433, -0.2023704, 0, 1.3187674, -0.3945036)
+layers = 3
+light_color = Color(0.49411765, 0.95686275, 1, 1)
+light_energy = 50.0
+
+[node name="TRONO_NIVEL063" parent="." unique_id=451904413 instance=ExtResource("21_vwinx")]
+transform = Transform3D(2.375, 0, 0, 0, 2.375, 0, 0, 0, 2.375, 0.49190176, 0.7039764, -1.9049892)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=797276859]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.56910414, 1.3884885, 0)
+layers = 3
+light_color = Color(1, 0.7411765, 0.5529412, 1)
+light_energy = 0.535
+
+[node name="OmniLight3D2" type="OmniLight3D" parent="." unique_id=1494659293]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.56910414, 1.0378263, 4.0945683)
+layers = 3
+light_color = Color(1, 0.7411765, 0.5529412, 1)
+light_energy = 0.535
+omni_range = 7.3554583
+
+[node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=498936636]
+transform = Transform3D(1, 0, 0, 0, -0.9994215, -0.03400995, 0, 0.03400995, -0.9994215, 0, 3.200758, -5.341655)
+layers = 3
+light_color = Color(1, 0.8627451, 0.6431373, 1)
+light_energy = 3.775
+
+[node name="CARNE_NIVEL_062" parent="." unique_id=993006975 instance=ExtResource("22_vo0hm")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0.16897866, 0.20699978, 3.5311937)
+
+[editable path="Player"]
+[editable path="Player/ArqueraModel"]

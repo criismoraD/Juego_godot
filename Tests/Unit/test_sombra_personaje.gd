@@ -11,9 +11,9 @@ func before_each():
 
 
 func after_each():
-	if is_instance_valid(sombra) and sombra.is_inside_tree():
+	if is_instance_valid(sombra):
 		sombra.queue_free()
-		await get_tree().process_frame
+	await get_tree().process_frame
 
 
 func test_instanciacion_correcta():
@@ -123,8 +123,8 @@ func test_set_opacidad_runtime():
 func test_sombra_invisible_sin_colision():
 	# Arrange — sin suelo debajo, el raycast no colisiona
 	var parent = Node3D.new()
-	parent.global_position = Vector3(0, 100, 0)  # Muy alto, sin suelo
 	add_child(parent)
+	parent.global_position = Vector3(0, 100, 0)  # Muy alto, sin suelo
 	parent.add_child(sombra)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -134,6 +134,7 @@ func test_sombra_invisible_sin_colision():
 		if child is MeshInstance3D:
 			assert_false(child.visible, "Sombra invisible sin suelo detectado")
 
+	sombra.queue_free()
 	parent.queue_free()
 	await get_tree().process_frame
 

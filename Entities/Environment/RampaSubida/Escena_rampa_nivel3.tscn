@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://boae4yg408kxa"]
+
+[ext_resource type="PackedScene" uid="uid://7oliq7q2w4q0" path="res://Entities/Environment/RampaSubida/RAMPA_SUBIDA_NIVEL3.glb" id="1_cfosr"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mpmth"]
+size = Vector3(1, 0.08328247, 0.61901855)
+
+[node name="EscenaRampaNivel3" type="Node3D" unique_id=866737437]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=2114633884]
+
+[node name="RAMPA_SUBIDA_NIVEL32" parent="StaticBody3D" unique_id=1330677280 instance=ExtResource("1_cfosr")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1873884411]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.042648315, -0.001159668)
+shape = SubResource("BoxShape3D_mpmth")

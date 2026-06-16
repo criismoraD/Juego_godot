@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-const RUTA_SHADER_TOON := "res://Assets/Shaders/TOON_LINEANEGRA.gdshader"
+const RUTA_SHADER_TOON := "res://System/Shaders/TOON_LINEANEGRA.gdshader"
 const RutaSegura := preload("res://addons/arquera_godot_tools/ruta_segura.gd")
 
 var Panel_Principal: VBoxContainer

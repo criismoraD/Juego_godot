@@ -1,6 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://cf06i5jgmyxcn"]
-
-[ext_resource type="Texture2D" uid="uid://bpevp35gj3ijp" path="res://Assets/Environment/TRONO_NIVEL_06/TRONO_NIVEL06_D.jpg" id="1_you6k"]
-
-[resource]
-albedo_texture = ExtResource("1_you6k")

@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var goblin_arrow_script = preload("res://Scripts/Projectiles/GoblinArrow.gd")
+var goblin_arrow_script = preload("res://Entities/Projectiles/GoblinArrow.gd")
 
 func test_initialize_sets_direction_and_speed():
 	var arrow = goblin_arrow_script.new()

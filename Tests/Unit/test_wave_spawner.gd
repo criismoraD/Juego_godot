@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var WaveSpawnerScript = load("res://Scripts/Core/WaveSpawner.gd")
+var WaveSpawnerScript = load("res://System/Core/WaveSpawner.gd")
 var _spawner = null
 
 # Mock para AudioManager

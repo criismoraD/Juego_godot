@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var GameUIScript = load("res://Scripts/UI/GameUI.gd")
+var GameUIScript = load("res://UI/GameUI.gd")
 var _game_ui = null
 
 # Mock para AudioManager si no está presente
@@ -114,3 +114,57 @@ func test_aplicar_calidad_alto():
 	assert_eq(_game_ui.Indice_Calidad_Actual, 2, "El índice de calidad actual debería ser 2 (Alto)")
 	assert_eq(Engine.max_fps, 0, "Engine.max_fps debería ser 0 (Sin límite) para calidad Alta")
 	remove_child(_game_ui)
+
+
+func test_reconstruir_todos_escudos_mantiene_tipo_y_nombre():
+	# Arrange
+	var main_scene = Node3D.new()
+	get_tree().root.add_child(main_scene)
+	
+	var parent_node = Node3D.new()
+	parent_node.name = "ContenedorEscudos"
+	main_scene.add_child(parent_node)
+	
+	# Instanciar escudo base real
+	var esc_base_scene = load("res://Entities/Environment/Escudo/Escudo.tscn")
+	var esc_base = esc_base_scene.instantiate()
+	esc_base.name = "EscudoBaseTest"
+	parent_node.add_child(esc_base)
+	
+	# Instanciar escudo enemigo real
+	var esc_enem_scene = load("res://Entities/Environment/Escudo/Escudo_enemigo.tscn")
+	var esc_enem = esc_enem_scene.instantiate()
+	esc_enem.name = "EscudoEnemigoTest"
+	parent_node.add_child(esc_enem)
+	
+	# Inicializar GameUI y agregarlo al árbol
+	var game_ui = GameUIScript.new()
+	main_scene.add_child(game_ui)
+	
+	# Forzar que transcurran un par de frames para que _ready de los escudos se ejecute
+	# y agregue los escudos al grupo "escudos"
+	await wait_seconds(0.1)
+	
+	# Act: Guardar posiciones originales
+	game_ui._guardar_posiciones_escudos()
+	await wait_seconds(0.1)
+	
+	# Reconstruir los escudos
+	game_ui._reconstruir_todos_escudos()
+	await wait_seconds(0.1)
+	
+	# Assert
+	var nuevo_base = parent_node.get_node_or_null("EscudoBaseTest")
+	var nuevo_enem = parent_node.get_node_or_null("EscudoEnemigoTest")
+	
+	assert_not_null(nuevo_base, "El escudo base reconstruido debería existir")
+	assert_not_null(nuevo_enem, "El escudo enemigo reconstruido debería existir")
+	
+	# Verificar que el escudo base no es escudo enemigo, y el enemigo sí lo es
+	if nuevo_base:
+		assert_false(nuevo_base.get("es_escudo_enemigo"), "El escudo base no debería ser marcado como enemigo")
+	if nuevo_enem:
+		assert_true(nuevo_enem.get("es_escudo_enemigo"), "El escudo enemigo debería mantener la marca de enemigo")
+	
+	# Limpieza
+	main_scene.free()

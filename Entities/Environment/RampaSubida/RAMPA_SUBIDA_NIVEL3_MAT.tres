@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://btlkmk65effag"]
+
+[ext_resource type="Texture2D" uid="uid://dmm1hx0as4ygp" path="res://Entities/Environment/RampaSubida/RAMPA_SUBIDA_NIVEL3_D.jpg" id="1_bgvx2"]
+
+[resource]
+albedo_texture = ExtResource("1_bgvx2")

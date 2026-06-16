@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var nivel01_script = preload("res://Scripts/Levels/NIVEL01.gd")
+var nivel01_script = preload("res://Levels/NIVEL01/NIVEL01.gd")
 
 
 func test_calcular_tamano_render_aplica_escala() -> void:

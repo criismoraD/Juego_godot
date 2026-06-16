@@ -1,7 +1,0 @@
-[gd_scene format=3 uid="uid://c6j2y8jxvg1v"]
-
-[ext_resource type="PackedScene" uid="uid://c2ljsyetfeom7" path="res://Assets/Characters/ImpShieldGirl/ESCUDO_IMP.glb" id="1_glb"]
-
-[node name="ESCUDO_IMP" type="Node3D"]
-
-[node name="ESCUDO_IMP" parent="." instance=ExtResource("1_glb")]
