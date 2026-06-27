@@ -12,5 +12,6 @@ shader_parameter/outline_width = 2.46
 [resource]
 resource_name = "Hand Crossbow"
 next_pass = SubResource("ShaderMaterial_outline")
+cull_mode = 2
 shading_mode = 0
 albedo_texture = ExtResource("1_nvchs")

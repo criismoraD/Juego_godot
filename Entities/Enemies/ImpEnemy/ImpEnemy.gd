@@ -20,10 +20,13 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 @export var pausa_idle_max: float = 2.0  ## Pausa máxima en IDLE entre lanzamientos
 @export_category("Muerte - Explosión")
 @export var tiempo_antes_disolver: float = 1.8  ## Tiempo antes de empezar disolución
+@export var escala_sangre_min: float = 0.015  ## Escala mínima de las partículas de sangre al morir
+@export var escala_sangre_max: float = 0.03   ## Escala máxima de las partículas de sangre al morir
 @export_category("Retroceso")
 @export var tiempo_retroceder: float = 1.5  ## Duración que se reproduce la animación RETROCEDER tras LANZAR01
 @export var offset_post_lanzar: float = 0.3  ## Salto instantáneo de posición al terminar LANZAR01 (antes de RETROCEDER)
 @export var desplazamiento_retroceder: float = 0.3  ## Movimiento gradual total durante la animación RETROCEDER
+@export var velocidad_correr: float = 1.2  ## Velocidad de movimiento cuando corre (1.2 por defecto)
 # === COLOR DE SANGRE (compartido entre todos los Imps) ===
 static var sangre_morada: bool = true  ## Toggle rojo/morado para la sangre (morada por defecto)
 # === REFERENCIAS ESPECÍFICAS ===
@@ -38,14 +41,18 @@ var current_throw_anim: String = ""  ## Nombre de la animación de lanzamiento a
 var throw_anim_timer: float = 0.0  ## Timer para el momento exacto de lanzamiento
 var throw_anim_duration: float = 0.0  ## Duración total de la animación actual
 var current_throw_time: float = 0.0  ## Segundo exacto de lanzamiento para la animación actual
+var va_a_correr: bool = false  ## Determina si el Imp corre o camina en esta aparición
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOOKS DE ENEMYBASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
 func _on_enemy_ready():
-	# Partículas de muerte rojas
-	color_borde_disolucion = Color(1.0, 0.15, 0.1)
+	# Partículas de muerte del mismo color que la sangre
+	if sangre_morada:
+		color_borde_disolucion = Color(0.4, 0.0, 0.5)
+	else:
+		color_borde_disolucion = Color(0.6, 0.0, 0.0)
 
 	# El IMP no necesita tracking de spine (apunta por cálculo)
 	rastrear_jugador = false
@@ -53,8 +60,13 @@ func _on_enemy_ready():
 	# Aplicar material del Imp a todos los meshes
 	_aplicar_material_imp()
 
-	# Reproducir animación de caminar
-	_play_animation("CAMINAR")
+	# Decidir aleatoriamente si corre o camina (50% de probabilidad)
+	va_a_correr = randf() < 0.5
+	if va_a_correr:
+		velocidad_caminar = velocidad_correr
+		_play_animation("CORRER")
+	else:
+		_play_animation("CAMINAR")
 
 
 func _aplicar_material_imp():
@@ -79,7 +91,10 @@ func _es_hijo_de_bone_attachment(node: Node) -> bool:
 
 
 func _on_state_walking():
-	_play_animation("CAMINAR")
+	if va_a_correr:
+		_play_animation("CORRER")
+	else:
+		_play_animation("CAMINAR")
 
 
 func _on_state_shooting():
@@ -135,8 +150,8 @@ func _crear_explosion_sangre():
 	process_mat.gravity = Vector3(0, -6.0, 0)
 	process_mat.damping_min = 1.0
 	process_mat.damping_max = 3.0
-	process_mat.scale_min = 0.015
-	process_mat.scale_max = 0.03
+	process_mat.scale_min = escala_sangre_min
+	process_mat.scale_max = escala_sangre_max
 
 	# Color de sangre: rojo o morado según toggle
 	var color_base: Color

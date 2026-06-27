@@ -1,0 +1,47 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Material" uid="uid://c5e3f4h5j6k7l" path="res://Entities/Environment/Hojas/MAT_hojas.tres" id="1_mat_hojas"]
+
+[sub_resource type="Gradient" id="Gradient_Hojas"]
+offsets = PackedFloat32Array(0, 0.15, 0.85, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_Hojas"]
+gradient = SubResource("Gradient_Hojas")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_Hojas"]
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(25, 0.1, 0)
+emission_shape_offset = Vector3(-10, 10, 0)
+direction = Vector3(1, -1, 0)
+spread = 15.0
+initial_velocity_min = 0.5
+initial_velocity_max = 1.0
+angular_velocity_min = -60.0
+angular_velocity_max = 60.0
+gravity = Vector3(0.06, -0.12, 0)
+scale_min = 0.25
+scale_max = 0.5
+color_ramp = SubResource("GradientTexture1D_Hojas")
+anim_offset_max = 1.0
+turbulence_enabled = true
+turbulence_noise_strength = 0.001
+turbulence_noise_scale = 8.0
+turbulence_influence_min = 0.01
+turbulence_influence_max = 0.02
+
+[sub_resource type="QuadMesh" id="QuadMesh_Hojas"]
+material = ExtResource("1_mat_hojas")
+size = Vector2(0.8, 0.8)
+
+[node name="HojasPlane" type="GPUParticles3D"]
+layers = 2
+amount = 60
+lifetime = 22.0
+preprocess = 22.0
+lifetime_randomness = 0.3
+local_coords = true
+visibility_aabb = AABB(-30, -15, -1, 60, 30, 2)
+process_material = SubResource("ParticleProcessMaterial_Hojas")
+draw_pass_1 = SubResource("QuadMesh_Hojas")

@@ -30,7 +30,8 @@
 [ext_resource type="PackedScene" uid="uid://bmei2xlho4of8" path="res://Entities/Environment/MuroPlataforma/Muro_Plataforma.tscn" id="29_ecyc1"]
 [ext_resource type="PackedScene" uid="uid://boae4yg408kxa" path="res://Entities/Environment/RampaSubida/Escena_rampa_nivel3.tscn" id="30_qlcu2"]
 [ext_resource type="PackedScene" uid="uid://bjn66i0gdcsyf" path="res://Entities/Environment/Escudo/Escudo_enemigo.tscn" id="31_lhtjo"]
-[ext_resource type="Texture2D" uid="uid://bt1a7ijdc6c7g" path="res://Entities/hojas.png" id="34_hojas"]
+[ext_resource type="PackedScene" path="res://Entities/Environment/Hojas/HojasPlane.tscn" id="32_dapvp"]
+[ext_resource type="PackedScene" uid="uid://ce4x7k7odgcle" path="res://Entities/Environment/BarreraLimite/BarreraDestruyeFlechas.tscn" id="33_jrbhj"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -51,33 +52,6 @@ viewport_path = NodePath("SubViewportFondo3D")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_frente_3d"]
 viewport_path = NodePath("SubViewportFrente3D")
-
-[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_Hojas"]
-particles_animation = true
-particles_anim_h_frames = 7
-particles_anim_v_frames = 1
-particles_anim_loop = false
-
-[sub_resource type="Gradient" id="Gradient_Hojas"]
-offsets = PackedFloat32Array(0, 0.18939394, 0.82575756, 1)
-colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_Hojas"]
-gradient = SubResource("Gradient_Hojas")
-
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_Hojas"]
-particle_flag_disable_z = true
-emission_shape = 3
-emission_box_extents = Vector3(1000, 500, 1)
-spread = 20.0
-initial_velocity_min = 20.0
-initial_velocity_max = 80.0
-angular_velocity_max = 50.0
-gravity = Vector3(0, 10, 0)
-scale_min = 0.04
-scale_max = 0.08
-color_ramp = SubResource("GradientTexture1D_Hojas")
-anim_offset_max = 1.0
 
 [node name="Node3D" type="Node3D" unique_id=615207129]
 script = ExtResource("Script_Level01")
@@ -129,7 +103,7 @@ velocidad_escalar_bajar = 0.5
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 2002849133) index="0" unique_id=1907458588]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 171212619) index="0" unique_id=1244104876]
 bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
 bones/0/rotation = Quaternion(0.20858404, -0.48332727, 0.08169286, 0.8462941)
 bones/1/rotation = Quaternion(-0.0072454643, 0, 0, 0.9999738)
@@ -169,26 +143,12 @@ bones/55/rotation = Quaternion(0.09216472, -9.534215e-08, -1.282547e-07, 0.99574
 bones/59/rotation = Quaternion(-0.0421584, 0.0031653713, -0.07480207, 0.99630183)
 bones/60/rotation = Quaternion(0.07334288, -4.3374817e-07, -1.6983543e-07, 0.99730676)
 bones/61/rotation = Quaternion(0.014149186, 6.797559e-08, -5.238197e-08, 0.99989986)
-bones/65/rotation = Quaternion(-0.05747355, -0.0029612232, 0.051369727, 0.9970202)
-bones/66/rotation = Quaternion(0.089709796, -2.3030488e-07, -1.9268327e-07, 0.995968)
-bones/67/rotation = Quaternion(0.13453335, 1.9692362e-07, 1.1326327e-07, 0.9909091)
-bones/71/rotation = Quaternion(-0.008238363, -0.0016768659, 0.1994669, 0.9798685)
-bones/72/rotation = Quaternion(0.12436842, 2.5106954e-07, 3.4042242e-07, 0.9922361)
-bones/73/rotation = Quaternion(0.07164645, -5.4248875e-07, -3.4938319e-07, 0.9974301)
-bones/77/rotation = Quaternion(-0.000114148694, -0.00957034, 0.9998838, -0.011868258)
-bones/78/rotation = Quaternion(-0.058542818, 0.0009706282, -0.016542234, 0.99814737)
-bones/79/rotation = Quaternion(0.55242866, -0.010337352, 0.0068516736, 0.8334679)
-bones/80/rotation = Quaternion(0.25234112, 0.067223445, -0.017575951, 0.9651404)
-bones/84/rotation = Quaternion(5.6047833e-05, -0.004705328, 0.99991846, 0.011870324)
-bones/85/rotation = Quaternion(-0.07090171, -0.0011755719, 0.016535468, 0.99734557)
-bones/86/rotation = Quaternion(0.5592251, 0.010226039, -0.0068988795, 0.82892406)
-bones/87/rotation = Quaternion(0.251852, -0.06658933, 0.017373264, 0.9653158)
 
 [node name="BoneAttach_Arco" parent="Player/ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
-transform = Transform3D(0.7939709, 0.58018094, 0.18165906, 0.37088796, -0.22548074, -0.9008886, -0.48171797, 0.78265435, -0.39420742, 0.08868073, 0.25188085, 0.22538188)
+transform = Transform3D(0.12982777, 0.6304633, -0.76528436, 0.97160184, -0.23487617, -0.028668888, -0.19782199, -0.73982984, -0.6430531, 9.608515, 11.5223465, 7.963058)
 
 [node name="BoneAttach_Flecha" parent="Player/ArqueraModel/Armature/Skeleton3D" index="2" unique_id=1617127062]
-transform = Transform3D(-0.8160166, -0.44470984, 0.36925605, -0.3613687, -0.10609962, -0.9263669, 0.45114252, -0.88936806, -0.07412496, -0.15205328, 0.28115964, -0.16927162)
+transform = Transform3D(0.8513862, -0.523388, -0.034724385, 0.5240353, 0.84580415, 0.100008324, -0.022973001, -0.10334259, 0.9943803, -13.043999, 33.224396, 10.523079)
 
 [node name="WaveSpawner" type="Node3D" parent="." unique_id=818768354]
 transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 4.746284, 0.9962306, 0)
@@ -324,14 +284,6 @@ grow_vertical = 2
 texture = SubResource("ViewportTexture_frente_3d")
 expand_mode = 1
 stretch_mode = 5
-
-[node name="Hojas_Particulas" type="GPUParticles2D" parent="Compositor3D" unique_id=1168423005]
-material = SubResource("CanvasItemMaterial_Hojas")
-position = Vector2(627, 388)
-amount = 50
-texture = ExtResource("34_hojas")
-lifetime = 8.0
-process_material = SubResource("ParticleProcessMaterial_Hojas")
 
 [node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8948145, -0.17290789, -12.293223)
@@ -488,6 +440,13 @@ torque_min = -1.0
 torque_max = 1.0
 tiempo_congelar = 5.0
 color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
+
+[node name="HojasPlane" parent="." unique_id=250802195 instance=ExtResource("32_dapvp")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.974465, -6.77036)
+amount = 100
+
+[node name="BarreraDestruyeFlechas" parent="." unique_id=1852478489 instance=ExtResource("33_jrbhj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 2.5280352, 4.775, 4.765, 0)
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

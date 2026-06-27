@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://14ysaaq1xrq1"
-path.s3tc="res://.godot/imported/TEX_GOBLING.png-c644b7c54048cb5d9a8a2366b4ea15aa.s3tc.ctex"
-path.etc2="res://.godot/imported/TEX_GOBLING.png-c644b7c54048cb5d9a8a2366b4ea15aa.etc2.ctex"
+uid="uid://5qjul1pb1fl"
+path.s3tc="res://.godot/imported/PROTA_D.jpg-aff0b0bbf12b6270ec3ac04bd9651e23.s3tc.ctex"
+path.etc2="res://.godot/imported/PROTA_D.jpg-aff0b0bbf12b6270ec3ac04bd9651e23.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://Entities/Enemies/Goblin/TEX_GOBLING.png"
-dest_files=["res://.godot/imported/TEX_GOBLING.png-c644b7c54048cb5d9a8a2366b4ea15aa.s3tc.ctex", "res://.godot/imported/TEX_GOBLING.png-c644b7c54048cb5d9a8a2366b4ea15aa.etc2.ctex"]
+source_file="res://Entities/Player/PROTA_D.jpg"
+dest_files=["res://.godot/imported/PROTA_D.jpg-aff0b0bbf12b6270ec3ac04bd9651e23.s3tc.ctex", "res://.godot/imported/PROTA_D.jpg-aff0b0bbf12b6270ec3ac04bd9651e23.etc2.ctex"]
 
 [params]
 

@@ -144,6 +144,10 @@ func _on_body_entered(body):
 	if is_stuck:
 		return
 
+	if body.is_in_group("barrera_destruye_flechas"):
+		_safe_destroy()
+		return
+
 	# Ignorar al jugador si es flecha del jugador (para que no se pegue al salir)
 	if tipo_dueño == TipoFlecha.JUGADOR and body.is_in_group("player"):
 		return

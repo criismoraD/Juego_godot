@@ -53,6 +53,7 @@ var _escudos_cache: Array[Node] = []
 var btn_toggle_shields: Button
 var btn_toggle_allies: Button
 var btn_revive_allies: Button
+var btn_kill_allies: Button
 var plantillas_aliadas: Array = []  # [{name, parent_path, global_transform, template}]
 # === NODOS DE EFECTOS ===
 var world_environment: WorldEnvironment = null
@@ -519,6 +520,14 @@ func _create_ui():
 	_style_button(btn_revive_allies, Color(0.2, 0.55, 0.35))
 	hbox2.add_child(btn_revive_allies)
 
+	# --- MATAR ALIADAS ---
+	btn_kill_allies = Button.new()
+	btn_kill_allies.text = "💔 MATAR ALIADAS"
+	btn_kill_allies.custom_minimum_size = Vector2(145, 32)
+	btn_kill_allies.pressed.connect(_matar_aliadas)
+	_style_button(btn_kill_allies, Color(0.65, 0.25, 0.25))
+	hbox2.add_child(btn_kill_allies)
+
 	# --- SEPARADOR ---
 	var sep_blood = VSeparator.new()
 	sep_blood.custom_minimum_size.x = 8
@@ -742,7 +751,12 @@ func _create_pause_panel():
 	fullscreen_check.toggled.connect(_on_fullscreen_toggled)
 	vbox.add_child(fullscreen_check)
 
-	add_child(pause_panel)
+	var pause_layer: CanvasLayer = CanvasLayer.new()
+	pause_layer.name = "PauseLayer"
+	pause_layer.layer = 210
+	pause_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(pause_layer)
+	pause_layer.add_child(pause_panel)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -880,6 +894,13 @@ func _toggle_bottom_panel():
 		toggle_ui_btn.text = "🔽 UI"
 	else:
 		toggle_ui_btn.text = "🔼 UI"
+
+
+func set_bottom_panel_visible(visible: bool) -> void:
+	if not debug_ui_enabled or not bottom_panel:
+		return
+	bottom_panel.visible = visible
+	toggle_ui_btn.text = "🔽 UI" if visible else "🔼 UI"
 
 
 func _toggle_pause():
@@ -1546,8 +1567,10 @@ func _revivir_aliadas():
 		var existente: AllyArcher = _buscar_aliada_por_nombre(nombre_aliada)
 		if existente and is_instance_valid(existente):
 			if _aliada_esta_revivible(existente):
-				existente.name = "%s_DESCARTADA" % nombre_aliada
-				existente.queue_free()
+				if existente.has_method("revivir"):
+					existente.revivir()
+				_aplicar_estado_aliada(existente)
+				continue
 			else:
 				_aplicar_estado_aliada(existente)
 				continue
@@ -1576,6 +1599,12 @@ func _revivir_aliadas():
 
 		if nueva_aliada is AllyArcher:
 			_aplicar_estado_aliada(nueva_aliada)
+
+
+func _matar_aliadas():
+	for ally in AllyArcher.active_allies_cache:
+		if ally is AllyArcher and ally.current_state != AllyArcher.State.DEAD and ally.current_state != AllyArcher.State.DYING:
+			ally.recibir_dano(9999)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

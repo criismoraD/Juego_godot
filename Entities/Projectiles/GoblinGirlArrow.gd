@@ -31,9 +31,7 @@ func _actualizar_movimiento(delta: float) -> void:
 
 
 func _preparar_visuales() -> void:
-	_remove_glb_model()
 	_create_material()
-	_create_procedural_arrow()
 	_create_trail_particles()
 
 

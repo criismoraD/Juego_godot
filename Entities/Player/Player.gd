@@ -876,13 +876,13 @@ func control_visual_state(delta):
 
 				# Asegurar escala final
 				if arrow_node:
-					arrow_node.scale = Vector3(0.4, 0.4, 0.4)
+					arrow_node.scale = Vector3(40.0, 40.0, 40.0)
 
 			# Mostrar trayectoria y actualizar escala de flecha
 
 			if arrow_node:
 				var progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0)
-				var scale_val = progress * 0.4
+				var scale_val = progress * 40.0
 				arrow_node.scale = Vector3(scale_val, scale_val, scale_val)
 
 		AimState.AIMING:

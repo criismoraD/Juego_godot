@@ -588,6 +588,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	estado_actual = NivelEstado.NIVEL_1
 
 	# El total incluye los enemigos pacíficos supervivientes ya presentes
+	wave_spawner.oleada_combate = numero_oleada
 	wave_spawner.enemigos_por_oleada = total_enemigos + wave_spawner.active_goblins.size()
 	wave_spawner.probabilidad_canonero = 0.0
 	wave_spawner.probabilidad_igual = false
@@ -803,6 +804,11 @@ func _mostrar_inter_nivel_continuar():
 	boton.pressed.connect(
 		func():
 			overlay.queue_free()
+			# Revivir aliadas al pasar de nivel
+			for ally in AllyArcher.active_allies_cache:
+				if ally is AllyArcher and (ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING):
+					ally.revivir()
+			
 			if oleada_combate_actual == 1:
 				await _mostrar_cartel_nivel_2()
 				oleada_combate_actual = 2
@@ -1065,6 +1071,7 @@ func _iniciar_oleadas_libres():
 	wave_spawner.intervalo_aparicion = 4.0
 
 	# Reiniciar wave y arrancar
+	wave_spawner.oleada_combate = 0
 	wave_spawner.current_wave = 0
 	wave_spawner.goblins_spawned_in_wave = 0
 	wave_spawner.is_wave_active = false

@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dwto33rqm8v41"]
+
+[ext_resource type="Script" uid="uid://bdtjbuugjjkh8" path="res://Entities/Projectiles/ImpEstandarteArrow.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cm3pmk7uvpqpi" path="res://Entities/Flecha_Gobling_Estandarte.glb" id="2_whyi6"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_arrow"]
+radius = 0.052246094
+height = 0.63017094
+
+[node name="ImpEstandarteArrow" type="Area3D" unique_id=1985371313]
+collision_layer = 8
+collision_mask = 67
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1969468802]
+transform = Transform3D(-2.4767528e-08, 0.566615, 0, -0.566615, -2.4767528e-08, 0, 0, 0, 0.566615, -0.005086057, 2.2231861e-10, 0)
+shape = SubResource("CapsuleShape_arrow")
+
+[node name="ArrowModel" type="Node3D" parent="." unique_id=1918986067]
+
+[node name="Flecha_Gobling_Estandarte" parent="." unique_id=1076718347 instance=ExtResource("2_whyi6")]
+transform = Transform3D(0.8149277, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0018507466, 0)

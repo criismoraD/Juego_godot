@@ -31,16 +31,17 @@ enum State { WALKING, SHOOTING, DYING, DEAD }
 @export var intensidad_emision: float = 3.0
 # === CONFIGURACIÓN - PARTÍCULAS DE DISOLUCIÓN ===
 @export_category("Partículas de Disolución")
-@export var particulas_cantidad: int = 25
+@export var particulas_cantidad: int = 80
 @export var particulas_vida: float = 2.0
 @export var particulas_posicion: Vector3 = Vector3(-0.5, 0.1, 0)
+@export var particulas_offset_y: float = 0.3  ## Ajuste de altura extra cuando las partículas siguen al hueso Hips
 @export var particulas_caja: Vector3 = Vector3(0.2, 0.5, 0.1)
 @export var particulas_dispersion: float = 20.0
 @export var particulas_velocidad_min: float = 0.1
 @export var particulas_velocidad_max: float = 1.0
 @export var particulas_gravedad: Vector3 = Vector3(0, 0.1, 0)
 @export var particulas_escala_min: float = 0.005
-@export var particulas_escala_max: float = 0.015
+@export var particulas_escala_max: float = 0.02
 @export_range(0.0, 1.0, 0.1) var particulas_detener_emision: float = 0.7
 # === CONFIGURACIÓN - SOMBRA ===
 @export_category("Sombra")
@@ -177,7 +178,7 @@ func _process(_delta):
 	if is_dissolving and dissolve_particles and is_instance_valid(dissolve_particles):
 		var bone_pos = _get_hips_global_position()
 		if bone_pos != Vector3.ZERO:
-			dissolve_particles.global_position = bone_pos
+			dissolve_particles.global_position = bone_pos + Vector3(0, particulas_offset_y, 0)
 
 
 func _get_hips_global_position() -> Vector3:
@@ -606,7 +607,7 @@ func _finish_dissolve():
 func _create_dissolve_particles():
 	var particles = GPUParticles3D.new()
 	particles.name = "DissolveParticles"
-	particles.amount = particulas_cantidad
+	particles.amount = particulas_cantidad * 3
 	particles.lifetime = particulas_vida
 	particles.one_shot = false
 	particles.explosiveness = 0.0
@@ -620,8 +621,9 @@ func _create_dissolve_particles():
 	process_mat.initial_velocity_min = particulas_velocidad_min
 	process_mat.initial_velocity_max = particulas_velocidad_max
 	process_mat.gravity = particulas_gravedad
-	process_mat.scale_min = particulas_escala_min * 0.5
-	process_mat.scale_max = particulas_escala_max * 0.5
+	# Variación aleatoria de tamaño entre partículas (rango normalizado)
+	process_mat.scale_min = 0.5
+	process_mat.scale_max = 1.5
 
 	var gradient = Gradient.new()
 	gradient.set_color(0, color_borde_disolucion)
@@ -642,26 +644,29 @@ func _create_dissolve_particles():
 
 	particles.process_material = process_mat
 
+	# El tamaño del mesh controla directamente el tamaño visual de las partículas
+	var avg_radius: float = (particulas_escala_min + particulas_escala_max) / 2.0
 	var sphere = SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
+	sphere.radius = avg_radius
+	sphere.height = avg_radius * 2.0
 
 	var part_mat = StandardMaterial3D.new()
 	part_mat.albedo_color = color_borde_disolucion
 	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	part_mat.emission_enabled = true
 	part_mat.emission = color_borde_disolucion
-	part_mat.emission_energy_multiplier = intensidad_emision * 0.5
+	part_mat.emission_energy_multiplier = intensidad_emision
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sphere.material = part_mat
 
 	particles.draw_pass_1 = sphere
 
 	add_child(particles)
-	# Posicionar en el centro del cuerpo (hueso Hips) en vez de offset fijo
+	# Posicionar en el centro del cuerpo (hueso Hips) aplicando el offset vertical
 	var bone_pos = _get_hips_global_position()
 	if bone_pos != Vector3.ZERO:
-		particles.global_position = bone_pos
+		particles.global_position = bone_pos + Vector3(0, particulas_offset_y, 0)
 	else:
 		particles.position = particulas_posicion
 	particles.emitting = true

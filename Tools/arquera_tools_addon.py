@@ -33,8 +33,35 @@ import bpy
 import os
 from pathlib import Path
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from bpy.props import CollectionProperty, StringProperty
+from bpy.props import CollectionProperty, StringProperty, EnumProperty
 from bpy.types import Operator, OperatorFileListElement, Panel
+
+
+def ejecutar_op_viewport(context, op, **kwargs):
+    """Ejecuta un operador garantizando un contexto de 3D Viewport para evitar errores de area/contexto."""
+    view3d_area = None
+    for window in context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                view3d_area = area
+                break
+        if view3d_area:
+            break
+
+    if view3d_area:
+        try:
+            with context.temp_override(area=view3d_area):
+                op(**kwargs)
+                return True
+        except Exception as e:
+            print(f"[Arquera Tools] Fallo temp_override en {op}: {e}")
+
+    try:
+        op(**kwargs)
+        return True
+    except Exception as e:
+        print(f"[Arquera Tools] Fallo sin override en {op}: {e}")
+        return False
 
 
 class ARQUERA_OT_import_fbx_actions(Operator, ImportHelper):
@@ -136,11 +163,9 @@ class ARQUERA_OT_import_fbx_actions(Operator, ImportHelper):
             objetos_a_borrar = objetos_actuales - objetos_originales
 
             if objetos_a_borrar:
-                bpy.ops.object.select_all(action='DESELECT')
                 for obj in objetos_a_borrar:
                     if obj.name in bpy.data.objects:
-                        obj.select_set(True)
-                bpy.ops.object.delete(use_global=False, confirm=False)
+                        bpy.data.objects.remove(obj, do_unlink=True)
                 print(f"   Objetos temporales eliminados ({len(objetos_a_borrar)})")
 
         for arm_data in list(bpy.data.armatures):
@@ -336,11 +361,18 @@ def preparar_modelo(context, obj):
 
     pivot_x = (bbox_min[0] + bbox_max[0]) / 2.0
     pivot_y = (bbox_min[1] + bbox_max[1]) / 2.0
-    pivot_z = bbox_min[2]
+    
+    pivot_mode = getattr(context.scene, "arquera_pivot_mode", 'BOTTOM')
+    if pivot_mode == 'CENTER':
+        pivot_z = (bbox_min[2] + bbox_max[2]) / 2.0
+        print("  Alineando pivote al centro geometrico (CENTER)")
+    else:
+        pivot_z = bbox_min[2]
+        print("  Alineando pivote a la base del objeto (BOTTOM)")
 
     cursor_location_original = context.scene.cursor.location.copy()
     context.scene.cursor.location = (pivot_x, pivot_y, pivot_z)
-    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+    ejecutar_op_viewport(context, bpy.ops.object.origin_set, type='ORIGIN_CURSOR')
     context.scene.cursor.location = cursor_location_original
 
     print(f"  OK Pivote ajustado a base: ({pivot_x:.3f}, {pivot_y:.3f}, {pivot_z:.3f})")
@@ -355,28 +387,71 @@ def preparar_modelo(context, obj):
 
 
 def exportar_modelo(context, obj, output_dir):
+    # Usar el objeto activo para determinar el nombre del archivo final
     nombre_base = obj.name
-    armature_obj = buscar_armature_vinculado(obj)
+    if context.active_object:
+        nombre_base = context.active_object.name
 
     print(f"\n{'=' * 70}")
     print(f"EXPORTANDO MODELO: {nombre_base}")
     print(f"{'=' * 70}")
 
-    if armature_obj:
-        print(f"Rig detectado: {armature_obj.name}")
-        print("Animaciones: habilitadas para exportacion GLB")
-    else:
-        print("ADVERTENCIA No se detecto armature vinculado")
-        print("Se exportara solo la malla y materiales")
+    # Guardamos todos los objetos que el usuario tenía seleccionados inicialmente
+    objetos_seleccionados = list(context.selected_objects)
+    if not objetos_seleccionados:
+        objetos_seleccionados = [obj]
+
+    armatures_a_exportar = set()
+    meshes_a_exportar = set()
+
+    # 1. Procesar objetos seleccionados directamente e identificar sus armatures y jerarquías
+    for o in objetos_seleccionados:
+        if o.type == 'ARMATURE':
+            armatures_a_exportar.add(o)
+        elif o.type == 'MESH':
+            meshes_a_exportar.add(o)
+            arm = buscar_armature_vinculado(o)
+            if arm:
+                armatures_a_exportar.add(arm)
+
+        # 2. Procesar hijos recursivos (por si seleccionó un Empty, un grupo o un nodo padre)
+        for child in o.children_recursive:
+            if child.type == 'MESH':
+                meshes_a_exportar.add(child)
+                arm = buscar_armature_vinculado(child)
+                if arm:
+                    armatures_a_exportar.add(arm)
+            elif child.type == 'ARMATURE':
+                armatures_a_exportar.add(child)
+
+    # 3. Para cada armature que se va a exportar, buscar todos los meshes asociados en toda la escena
+    # (así garantizamos que si seleccionaron el armature o solo uno de los meshes, exportamos TODO el rig completo)
+    for arm in list(armatures_a_exportar):
+        for scene_obj in context.scene.objects:
+            if scene_obj.type == 'MESH':
+                if scene_obj.parent == arm or buscar_armature_vinculado(scene_obj) == arm:
+                    meshes_a_exportar.add(scene_obj)
+
+    # Combinamos todos los objetos que deben ser seleccionados en la exportación
+    todos_los_objetos = list(armatures_a_exportar) + list(meshes_a_exportar)
+
+    print(f"Objetos seleccionados por usuario: {[o.name for o in objetos_seleccionados]}")
+    print(f"Objetos finales a exportar en el GLB: {[o.name for o in todos_los_objetos]}")
 
     print("\n[1/2] Exportando GLB sin texturas embebidas (con animaciones si existen)...")
     glb_path = output_dir / f"{nombre_base}.glb"
 
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    if armature_obj:
-        armature_obj.select_set(True)
-    context.view_layer.objects.active = obj
+    # Seleccionar todos los objetos de la exportación (meshes + armatures)
+    for o_scene in context.scene.objects:
+        o_scene.select_set(False)
+    for o in todos_los_objetos:
+        o.select_set(True)
+
+    # Establecer un objeto activo válido para evitar problemas en el exportador
+    if context.active_object in todos_los_objetos:
+        context.view_layer.objects.active = context.active_object
+    elif todos_los_objetos:
+        context.view_layer.objects.active = todos_los_objetos[0]
 
     opciones_exportacion = {
         'filepath': str(glb_path),
@@ -393,31 +468,40 @@ def exportar_modelo(context, obj, output_dir):
     bpy.ops.export_scene.gltf(**opciones_exportacion)
     print(f"  OK GLB exportado: {glb_path.name}")
 
-    print("\n[2/2] Exportando textura difusa en JPG...")
-    textura_difusa_imagen = buscar_textura_difusa(obj)
+    print("\n[2/2] Exportando texturas difusas en JPG...")
+    texturas_exportadas = 0
+    
+    # Iterar sobre todos los meshes exportados para guardar sus texturas difusas correspondientes
+    for o in meshes_a_exportar:
+        textura_difusa_imagen = buscar_textura_difusa(o)
+        if textura_difusa_imagen:
+            # La textura se exporta con el nombre del mesh correspondiente
+            texture_out_path = output_dir / f"{o.name}_D.jpg"
+            formato_original = textura_difusa_imagen.file_format
+            ruta_original = textura_difusa_imagen.filepath_raw
 
-    if textura_difusa_imagen:
-        texture_out_path = output_dir / f"{nombre_base}_D.jpg"
-        formato_original = textura_difusa_imagen.file_format
-        ruta_original = textura_difusa_imagen.filepath_raw
+            try:
+                textura_difusa_imagen.filepath_raw = str(texture_out_path)
+                textura_difusa_imagen.file_format = 'JPEG'
+                textura_difusa_imagen.save()
+                print(f"  OK Textura exportada para {o.name}: {texture_out_path.name}")
+                texturas_exportadas += 1
+            except Exception as e:
+                print(f"  ADVERTENCIA No se pudo exportar la textura de {o.name}: {e}")
+            finally:
+                textura_difusa_imagen.filepath_raw = ruta_original
+                textura_difusa_imagen.file_format = formato_original
 
-        try:
-            textura_difusa_imagen.filepath_raw = str(texture_out_path)
-            textura_difusa_imagen.file_format = 'JPEG'
-            textura_difusa_imagen.save()
-            print(f"  OK Textura exportada: {texture_out_path.name}")
-        finally:
-            textura_difusa_imagen.filepath_raw = ruta_original
-            textura_difusa_imagen.file_format = formato_original
-    else:
-        print("  AVISO No se encontro textura difusa para exportar")
+    if texturas_exportadas == 0:
+        print("  AVISO No se encontraron texturas difusas para exportar")
 
     print(f"\n{'=' * 70}")
     print("EXPORTACION COMPLETADA")
     print(f"{'=' * 70}")
     print(f"Archivos generados en: {output_dir}")
     print(f"  - {nombre_base}.glb")
-    print(f"  - {nombre_base}_D.jpg")
+    if texturas_exportadas > 0:
+        print(f"  - Texturas JPG correspondientes a cada mesh")
     print(f"{'=' * 70}\n")
 
 
@@ -543,6 +627,8 @@ class ARQUERA_PT_tools_panel(Panel):
         mesh_objetivo = resolver_mesh_objetivo(context)
         if mesh_objetivo:
             box_exp.label(text=f"Objeto: {mesh_objetivo.name}", icon='MESH_DATA')
+            box_exp.prop(context.scene, "arquera_pivot_mode")
+            box_exp.separator()
             box_exp.operator(
                 "arquera.prepare_model",
                 text="Preparar Modelo (1-5)",
@@ -581,12 +667,23 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.types.Scene.arquera_pivot_mode = EnumProperty(
+        name="Alineacion Pivote",
+        description="Elige como centrar el pivote del modelo",
+        items=[
+            ('BOTTOM', "Base / Punto mas bajo", "Centra el pivote en el fondo del bounding box (ideal para personajes)"),
+            ('CENTER', "Centro geometrico", "Centra el pivote en el centro del bounding box (ideal para proyectiles y objetos voladores)"),
+        ],
+        default='BOTTOM'
+    )
     print("OK Arquera Tools registrado")
 
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    if hasattr(bpy.types.Scene, "arquera_pivot_mode"):
+        del bpy.types.Scene.arquera_pivot_mode
     print("OK Arquera Tools desregistrado")
 
 

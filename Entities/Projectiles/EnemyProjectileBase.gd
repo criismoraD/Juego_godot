@@ -41,6 +41,32 @@ static var _tip_mesh: CylinderMesh = null
 
 
 func _ready() -> void:
+	# Si somos una flecha en mano (por ejemplo, nos llamamos FlechaMano o tenemos un ancestro BoneAttachment3D),
+	# no nos comportamos como proyectil.
+	var es_flecha_mano := false
+	if name == "FlechaMano":
+		es_flecha_mano = true
+	else:
+		var parent_node := get_parent()
+		while parent_node:
+			if parent_node is BoneAttachment3D or "Attachment" in parent_node.name or "Mano" in parent_node.name or "Hand" in parent_node.name:
+				es_flecha_mano = true
+				break
+			parent_node = parent_node.get_parent()
+
+	if es_flecha_mano:
+		set_physics_process(false)
+		monitoring = false
+		monitorable = false
+		visible = false
+		_preparar_visuales()
+		_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
+		_aplicar_visuales_cacheados()
+		_restaurar_visuales_desde_pool()
+		if trail_particles:
+			trail_particles.emitting = false
+		return
+
 	add_to_group("enemy_projectiles")
 	var player = get_tree().get_first_node_in_group("player")
 	if player:

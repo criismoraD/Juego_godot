@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://cb5c0w2ly2s3e"]
+
+[ext_resource type="PackedScene" uid="uid://d08lvfebk5a4c" path="res://Entities/Environment/Estandarte/estandarte.glb" id="1_glb"]
+[ext_resource type="Shader" uid="uid://5swvbw7wqnfd" path="res://Entities/Environment/Estandarte/wind_flag.gdshader" id="2_shader"]
+[ext_resource type="Texture2D" uid="uid://d13dht4nsfggi" path="res://Entities/Environment/Estandarte/estandarte_D.jpg" id="3_tex"]
+[ext_resource type="Material" uid="uid://qjnb7cj6gshw" path="res://Entities/Environment/Estandarte/estandarte_MAT.tres" id="4_mat"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_flag"]
+render_priority = 0
+shader = ExtResource("2_shader")
+shader_parameter/albedo_texture = ExtResource("3_tex")
+shader_parameter/albedo_color = Color(1, 1, 1, 1)
+shader_parameter/wind_speed = 4.0
+shader_parameter/wind_strength = 0.3510000166725
+shader_parameter/wave_frequency = 9.306000442035
+shader_parameter/wind_direction = Vector3(0.235, 0.25, 1)
+shader_parameter/invert_pinning = false
+shader_parameter/pinning_exponent = 1.5
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_l6cxe"]
+radius = 0.048339844
+height = 1.0102539
+
+[node name="Estandarte" unique_id=1633326029 instance=ExtResource("1_glb")]
+
+[node name="PALO" parent="." index="0" unique_id=1485351252]
+surface_material_override/0 = ExtResource("4_mat")
+
+[node name="TELA" parent="." index="1" unique_id=1808012155]
+surface_material_override/0 = SubResource("ShaderMaterial_flag")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." index="2" unique_id=1194944355]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.018447876, 0.51745605, 0.03213501)
+shape = SubResource("CapsuleShape3D_l6cxe")

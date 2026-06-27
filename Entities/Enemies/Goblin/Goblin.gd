@@ -41,6 +41,10 @@ func _on_state_dying():
 	]
 	var chosen_death = death_anims[randi() % death_anims.size()]
 
+	# Girar el modelo 180 grados en Y para ocultar la cara con culling/color negro a la cámara
+	if chosen_death == "ENEMIGO_GOBLING_MUERTE_2":
+		$GOBLING_REMASTER_ANIMACIONES.rotate_y(PI)
+
 	var anim_length = _get_animation_duration(chosen_death)
 	_play_animation(chosen_death)
 

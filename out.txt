@@ -1,0 +1,153 @@
+Godot Engine v4.7.stable.steam.5b4e0cb0f - https://godotengine.org
+
+---  GUT  ---
+[1m[INFO]:  [0musing [C:/Users/criis/AppData/Roaming/Godot/app_userdata/Arrow of Anathema] for temporary output.
+Godot version:  4.7.0
+GUT version:  9.6.0
+[4m
+
+res://Tests/Unit/test_ally_archer.gd
+[0m* test_inicializacion_vida
+* test_recibir_dano_no_muere
+* test_recibir_dano_muere_y_permanece
+* test_revivir_desde_muerta
+* test_revivir_rotacion_muerte_01
+* test_invulnerable_durante_getting_up
+[1m6/6 passed.
+[0m[4m
+
+res://Tests/Unit/test_barrera_destruye_flechas.gd
+[0m* test_barrera_properties
+* test_arrow_destroyed_by_barrier
+* test_ally_arrow_destroyed_by_barrier
+[1m3/3 passed.
+[0m[4m
+
+res://Tests/Unit/test_game_ui.gd
+[0m* test_set_modo_minimo_true
+* test_set_modo_minimo_false
+* test_set_modo_minimo_false_keeps_debug_ui_hidden_by_default
+* test_set_modo_minimo_null_safe
+* test_aplicar_calidad_bajo
+* test_aplicar_calidad_medio
+* test_aplicar_calidad_alto
+* test_reconstruir_todos_escudos_mantiene_tipo_y_nombre
+[1m8/8 passed.
+[0m[4m
+
+res://Tests/Unit/test_goblin_arrow.gd
+[0m* test_initialize_sets_direction_and_speed
+* test_default_color_is_orange
+* test_initialize_clamped_power
+* test_initialize_defaults_on_zero_direction
+* test_create_material_reuses_shared_resource_for_same_color
+* test_trail_resources_are_cached_per_color
+[1m6/6 passed.
+[0m[4m
+
+res://Tests/Unit/test_goblin_girl_arrow.gd
+[0m* test_initialize_sets_direction_and_scales_velocity
+* test_initialize_does_not_accumulate_velocity_between_reuses
+* test_default_color_is_magenta
+* test_initialize_defaults_on_zero_direction
+* test_visual_resources_are_cached_per_color
+[1m5/5 passed.
+[0m[4m
+
+res://Tests/Unit/test_imp_trident.gd
+[0m* test_create_material
+* test_create_material_reuses_shared_resource_for_same_color
+* test_initialize_does_not_accumulate_velocity_between_reuses
+[1m3/3 passed.
+[0m[4m
+
+res://Tests/Unit/test_nivel01_render.gd
+[0m* test_calcular_tamano_render_aplica_escala
+* test_calcular_tamano_render_clampea_escala_baja
+* test_configurar_texture_rect_fullscreen_usa_estirado_sin_recorte
+[1m3/3 passed.
+[0m[4m
+
+res://Tests/Unit/test_nivel_debug.gd
+[0m* test_calcular_tamano_render_debug
+[1m1/1 passed.
+[0m[4m
+
+res://Tests/Unit/test_player_damage.gd
+[0m* test_recibir_dano_reduces_health
+* test_recibir_dano_invulnerable
+* test_recibir_dano_modo_dios
+* test_recibir_dano_is_dead
+* test_recibir_dano_emits_signal
+* test_recibir_dano_cancels_shot
+[1m6/6 passed.
+[0m[4m
+
+res://Tests/Unit/test_projectile_pool.gd
+[0m* test_release_reuses_same_projectile_instance
+* test_activate_restores_reused_projectile_state
+* test_reused_arrow_updates_visual_resources_for_new_color
+* test_reused_projectile_does_not_keep_previous_shooter_scale
+[1m4/4 passed.
+[0m[4m
+
+res://Tests/Unit/test_security_plugin_paths.gd
+[0m* test_es_ruta_segura_valida_solo_rutas_res_sin_traversal
+[1m1/1 passed.
+[0m[4m
+
+res://Tests/Unit/test_shader_globals.gd
+[0m* test_asegurar_outline_global_registra_parametro_bool
+[1m1/1 passed.
+[0m[4m
+
+res://Tests/Unit/test_sombra_personaje.gd
+[0m* test_instanciacion_correcta
+* test_valores_por_defecto
+* test_crea_mesh_y_raycast_en_ready
+* test_mesh_usa_quad
+* test_set_tamano_runtime
+* test_set_opacidad_runtime
+* test_sombra_invisible_sin_colision
+* test_opacidad_negativa_clampeada
+* test_tamano_cero
+[1m9/9 passed.
+[0m[4m
+
+res://Tests/Unit/test_wave_spawner.gd
+[0m* test_get_active_enemies_with_freed_instances
+* test_obtener_goblins_activos_counts_correctly
+* test_get_active_shield_imps_filtering
+* test_filtering_all_freed_instances
+* test_filtering_empty_array
+* test_filtering_all_valid_instances
+* test_filtering_null_values
+* test_forzar_spawn
+* test_forzar_tipo_enemigo_goblin
+* test_forzar_tipo_enemigo_goblin_girl
+* test_forzar_tipo_enemigo_imp
+* test_forzar_tipo_enemigo_canonero
+* test_forzar_spawn_escudo
+* test_predefined_wave_spawn_queue_wave_1
+* test_predefined_wave_spawn_queue_wave_2
+* test_predefined_wave_spawn_queue_wave_3
+[1m16/16 passed.
+[0m
+
+
+
+[33m==============================================
+[0m[33m= Run Summary
+[0m[33m==============================================
+[0m
+Totals
+------
+Scripts              14
+Tests                72
+Passing Tests        72
+Asserts             215
+Time              1.994s
+
+
+[32m---- All tests passed! ----
+[0m

@@ -10,21 +10,33 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 ## Algunas se agachan al disparar (animación AGACHADA).
 # === CONFIGURACIÓN ESPECÍFICA DE GOBLIN GIRL ===
 @export_category("Combate - GoblinGirl")
-@export var tiempo_disparo_en_animacion: float = 4.0
+@export var tiempo_disparo_en_animacion: float = 3.1
+@export var tiempo_tensa_arco: float = 1.9
 @export var pausa_entre_disparos: float = 0.1
 @export var potencia_disparo_min: float = 1.0
 @export var potencia_disparo_max: float = 2.0
 @export_category("Agacharse")
 @export var probabilidad_agacharse: float = 0.3
-@export var tiempo_disparo_agachada: float = 4.0
+@export var tiempo_disparo_agachada: float = 3.1
+@export_category("Visual - Flecha en Mano")
+@export var mostrar_flecha_en_mano: bool = true
+@export var offset_flecha_mano: Vector3 = Vector3(0.0, 0.0, 0.0)
+@export var rotacion_flecha_mano_grados: Vector3 = Vector3(90.0, 0.0, 0.0)
+@export var escala_flecha_mano: Vector3 = Vector3(1.0, 1.0, 1.0)
 # === ESTADO ESPECÍFICO ===
 var anim_timer: float = 0.0
 var has_fired_this_cycle: bool = false
 var esta_agachada: bool = false
+var en_animacion_disparo: bool = false
 # === REFERENCIAS ESPECÍFICAS ===
 var goblin_girl_arrow_scene = preload("res://Entities/Projectiles/GoblinGirlArrow.tscn")
+var escena_flecha_visual_mano = preload("res://Entities/Projectiles/GoblinGirlArrow.tscn")
 var bow_anim_player: AnimationPlayer = null
 var girl_anim_tree: AnimationTree = null
+var attachment_flecha_mano: BoneAttachment3D = null
+var flecha_visual_mano: Node3D = null
+var escala_original_flecha_mano: Vector3 = Vector3.ONE
+var escala_original_global_flecha_mano: Vector3 = Vector3.ONE
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOOKS DE ENEMYBASE
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -36,6 +48,11 @@ func _on_enemy_ready():
 
 	# Decidir aleatoriamente si esta GoblinGirl se agacha al disparar
 	esta_agachada = randf() < probabilidad_agacharse
+
+	# Configurar la flecha en la mano al iniciar
+	_configurar_flecha_visual_mano()
+	en_animacion_disparo = false
+	_actualizar_visibilidad_flecha_mano(false)
 
 	# Buscar AnimationPlayer del arco
 	var bow_node = find_child("ARCO_GOBLING_GIRL", true, false)
@@ -71,11 +88,14 @@ func _on_enemy_ready():
 func _on_state_walking():
 	if girl_anim_tree:
 		girl_anim_tree.active = false
+	en_animacion_disparo = false
+	_actualizar_visibilidad_flecha_mano(false)
 	_play_animation("GIRL_GOB_CAMINA")
 	_play_bow_animation("ARCO_IDLE")
 
 
 func _on_state_shooting():
+	en_animacion_disparo = true
 	if esta_agachada and girl_anim_tree:
 		# Activar AnimationTree: piernas agachadas + torso disparando
 		girl_anim_tree.active = true
@@ -87,12 +107,15 @@ func _on_state_shooting():
 	anim_timer = 0.0
 	has_fired_this_cycle = false
 	shoot_timer = pausa_entre_disparos
+	_actualizar_visibilidad_flecha_mano(false)
 
 
 func _on_state_dying():
 	if girl_anim_tree:
 		girl_anim_tree.active = false
 	super._on_state_dying()
+	en_animacion_disparo = false
+	_actualizar_visibilidad_flecha_mano(false)
 	AudioManager.play_sfx("goblin_girl_death")
 
 	# Elegir aleatoriamente entre las 3 animaciones de muerte
@@ -106,6 +129,17 @@ func _on_state_dying():
 			if is_instance_valid(self) and is_inside_tree():
 				_die()
 	)
+
+
+func take_damage(amount: float) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# Ocultar la flecha de la mano inmediatamente si es dañada o muere
+	en_animacion_disparo = false
+	_actualizar_visibilidad_flecha_mano(false)
+
+	super.take_damage(amount)
 
 
 func _on_pacifico_detenido():
@@ -138,6 +172,7 @@ func _process_shooting(delta):
 
 	# Incrementar timer de animación
 	anim_timer += delta
+	_actualizar_flecha_mano_durante_animacion()
 
 	# Timing del disparo: siempre basado en GIRL_GOB_DISPARO (torso superior)
 	var disparo_time = tiempo_disparo_en_animacion
@@ -151,8 +186,11 @@ func _process_shooting(delta):
 	# El ciclo se basa en la animación GIRL_GOB_DISPARO (el torso manda)
 	var anim_duration = _get_animation_duration("GIRL_GOB_DISPARO")
 	if anim_timer >= anim_duration:
+		en_animacion_disparo = false
+		_actualizar_visibilidad_flecha_mano(false)
 		shoot_timer -= delta
 		if shoot_timer <= 0:
+			en_animacion_disparo = true
 			anim_timer = 0.0
 			has_fired_this_cycle = false
 			shoot_timer = pausa_entre_disparos
@@ -181,10 +219,14 @@ func _shoot_arrow():
 	if not arrow:
 		return
 
-	arrow.scale = PROJECTILE_SCALE
+	arrow.scale = escala_original_global_flecha_mano
 	arrow.color_proyectil = GoblinGirlArrowProjectile.GOBLIN_GIRL_ARROW_MAGENTA
 
-	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
+	var spawn_pos: Vector3
+	if flecha_visual_mano and is_instance_valid(flecha_visual_mano) and flecha_visual_mano.visible:
+		spawn_pos = flecha_visual_mano.global_position
+	else:
+		spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
 	var diff = target_pos - spawn_pos
 	var base_direction = diff.normalized()
@@ -202,6 +244,7 @@ func _shoot_arrow():
 	PROJECTILE_POOL_REF.activate(arrow, get_tree().root, spawn_pos)
 
 	AudioManager.play_sfx("goblin_girl_shoot")
+	_actualizar_visibilidad_flecha_mano(false)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -335,3 +378,122 @@ func _find_anim_name(base_name: String) -> StringName:
 		if base_name in anim_name:
 			return anim_name
 	return base_name
+
+
+func _configurar_flecha_visual_mano():
+	# ── 1. Buscar una "FlechaMano" ya colocada manualmente en la escena ──
+	flecha_visual_mano = find_child("FlechaMano", true, false) as Node3D
+	if flecha_visual_mano:
+		flecha_visual_mano.visible = false
+		escala_original_flecha_mano = flecha_visual_mano.scale
+		# Incrementado en un 10% según solicitud del usuario
+		escala_original_global_flecha_mano = (flecha_visual_mano.global_transform.basis.get_scale() * 1.10).abs()
+		return
+
+	# ── 2. Si no existe, crearla programáticamente como fallback ──
+	if not mostrar_flecha_en_mano:
+		return
+
+	var esqueleto_nodo: Skeleton3D = find_child("Skeleton3D", true, false) as Skeleton3D
+	if not esqueleto_nodo:
+		push_warning("[GoblinGirl] No se encontró Skeleton3D para crear FlechaMano")
+		return
+
+	var nombre_hueso: String = _obtener_hueso_mano(esqueleto_nodo)
+	if nombre_hueso.is_empty():
+		push_warning("[GoblinGirl] No se encontró hueso de mano en el esqueleto")
+		return
+
+	attachment_flecha_mano = BoneAttachment3D.new()
+	attachment_flecha_mano.name = "AttachmentFlechaMano"
+	esqueleto_nodo.add_child(attachment_flecha_mano)
+	attachment_flecha_mano.bone_name = nombre_hueso
+
+	flecha_visual_mano = _crear_visual_flecha_mano()
+	if not flecha_visual_mano:
+		push_warning("[GoblinGirl] No se pudo crear la flecha visual de mano")
+		return
+	attachment_flecha_mano.add_child(flecha_visual_mano)
+
+	flecha_visual_mano.position = offset_flecha_mano
+	flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
+	flecha_visual_mano.scale = escala_flecha_mano
+	# Forzar actualización de transform para que calcule la escala global
+	flecha_visual_mano.force_update_transform()
+	escala_original_flecha_mano = escala_flecha_mano
+	# Incrementado en un 10% según solicitud del usuario
+	escala_original_global_flecha_mano = (flecha_visual_mano.global_transform.basis.get_scale() * 1.10).abs()
+	flecha_visual_mano.visible = false
+
+
+func _crear_visual_flecha_mano() -> Node3D:
+	if escena_flecha_visual_mano:
+		var instancia_visual := escena_flecha_visual_mano.instantiate() as Node3D
+		if instancia_visual:
+			instancia_visual.name = "FlechaMano"
+			return instancia_visual
+	return null
+
+
+
+
+
+func _obtener_hueso_mano(esqueleto_nodo: Skeleton3D) -> String:
+	var candidatos := ["mixamorig_LeftHand", "mixamorig_RightHand", "LeftHand", "RightHand", "Hand_L", "Hand_R"]
+	for nombre in candidatos:
+		if esqueleto_nodo.find_bone(nombre) != -1:
+			return nombre
+	return ""
+
+
+func _actualizar_visibilidad_flecha_mano(visible_flecha: bool):
+	if not flecha_visual_mano or not is_instance_valid(flecha_visual_mano):
+		return
+	flecha_visual_mano.visible = visible_flecha and mostrar_flecha_en_mano
+
+
+func _actualizar_flecha_mano_durante_animacion():
+	if not en_animacion_disparo or not flecha_visual_mano or not is_instance_valid(flecha_visual_mano):
+		return
+
+	var anim_time_scaled: float = anim_timer
+	var tiempo_tensa: float = tiempo_tensa_arco
+	var tiempo_disparo: float = tiempo_disparo_en_animacion
+
+	# Mostrar la flecha durante la fase de tensión del arco
+	if anim_time_scaled >= tiempo_tensa and anim_time_scaled < tiempo_disparo and not has_fired_this_cycle:
+		flecha_visual_mano.visible = true
+		
+		# Animación de escala: de 0.01 a 1.0 (de la escala del proyectil disparado)
+		var duracion_tensa: float = tiempo_disparo - tiempo_tensa
+		var t: float = 0.0
+		if duracion_tensa > 0.0:
+			t = clampf((anim_time_scaled - tiempo_tensa) / duracion_tensa, 0.0, 1.0)
+		
+		# Efecto juice: curva easeOutBack
+		var t_eased: float = _ease_out_back(t)
+		
+		var target_scale: Vector3 = escala_original_global_flecha_mano * lerp(0.01, 1.0, t_eased)
+		var trans: Transform3D = flecha_visual_mano.global_transform
+		trans.basis = trans.basis.orthonormalized().scaled(target_scale)
+		flecha_visual_mano.global_transform = trans
+		
+		# Efecto juice: vibración/temblor por tensión al final del tensado (t > 0.8)
+		if t > 0.8:
+			var shake_intensity: float = (t - 0.8) * 0.012
+			flecha_visual_mano.position = offset_flecha_mano + Vector3(
+				randf_range(-shake_intensity, shake_intensity),
+				randf_range(-shake_intensity, shake_intensity),
+				randf_range(-shake_intensity, shake_intensity)
+			)
+		else:
+			flecha_visual_mano.position = offset_flecha_mano
+	else:
+		flecha_visual_mano.visible = false
+		flecha_visual_mano.position = offset_flecha_mano
+
+
+func _ease_out_back(x: float) -> float:
+	var c1: float = 1.70158
+	var c3: float = c1 + 1.0
+	return 1.0 + c3 * pow(x - 1.0, 3.0) + c1 * pow(x - 1.0, 2.0)

@@ -3,7 +3,7 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dfrf7l5pnbfk4"
+uid="uid://d0k6gtuk25ija"
 path="res://.godot/imported/GEO_ARQUERA_FINAL_ANIMATION.fbx-5781fa1d0eb37cca44044957ff589caa.scn"
 
 [deps]
@@ -16,6 +16,8 @@ dest_files=["res://.godot/imported/GEO_ARQUERA_FINAL_ANIMATION.fbx-5781fa1d0eb37
 nodes/root_type=""
 nodes/root_name=""
 nodes/root_script=null
+mesh_library/use_node_names_as_mesh_names=false
+array_mesh/deduplicate_surfaces=true
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false
@@ -28,7 +30,7 @@ meshes/light_baking=1
 meshes/lightmap_texel_size=0.2
 meshes/force_disable_compression=false
 skins/use_named_skins=true
-animation/import=false
+animation/import=true
 animation/fps=30
 animation/trimming=true
 animation/remove_immutable_tracks=true
@@ -37,22 +39,7 @@ import_script/path=""
 materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
-_subresources={
-"materials": {
-"ARQUERA_MATERIAL": {
-"use_external/enabled": true,
-"use_external/fallback_path": "res://Entities/Player/ARQUERA_MATERIAL.tres",
-"use_external/path": "uid://crcl2un7te63e"
-}
-},
-"nodes": {
-"PATH:Armature/Skeleton3D": {
-"rest_pose/load_pose": 1,
-"rest_pose/selected_animation": "Armature|IDLE",
-"retarget/bone_map": null
-}
-}
-}
+_subresources={}
 fbx/importer=0
 fbx/allow_geometry_helper_nodes=false
 fbx/embedded_image_handling=1

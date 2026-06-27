@@ -21,15 +21,15 @@ var color_borde_disolucion: Color = Color(1.0, 0.6, 0.2)
 var intensidad_emision: float = 3.0
 
 # Partículas
-var particulas_cantidad: int = 60
+var particulas_cantidad: int = 80
 var particulas_vida: float = 1.5
 var particulas_caja: Vector3 = Vector3(0.3, 0.3, 0.1)
 var particulas_dispersion: float = 25.0
 var particulas_velocidad_min: float = 0.1
 var particulas_velocidad_max: float = 0.8
 var particulas_gravedad: Vector3 = Vector3(0, 0.1, 0)
-var particulas_escala_min: float = 0.01
-var particulas_escala_max: float = 0.03
+var particulas_escala_min: float = 0.005
+var particulas_escala_max: float = 0.02
 
 # Materiales de disolución
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
@@ -252,7 +252,7 @@ func _finish_dissolve():
 func _create_dissolve_particles():
 	var particles = GPUParticles3D.new()
 	particles.name = "DissolveParticles"
-	particles.amount = particulas_cantidad
+	particles.amount = particulas_cantidad * 3
 	particles.lifetime = particulas_vida
 	particles.one_shot = false
 	particles.explosiveness = 0.0
@@ -266,8 +266,9 @@ func _create_dissolve_particles():
 	process_mat.initial_velocity_min = particulas_velocidad_min
 	process_mat.initial_velocity_max = particulas_velocidad_max
 	process_mat.gravity = particulas_gravedad
-	process_mat.scale_min = particulas_escala_min * 0.5
-	process_mat.scale_max = particulas_escala_max * 0.5
+	# Variación aleatoria de tamaño entre partículas (rango normalizado)
+	process_mat.scale_min = 0.5
+	process_mat.scale_max = 1.5
 
 	# Gradiente de color: del color de borde a transparente
 	var gradient = Gradient.new()
@@ -290,17 +291,19 @@ func _create_dissolve_particles():
 
 	particles.process_material = process_mat
 
-	# Mesh de partícula (esfera pequeña)
+	# El tamaño del mesh controla directamente el tamaño visual de las partículas
+	var avg_radius: float = (particulas_escala_min + particulas_escala_max) / 2.0
 	var sphere = SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
+	sphere.radius = avg_radius
+	sphere.height = avg_radius * 2.0
 
 	var part_mat = StandardMaterial3D.new()
 	part_mat.albedo_color = color_borde_disolucion
 	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	part_mat.emission_enabled = true
 	part_mat.emission = color_borde_disolucion
-	part_mat.emission_energy_multiplier = intensidad_emision * 0.5
+	part_mat.emission_energy_multiplier = intensidad_emision
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sphere.material = part_mat
 

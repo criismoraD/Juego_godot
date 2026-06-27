@@ -6,11 +6,12 @@ static var active_allies_cache: Array[Node] = []
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
-enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD }
+enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP }
 @export_category("Activación")
 @export var enemigos_minimos: int = 2  ## Cantidad mínima de enemigos vivos para empezar a disparar
 @export_category("Disparo")
 @export var tiempo_carga_min: float = 1.0  ## Carga mínima (potencia baja)
+@export_category("Tiempo_carga_max")
 @export var tiempo_carga_max: float = 2.0  ## Carga máxima (potencia alta)
 @export var potencia_minima: float = 5.0
 @export var potencia_maxima: float = 12.0
@@ -21,13 +22,13 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD }
 @export var idle_min: float = 1.0  ## Segundos mínimos en idle entre ciclos
 @export var idle_max: float = 2.0  ## Segundos máximos en idle entre ciclos
 @export_category("Vida")
-@export var vida_maxima: int = 1
+@export var vida_maxima: int = 2
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
-var arrow_scene = preload("res://Entities/Projectiles/Arrow.tscn")
+var arrow_scene = preload("res://Entities/Projectiles/AllyArrow.tscn")
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer
@@ -35,6 +36,8 @@ var skeleton: Skeleton3D
 var arrow_node: Node3D
 var hitbox_body: StaticBody3D
 var model_root: Node3D
+var _original_model_y_rot: float = 0.0
+var ultima_muerte_anim: String = ""
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -57,6 +60,8 @@ func _ready():
 	set_physics_process(false)
 
 	model_root = find_child("ArqueraModel", false, false)
+	if model_root:
+		_original_model_y_rot = model_root.rotation.y
 
 	_setup_animation_player()
 	_buscar_arrow_node()
@@ -210,6 +215,8 @@ func _process(delta):
 			_process_aiming(delta)
 		State.SHOOTING:
 			_process_shooting(delta)
+		State.GETTING_UP:
+			_process_getting_up(delta)
 
 
 ## IDLE: esperar 1-2s, luego ir a RELOADING (tomar flecha)
@@ -244,12 +251,22 @@ func _process_shooting(delta):
 		_cambiar_estado(State.IDLE)
 
 
+## GETTING_UP: esperar a que termine de levantarse
+func _process_getting_up(delta):
+	state_timer -= delta
+	if state_timer <= 0:
+		_cambiar_estado(State.IDLE)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CAMBIO DE ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
 func _cambiar_estado(nuevo: State):
+	if nuevo != State.GETTING_UP and model_root:
+		model_root.rotation.y = _original_model_y_rot
+
 	current_state = nuevo
 	match nuevo:
 		State.IDLE:
@@ -286,6 +303,13 @@ func _cambiar_estado(nuevo: State):
 			_on_dying()
 		State.DEAD:
 			pass
+		State.GETTING_UP:
+			_play_anim("LEVANTARSE", 0.0)
+			_play_bow_anim("ARCO_IDLE")
+			state_timer = _get_anim_length("LEVANTARSE")
+			_ocultar_flecha()
+			if ultima_muerte_anim == "MUERTE_01" and model_root:
+				model_root.rotation.y = _original_model_y_rot + deg_to_rad(90)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -390,7 +414,7 @@ func _ocultar_flecha():
 
 
 func take_damage(amount: float):
-	if current_state == State.DYING or current_state == State.DEAD:
+	if current_state == State.DYING or current_state == State.DEAD or current_state == State.GETTING_UP:
 		return
 
 	health -= int(amount)
@@ -418,6 +442,18 @@ func recibir_dano(amount: int):
 	take_damage(float(amount))
 
 
+func revivir() -> void:
+	if current_state != State.DEAD and current_state != State.DYING:
+		return
+
+	health = vida_maxima
+	set_process(true)
+	if hitbox_body:
+		hitbox_body.collision_layer = 2
+
+	_cambiar_estado(State.GETTING_UP)
+
+
 func _on_dying():
 	set_process(false)
 	_ocultar_flecha()
@@ -431,14 +467,15 @@ func _on_dying():
 
 	# Reproducir muerte (elegir aleatoriamente entre MUERTE_01 y MUERTE_02)
 	var death_anim = ["MUERTE_01", "MUERTE_02"][randi() % 2]
+	ultima_muerte_anim = death_anim
 	_play_anim(death_anim)
 	_play_bow_anim("ARCO_IDLE")
 
 	var dur = _get_anim_length(death_anim)
 	get_tree().create_timer(dur + 0.5).timeout.connect(
 		func():
-			if is_instance_valid(self):
-				_start_dissolve()
+			if is_instance_valid(self) and current_state == State.DYING:
+				_cambiar_estado(State.DEAD)
 	)
 
 

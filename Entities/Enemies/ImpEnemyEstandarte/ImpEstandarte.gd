@@ -8,9 +8,13 @@ const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 ## en lugar del tridente del Imp normal.
 @export_category("Combate - Imp Estandarte")
 @export var intervalo_disparo_arco: float = 0.0
-@export var tiempo_disparo_en_animacion_arco: float = 4.0
+@export var tiempo_disparo_en_animacion_arco: float = 3.1
+@export var tiempo_tensa_arco: float = 1.9
 @export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_min: float = 15.0
 @export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_max: float = 20.0
+@export var distancia_escala_velocidad_min: float = 5.0
+@export var distancia_escala_velocidad_max: float = 15.0
+@export_range(0.0, 0.5, 0.05) var variacion_velocidad_arco: float = 0.20
 @export_range(0.25, 5.0, 0.05) var multiplicador_cadencia_arco: float = 1.0
 @export var elevacion_disparo_arco: float = 0.18
 @export var espera_idle_arco_min: float = 0.08
@@ -19,14 +23,14 @@ const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 @export var escala_proyectil_estandarte: float = 1.8
 @export var color_proyectil_estandarte: Color = Color(1.0, 0.06, 0.03, 1.0)
 @export_category("Visual - Estandarte")
-@export var soltar_estandarte_al_atacar: bool = true
-@export var impulso_caida_estandarte: float = 0.32
-@export var torque_caida_estandarte: float = 0.04
+@export var soltar_estandarte_al_atacar: bool = false
+@export var impulso_caida_estandarte: float = 0.08
+@export var torque_caida_estandarte: float = 0.01
 @export var tiempo_autodestruir_estandarte: float = 8.0
+@export var escala_gravedad_caida: float = 0.25
+@export var amortiguacion_lineal_caida: float = 2.5
 @export_category("Visual - Flecha en Mano")
-@export var mostrar_flecha_en_mano: bool = false
-@export var tiempo_aparece_flecha_mano: float = 0.0
-@export var tiempo_desaparece_flecha_mano: float = 4.0
+@export var mostrar_flecha_en_mano: bool = true
 @export var offset_flecha_mano: Vector3 = Vector3(0.0, 0.0, 0.0)
 @export var rotacion_flecha_mano_grados: Vector3 = Vector3(90.0, 0.0, 0.0)
 @export var escala_flecha_mano: Vector3 = Vector3(1.0, 1.0, 1.0)
@@ -35,9 +39,11 @@ const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 @export var volumen_hit_imp_db: float = -7.0
 @export_category("Muerte - Imp Estandarte")
 @export var tiempo_antes_disolver: float = 1.8
-var escena_flecha_estandarte = preload("res://Entities/Projectiles/GoblinGirlArrow.tscn")
-var escena_flecha_visual_mano = preload("res://Entities/Projectiles/FlechaManoVisual.tscn")
-var escena_estandarte_caido = preload("res://Entities/Environment/Estandarte/Estandarte.glb")
+@export var escala_sangre_min: float = 0.015  ## Escala mínima de las partículas de sangre al morir
+@export var escala_sangre_max: float = 0.03   ## Escala máxima de las partículas de sangre al morir
+var escena_flecha_estandarte = preload("res://Entities/Projectiles/ImpEstandarteArrow.tscn")
+var escena_flecha_visual_mano = preload("res://Entities/Projectiles/ImpEstandarteArrow.tscn")
+var escena_estandarte_caido = preload("res://Entities/Environment/Estandarte/Estandarte.tscn")
 var sonido_muerte_estandarte: AudioStreamMP3 = preload(
 	"res://Entities/Enemies/ImpEnemyEstandarte/IMP_ESTANDARTE_MUERTE.mp3"
 )
@@ -52,11 +58,13 @@ var arco_visual: Node3D = null
 var estandarte_ya_soltado: bool = false
 var attachment_flecha_mano: BoneAttachment3D = null
 var flecha_visual_mano: Node3D = null
+var escala_original_flecha_mano: Vector3 = Vector3.ONE
+var escala_original_global_flecha_mano: Vector3 = Vector3.ONE
 
 
 func _on_enemy_ready():
 	# Configuración base del Imp (sin usar lógica de tridente)
-	color_borde_disolucion = Color(1.0, 0.15, 0.1)
+	color_borde_disolucion = Color(0.7, 0.0, 0.0)
 	rastrear_jugador = true
 
 	# Restaurar materiales originales del casco y estandarte
@@ -191,11 +199,15 @@ func _throw_projectile():
 
 	AudioManager.play_sfx("goblin_girl_shoot")
 
-	var flecha := PROJECTILE_POOL_REF.acquire(escena_flecha_estandarte) as GoblinGirlArrowProjectile
+	var flecha := PROJECTILE_POOL_REF.acquire(escena_flecha_estandarte) as ImpEstandarteArrowProjectile
 	if not flecha:
 		return
 
-	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
+	var spawn_pos: Vector3
+	if flecha_visual_mano and is_instance_valid(flecha_visual_mano):
+		spawn_pos = flecha_visual_mano.global_position
+	else:
+		spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
 	var direction = (target_pos - spawn_pos).normalized()
 	direction.y += elevacion_disparo_arco
@@ -203,11 +215,17 @@ func _throw_projectile():
 
 	flecha.color_proyectil = color_proyectil_estandarte
 
-	var escala_final: float = max(0.1, escala_proyectil_estandarte)
-	flecha.scale = Vector3(escala_final, escala_final, escala_final)
+	flecha.scale = escala_original_global_flecha_mano
+	var dist_x: float = abs(player_ref.global_position.x - global_position.x)
+	var t: float = 0.0
+	var rango_dist: float = distancia_escala_velocidad_max - distancia_escala_velocidad_min
+	if rango_dist > 0.0:
+		t = clampf((dist_x - distancia_escala_velocidad_min) / rango_dist, 0.0, 1.0)
+	
 	var velocidad_minima: float = min(velocidad_flecha_arco_min, velocidad_flecha_arco_max)
 	var velocidad_maxima: float = max(velocidad_flecha_arco_min, velocidad_flecha_arco_max)
-	var velocidad_final: float = randf_range(velocidad_minima, velocidad_maxima)
+	var velocidad_base: float = lerp(velocidad_minima, velocidad_maxima, t)
+	var velocidad_final: float = velocidad_base * randf_range(1.0 - variacion_velocidad_arco, 1.0 + variacion_velocidad_arco)
 
 	flecha.initialize(direction, 1.0)
 	flecha.velocidad = velocidad_final
@@ -234,11 +252,12 @@ func _on_state_dying():
 	_crear_explosion_sangre()
 
 	var tiempo_total = max(anim_length, tiempo_antes_disolver)
-	get_tree().create_timer(tiempo_total).timeout.connect(
-		func():
-			if is_instance_valid(self) and is_inside_tree():
-				_die()
-	)
+	get_tree().create_timer(tiempo_total).timeout.connect(_on_death_timer_timeout)
+
+
+func _on_death_timer_timeout() -> void:
+	if is_inside_tree():
+		_die()
 
 
 func _reproducir_sonido_muerte_estandarte():
@@ -263,8 +282,12 @@ func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
+	# Ocultar la flecha de la mano inmediatamente si es dañado o muere
+	en_animacion_disparo = false
+	_actualizar_visibilidad_flecha_mano(false)
+
 	if not estandarte_ya_soltado:
-		_desaparecer_estandarte_con_particulas()
+		_soltar_estandarte_fisico()
 		estandarte_ya_soltado = true
 		_actualizar_visual_arma(current_state == State.SHOOTING)
 
@@ -279,12 +302,10 @@ func take_damage(amount: float):
 
 
 func _desaparecer_estandarte_con_particulas() -> void:
-	if not estandarte_visual or not is_instance_valid(estandarte_visual):
-		return
-
-	_crear_particulas_desaparicion_estandarte(estandarte_visual.global_position)
-	estandarte_visual.queue_free()
-	estandarte_visual = null
+	if not estandarte_ya_soltado:
+		_soltar_estandarte_fisico()
+		estandarte_ya_soltado = true
+		_actualizar_visual_arma(current_state == State.SHOOTING)
 
 
 func _reproducir_hit_aleatorio():
@@ -297,22 +318,19 @@ func _reproducir_hit_aleatorio():
 	_play_animation(anim_hit)
 
 	var dur_hit = _get_animation_duration(anim_hit)
-	get_tree().create_timer(max(0.15, dur_hit)).timeout.connect(
-		func():
-			hit_en_proceso = false
-			if (
-				not is_instance_valid(self)
-				or current_state == State.DYING
-				or current_state == State.DEAD
-			):
-				return
-			if current_state == State.WALKING:
-				_on_state_walking()
-			elif current_state == State.SHOOTING:
-				espera_entrada_disparo = 0.0
-				shoot_timer = 0.0
-				_iniciar_ciclo_disparo()
-	)
+	get_tree().create_timer(max(0.15, dur_hit)).timeout.connect(_on_hit_timer_timeout)
+
+
+func _on_hit_timer_timeout() -> void:
+	hit_en_proceso = false
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	if current_state == State.WALKING:
+		_on_state_walking()
+	elif current_state == State.SHOOTING:
+		espera_entrada_disparo = 0.0
+		shoot_timer = 0.0
+		_iniciar_ciclo_disparo()
 
 
 func _crear_explosion_sangre():
@@ -335,8 +353,8 @@ func _crear_explosion_sangre():
 	process_mat.gravity = Vector3(0, -6.0, 0)
 	process_mat.damping_min = 1.0
 	process_mat.damping_max = 3.0
-	process_mat.scale_min = 0.015
-	process_mat.scale_max = 0.03
+	process_mat.scale_min = escala_sangre_min
+	process_mat.scale_max = escala_sangre_max
 
 	var gradient := Gradient.new()
 	gradient.set_color(0, Color(0.7, 0.0, 0.0, 1.0))
@@ -390,54 +408,45 @@ func _cachear_visuales_arma():
 
 
 func _configurar_flecha_visual_mano():
+	# ── 1. Buscar una "FlechaMano" ya colocada manualmente en la escena ──
+	flecha_visual_mano = find_child("FlechaMano", true, false) as Node3D
+	if flecha_visual_mano:
+		flecha_visual_mano.visible = false
+		escala_original_flecha_mano = flecha_visual_mano.scale
+		# Incrementado en un 25% según solicitud del usuario
+		escala_original_global_flecha_mano = (flecha_visual_mano.global_transform.basis.get_scale() * 1.25).abs()
+		return
+
+	# ── 2. Si no existe, crearla programáticamente como fallback ──
+	if not mostrar_flecha_en_mano:
+		return
+
 	var esqueleto_nodo: Skeleton3D = find_child("Skeleton3D", true, false) as Skeleton3D
 	if not esqueleto_nodo:
+		push_warning("[ImpEstandarte] No se encontró Skeleton3D para crear FlechaMano")
 		return
 
-	if not mostrar_flecha_en_mano:
-		# Ocultar cualquier flecha visual de mano preexistente en la escena
-		var node = esqueleto_nodo.find_child("FlechaMano", true, false) as Node3D
-		if node:
-			node.visible = false
-		return
-
-	var nombre_hueso: String = _obtener_hueso_mano_derecha(esqueleto_nodo)
+	var nombre_hueso: String = _obtener_hueso_mano(esqueleto_nodo)
 	if nombre_hueso.is_empty():
+		push_warning("[ImpEstandarte] No se encontró hueso de mano en el esqueleto")
 		return
 
-	var es_reutilizado := false
-	attachment_flecha_mano = (
-		esqueleto_nodo.get_node_or_null("AttachmentFlechaMano") as BoneAttachment3D
-	)
-	if not attachment_flecha_mano:
-		# Buscar si ya existe algún BoneAttachment3D con una FlechaMano de escena
-		for child in esqueleto_nodo.get_children():
-			if child is BoneAttachment3D and child.has_node("FlechaMano"):
-				attachment_flecha_mano = child
-				es_reutilizado = true
-				break
-
-	if not attachment_flecha_mano:
-		attachment_flecha_mano = BoneAttachment3D.new()
-		attachment_flecha_mano.name = "AttachmentFlechaMano"
-		esqueleto_nodo.add_child(attachment_flecha_mano)
-
+	attachment_flecha_mano = BoneAttachment3D.new()
+	attachment_flecha_mano.name = "AttachmentFlechaMano"
+	esqueleto_nodo.add_child(attachment_flecha_mano)
 	attachment_flecha_mano.bone_name = nombre_hueso
-	attachment_flecha_mano.position = Vector3.ZERO
-	attachment_flecha_mano.rotation = Vector3.ZERO
-	attachment_flecha_mano.scale = Vector3.ONE
 
-	flecha_visual_mano = attachment_flecha_mano.get_node_or_null("FlechaMano") as Node3D
-	if not flecha_visual_mano:
-		flecha_visual_mano = _crear_visual_flecha_mano()
-		attachment_flecha_mano.add_child(flecha_visual_mano)
+	flecha_visual_mano = _crear_visual_flecha_mano()
+	attachment_flecha_mano.add_child(flecha_visual_mano)
 
-	# Solo configurar transform si NO es reutilizado del editor/escena
-	if not es_reutilizado:
-		flecha_visual_mano.position = offset_flecha_mano
-		flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
-		flecha_visual_mano.scale = escala_flecha_mano
-	
+	flecha_visual_mano.position = offset_flecha_mano
+	flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
+	flecha_visual_mano.scale = escala_flecha_mano
+	# Forzar actualización de transform para que calcule la escala global
+	flecha_visual_mano.force_update_transform()
+	escala_original_flecha_mano = escala_flecha_mano
+	# Incrementado en un 25% según solicitud del usuario
+	escala_original_global_flecha_mano = (flecha_visual_mano.global_transform.basis.get_scale() * 1.25).abs()
 	flecha_visual_mano.visible = false
 
 
@@ -447,47 +456,14 @@ func _crear_visual_flecha_mano() -> Node3D:
 		if instancia_visual:
 			instancia_visual.name = "FlechaMano"
 			return instancia_visual
-
-	var raiz := Node3D.new()
-	raiz.name = "FlechaMano"
-
-	var material_flecha := StandardMaterial3D.new()
-	material_flecha.albedo_color = color_proyectil_estandarte
-	material_flecha.emission_enabled = true
-	material_flecha.emission = color_proyectil_estandarte
-	material_flecha.emission_energy_multiplier = 2.0
-	material_flecha.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-
-	var cuerpo := MeshInstance3D.new()
-	cuerpo.name = "Body"
-	var mesh_cuerpo := CylinderMesh.new()
-	mesh_cuerpo.top_radius = 0.015
-	mesh_cuerpo.bottom_radius = 0.015
-	mesh_cuerpo.height = 0.25
-	mesh_cuerpo.radial_segments = 6
-	mesh_cuerpo.rings = 1
-	mesh_cuerpo.material = material_flecha
-	cuerpo.mesh = mesh_cuerpo
-	raiz.add_child(cuerpo)
-
-	var punta := MeshInstance3D.new()
-	punta.name = "Tip"
-	var mesh_punta := CylinderMesh.new()
-	mesh_punta.top_radius = 0.0
-	mesh_punta.bottom_radius = 0.03
-	mesh_punta.height = 0.08
-	mesh_punta.radial_segments = 6
-	mesh_punta.rings = 1
-	mesh_punta.material = material_flecha
-	punta.mesh = mesh_punta
-	punta.position = Vector3(0.165, 0.0, 0.0)
-	raiz.add_child(punta)
-
-	return raiz
+	return null
 
 
-func _obtener_hueso_mano_derecha(esqueleto_nodo: Skeleton3D) -> String:
-	var candidatos := ["mixamorig_RightHandIndex1", "mixamorig_RightHand", "RightHand", "Hand_R"]
+
+
+
+func _obtener_hueso_mano(esqueleto_nodo: Skeleton3D) -> String:
+	var candidatos := ["mixamorig_LeftHand", "mixamorig_RightHand", "LeftHand", "RightHand", "Hand_L", "Hand_R"]
 
 	for nombre in candidatos:
 		if esqueleto_nodo.find_bone(nombre) != -1:
@@ -497,20 +473,51 @@ func _obtener_hueso_mano_derecha(esqueleto_nodo: Skeleton3D) -> String:
 
 
 func _actualizar_flecha_mano_durante_animacion():
-	if not en_animacion_disparo:
-		_actualizar_visibilidad_flecha_mano(false)
+	if not en_animacion_disparo or not flecha_visual_mano or not is_instance_valid(flecha_visual_mano):
 		return
 
-	var multiplicador := _obtener_multiplicador_cadencia()
-	var tiempo_aparece: float = max(0.0, tiempo_aparece_flecha_mano / multiplicador)
-	var tiempo_desaparece: float = max(
-		tiempo_aparece, tiempo_desaparece_flecha_mano / multiplicador
-	)
-	var visible_en_ventana: bool = (
-		timer_animacion_disparo >= tiempo_aparece and timer_animacion_disparo < tiempo_desaparece
-	)
+	var multiplicador: float = _obtener_multiplicador_cadencia()
+	var anim_time_scaled: float = timer_animacion_disparo * multiplicador
+	var tiempo_tensa: float = tiempo_tensa_arco
+	var tiempo_disparo: float = tiempo_disparo_en_animacion_arco
 
-	_actualizar_visibilidad_flecha_mano(visible_en_ventana and not disparo_realizado_en_ciclo)
+	# Mostrar la flecha durante la fase de tensión del arco
+	if anim_time_scaled >= tiempo_tensa and anim_time_scaled < tiempo_disparo and not disparo_realizado_en_ciclo:
+		flecha_visual_mano.visible = true
+		
+		# Animación de escala: de 0.01 a 1.0 (de la escala del proyectil disparado)
+		var duracion_tensa: float = tiempo_disparo - tiempo_tensa
+		var t: float = 0.0
+		if duracion_tensa > 0.0:
+			t = clampf((anim_time_scaled - tiempo_tensa) / duracion_tensa, 0.0, 1.0)
+		
+		# Efecto juice: curva easeOutBack
+		var t_eased: float = _ease_out_back(t)
+		
+		var target_scale: Vector3 = escala_original_global_flecha_mano * lerp(0.01, 1.0, t_eased)
+		var trans: Transform3D = flecha_visual_mano.global_transform
+		trans.basis = trans.basis.orthonormalized().scaled(target_scale)
+		flecha_visual_mano.global_transform = trans
+		
+		# Efecto juice: vibración/temblor por tensión al final del tensado (t > 0.8)
+		if t > 0.8:
+			var shake_intensity: float = (t - 0.8) * 0.012
+			flecha_visual_mano.position = offset_flecha_mano + Vector3(
+				randf_range(-shake_intensity, shake_intensity),
+				randf_range(-shake_intensity, shake_intensity),
+				randf_range(-shake_intensity, shake_intensity)
+			)
+		else:
+			flecha_visual_mano.position = offset_flecha_mano
+	else:
+		flecha_visual_mano.visible = false
+		flecha_visual_mano.position = offset_flecha_mano
+
+
+func _ease_out_back(x: float) -> float:
+	var c1: float = 1.70158
+	var c3: float = c1 + 1.0
+	return 1.0 + c3 * pow(x - 1.0, 3.0) + c1 * pow(x - 1.0, 2.0)
 
 
 func _actualizar_visibilidad_flecha_mano(visible_flecha: bool):
@@ -531,26 +538,51 @@ func _soltar_estandarte_fisico():
 	if not estandarte_visual or not is_instance_valid(estandarte_visual):
 		return
 
+	# Buscar el esqueleto y el BoneAttachment3D subiendo por el árbol de padres
+	var skel_ref = estandarte_visual.get_parent()
+	var attachment: BoneAttachment3D = null
+	while skel_ref and not skel_ref is Skeleton3D:
+		if skel_ref is BoneAttachment3D:
+			attachment = skel_ref
+		skel_ref = skel_ref.get_parent()
+
 	var escena_actual = get_tree().current_scene
 	if not escena_actual:
 		return
 
+	var transform_global_estandarte: Transform3D = estandarte_visual.global_transform
+	if skel_ref and attachment:
+		var bone_name_str: String = attachment.bone_name
+		var bone_idx: int = (skel_ref as Skeleton3D).find_bone(bone_name_str)
+		if bone_idx != -1:
+			(skel_ref as Skeleton3D).force_update_all_bone_transforms()
+			var bone_global_pose: Transform3D = (skel_ref as Skeleton3D).global_transform * (skel_ref as Skeleton3D).get_bone_global_pose(bone_idx)
+			transform_global_estandarte = bone_global_pose * estandarte_visual.transform
+	else:
+		estandarte_visual.force_update_transform()
+
+	# Usar valores absolutos de la escala para evitar dimensiones negativas en BoxShape3D
+	var escala_global := transform_global_estandarte.basis.get_scale().abs()
+
+	# Crear el RigidBody3D con escala (1, 1, 1) para evitar errores del motor de física
 	var cuerpo_caida := RigidBody3D.new()
 	cuerpo_caida.name = "EstandarteCaido"
-	cuerpo_caida.mass = 1.2
-	cuerpo_caida.gravity_scale = 3.4
-	cuerpo_caida.linear_damp = 0.02
-	cuerpo_caida.angular_damp = 3.0
+	cuerpo_caida.mass = 0.5
+	cuerpo_caida.gravity_scale = escala_gravedad_caida
+	cuerpo_caida.linear_damp = amortiguacion_lineal_caida
+	cuerpo_caida.angular_damp = 4.0
 	cuerpo_caida.collision_layer = 0
 	cuerpo_caida.collision_mask = 1
-	cuerpo_caida.add_collision_exception_with(self)
+	# Habilitar Continuous Collision Detection (CCD) para evitar que atraviese el suelo
+	cuerpo_caida.continuous_cd = true
+	# Configurar reporte de colisiones para detectar el impacto contra el suelo
+	cuerpo_caida.contact_monitor = true
+	cuerpo_caida.max_contacts_reported = 3
 
-	var colision := CollisionShape3D.new()
-	var forma := CapsuleShape3D.new()
-	forma.radius = 0.6
-	forma.height = 1.2
-	colision.shape = forma
-	cuerpo_caida.add_child(colision)
+	# Configurar el transform sin escala (normalizado) antes de añadir al árbol
+	var transform_body := transform_global_estandarte
+	transform_body.basis = transform_body.basis.orthonormalized()
+	cuerpo_caida.global_transform = transform_body
 
 	var visual_caida: Node3D = null
 	if escena_estandarte_caido:
@@ -559,83 +591,164 @@ func _soltar_estandarte_fisico():
 	if visual_caida:
 		_desactivar_colisiones_visual_caida(visual_caida)
 		cuerpo_caida.add_child(visual_caida)
+		# Aplicamos la escala real únicamente al nodo visual
+		visual_caida.scale = escala_global
 
-	var transform_global_estandarte := estandarte_visual.global_transform
+	# Buscar y reparentar la colisión del visual al cuerpo rígido (antes de añadir al árbol)
+	var colision: CollisionShape3D = null
+	if visual_caida:
+		colision = visual_caida.find_child("CollisionShape3D", true, false) as CollisionShape3D
+
+	if colision:
+		# Calcular transform local relativo a cuerpo_caida
+		var local_trans := visual_caida.transform * colision.transform
+		# Limpiar el owner antes de reparentar para evitar inconsistencias
+		colision.owner = null
+		colision.get_parent().remove_child(colision)
+		cuerpo_caida.add_child(colision)
+		
+		# Asignar posición y rotación (sin escala para evitar bugs de física en Godot)
+		colision.position = local_trans.origin
+		colision.transform.basis = Basis(local_trans.basis.get_rotation_quaternion())
+		
+		# Aplicar la escala directamente al recurso Shape de la colisión para evitar bugs de física
+		_aplicar_escala_a_forma_de_colision(colision, escala_global)
+	else:
+		# Fallback programático si por alguna razón no tiene colisión en la escena
+		colision = CollisionShape3D.new()
+		var forma := CapsuleShape3D.new()
+		forma.radius = 0.12 * escala_global.y
+		forma.height = 2.0 * escala_global.y
+		colision.shape = forma
+		colision.position.y = 1.0 * escala_global.y
+		cuerpo_caida.add_child(colision)
+
+	# Conectar señal para detectar la caída y el desvanecimiento 1 segundo después de tocar el suelo
+	cuerpo_caida.body_entered.connect(_on_estandarte_caido_contacto.bind(cuerpo_caida, visual_caida))
+
+	# Agregar excepciones para evitar colisiones indeseadas con personajes
+	cuerpo_caida.add_collision_exception_with(self)
+	
+	# Añadimos al árbol de la escena activa
 	escena_actual.add_child(cuerpo_caida)
 	_agregar_excepciones_personajes_estandarte(cuerpo_caida)
-	cuerpo_caida.global_transform = transform_global_estandarte
 
-	var direccion_impulso := Vector3(-0.22, -0.98, 0.0).normalized()
+	# Asignar la velocidad actual (inercia) del enemigo
+	cuerpo_caida.linear_velocity = velocity
+
+	# Aplicamos el impulso inicial (caída natural, hacia adelante y levemente hacia arriba)
+	var direccion_impulso := Vector3(-1.0, 0.1, 0.0).normalized()
 	cuerpo_caida.apply_central_impulse(direccion_impulso * impulso_caida_estandarte)
 
 	if torque_caida_estandarte > 0.0:
 		var torque := Vector3(0.0, 0.0, torque_caida_estandarte)
 		cuerpo_caida.apply_torque_impulse(torque)
 
+
+	# Temporizador de seguridad por si cae fuera de límites o no colisiona
 	if tiempo_autodestruir_estandarte > 0.0:
-		get_tree().create_timer(tiempo_autodestruir_estandarte).timeout.connect(
-			func():
-				if is_instance_valid(cuerpo_caida):
-					_crear_particulas_desaparicion_estandarte(cuerpo_caida.global_position)
-					cuerpo_caida.queue_free()
-		)
+		var tiempo_espera = max(0.05, tiempo_autodestruir_estandarte - 0.4)
+		var timer = get_tree().create_timer(tiempo_espera)
+		timer.timeout.connect(_on_safety_timer_timeout.bind(cuerpo_caida, visual_caida))
 
 
-func _crear_particulas_desaparicion_estandarte(posicion_global: Vector3):
-	var particulas := GPUParticles3D.new()
-	particulas.name = "EstandarteDesaparece"
-	particulas.amount = 15
-	particulas.lifetime = 1.05
-	particulas.one_shot = true
-	particulas.explosiveness = 1.0
-	particulas.randomness = 0.4
-	particulas.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+func _on_safety_timer_timeout(cuerpo_caida: Object, visual_caida: Object) -> void:
+	if is_instance_valid(cuerpo_caida) and not cuerpo_caida.has_meta("landed"):
+		_desvanecer_y_destruir_cuerpo(cuerpo_caida, visual_caida)
 
-	var proceso := ParticleProcessMaterial.new()
-	proceso.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	proceso.emission_sphere_radius = 0.18
-	proceso.direction = Vector3(0, 1, 0)
-	proceso.spread = 180.0
-	proceso.initial_velocity_min = 0.55
-	proceso.initial_velocity_max = 1.6
-	proceso.gravity = Vector3(0, -0.7, 0)
-	proceso.scale_min = 0.01125
-	proceso.scale_max = 0.0225
 
-	var gradiente := Gradient.new()
-	gradiente.set_color(0, color_borde_disolucion)
-	gradiente.set_color(
-		1, Color(color_borde_disolucion.r, color_borde_disolucion.g, color_borde_disolucion.b, 0.0)
-	)
-	var textura_gradiente := GradientTexture1D.new()
-	textura_gradiente.gradient = gradiente
-	proceso.color_ramp = textura_gradiente
+func _desvanecer_y_destruir_cuerpo(cuerpo: Object, visual: Object):
+	if not is_instance_valid(cuerpo) or not is_instance_valid(visual):
+		return
 
-	particulas.process_material = proceso
+	# Buscar las mallas del estandarte para aplicarles el shader de disolución
+	var palo = visual.find_child("PALO", true, false) as MeshInstance3D
+	var tela = visual.find_child("TELA", true, false) as MeshInstance3D
 
-	var esfera := SphereMesh.new()
-	esfera.radius = 0.025
-	esfera.height = 0.05
-	var material_particula := StandardMaterial3D.new()
-	material_particula.albedo_color = color_borde_disolucion
-	material_particula.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	material_particula.emission_enabled = true
-	material_particula.emission = color_borde_disolucion
-	material_particula.emission_energy_multiplier = intensidad_emision * 0.5
-	material_particula.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material_particula.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	esfera.material = material_particula
-	particulas.draw_pass_1 = esfera
+	var shaders_creados: Array[ShaderMaterial] = []
 
-	get_tree().root.add_child(particulas)
-	particulas.global_position = posicion_global
-	particulas.emitting = true
+	for mesh in [palo, tela]:
+		if not mesh or not is_instance_valid(mesh):
+			continue
+		
+		var mat_dissolve := ShaderMaterial.new()
+		mat_dissolve.shader = dissolve_shader
+		mat_dissolve.set_shader_parameter("dissolve_amount", 0.0)
+		mat_dissolve.set_shader_parameter("glow_color", color_borde_disolucion)
+		mat_dissolve.set_shader_parameter("glow_intensity", intensidad_emision)
+		mat_dissolve.set_shader_parameter("edge_thickness", 0.05)
+		mat_dissolve.set_shader_parameter("noise_scale", 20.0)
 
-	get_tree().create_timer(2.0).timeout.connect(
-		func():
-			if is_instance_valid(particulas):
-				particulas.queue_free()
-	)
+		var original_mat = mesh.get_surface_override_material(0)
+		if original_mat == null and mesh.mesh:
+			original_mat = mesh.mesh.surface_get_material(0)
+
+		if original_mat:
+			var tex = null
+			var col = Color(1.0, 1.0, 1.0, 1.0)
+			if original_mat is StandardMaterial3D:
+				tex = original_mat.albedo_texture
+				col = original_mat.albedo_color
+			elif original_mat is ShaderMaterial:
+				tex = original_mat.get_shader_parameter("albedo_texture")
+				var c = original_mat.get_shader_parameter("albedo_color")
+				if c is Color:
+					col = c
+			
+			if tex:
+				mat_dissolve.set_shader_parameter("albedo_texture", tex)
+			mat_dissolve.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+
+		mesh.material_override = mat_dissolve
+		shaders_creados.append(mat_dissolve)
+
+	# Función de interpolación del shader de disolución
+	var actualizar_disolucion_fn := func(value: float):
+		for mat in shaders_creados:
+			if is_instance_valid(mat):
+				mat.set_shader_parameter("dissolve_amount", value)
+
+	# Crear Tween en el cuerpo físico (no en el visual) para evitar null cuando self sea liberado
+	var tween = cuerpo.create_tween()
+	tween.tween_method(actualizar_disolucion_fn, 0.0, 1.0, duracion_disolucion)
+
+	# Callback de finalización: guardar referencia local para evitar lambda captures liberados
+	var cuerpo_ref: RigidBody3D = cuerpo
+	var al_terminar_fn := func():
+		if is_instance_valid(cuerpo_ref):
+			cuerpo_ref.queue_free()
+
+	tween.tween_callback(al_terminar_fn)
+
+
+
+func _aplicar_escala_a_forma_de_colision(colision_node: CollisionShape3D, escala: Vector3):
+	if not colision_node or not colision_node.shape:
+		return
+
+	# Duplicar el recurso de la forma para no modificar el original de la escena
+	var shape_original = colision_node.shape
+	var shape_duplicada = shape_original.duplicate()
+	# Usar valores absolutos para evitar dimensiones negativas
+	var escala_abs := escala.abs()
+
+	if shape_duplicada is BoxShape3D:
+		var box = shape_duplicada as BoxShape3D
+		box.size = box.size * escala_abs
+	elif shape_duplicada is CapsuleShape3D:
+		var capsule = shape_duplicada as CapsuleShape3D
+		capsule.radius = capsule.radius * escala_abs.x
+		capsule.height = capsule.height * escala_abs.y
+	elif shape_duplicada is CylinderShape3D:
+		var cylinder = shape_duplicada as CylinderShape3D
+		cylinder.radius = cylinder.radius * escala_abs.x
+		cylinder.height = cylinder.height * escala_abs.y
+	elif shape_duplicada is SphereShape3D:
+		var sphere = shape_duplicada as SphereShape3D
+		sphere.radius = sphere.radius * escala_abs.y
+
+	colision_node.shape = shape_duplicada
+
 
 
 func _agregar_excepciones_personajes_estandarte(cuerpo_caida: RigidBody3D):
@@ -679,3 +792,12 @@ func _restaurar_materiales_accesorios():
 			meshes.append(accesorio)
 		for mesh in meshes:
 			mesh.material_override = null  # Quitar override, usa material del GLB
+
+
+func _on_estandarte_caido_contacto(_body: Node, cuerpo: Object, visual: Object):
+	if not is_instance_valid(cuerpo) or cuerpo.has_meta("landed"):
+		return
+	cuerpo.set_meta("landed", true)
+	
+	# Desvanecer y destruir a partir de 1.0 segundo después de tocar el suelo
+	get_tree().create_timer(1.0).timeout.connect(_desvanecer_y_destruir_cuerpo.bind(cuerpo, visual))

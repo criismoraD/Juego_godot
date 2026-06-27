@@ -195,3 +195,89 @@ func test_forzar_spawn_escudo():
 
 	var spawned = _spawner.active_goblins.back()
 	assert_eq(spawned.name, "ImpShieldNode", "Should spawn an imp shield girl")
+
+
+func test_predefined_wave_spawn_queue_wave_1():
+	_spawner.oleada_combate = 1
+	_spawner._start_wave()
+	
+	assert_eq(_spawner.cola_spawn.size(), 12, "Wave 1 queue should have 12 elements")
+	
+	var imp_count = 0
+	var girl_count = 0
+	var shield_count = 0
+	
+	for scene in _spawner.cola_spawn:
+		if scene == _spawner.escena_imp:
+			imp_count += 1
+		elif scene == _spawner.escena_goblin_girl:
+			girl_count += 1
+		elif scene == _spawner.escena_imp_escudo:
+			shield_count += 1
+			
+	assert_eq(imp_count, 6, "Wave 1 should have 6 imps")
+	assert_eq(girl_count, 5, "Wave 1 should have 5 goblin girls")
+	assert_eq(shield_count, 1, "Wave 1 should have 1 imp shield")
+	assert_ne(_spawner.cola_spawn.back(), _spawner.escena_imp_escudo, "The imp shield cannot be the last one in Wave 1")
+
+
+func test_predefined_wave_spawn_queue_wave_2():
+	_spawner.oleada_combate = 2
+	_spawner._start_wave()
+	
+	assert_eq(_spawner.cola_spawn.size(), 25, "Wave 2 queue should have 25 elements")
+	
+	var imp_count = 0
+	var girl_count = 0
+	var goblin_count = 0
+	var shield_count = 0
+	
+	for scene in _spawner.cola_spawn:
+		if scene == _spawner.escena_imp:
+			imp_count += 1
+		elif scene == _spawner.escena_goblin_girl:
+			girl_count += 1
+		elif scene == _spawner.escena_goblin:
+			goblin_count += 1
+		elif scene == _spawner.escena_imp_escudo:
+			shield_count += 1
+			
+	assert_eq(shield_count, 2, "Wave 2 should have 2 imps shield")
+	assert_eq(imp_count, 7, "Wave 2 should have 7 imps normal")
+	assert_eq(girl_count, 8, "Wave 2 should have 8 goblin archers")
+	assert_eq(goblin_count, 8, "Wave 2 should have 8 goblin crossbows")
+
+	# Verificar restricciones
+	assert_ne(_spawner.cola_spawn.back(), _spawner.escena_imp_escudo, "The imp shield cannot be the last one in Wave 2")
+	for i in range(_spawner.cola_spawn.size() - 1):
+		var is_consecutive = (_spawner.cola_spawn[i] == _spawner.escena_imp_escudo and _spawner.cola_spawn[i+1] == _spawner.escena_imp_escudo)
+		assert_false(is_consecutive, "No two imp shields can be consecutive in Wave 2")
+
+
+func test_predefined_wave_spawn_queue_wave_3():
+	_spawner.oleada_combate = 3
+	_spawner._start_wave()
+	
+	assert_eq(_spawner.cola_spawn.size(), 25, "Wave 3 queue should have 25 elements")
+	
+	var girl_count = 0
+	var goblin_count = 0
+	var shield_count = 0
+	
+	for scene in _spawner.cola_spawn:
+		if scene == _spawner.escena_goblin_girl:
+			girl_count += 1
+		elif scene == _spawner.escena_goblin:
+			goblin_count += 1
+		elif scene == _spawner.escena_imp_escudo:
+			shield_count += 1
+			
+	assert_eq(shield_count, 3, "Wave 3 should have 3 imps shield")
+	assert_eq(girl_count, 11, "Wave 3 should have 11 goblin archers")
+	assert_eq(goblin_count, 11, "Wave 3 should have 11 goblin crossbows")
+
+	# Verificar restricciones
+	assert_ne(_spawner.cola_spawn.back(), _spawner.escena_imp_escudo, "The imp shield cannot be the last one in Wave 3")
+	for i in range(_spawner.cola_spawn.size() - 1):
+		var is_consecutive = (_spawner.cola_spawn[i] == _spawner.escena_imp_escudo and _spawner.cola_spawn[i+1] == _spawner.escena_imp_escudo)
+		assert_false(is_consecutive, "No two imp shields can be consecutive in Wave 3")

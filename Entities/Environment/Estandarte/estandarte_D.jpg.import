@@ -2,21 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bpxotjefgvq8x"
-path.s3tc="res://.godot/imported/GOBLING_REMASTER_ANIMACIONES_modddif_image_0.png-5ad20f28a74c7b087dab3d2f50a092dd.s3tc.ctex"
-path.etc2="res://.godot/imported/GOBLING_REMASTER_ANIMACIONES_modddif_image_0.png-5ad20f28a74c7b087dab3d2f50a092dd.etc2.ctex"
+uid="uid://d13dht4nsfggi"
+path.s3tc="res://.godot/imported/estandarte_D.jpg-5366cdf9037b59bf7fb3dd9b96f894e1.s3tc.ctex"
+path.etc2="res://.godot/imported/estandarte_D.jpg-5366cdf9037b59bf7fb3dd9b96f894e1.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
-generator_parameters={
-"md5": "6f7c3fe7f9b9cb1be629f67a76facd2e"
-}
 
 [deps]
 
-source_file="res://Entities/Enemies/Goblin/GOBLING_REMASTER_ANIMACIONES_modddif_image_0.png"
-dest_files=["res://.godot/imported/GOBLING_REMASTER_ANIMACIONES_modddif_image_0.png-5ad20f28a74c7b087dab3d2f50a092dd.s3tc.ctex", "res://.godot/imported/GOBLING_REMASTER_ANIMACIONES_modddif_image_0.png-5ad20f28a74c7b087dab3d2f50a092dd.etc2.ctex"]
+source_file="res://Entities/Environment/Estandarte/estandarte_D.jpg"
+dest_files=["res://.godot/imported/estandarte_D.jpg-5366cdf9037b59bf7fb3dd9b96f894e1.s3tc.ctex", "res://.godot/imported/estandarte_D.jpg-5366cdf9037b59bf7fb3dd9b96f894e1.etc2.ctex"]
 
 [params]
 

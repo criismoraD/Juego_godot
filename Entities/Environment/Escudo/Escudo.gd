@@ -34,15 +34,15 @@ signal destruido
 @export var color_borde_disolucion: Color = Color(1.0, 0.6, 0.2)
 @export var intensidad_emision_disolucion: float = 3.0
 @export_category("Destrucción - Partículas")
-@export var particulas_cantidad: int = 60
+@export var particulas_cantidad: int = 80
 @export var particulas_vida: float = 1.5
 @export var particulas_caja: Vector3 = Vector3(0.3, 0.3, 0.1)
 @export var particulas_dispersion: float = 25.0
 @export var particulas_velocidad_min: float = 0.1
 @export var particulas_velocidad_max: float = 0.8
 @export var particulas_gravedad: Vector3 = Vector3(0, 0.1, 0)
-@export var particulas_escala_min: float = 0.01
-@export var particulas_escala_max: float = 0.03
+@export var particulas_escala_min: float = 0.005
+@export var particulas_escala_max: float = 0.02
 # Estado interno
 var golpes_recibidos: int = 0
 var mesh_instance: MeshInstance3D

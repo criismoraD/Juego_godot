@@ -136,7 +136,8 @@ class EXPORT_OT_model_glb_jpg(Operator, ExportHelper):
             return {'CANCELLED'}
 
         nombre_base = obj.name
-        armature_obj = self.buscar_armature_vinculado(obj)
+        if context.active_object:
+            nombre_base = context.active_object.name
 
         output_dir = Path(self.directory)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -145,22 +146,38 @@ class EXPORT_OT_model_glb_jpg(Operator, ExportHelper):
         print(f"EXPORTANDO MODELO: {nombre_base}")
         print(f"{'='*70}")
 
-        if armature_obj:
-            print(f"Rig detectado: {armature_obj.name}")
-            print("Animaciones: habilitadas para exportacion GLB")
-        else:
-            print("ADVERTENCIA No se detecto armature vinculado")
-            print("Se exportara solo la malla y materiales")
-            self.report({'WARNING'}, "No se detecto armature; no se incluiran animaciones de rig")
+        # Guardamos todos los objetos que el usuario tenía seleccionados
+        objetos_seleccionados = list(context.selected_objects)
+        if not objetos_seleccionados:
+            objetos_seleccionados = [obj]
+
+        # Recolectar también los armatures vinculados de todos los objetos MESH seleccionados
+        armatures_a_seleccionar = set()
+        for o in objetos_seleccionados:
+            if o.type == 'MESH':
+                arm = self.buscar_armature_vinculado(o)
+                if arm:
+                    armatures_a_seleccionar.add(arm)
+
+        print(f"Objetos a exportar: {[o.name for o in objetos_seleccionados]}")
+        if armatures_a_seleccionar:
+            print(f"Rig(s) vinculados a exportar: {[a.name for a in armatures_a_seleccionar]}")
 
         print("\n[1/2] Exportando GLB sin texturas embebidas (con animaciones si existen)...")
         glb_path = output_dir / f"{nombre_base}.glb"
 
+        # Seleccionar todos los objetos de la exportación (meshes + armatures)
         bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(True)
-        if armature_obj:
-            armature_obj.select_set(True)
-        context.view_layer.objects.active = obj
+        for o in objetos_seleccionados:
+            o.select_set(True)
+        for a in armatures_a_seleccionar:
+            a.select_set(True)
+
+        # Establecer un objeto activo válido para evitar problemas en el exportador
+        if context.active_object in objetos_seleccionados:
+            context.view_layer.objects.active = context.active_object
+        elif objetos_seleccionados:
+            context.view_layer.objects.active = objetos_seleccionados[0]
 
         opciones_exportacion = {
             'filepath': str(glb_path),
@@ -177,35 +194,44 @@ class EXPORT_OT_model_glb_jpg(Operator, ExportHelper):
         bpy.ops.export_scene.gltf(**opciones_exportacion)
         print(f"  OK GLB exportado: {glb_path.name}")
 
-        print("\n[2/2] Exportando textura difusa en JPG...")
-        textura_difusa_imagen = self.buscar_textura_difusa(obj)
+        print("\n[2/2] Exportando texturas difusas en JPG...")
+        texturas_exportadas = 0
 
-        if textura_difusa_imagen:
-            texture_out_path = output_dir / f"{nombre_base}_D.jpg"
-            formato_original = textura_difusa_imagen.file_format
-            ruta_original = textura_difusa_imagen.filepath_raw
+        # Iterar sobre todos los objetos exportados para guardar sus texturas difusas correspondientes
+        for o in objetos_seleccionados:
+            if o.type != 'MESH':
+                continue
+            textura_difusa_imagen = self.buscar_textura_difusa(o)
+            if textura_difusa_imagen:
+                # La textura se exporta con el nombre del mesh correspondiente
+                texture_out_path = output_dir / f"{o.name}_D.jpg"
+                formato_original = textura_difusa_imagen.file_format
+                ruta_original = textura_difusa_imagen.filepath_raw
 
-            try:
-                textura_difusa_imagen.filepath_raw = str(texture_out_path)
-                textura_difusa_imagen.file_format = 'JPEG'
-                textura_difusa_imagen.save()
-                print(f"  OK Textura exportada: {texture_out_path.name}")
-            except RuntimeError as error:
-                print(f"  ADVERTENCIA No se pudo exportar la textura: {error}")
-                self.report({'WARNING'}, f"No se pudo exportar la textura JPG: {error}")
-            finally:
-                textura_difusa_imagen.filepath_raw = ruta_original
-                textura_difusa_imagen.file_format = formato_original
-        else:
-            print("  ADVERTENCIA No se encontro textura difusa conectada a Base Color")
-            self.report({'WARNING'}, "No se encontro textura difusa para exportar")
+                try:
+                    textura_difusa_imagen.filepath_raw = str(texture_out_path)
+                    textura_difusa_imagen.file_format = 'JPEG'
+                    textura_difusa_imagen.save()
+                    print(f"  OK Textura exportada para {o.name}: {texture_out_path.name}")
+                    texturas_exportadas += 1
+                except Exception as error:
+                    print(f"  ADVERTENCIA No se pudo exportar la textura de {o.name}: {error}")
+                    self.report({'WARNING'}, f"No se pudo exportar la textura JPG de {o.name}: {error}")
+                finally:
+                    textura_difusa_imagen.filepath_raw = ruta_original
+                    textura_difusa_imagen.file_format = formato_original
+
+        if texturas_exportadas == 0:
+            print("  ADVERTENCIA No se encontraron texturas difusas conectadas a Base Color")
+            self.report({'WARNING'}, "No se encontraron texturas difusas para exportar")
 
         print(f"\n{'='*70}")
         print("EXPORTACION COMPLETADA")
         print(f"{'='*70}")
         print(f"Archivos generados en: {output_dir}")
         print(f"  - {nombre_base}.glb")
-        print(f"  - {nombre_base}_D.jpg")
+        if texturas_exportadas > 0:
+            print(f"  - Texturas JPG correspondientes a cada mesh")
         print(f"{'='*70}\n")
 
         self.report({'INFO'}, f"Exportacion completada: {nombre_base}.glb")
