@@ -43,6 +43,7 @@ var ultima_muerte_anim: String = ""
 # ═══════════════════════════════════════════════════════════════════════════════
 var current_state: State = State.IDLE
 var state_timer: float = 0.0
+var _blink_timer: float = 0.0
 var charge_duration: float = 0.0
 var health: int = 1
 var is_dissolving: bool = false
@@ -254,7 +255,17 @@ func _process_shooting(delta):
 ## GETTING_UP: esperar a que termine de levantarse
 func _process_getting_up(delta):
 	state_timer -= delta
+	
+	# Parpadeo de invulnerabilidad
+	_blink_timer += delta
+	if _blink_timer >= 0.06:
+		_blink_timer = 0.0
+		if model_root:
+			model_root.visible = not model_root.visible
+
 	if state_timer <= 0:
+		if model_root:
+			model_root.visible = true
 		_cambiar_estado(State.IDLE)
 
 
@@ -265,6 +276,7 @@ func _process_getting_up(delta):
 
 func _cambiar_estado(nuevo: State):
 	if nuevo != State.GETTING_UP and model_root:
+		model_root.visible = true
 		if model_root.rotation.y != _original_model_y_rot:
 			if is_inside_tree():
 				var tween = create_tween()
@@ -311,9 +323,10 @@ func _cambiar_estado(nuevo: State):
 		State.DEAD:
 			pass
 		State.GETTING_UP:
-			_play_anim("LEVANTARSE", 0.3)
-			_play_bow_anim("ARCO_IDLE", 0.3)
+			_play_anim("LEVANTARSE", 0.0)
+			_play_bow_anim("ARCO_IDLE", 0.0)
 			state_timer = _get_anim_length("LEVANTARSE")
+			_blink_timer = 0.0
 			_ocultar_flecha()
 			if ultima_muerte_anim == "MUERTE_01" and model_root:
 				model_root.rotation.y = _original_model_y_rot + deg_to_rad(90)
