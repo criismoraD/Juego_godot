@@ -411,7 +411,8 @@ func _apply_climbing_rotation(delta: float, snap: bool = false):
 			target_y = armature_original_rotation.y
 		else:
 			# Si solo está escalando, se orienta hacia la escalera
-			target_y = armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera)
+			# Restamos 0.5 grados para que el camino más corto al apuntar sea en sentido horario (decreciente)
+			target_y = armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera - 0.5)
 		
 		if snap:
 			armature_node.rotation.y = target_y
