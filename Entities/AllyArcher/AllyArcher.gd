@@ -258,7 +258,7 @@ func _process_getting_up(delta):
 	
 	# Parpadeo de invulnerabilidad
 	_blink_timer += delta
-	if _blink_timer >= 0.06:
+	if _blink_timer >= 0.16:
 		_blink_timer = 0.0
 		if model_root:
 			model_root.visible = not model_root.visible

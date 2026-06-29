@@ -30,7 +30,7 @@ const JUMP_BUFFER_TIME: float = 0.12
 @export_range(-90, 90, 0.1) var angulo_maximo: float = 70.0  # Ángulo máximo de apuntado
 @export var invertir_angulo: bool = true
 @export var altura_barra: float = 0.7  # Altura de la barra de carga
-@export_range(-180, 180, 1.0) var rotacion_torso_escalera: float = -180.0  # Giro del torso al disparar en escalera
+@export_range(-180, 180, 1.0) var rotacion_torso_escalera: float = 0.0  # Giro del torso al disparar en escalera
 @export var invertir_pitch_escalera: bool = true  # Invertir dirección de apuntado en escalera
 @export_range(-10.0, 10.0, 0.1) var multiplicador_inversion_pitch: float = -2.0  # Multiplicador de inversión en escalera
 @export_enum("X (Izq/Der)", "Y (Arriba/Abajo)", "Z (Adelante/Atras)") var eje_rotacion: int = 2
@@ -405,9 +405,14 @@ func stop_climbing():
 func _apply_climbing_rotation():
 	# Rotar el modelo para la animación de escalera
 	if armature_node:
-		armature_node.rotation.y = (
-			armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera)
-		)
+		if current_aim_state != AimState.NONE:
+			# Si está apuntando o disparando, se orienta hacia la derecha (rotación original)
+			armature_node.rotation.y = armature_original_rotation.y
+		else:
+			# Si solo está escalando, se orienta hacia la escalera
+			armature_node.rotation.y = (
+				armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera)
+			)
 
 
 func _reset_armature_rotation():
@@ -582,6 +587,7 @@ func _physics_process(delta):
 				update_locomotion_anim(input_dir)
 
 		MoveState.CLIMBING:
+			_apply_climbing_rotation()
 			# Si estamos apuntando, bloquear movimiento completamente
 			if current_aim_state != AimState.NONE:
 				velocity.y = 0
@@ -1075,7 +1081,7 @@ func actualizar_rotacion_torso_pitch():
 
 	# Si estamos escalando, añadir rotación en Y para apuntar hacia la izquierda
 	# e invertir el pitch para que el apuntado sea correcto
-	if current_move_state == MoveState.CLIMBING:
+	if current_move_state == MoveState.CLIMBING and not (armature_node and current_aim_state != AimState.NONE):
 		var yaw_rotation = Quaternion(Vector3.UP, deg_to_rad(rotacion_torso_escalera))
 		# Invertir pitch si está habilitado
 		if invertir_pitch_escalera:
