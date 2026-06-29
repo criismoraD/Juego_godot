@@ -402,17 +402,21 @@ func stop_climbing():
 	_reset_armature_rotation()
 
 
-func _apply_climbing_rotation():
+func _apply_climbing_rotation(delta: float, snap: bool = false):
 	# Rotar el modelo para la animación de escalera
 	if armature_node:
+		var target_y: float
 		if current_aim_state != AimState.NONE:
 			# Si está apuntando o disparando, se orienta hacia la derecha (rotación original)
-			armature_node.rotation.y = armature_original_rotation.y
+			target_y = armature_original_rotation.y
 		else:
 			# Si solo está escalando, se orienta hacia la escalera
-			armature_node.rotation.y = (
-				armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera)
-			)
+			target_y = armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera)
+		
+		if snap:
+			armature_node.rotation.y = target_y
+		else:
+			armature_node.rotation.y = lerp_angle(armature_node.rotation.y, target_y, 12.0 * delta)
 
 
 func _reset_armature_rotation():
@@ -535,7 +539,7 @@ func _physics_process(delta):
 				)
 
 			_cancel_current_shot()
-			_apply_climbing_rotation()  # Aplicar rotación de escalera
+			_apply_climbing_rotation(delta, true)  # Aplicar rotación de escalera (snap al montar)
 
 	# 2. MOVIMIENTO FÍSICO
 	move_and_slide()
@@ -587,7 +591,7 @@ func _physics_process(delta):
 				update_locomotion_anim(input_dir)
 
 		MoveState.CLIMBING:
-			_apply_climbing_rotation()
+			_apply_climbing_rotation(delta, false)
 			# Si estamos apuntando, bloquear movimiento completamente
 			if current_aim_state != AimState.NONE:
 				velocity.y = 0
