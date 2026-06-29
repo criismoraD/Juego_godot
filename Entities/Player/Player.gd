@@ -1014,8 +1014,10 @@ func spawn_arrow_projectile():
 	# Calcular velocidad basada en la carga (usando variables exportadas)
 	var arrow_speed = lerp(velocidad_flecha_minima, velocidad_flecha_maxima, last_charge_power)
 
-	# Reducir velocidad según el ángulo de inclinación vertical
-	var Factor_Angulo: float = 1.0 - (Reduccion_Velocidad_Por_Angulo * abs(shoot_dir.y))
+	# Reducir velocidad según el ángulo de inclinación vertical (solo al disparar hacia arriba)
+	var Factor_Angulo: float = 1.0
+	if shoot_dir.y > 0.0:
+		Factor_Angulo = 1.0 - (Reduccion_Velocidad_Por_Angulo * shoot_dir.y)
 	arrow_speed *= Factor_Angulo
 
 	# Inicializar la flecha con dirección y velocidad calculada
@@ -1174,7 +1176,9 @@ func calculate_shoot_data() -> Dictionary:
 	var current_power = clamp(charge_time / adjusted_charge_dur, 0.0, 1.0)
 
 	var speed = lerp(velocidad_flecha_minima, velocidad_flecha_maxima, current_power)
-	var Factor_Angulo: float = 1.0 - (Reduccion_Velocidad_Por_Angulo * abs(shoot_direction.y))
+	var Factor_Angulo: float = 1.0
+	if shoot_direction.y > 0.0:
+		Factor_Angulo = 1.0 - (Reduccion_Velocidad_Por_Angulo * shoot_direction.y)
 	speed *= Factor_Angulo
 	result["velocity"] = shoot_direction * speed
 	result["valid"] = true
