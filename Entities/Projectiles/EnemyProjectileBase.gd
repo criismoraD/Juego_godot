@@ -18,6 +18,7 @@ const ARROW_TIP_OFFSET: float = 0.165
 
 @export_category("Visual")
 @export var color_proyectil: Color = Color.WHITE
+@export var outline_width: float = 20.0
 
 var direction: Vector3 = Vector3.LEFT
 var is_stuck: bool = false
@@ -392,7 +393,7 @@ func _remove_glb_model() -> void:
 
 
 func _create_material(emission_energy: float = 3.0) -> void:
-	projectile_material = _get_shared_projectile_material(color_proyectil, emission_energy)
+	projectile_material = _get_shared_projectile_material(color_proyectil, emission_energy, outline_width)
 
 
 func _create_procedural_arrow() -> void:
@@ -438,9 +439,10 @@ static func _get_color_key(color: Color) -> String:
 
 static func _get_shared_projectile_material(
 	color: Color,
-	emission_energy: float = 3.0
+	emission_energy: float = 3.0,
+	p_outline_width: float = 20.0
 ) -> StandardMaterial3D:
-	var key := "%s_%.3f" % [_get_color_key(color), emission_energy]
+	var key := "%s_%.3f_%.3f" % [_get_color_key(color), emission_energy, p_outline_width]
 	if _projectile_material_cache.has(key):
 		return _projectile_material_cache[key]
 
@@ -456,7 +458,7 @@ static func _get_shared_projectile_material(
 		var outline_mat = ShaderMaterial.new()
 		outline_mat.shader = shader
 		outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
-		outline_mat.set_shader_parameter("outline_width", 20.0)
+		outline_mat.set_shader_parameter("outline_width", p_outline_width)
 		material.next_pass = outline_mat
 
 	_projectile_material_cache[key] = material

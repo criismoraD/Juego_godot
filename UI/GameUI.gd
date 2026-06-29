@@ -896,11 +896,11 @@ func _toggle_bottom_panel():
 		toggle_ui_btn.text = "🔼 UI"
 
 
-func set_bottom_panel_visible(visible: bool) -> void:
+func set_bottom_panel_visible(p_visible: bool) -> void:
 	if not debug_ui_enabled or not bottom_panel:
 		return
-	bottom_panel.visible = visible
-	toggle_ui_btn.text = "🔽 UI" if visible else "🔼 UI"
+	bottom_panel.visible = p_visible
+	toggle_ui_btn.text = "🔽 UI" if p_visible else "🔼 UI"
 
 
 func _toggle_pause():
@@ -1289,6 +1289,8 @@ func _guardar_posiciones_escudos():
 	var nodos_escudo = get_tree().get_nodes_in_group("escudos")
 	for escudo in nodos_escudo:
 		if is_instance_valid(escudo):
+			if escudo.get("es_escudo_enemigo") == true:
+				continue
 			_escudos_cache.append(escudo)
 			escudos_originales.append(
 				{
@@ -1317,6 +1319,8 @@ func _reconstruir_todos_escudos():
 	var escudos_rotos = get_tree().get_nodes_in_group("escudos_rotos")
 	for roto in escudos_rotos:
 		if is_instance_valid(roto):
+			if roto.scene_file_path.contains("Imp"):
+				continue
 			roto.queue_free()
 
 	# Eliminar escudos existentes (por si quedan)

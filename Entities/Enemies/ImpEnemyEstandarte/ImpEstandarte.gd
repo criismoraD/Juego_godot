@@ -652,12 +652,12 @@ func _soltar_estandarte_fisico():
 		timer.timeout.connect(_on_safety_timer_timeout.bind(cuerpo_caida, visual_caida))
 
 
-func _on_safety_timer_timeout(cuerpo_caida: Object, visual_caida: Object) -> void:
+func _on_safety_timer_timeout(cuerpo_caida, visual_caida) -> void:
 	if is_instance_valid(cuerpo_caida) and not cuerpo_caida.has_meta("landed"):
 		_desvanecer_y_destruir_cuerpo(cuerpo_caida, visual_caida)
 
 
-func _desvanecer_y_destruir_cuerpo(cuerpo: Object, visual: Object):
+func _desvanecer_y_destruir_cuerpo(cuerpo, visual):
 	if not is_instance_valid(cuerpo) or not is_instance_valid(visual):
 		return
 
@@ -794,7 +794,7 @@ func _restaurar_materiales_accesorios():
 			mesh.material_override = null  # Quitar override, usa material del GLB
 
 
-func _on_estandarte_caido_contacto(_body: Node, cuerpo: Object, visual: Object):
+func _on_estandarte_caido_contacto(_body: Node, cuerpo, visual):
 	if not is_instance_valid(cuerpo) or cuerpo.has_meta("landed"):
 		return
 	cuerpo.set_meta("landed", true)
