@@ -103,6 +103,7 @@ func test_revivir_rotacion_muerte_01():
 	
 	# Transicionar fuera de GETTING_UP debería restaurar la rotación original
 	_ally._cambiar_estado(_ally.State.IDLE)
+	await wait_seconds(0.4)
 	assert_eq(dummy_model.rotation.y, 0.0, "La rotación debería restaurarse al salir de GETTING_UP")
 
 func test_invulnerable_durante_getting_up():

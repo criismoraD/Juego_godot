@@ -265,19 +265,26 @@ func _process_getting_up(delta):
 
 func _cambiar_estado(nuevo: State):
 	if nuevo != State.GETTING_UP and model_root:
-		model_root.rotation.y = _original_model_y_rot
+		if model_root.rotation.y != _original_model_y_rot:
+			if is_inside_tree():
+				var tween = create_tween()
+				tween.tween_property(model_root, "rotation:y", _original_model_y_rot, 0.3)\
+					.set_trans(Tween.TRANS_SINE)\
+					.set_ease(Tween.EASE_OUT)
+			else:
+				model_root.rotation.y = _original_model_y_rot
 
 	current_state = nuevo
 	match nuevo:
 		State.IDLE:
-			_play_anim("IDLE")
-			_play_bow_anim("ARCO_IDLE")
+			_play_anim("IDLE", 0.3)
+			_play_bow_anim("ARCO_IDLE", 0.3)
 			state_timer = randf_range(idle_min, idle_max)
 			_ocultar_flecha()
 		State.RELOADING:
 			# Tomar flecha — el arco empieza a tensarse tras un desfase
-			_play_anim("TOMAR_FLECHA", 0.1)
-			_play_bow_anim("ARCO_IDLE")
+			_play_anim("TOMAR_FLECHA", 0.3)
+			_play_bow_anim("ARCO_IDLE", 0.3)
 			var tomar_dur = _get_anim_length("TOMAR_FLECHA")
 			state_timer = tomar_dur + 0.1
 			_mostrar_flecha()
@@ -285,18 +292,18 @@ func _cambiar_estado(nuevo: State):
 			get_tree().create_timer(tomar_dur * 0.4).timeout.connect(
 				func():
 					if is_instance_valid(self) and current_state == State.RELOADING:
-						_play_bow_anim("ARCO_TENSAR")
+						_play_bow_anim("ARCO_TENSAR", 0.3)
 			)
 		State.AIMING:
 			# Apuntar — arco ya tenso, solo mantener pose
-			_play_anim("APUNTAR_IDLE")
+			_play_anim("APUNTAR_IDLE", 0.3)
 			charge_duration = randf_range(tiempo_carga_min, tiempo_carga_max)
 			state_timer = charge_duration
 			AudioManager.play_sfx("bow_tension")
 		State.SHOOTING:
 			# Disparar
-			_play_anim("DISPARO", 0.05)
-			_play_bow_anim("ARCO_DISPARO")
+			_play_anim("DISPARO", 0.15)
+			_play_bow_anim("ARCO_DISPARO", 0.15)
 			state_timer = _get_anim_length("DISPARO") + 0.2
 			_ocultar_flecha()
 		State.DYING:
@@ -304,8 +311,8 @@ func _cambiar_estado(nuevo: State):
 		State.DEAD:
 			pass
 		State.GETTING_UP:
-			_play_anim("LEVANTARSE", 0.0)
-			_play_bow_anim("ARCO_IDLE")
+			_play_anim("LEVANTARSE", 0.3)
+			_play_bow_anim("ARCO_IDLE", 0.3)
 			state_timer = _get_anim_length("LEVANTARSE")
 			_ocultar_flecha()
 			if ultima_muerte_anim == "MUERTE_01" and model_root:
