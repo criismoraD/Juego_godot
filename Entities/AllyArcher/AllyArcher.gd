@@ -422,6 +422,7 @@ func take_damage(amount: float):
 	# Reproducir animación de daño si sigue vivo
 	if health > 0:
 		_play_anim("DAÑO_HIT", 0.05)
+		AudioManager.play_sfx("player_hurt")
 		# Volver al estado anterior tras la animación de daño
 		var dur = _get_anim_length("DAÑO_HIT")
 		get_tree().create_timer(dur).timeout.connect(
