@@ -8,7 +8,7 @@ static var active_allies_cache: Array[Node] = []
 # ═══════════════════════════════════════════════════════════════════════════════
 enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP }
 @export_category("Activación")
-@export var enemigos_minimos: int = 2  ## Cantidad mínima de enemigos vivos para empezar a disparar
+@export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos vivos para empezar a disparar
 @export_category("Disparo")
 @export var tiempo_carga_min: float = 1.0  ## Carga mínima (potencia baja)
 @export_category("Tiempo_carga_max")

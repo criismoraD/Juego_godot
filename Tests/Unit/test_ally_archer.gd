@@ -110,3 +110,7 @@ func test_invulnerable_durante_getting_up():
 	_ally.current_state = _ally.State.GETTING_UP
 	_ally.take_damage(1.0)
 	assert_eq(_ally.health, 2, "No debería recibir daño durante el estado GETTING_UP")
+
+func test_enemigos_minimos_es_uno():
+	assert_eq(_ally.enemigos_minimos, 1, "Las arqueras aliadas deben empezar a disparar con al menos 1 enemigo")
+

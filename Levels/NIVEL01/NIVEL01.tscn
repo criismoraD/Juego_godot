@@ -366,7 +366,6 @@ idle_max = 2.0
 
 [node name="AllyArcher2" parent="." unique_id=1802001803 instance=ExtResource("20_cayny")]
 transform = Transform3D(0.28, 0, 0, 0, 0.28, 0, 0, 0, 0.28, -7.1104116, 1.5736867, 0)
-enemigos_minimos = 2
 tiempo_carga_max = 2.0
 idle_max = 2.0
 
