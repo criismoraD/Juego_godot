@@ -452,7 +452,6 @@ func _spawn_max_power_impact_vfx():
 	var base_mat = StandardMaterial3D.new()
 	base_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	base_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	base_mat.use_particle_colors = true
 	base_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	base_mat.vertex_color_use_as_albedo = true
 	base_mat.albedo_texture = tex
