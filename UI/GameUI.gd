@@ -618,6 +618,34 @@ func _create_pause_panel():
 	_style_button(menu_btn, Color(0.3, 0.4, 0.7))
 	vbox.add_child(menu_btn)
 
+	var lvl6_btn = Button.new()
+	lvl6_btn.text = "🏆 IR AL NIVEL 6"
+	lvl6_btn.custom_minimum_size = Vector2(200, 50)
+	lvl6_btn.pressed.connect(
+		func():
+			if is_paused:
+				is_paused = false
+				get_tree().paused = false
+			AudioManager.stop_all()
+			get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
+	)
+	_style_button(lvl6_btn, Color(0.6, 0.4, 0.1))
+	vbox.add_child(lvl6_btn)
+
+	var debug_btn = Button.new()
+	debug_btn.text = "🔧 IR AL NIVEL DEBUG"
+	debug_btn.custom_minimum_size = Vector2(200, 50)
+	debug_btn.pressed.connect(
+		func():
+			if is_paused:
+				is_paused = false
+				get_tree().paused = false
+			AudioManager.stop_all()
+			get_tree().change_scene_to_file("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.tscn")
+	)
+	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
+	vbox.add_child(debug_btn)
+
 	var quit_pause_btn = Button.new()
 	quit_pause_btn.text = "❌ SALIR DEL JUEGO"
 	quit_pause_btn.custom_minimum_size = Vector2(200, 50)

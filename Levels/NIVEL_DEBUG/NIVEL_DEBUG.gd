@@ -1169,7 +1169,7 @@ func _crear_panel_controles_spawn():
 	panel.anchor_top = 0.0
 	panel.offset_left = 20
 	panel.offset_top = 20
-	panel.custom_minimum_size = Vector2(240, 0)
+	panel.custom_minimum_size = Vector2(260, 0)
 	
 	# Layout vertical
 	var vbox = VBoxContainer.new()
@@ -1224,37 +1224,85 @@ func _crear_panel_controles_spawn():
 	vbox.add_child(sep2)
 	
 	# Fila 2: Selector de tipo de enemigo
+	# Fila 2: Selector de tipo de enemigo (como botones y labels)
 	var label_tipo = Label.new()
-	label_tipo.text = "Tipo a spawnear:"
-	label_tipo.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+	label_tipo.text = "Tipo a spawnear:\n🎲 Todos (Azar)"
+	label_tipo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	label_tipo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(label_tipo)
 	
-	var selector_tipo = OptionButton.new()
-	selector_tipo.name = "SelectorTipoEnemigo"
-	selector_tipo.add_item("Todos (Azar)", 0)
-	selector_tipo.add_item("Goblin (Ballesta)", 1)
-	selector_tipo.add_item("Goblin Girl", 2)
-	selector_tipo.add_item("Imp (Normal)", 3)
-	selector_tipo.add_item("Cañonero", 4)
-	selector_tipo.add_item("Imp Escudo", 5)
+	var grid_tipos = GridContainer.new()
+	grid_tipos.columns = 2
+	grid_tipos.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid_tipos.add_theme_constant_override("h_separation", 8)
+	grid_tipos.add_theme_constant_override("v_separation", 8)
+	vbox.add_child(grid_tipos)
 	
-	selector_tipo.item_selected.connect(func(index: int):
-		match index:
-			0:
+	var opciones = [
+		{"nombre": "🎲 Todos (Azar)", "id": -1},
+		{"nombre": "🏹 Gob Ballesta", "id": 0},
+		{"nombre": "👧 Goblin Girl", "id": 1},
+		{"nombre": "😈 Imp Normal", "id": 2},
+		{"nombre": "💣 Cañonero", "id": 3},
+		{"nombre": "🛡️ Imp Escudo", "id": 4}
+	]
+	
+	for opt in opciones:
+		var btn = Button.new()
+		btn.text = opt["nombre"]
+		btn.custom_minimum_size = Vector2(112, 35)
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.set_meta("tipo_id", opt["id"])
+		btn.set_meta("tipo_nombre", opt["nombre"])
+		
+		# Estilo inicial
+		var init_style = StyleBoxFlat.new()
+		if opt["id"] == -1:
+			init_style.bg_color = Color(0.2, 0.5, 0.8, 1.0) # Azul destacado
+			init_style.border_width_left = 2
+			init_style.border_width_top = 2
+			init_style.border_width_right = 2
+			init_style.border_width_bottom = 2
+			init_style.border_color = Color(1.0, 1.0, 1.0, 0.9)
+		else:
+			init_style.bg_color = Color(0.18, 0.18, 0.22, 0.95) # Color base oscuro
+		init_style.corner_radius_top_left = 4
+		init_style.corner_radius_top_right = 4
+		init_style.corner_radius_bottom_right = 4
+		init_style.corner_radius_bottom_left = 4
+		btn.add_theme_stylebox_override("normal", init_style)
+		
+		btn.pressed.connect(func():
+			var tid = btn.get_meta("tipo_id")
+			var tnombre = btn.get_meta("tipo_nombre")
+			if tid == -1:
 				wave_spawner.forzar_tipo_enemigo = -1
 				wave_spawner.probabilidad_igual = true
-			1:
-				wave_spawner.forzar_tipo_enemigo = 0
-			2:
-				wave_spawner.forzar_tipo_enemigo = 1
-			3:
-				wave_spawner.forzar_tipo_enemigo = 2
-			4:
-				wave_spawner.forzar_tipo_enemigo = 3
-			5:
-				wave_spawner.forzar_tipo_enemigo = 4
-	)
-	vbox.add_child(selector_tipo)
+			else:
+				wave_spawner.forzar_tipo_enemigo = tid
+			
+			label_tipo.text = "Tipo a spawnear:\n" + tnombre
+			for b in grid_tipos.get_children():
+				if b is Button:
+					var b_id = b.get_meta("tipo_id")
+					var b_style = StyleBoxFlat.new()
+					if b_id == tid:
+						b_style.bg_color = Color(0.2, 0.5, 0.8, 1.0) # Azul destacado
+						b_style.border_width_left = 2
+						b_style.border_width_top = 2
+						b_style.border_width_right = 2
+						b_style.border_width_bottom = 2
+						b_style.border_color = Color(1.0, 1.0, 1.0, 0.9)
+					else:
+						b_style.bg_color = Color(0.18, 0.18, 0.22, 0.95) # Color base oscuro
+					b_style.corner_radius_top_left = 4
+					b_style.corner_radius_top_right = 4
+					b_style.corner_radius_bottom_right = 4
+					b_style.corner_radius_bottom_left = 4
+					b.add_theme_stylebox_override("normal", b_style)
+		)
+		grid_tipos.add_child(btn)
 	
 	# Botón Spawnear Uno
 	var btn_spawn_uno = Button.new()
