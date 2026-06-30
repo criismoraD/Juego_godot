@@ -1073,6 +1073,18 @@ func spawn_arrow_projectile():
 		scale_curve.add_point(Vector2(0, 1.0))
 		scale_curve.add_point(Vector2(1, 0.0))
 		super_trail.scale_amount_curve = scale_curve
+		
+		# Configurar malla y material para visibilidad 3D
+		var qmesh = QuadMesh.new()
+		qmesh.size = Vector2(0.12, 0.12)
+		var mat = StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.use_particle_colors = true
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		qmesh.material = mat
+		super_trail.mesh = qmesh
+		
 		arrow_instance.add_child(super_trail)
 
 	# Agregar al árbol PRIMERO (para que _ready se ejecute y sea válido en el tree)
@@ -1488,6 +1500,17 @@ func _update_charge_vfx(active: bool):
 		scale_curve.add_point(Vector2(1.0, 0.0))
 		_charge_vfx.scale_amount_curve = scale_curve
 		
+		# Configurar malla y material para visibilidad 3D
+		var qmesh = QuadMesh.new()
+		qmesh.size = Vector2(0.1, 0.1)
+		var mat = StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.use_particle_colors = true
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		qmesh.material = mat
+		_charge_vfx.mesh = qmesh
+		
 		if arrow_node:
 			arrow_node.add_child(_charge_vfx)
 			_charge_vfx.position = Vector3(0, 0, 0.3)
@@ -1516,6 +1539,16 @@ func _spawn_release_blast_vfx(pos: Vector3, dir: Vector3):
 	sparkles.scale_amount_min = 0.05
 	sparkles.scale_amount_max = 0.15
 	
+	var qmesh_spark = QuadMesh.new()
+	qmesh_spark.size = Vector2(0.08, 0.08)
+	var mat_spark = StandardMaterial3D.new()
+	mat_spark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat_spark.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_spark.use_particle_colors = true
+	mat_spark.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	qmesh_spark.material = mat_spark
+	sparkles.mesh = qmesh_spark
+	
 	get_tree().root.add_child(sparkles)
 	sparkles.global_position = pos
 	
@@ -1538,6 +1571,16 @@ func _spawn_release_blast_vfx(pos: Vector3, dir: Vector3):
 	ring.scale_amount_min = 0.08
 	ring.scale_amount_max = 0.2
 	
+	var qmesh_ring = QuadMesh.new()
+	qmesh_ring.size = Vector2(0.15, 0.15)
+	var mat_ring = StandardMaterial3D.new()
+	mat_ring.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat_ring.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_ring.use_particle_colors = true
+	mat_ring.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	qmesh_ring.material = mat_ring
+	ring.mesh = qmesh_ring
+	
 	get_tree().root.add_child(ring)
 	ring.global_position = pos
 	
@@ -1546,6 +1589,3 @@ func _spawn_release_blast_vfx(pos: Vector3, dir: Vector3):
 		if is_instance_valid(sparkles): sparkles.queue_free()
 		if is_instance_valid(ring): ring.queue_free()
 	)
-	
-	# 3. Punch sonoro
-	AudioManager.play_sfx("player_hit")

@@ -467,6 +467,16 @@ func _spawn_max_power_impact_vfx():
 	scale_curve.add_point(Vector2(1, 0.0))
 	sparks.scale_amount_curve = scale_curve
 	
+	var qmesh_spark = QuadMesh.new()
+	qmesh_spark.size = Vector2(0.08, 0.08)
+	var mat_spark = StandardMaterial3D.new()
+	mat_spark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat_spark.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_spark.use_particle_colors = true
+	mat_spark.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	qmesh_spark.material = mat_spark
+	sparks.mesh = qmesh_spark
+	
 	get_tree().root.add_child(sparks)
 	sparks.global_position = global_position
 	
@@ -488,6 +498,16 @@ func _spawn_max_power_impact_vfx():
 	flash.scale_amount_min = 0.5
 	flash.scale_amount_max = 1.0
 	
+	var qmesh_flash = QuadMesh.new()
+	qmesh_flash.size = Vector2(0.8, 0.8)
+	var mat_flash = StandardMaterial3D.new()
+	mat_flash.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat_flash.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_flash.use_particle_colors = true
+	mat_flash.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	qmesh_flash.material = mat_flash
+	flash.mesh = qmesh_flash
+	
 	get_tree().root.add_child(flash)
 	flash.global_position = global_position
 	
@@ -498,7 +518,7 @@ func _spawn_max_power_impact_vfx():
 	)
 	
 	# 3. Sonido de impacto potente
-	AudioManager.play_sfx("player_hit")
+	AudioManager.play_sfx("shield_hit_arrow")
 	
 	# 4. Screen shake en el impacto
 	var game_feel = get_tree().root.get_node_or_null("GameFeel")
