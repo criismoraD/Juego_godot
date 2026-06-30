@@ -49,5 +49,30 @@ func test_ally_arrow_destroyed_by_barrier():
 	# Act
 	_ally_arrow._on_body_entered(_barrera)
 
-	# Assert
 	assert_true(_ally_arrow.get("_destroying"), "La flecha aliada debería destruirse al chocar con la barrera")
+
+
+func test_enemy_walks_out_of_barrier():
+	# Arrange: Crear un enemigo y colocarlo en la posición de la barrera
+	var EnemyBaseScript = load("res://Entities/Enemies/EnemyBase.gd")
+	var enemy = EnemyBaseScript.new()
+	# Añadir al árbol para que _physics_process y get_tree() funcionen
+	get_tree().root.add_child(enemy)
+	
+	# Colocar la barrera en x = 5.0, tamaño 1.0 (cubre 4.5 a 5.5)
+	_barrera.global_position = Vector3(5.0, 0.0, 0.0)
+	_barrera.tamano = Vector3(1.0, 10.0, 1.0)
+	
+	# Colocar al enemigo dentro de la barrera en x = 5.0
+	enemy.global_position = Vector3(5.0, 0.0, 0.0)
+	enemy.current_state = enemy.State.SHOOTING
+	
+	# Act: Ejecutar un frame de física
+	enemy._physics_process(0.1)
+	
+	# Assert: Debería haber cambiado a WALKING y tener velocidad hacia la izquierda (negativa)
+	assert_eq(enemy.current_state, enemy.State.WALKING, "El enemigo debería cambiar a WALKING para salir de la barrera")
+	assert_lt(enemy.velocity.x, 0.0, "La velocidad.x del enemigo debería ser negativa (moverse a la izquierda)")
+	
+	# Limpieza
+	enemy.free()

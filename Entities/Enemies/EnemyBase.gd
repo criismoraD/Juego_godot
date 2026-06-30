@@ -239,6 +239,32 @@ func _physics_process(delta):
 		State.DEAD:
 			pass
 
+	# Si el enemigo está en el área de la barrera destruye flechas (o a la derecha de ella),
+	# se le obliga a seguir caminando hacia la izquierda para salir de la zona de invulnerabilidad.
+	if current_state != State.DYING and current_state != State.DEAD:
+		var esta_en_barrera = false
+		var barreras = get_tree().get_nodes_in_group("barrera_destruye_flechas")
+		for barrera in barreras:
+			if is_instance_valid(barrera):
+				var tam_x = 1.0
+				if "tamano" in barrera:
+					tam_x = barrera.tamano.x
+				var limite_izquierdo = barrera.global_position.x - (tam_x * 0.5)
+				# Margen de seguridad de 0.5 para asegurar que quede completamente fuera de la barrera
+				if global_position.x >= limite_izquierdo - 0.5:
+					esta_en_barrera = true
+					break
+		
+		if esta_en_barrera:
+			if current_state != State.WALKING:
+				_change_state(State.WALKING)
+			else:
+				# Si ya está en WALKING pero se detuvo (ej: modo pacífico), reanudar caminata y animación
+				if modo_pacifico and pacifico_detenido:
+					pacifico_detenido = false
+					_on_state_walking()
+			velocity.x = -velocidad_caminar
+
 	move_and_slide()
 
 
