@@ -1073,6 +1073,7 @@ func spawn_arrow_projectile():
 		super_trail.scale_amount_curve = scale_curve
 		super_trail.mesh = _create_particle_mesh(0.04)
 		arrow_instance.add_child(super_trail)
+		super_trail.position = Vector3(-0.35, 0, 0)
 
 	# Agregar al árbol PRIMERO (para que _ready se ejecute y sea válido en el tree)
 	get_tree().root.add_child(arrow_instance)
