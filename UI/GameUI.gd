@@ -1666,7 +1666,14 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 		var mat = ShaderMaterial.new()
 		mat.shader = shader
 		mat.set_shader_parameter("threshold", 1.1)
-		mat.set_shader_parameter("edge_softness", 0.08)
+		
+		var grad = Gradient.new()
+		grad.set_color(0, Color(0, 0, 0, 0))
+		grad.set_color(1, Color(0, 0, 0, 1))
+		
+		var ramp_tex = GradientTexture1D.new()
+		ramp_tex.gradient = grad
+		mat.set_shader_parameter("ramp_texture", ramp_tex)
 		cortinilla.material = mat
 
 	# 3. Crear Contenedor de UI (en la parte derecha, cubriendo de 0.33 a 1.0 en X)
