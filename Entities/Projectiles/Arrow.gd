@@ -412,6 +412,11 @@ func _safe_destroy():
 	if _destroying:
 		return
 	_destroying = true
+	
+	# Si es de máxima potencia, crear una explosión de impacto juiciosa
+	if has_meta("is_max_power") and bool(get_meta("is_max_power")):
+		_spawn_max_power_impact_vfx()
+		
 	# Detener trail antes de liberar para evitar "Parameter material is null"
 	var trail = get_node_or_null("TrailParticles")
 	if trail:
@@ -430,6 +435,75 @@ func _safe_destroy():
 			if is_instance_valid(self) and is_inside_tree():
 				queue_free()
 	)
+
+
+func _spawn_max_power_impact_vfx():
+	# 1. Chispas radiales de impacto
+	var sparks = CPUParticles3D.new()
+	sparks.amount = 25
+	sparks.lifetime = 0.4
+	sparks.one_shot = true
+	sparks.explosiveness = 0.95
+	sparks.emitting = true
+	sparks.local_coords = false
+	
+	sparks.direction = -velocity.normalized() # Rebotar en dirección opuesta al impacto
+	sparks.spread = 60.0
+	sparks.initial_velocity_min = 4.0
+	sparks.initial_velocity_max = 8.0
+	sparks.gravity = Vector3(0, -12.0, 0) # Gravedad alta para que caigan rápido
+	
+	sparks.color = Color(0.2, 0.8, 1.0, 1.0) # Celeste eléctrico
+	var gradient = Gradient.new()
+	gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0)) # Blanco
+	gradient.set_color(0.3, Color(0.2, 0.8, 1.0, 1.0)) # Celeste
+	gradient.set_color(1, Color(0.05, 0.1, 0.6, 0.0)) # Azul oscuro transparente
+	sparks.color_ramp = gradient
+	
+	sparks.scale_amount_min = 0.06
+	sparks.scale_amount_max = 0.18
+	var scale_curve = Curve.new()
+	scale_curve.add_point(Vector2(0, 1.0))
+	scale_curve.add_point(Vector2(1, 0.0))
+	sparks.scale_amount_curve = scale_curve
+	
+	get_tree().root.add_child(sparks)
+	sparks.global_position = global_position
+	
+	# 2. Destello de impacto (Flash)
+	var flash = CPUParticles3D.new()
+	flash.amount = 1
+	flash.lifetime = 0.15
+	flash.one_shot = true
+	flash.emitting = true
+	flash.local_coords = false
+	flash.gravity = Vector3.ZERO
+	
+	flash.color = Color(1.0, 1.0, 1.0, 1.0)
+	var flash_gradient = Gradient.new()
+	flash_gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	flash_gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	flash.color_ramp = flash_gradient
+	
+	flash.scale_amount_min = 0.5
+	flash.scale_amount_max = 1.0
+	
+	get_tree().root.add_child(flash)
+	flash.global_position = global_position
+	
+	# Auto-destroy
+	get_tree().create_timer(0.5).timeout.connect(func():
+		if is_instance_valid(sparks): sparks.queue_free()
+		if is_instance_valid(flash): flash.queue_free()
+	)
+	
+	# 3. Sonido de impacto potente
+	AudioManager.play_sfx("player_hit")
+	
+	# 4. Screen shake en el impacto
+	var game_feel = get_tree().root.get_node_or_null("GameFeel")
+	if game_feel and game_feel.has_method("on_player_shoot"):
+		game_feel.on_player_shoot()
 
 
 func _cleanup_materials():

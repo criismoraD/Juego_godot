@@ -446,7 +446,7 @@ transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.9744
 amount = 100
 
 [node name="BarreraDestruyeFlechas" parent="." unique_id=1852478489 instance=ExtResource("33_jrbhj")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 2.5280352, 4.775, 4.765, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.775, 4.765, 0)
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

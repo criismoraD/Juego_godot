@@ -916,10 +916,12 @@ func control_visual_state(delta):
 
 			# Sonido de mantener arco al máximo (con delay configurable)
 			if charge_percent >= 100:
+				_update_charge_vfx(true)
 				_bow_hold_timer += delta
 				if _bow_hold_timer >= AudioManager.delay_mantener_arco:
 					AudioManager.play_bow_hold()
 			else:
+				_update_charge_vfx(false)
 				_bow_hold_timer = 0.0
 
 			charge_bar.modulate = Color.WHITE
@@ -967,6 +969,7 @@ var shoot_anim_duration = 1.0  # Valor por defecto
 
 
 func start_shooting():
+	_update_charge_vfx(false)
 	# Detener el sonido de tensar cuerda
 	AudioManager.stop_bow_tension()
 
@@ -1039,6 +1042,39 @@ func spawn_arrow_projectile():
 	# Inicializar la flecha con dirección y velocidad calculada
 	arrow_instance.initialize(shoot_dir, arrow_speed)
 
+	# Si es disparo cargado al máximo (potencia al 98% o más)
+	var es_potencia_maxima = last_charge_power >= 0.98
+	if es_potencia_maxima:
+		arrow_instance.set_meta("is_max_power", true)
+		_spawn_release_blast_vfx(data["origin"], shoot_dir)
+		
+		# Agregar rastro de súper potencia eléctrico/celeste al proyectil
+		var super_trail = CPUParticles3D.new()
+		super_trail.name = "SuperTrail"
+		super_trail.amount = 40
+		super_trail.lifetime = 0.3
+		super_trail.local_coords = false
+		super_trail.draw_order = CPUParticles3D.DRAW_ORDER_LIFETIME
+		super_trail.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		super_trail.emission_sphere_radius = 0.04
+		super_trail.direction = -shoot_dir
+		super_trail.spread = 10.0
+		super_trail.initial_velocity_min = 1.0
+		super_trail.initial_velocity_max = 3.0
+		super_trail.gravity = Vector3.ZERO
+		super_trail.color = Color(0.2, 0.7, 1.0, 1.0)
+		var gradient = Gradient.new()
+		gradient.set_color(0, Color(0.2, 0.7, 1.0, 1.0)) # Celeste brillante
+		gradient.set_color(1, Color(0.05, 0.1, 0.6, 0.0)) # Azul transparente
+		super_trail.color_ramp = gradient
+		super_trail.scale_amount_min = 0.05
+		super_trail.scale_amount_max = 0.15
+		var scale_curve = Curve.new()
+		scale_curve.add_point(Vector2(0, 1.0))
+		scale_curve.add_point(Vector2(1, 0.0))
+		super_trail.scale_amount_curve = scale_curve
+		arrow_instance.add_child(super_trail)
+
 	# Agregar al árbol PRIMERO (para que _ready se ejecute y sea válido en el tree)
 	get_tree().root.add_child(arrow_instance)
 
@@ -1048,6 +1084,9 @@ func spawn_arrow_projectile():
 	# GAME FEEL: Screen shake al disparar
 	if has_node("/root/GameFeel"):
 		get_node("/root/GameFeel").on_player_shoot()
+		if es_potencia_maxima:
+			# Sacudida doble para potencia máxima
+			get_node("/root/GameFeel").on_player_shoot()
 
 	# GAME FEEL: Partículas de disparo (DESACTIVADO)
 	# VFXFactory.spawn_muzzle_flash(get_tree().root, data["origin"], shoot_dir)
@@ -1209,6 +1248,7 @@ func take_damage(amount: float):
 
 
 func _cancel_current_shot():
+	_update_charge_vfx(false)
 	# Cancelar cualquier estado de disparo actual
 	if current_aim_state != AimState.NONE:
 		# Marcar que el disparo fue cancelado (evita disparar al soltar clic)
@@ -1406,3 +1446,106 @@ func revive():
 
 	if anim_tree:
 		anim_tree.set("parameters/MotionState/transition_request", "ground")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JUICE & VFX COMPLEMENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+var _charge_vfx: CPUParticles3D = null
+
+func _update_charge_vfx(active: bool):
+	if active:
+		if is_instance_valid(_charge_vfx):
+			return
+		
+		_charge_vfx = CPUParticles3D.new()
+		_charge_vfx.name = "ChargeVFX"
+		_charge_vfx.amount = 30
+		_charge_vfx.lifetime = 0.5
+		_charge_vfx.local_coords = true
+		
+		# Partículas que convergen hacia el centro
+		_charge_vfx.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		_charge_vfx.emission_sphere_radius = 0.8
+		_charge_vfx.gravity = Vector3.ZERO
+		_charge_vfx.radial_accel_min = -8.0
+		_charge_vfx.radial_accel_max = -4.0
+		_charge_vfx.tangential_accel_min = 2.0
+		_charge_vfx.tangential_accel_max = 4.0
+		
+		# Color celeste eléctrico brillante
+		_charge_vfx.color = Color(0.2, 0.6, 1.0, 1.0)
+		var gradient = Gradient.new()
+		gradient.set_color(0, Color(0.2, 0.7, 1.0, 1.0))
+		gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+		_charge_vfx.color_ramp = gradient
+		
+		_charge_vfx.scale_amount_min = 0.04
+		_charge_vfx.scale_amount_max = 0.12
+		var scale_curve = Curve.new()
+		scale_curve.add_point(Vector2(0, 0.1))
+		scale_curve.add_point(Vector2(0.8, 1.0))
+		scale_curve.add_point(Vector2(1.0, 0.0))
+		_charge_vfx.scale_amount_curve = scale_curve
+		
+		if arrow_node:
+			arrow_node.add_child(_charge_vfx)
+			_charge_vfx.position = Vector3(0, 0, 0.3)
+	else:
+		if is_instance_valid(_charge_vfx):
+			_charge_vfx.queue_free()
+			_charge_vfx = null
+
+func _spawn_release_blast_vfx(pos: Vector3, dir: Vector3):
+	# 1. Sparkles burst (cono de chispas)
+	var sparkles = CPUParticles3D.new()
+	sparkles.amount = 25
+	sparkles.lifetime = 0.3
+	sparkles.one_shot = true
+	sparkles.color_ramp = Gradient.new()
+	sparkles.color_ramp.set_color(0, Color(0.3, 0.8, 1.0, 1.0))
+	sparkles.color_ramp.set_color(1, Color(0.1, 0.3, 1.0, 0.0))
+	sparkles.explosiveness = 0.9
+	sparkles.emitting = true
+	sparkles.local_coords = false
+	sparkles.direction = dir
+	sparkles.spread = 45.0
+	sparkles.initial_velocity_min = 5.0
+	sparkles.initial_velocity_max = 10.0
+	sparkles.gravity = Vector3.ZERO
+	sparkles.scale_amount_min = 0.05
+	sparkles.scale_amount_max = 0.15
+	
+	get_tree().root.add_child(sparkles)
+	sparkles.global_position = pos
+	
+	# 2. Expanding shockwave ring (anillo expansivo)
+	var ring = CPUParticles3D.new()
+	ring.amount = 20
+	ring.lifetime = 0.25
+	ring.one_shot = true
+	ring.color_ramp = Gradient.new()
+	ring.color_ramp.set_color(0, Color(1.0, 1.0, 1.0, 0.8))
+	ring.color_ramp.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	ring.explosiveness = 0.95
+	ring.emitting = true
+	ring.local_coords = false
+	ring.direction = Vector3.ZERO
+	ring.spread = 180.0
+	ring.gravity = Vector3.ZERO
+	ring.initial_velocity_min = 3.0
+	ring.initial_velocity_max = 6.0
+	ring.scale_amount_min = 0.08
+	ring.scale_amount_max = 0.2
+	
+	get_tree().root.add_child(ring)
+	ring.global_position = pos
+	
+	# Auto-destroy
+	get_tree().create_timer(0.4).timeout.connect(func():
+		if is_instance_valid(sparkles): sparkles.queue_free()
+		if is_instance_valid(ring): ring.queue_free()
+	)
+	
+	# 3. Punch sonoro
+	AudioManager.play_sfx("player_hit")
