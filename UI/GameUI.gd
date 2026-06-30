@@ -1629,6 +1629,7 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 	var overlay = CanvasLayer.new()
 	overlay.layer = 210
 	overlay.name = "PantallaVictoriaCortinilla"
+	overlay.add_to_group("pantalla_victoria_cortinilla")
 	add_child(overlay)
 
 	# 2. Crear ColorRect con Shader

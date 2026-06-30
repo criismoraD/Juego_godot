@@ -487,11 +487,12 @@ func _iniciar_nivel_0():
 		escenas, velocidad_pacificos, offset_entre_pacificos
 	)
 
-	# Asignar límite de parada escalonado: Imp en -5.0, arqueras en -4.8 y -4.6.
+	# Asignar límite de parada escalonado: Imp en -5.0, arqueras adelante (más a la izquierda: -5.2 y -5.4)
 	for i in range(enemigos_pacificos.size()):
 		var enemigo = enemigos_pacificos[i]
 		if is_instance_valid(enemigo):
-			enemigo.limite_pacifico_x = limite_fin_mapa_x + (i * retroceso_parada_arqueras)
+			# Restamos en lugar de sumar para que las arqueras se ubiquen adelante del imp (más a la izquierda) y no queden sobre la barrera
+			enemigo.limite_pacifico_x = limite_fin_mapa_x - (i * retroceso_parada_arqueras)
 
 	# Conectar señal de daño pacífico
 	for enemigo in enemigos_pacificos:

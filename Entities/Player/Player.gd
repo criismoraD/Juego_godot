@@ -785,6 +785,11 @@ func control_visual_state(delta):
 	if current_move_state == MoveState.LANDING:
 		return
 
+	# Si la cortinilla está activa, cancelar disparo y bloquear aiming
+	if get_tree().has_group("pantalla_victoria_cortinilla") and not get_tree().get_nodes_in_group("pantalla_victoria_cortinilla").is_empty():
+		_cancel_current_shot()
+		return
+
 	if not anim_tree:
 		return
 

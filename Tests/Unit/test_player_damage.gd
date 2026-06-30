@@ -70,6 +70,21 @@ func test_recibir_dano_cancels_shot():
 	assert_eq(_player.current_aim_state, _player.AimState.NONE, "El disparo debería cancelarse al recibir daño")
 	assert_true(_player.shot_cancelled, "shot_cancelled debería ser true")
 
+
+func test_disparo_bloqueado_si_cortinilla_activa():
+	# Añadir un nodo al grupo para simular que la cortinilla está activa en escena
+	var dummy := Node.new()
+	dummy.add_to_group("pantalla_victoria_cortinilla")
+	_player.get_parent().add_child(dummy)
+	
+	_player.current_aim_state = _player.AimState.DRAWING
+	_player.control_visual_state(0.1)
+	
+	assert_eq(_player.current_aim_state, _player.AimState.NONE, "El disparo debería cancelarse si la cortinilla está activa")
+	
+	dummy.queue_free()
+
+
 func _agregar_animacion_minima(player: Player) -> void:
 	var anim_player := AnimationPlayer.new()
 	anim_player.name = "AnimationPlayer"
