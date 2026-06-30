@@ -13,14 +13,16 @@ res://Tests/Unit/test_ally_archer.gd
 * test_revivir_desde_muerta
 * test_revivir_rotacion_muerte_01
 * test_invulnerable_durante_getting_up
-[1m6/6 passed.
+* test_enemigos_minimos_es_uno
+[1m7/7 passed.
 [0m[4m
 
 res://Tests/Unit/test_barrera_destruye_flechas.gd
 [0m* test_barrera_properties
 * test_arrow_destroyed_by_barrier
 * test_ally_arrow_destroyed_by_barrier
-[1m3/3 passed.
+* test_enemy_walks_out_of_barrier
+[1m4/4 passed.
 [0m[4m
 
 res://Tests/Unit/test_game_ui.gd
@@ -80,7 +82,8 @@ res://Tests/Unit/test_player_damage.gd
 * test_recibir_dano_is_dead
 * test_recibir_dano_emits_signal
 * test_recibir_dano_cancels_shot
-[1m6/6 passed.
+* test_disparo_bloqueado_si_cortinilla_activa
+[1m7/7 passed.
 [0m[4m
 
 res://Tests/Unit/test_projectile_pool.gd
@@ -143,10 +146,10 @@ res://Tests/Unit/test_wave_spawner.gd
 Totals
 ------
 Scripts              14
-Tests                72
-Passing Tests        72
-Asserts             215
-Time              1.994s
+Tests                75
+Passing Tests        75
+Asserts             219
+Time              2.305s
 
 
 [32m---- All tests passed! ----

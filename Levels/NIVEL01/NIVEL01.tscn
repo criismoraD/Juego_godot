@@ -94,7 +94,7 @@ size = 0.01
 
 [node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_1cr8j")]
 transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 0)
-rotacion_torso_escalera = 0.0
+rotacion_torso_escalera = 180.0
 color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
 escala_min_salto = 0.01
 escala_max_salto = 0.05
