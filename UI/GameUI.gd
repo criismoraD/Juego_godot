@@ -618,34 +618,6 @@ func _create_pause_panel():
 	_style_button(menu_btn, Color(0.3, 0.4, 0.7))
 	vbox.add_child(menu_btn)
 
-	var lvl6_btn = Button.new()
-	lvl6_btn.text = "🏆 IR AL NIVEL 6"
-	lvl6_btn.custom_minimum_size = Vector2(200, 50)
-	lvl6_btn.pressed.connect(
-		func():
-			if is_paused:
-				is_paused = false
-				get_tree().paused = false
-			AudioManager.stop_all()
-			get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
-	)
-	_style_button(lvl6_btn, Color(0.6, 0.4, 0.1))
-	vbox.add_child(lvl6_btn)
-
-	var debug_btn = Button.new()
-	debug_btn.text = "🔧 IR AL NIVEL DEBUG"
-	debug_btn.custom_minimum_size = Vector2(200, 50)
-	debug_btn.pressed.connect(
-		func():
-			if is_paused:
-				is_paused = false
-				get_tree().paused = false
-			AudioManager.stop_all()
-			get_tree().change_scene_to_file("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.tscn")
-	)
-	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
-	vbox.add_child(debug_btn)
-
 	var quit_pause_btn = Button.new()
 	quit_pause_btn.text = "❌ SALIR DEL JUEGO"
 	quit_pause_btn.custom_minimum_size = Vector2(200, 50)
@@ -659,9 +631,9 @@ func _create_pause_panel():
 	sep_lvl.visible = debug_ui_enabled
 	vbox.add_child(sep_lvl)
 
-	# ═══════════════ SELECTOR DE OLEADAS (DEBUG) ═══════════════
+	# ═══════════════ SELECTOR DE OLEADAS Y NIVELES (DEBUG) ═══════════════
 	var lvl_label = Label.new()
-	lvl_label.text = "⚔️ CAMBIAR OLEADA (DEBUG)"
+	lvl_label.text = "⚙️ CONTROLES DE DESARROLLADOR"
 	lvl_label.add_theme_font_size_override("font_size", 22)
 	lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lvl_label.visible = debug_ui_enabled
@@ -706,16 +678,40 @@ func _create_pause_panel():
 	_style_button(btn_oleada_3, Color(0.5, 0.3, 0.6))
 	hbox_levels.add_child(btn_oleada_3)
 
-	var btn_carteles = Button.new()
-	btn_carteles.text = "Carteles"
-	btn_carteles.custom_minimum_size = Vector2(110, 40)
-	btn_carteles.pressed.connect(
+	# Fila de Navegación de Nivees (Debug)
+	var hbox_nav_debug = HBoxContainer.new()
+	hbox_nav_debug.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox_nav_debug.add_theme_constant_override("separation", 10)
+	hbox_nav_debug.visible = debug_ui_enabled
+	vbox.add_child(hbox_nav_debug)
+
+	var lvl6_btn = Button.new()
+	lvl6_btn.text = "🏆 Ir al Nivel 6"
+	lvl6_btn.custom_minimum_size = Vector2(170, 40)
+	lvl6_btn.pressed.connect(
 		func():
-			_toggle_pause()
-			_ejecutar_carteles_debug()
+			if is_paused:
+				is_paused = false
+				get_tree().paused = false
+			AudioManager.stop_all()
+			get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
 	)
-	_style_button(btn_carteles, Color(0.45, 0.35, 0.1))
-	hbox_levels.add_child(btn_carteles)
+	_style_button(lvl6_btn, Color(0.6, 0.4, 0.1))
+	hbox_nav_debug.add_child(lvl6_btn)
+
+	var debug_btn = Button.new()
+	debug_btn.text = "🔧 Ir al Nivel Debug"
+	debug_btn.custom_minimum_size = Vector2(170, 40)
+	debug_btn.pressed.connect(
+		func():
+			if is_paused:
+				is_paused = false
+				get_tree().paused = false
+			AudioManager.stop_all()
+			get_tree().change_scene_to_file("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.tscn")
+	)
+	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
+	hbox_nav_debug.add_child(debug_btn)
 
 	# ═══════════════ CALIDAD GRÁFICA ═══════════════
 	var sep_calidad = HSeparator.new()
