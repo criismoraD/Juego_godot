@@ -6,8 +6,9 @@ Prepara modelos 3D para exportar a Godot con convenciones especificas:
     1. Renombra Material -> [nombre]_M
     2. Renombra Textura difusa -> [nombre]_D
     3. Limpia texturas (solo mantiene difusa/color)
-    4. Coloca el pivote en la base del modelo (centro inferior)
-    5. Centra el modelo en el mundo (0,0,0)
+    4. Hace un merge by distance de todos los vertices (0.0001)
+    5. Coloca el pivote en la base del modelo (centro inferior)
+    6. Centra el modelo en el mundo (0,0,0)
 
 REQUISITO: Seleccionar el objeto a procesar antes de ejecutar.
 
@@ -117,9 +118,28 @@ class OBJECT_OT_prepare_model(Operator):
             print("  ⚠ Objeto sin materiales")
         
         # ═══════════════════════════════════════════════════════════════════
-        # PASO 2: Colocar pivote en la base del modelo
         # ═══════════════════════════════════════════════════════════════════
-        print("\n[2/3] Ajustando pivote...")
+        # PASO 2: Unificar vertices duplicados (Merge by Distance)
+        # ═══════════════════════════════════════════════════════════════════
+        print("\n[2/4] Unificando vertices duplicados (Merge by Distance)...")
+        # Asegurar modo objeto para manipulacion limpia
+        bpy.ops.object.mode_set(mode='OBJECT')
+        context.view_layer.objects.active = obj
+        obj.select_set(True)
+        
+        # Cambiar a modo edicion, seleccionar todo y remover doubles
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.0001)
+        
+        # Regresar a modo objeto para continuar preparacion
+        bpy.ops.object.mode_set(mode='OBJECT')
+        print("  ✓ Vertices duplicados unificados con umbral 0.0001")
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # PASO 3: Colocar pivote en la base del modelo
+        # ═══════════════════════════════════════════════════════════════════
+        print("\n[3/4] Ajustando pivote...")
         
         # Obtener bounding box del objeto
         bbox_min = [float('inf')] * 3
@@ -150,9 +170,9 @@ class OBJECT_OT_prepare_model(Operator):
         context.scene.cursor.location = cursor_location_original
         
         # ═══════════════════════════════════════════════════════════════════
-        # PASO 3: Centrar modelo en el mundo
+        # PASO 4: Centrar modelo en el mundo
         # ═══════════════════════════════════════════════════════════════════
-        print("\n[3/3] Centrando modelo en el mundo...")
+        print("\n[4/4] Centrando modelo en el mundo...")
         obj.location = (0, 0, 0)
         print(f"  ✓ Modelo centrado en (0, 0, 0)")
 
@@ -163,9 +183,10 @@ class OBJECT_OT_prepare_model(Operator):
         print("  • Material renombrado a [nombre]_M")
         print("  • Textura difusa renombrada a [nombre]_D")
         print("  • Texturas extra eliminadas")
+        print("  • Vertices duplicados unificados (Merge by distance)")
         print("  • Pivote colocado en la base")
         print("  • Modelo centrado en el mundo")
-        print("\nSiguiente paso: ejecutar el script de exportacion (pasos 6-7).")
+        print("\nSiguiente paso: ejecutar el script de exportacion (pasos 7-8).")
         print(f"{'='*70}\n")
         
         self.report({'INFO'}, f"Preparacion completada para: {nombre_base}")

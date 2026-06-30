@@ -6,9 +6,9 @@ Panel de herramientas para el proyecto Arrow of Anathema.
 
 CARACTERISTICAS:
   - Importar animaciones FBX en batch
-    - Preparar modelos (pasos 1-5)
-    - Exportar GLB + JPG (pasos 6-7)
-    - Pipeline completo preparar + exportar (pasos 1-7)
+    - Preparar modelos (pasos 1-6)
+    - Exportar GLB + JPG (pasos 7-8)
+    - Pipeline completo preparar + exportar (pasos 1-8)
 
 INSTALACION:
   1. Editar -> Preferencias -> Add-ons
@@ -282,104 +282,119 @@ def preparar_modelo(context, obj):
     print(f"PREPARANDO MODELO: {nombre_base}")
     print(f"{'=' * 70}")
 
-    print("\n[1/3] Procesando materiales y texturas...")
-    if obj.data.materials:
-        for mat in obj.data.materials:
-            if mat and mat.node_tree:
-                mat.name = f"{nombre_base}_M"
-                print(f"  OK Material renombrado: {mat.name}")
+	print("\n[1/4] Procesando materiales y texturas...")
+	if obj.data.materials:
+		for mat in obj.data.materials:
+			if mat and mat.node_tree:
+				mat.name = f"{nombre_base}_M"
+				print(f"  OK Material renombrado: {mat.name}")
 
-                nodes = mat.node_tree.nodes
-                links = mat.node_tree.links
-                principled = None
-                image_node = None
+				nodes = mat.node_tree.nodes
+				links = mat.node_tree.links
+				principled = None
+				image_node = None
 
-                for node in nodes:
-                    if node.type == 'BSDF_PRINCIPLED':
-                        principled = node
-                        break
+				for node in nodes:
+					if node.type == 'BSDF_PRINCIPLED':
+						principled = node
+						break
 
-                if not principled:
-                    print("  AVISO Material sin Principled BSDF, se omite limpieza")
-                    continue
+				if not principled:
+					print("  AVISO Material sin Principled BSDF, se omite limpieza")
+					continue
 
-                base_color_input = principled.inputs.get('Base Color')
-                if base_color_input and base_color_input.links:
-                    for link in base_color_input.links:
-                        if link.from_node.type == 'TEX_IMAGE' and link.from_node.image:
-                            image_node = link.from_node
-                            break
+				base_color_input = principled.inputs.get('Base Color')
+				if base_color_input and base_color_input.links:
+					for link in base_color_input.links:
+						if link.from_node.type == 'TEX_IMAGE' and link.from_node.image:
+							image_node = link.from_node
+							break
 
-                if not image_node:
-                    for node in nodes:
-                        if node.type == 'TEX_IMAGE' and node.image:
-                            image_node = node
-                            break
+				if not image_node:
+					for node in nodes:
+						if node.type == 'TEX_IMAGE' and node.image:
+							image_node = node
+							break
 
-                if image_node and image_node.image:
-                    image_name = f"{nombre_base}_D"
-                    image_node.image.name = image_name
-                    print(f"  OK Textura difusa encontrada: {image_name}")
+				if image_node and image_node.image:
+					image_name = f"{nombre_base}_D"
+					image_node.image.name = image_name
+					print(f"  OK Textura difusa encontrada: {image_name}")
 
-                    if base_color_input:
-                        for link in list(base_color_input.links):
-                            links.remove(link)
-                        links.new(image_node.outputs.get('Color'), base_color_input)
+					if base_color_input:
+						for link in list(base_color_input.links):
+							links.remove(link)
+						links.new(image_node.outputs.get('Color'), base_color_input)
 
-                # Desconectar mapas no difusos del Principled
-                for input_socket in principled.inputs:
-                    if input_socket.name == 'Base Color':
-                        continue
-                    for link in list(input_socket.links):
-                        links.remove(link)
+				# Desconectar mapas no difusos del Principled
+				for input_socket in principled.inputs:
+					if input_socket.name == 'Base Color':
+						continue
+					for link in list(input_socket.links):
+						links.remove(link)
 
-                # Mantener solo Output, Principled y mapa difuso
-                nodos_permitidos = {principled}
-                if image_node:
-                    nodos_permitidos.add(image_node)
+				# Mantener solo Output, Principled y mapa difuso
+				nodos_permitidos = {principled}
+				if image_node:
+					nodos_permitidos.add(image_node)
 
-                nodos_eliminados = 0
-                for node in list(nodes):
-                    if node in nodos_permitidos or node.type == 'OUTPUT_MATERIAL':
-                        continue
-                    nodes.remove(node)
-                    nodos_eliminados += 1
+				nodos_eliminados = 0
+				for node in list(nodes):
+					if node in nodos_permitidos or node.type == 'OUTPUT_MATERIAL':
+						continue
+					nodes.remove(node)
+					nodos_eliminados += 1
 
-                print(f"  OK Nodos no difusos eliminados: {nodos_eliminados}")
-    else:
-        print("  AVISO Objeto sin materiales")
+				print(f"  OK Nodos no difusos eliminados: {nodos_eliminados}")
+	else:
+		print("  AVISO Objeto sin materiales")
 
-    print("\n[2/3] Ajustando pivote...")
-    bbox_min = [float('inf')] * 3
-    bbox_max = [float('-inf')] * 3
+	print("\n[2/4] Unificando vertices duplicados (Merge by Distance)...")
+	# Asegurar modo objeto para manipulacion limpia
+	bpy.ops.object.mode_set(mode='OBJECT')
+	context.view_layer.objects.active = obj
+	obj.select_set(True)
+	
+	# Cambiar a modo edicion, seleccionar todo y remover doubles
+	bpy.ops.object.mode_set(mode='EDIT')
+	bpy.ops.mesh.select_all(action='SELECT')
+	bpy.ops.mesh.remove_doubles(threshold=0.0001)
+	
+	# Regresar a modo objeto para continuar preparacion
+	bpy.ops.object.mode_set(mode='OBJECT')
+	print("  OK Vertices duplicados unificados con umbral 0.0001")
 
-    for vertex in obj.data.vertices:
-        world_co = obj.matrix_world @ vertex.co
-        for i in range(3):
-            bbox_min[i] = min(bbox_min[i], world_co[i])
-            bbox_max[i] = max(bbox_max[i], world_co[i])
+	print("\n[3/4] Ajustando pivote...")
+	bbox_min = [float('inf')] * 3
+	bbox_max = [float('-inf')] * 3
 
-    pivot_x = (bbox_min[0] + bbox_max[0]) / 2.0
-    pivot_y = (bbox_min[1] + bbox_max[1]) / 2.0
-    
-    pivot_mode = getattr(context.scene, "arquera_pivot_mode", 'BOTTOM')
-    if pivot_mode == 'CENTER':
-        pivot_z = (bbox_min[2] + bbox_max[2]) / 2.0
-        print("  Alineando pivote al centro geometrico (CENTER)")
-    else:
-        pivot_z = bbox_min[2]
-        print("  Alineando pivote a la base del objeto (BOTTOM)")
+	for vertex in obj.data.vertices:
+		world_co = obj.matrix_world @ vertex.co
+		for i in range(3):
+			bbox_min[i] = min(bbox_min[i], world_co[i])
+			bbox_max[i] = max(bbox_max[i], world_co[i])
 
-    cursor_location_original = context.scene.cursor.location.copy()
-    context.scene.cursor.location = (pivot_x, pivot_y, pivot_z)
-    ejecutar_op_viewport(context, bpy.ops.object.origin_set, type='ORIGIN_CURSOR')
-    context.scene.cursor.location = cursor_location_original
+	pivot_x = (bbox_min[0] + bbox_max[0]) / 2.0
+	pivot_y = (bbox_min[1] + bbox_max[1]) / 2.0
+	
+	pivot_mode = getattr(context.scene, "arquera_pivot_mode", 'BOTTOM')
+	if pivot_mode == 'CENTER':
+		pivot_z = (bbox_min[2] + bbox_max[2]) / 2.0
+		print("  Alineando pivote al centro geometrico (CENTER)")
+	else:
+		pivot_z = bbox_min[2]
+		print("  Alineando pivote a la base del objeto (BOTTOM)")
 
-    print(f"  OK Pivote ajustado a base: ({pivot_x:.3f}, {pivot_y:.3f}, {pivot_z:.3f})")
+	cursor_location_original = context.scene.cursor.location.copy()
+	context.scene.cursor.location = (pivot_x, pivot_y, pivot_z)
+	ejecutar_op_viewport(context, bpy.ops.object.origin_set, type='ORIGIN_CURSOR')
+	context.scene.cursor.location = cursor_location_original
 
-    print("\n[3/3] Centrando modelo en el mundo...")
-    obj.location = (0, 0, 0)
-    print("  OK Modelo centrado en (0, 0, 0)")
+	print(f"  OK Pivote ajustado a base: ({pivot_x:.3f}, {pivot_y:.3f}, {pivot_z:.3f})")
+
+	print("\n[4/4] Centrando modelo en el mundo...")
+	obj.location = (0, 0, 0)
+	print("  OK Modelo centrado en (0, 0, 0)")
 
     print(f"\n{'=' * 70}")
     print("PREPARACION COMPLETADA")
@@ -506,10 +521,10 @@ def exportar_modelo(context, obj, output_dir):
 
 
 class ARQUERA_OT_prepare_model(Operator):
-    """Ejecuta pasos 1-5 de preparacion"""
+    """Ejecuta pasos 1-6 de preparacion"""
 
     bl_idname = "arquera.prepare_model"
-    bl_label = "Preparar Modelo (pasos 1-5)"
+    bl_label = "Preparar Modelo (pasos 1-6)"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -524,10 +539,10 @@ class ARQUERA_OT_prepare_model(Operator):
 
 
 class ARQUERA_OT_export_model(Operator, ExportHelper):
-    """Ejecuta pasos 6-7 de exportacion"""
+    """Ejecuta pasos 7-8 de exportacion"""
 
     bl_idname = "arquera.export_model"
-    bl_label = "Exportar GLB + JPG (pasos 6-7)"
+    bl_label = "Exportar GLB + JPG (pasos 7-8)"
     bl_options = {'PRESET', 'UNDO'}
 
     filename_ext = ""
@@ -562,10 +577,10 @@ class ARQUERA_OT_export_model(Operator, ExportHelper):
 
 
 class ARQUERA_OT_prepare_and_export_model(Operator, ExportHelper):
-    """Ejecuta pasos 1-7 de preparacion y exportacion"""
+    """Ejecuta pasos 1-8 de preparacion y exportacion"""
 
     bl_idname = "arquera.prepare_and_export_model"
-    bl_label = "Preparar + Exportar (pasos 1-7)"
+    bl_label = "Preparar + Exportar (pasos 1-8)"
     bl_options = {'PRESET', 'UNDO'}
 
     filename_ext = ""
@@ -631,17 +646,17 @@ class ARQUERA_PT_tools_panel(Panel):
             box_exp.separator()
             box_exp.operator(
                 "arquera.prepare_model",
-                text="Preparar Modelo (1-5)",
+                text="Preparar Modelo (1-6)",
                 icon='MODIFIER',
             )
             box_exp.operator(
                 "arquera.export_model",
-                text="Exportar GLB + JPG (6-7)",
+                text="Exportar GLB + JPG (7-8)",
                 icon='EXPORT',
             )
             box_exp.operator(
                 "arquera.prepare_and_export_model",
-                text="Preparar + Exportar (1-7)",
+                text="Preparar + Exportar (1-8)",
                 icon='FILE_TICK',
             )
         elif context.active_object:
