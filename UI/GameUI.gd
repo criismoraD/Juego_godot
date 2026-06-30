@@ -1622,3 +1622,143 @@ func set_modo_minimo(activo: bool):
 		toggle_ui_btn.visible = debug_ui_enabled and not activo
 	if bottom_panel:
 		bottom_panel.visible = false
+
+
+func mostrar_pantalla_victoria(titulo: String, max_combo: int, on_continuar: Callable):
+	# 1. Crear CanvasLayer
+	var overlay = CanvasLayer.new()
+	overlay.layer = 210
+	overlay.name = "PantallaVictoriaCortinilla"
+	add_child(overlay)
+
+	# 2. Crear ColorRect con Shader
+	var cortinilla = ColorRect.new()
+	cortinilla.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(cortinilla)
+
+	var shader = load("res://System/Shaders/victory_curtain.gdshader") as Shader
+	if shader:
+		var mat = ShaderMaterial.new()
+		mat.shader = shader
+		mat.set_shader_parameter("threshold", 1.1)
+		mat.set_shader_parameter("wave_amplitude", 0.02)
+		mat.set_shader_parameter("wave_frequency", 15.0)
+		mat.set_shader_parameter("roughness", 0.008)
+		mat.set_shader_parameter("border_color", Color(0.85, 0.65, 0.2, 1.0))
+		mat.set_shader_parameter("border_width", 0.006)
+		cortinilla.material = mat
+
+	# 3. Crear Contenedor de UI (en la parte derecha, cubriendo de 0.33 a 1.0 en X)
+	var ui_container = Control.new()
+	ui_container.anchor_left = 0.33
+	ui_container.anchor_right = 1.0
+	ui_container.anchor_top = 0.0
+	ui_container.anchor_bottom = 1.0
+	ui_container.offset_left = 0
+	ui_container.offset_right = 0
+	ui_container.offset_top = 0
+	ui_container.offset_bottom = 0
+	ui_container.modulate.a = 0.0  # Empezar invisible para fade-in
+	overlay.add_child(ui_container)
+
+	# 4. VBoxContainer centrado para el texto y botón
+	var center = VBoxContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_theme_constant_override("separation", 30)
+	ui_container.add_child(center)
+
+	# Título (e.g. LEVEL COMPLETE!)
+	var title_label = Label.new()
+	title_label.text = titulo.to_upper()
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var settings_title = LabelSettings.new()
+	settings_title.font_size = 64
+	settings_title.font_color = Color(1, 1, 1, 1)
+	settings_title.outline_size = 12
+	settings_title.outline_color = Color(0, 0, 0, 1)
+	title_label.label_settings = settings_title
+	center.add_child(title_label)
+
+	# Combo (MAX COMBO XX)
+	var combo_label = Label.new()
+	combo_label.text = "MAX COMBO " + str(max_combo)
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var settings_combo = LabelSettings.new()
+	settings_combo.font_size = 28
+	settings_combo.font_color = Color(0.85, 0.65, 0.2, 1.0) # Dorado
+	settings_combo.outline_size = 6
+	settings_combo.outline_color = Color(0, 0, 0, 1)
+	combo_label.label_settings = settings_combo
+	center.add_child(combo_label)
+
+	# Botón Continuar
+	var boton = Button.new()
+	boton.text = tr("BOTON_CONTINUAR") if TranslationServer.get_locale() != "" else "CONTINUAR"
+	boton.add_theme_font_size_override("font_size", 24)
+
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.12, 0.08, 0.05, 0.95)
+	btn_style.border_color = Color(0.85, 0.65, 0.2)
+	btn_style.set_border_width_all(2)
+	btn_style.set_corner_radius_all(6)
+	btn_style.set_content_margin_all(12)
+	boton.add_theme_stylebox_override("normal", btn_style)
+
+	var btn_hover = btn_style.duplicate()
+	btn_hover.bg_color = Color(0.2, 0.14, 0.08, 0.95)
+	boton.add_theme_stylebox_override("hover", btn_hover)
+
+	var btn_pressed = btn_style.duplicate()
+	btn_pressed.bg_color = Color(0.08, 0.05, 0.02, 0.95)
+	boton.add_theme_stylebox_override("pressed", btn_pressed)
+
+	boton.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	boton.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.6))
+	boton.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	center.add_child(boton)
+
+	# 5. Animación de entrada de la cortinilla y la UI
+	var tween_in = create_tween()
+	if cortinilla.material:
+		tween_in.tween_property(cortinilla.material, "shader_parameter/threshold", 0.33, 0.6)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+	tween_in.parallel().tween_property(ui_container, "modulate:a", 1.0, 0.4)\
+		.set_delay(0.2)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_IN_OUT)
+
+	# 6. Lógica de botón de continuar
+	boton.pressed.connect(
+		func():
+			boton.disabled = true
+			# Desvanecer UI
+			var tween_out = create_tween()
+			tween_out.tween_property(ui_container, "modulate:a", 0.0, 0.2)\
+				.set_trans(Tween.TRANS_SINE)
+			
+			if cortinilla.material:
+				tween_out.parallel().tween_property(cortinilla.material, "shader_parameter/threshold", -0.1, 0.3)\
+					.set_trans(Tween.TRANS_QUAD)\
+					.set_ease(Tween.EASE_IN)
+			
+			await tween_out.finished
+			
+			# Llamamos al callback detrás del telón negro
+			on_continuar.call()
+			
+			await get_tree().create_timer(0.25).timeout
+			
+			# Desplazar la cortinilla fuera de la pantalla por la izquierda
+			var tween_exit = create_tween()
+			if cortinilla.material:
+				cortinilla.material.set_shader_parameter("border_width", 0.0)
+				tween_exit.tween_property(cortinilla.material, "shader_parameter/threshold", -1.2, 0.5)\
+					.set_trans(Tween.TRANS_QUAD)\
+					.set_ease(Tween.EASE_OUT)
+			
+			await tween_exit.finished
+			overlay.queue_free()
+	)
+

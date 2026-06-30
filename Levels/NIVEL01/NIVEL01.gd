@@ -748,77 +748,47 @@ func _mostrar_cartel_level_01() -> void:
 
 
 func _mostrar_inter_nivel_continuar():
-	var overlay = CanvasLayer.new()
-	overlay.layer = 200
-	overlay.name = "InterNivelContinuar"
-	add_child(overlay)
-
-	var center = VBoxContainer.new()
-	center.anchor_left = 0.2
-	center.anchor_right = 0.8
-	center.anchor_top = 0.3
-	center.anchor_bottom = 0.7
-	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	center.add_theme_constant_override("separation", 30)
-	overlay.add_child(center)
-
-	var label = Label.new()
+	var msg = ""
 	if oleada_combate_actual == 1:
-		label.text = tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleada 1 completada!"
+		msg = tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleada 1 completada!"
 	else:
-		label.text = "¡Oleada 2 completada!"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		msg = "¡Oleada 2 completada!"
 
-	# Usar LabelSettings para contorno y color blanco
-	label.label_settings = _crear_label_settings_contorno(10, Color(0, 0, 0, 1))
-	label.label_settings.font_size = 48
-	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	var max_combo_val = 0
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		max_combo_val = player.get("max_combo")
 
-	center.add_child(label)
-
-	var boton = Button.new()
-	boton.text = tr("BOTON_CONTINUAR")
-	boton.add_theme_font_size_override("font_size", 24)
-
-	var btn_style = StyleBoxFlat.new()
-	btn_style.bg_color = Color(0.12, 0.08, 0.05, 0.95)
-	btn_style.border_color = Color(0.85, 0.65, 0.2)
-	btn_style.set_border_width_all(2)
-	btn_style.set_corner_radius_all(6)
-	btn_style.set_content_margin_all(12)
-	boton.add_theme_stylebox_override("normal", btn_style)
-
-	var btn_hover = btn_style.duplicate()
-	btn_hover.bg_color = Color(0.2, 0.14, 0.08, 0.95)
-	boton.add_theme_stylebox_override("hover", btn_hover)
-
-	var btn_pressed = btn_style.duplicate()
-	btn_pressed.bg_color = Color(0.08, 0.05, 0.02, 0.95)
-	boton.add_theme_stylebox_override("pressed", btn_pressed)
-
-	boton.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-	boton.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.6))
-	boton.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	center.add_child(boton)
-
-	boton.pressed.connect(
-		func():
-			overlay.queue_free()
+	if game_ui:
+		game_ui.mostrar_pantalla_victoria(msg, max_combo_val, func():
 			# Revivir aliadas al pasar de nivel
 			for ally in AllyArcher.active_allies_cache:
 				if ally is AllyArcher and (ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING):
 					ally.revivir()
 			
 			if oleada_combate_actual == 1:
-				await _mostrar_cartel_nivel_2()
+				_mostrar_cartel_nivel_2()
 				oleada_combate_actual = 2
 				_configurar_oleada_combate(total_enemigos_oleada_2, 2)
 			elif oleada_combate_actual == 2:
-				await _mostrar_cartel_nivel_3()
+				_mostrar_cartel_nivel_3()
 				oleada_combate_actual = 3
 				_configurar_oleada_combate(total_enemigos_oleada_3, 3)
 			transicion_carteles_en_progreso = false
-	)
+		)
+	else:
+		for ally in AllyArcher.active_allies_cache:
+			if ally is AllyArcher and (ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING):
+				ally.revivir()
+		if oleada_combate_actual == 1:
+			_mostrar_cartel_nivel_2()
+			oleada_combate_actual = 2
+			_configurar_oleada_combate(total_enemigos_oleada_2, 2)
+		elif oleada_combate_actual == 2:
+			_mostrar_cartel_nivel_3()
+			oleada_combate_actual = 3
+			_configurar_oleada_combate(total_enemigos_oleada_3, 3)
+		transicion_carteles_en_progreso = false
 
 
 func _mostrar_cartel_nivel_2() -> void:
@@ -992,69 +962,17 @@ func _reiniciar_nivel01_limpio():
 
 
 func _mostrar_victoria_con_continuar(mensaje: String):
-	var overlay = CanvasLayer.new()
-	overlay.layer = 200
-	overlay.name = "VictoriaContinuar"
-	add_child(overlay)
+	var max_combo_val = 0
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		max_combo_val = player.get("max_combo")
 
-	var fondo = ColorRect.new()
-	fondo.color = Color(0, 0, 0, 0.7)
-	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(fondo)
-
-	# Contenedor centrado
-	var center = VBoxContainer.new()
-	center.anchor_left = 0.2
-	center.anchor_right = 0.8
-	center.anchor_top = 0.3
-	center.anchor_bottom = 0.7
-	center.offset_left = 0
-	center.offset_right = 0
-	center.offset_top = 0
-	center.offset_bottom = 0
-	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	center.add_theme_constant_override("separation", 30)
-	overlay.add_child(center)
-
-	# Texto de victoria
-	var label = Label.new()
-	label.text = mensaje
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 48)
-	label.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-	center.add_child(label)
-
-	# Botón "Continuar"
-	var boton = Button.new()
-	boton.text = tr("BOTON_CONTINUAR")
-	boton.add_theme_font_size_override("font_size", 24)
-
-	var btn_style = StyleBoxFlat.new()
-	btn_style.bg_color = Color(0.12, 0.08, 0.05, 0.95)
-	btn_style.border_color = Color(0.85, 0.65, 0.2)
-	btn_style.set_border_width_all(2)
-	btn_style.set_corner_radius_all(6)
-	btn_style.set_content_margin_all(12)
-	boton.add_theme_stylebox_override("normal", btn_style)
-
-	var btn_hover = btn_style.duplicate()
-	btn_hover.bg_color = Color(0.2, 0.14, 0.08, 0.95)
-	boton.add_theme_stylebox_override("hover", btn_hover)
-
-	var btn_pressed = btn_style.duplicate()
-	btn_pressed.bg_color = Color(0.08, 0.05, 0.02, 0.95)
-	boton.add_theme_stylebox_override("pressed", btn_pressed)
-
-	boton.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
-	boton.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.6))
-	boton.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	center.add_child(boton)
-
-	boton.pressed.connect(
-		func():
-			overlay.queue_free()
+	if game_ui:
+		game_ui.mostrar_pantalla_victoria(mensaje, max_combo_val, func():
 			_iniciar_oleadas_libres()
-	)
+		)
+	else:
+		_iniciar_oleadas_libres()
 
 
 func _iniciar_oleadas_libres():

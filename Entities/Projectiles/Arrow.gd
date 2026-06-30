@@ -199,6 +199,9 @@ func _on_body_entered(body):
 			if body.has_method("set") and "last_hit_position" in body:
 				body.last_hit_position = global_position
 			body.take_damage(1.0)
+			var player = get_tree().get_first_node_in_group("player")
+			if player and player.has_method("registrar_impacto_combo"):
+				player.registrar_impacto_combo()
 			_safe_destroy()
 	elif tipo_dueño == TipoFlecha.ENEMIGO:
 		# Las flechas del enemigo dañan al jugador
