@@ -438,86 +438,83 @@ func _safe_destroy():
 
 
 func _spawn_max_power_impact_vfx():
-	# 1. Chispas radiales de impacto
+	# Helper local para crear textura suave de círculo radial
+	var grad = Gradient.new()
+	grad.set_color(0, Color(1, 1, 1, 1))
+	grad.set_color(1, Color(1, 1, 1, 0))
+	var tex = GradientTexture2D.new()
+	tex.gradient = grad
+	tex.width = 64
+	tex.height = 64
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(0.5, 0.0)
+	var base_mat = StandardMaterial3D.new()
+	base_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	base_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	base_mat.use_particle_colors = true
+	base_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	base_mat.vertex_color_use_as_albedo = true
+	base_mat.albedo_texture = tex
+
+	# 1. Chispas sutiles de impacto
 	var sparks = CPUParticles3D.new()
-	sparks.amount = 25
-	sparks.lifetime = 0.4
+	sparks.amount = 10
+	sparks.lifetime = 0.25
 	sparks.one_shot = true
 	sparks.explosiveness = 0.95
 	sparks.emitting = true
 	sparks.local_coords = false
-	
-	sparks.direction = -velocity.normalized() # Rebotar en dirección opuesta al impacto
-	sparks.spread = 60.0
-	sparks.initial_velocity_min = 4.0
-	sparks.initial_velocity_max = 8.0
-	sparks.gravity = Vector3(0, -12.0, 0) # Gravedad alta para que caigan rápido
-	
-	sparks.color = Color(0.2, 0.8, 1.0, 1.0) # Celeste eléctrico
-	var gradient = Gradient.new()
-	gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0)) # Blanco
-	gradient.set_color(0.3, Color(0.2, 0.8, 1.0, 1.0)) # Celeste
-	gradient.set_color(1, Color(0.05, 0.1, 0.6, 0.0)) # Azul oscuro transparente
-	sparks.color_ramp = gradient
-	
-	sparks.scale_amount_min = 0.06
-	sparks.scale_amount_max = 0.18
-	var scale_curve = Curve.new()
-	scale_curve.add_point(Vector2(0, 1.0))
-	scale_curve.add_point(Vector2(1, 0.0))
-	sparks.scale_amount_curve = scale_curve
-	
-	var qmesh_spark = QuadMesh.new()
-	qmesh_spark.size = Vector2(0.08, 0.08)
-	var mat_spark = StandardMaterial3D.new()
-	mat_spark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat_spark.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_spark.use_particle_colors = true
-	mat_spark.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	qmesh_spark.material = mat_spark
-	sparks.mesh = qmesh_spark
-	
+	sparks.direction = -velocity.normalized()
+	sparks.spread = 45.0
+	sparks.initial_velocity_min = 2.0
+	sparks.initial_velocity_max = 5.0
+	sparks.gravity = Vector3(0, -8.0, 0)
+	var color_grad = Gradient.new()
+	color_grad.set_color(0, Color(0.5, 0.85, 1.0, 0.8))
+	color_grad.set_color(1, Color(0.2, 0.5, 1.0, 0.0))
+	sparks.color_ramp = color_grad
+	sparks.scale_amount_min = 0.01
+	sparks.scale_amount_max = 0.04
+	var sc = Curve.new()
+	sc.add_point(Vector2(0, 1.0))
+	sc.add_point(Vector2(1, 0.0))
+	sparks.scale_amount_curve = sc
+	var qm = QuadMesh.new()
+	qm.size = Vector2(0.04, 0.04)
+	qm.material = base_mat
+	sparks.mesh = qm
 	get_tree().root.add_child(sparks)
 	sparks.global_position = global_position
-	
-	# 2. Destello de impacto (Flash)
+
+	# 2. Destello pequeño de impacto
 	var flash = CPUParticles3D.new()
 	flash.amount = 1
-	flash.lifetime = 0.15
+	flash.lifetime = 0.1
 	flash.one_shot = true
 	flash.emitting = true
 	flash.local_coords = false
 	flash.gravity = Vector3.ZERO
-	
-	flash.color = Color(1.0, 1.0, 1.0, 1.0)
-	var flash_gradient = Gradient.new()
-	flash_gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
-	flash_gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
-	flash.color_ramp = flash_gradient
-	
-	flash.scale_amount_min = 0.5
-	flash.scale_amount_max = 1.0
-	
-	var qmesh_flash = QuadMesh.new()
-	qmesh_flash.size = Vector2(0.8, 0.8)
-	var mat_flash = StandardMaterial3D.new()
-	mat_flash.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat_flash.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_flash.use_particle_colors = true
-	mat_flash.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	qmesh_flash.material = mat_flash
-	flash.mesh = qmesh_flash
-	
+	var fg = Gradient.new()
+	fg.set_color(0, Color(0.6, 0.9, 1.0, 0.7))
+	fg.set_color(1, Color(0.4, 0.7, 1.0, 0.0))
+	flash.color_ramp = fg
+	flash.scale_amount_min = 0.05
+	flash.scale_amount_max = 0.1
+	var qf = QuadMesh.new()
+	qf.size = Vector2(0.12, 0.12)
+	qf.material = base_mat.duplicate()
+	flash.mesh = qf
 	get_tree().root.add_child(flash)
 	flash.global_position = global_position
-	
+
 	# Auto-destroy
-	get_tree().create_timer(0.5).timeout.connect(func():
+	get_tree().create_timer(0.4).timeout.connect(func():
 		if is_instance_valid(sparks): sparks.queue_free()
 		if is_instance_valid(flash): flash.queue_free()
 	)
-	
-	# 3. Sonido de impacto potente
+
+	# 3. Sonido sutil de impacto
 	AudioManager.play_sfx("shield_hit_arrow")
 	
 	# 4. Screen shake en el impacto

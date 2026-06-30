@@ -1046,45 +1046,32 @@ func spawn_arrow_projectile():
 	var es_potencia_maxima = last_charge_power >= 0.98
 	if es_potencia_maxima:
 		arrow_instance.set_meta("is_max_power", true)
-		_spawn_release_blast_vfx(data["origin"], shoot_dir)
 		
-		# Agregar rastro de súper potencia eléctrico/celeste al proyectil
+		# Agregar rastro sutil de súper potencia celeste al proyectil
 		var super_trail = CPUParticles3D.new()
 		super_trail.name = "SuperTrail"
-		super_trail.amount = 40
-		super_trail.lifetime = 0.3
+		super_trail.amount = 15
+		super_trail.lifetime = 0.2
 		super_trail.local_coords = false
 		super_trail.draw_order = CPUParticles3D.DRAW_ORDER_LIFETIME
 		super_trail.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-		super_trail.emission_sphere_radius = 0.04
+		super_trail.emission_sphere_radius = 0.02
 		super_trail.direction = -shoot_dir
-		super_trail.spread = 10.0
-		super_trail.initial_velocity_min = 1.0
-		super_trail.initial_velocity_max = 3.0
+		super_trail.spread = 8.0
+		super_trail.initial_velocity_min = 0.5
+		super_trail.initial_velocity_max = 1.5
 		super_trail.gravity = Vector3.ZERO
-		super_trail.color = Color(0.2, 0.7, 1.0, 1.0)
 		var gradient = Gradient.new()
-		gradient.set_color(0, Color(0.2, 0.7, 1.0, 1.0)) # Celeste brillante
-		gradient.set_color(1, Color(0.05, 0.1, 0.6, 0.0)) # Azul transparente
+		gradient.set_color(0, Color(0.4, 0.8, 1.0, 0.7))
+		gradient.set_color(1, Color(0.2, 0.5, 1.0, 0.0))
 		super_trail.color_ramp = gradient
-		super_trail.scale_amount_min = 0.05
-		super_trail.scale_amount_max = 0.15
+		super_trail.scale_amount_min = 0.01
+		super_trail.scale_amount_max = 0.04
 		var scale_curve = Curve.new()
 		scale_curve.add_point(Vector2(0, 1.0))
 		scale_curve.add_point(Vector2(1, 0.0))
 		super_trail.scale_amount_curve = scale_curve
-		
-		# Configurar malla y material para visibilidad 3D
-		var qmesh = QuadMesh.new()
-		qmesh.size = Vector2(0.12, 0.12)
-		var mat = StandardMaterial3D.new()
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.use_particle_colors = true
-		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		qmesh.material = mat
-		super_trail.mesh = qmesh
-		
+		super_trail.mesh = _create_particle_mesh(0.04)
 		arrow_instance.add_child(super_trail)
 
 	# Agregar al árbol PRIMERO (para que _ready se ejecute y sea válido en el tree)
@@ -1464,128 +1451,74 @@ func revive():
 # JUICE & VFX COMPLEMENTS
 # ═══════════════════════════════════════════════════════════════════════════════
 var _charge_vfx: CPUParticles3D = null
+var _soft_particle_material: StandardMaterial3D = null
+
+
+## Crea un material de partícula suave con textura de círculo difuso generada
+## programáticamente mediante GradientTexture2D radial.
+func _get_soft_particle_material() -> StandardMaterial3D:
+	if _soft_particle_material:
+		return _soft_particle_material.duplicate()
+	var grad = Gradient.new()
+	grad.set_color(0, Color(1, 1, 1, 1))
+	grad.set_color(1, Color(1, 1, 1, 0))
+	var tex = GradientTexture2D.new()
+	tex.gradient = grad
+	tex.width = 64
+	tex.height = 64
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(0.5, 0.0)
+	_soft_particle_material = StandardMaterial3D.new()
+	_soft_particle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_soft_particle_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_soft_particle_material.use_particle_colors = true
+	_soft_particle_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	_soft_particle_material.vertex_color_use_as_albedo = true
+	_soft_particle_material.albedo_texture = tex
+	return _soft_particle_material.duplicate()
+
+
+func _create_particle_mesh(particle_size: float) -> QuadMesh:
+	var qmesh = QuadMesh.new()
+	qmesh.size = Vector2(particle_size, particle_size)
+	qmesh.material = _get_soft_particle_material()
+	return qmesh
+
 
 func _update_charge_vfx(active: bool):
 	if active:
 		if is_instance_valid(_charge_vfx):
 			return
-		
 		_charge_vfx = CPUParticles3D.new()
 		_charge_vfx.name = "ChargeVFX"
-		_charge_vfx.amount = 30
-		_charge_vfx.lifetime = 0.5
+		_charge_vfx.amount = 12
+		_charge_vfx.lifetime = 0.4
 		_charge_vfx.local_coords = true
-		
-		# Partículas que convergen hacia el centro
 		_charge_vfx.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-		_charge_vfx.emission_sphere_radius = 0.8
+		_charge_vfx.emission_sphere_radius = 0.4
 		_charge_vfx.gravity = Vector3.ZERO
-		_charge_vfx.radial_accel_min = -8.0
-		_charge_vfx.radial_accel_max = -4.0
-		_charge_vfx.tangential_accel_min = 2.0
-		_charge_vfx.tangential_accel_max = 4.0
-		
-		# Color celeste eléctrico brillante
-		_charge_vfx.color = Color(0.2, 0.6, 1.0, 1.0)
+		_charge_vfx.radial_accel_min = -6.0
+		_charge_vfx.radial_accel_max = -3.0
+		_charge_vfx.tangential_accel_min = 1.0
+		_charge_vfx.tangential_accel_max = 2.0
 		var gradient = Gradient.new()
-		gradient.set_color(0, Color(0.2, 0.7, 1.0, 1.0))
-		gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+		gradient.set_color(0, Color(0.4, 0.7, 1.0, 0.6))
+		gradient.set_color(1, Color(0.6, 0.9, 1.0, 0.0))
 		_charge_vfx.color_ramp = gradient
-		
-		_charge_vfx.scale_amount_min = 0.04
-		_charge_vfx.scale_amount_max = 0.12
+		_charge_vfx.scale_amount_min = 0.02
+		_charge_vfx.scale_amount_max = 0.06
 		var scale_curve = Curve.new()
-		scale_curve.add_point(Vector2(0, 0.1))
-		scale_curve.add_point(Vector2(0.8, 1.0))
+		scale_curve.add_point(Vector2(0, 0.2))
+		scale_curve.add_point(Vector2(0.6, 1.0))
 		scale_curve.add_point(Vector2(1.0, 0.0))
 		_charge_vfx.scale_amount_curve = scale_curve
-		
-		# Configurar malla y material para visibilidad 3D
-		var qmesh = QuadMesh.new()
-		qmesh.size = Vector2(0.1, 0.1)
-		var mat = StandardMaterial3D.new()
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.use_particle_colors = true
-		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		qmesh.material = mat
-		_charge_vfx.mesh = qmesh
-		
+		_charge_vfx.mesh = _create_particle_mesh(0.06)
 		if arrow_node:
 			arrow_node.add_child(_charge_vfx)
-			_charge_vfx.position = Vector3(0, 0, 0.3)
+			_charge_vfx.position = Vector3(0, 0, 0.2)
 	else:
 		if is_instance_valid(_charge_vfx):
 			_charge_vfx.queue_free()
 			_charge_vfx = null
 
-func _spawn_release_blast_vfx(pos: Vector3, dir: Vector3):
-	# 1. Sparkles burst (cono de chispas)
-	var sparkles = CPUParticles3D.new()
-	sparkles.amount = 25
-	sparkles.lifetime = 0.3
-	sparkles.one_shot = true
-	sparkles.color_ramp = Gradient.new()
-	sparkles.color_ramp.set_color(0, Color(0.3, 0.8, 1.0, 1.0))
-	sparkles.color_ramp.set_color(1, Color(0.1, 0.3, 1.0, 0.0))
-	sparkles.explosiveness = 0.9
-	sparkles.emitting = true
-	sparkles.local_coords = false
-	sparkles.direction = dir
-	sparkles.spread = 45.0
-	sparkles.initial_velocity_min = 5.0
-	sparkles.initial_velocity_max = 10.0
-	sparkles.gravity = Vector3.ZERO
-	sparkles.scale_amount_min = 0.05
-	sparkles.scale_amount_max = 0.15
-	
-	var qmesh_spark = QuadMesh.new()
-	qmesh_spark.size = Vector2(0.08, 0.08)
-	var mat_spark = StandardMaterial3D.new()
-	mat_spark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat_spark.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_spark.use_particle_colors = true
-	mat_spark.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	qmesh_spark.material = mat_spark
-	sparkles.mesh = qmesh_spark
-	
-	get_tree().root.add_child(sparkles)
-	sparkles.global_position = pos
-	
-	# 2. Expanding shockwave ring (anillo expansivo)
-	var ring = CPUParticles3D.new()
-	ring.amount = 20
-	ring.lifetime = 0.25
-	ring.one_shot = true
-	ring.color_ramp = Gradient.new()
-	ring.color_ramp.set_color(0, Color(1.0, 1.0, 1.0, 0.8))
-	ring.color_ramp.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
-	ring.explosiveness = 0.95
-	ring.emitting = true
-	ring.local_coords = false
-	ring.direction = Vector3.ZERO
-	ring.spread = 180.0
-	ring.gravity = Vector3.ZERO
-	ring.initial_velocity_min = 3.0
-	ring.initial_velocity_max = 6.0
-	ring.scale_amount_min = 0.08
-	ring.scale_amount_max = 0.2
-	
-	var qmesh_ring = QuadMesh.new()
-	qmesh_ring.size = Vector2(0.15, 0.15)
-	var mat_ring = StandardMaterial3D.new()
-	mat_ring.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat_ring.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_ring.use_particle_colors = true
-	mat_ring.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	qmesh_ring.material = mat_ring
-	ring.mesh = qmesh_ring
-	
-	get_tree().root.add_child(ring)
-	ring.global_position = pos
-	
-	# Auto-destroy
-	get_tree().create_timer(0.4).timeout.connect(func():
-		if is_instance_valid(sparkles): sparkles.queue_free()
-		if is_instance_valid(ring): ring.queue_free()
-	)
