@@ -65,6 +65,7 @@ var walked_distance: float = 0.0
 var target_walk_distance: float = 0.0
 var shoot_timer: float = 0.0
 var original_materials: Array = []
+var _test_floor_normal_override = null
 # === EFECTO DE DISOLUCIÓN ===
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 var is_dissolving: bool = false
@@ -370,6 +371,13 @@ func _change_state(new_state: State):
 		State.SHOOTING:
 			_on_state_shooting()
 		State.DYING:
+			# Alinear la rotación del cuerpo del enemigo con la rampa/suelo actual
+			var is_touching_floor = is_on_floor() if _test_floor_normal_override == null else true
+			if is_touching_floor:
+				var normal = get_floor_normal() if _test_floor_normal_override == null else _test_floor_normal_override
+				if normal.length_squared() > 0.9:
+					var angle = atan2(-normal.x, normal.y)
+					rotation.z = angle
 			_on_state_dying()
 		State.DEAD:
 			_cleanup_all_materials()

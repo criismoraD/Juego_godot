@@ -1046,34 +1046,6 @@ func spawn_arrow_projectile():
 	var es_potencia_maxima = last_charge_power >= 0.98
 	if es_potencia_maxima:
 		arrow_instance.set_meta("is_max_power", true)
-		
-		# Agregar rastro sutil de súper potencia celeste al proyectil
-		var super_trail = CPUParticles3D.new()
-		super_trail.name = "SuperTrail"
-		super_trail.amount = 15
-		super_trail.lifetime = 0.2
-		super_trail.local_coords = false
-		super_trail.draw_order = CPUParticles3D.DRAW_ORDER_LIFETIME
-		super_trail.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-		super_trail.emission_sphere_radius = 0.02
-		super_trail.direction = -shoot_dir
-		super_trail.spread = 8.0
-		super_trail.initial_velocity_min = 0.5
-		super_trail.initial_velocity_max = 1.5
-		super_trail.gravity = Vector3.ZERO
-		var gradient = Gradient.new()
-		gradient.set_color(0, Color(0.4, 0.8, 1.0, 0.7))
-		gradient.set_color(1, Color(0.2, 0.5, 1.0, 0.0))
-		super_trail.color_ramp = gradient
-		super_trail.scale_amount_min = 0.01
-		super_trail.scale_amount_max = 0.04
-		var scale_curve = Curve.new()
-		scale_curve.add_point(Vector2(0, 1.0))
-		scale_curve.add_point(Vector2(1, 0.0))
-		super_trail.scale_amount_curve = scale_curve
-		super_trail.mesh = _create_particle_mesh(0.04)
-		arrow_instance.add_child(super_trail)
-		super_trail.position = Vector3(-0.35, 0, 0)
 
 	# Agregar al árbol PRIMERO (para que _ready se ejecute y sea válido en el tree)
 	get_tree().root.add_child(arrow_instance)
