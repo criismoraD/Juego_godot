@@ -1666,10 +1666,7 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 		var mat = ShaderMaterial.new()
 		mat.shader = shader
 		mat.set_shader_parameter("threshold", 1.1)
-		mat.set_shader_parameter("transition_width", 0.12)
-		var mask_tex = load("res://UI/Assets/brush_transition_mask.png") as Texture2D
-		if mask_tex:
-			mat.set_shader_parameter("mask_texture", mask_tex)
+		mat.set_shader_parameter("edge_softness", 0.08)
 		cortinilla.material = mat
 
 	# 3. Crear Contenedor de UI (en la parte derecha, cubriendo de 0.33 a 1.0 en X)
