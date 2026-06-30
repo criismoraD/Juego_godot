@@ -754,13 +754,8 @@ func _mostrar_inter_nivel_continuar():
 	else:
 		msg = "¡Oleada 2 completada!"
 
-	var max_combo_val = 0
-	var player = get_tree().get_first_node_in_group("player")
-	if player:
-		max_combo_val = player.get("max_combo")
-
 	if game_ui:
-		game_ui.mostrar_pantalla_victoria(msg, max_combo_val, func():
+		game_ui.mostrar_pantalla_victoria(msg, func():
 			# Revivir aliadas al pasar de nivel
 			for ally in AllyArcher.active_allies_cache:
 				if ally is AllyArcher and (ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING):
@@ -962,13 +957,8 @@ func _reiniciar_nivel01_limpio():
 
 
 func _mostrar_victoria_con_continuar(mensaje: String):
-	var max_combo_val = 0
-	var player = get_tree().get_first_node_in_group("player")
-	if player:
-		max_combo_val = player.get("max_combo")
-
 	if game_ui:
-		game_ui.mostrar_pantalla_victoria(mensaje, max_combo_val, func():
+		game_ui.mostrar_pantalla_victoria(mensaje, func():
 			_iniciar_oleadas_libres()
 		)
 	else:

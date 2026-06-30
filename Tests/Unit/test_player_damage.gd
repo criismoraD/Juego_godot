@@ -69,23 +69,6 @@ func test_recibir_dano_cancels_shot():
 	_player.recibir_dano(1)
 	assert_eq(_player.current_aim_state, _player.AimState.NONE, "El disparo debería cancelarse al recibir daño")
 	assert_true(_player.shot_cancelled, "shot_cancelled debería ser true")
-func test_combo_impacto_increments():
-	assert_eq(_player.current_combo, 0, "El combo inicial debería ser 0")
-	_player.registrar_impacto_combo()
-	assert_eq(_player.current_combo, 1, "El combo debería incrementarse a 1")
-	assert_eq(_player.max_combo, 1, "El max_combo debería ser 1")
-	_player.registrar_impacto_combo()
-	assert_eq(_player.current_combo, 2, "El combo debería incrementarse a 2")
-	assert_eq(_player.max_combo, 2, "El max_combo debería ser 2")
-
-func test_combo_dano_resets():
-	_player.registrar_impacto_combo()
-	_player.registrar_impacto_combo()
-	assert_eq(_player.current_combo, 2, "El combo debería ser 2 antes de recibir daño")
-	_player.recibir_dano(1)
-	assert_eq(_player.current_combo, 0, "El combo debería reiniciarse a 0 tras recibir daño")
-	assert_eq(_player.max_combo, 2, "El max_combo debería mantenerse en 2")
-
 
 func _agregar_animacion_minima(player: Player) -> void:
 	var anim_player := AnimationPlayer.new()

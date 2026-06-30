@@ -1624,7 +1624,7 @@ func set_modo_minimo(activo: bool):
 		bottom_panel.visible = false
 
 
-func mostrar_pantalla_victoria(titulo: String, max_combo: int, on_continuar: Callable):
+func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 	# 1. Crear CanvasLayer
 	var overlay = CanvasLayer.new()
 	overlay.layer = 210
@@ -1680,18 +1680,6 @@ func mostrar_pantalla_victoria(titulo: String, max_combo: int, on_continuar: Cal
 	title_label.label_settings = settings_title
 	center.add_child(title_label)
 
-	# Combo (MAX COMBO XX)
-	var combo_label = Label.new()
-	combo_label.text = "MAX COMBO " + str(max_combo)
-	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var settings_combo = LabelSettings.new()
-	settings_combo.font_size = 28
-	settings_combo.font_color = Color(0.85, 0.65, 0.2, 1.0) # Dorado
-	settings_combo.outline_size = 6
-	settings_combo.outline_color = Color(0, 0, 0, 1)
-	combo_label.label_settings = settings_combo
-	center.add_child(combo_label)
-
 	# Botón Continuar
 	var boton = Button.new()
 	boton.text = tr("BOTON_CONTINUAR") if TranslationServer.get_locale() != "" else "CONTINUAR"
@@ -1733,32 +1721,22 @@ func mostrar_pantalla_victoria(titulo: String, max_combo: int, on_continuar: Cal
 	boton.pressed.connect(
 		func():
 			boton.disabled = true
+			
+			# Llamar al callback de continuar inmediatamente
+			on_continuar.call()
+			
 			# Desvanecer UI
 			var tween_out = create_tween()
 			tween_out.tween_property(ui_container, "modulate:a", 0.0, 0.2)\
 				.set_trans(Tween.TRANS_SINE)
 			
+			# La cortinilla regresa por donde vino (de 0.33 a 1.1)
 			if cortinilla.material:
-				tween_out.parallel().tween_property(cortinilla.material, "shader_parameter/threshold", -0.1, 0.3)\
+				tween_out.parallel().tween_property(cortinilla.material, "shader_parameter/threshold", 1.1, 0.6)\
 					.set_trans(Tween.TRANS_QUAD)\
-					.set_ease(Tween.EASE_IN)
+					.set_ease(Tween.EASE_IN_OUT)
 			
 			await tween_out.finished
-			
-			# Llamamos al callback detrás del telón negro
-			on_continuar.call()
-			
-			await get_tree().create_timer(0.25).timeout
-			
-			# Desplazar la cortinilla fuera de la pantalla por la izquierda
-			var tween_exit = create_tween()
-			if cortinilla.material:
-				cortinilla.material.set_shader_parameter("border_width", 0.0)
-				tween_exit.tween_property(cortinilla.material, "shader_parameter/threshold", -1.2, 0.5)\
-					.set_trans(Tween.TRANS_QUAD)\
-					.set_ease(Tween.EASE_OUT)
-			
-			await tween_exit.finished
 			overlay.queue_free()
 	)
 

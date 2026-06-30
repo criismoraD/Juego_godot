@@ -81,10 +81,6 @@ var ladder_cooldown: float = 0.0  # Tiempo de espera para volver a agarrar la es
 var is_inside_platform: bool = false  # Bloquea movimiento lateral
 var charge_time = 0.0
 var last_charge_power = 0.0  # Potencia al momento de disparar (0.0 a 1.0)
-var current_combo: int = 0
-var max_combo: int = 0
-var combo_timer: float = 0.0
-const COMBO_TIMEOUT: float = 5.0
 var charge_bar: ProgressBar
 var _bow_hold_timer: float = 0.0  # Timer para delay de sonido mantener arco
 # === HITBOX ===
@@ -492,11 +488,6 @@ func _process(delta):
 	# Actualizar visibilidad del debug de hitbox en tiempo real
 	if hitbox_debug_mesh:
 		hitbox_debug_mesh.visible = mostrar_hitbox
-	# Actualizar combo timer
-	if combo_timer > 0.0:
-		combo_timer -= delta
-		if combo_timer <= 0.0:
-			current_combo = 0
 	# Actualizar estados visuales y UI
 	_process_gameplay(delta)
 
@@ -1280,7 +1271,6 @@ func recibir_dano(cantidad: int = 1):
 	# Reducir vida
 	health -= cantidad
 	health_changed.emit(health)
-	current_combo = 0
 
 	# IMPORTANTE: Cancelar disparo actual cuando recibimos daño
 	_cancel_current_shot()
@@ -1411,9 +1401,3 @@ func revive():
 
 	if anim_tree:
 		anim_tree.set("parameters/MotionState/transition_request", "ground")
-
-
-func registrar_impacto_combo():
-	current_combo += 1
-	max_combo = max(max_combo, current_combo)
-	combo_timer = COMBO_TIMEOUT
