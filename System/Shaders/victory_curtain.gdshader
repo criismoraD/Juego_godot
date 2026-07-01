@@ -7,8 +7,8 @@ void fragment() {
 	if (threshold >= 1.05) {
 		COLOR = vec4(0.0, 0.0, 0.0, 0.0);
 	} else {
-		// Distorsion organica muy barata en el borde para simular pinceladas
-		float noise_offset = sin(UV.y * 14.0) * 0.04 + cos(UV.y * 32.0) * 0.02;
+		// Distorsion organica muy barata en el borde para simular pinceladas (reducido a la mitad)
+		float noise_offset = sin(UV.y * 14.0) * 0.02 + cos(UV.y * 32.0) * 0.01;
 		
 		// Invertido: la derecha es negra (UV.x > threshold) y la izquierda es transparente
 		float progress = (UV.x - threshold + noise_offset) / 0.12;
