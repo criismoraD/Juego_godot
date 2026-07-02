@@ -8,7 +8,7 @@ uniform sampler2D ramp_texture : filter_linear, repeat_disable;
 
 // --- Parámetros del brochazo (con defaults, no rompen GameUI.gd) ---
 // Amplitud de la irregularidad vertical del borde (qué tanto avanza/retrocede).
-uniform float brush_jitter : hint_range(0.0, 0.4) = 0.16;
+uniform float brush_jitter : hint_range(0.0, 0.4) = 0.06;
 // Escala vertical del patrón de cerdas (frecuencia de las marcas).
 // Duplicada respecto a la versión anterior: ondas la mitad de cortas (longitud de onda reducida a la mitad).
 uniform float brush_scale : hint_range(10.0, 400.0) = 220.0;
