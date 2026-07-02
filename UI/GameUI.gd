@@ -713,6 +713,13 @@ func _create_pause_panel():
 	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
 	hbox_nav_debug.add_child(debug_btn)
 
+	var cortinilla_btn = Button.new()
+	cortinilla_btn.text = "🎭 Cortinilla"
+	cortinilla_btn.custom_minimum_size = Vector2(170, 40)
+	cortinilla_btn.pressed.connect(_toggle_curtain_debug)
+	_style_button(cortinilla_btn, Color(0.35, 0.25, 0.45))
+	hbox_nav_debug.add_child(cortinilla_btn)
+
 	# ═══════════════ CALIDAD GRÁFICA ═══════════════
 	var sep_calidad = HSeparator.new()
 	sep_calidad.custom_minimum_size = Vector2(200, 10)
@@ -1648,6 +1655,39 @@ func set_modo_minimo(activo: bool):
 		bottom_panel.visible = false
 
 
+func _toggle_curtain_debug():
+	# Toggle: si ya existe una cortinilla de debug, la elimina; si no, la crea.
+	var existing = get_node_or_null("PantallaVictoriaCortinilla")
+	if existing:
+		existing.queue_free()
+		return
+
+	var overlay = CanvasLayer.new()
+	overlay.layer = 210
+	overlay.name = "PantallaVictoriaCortinilla"
+	overlay.add_to_group("pantalla_victoria_cortinilla")
+	add_child(overlay)
+
+	var cortinilla = ColorRect.new()
+	cortinilla.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(cortinilla)
+
+	var shader = load("res://System/Shaders/victory_curtain.gdshader") as Shader
+	if shader:
+		var mat = ShaderMaterial.new()
+		mat.shader = shader
+		mat.set_shader_parameter("threshold", 0.25)
+
+		var grad = Gradient.new()
+		grad.set_color(0, Color(0, 0, 0, 0))
+		grad.set_color(1, Color(0, 0, 0, 1))
+
+		var ramp_tex = GradientTexture1D.new()
+		ramp_tex.gradient = grad
+		mat.set_shader_parameter("ramp_texture", ramp_tex)
+		cortinilla.material = mat
+
+
 func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 	# 1. Crear CanvasLayer
 	var overlay = CanvasLayer.new()
@@ -1676,9 +1716,9 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 		mat.set_shader_parameter("ramp_texture", ramp_tex)
 		cortinilla.material = mat
 
-	# 3. Crear Contenedor de UI (en la parte derecha, cubriendo de 0.22 a 1.0 en X)
+	# 3. Crear Contenedor de UI (en la parte derecha, cubriendo de 0.25 a 1.0 en X)
 	var ui_container = Control.new()
-	ui_container.anchor_left = 0.22
+	ui_container.anchor_left = 0.25
 	ui_container.anchor_right = 1.0
 	ui_container.anchor_top = 0.0
 	ui_container.anchor_bottom = 1.0
@@ -1737,7 +1777,7 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 	# 5. Animación de entrada de la cortinilla y la UI
 	var tween_in = create_tween()
 	if cortinilla.material:
-		tween_in.tween_property(cortinilla.material, "shader_parameter/threshold", 0.22, 0.6)\
+		tween_in.tween_property(cortinilla.material, "shader_parameter/threshold", 0.25, 0.6)\
 			.set_trans(Tween.TRANS_QUAD)\
 			.set_ease(Tween.EASE_OUT)
 	tween_in.parallel().tween_property(ui_container, "modulate:a", 1.0, 0.4)\
@@ -1758,7 +1798,7 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 			tween_out.tween_property(ui_container, "modulate:a", 0.0, 0.2)\
 				.set_trans(Tween.TRANS_SINE)
 			
-			# La cortinilla regresa por donde vino (de 0.22 a 1.1)
+			# La cortinilla regresa por donde vino (de 0.25 a 1.1)
 			if cortinilla.material:
 				tween_out.parallel().tween_property(cortinilla.material, "shader_parameter/threshold", 1.1, 0.6)\
 					.set_trans(Tween.TRANS_QUAD)\

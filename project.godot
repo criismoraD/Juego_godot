@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Arrow of Anathema"
 run/main_scene="res://UI/SplashScreen.tscn"
-config/features=PackedStringArray("4.7", "Forward Plus")
+config/features=PackedStringArray("4.7", "Mobile")
 run/max_fps=30
 boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/show_image=false
@@ -92,22 +92,19 @@ locale/translations=PackedStringArray("res://Translations/translations.es.transl
 
 [rendering]
 
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
 textures/vram_compression/import_etc2_astc=true
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=0
-lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
-lights_and_shadows/positional_shadow/soft_shadow_filter_quality.mobile=0
 lights_and_shadows/directional_shadow/size=512
 lights_and_shadows/directional_shadow/size.mobile=512
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
+environment/volumetric_fog/volume_size=48
+environment/volumetric_fog/use_filter=true
 lights_and_shadows/positional_shadow/size=256
 lights_and_shadows/positional_shadow/size.mobile=256
-anti_aliasing/quality/msaa_3d=0
-anti_aliasing/quality/msaa_2d=0
-anti_aliasing/quality/screen_space_aa=0
-anti_aliasing/quality/use_taa=false
-anti_aliasing/quality/use_debanding=false
 textures/default_filters/anisotropic_filter_level=0
-scaling_3d/mode=0
+environment/defaults/glow_use_bicubic_upscale=false
 
 [shader_globals]
 
