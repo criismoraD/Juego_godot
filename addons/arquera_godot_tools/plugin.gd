@@ -7,7 +7,8 @@ const RutaSegura := preload("res://addons/arquera_godot_tools/ruta_segura.gd")
 var Panel_Principal: VBoxContainer
 var Etiqueta_Estado: Label
 var Boton_Procesar_Glb: Button
-var Boton_Procesar_Glb_Sin_Outline: Button
+var Check_Next_Pass: CheckBox
+var Check_Unshaded: CheckBox
 var Boton_Panel_Inferior: Button
 
 
@@ -38,14 +39,25 @@ func _crear_ui() -> void:
 	Panel_Principal.add_child(descripcion)
 
 	Boton_Procesar_Glb = Button.new()
-	Boton_Procesar_Glb.text = "Extraer material + difuso + next_pass"
+	Boton_Procesar_Glb.text = "Procesar"
 	Boton_Procesar_Glb.pressed.connect(_on_boton_procesar_glb_presionado)
 	Panel_Principal.add_child(Boton_Procesar_Glb)
 
-	Boton_Procesar_Glb_Sin_Outline = Button.new()
-	Boton_Procesar_Glb_Sin_Outline.text = "Extraer material + difuso (Sin next_pass)"
-	Boton_Procesar_Glb_Sin_Outline.pressed.connect(_on_boton_procesar_glb_sin_outline_presionado)
-	Panel_Principal.add_child(Boton_Procesar_Glb_Sin_Outline)
+	var contour_opciones := HBoxContainer.new()
+	contour_opciones.name = "OpcionesProcesar"
+	Panel_Principal.add_child(contour_opciones)
+
+	Check_Next_Pass = CheckBox.new()
+	Check_Next_Pass.text = "Next Pass (Outline)"
+	Check_Next_Pass.tooltip_text = "Activa el next_pass del material con el shader TOON (outline)."
+	Check_Next_Pass.button_pressed = true
+	contour_opciones.add_child(Check_Next_Pass)
+
+	Check_Unshaded = CheckBox.new()
+	Check_Unshaded.text = "Unshaded"
+	Check_Unshaded.tooltip_text = "Activa SHADING_MODE_UNSHADED en el StandardMaterial3D."
+	Check_Unshaded.button_pressed = true
+	contour_opciones.add_child(Check_Unshaded)
 
 	Etiqueta_Estado = Label.new()
 	Etiqueta_Estado.text = "Estado: esperando seleccion."
@@ -54,14 +66,10 @@ func _crear_ui() -> void:
 
 
 func _on_boton_procesar_glb_presionado() -> void:
-	_ejecutar_procesamiento(true)
+	_ejecutar_procesamiento()
 
 
-func _on_boton_procesar_glb_sin_outline_presionado() -> void:
-	_ejecutar_procesamiento(false)
-
-
-func _ejecutar_procesamiento(con_outline: bool) -> void:
+func _ejecutar_procesamiento() -> void:
 	var rutas_seleccionadas := PackedStringArray()
 	var interfaz := get_editor_interface()
 
@@ -78,7 +86,10 @@ func _ejecutar_procesamiento(con_outline: bool) -> void:
 		_mostrar_estado("Error: selecciona un archivo .glb en FileSystem.", true)
 		return
 
-	var resultado := _procesar_glb_seleccionado(ruta_glb, con_outline)
+	var usar_next_pass: bool = Check_Next_Pass.button_pressed if Check_Next_Pass else true
+	var usar_unshaded: bool = Check_Unshaded.button_pressed if Check_Unshaded else true
+
+	var resultado := _procesar_glb_seleccionado(ruta_glb, usar_next_pass, usar_unshaded)
 	if resultado["error"] != OK:
 		_mostrar_estado("Error: %s" % resultado["mensaje"], true)
 		return
@@ -96,7 +107,7 @@ func _obtener_ruta_glb_seleccionada(rutas: PackedStringArray) -> String:
 	return ""
 
 
-func _procesar_glb_seleccionado(ruta_glb: String, con_outline: bool = true) -> Dictionary:
+func _procesar_glb_seleccionado(ruta_glb: String, usar_next_pass: bool = true, usar_unshaded: bool = true) -> Dictionary:
 	if not _es_ruta_segura(ruta_glb):
 		return {
 			"error": ERR_INVALID_PARAMETER,
@@ -111,16 +122,24 @@ func _procesar_glb_seleccionado(ruta_glb: String, con_outline: bool = true) -> D
 		}
 
 	var textura_difusa := _buscar_textura_difusa_en_carpeta(ruta_glb)
-	var material_final := _crear_material_final(textura_difusa, shader_toon, con_outline)
+	var material_final := _crear_material_final(textura_difusa, shader_toon, usar_next_pass, usar_unshaded)
 	var ruta_material := _generar_ruta_material(ruta_glb)
 	var error_guardado_material := ResourceSaver.save(material_final, ruta_material)
+	print("[ARQUERA] ResourceSaver.save error=", error_guardado_material, " ruta_material=", ruta_material)
 	if error_guardado_material != OK:
 		return {
 			"error": error_guardado_material,
 			"mensaje": "No se pudo guardar el material externo."
 		}
 
-	var resultado_import := _aplicar_material_externo_en_import(ruta_glb, ruta_material)
+	var fs := get_editor_interface().get_resource_filesystem()
+	if fs:
+		fs.scan()
+
+	var uid_texto := _asignar_uid_material(ruta_material)
+
+	var resultado_import := _aplicar_material_externo_en_import(ruta_glb, ruta_material, uid_texto)
+	print("[ARQUERA] uid_texto=", uid_texto, " resultado_import=", resultado_import)
 	if resultado_import["error"] != OK:
 		return resultado_import
 
@@ -137,14 +156,16 @@ func _procesar_glb_seleccionado(ruta_glb: String, con_outline: bool = true) -> D
 	}
 
 
-func _crear_material_final(textura_difusa: Texture2D, shader_toon: Shader, con_outline: bool = true) -> StandardMaterial3D:
+func _crear_material_final(textura_difusa: Texture2D, shader_toon: Shader, usar_next_pass: bool = true, usar_unshaded: bool = true) -> StandardMaterial3D:
 	var material_base := StandardMaterial3D.new()
-	material_base.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	if usar_unshaded:
+		material_base.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 	if textura_difusa:
 		material_base.albedo_texture = textura_difusa
 
-	if con_outline:
+	if usar_next_pass:
 		var material_outline := ShaderMaterial.new()
 		material_outline.shader = shader_toon
 		material_base.next_pass = material_outline
@@ -152,7 +173,7 @@ func _crear_material_final(textura_difusa: Texture2D, shader_toon: Shader, con_o
 	return material_base
 
 
-func _aplicar_material_externo_en_import(ruta_glb: String, ruta_material: String) -> Dictionary:
+func _aplicar_material_externo_en_import(ruta_glb: String, ruta_material: String, uid_texto: String = "") -> Dictionary:
 	var ruta_import := "%s.import" % ruta_glb
 	var config := ConfigFile.new()
 	var error_carga := config.load(ruta_import)
@@ -163,6 +184,7 @@ func _aplicar_material_externo_en_import(ruta_glb: String, ruta_material: String
 		}
 
 	var subrecursos = config.get_value("params", "_subresources", {})
+	print("[ARQUERA] _subresources typeof=", typeof(subrecursos), " is_dict=", subrecursos is Dictionary, " value=", subrecursos)
 	if not (subrecursos is Dictionary):
 		return {
 			"error": ERR_PARSE_ERROR,
@@ -175,24 +197,21 @@ func _aplicar_material_externo_en_import(ruta_glb: String, ruta_material: String
 			materiales = {}
 		var doc := GLTFDocument.new()
 		var state := GLTFState.new()
-		if doc.append_from_file(ruta_glb, state) == OK:
-			var mats = state.materials
+		var gltf_ok := doc.append_from_file(ruta_glb, state) == OK
+		var mats = state.materials
+		print("[ARQUERA] GLTFDocument OK=", gltf_ok, " mats_size=", (mats.size() if mats else 0))
+		if gltf_ok:
 			if mats:
 				for i in range(mats.size()):
 					var mat = mats[i]
-					if mat and not mat.name.is_empty():
-						materiales[mat.name] = {}
-		
+					if mat and not mat.resource_name.is_empty():
+						materiales[mat.resource_name] = {}
+
 		if materiales.is_empty():
 			return {
 				"error": ERR_UNAVAILABLE,
 				"mensaje": "No se encontraron materiales en _subresources del GLB ni leyendo con GLTFDocument."
 			}
-
-	var uid_material := ResourceLoader.get_resource_uid(ruta_material)
-	var uid_texto := ""
-	if uid_material > 0:
-		uid_texto = ResourceUID.id_to_text(uid_material)
 
 	for nombre_material in materiales.keys():
 		var data_material = materiales[nombre_material]
@@ -218,6 +237,25 @@ func _aplicar_material_externo_en_import(ruta_glb: String, ruta_material: String
 		"mensaje": "Import actualizado.",
 		"total_materiales": materiales.size()
 	}
+
+
+func _asignar_uid_material(ruta_material: String) -> String:
+	var uid_existente: int = ResourceLoader.get_resource_uid(ruta_material)
+	if uid_existente > 0:
+		return ResourceUID.id_to_text(uid_existente)
+
+	if FileAccess.file_exists(ruta_material):
+		var contenido: String = FileAccess.get_file_as_string(ruta_material)
+		var primera: String = contenido.get_slice("\n", 0)
+		var pos := primera.find("uid=\"")
+		if pos != -1:
+			var uid_crudo: String = primera.substr(pos + 5)
+			var fin := uid_crudo.find("\"")
+			if fin != -1:
+				uid_crudo = uid_crudo.substr(0, fin)
+				if uid_crudo.begins_with("uid://"):
+					return uid_crudo
+	return ""
 
 
 func _forzar_reimport_glb(ruta_glb: String) -> void:

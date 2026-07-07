@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dcri1fif5ky1b"]
 
-[ext_resource type="PackedScene" uid="uid://dqp6bym8k0nbe" path="res://Entities/FLECHA_ARQUERA_ENEMIGA.glb" id="2_0feol"]
+[ext_resource type="PackedScene" uid="uid://dqp6bym8k0nbe" path="res://Entities/Projectiles/FLECHA_ARQUERA_ENEMIGA.glb" id="2_0feol"]
 [ext_resource type="Script" uid="uid://bygcsae7ly4dt" path="res://Entities/Projectiles/GoblinGirlArrow.gd" id="2_script"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_arrow"]

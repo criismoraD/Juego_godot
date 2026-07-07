@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bt1a7ijdc6c7g"
-path.s3tc="res://.godot/imported/hojas.png-89181e997f1e17a01eb6c659cc19b798.s3tc.ctex"
-path.etc2="res://.godot/imported/hojas.png-89181e997f1e17a01eb6c659cc19b798.etc2.ctex"
+uid="uid://bybhg1um1otvi"
+path.s3tc="res://.godot/imported/GARGOLA_D.jpg-cb04c94033fe9ed011fd7e28f1c6c516.s3tc.ctex"
+path.etc2="res://.godot/imported/GARGOLA_D.jpg-cb04c94033fe9ed011fd7e28f1c6c516.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://Entities/Environment/Hojas/hojas.png"
-dest_files=["res://.godot/imported/hojas.png-89181e997f1e17a01eb6c659cc19b798.s3tc.ctex", "res://.godot/imported/hojas.png-89181e997f1e17a01eb6c659cc19b798.etc2.ctex"]
+source_file="res://Entities/Enemies/GARGOLA/GARGOLA_D.jpg"
+dest_files=["res://.godot/imported/GARGOLA_D.jpg-cb04c94033fe9ed011fd7e28f1c6c516.s3tc.ctex", "res://.godot/imported/GARGOLA_D.jpg-cb04c94033fe9ed011fd7e28f1c6c516.etc2.ctex"]
 
 [params]
 

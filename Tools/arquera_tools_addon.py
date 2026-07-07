@@ -33,7 +33,7 @@ import bpy
 import os
 from pathlib import Path
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from bpy.props import CollectionProperty, StringProperty, EnumProperty
+from bpy.props import CollectionProperty, StringProperty, EnumProperty, BoolProperty
 from bpy.types import Operator, OperatorFileListElement, Panel
 
 
@@ -350,19 +350,22 @@ def preparar_modelo(context, obj):
         print("  AVISO Objeto sin materiales")
 
     print("\n[2/4] Unificando vertices duplicados (Merge by Distance)...")
-    # Asegurar modo objeto para manipulacion limpia
-    bpy.ops.object.mode_set(mode='OBJECT')
-    context.view_layer.objects.active = obj
-    obj.select_set(True)
-    
-    # Cambiar a modo edicion, seleccionar todo y remover doubles
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.remove_doubles(threshold=0.0001)
-    
-    # Regresar a modo objeto para continuar preparacion
-    bpy.ops.object.mode_set(mode='OBJECT')
-    print("  OK Vertices duplicados unificados con umbral 0.0001")
+    if getattr(context.scene, "arquera_merge_enabled", True):
+        # Asegurar modo objeto para manipulacion limpia
+        bpy.ops.object.mode_set(mode='OBJECT')
+        context.view_layer.objects.active = obj
+        obj.select_set(True)
+
+        # Cambiar a modo edicion, seleccionar todo y remover doubles
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.0001)
+
+        # Regresar a modo objeto para continuar preparacion
+        bpy.ops.object.mode_set(mode='OBJECT')
+        print("  OK Vertices duplicados unificados con umbral 0.0001")
+    else:
+        print("  SKIP Merge by Distance desactivado por el usuario")
 
     print("\n[3/4] Ajustando pivote...")
     bbox_min = [float('inf')] * 3
@@ -643,6 +646,7 @@ class ARQUERA_PT_tools_panel(Panel):
         if mesh_objetivo:
             box_exp.label(text=f"Objeto: {mesh_objetivo.name}", icon='MESH_DATA')
             box_exp.prop(context.scene, "arquera_pivot_mode")
+            box_exp.prop(context.scene, "arquera_merge_enabled")
             box_exp.separator()
             box_exp.operator(
                 "arquera.prepare_model",
@@ -691,6 +695,11 @@ def register():
         ],
         default='BOTTOM'
     )
+    bpy.types.Scene.arquera_merge_enabled = BoolProperty(
+        name="Merge by Distance",
+        description="Activa/desactiva la fusion de vertices duplicados en Preparar Modelo",
+        default=True,
+    )
     print("OK Arquera Tools registrado")
 
 
@@ -699,6 +708,8 @@ def unregister():
         bpy.utils.unregister_class(cls)
     if hasattr(bpy.types.Scene, "arquera_pivot_mode"):
         del bpy.types.Scene.arquera_pivot_mode
+    if hasattr(bpy.types.Scene, "arquera_merge_enabled"):
+        del bpy.types.Scene.arquera_merge_enabled
     print("OK Arquera Tools desregistrado")
 
 

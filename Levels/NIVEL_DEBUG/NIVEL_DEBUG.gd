@@ -1244,7 +1244,8 @@ func _crear_panel_controles_spawn():
 		{"nombre": "👧 Goblin Girl", "id": 1},
 		{"nombre": "😈 Imp Normal", "id": 2},
 		{"nombre": "💣 Cañonero", "id": 3},
-		{"nombre": "🛡️ Imp Escudo", "id": 4}
+		{"nombre": "🛡️ Imp Escudo", "id": 4},
+		{"nombre": "🦅 Gárgola", "id": 5}
 	]
 	
 	for opt in opciones:

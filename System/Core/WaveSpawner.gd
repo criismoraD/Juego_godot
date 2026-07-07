@@ -9,6 +9,7 @@ signal goblin_spawneado(goblin: Node)
 @export var escena_goblin_girl: PackedScene  # Escena de la goblin girl
 @export var escena_imp: PackedScene  # Escena del imp enemigo
 @export var escena_canonero: PackedScene  # Nueva escena del cañonero
+@export var escena_gargola: PackedScene  # Escena de la gárgola voladora
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns (más lento)
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
@@ -26,7 +27,7 @@ signal goblin_spawneado(goblin: Node)
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero
+var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
@@ -55,6 +56,8 @@ func _ready():
 		escena_imp = preload("res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn")
 	if not escena_canonero:
 		escena_canonero = preload("res://Entities/Enemies/Canonero/Canonero.tscn")
+	if not escena_gargola:
+		escena_gargola = preload("res://Entities/Enemies/GARGOLA/Gargola.tscn")
 
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn")
@@ -187,17 +190,21 @@ func _elegir_escena_probabilidades() -> PackedScene:
 			return escena_canonero
 		elif forzar_tipo_enemigo == 4:
 			return escena_imp_escudo
+		elif forzar_tipo_enemigo == 5:
+			return escena_gargola
 		elif probabilidad_igual:
-			# Probabilidad igual: 25% cada tipo
+			# Probabilidad igual: 20% cada tipo (5 tipos)
 			var roll = randf()
-			if roll < 0.25:
+			if roll < 0.20:
 				return escena_canonero
-			elif roll < 0.50:
+			elif roll < 0.40:
 				return escena_imp
-			elif roll < 0.75:
+			elif roll < 0.60:
 				return escena_goblin_girl
-			else:
+			elif roll < 0.80:
 				return escena_goblin
+			else:
+				return escena_gargola
 		else:
 			# Probabilidades configuradas
 			var roll = randf()

@@ -4,6 +4,7 @@ Godot Engine v4.7.stable.steam.5b4e0cb0f - https://godotengine.org
 [1m[INFO]:  [0musing [C:/Users/criis/AppData/Roaming/Godot/app_userdata/Arrow of Anathema] for temporary output.
 Godot version:  4.7.0
 GUT version:  9.6.0
+[33m[WARNING]:  [0mIgnoring Inner Class TestableGoblin because it does not extend GutTest
 [4m
 
 res://Tests/Unit/test_ally_archer.gd
@@ -20,9 +21,17 @@ res://Tests/Unit/test_ally_archer.gd
 res://Tests/Unit/test_barrera_destruye_flechas.gd
 [0m* test_barrera_properties
 * test_arrow_destroyed_by_barrier
+* test_arrow_silent_on_barrier_no_vfx
 * test_ally_arrow_destroyed_by_barrier
 * test_enemy_walks_out_of_barrier
-[1m4/4 passed.
+[1m5/5 passed.
+[0m[4m
+
+res://Tests/Unit/test_enemy_rotation_on_death.gd
+[0m* test_rotation_on_flat_ground
+* test_rotation_on_ramp_up_right
+* test_rotation_on_ramp_up_left
+[1m3/3 passed.
 [0m[4m
 
 res://Tests/Unit/test_game_ui.gd
@@ -145,11 +154,13 @@ res://Tests/Unit/test_wave_spawner.gd
 [0m
 Totals
 ------
-Scripts              14
-Tests                75
-Passing Tests        75
-Asserts             219
-Time              2.411s
+Warnings              1
+
+Scripts              15
+Tests                79
+Passing Tests        79
+Asserts             224
+Time              2.482s
 
 
 [32m---- All tests passed! ----

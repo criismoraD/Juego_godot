@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://7oliq7q2w4q0"
-path="res://.godot/imported/RAMPA_SUBIDA_NIVEL3.glb-2c666b395ae8e078c75f3fd25e8d3af9.scn"
+uid="uid://dxecxqd34tdkl"
+path="res://.godot/imported/ESCUDO_ORNAMENTO.glb-2dacc968091047ba772fda7402ee4135.scn"
 
 [deps]
 
-source_file="res://Entities/Environment/RampaSubida/RAMPA_SUBIDA_NIVEL3.glb"
-dest_files=["res://.godot/imported/RAMPA_SUBIDA_NIVEL3.glb-2c666b395ae8e078c75f3fd25e8d3af9.scn"]
+source_file="res://Nivel_Interior/ESCUDO_ORNAMENTO.glb"
+dest_files=["res://.godot/imported/ESCUDO_ORNAMENTO.glb-2dacc968091047ba772fda7402ee4135.scn"]
 
 [params]
 
@@ -41,13 +41,13 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "materials": {
-"RAMPA_SUBIDA_NIVEL3_M": {
+"ESCUDO_ORNAMENTO_M.001": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Entities/Environment/RampaSubida/RAMPA_SUBIDA_NIVEL3_MAT.tres",
-"use_external/path": "uid://btlkmk65effag"
+"use_external/fallback_path": "res://Nivel_Interior/ESCUDO_ORNAMENTO_MAT.tres",
+"use_external/path": "uid://36y60jg1h228"
 }
 }
 }
 gltf/naming_version=2
 gltf/embedded_image_handling=1
-gltf/texture_map_mode=0
+gltf/texture_map_mode=1

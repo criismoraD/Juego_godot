@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://c5e3f4h5j6k7l"]
 
-[ext_resource type="Texture2D" uid="uid://bt1a7ijdc6c7g" path="res://Entities/hojas.png" id="1_hojas"]
+[ext_resource type="Texture2D" uid="uid://bt1a7ijdc6c7g" path="res://Entities/Environment/Hojas/hojas.png" id="1_hojas"]
 
 [resource]
 transparency = 1

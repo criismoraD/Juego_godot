@@ -41,6 +41,25 @@ func test_arrow_destroyed_by_barrier():
 	assert_true(_arrow.get("_destroying"), "La flecha del jugador debería destruirse al chocar con la barrera")
 
 
+func test_arrow_silent_on_barrier_no_vfx():
+	# Arrange: flecha de máxima potencia (la que normalmente genera VFX de impacto)
+	_arrow = ArrowScene.instantiate()
+	get_tree().root.add_child(_arrow)
+	_arrow.set_meta("is_max_power", true)
+
+	var cpu_particles_before := get_tree().root.find_children("*", "CPUParticles3D", true, false).size()
+
+	# Act
+	_arrow._on_body_entered(_barrera)
+
+	# Assert: al chocar con la barrera NO debe generar VFX de impacto (silencioso)
+	var cpu_particles_after := get_tree().root.find_children("*", "CPUParticles3D", true, false).size()
+	assert_eq(cpu_particles_after, cpu_particles_before,
+		"La flecha NO debería generar partículas de impacto al chocar con la barrera (destrucción silenciosa)")
+	assert_true(_arrow.get("_destroying"), "La flecha debería marcarse como destruyéndose")
+
+
+
 func test_ally_arrow_destroyed_by_barrier():
 	# Arrange
 	_ally_arrow = AllyArrowScene.instantiate()

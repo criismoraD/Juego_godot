@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://t0whis8d7cuv"]
+
+[ext_resource type="Script" path="res://Entities/Enemies/GARGOLA/Gargola.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bkfe1ni27l3lm" path="res://Entities/Enemies/GARGOLA/GARGOLA.glb" id="2_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_gargola"]
+radius = 0.25
+height = 0.6
+
+[node name="Gargola" type="CharacterBody3D" groups=["enemies"]]
+collision_layer = 4
+script = ExtResource("1_script")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("CapsuleShape_gargola")
+
+[editable path="Model"]

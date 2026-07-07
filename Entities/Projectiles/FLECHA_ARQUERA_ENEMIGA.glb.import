@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dqp6bym8k0nbe"
-path="res://.godot/imported/FLECHA_ARQUERA_ENEMIGA.glb-a888ea420d18b22eea20b2631db8e528.scn"
+path="res://.godot/imported/FLECHA_ARQUERA_ENEMIGA.glb-ad85a8fd519ceb3497e76a0c3d979a9a.scn"
 
 [deps]
 
-source_file="res://Entities/FLECHA_ARQUERA_ENEMIGA.glb"
-dest_files=["res://.godot/imported/FLECHA_ARQUERA_ENEMIGA.glb-a888ea420d18b22eea20b2631db8e528.scn"]
+source_file="res://Entities/Projectiles/FLECHA_ARQUERA_ENEMIGA.glb"
+dest_files=["res://.godot/imported/FLECHA_ARQUERA_ENEMIGA.glb-ad85a8fd519ceb3497e76a0c3d979a9a.scn"]
 
 [params]
 

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dwto33rqm8v41"]
 
 [ext_resource type="Script" uid="uid://bdtjbuugjjkh8" path="res://Entities/Projectiles/ImpEstandarteArrow.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cm3pmk7uvpqpi" path="res://Entities/Flecha_Gobling_Estandarte.glb" id="2_whyi6"]
+[ext_resource type="PackedScene" uid="uid://cm3pmk7uvpqpi" path="res://Entities/Projectiles/Flecha_Gobling_Estandarte.glb" id="2_whyi6"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_arrow"]
 radius = 0.052246094

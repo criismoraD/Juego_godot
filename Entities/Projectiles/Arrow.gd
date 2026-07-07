@@ -145,7 +145,8 @@ func _on_body_entered(body):
 		return
 
 	if body.is_in_group("barrera_destruye_flechas"):
-		_safe_destroy()
+		# La barrera solo elimina la flecha: sin sonido ni VFX de impacto.
+		_safe_destroy(true)
 		return
 
 	# Ignorar al jugador si es flecha del jugador (para que no se pegue al salir)
@@ -408,13 +409,14 @@ func _reparent_to_enemy(enemy: Node3D, relative_pos: Vector3):
 	)
 
 
-func _safe_destroy():
+func _safe_destroy(silent: bool = false):
 	if _destroying:
 		return
 	_destroying = true
-	
-	# Si es de máxima potencia, crear una explosión de impacto juiciosa
-	if has_meta("is_max_power") and bool(get_meta("is_max_power")):
+
+	# Si es de máxima potencia, crear una explosión de impacto juiciosa.
+	# Se omite cuando la destrucción es silenciosa (ej. BarreraDestruyeFlechas).
+	if not silent and has_meta("is_max_power") and bool(get_meta("is_max_power")):
 		_spawn_max_power_impact_vfx()
 		
 	# Detener trail antes de liberar para evitar "Parameter material is null"

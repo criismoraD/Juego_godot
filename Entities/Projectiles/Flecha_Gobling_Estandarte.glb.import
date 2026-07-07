@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cm3pmk7uvpqpi"
-path="res://.godot/imported/Flecha_Gobling_Estandarte.glb-729fee4e88c5bfeaec41fa5822c2bbd5.scn"
+path="res://.godot/imported/Flecha_Gobling_Estandarte.glb-2aba81bbf3472ed27ef17dfcdb0786bf.scn"
 
 [deps]
 
-source_file="res://Entities/Flecha_Gobling_Estandarte.glb"
-dest_files=["res://.godot/imported/Flecha_Gobling_Estandarte.glb-729fee4e88c5bfeaec41fa5822c2bbd5.scn"]
+source_file="res://Entities/Projectiles/Flecha_Gobling_Estandarte.glb"
+dest_files=["res://.godot/imported/Flecha_Gobling_Estandarte.glb-2aba81bbf3472ed27ef17dfcdb0786bf.scn"]
 
 [params]
 

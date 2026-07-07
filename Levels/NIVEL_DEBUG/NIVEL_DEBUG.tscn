@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://cr61kgfu7qhp0" path="res://Entities/Environment/ESCALERA/ESCALERA.tscn" id="7_ladder"]
 [ext_resource type="PackedScene" uid="uid://d3x1a2b3c4d5e" path="res://Entities/Enemies/Canonero/Canonero.tscn" id="8_koe3n"]
 [ext_resource type="PackedScene" uid="uid://dcqn4obnv8xjm" path="res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn" id="8_qcvbp"]
+[ext_resource type="PackedScene" uid="uid://t0whis8d7cuv" path="res://Entities/Enemies/GARGOLA/Gargola.tscn" id="34_gargola"]
 [ext_resource type="PackedScene" uid="uid://c7a4c82odgcle" path="res://Entities/Environment/BarreraLimite/BarreraLimite.tscn" id="9_8uf3n"]
 [ext_resource type="PackedScene" uid="uid://d3e4f5g6h7i8j" path="res://Entities/Environment/Escudo/Escudo.tscn" id="10_j54d2"]
 [ext_resource type="PackedScene" uid="uid://v8ci5ta3tkkr" path="res://Entities/Environment/PlataformaOneway/PlataformaOneway.tscn" id="11_j5qtk"]
@@ -157,6 +158,7 @@ escena_goblin = ExtResource("6_goblin")
 escena_goblin_girl = ExtResource("6_an7ty")
 escena_imp = ExtResource("7_i7crs")
 escena_canonero = ExtResource("8_koe3n")
+escena_gargola = ExtResource("34_gargola")
 intervalo_aparicion = 3.0
 probabilidad_goblin_girl = 0.0
 probabilidad_imp = 1.0
