@@ -1,0 +1,23 @@
+res://Entities/Enemies/GARGOLA/Gargola.gd
+res://Entities/Enemies/GARGOLA/Gargola.tscn
+res://Entities/Environment/new_environment.tres
+res://Entities/Player/Arrows.tres
+res://Entities/Player/ARQUERA_MATERIAL.tres
+res://Entities/Player/Recurve Bow 2.tres
+res://Entities/Enemies/Goblin/GOBLING_MATERIAL.tres
+res://Entities/Enemies/Goblin/Hand Crossbow.tres
+res://Entities/Enemies/GoblinGirl/MAT_GOBLIN_GIRL.tres
+res://Entities/Enemies/GoblinGirl/ARCO_GIRL_GOBLING.tres
+res://Entities/Enemies/ImpEnemy/MAT_IMP.tres
+res://Entities/Enemies/GARGOLA/GARGOLA_MAT.tres
+res://Entities/Enemies/ImpShieldGirl/ESCUDO_IMP_MAT.tres
+res://Entities/Enemies/ImpShieldGirl/GIRL_IMP_ESCUDO.tres
+res://Entities/Environment/Ladder/ESCALERAS.tres
+res://Entities/Environment/Escudo/ESCUDO2_MAT.tres
+res://Entities/Environment/Escudo/MAT_shield.tres
+res://Entities/Environment/Platform/MAT_platform.tres
+res://Entities/Environment/SpikeTrap/MAT_spike_trap.tres
+res://Entities/Environment/Water/Water.tres
+res://Entities/AllyArcher/ARQUERA_ALIADA_MATERIAL.tres
+res://Entities/Environment/Estandarte/wind_flag.gdshader
+res://Entities/Enemies/ImpEnemyEstandarte/IMP_ESTANDARTE.001_MAT.tres
