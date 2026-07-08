@@ -6,7 +6,7 @@ extends EnemyBase
 ##   CARGA_ATAQUE → esfera roja en manos crece → ATACAR → 2 proyectiles rectos con dispersión.
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const GARGOLA_PROJECTILE_COLOR: Color = Color(1.0, 0.1, 0.05)
-const PROJECTILE_SCALE: Vector3 = Vector3.ONE
+const PROJECTILE_SCALE: Vector3 = Vector3(0.5, 0.5, 0.5)
 
 # === CONFIGURACIÓN VUELO ===
 @export_category("Vuelo - Gargola")
@@ -87,9 +87,7 @@ func _on_state_shooting():
 func take_damage(amount: float) -> void:
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
-	# Pausar animación al recibir daño (efecto petrificación)
-	if anim_player and anim_player.is_playing():
-		anim_player.pause()
+	# Ya no pausa la animación al recibir daño, puede ser dañado en cualquier momento
 	if is_instance_valid(esfera_carga):
 		esfera_carga.visible = false
 	fase_combate = FaseCombate.IDLE
@@ -97,18 +95,13 @@ func take_damage(amount: float) -> void:
 
 
 func _on_state_dying():
-	super._on_state_dying()
-	AudioManager.play_sfx("imp_death")
+	# No llamar a super._on_state_dying() para evitar que desactive colisiones
+	# La Gárgola puede seguir siendo dañada mientras cae como piedra
 	if is_instance_valid(esfera_carga):
 		esfera_carga.visible = false
 	_aplicar_textura_piedra()
 	cayendo = true
-	# Delay para iniciar disolución después de caer
-	get_tree().create_timer(tiempo_disolucion_muerte + 1.5).timeout.connect(
-		func():
-			if is_instance_valid(self) and is_inside_tree():
-				_die()
-	)
+	# Ya no hay disolución, se convierte en piedra y cae al suelo permanentemente
 
 
 func _aplicar_textura_piedra():
@@ -326,8 +319,6 @@ func _disparar_proyectiles():
 		return
 	if not gargola_projectile_scene:
 		return
-
-	AudioManager.play_sfx("goblin_shoot")
 
 	var spawn_pos: Vector3 = global_position
 	if is_instance_valid(esfera_carga) and esfera_carga.visible:
