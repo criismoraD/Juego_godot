@@ -34,7 +34,9 @@ var btn_iguales: Button
 var btn_solo_imp: Button
 var btn_solo_goblin: Button
 var btn_solo_ggirl: Button
+var btn_solo_lonko: Button
 var btn_spawn_escudo: Button
+var btn_spawn_posion: Button
 # === TOGGLE UI ===
 var bottom_panel: Control
 var toggle_ui_btn: Button
@@ -48,6 +50,7 @@ var allies_enabled: bool = true
 # === OPTIMIZACIÓN ===
 var _wave_update_timer: float = 0.0
 var escudo_scene: PackedScene = preload("res://Entities/Environment/Escudo/Escudo.tscn")
+var posion_scene_debug: PackedScene = preload("res://Pocion/Posion.tscn")
 var escudos_originales: Array = []  # [{transform, parent_path}]
 var _escudos_cache: Array[Node] = []
 var btn_toggle_shields: Button
@@ -433,6 +436,13 @@ func _create_ui():
 	_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
 	hbox.add_child(btn_solo_ggirl)
 
+	btn_solo_lonko = Button.new()
+	btn_solo_lonko.text = "🏹 LONKO"
+	btn_solo_lonko.custom_minimum_size = Vector2(75, 32)
+	btn_solo_lonko.pressed.connect(func(): _set_spawn_type(6))
+	_style_button(btn_solo_lonko, Color(0.4, 0.4, 0.5))
+	hbox.add_child(btn_solo_lonko)
+
 	# --- FORZAR SPAWN ESCUDO ---
 	btn_spawn_escudo = Button.new()
 	btn_spawn_escudo.text = "\U0001F6E1\uFE0F ESCUDO"
@@ -444,6 +454,14 @@ func _create_ui():
 	)
 	_style_button(btn_spawn_escudo, Color(0.5, 0.3, 0.6))
 	hbox.add_child(btn_spawn_escudo)
+
+	# --- FORZAR SPAWN POCIÓN ---
+	btn_spawn_posion = Button.new()
+	btn_spawn_posion.text = "🧪 POCIÓN"
+	btn_spawn_posion.custom_minimum_size = Vector2(85, 32)
+	btn_spawn_posion.pressed.connect(_spawn_posion_debug)
+	_style_button(btn_spawn_posion, Color(0.7, 0.15, 0.35))
+	hbox.add_child(btn_spawn_posion)
 
 	# Sincronizar estado inicial
 	_update_spawn_buttons()
@@ -678,6 +696,17 @@ func _create_pause_panel():
 	_style_button(btn_oleada_3, Color(0.5, 0.3, 0.6))
 	hbox_levels.add_child(btn_oleada_3)
 
+	var btn_oleada_4 = Button.new()
+	btn_oleada_4.text = "Oleada 4"
+	btn_oleada_4.custom_minimum_size = Vector2(110, 40)
+	btn_oleada_4.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_cambio_oleada_debug(4)
+	)
+	_style_button(btn_oleada_4, Color(0.3, 0.5, 0.7))
+	hbox_levels.add_child(btn_oleada_4)
+
 	# Fila de Navegación de Nivees (Debug)
 	var hbox_nav_debug = HBoxContainer.new()
 	hbox_nav_debug.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -796,30 +825,11 @@ func _create_pause_panel():
 
 
 func _update_health_ui():
-	# Limpiar corazones existentes
+	# La UI de vida anterior (corazones emoji) fue reemplazada por UIVidaProtagonista.tscn
 	for icon in heart_icons:
 		if is_instance_valid(icon):
 			icon.queue_free()
 	heart_icons.clear()
-
-	if not player:
-		return
-
-	var max_hp = player.get("vida_maxima") if player.get("vida_maxima") else 5
-	var current_hp = player.get("health") if player.get("health") else max_hp
-
-	# Crear nuevos corazones
-	for i in range(max_hp):
-		var heart = Label.new()
-		heart.add_theme_font_size_override("font_size", 24)
-		if i < current_hp:
-			heart.text = "❤️"
-			heart.add_theme_color_override("font_color", Color(1, 0.2, 0.2))
-		else:
-			heart.text = "🖤"
-			heart.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3))
-		health_container.add_child(heart)
-		heart_icons.append(heart)
 
 
 func _on_health_changed(_new_health: int):
@@ -854,11 +864,24 @@ func _process(delta):
 
 
 func _on_player_died():
-	# Mostrar todos los corazones vacíos
-	for icon in heart_icons:
-		if is_instance_valid(icon):
-			icon.text = "🖤"
-			icon.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3))
+	# Ocultar la barra de progreso de oleadas y contenedor de UI
+	if wave_container:
+		wave_container.visible = false
+	visible = false
+
+	# Detener audios de fondo
+	if has_node("/root/AudioManager"):
+		var am = get_node("/root/AudioManager")
+		if am.has_method("stop_all"):
+			am.call("stop_all")
+
+	# Instanciar y mostrar la pantalla de Game Over centrada con pantalla negra opaca
+	var game_over_screen := UIGameOver.new()
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(game_over_screen)
+	else:
+		add_child(game_over_screen)
 
 
 func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
@@ -866,7 +889,10 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 	if not is_instance_valid(root_node):
 		return
 
-	if numero_oleada == 3:
+	if numero_oleada == 4:
+		if root_node.has_method("debug_ir_a_oleada_4"):
+			root_node.call("debug_ir_a_oleada_4")
+	elif numero_oleada == 3:
 		if root_node.has_method("debug_ir_a_oleada_3"):
 			root_node.call("debug_ir_a_oleada_3")
 	elif numero_oleada == 2:
@@ -1024,15 +1050,25 @@ func _find_wave_spawner() -> Node:
 
 	# Buscar mediante grupo (Optimizado)
 	wave_spawner = get_tree().get_first_node_in_group("wave_spawners")
-	if wave_spawner:
-		return wave_spawner
+	if not wave_spawner:
+		# Fallback: Buscar por nombre en la raíz de la escena
+		var root = get_tree().current_scene
+		if root:
+			wave_spawner = root.find_child("WaveSpawner", true, false)
 
-	# Fallback: Buscar por nombre en la raíz de la escena
-	var root = get_tree().current_scene
-	if root:
-		wave_spawner = root.find_child("WaveSpawner", true, false)
+	if wave_spawner and wave_spawner.has_signal("oleada_iniciada"):
+		if not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_reconstruir_escudos):
+			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_reconstruir_escudos)
+
+	# Marcar Lonko (tipo 6) por defecto si aún no está forzado
+	if wave_spawner and wave_spawner.get("forzar_tipo_enemigo") == -1:
+		wave_spawner.forzar_tipo_enemigo = 6
 
 	return wave_spawner
+
+
+func _on_oleada_iniciada_reconstruir_escudos(_num_oleada: int) -> void:
+	_reconstruir_todos_escudos()
 
 
 func _toggle_equal_spawn():
@@ -1095,6 +1131,15 @@ func _update_spawn_buttons():
 	else:
 		btn_solo_ggirl.text = "🧝 G.GIRL"
 		_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
+
+	# Botón LONKO
+	if is_instance_valid(btn_solo_lonko):
+		if tipo == 6:
+			btn_solo_lonko.text = "🏹 LONKO ✓"
+			_style_button(btn_solo_lonko, Color(0.9, 0.4, 0.1))
+		else:
+			btn_solo_lonko.text = "🏹 LONKO"
+			_style_button(btn_solo_lonko, Color(0.4, 0.4, 0.5))
 
 
 func _toggle_outlines():
@@ -1344,9 +1389,8 @@ func _destruir_todos_escudos():
 
 
 func _reconstruir_todos_escudos():
-	"""Re-instancia los escudos en sus posiciones originales"""
-	# Primero eliminar cualquier escudo roto que quede
-	# OPT: Cachear el grupo para evitar múltiples accesos al tree
+	"""Re-instancia ÚNICAMENTE los escudos que han sido destruidos/rotos"""
+	# 1. Eliminar restos de escudos rotos que queden en escena
 	var escudos_rotos = get_tree().get_nodes_in_group("escudos_rotos")
 	for roto in escudos_rotos:
 		if is_instance_valid(roto):
@@ -1354,26 +1398,29 @@ func _reconstruir_todos_escudos():
 				continue
 			roto.queue_free()
 
-	# Eliminar escudos existentes (por si quedan)
-	var escudos = _get_valid_escudos()
-	for escudo in escudos:
-		if is_instance_valid(escudo):
-			var p = escudo.get_parent()
-			if p:
-				p.remove_child(escudo)
-			escudo.queue_free()
-	_escudos_cache.clear()
+	# 2. Mapear escudos activos actualmente en el mapa
+	var escudos_activos = _get_valid_escudos()
+	var nombres_activos: Dictionary = {}
+	for esc in escudos_activos:
+		if is_instance_valid(esc):
+			nombres_activos[esc.name] = esc
 
-	# Recrear en las posiciones originales
+	# 3. Recorrer la lista de escudos originales y recrear SOLO los faltantes/rotos
 	for data in escudos_originales:
+		var nombre_escudo: String = data["name"]
+		
+		# Si el escudo ya existe e intacto en el mapa, NO tocarlo ni recrearlo
+		if nombres_activos.has(nombre_escudo) and is_instance_valid(nombres_activos[nombre_escudo]):
+			continue
+
+		# Si el escudo falta (fue destruido), recrear SOLO este escudo roto
 		var nuevo_escudo: Node = null
 		var scene_path: String = data.get("scene_path", "")
 		if scene_path != "":
 			var res = load(scene_path)
 			if res is PackedScene:
 				nuevo_escudo = res.instantiate()
-		
-		# Fallback al escudo base
+
 		if nuevo_escudo == null:
 			nuevo_escudo = escudo_scene.instantiate()
 
@@ -1382,16 +1429,90 @@ func _reconstruir_todos_escudos():
 			parent.add_child(nuevo_escudo)
 		else:
 			get_tree().current_scene.add_child(nuevo_escudo)
-		
-		nuevo_escudo.name = data["name"]
-		nuevo_escudo.global_transform = data["transform"]
-		_escudos_cache.append(nuevo_escudo)
 
-	# Actualizar estado del toggle
+		nuevo_escudo.name = nombre_escudo
+		nuevo_escudo.global_transform = data["transform"]
+
+		# Animar la reaparición mística con el shader de disolución SOLO para los escudos reconstruidos
+		_animar_aparicion_escudo_disolucion(nuevo_escudo)
+
+	# Actualizar caché de escudos
+	_escudos_cache = _get_valid_escudos()
+
 	shields_enabled = true
 	if btn_toggle_shields:
 		btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
 		_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
+
+
+func _animar_aparicion_escudo_disolucion(escudo: Node) -> void:
+	if not is_instance_valid(escudo):
+		return
+	var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
+	var meshes: Array[Node] = escudo.find_children("*", "MeshInstance3D", true, false)
+	var dissolve_mats: Array = []
+
+	for mesh in meshes:
+		if not is_instance_valid(mesh):
+			continue
+		var mi := mesh as MeshInstance3D
+		var mat := ShaderMaterial.new()
+		mat.shader = dissolve_shader
+		mat.set_shader_parameter("dissolve_amount", 1.0)
+		mat.set_shader_parameter("glow_color", Color(0.2, 0.8, 1.0))
+		mat.set_shader_parameter("glow_intensity", 8.0)
+		mat.set_shader_parameter("edge_thickness", 0.08)
+		mat.set_shader_parameter("noise_scale", 20.0)
+
+		var orig: Material = mi.material_override
+		if orig == null and mi.mesh and mi.mesh.get_surface_count() > 0:
+			orig = mi.mesh.surface_get_material(0)
+		if orig and orig is StandardMaterial3D:
+			var std := orig as StandardMaterial3D
+			if std.albedo_texture:
+				mat.set_shader_parameter("albedo_texture", std.albedo_texture)
+			var col := std.albedo_color
+			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+
+		mi.material_override = mat
+		dissolve_mats.append({"mesh": mi, "material": mat, "original": orig})
+
+	# Guardar la escala objetivo original
+	var target_scale: Vector3 = Vector3.ONE
+	if escudo is Node3D:
+		target_scale = (escudo as Node3D).scale
+		if target_scale.is_zero_approx():
+			target_scale = Vector3.ONE
+
+	# Iniciar el escudo aplanado en la base (escala Y casi cero)
+	if escudo is Node3D:
+		(escudo as Node3D).scale = Vector3(target_scale.x * 0.4, 0.01, target_scale.z * 0.4)
+
+	var duracion: float = 1.2
+	var tween := escudo.create_tween().set_parallel(true)
+
+	# 1. Materialización con shader dissolve
+	tween.tween_method(
+		func(val: float) -> void:
+			for item in dissolve_mats:
+				if is_instance_valid(item["mesh"]):
+					item["material"].set_shader_parameter("dissolve_amount", val),
+		1.0, 0.0, duracion
+	)
+
+	# 2. Crecimiento/Escalado vertical desde la base hacia arriba
+	if escudo is Node3D:
+		tween.tween_property(escudo, "scale", target_scale, duracion) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+	tween.finished.connect(
+		func() -> void:
+			for item in dissolve_mats:
+				if is_instance_valid(item["mesh"]):
+					item["mesh"].material_override = item["original"]
+			if is_instance_valid(escudo) and escudo is Node3D:
+				(escudo as Node3D).scale = target_scale
+	)
 
 
 func _toggle_escudos():
@@ -1668,24 +1789,22 @@ func _toggle_curtain_debug():
 	overlay.add_to_group("pantalla_victoria_cortinilla")
 	add_child(overlay)
 
-	var cortinilla = ColorRect.new()
-	cortinilla.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var cortinilla = TextureRect.new()
+	cortinilla.texture = load("res://Entities/fondo trasparencia.png")
+	cortinilla.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cortinilla.stretch_mode = TextureRect.STRETCH_SCALE
+	
+	# En debug la mostramos completamente extendida
+	cortinilla.anchor_left = 0.0
+	cortinilla.anchor_right = 1.0
+	cortinilla.anchor_top = 0.0
+	cortinilla.anchor_bottom = 1.0
+	
+	cortinilla.offset_left = 0
+	cortinilla.offset_right = 0
+	cortinilla.offset_top = 0
+	cortinilla.offset_bottom = 0
 	overlay.add_child(cortinilla)
-
-	var shader = load("res://System/Shaders/victory_curtain.gdshader") as Shader
-	if shader:
-		var mat = ShaderMaterial.new()
-		mat.shader = shader
-		mat.set_shader_parameter("threshold", 0.28)
-
-		var grad = Gradient.new()
-		grad.set_color(0, Color(0, 0, 0, 0))
-		grad.set_color(1, Color(0, 0, 0, 1))
-
-		var ramp_tex = GradientTexture1D.new()
-		ramp_tex.gradient = grad
-		mat.set_shader_parameter("ramp_texture", ramp_tex)
-		cortinilla.material = mat
 
 
 func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
@@ -1696,25 +1815,23 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 	overlay.add_to_group("pantalla_victoria_cortinilla")
 	add_child(overlay)
 
-	# 2. Crear ColorRect con Shader
-	var cortinilla = ColorRect.new()
-	cortinilla.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 2. Crear TextureRect con fondo trasparencia.png
+	var cortinilla = TextureRect.new()
+	cortinilla.texture = load("res://Entities/fondo trasparencia.png")
+	cortinilla.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cortinilla.stretch_mode = TextureRect.STRETCH_SCALE
+	
+	# Posición inicial: oculta a la derecha (ancho = 0)
+	cortinilla.anchor_left = 1.0
+	cortinilla.anchor_right = 1.0
+	cortinilla.anchor_top = 0.0
+	cortinilla.anchor_bottom = 1.0
+	
+	cortinilla.offset_left = 0
+	cortinilla.offset_right = 0
+	cortinilla.offset_top = 0
+	cortinilla.offset_bottom = 0
 	overlay.add_child(cortinilla)
-
-	var shader = load("res://System/Shaders/victory_curtain.gdshader") as Shader
-	if shader:
-		var mat = ShaderMaterial.new()
-		mat.shader = shader
-		mat.set_shader_parameter("threshold", 1.1)
-		
-		var grad = Gradient.new()
-		grad.set_color(0, Color(0, 0, 0, 0))
-		grad.set_color(1, Color(0, 0, 0, 1))
-		
-		var ramp_tex = GradientTexture1D.new()
-		ramp_tex.gradient = grad
-		mat.set_shader_parameter("ramp_texture", ramp_tex)
-		cortinilla.material = mat
 
 	# 3. Crear Contenedor de UI (en la parte derecha, cubriendo de 0.28 a 1.0 en X)
 	var ui_container = Control.new()
@@ -1776,10 +1893,10 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 
 	# 5. Animación de entrada de la cortinilla y la UI
 	var tween_in = create_tween()
-	if cortinilla.material:
-		tween_in.tween_property(cortinilla.material, "shader_parameter/threshold", 0.28, 0.6)\
-			.set_trans(Tween.TRANS_QUAD)\
-			.set_ease(Tween.EASE_OUT)
+	# Estirar de derecha a izquierda: animar anchor_left de 1.0 a 0.0
+	tween_in.tween_property(cortinilla, "anchor_left", 0.0, 0.6)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
 	tween_in.parallel().tween_property(ui_container, "modulate:a", 1.0, 0.4)\
 		.set_delay(0.2)\
 		.set_trans(Tween.TRANS_SINE)\
@@ -1798,12 +1915,39 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 			tween_out.tween_property(ui_container, "modulate:a", 0.0, 0.2)\
 				.set_trans(Tween.TRANS_SINE)
 			
-			# La cortinilla regresa por donde vino (de 0.28 a 1.1)
-			if cortinilla.material:
-				tween_out.parallel().tween_property(cortinilla.material, "shader_parameter/threshold", 1.1, 0.6)\
-					.set_trans(Tween.TRANS_QUAD)\
-					.set_ease(Tween.EASE_IN_OUT)
+			# La cortinilla regresa por donde vino (de 0.0 a 1.0)
+			tween_out.parallel().tween_property(cortinilla, "anchor_left", 1.0, 0.6)\
+				.set_trans(Tween.TRANS_QUAD)\
+				.set_ease(Tween.EASE_IN_OUT)
 			
 			await tween_out.finished
 			overlay.queue_free()
 	)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEBUG: SPAWN POCIÓN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _spawn_posion_debug() -> void:
+	if not posion_scene_debug:
+		push_warning("[GameUI] posion_scene_debug no está asignado.")
+		return
+
+	var scene_root := get_tree().current_scene
+	if not scene_root:
+		push_warning("[GameUI] No hay escena activa para instanciar la poción.")
+		return
+
+	var posion := posion_scene_debug.instantiate() as Node3D
+	if not posion:
+		push_warning("[GameUI] No se pudo instanciar Posion.tscn.")
+		return
+
+	# Colocar en el centro del mapa en X, a altura del jugador si está disponible
+	var spawn_y: float = 1.0
+	if player and "global_position" in player:
+		spawn_y = player.global_position.y
+
+	scene_root.add_child(posion)
+	posion.global_position = Vector3(0.0, spawn_y, 0.0)

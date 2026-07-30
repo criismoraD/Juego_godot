@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://t0a53d8s657t"]
+
+[ext_resource type="Texture2D" uid="uid://d3cdiumkabmpw" path="res://Pocion/POSION_D.jpg" id="1_4nihf"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_11s41"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fm8ot"]
+render_priority = 0
+shader = ExtResource("2_11s41")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_fm8ot")
+albedo_texture = ExtResource("1_4nihf")
+emission_enabled = true
+emission_texture = ExtResource("1_4nihf")

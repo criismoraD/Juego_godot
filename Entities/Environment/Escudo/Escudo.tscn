@@ -16,3 +16,5 @@ transform = Transform3D(0.32965365, -0.083434254, 1.4877793, -0.07089735, 1.5245
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2094093161]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06372532, 0.74518585, 0.008956082)
 shape = SubResource("BoxShape3D_1")
+
+[editable path="ESCUDO22"]

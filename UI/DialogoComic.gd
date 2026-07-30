@@ -67,6 +67,9 @@ func _ready():
 	_timer_revelado.timeout.connect(_on_reveal_timer_timeout)
 	add_child(_timer_revelado)
 
+	# Traducir los contenidos del diálogo
+	_traducir_dialogos()
+
 	if boton_continuar:
 		boton_continuar.visible = false
 		boton_continuar.focus_mode = Control.FOCUS_NONE
@@ -81,6 +84,7 @@ func _ready():
 
 	var boton_saltar = find_child("BotonSaltar", true, false)
 	if boton_saltar and boton_saltar is Button:
+		boton_saltar.text = tr("BTN_SKIP")
 		boton_saltar.focus_mode = Control.FOCUS_NONE
 		
 		# Estilos premium (oscuro con borde dorado)
@@ -156,14 +160,23 @@ func _terminar_revelado() -> void:
 		boton_continuar.visible = true
 
 
+func _traducir_dialogos() -> void:
+	var nodo_nombre = find_child("Nombre", true, false)
+	if nodo_nombre and nodo_nombre is Label:
+		nodo_nombre.text = tr(nodo_nombre.text)
+
+	for i in range(paginas_texto.size()):
+		paginas_texto[i] = tr(paginas_texto[i])
+
+
 func _actualizar_texto_boton():
 	if not boton_continuar:
 		return
 
 	if paginas_texto.size() > 1 and _indice_pagina < paginas_texto.size() - 1:
-		boton_continuar.text = "Siguiente"
+		boton_continuar.text = tr("BOTON_SIGUIENTE")
 	else:
-		boton_continuar.text = "Continuar"
+		boton_continuar.text = tr("BOTON_CONTINUAR")
 
 
 func _aplicar_pagina_actual() -> void:

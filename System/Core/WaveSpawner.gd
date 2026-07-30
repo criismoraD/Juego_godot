@@ -10,6 +10,7 @@ signal goblin_spawneado(goblin: Node)
 @export var escena_imp: PackedScene  # Escena del imp enemigo
 @export var escena_canonero: PackedScene  # Nueva escena del cañonero
 @export var escena_gargola: PackedScene  # Escena de la gárgola voladora
+@export var escena_lonko: PackedScene  # Escena del nuevo enemigo Lonko
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns (más lento)
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
@@ -39,7 +40,7 @@ var shield_spawn_timer: float = 5.0  ## Timer para spawn de escudo
 var enemigos_muertos_en_oleada: int = 0  ## Contador de muertos para la UI
 var max_shield_imps_to_spawn_this_wave: int = 0
 var shield_imps_spawned_this_wave: int = 0
-var oleada_combate: int = 0  ## Nivel/Oleada de combate configurada desde el nivel (1, 2, 3)
+var oleada_combate: int = 0  ## Nivel/Oleada de combate configurada desde el nivel (1, 2, 3, 4)
 var cola_spawn: Array[PackedScene] = []  ## Cola de enemigos prediseñada para la oleada activa
 
 # === SEÑALES ===
@@ -58,6 +59,8 @@ func _ready():
 		escena_canonero = preload("res://Entities/Enemies/Canonero/Canonero.tscn")
 	if not escena_gargola:
 		escena_gargola = preload("res://Entities/Enemies/GARGOLA/Gargola.tscn")
+	if not escena_lonko:
+		escena_lonko = preload("res://LONKO/Lonko.tscn")
 
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn")
@@ -134,6 +137,19 @@ func _generar_cola_spawn() -> void:
 		for i in range(11):
 			pool.append(escena_goblin)
 
+	elif wave_num == 4:
+		# Oleada 4: 9 imp, 9 goblin arquera, 9 gárgola. Total: 27 (números fijos).
+		# La primera en salir siempre es una gárgola.
+		for i in range(9):
+			pool.append(escena_gargola)
+		for i in range(9):
+			pool.append(escena_imp)
+		for i in range(9):
+			pool.append(escena_goblin_girl)
+		# Poner una gárgola al frente de la cola (sale primero)
+		pool.push_front(escena_gargola)
+		pool.pop_back()
+
 	else:
 		return
 
@@ -192,6 +208,8 @@ func _elegir_escena_probabilidades() -> PackedScene:
 			return escena_imp_escudo
 		elif forzar_tipo_enemigo == 5:
 			return escena_gargola
+		elif forzar_tipo_enemigo == 6:
+			return escena_lonko
 		elif probabilidad_igual:
 			# Probabilidad igual: 20% cada tipo (5 tipos)
 			var roll = randf()
@@ -231,6 +249,10 @@ func _spawn_goblin():
 
 	if not cola_spawn.is_empty():
 		scene_to_spawn = cola_spawn.pop_front()
+	elif oleada_combate == 4:
+		# Oleada 4 usa SOLO cola prediseñada (8 imp, 8 arquera, 7 gárgola).
+		# Evitar fallback que spawnea ballesteros.
+		return
 	else:
 		scene_to_spawn = _elegir_escena_probabilidades()
 
@@ -341,7 +363,7 @@ func get_active_shield_imps() -> Array:
 
 
 func _check_shield_imp_spawn(delta):
-	if oleada_combate in [1, 2, 3]:
+	if oleada_combate in [1, 2, 3, 4]:
 		return
 	if max_shield_imps_to_spawn_this_wave > 0:
 		return

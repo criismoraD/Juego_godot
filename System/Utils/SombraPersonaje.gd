@@ -10,6 +10,8 @@ extends Node3D
 @export var tamano: Vector2 = Vector2(0.6, 0.6)
 @export var suavizado: float = 0.8
 @export var offset_y: float = 0.015
+@export var offset_x: float = 0.0
+@export var offset_z: float = 0.0
 
 # === CONFIGURACIÓN - COMPORTAMIENTO ===
 @export_category("Sombra Comportamiento")
@@ -118,7 +120,7 @@ func _process(_delta: float) -> void:
 	var punto_suelo: Vector3 = _ray.get_collision_point()
 	var y_centro: float = punto_suelo.y
 	
-	_mesh.global_position = Vector3(padre_pos.x, y_centro + offset_y, padre_pos.z)
+	_mesh.global_position = Vector3(padre_pos.x + offset_x, y_centro + offset_y, padre_pos.z + offset_z)
 	_mesh.global_rotation = Vector3(-PI / 2.0, 0.0, 0.0)
 	_mesh.visible = true
 

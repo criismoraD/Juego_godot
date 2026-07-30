@@ -1,0 +1,78 @@
+[gd_scene format=3 uid="uid://b7v8x2y1w4n0k"]
+
+[ext_resource type="Script" uid="uid://dc4lvbdfme0vi" path="res://UI/UI_Vida_Protagonista.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://tnt51rpoblb7" path="res://UI_VIDA/BARRA_VIDA.png" id="2_barra"]
+[ext_resource type="Texture2D" uid="uid://c5kekyonkla78" path="res://UI_VIDA/corazon.png" id="3_corazon"]
+
+[node name="UIVidaProtagonista" type="CanvasLayer" unique_id=2104918274]
+layer = 100
+script = ExtResource("1_script")
+
+[node name="ContenedorVida" type="Control" parent="." unique_id=149810293]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 320.0
+offset_bottom = 120.0
+
+[node name="BarraVida" type="TextureRect" parent="ContenedorVida" unique_id=2081947210]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = -0.47100002
+anchor_right = 1.0960001
+anchor_bottom = 1.0
+offset_left = -18.0
+offset_top = 30.100002
+offset_right = 103.19998
+offset_bottom = 84.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_barra")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Corazon01" type="TextureRect" parent="ContenedorVida/BarraVida" unique_id=194827104]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 182.0
+offset_top = 78.0
+offset_right = 244.0
+offset_bottom = 125.0
+texture = ExtResource("3_corazon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Corazon02" type="TextureRect" parent="ContenedorVida/BarraVida" unique_id=75301324]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 237.0
+offset_top = 78.0
+offset_right = 299.0
+offset_bottom = 125.0
+texture = ExtResource("3_corazon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Corazon03" type="TextureRect" parent="ContenedorVida/BarraVida" unique_id=208964661]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 291.0
+offset_top = 78.0
+offset_right = 353.0
+offset_bottom = 125.0
+texture = ExtResource("3_corazon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Corazon04" type="TextureRect" parent="ContenedorVida/BarraVida" unique_id=1166910193]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 346.0
+offset_top = 78.0
+offset_right = 408.0
+offset_bottom = 125.0
+texture = ExtResource("3_corazon")
+expand_mode = 1
+stretch_mode = 5

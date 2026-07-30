@@ -1404,6 +1404,13 @@ func _wait_for_ground_death():
 		timeout -= get_process_delta_time()
 
 
+func curar(cantidad: int = 1) -> void:
+	if is_dead:
+		return
+	health = min(health + cantidad, vida_maxima)
+	health_changed.emit(health)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SISTEMA DE REVIVIR
 # ═══════════════════════════════════════════════════════════════════════════════

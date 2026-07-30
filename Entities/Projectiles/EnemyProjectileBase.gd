@@ -22,6 +22,7 @@ const ARROW_TIP_OFFSET: float = 0.165
 
 var direction: Vector3 = Vector3.LEFT
 var is_stuck: bool = false
+var en_mano: bool = false
 var projectile_material: StandardMaterial3D
 var trail_particles: GPUParticles3D
 
@@ -54,6 +55,8 @@ func _ready() -> void:
 				es_flecha_mano = true
 				break
 			parent_node = parent_node.get_parent()
+
+	en_mano = es_flecha_mano
 
 	if es_flecha_mano:
 		set_physics_process(false)

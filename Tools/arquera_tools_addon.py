@@ -8,6 +8,7 @@ CARACTERISTICAS:
   - Importar animaciones FBX en batch
     - Preparar modelos (pasos 1-6)
     - Exportar GLB + JPG (pasos 7-8)
+    - Exportar Solo Textura (JPG)
     - Pipeline completo preparar + exportar (pasos 1-8)
 
 INSTALACION:
@@ -21,7 +22,7 @@ INSTALACION:
 bl_info = {
     "name": "Arquera Tools",
     "author": "Arrow of Anathema Team",
-    "version": (1, 2, 0),
+    "version": (1, 3, 0),
     "blender": (4, 0, 0),
     "location": "View3D > Sidebar > ARQUERA",
     "description": "Herramientas de pipeline para Arrow of Anathema (Godot 4.6)",
@@ -404,6 +405,61 @@ def preparar_modelo(context, obj):
     print(f"{'=' * 70}\n")
 
 
+def exportar_solo_textura(context, obj, output_dir):
+    nombre_base = obj.name
+    if context.active_object:
+        nombre_base = context.active_object.name
+
+    print(f"\n{'=' * 70}")
+    print(f"EXPORTANDO SOLO TEXTURA: {nombre_base}")
+    print(f"{'=' * 70}")
+
+    objetos_seleccionados = list(context.selected_objects)
+    if not objetos_seleccionados:
+        objetos_seleccionados = [obj]
+
+    meshes_a_exportar = set()
+    for o in objetos_seleccionados:
+        if o.type == 'MESH':
+            meshes_a_exportar.add(o)
+        elif o.type == 'ARMATURE':
+            for scene_obj in context.scene.objects:
+                if scene_obj.type == 'MESH' and (scene_obj.parent == o or buscar_armature_vinculado(scene_obj) == o):
+                    meshes_a_exportar.add(scene_obj)
+
+        for child in o.children_recursive:
+            if child.type == 'MESH':
+                meshes_a_exportar.add(child)
+
+    texturas_exportadas = 0
+    for o in meshes_a_exportar:
+        textura_difusa_imagen = buscar_textura_difusa(o)
+        if textura_difusa_imagen:
+            texture_out_path = output_dir / f"{o.name}_D.jpg"
+            formato_original = textura_difusa_imagen.file_format
+            ruta_original = textura_difusa_imagen.filepath_raw
+
+            try:
+                textura_difusa_imagen.filepath_raw = str(texture_out_path)
+                textura_difusa_imagen.file_format = 'JPEG'
+                textura_difusa_imagen.save()
+                print(f"  OK Textura exportada para {o.name}: {texture_out_path.name}")
+                texturas_exportadas += 1
+            except Exception as e:
+                print(f"  ADVERTENCIA No se pudo exportar la textura de {o.name}: {e}")
+            finally:
+                textura_difusa_imagen.filepath_raw = ruta_original
+                textura_difusa_imagen.file_format = formato_original
+
+    if texturas_exportadas == 0:
+        print("  AVISO No se encontraron texturas difusas para exportar")
+
+    print(f"\n{'=' * 70}")
+    print("EXPORTACION DE TEXTURA COMPLETADA")
+    print(f"{'=' * 70}\n")
+    return texturas_exportadas
+
+
 def exportar_modelo(context, obj, output_dir):
     # Usar el objeto activo para determinar el nombre del archivo final
     nombre_base = obj.name
@@ -443,7 +499,6 @@ def exportar_modelo(context, obj, output_dir):
                 armatures_a_exportar.add(child)
 
     # 3. Para cada armature que se va a exportar, buscar todos los meshes asociados en toda la escena
-    # (así garantizamos que si seleccionaron el armature o solo uno de los meshes, exportamos TODO el rig completo)
     for arm in list(armatures_a_exportar):
         for scene_obj in context.scene.objects:
             if scene_obj.type == 'MESH':
@@ -487,31 +542,7 @@ def exportar_modelo(context, obj, output_dir):
     print(f"  OK GLB exportado: {glb_path.name}")
 
     print("\n[2/2] Exportando texturas difusas en JPG...")
-    texturas_exportadas = 0
-    
-    # Iterar sobre todos los meshes exportados para guardar sus texturas difusas correspondientes
-    for o in meshes_a_exportar:
-        textura_difusa_imagen = buscar_textura_difusa(o)
-        if textura_difusa_imagen:
-            # La textura se exporta con el nombre del mesh correspondiente
-            texture_out_path = output_dir / f"{o.name}_D.jpg"
-            formato_original = textura_difusa_imagen.file_format
-            ruta_original = textura_difusa_imagen.filepath_raw
-
-            try:
-                textura_difusa_imagen.filepath_raw = str(texture_out_path)
-                textura_difusa_imagen.file_format = 'JPEG'
-                textura_difusa_imagen.save()
-                print(f"  OK Textura exportada para {o.name}: {texture_out_path.name}")
-                texturas_exportadas += 1
-            except Exception as e:
-                print(f"  ADVERTENCIA No se pudo exportar la textura de {o.name}: {e}")
-            finally:
-                textura_difusa_imagen.filepath_raw = ruta_original
-                textura_difusa_imagen.file_format = formato_original
-
-    if texturas_exportadas == 0:
-        print("  AVISO No se encontraron texturas difusas para exportar")
+    texturas_exportadas = exportar_solo_textura(context, obj, output_dir)
 
     print(f"\n{'=' * 70}")
     print("EXPORTACION COMPLETADA")
@@ -568,6 +599,47 @@ class ARQUERA_OT_export_model(Operator, ExportHelper):
 
         exportar_modelo(context, obj, output_dir)
         self.report({'INFO'}, f"Exportacion completada: {obj.name}.glb")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        if not resolver_mesh_objetivo(context):
+            self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado antes de ejecutar")
+            return {'CANCELLED'}
+
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ARQUERA_OT_export_texture_only(Operator, ExportHelper):
+    """Exporta solo las texturas difusas en JPG"""
+
+    bl_idname = "arquera.export_texture_only"
+    bl_label = "Exportar Solo Textura (JPG)"
+    bl_options = {'PRESET', 'UNDO'}
+
+    filename_ext = ""
+    filter_folder = True
+
+    directory: StringProperty(
+        name="Directorio",
+        description="Carpeta donde se exportara la textura",
+        subtype='DIR_PATH'
+    )
+
+    def execute(self, context):
+        obj = resolver_mesh_objetivo(context)
+        if not obj:
+            self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado")
+            return {'CANCELLED'}
+
+        output_dir = Path(self.directory)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        count = exportar_solo_textura(context, obj, output_dir)
+        if count > 0:
+            self.report({'INFO'}, f"Textura exportada ({count} archivo/s)")
+        else:
+            self.report({'WARNING'}, "No se encontraron texturas difusas para exportar")
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -659,6 +731,11 @@ class ARQUERA_PT_tools_panel(Panel):
                 icon='EXPORT',
             )
             box_exp.operator(
+                "arquera.export_texture_only",
+                text="Exportar Solo Textura (JPG)",
+                icon='IMAGE_DATA',
+            )
+            box_exp.operator(
                 "arquera.prepare_and_export_model",
                 text="Preparar + Exportar (1-8)",
                 icon='FILE_TICK',
@@ -678,6 +755,7 @@ classes = (
     ARQUERA_OT_import_fbx_actions,
     ARQUERA_OT_prepare_model,
     ARQUERA_OT_export_model,
+    ARQUERA_OT_export_texture_only,
     ARQUERA_OT_prepare_and_export_model,
     ARQUERA_PT_tools_panel,
 )

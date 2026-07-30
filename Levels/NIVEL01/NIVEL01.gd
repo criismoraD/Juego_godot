@@ -16,6 +16,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = ["enemy_projectiles", "enemies", 
 @export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
 @export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 25  ## Enemigos totales en la Oleada 3
+@export var total_enemigos_oleada_4: int = 27  ## Enemigos totales en la Oleada 4 (9 imp, 9 arquera, 9 gárgola)
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
@@ -52,6 +53,9 @@ var escena_imp_estandarte: PackedScene = preload("res://Entities/Enemies/ImpEnem
 var escena_dialogo_inicio_protagonista: PackedScene = preload(
 	"res://UI/Dialogo_Protagonista.tscn"
 )
+var escena_instrucciones_mouse: PackedScene = preload(
+	"res://UI_INSTRUCCIONES/UI_INSTRUCCIONES_Mouse.tscn"
+)
 var escena_dialogo_emisario_parte1: PackedScene = preload(
 	"res://UI/Dialogo_Emisario_Parte1.tscn"
 )
@@ -73,13 +77,17 @@ var _monitor_timer: float = 0.0
 @onready var fondo_3d_rect: TextureRect = (
 	get_node_or_null("Compositor3D/Fondo3DRect") as TextureRect
 )
+@onready var medio_3d_rect: TextureRect = (
+	get_node_or_null("Compositor3D/Fondo3DRect/Medio3DRect") as TextureRect
+)
 @onready var frente_3d_rect: TextureRect = (
-	get_node_or_null("Compositor3D/Frente3DRect") as TextureRect
+	get_node_or_null("Compositor3D/Fondo3DRect/Medio3DRect/Frente3DRect") as TextureRect
 )
 @onready var texture_rect: TextureRect = (
 	get_node_or_null("SubViewportFondo3D/SubViewport/TextureRect") as TextureRect
 )
 @onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
+@onready var subviewport_medio_3d: SubViewport = $SubViewportMedio3D
 @onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
 @onready var fondo_animado_sprite: Sprite3D = (
 	get_node_or_null("SubViewportFondo3D/FONDO ANIMADO") as Sprite3D
@@ -100,6 +108,12 @@ var _monitor_timer: float = 0.0
 var escudo_enemigo: EscudoDestruible:
 	get:
 		return get_node_or_null("Escudo_enemigo") as EscudoDestruible
+var escudo_enemigo2: EscudoDestruible:
+	get:
+		return get_node_or_null("NIVEL_2_Escudo_enemigo2") as EscudoDestruible
+var escudo_enemigo3: EscudoDestruible:
+	get:
+		return get_node_or_null("NIVEL_2_Escudo_enemigo3") as EscudoDestruible
 # === ESCENAS ===
 
 
@@ -108,12 +122,16 @@ func _ready():
 	_dialogo_audio_player.bus = "Master"
 	add_child(_dialogo_audio_player)
 	
-	# Ocultar elementos de la oleada 3 al inicio
+	# Ocultar elementos de la oleada 2, 3 y 4 al inicio
 	_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
 	_set_elemento_nivel3_activo(muro_plataforma, false)
 	_set_elemento_nivel3_activo(muro_plataforma2, false)
 	if is_instance_valid(escudo_enemigo):
 		_set_elemento_nivel3_activo(escudo_enemigo, false)
+	if is_instance_valid(escudo_enemigo2):
+		_set_elemento_nivel3_activo(escudo_enemigo2, false)
+	if is_instance_valid(escudo_enemigo3):
+		_set_elemento_nivel3_activo(escudo_enemigo3, false)
 
 	_forzar_refresco_outline_global()
 	_configurar_compositor_3d()
@@ -147,8 +165,22 @@ func _ready():
 	# Mensaje inicial de protagonista antes de iniciar el flujo pacifista
 	await _mostrar_dialogo_inicio_protagonista()
 
+	# Mostrar instrucciones de mouse inmediatamente tras cerrar el diálogo
+	_mostrar_instrucciones_mouse()
+
 	# Iniciar Nivel 0
 	_iniciar_nivel_0()
+
+
+func _mostrar_instrucciones_mouse() -> void:
+	# El panel de instrucciones solo debe aparecer al inicio del Nivel 1 (oleada 1).
+	# Si se está en oleadas 2, 3, 4 o cualquier otro nivel, no se muestra.
+	if oleada_combate_actual != 1:
+		return
+
+	if escena_instrucciones_mouse:
+		var inst = escena_instrucciones_mouse.instantiate()
+		add_child(inst)
 
 
 func _ajustar_subviewports_3d() -> void:
@@ -162,6 +194,10 @@ func _ajustar_subviewports_3d() -> void:
 
 	if subviewport_fondo_3d:
 		subviewport_fondo_3d.size = tamano_render_fondo
+
+	if subviewport_medio_3d:
+		subviewport_medio_3d.size = tamano_render_frente
+		subviewport_medio_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 	if subviewport_frente_3d:
 		subviewport_frente_3d.size = tamano_render_frente
@@ -587,15 +623,31 @@ func _aplicar_perfil_render_combate() -> void:
 func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
 	estado_actual = NivelEstado.NIVEL_1
 
-	# El total incluye los enemigos pacíficos supervivientes ya presentes
+	# Si se avanza a la oleada 2, 3 o 4 (o cualquier otra oleada que no sea la inicial), remover instrucciones
+	if numero_oleada > 1:
+		get_tree().call_group("ui_instrucciones", "queue_free")
+		get_tree().call_group("ui_vida_protagonista", "mostrar")
+
 	wave_spawner.oleada_combate = numero_oleada
-	wave_spawner.enemigos_por_oleada = total_enemigos + wave_spawner.active_goblins.size()
+	# Oleada 4: números fijos (9+9+9). No sumar pacíficos de otras oleadas.
+	if numero_oleada == 4:
+		wave_spawner.enemigos_por_oleada = total_enemigos
+	else:
+		# El total incluye los enemigos pacíficos supervivientes ya presentes
+		wave_spawner.enemigos_por_oleada = total_enemigos + wave_spawner.active_goblins.size()
 	wave_spawner.probabilidad_canonero = 0.0
 	wave_spawner.probabilidad_igual = false
 	wave_spawner.forzar_tipo_enemigo = -1  # Normal
 
-	# Ocultar o mostrar elementos de la oleada 3
-	var activa_nivel3 := (numero_oleada == 3)
+	# Mostrar escudos de la oleada 2 (visibles ÚNICAMENTE en la oleada 2)
+	var activa_oleada2 := (numero_oleada == 2)
+	if is_instance_valid(escudo_enemigo2):
+		_set_elemento_nivel3_activo(escudo_enemigo2, activa_oleada2)
+	if is_instance_valid(escudo_enemigo3):
+		_set_elemento_nivel3_activo(escudo_enemigo3, activa_oleada2)
+
+	# Mostrar elementos del nivel 3 en oleadas 3 y 4
+	var activa_nivel3 := (numero_oleada == 3 or numero_oleada == 4)
 	_set_elemento_nivel3_activo(escena_rampa_nivel3, activa_nivel3)
 	_set_elemento_nivel3_activo(muro_plataforma, activa_nivel3)
 	_set_elemento_nivel3_activo(muro_plataforma2, activa_nivel3)
@@ -629,6 +681,22 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.max_imp_escudo_activos = 2
 		wave_spawner.intervalo_check_escudo = 6.0
+	elif numero_oleada == 4:
+		# Oleada 4: 9 Imp + 9 GoblinGirl (arquera) + 9 Gárgola. Solo estos 3 tipos.
+		wave_spawner.probabilidad_imp = 0.0
+		wave_spawner.probabilidad_goblin_girl = 0.0
+		wave_spawner.probabilidad_canonero = 0.0
+		wave_spawner.escena_goblin = wave_spawner.escena_goblin_girl
+		# Sin imps escudo en oleada 4
+		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+		wave_spawner.max_imp_escudo_activos = 0
+		wave_spawner.intervalo_check_escudo = 999.0
+		# Activar assets visibles del nivel 3 / oleada 4
+		_set_elemento_nivel3_activo(escena_rampa_nivel3, true)
+		_set_elemento_nivel3_activo(muro_plataforma, true)
+		_set_elemento_nivel3_activo(muro_plataforma2, true)
+		if is_instance_valid(escudo_enemigo):
+			_set_elemento_nivel3_activo(escudo_enemigo, true)
 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
@@ -661,7 +729,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 
 	wave_spawner.detener_spawning()
 
-	if oleada_combate_actual == 1 or oleada_combate_actual == 2:
+	if oleada_combate_actual == 1 or oleada_combate_actual == 2 or oleada_combate_actual == 3:
 		if transicion_carteles_en_progreso:
 			return
 		transicion_carteles_en_progreso = true
@@ -669,7 +737,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 		return
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
-	_log_debug("[NIVEL01] ¡Oleada 3 completada! Mostrando victoria con botón continuar...")
+	_log_debug("[NIVEL01] ¡Oleada 4 completada! Mostrando victoria con botón continuar...")
 	_mostrar_victoria_con_continuar(
 		(
 			tr("NIVEL_1_COMPLETADO")
@@ -751,8 +819,10 @@ func _mostrar_inter_nivel_continuar():
 	var msg = ""
 	if oleada_combate_actual == 1:
 		msg = tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleada 1 completada!"
-	else:
+	elif oleada_combate_actual == 2:
 		msg = "¡Oleada 2 completada!"
+	else:
+		msg = "¡Oleada 3 completada!"
 
 	if game_ui:
 		game_ui.mostrar_pantalla_victoria(msg, func():
@@ -769,6 +839,10 @@ func _mostrar_inter_nivel_continuar():
 				_mostrar_cartel_nivel_3()
 				oleada_combate_actual = 3
 				_configurar_oleada_combate(total_enemigos_oleada_3, 3)
+			elif oleada_combate_actual == 3:
+				_mostrar_cartel_nivel_4()
+				oleada_combate_actual = 4
+				_configurar_oleada_combate(total_enemigos_oleada_4, 4)
 			transicion_carteles_en_progreso = false
 		)
 	else:
@@ -783,6 +857,10 @@ func _mostrar_inter_nivel_continuar():
 			_mostrar_cartel_nivel_3()
 			oleada_combate_actual = 3
 			_configurar_oleada_combate(total_enemigos_oleada_3, 3)
+		elif oleada_combate_actual == 3:
+			_mostrar_cartel_nivel_4()
+			oleada_combate_actual = 4
+			_configurar_oleada_combate(total_enemigos_oleada_4, 4)
 		transicion_carteles_en_progreso = false
 
 
@@ -826,6 +904,25 @@ func _mostrar_cartel_nivel_3() -> void:
 		overlay.queue_free()
 
 
+func _mostrar_cartel_nivel_4() -> void:
+	_limpiar_carteles_transicion()
+	var overlay := CanvasLayer.new()
+	overlay.layer = 205
+	overlay.name = "CartelNivel4"
+	add_child(overlay)
+
+	var texto = "Level 04"
+
+	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
+	overlay.add_child(label)
+	label.modulate = Color(1, 1, 1, 1)
+	label.scale = Vector2.ONE
+	await get_tree().create_timer(1.2).timeout
+
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+
+
 func _limpiar_carteles_transicion() -> void:
 	var cartel_1 = get_node_or_null("CartelNivel1Completado")
 	if is_instance_valid(cartel_1):
@@ -836,6 +933,9 @@ func _limpiar_carteles_transicion() -> void:
 	var cartel_3 = get_node_or_null("CartelNivel3")
 	if is_instance_valid(cartel_3):
 		cartel_3.queue_free()
+	var cartel_4 = get_node_or_null("CartelNivel4")
+	if is_instance_valid(cartel_4):
+		cartel_4.queue_free()
 
 
 func debug_mostrar_carteles_transicion() -> void:
@@ -845,6 +945,7 @@ func debug_mostrar_carteles_transicion() -> void:
 	await _mostrar_cartel_nivel1_completado()
 	await _mostrar_cartel_nivel_2()
 	await _mostrar_cartel_nivel_3()
+	await _mostrar_cartel_nivel_4()
 	transicion_carteles_en_progreso = false
 
 
@@ -860,9 +961,17 @@ func debug_ir_a_oleada_3() -> void:
 	_iniciar_oleada_debug(3)
 
 
+func debug_ir_a_oleada_4() -> void:
+	_iniciar_oleada_debug(4)
+
+
 func _iniciar_oleada_debug(numero_oleada: int) -> void:
 	if not is_instance_valid(wave_spawner):
 		return
+
+	# Si se usan botones debug para saltar a cualquier oleada, remover instrucciones y revelar vida
+	get_tree().call_group("ui_instrucciones", "queue_free")
+	get_tree().call_group("ui_vida_protagonista", "mostrar")
 
 	_limpiar_nodos_combate_spawneados()
 
@@ -877,7 +986,10 @@ func _iniciar_oleada_debug(numero_oleada: int) -> void:
 	_set_aliadas_activas(true)
 	AudioManager.play_music(2)
 
-	if numero_oleada == 3:
+	if numero_oleada == 4:
+		oleada_combate_actual = 4
+		_configurar_oleada_combate(total_enemigos_oleada_4, 4)
+	elif numero_oleada == 3:
 		oleada_combate_actual = 3
 		_configurar_oleada_combate(total_enemigos_oleada_3, 3)
 	elif numero_oleada == 2:
@@ -967,16 +1079,14 @@ func _mostrar_victoria_con_continuar(mensaje: String):
 
 func _iniciar_oleadas_libres():
 	estado_actual = NivelEstado.OLEADAS_LIBRES
-	_log_debug("[NIVEL01] Oleadas libres iniciadas — enemigos al azar")
+	_log_debug("[NIVEL01] Oleadas libres iniciadas — Gárgola por defecto para Debug")
 
-	# Restaurar goblin base para que aparezcan los 3 tipos
-	wave_spawner.escena_goblin = load("res://Entities/Enemies/Goblin/Goblin.tscn")
-
-	# Probabilidad igual: 33% cada tipo
-	wave_spawner.probabilidad_igual = true
-	wave_spawner.forzar_tipo_enemigo = -1
+	# Forzar tipo de enemigo 5 (Gárgola) para pruebas de Ragdoll
+	wave_spawner.forzar_tipo_enemigo = 5
+	wave_spawner.probabilidad_igual = false
 	wave_spawner.enemigos_por_oleada = 8
 	wave_spawner.intervalo_aparicion = 4.0
+	wave_spawner.spawn_infinito = true
 
 	# Reiniciar wave y arrancar
 	wave_spawner.oleada_combate = 0

@@ -33,7 +33,7 @@ enum State { WALKING, SHOOTING, DYING, DEAD }
 @export_category("Partículas de Disolución")
 @export var particulas_cantidad: int = 80
 @export var particulas_vida: float = 2.0
-@export var particulas_posicion: Vector3 = Vector3(-0.5, 0.1, 0)
+@export var particulas_posicion: Vector3 = Vector3(0.0, 0.1, 0.0)
 @export var particulas_offset_y: float = 0.3  ## Ajuste de altura extra cuando las partículas siguen al hueso Hips
 @export var particulas_caja: Vector3 = Vector3(0.2, 0.5, 0.1)
 @export var particulas_dispersion: float = 20.0
@@ -442,6 +442,10 @@ func take_damage(amount: float):
 		pacifico_danado.emit()
 
 	health -= int(amount)
+
+	# Ocultar las instrucciones en pantalla al impactar un enemigo
+	if get_tree():
+		get_tree().call_group("ui_instrucciones", "ocultar")
 
 	if has_node("/root/GameFeel"):
 		if game_feel:

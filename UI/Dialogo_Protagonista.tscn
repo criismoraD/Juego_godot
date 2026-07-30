@@ -28,7 +28,7 @@ chars_por_sonido = 7
 audio_stream = ExtResource("3_audio")
 audio_volume_db = -16.0
 audio_pitch_scale = 1.1
-paginas_texto = PackedStringArray("Distingo varias siluetas en el horizonte\n¿Quizás refugiados que escapan de la horda?", "¡Es un estandarte demoniaco!\nPreparen sus arcos\nNo muestren piedad\nEstos cerdos planean hacernos sus esclavos…")
+paginas_texto = PackedStringArray("DIALOGO_PROTA_P1", "DIALOGO_PROTA_P2")
 paginas_imagenes = Array[Texture2D]([ExtResource("2_tex_normal"), ExtResource("4_tex_enojada")])
 metadata/_edit_vertical_guides_ = [774.0]
 
@@ -82,7 +82,7 @@ offset_right = 707.80005
 offset_bottom = 253.6
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 34
-text = "Erynn"
+text = "PROTAGONISTA_NOMBRE"
 
 [node name="Dialogo" type="RichTextLabel" parent="." unique_id=1231851043]
 z_index = 2

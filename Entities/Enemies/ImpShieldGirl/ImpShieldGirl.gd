@@ -40,6 +40,9 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 ]  ## Animaciones de muerte (aleatoria)
 @export_category("Posición Libre")
 @export var rango_posicion_libre: Vector2 = Vector2(-5.0, 1.0)  ## Rango X aleatorio si no hay enemigo
+@export_category("Drops")
+@export var posion_scene: PackedScene = preload("res://Pocion/Posion.tscn")
+@export_range(0.0, 1.0, 0.01) var posion_drop_chance: float = 1.0  ## 100% de probabilidad de dropear poción
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -540,6 +543,7 @@ func _on_dying():
 	set_physics_process(false)
 
 	AudioManager.play_sfx("shield_imp_death")
+	_drop_pocion()
 
 	# Si murió sin escudo (huyendo), asegurar que mire hacia la derecha
 	if escudo_vida_actual <= 0:
@@ -679,3 +683,20 @@ func _emitir_muerte_por_escudo_roto() -> void:
 		return
 	_died_emitted = true
 	died.emit()
+
+
+func _drop_pocion() -> void:
+	if not posion_scene:
+		return
+	if randf() > posion_drop_chance:
+		return
+	var posion := posion_scene.instantiate() as Node3D
+	if not posion:
+		return
+	var target_parent := get_tree().current_scene
+	if target_parent:
+		target_parent.add_child(posion)
+	elif get_parent():
+		get_parent().add_child(posion)
+	posion.global_position = global_position + Vector3(0.0, 0.4, 0.0)
+

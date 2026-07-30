@@ -199,6 +199,8 @@ func _on_body_entered(body):
 			# Guardar posición del impacto para las partículas de sangre
 			if body.has_method("set") and "last_hit_position" in body:
 				body.last_hit_position = global_position
+			if body.has_method("set") and "last_hit_direction" in body:
+				body.last_hit_direction = velocity.normalized()
 			body.take_damage(1.0)
 			_safe_destroy()
 	elif tipo_dueño == TipoFlecha.ENEMIGO:

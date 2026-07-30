@@ -156,6 +156,26 @@ func _load_all_sounds():
 		load("res://Entities/Enemies/ImpShieldGirl/MUERTE_IMP_ESCUDO_2.mp3")
 	]
 
+	sfx_streams["gargola_fire"] = [
+		load("res://Entities/Enemies/GARGOLA/ffuego gargola.mp3"),
+		load("res://Entities/Enemies/GARGOLA/ffuego gargola 2.mp3")
+	]
+
+	sfx_streams["gargola_impacto"] = [
+		load("res://Entities/Enemies/GARGOLA/IMPACTO_FUEGO_01.mp3"),
+		load("res://Entities/Enemies/GARGOLA/IMPACTO_FUEGO_02.mp3")
+	]
+
+	sfx_streams["gargola_herida"] = [
+		load("res://Entities/Enemies/GARGOLA/IMPACTO_HERIDA_01.mp3"),
+		load("res://Entities/Enemies/GARGOLA/IMPACTO_HERIDA_02.mp3")
+	]
+
+	sfx_streams["gargola_death"] = [
+		load("res://Entities/Enemies/GARGOLA/Muerte new1.mp3"),
+		load("res://Entities/Enemies/GARGOLA/Muerte new2.mp3")
+	]
+
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE AMBIENTE / ESCUDOS
 	# ═══════════════════════════════════════════════════════════════════════════════
@@ -246,6 +266,12 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		elif sound_name == "imp_death":
 			# Imp muerte al doble de volumen
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 6.0
+		elif sound_name == "gargola_death":
+			# Muerte de gárgola reducida un 30% (-3.1 dB)
+			volume_to_use = _get_specific_volume_db(enemy_damage_volume) - 3.1
+		elif sound_name in ["gargola_fire", "gargola_impacto"]:
+			# Fuego e impacto de gárgola reducidos un 60% (-8.0 dB)
+			volume_to_use = sfx_volume_db - 8.0
 		elif sound_name == "explosion_muerte":
 			# Explosión 3x más fuerte
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 10.0
@@ -279,7 +305,12 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 		# Usar object pooling
 		var temp_player = _get_available_sfx_3d_player()
 		temp_player.stream = sound
-		temp_player.volume_db = sfx_volume_db + 5.0  # Boost adicional
+		var volume_to_use = sfx_volume_db + 5.0  # Boost adicional
+		if sound_name == "gargola_death":
+			volume_to_use -= 3.1
+		elif sound_name in ["gargola_fire", "gargola_impacto"]:
+			volume_to_use -= 8.0
+		temp_player.volume_db = volume_to_use
 
 		# Pitch dithering
 		if "shoot" in sound_name:

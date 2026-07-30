@@ -24,7 +24,7 @@ corner_radius_bottom_left = 8
 layer = 200
 script = ExtResource("1_script")
 audio_stream = ExtResource("3_audio")
-paginas_texto = PackedStringArray("Mi señora Vesara no tiene interés en arrasar esta tierra, solo queremos negociar un paso seguro.", "Su cooperación será recompensada, ella satisface a los súbditos leales…")
+paginas_texto = PackedStringArray("DIALOGO_EMISARIO_P1", "DIALOGO_EMISARIO_P2")
 
 [node name="Fondo" type="ColorRect" parent="." unique_id=461068099]
 anchors_preset = 15
@@ -74,7 +74,7 @@ offset_right = 301.80002
 offset_bottom = 251.6
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 34
-text = "Imp Emisario"
+text = "EMISARIO_NOMBRE"
 
 [node name="Dialogo" type="RichTextLabel" parent="." unique_id=1165297130]
 z_index = 2

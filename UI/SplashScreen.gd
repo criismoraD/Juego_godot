@@ -7,6 +7,7 @@ const FADE_OUT_DURATION := 0.8
 var next_scene_path := "res://UI/LanguageSelector.tscn"
 var game_scene_path := "res://Levels/NIVEL01/NIVEL01.tscn"
 var transitioning := false
+var input_enabled := false
 @onready var splash_image: TextureRect = $CenterContainer/SplashImage
 @onready var fade_overlay: ColorRect = $FadeOverlay
 
@@ -35,12 +36,16 @@ func _ready() -> void:
 
 	_play_splash_sequence()
 
+	# Evitar entrada en el primer instante (evita clics residuales del editor)
+	get_tree().create_timer(0.15).timeout.connect(func(): input_enabled = true)
+
 
 func _crear_boton_saltar() -> void:
 	var skip_btn = Button.new()
 	skip_btn.name = "SkipButton"
 	skip_btn.text = "SKIP ⏭"
 	skip_btn.custom_minimum_size = Vector2(120, 40)
+	skip_btn.focus_mode = Control.FOCUS_NONE  # Evita que tome el foco de teclado por defecto
 
 	# Estilo normal
 	var style_normal = StyleBoxFlat.new()
@@ -87,7 +92,7 @@ func _crear_boton_saltar() -> void:
 	skip_btn.offset_bottom = -20
 
 	skip_btn.z_index = 100
-	skip_btn.pressed.connect(_skip_to_game)
+	skip_btn.pressed.connect(_skip_splash)
 	add_child(skip_btn)
 
 
@@ -114,6 +119,9 @@ func _play_splash_sequence() -> void:
 	# Breve pausa al finalizar zoom
 	tween.tween_interval(0.3)
 
+	# Cambiar color de fade a negro mientras es transparente
+	tween.tween_callback(func(): fade_overlay.color = Color(0, 0, 0, 0))
+
 	# Fase 3: Fade-out a negro
 	(
 		tween
@@ -129,49 +137,40 @@ func _play_splash_sequence() -> void:
 func _on_splash_finished() -> void:
 	if transitioning:
 		return
-	# No music during language selector
+	transitioning = true
+	_cambiar_a_siguiente_escena()
+
+
+func _cambiar_a_siguiente_escena() -> void:
 	get_tree().change_scene_to_file(next_scene_path)
 
 
-# Permitir saltar TODO con ESCAPE → ir directo al juego
+# Permitir saltar con cualquier tecla o clic (siempre al selector de idioma para el flujo correcto)
 func _input(event: InputEvent) -> void:
+	if not input_enabled or transitioning:
+		return
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_ESCAPE:
-			_skip_to_game()
-		else:
-			_skip_splash()
+		_skip_splash()
 	elif event is InputEventMouseButton and event.pressed:
 		_skip_splash()
 
 
-# Saltar SOLO el splash → ir a LanguageSelector (comportamiento original)
+# Saltar el splash → ir a LanguageSelector (res://UI/LanguageSelector.tscn)
 func _skip_splash() -> void:
-	if transitioning:
-		return
-	# Detener tweens actuales y hacer fade-out rápido
-	var tweens = get_tree().get_processed_tweens()
-	for t in tweens:
-		t.kill()
-
-	var skip_tween = create_tween()
-	skip_tween.tween_property(fade_overlay, "color:a", 1.0, 0.3).set_ease(Tween.EASE_IN)
-	skip_tween.finished.connect(_on_splash_finished)
-
-
-# Saltar TODO → ir directo al juego
-func _skip_to_game() -> void:
 	if transitioning:
 		return
 	transitioning = true
 
-	# Iniciar música de batalla (normalmente lo hace IntroScene)
-	AudioManager.play_music(2)
-
 	# Detener tweens actuales
 	var tweens = get_tree().get_processed_tweens()
 	for t in tweens:
-		t.kill()
+		if is_instance_valid(t):
+			t.kill()
+
+	# Cambiar color de fade a negro para la transición de salida
+	fade_overlay.color = Color(0, 0, 0, fade_overlay.color.a)
 
 	var skip_tween = create_tween()
 	skip_tween.tween_property(fade_overlay, "color:a", 1.0, 0.3).set_ease(Tween.EASE_IN)
-	skip_tween.finished.connect(func(): get_tree().change_scene_to_file(game_scene_path))
+	skip_tween.finished.connect(_cambiar_a_siguiente_escena)
+
