@@ -864,16 +864,15 @@ func _process(delta):
 
 
 func _on_player_died():
+	# Esperar 5 segundos para que se pueda ver la animación de muerte del personaje y su audio completo
+	await get_tree().create_timer(5.0).timeout
+	if not is_instance_valid(self):
+		return
+
 	# Ocultar la barra de progreso de oleadas y contenedor de UI
 	if wave_container:
 		wave_container.visible = false
 	visible = false
-
-	# Detener audios de fondo
-	if has_node("/root/AudioManager"):
-		var am = get_node("/root/AudioManager")
-		if am.has_method("stop_all"):
-			am.call("stop_all")
 
 	# Instanciar y mostrar la pantalla de Game Over centrada con pantalla negra opaca
 	var game_over_screen := UIGameOver.new()
