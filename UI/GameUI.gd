@@ -864,8 +864,8 @@ func _process(delta):
 
 
 func _on_player_died():
-	# Esperar 5 segundos para que se pueda ver la animación de muerte del personaje y su audio completo
-	await get_tree().create_timer(5.0).timeout
+	# Esperar 2.5 segundos para ver la animación de muerte y su audio completo antes del degradado
+	await get_tree().create_timer(2.5).timeout
 	if not is_instance_valid(self):
 		return
 
