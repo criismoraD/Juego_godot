@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://c7v8yay001a2b"]
+
+[ext_resource type="PackedScene" uid="uid://dq8p4q0wjyuaw" path="res://LONKO/PILAR_LONKO.glb" id="1_mesh"]
+[ext_resource type="Script" uid="uid://bjxftvx58na0x" path="res://LONKO/PilarLonkoBody.gd" id="2_script"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_pilar"]
+height = 0.9988769
+radius = 0.1274414
+
+[node name="PilarLonko" type="Node3D" unique_id=2057774626]
+
+[node name="PILAR_LONKO" parent="." unique_id=1925141848 instance=ExtResource("1_mesh")]
+
+[node name="PilarBody" type="StaticBody3D" parent="." unique_id=1820643219]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("2_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PilarBody" unique_id=1671716847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.49943852, 0)
+shape = SubResource("CylinderShape3D_pilar")

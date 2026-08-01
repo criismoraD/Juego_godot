@@ -147,6 +147,7 @@ func _buscar_animation_player():
 		for anim_name in anim_player.get_animation_list():
 			if (
 				"CORRER" in anim_name
+				or "CORRE" in anim_name
 				or "CAMINAR" in anim_name
 				or "CAMINA" in anim_name
 				or "RUN" in anim_name

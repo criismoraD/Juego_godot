@@ -18,6 +18,7 @@ enum State { IDLE, DISSOLVING }
 @export_category("Curación")
 @export var vida_a_restaurar: int = 1
 @export var tiempo_en_pantalla: float = 3.0  ## Segundos antes de auto-consumirse
+@export var tiempo_escala_spawn: float = 0.4  ## Duración del escalado orgánico (0 a 1) al aparecer
 
 @export_category("Luz Rubí")
 @export var ruby_color: Color = Color(1.0, 0.08, 0.25)
@@ -70,6 +71,12 @@ func _ready() -> void:
 		ruby_light.light_energy = light_energy_min
 
 	if not Engine.is_editor_hint():
+		# Escalado orgánico de 0 a 1 al aparecer
+		scale = Vector3(0.001, 0.001, 0.001)
+		var spawn_tween := create_tween()
+		spawn_tween.tween_property(self, "scale", Vector3.ONE, tiempo_escala_spawn) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
 		var sombra := SombraPersonaje.new()
 		sombra.tamano = Vector2(0.25, 0.25)
 		sombra.opacidad = 0.6

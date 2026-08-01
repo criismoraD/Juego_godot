@@ -311,7 +311,7 @@ func _cambiar_estado(nuevo: State):
 			_play_anim("APUNTAR_IDLE", 0.3)
 			charge_duration = randf_range(tiempo_carga_min, tiempo_carga_max)
 			state_timer = charge_duration
-			AudioManager.play_sfx("bow_tension")
+			AudioManager.play_sfx("bow_tension", -6.0)
 		State.SHOOTING:
 			# Disparar
 			_play_anim("DISPARO", 0.15)
@@ -391,7 +391,7 @@ func _disparar():
 	if not arrow_scene:
 		return
 
-	AudioManager.play_sfx("player_shoot")
+	AudioManager.play_sfx("player_shoot", -6.0)
 
 	# Posición de spawn
 	var spawn_pos = global_position + Vector3(0, altura_spawn_flecha, 0)

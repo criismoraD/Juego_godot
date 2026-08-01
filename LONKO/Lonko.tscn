@@ -12,7 +12,11 @@ height = 1.0251954
 [node name="Lonko" type="CharacterBody3D" unique_id=2008123910]
 collision_layer = 4
 script = ExtResource("1_lonko")
-vida_maxima = 6
+altura_pilar_offset = 3.0
+debug_pitch_deg = -90.0
+distancia_maxima_caminar = 7.0
+vida_maxima = 5
+altura_spawn_flecha = 0.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1943347810]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5125977, 0)
@@ -21,21 +25,77 @@ shape = SubResource("CapsuleShape3D_lonko")
 [node name="LONKO" parent="." unique_id=1820795103 instance=ExtResource("2_glb")]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
 
-[node name="BoneAttachment3D_Bow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" parent_id_path=PackedInt32Array(1820795103, 1269417501) index="1" unique_id=253504640]
-transform = Transform3D(0.02766139, 0.9954067, 0.091654845, -0.9986323, 0.02344719, 0.046741027, 0.044377275, -0.09282235, 0.9946936, 4.0682898, 5.96367, -66.10823)
-bone_name = "mixamorig:LeftHand"
-bone_idx = 14
+[node name="Armature" parent="LONKO" index="0" unique_id=1048752254]
+transform = Transform3D(0.00999999, 0, 0, 0, -4.3711346e-10, -0.00999999, 0, 0.00999999, -4.3711346e-10, 0, 0, 0)
+
+[node name="Skeleton3D" parent="LONKO/Armature" index="0" unique_id=1269417501]
+bones/0/position = Vector3(0.6126486, -0.7205453, -41.519554)
+bones/0/rotation = Quaternion(-0.6313498, 0.046830185, 0.1827637, 0.752198)
+bones/1/position = Vector3(5.789078, -2.1694145, 0.37194788)
+bones/1/rotation = Quaternion(0.081388235, 0.24357958, 0.9555827, 0.14459202)
+bones/2/position = Vector3(4.0351506e-07, 22.526602, 6.780517e-07)
+bones/2/rotation = Quaternion(-0.41871506, -0.0884313, -0.030178417, 0.9032977)
+bones/3/rotation = Quaternion(0.67149675, 0.05302748, 0.041126255, 0.7379626)
+bones/4/position = Vector3(-7.4903664e-07, 9.775901, -4.6791968e-07)
+bones/4/rotation = Quaternion(0.33779493, -0.14214186, 0.05066413, 0.92904437)
+bones/6/rotation = Quaternion(0.09002737, 0.38338822, 0.90802044, 0.14285432)
+bones/7/position = Vector3(5.3224244e-07, 22.405684, -3.6062886e-07)
+bones/7/rotation = Quaternion(-0.5853503, 0.03908447, -0.0802505, 0.80585206)
+bones/8/position = Vector3(-1.4461568e-07, 15.6643915, -3.2859504e-07)
+bones/8/rotation = Quaternion(0.68574476, -0.03767021, 0.047035825, 0.7253432)
+bones/9/rotation = Quaternion(0.37810272, 0.13911507, -0.050011713, 0.91388416)
+bones/11/position = Vector3(-4.4703484e-07, 3.9058082, -0.17724337)
+bones/11/rotation = Quaternion(0.006779029, 0.06426016, 0.0329728, 0.99736536)
+bones/12/rotation = Quaternion(0.10239872, 0.015179623, -0.11227074, 0.9882709)
+bones/13/position = Vector3(-1.1213124e-06, 5.213094, -2.7865171e-06)
+bones/13/rotation = Quaternion(0.10418577, 0.014637949, -0.11074973, 0.9882639)
+bones/14/rotation = Quaternion(0.5543351, 0.4409299, -0.40419847, 0.57872015)
+bones/15/position = Vector3(3.9316014e-06, 8.329073, 2.8304366e-06)
+bones/15/rotation = Quaternion(0.5233139, 0.015842078, 0.17198932, 0.83445275)
+bones/16/position = Vector3(1.1139458e-06, 9.601478, -2.1411724e-06)
+bones/16/rotation = Quaternion(0.018948598, -0.008210836, 0.37592444, 0.9264203)
+bones/17/position = Vector3(-8.413181e-07, 12.871076, 7.943768e-07)
+bones/17/rotation = Quaternion(0.0963189, 0.3480791, -0.06491303, 0.93024194)
+bones/18/position = Vector3(2.0085281e-08, 8.671351, -1.3158588e-06)
+bones/18/rotation = Quaternion(0.015103127, 0.0027931645, 0.08409835, 0.99633914)
+bones/19/position = Vector3(1.5497241e-06, 0.72490215, -1.0430722e-06)
+bones/19/rotation = Quaternion(0.122476816, -0.010391925, 0.10268344, 0.98709047)
+bones/20/position = Vector3(0.25819516, 1.0712175, -0.08768174)
+bones/20/rotation = Quaternion(0.2015466, -0.05074648, -0.19257243, 0.9590202)
+bones/21/position = Vector3(-0.104136705, 0.73220086, -0.24853241)
+bones/22/position = Vector3(5.9604645e-08, 5.8647323, 3.1261739e-06)
+bones/22/rotation = Quaternion(-0.03239368, -0.025340917, 0.025201902, 0.998836)
+bones/23/position = Vector3(-2.2351742e-07, 6.7858534, -4.8023567)
+bones/23/rotation = Quaternion(-0.19888799, -0.09205358, -0.051814713, 0.97431254)
+bones/24/position = Vector3(-1.0263175e-06, 15.8662, -11.228521)
+bones/25/rotation = Quaternion(0.48914367, -0.5212188, 0.38260907, 0.58538866)
+bones/26/position = Vector3(-2.5102514e-07, 8.329073, 1.9821e-06)
+bones/26/rotation = Quaternion(0.64909345, -0.061426315, -0.40084887, 0.64360297)
+bones/27/position = Vector3(-9.168224e-07, 9.641686, -1.00139005e-07)
+bones/27/rotation = Quaternion(0.008305848, 0.0053619314, -0.2916688, 0.95646834)
+bones/28/rotation = Quaternion(-0.13145915, -0.17056498, 0.0077674873, 0.9765069)
+bones/29/position = Vector3(-5.921807e-07, 4.203515, -4.9472096e-06)
+bones/29/rotation = Quaternion(0.006220206, -0.0061642183, -0.04061368, 0.9991365)
+bones/30/position = Vector3(-1.9073495e-06, 2.9185956, -3.576206e-07)
+bones/30/rotation = Quaternion(0.06584984, 0.0049898587, -0.049936585, 0.9965667)
+bones/31/position = Vector3(-0.23343742, 1.8589145, 0.065342784)
+bones/31/rotation = Quaternion(0.015031243, -0.015082539, 0.14299943, 0.98949367)
+
+[node name="BoneAttachment3D_Bow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" index="1" unique_id=253504640]
+transform = Transform3D(0.8597969, 0.34699357, 0.3746267, 0.24267247, 0.36784548, -0.89766383, -0.44928843, 0.8627197, 0.23206657, -8.549639, 9.135729, -39.736847)
+bone_name = "mixamorig_RightHand"
+bone_idx = 28
 
 [node name="ARCO_GOBLING_GIRL" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Bow" unique_id=1734146513 instance=ExtResource("3_bow")]
-transform = Transform3D(-0.069, 0.431, -0.309, -0.53, -0.044, 0.058, 0.021, 0.314, 0.433, -0.012, 0.087, 0.029)
+transform = Transform3D(10.135045, -52.896595, -11.145901, -51.477585, -5.9819875, -18.419403, 16.50271, 13.826282, -50.61121, -1.1256943, 7.041935, -0.88827133)
 
-[node name="BoneAttachment3D_Arrow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" parent_id_path=PackedInt32Array(1820795103, 1269417501) index="2" unique_id=253504641]
-transform = Transform3D(-0.019331457, -0.99540687, -0.09376602, 0.99880046, -0.023447432, 0.042994294, -0.044995382, -0.092822395, 0.99466586, -4.0682898, 5.768376, -66.10823)
-bone_name = "mixamorig:RightHand"
-bone_idx = 25
+[node name="BoneAttachment3D_Arrow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" index="2" unique_id=253504641]
+transform = Transform3D(0.96576256, -0.1198668, -0.23007578, -0.2039676, 0.19720021, -0.9589108, 0.16031253, 0.9730081, 0.16599958, 10.91519, 10.089495, -38.125072)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
 
 [node name="FlechaMano" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=1101558565 instance=ExtResource("4_arrow")]
-transform = Transform3D(0.254, -0.96, -0.114, 0.957, 0.267, -0.111, 0.137, -0.081, 0.987, -0.052, 0.014, 0.101)
+transform = Transform3D(6.588788, -89.10347, -10.823942, 89.30569, 7.596483, -8.172351, 9.004547, -10.142159, 88.97219, 4.370201, 31.560211, 5.4091187)
 visible = false
 
 [editable path="LONKO"]

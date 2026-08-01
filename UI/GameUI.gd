@@ -1346,10 +1346,13 @@ func _input(event):
 
 
 func _get_valid_escudos() -> Array[Node]:
-	"""Limpia el cache de nodos inválidos y retorna la lista actualizada"""
-	for i in range(_escudos_cache.size() - 1, -1, -1):
-		if not is_instance_valid(_escudos_cache[i]):
-			_escudos_cache.remove_at(i)
+	"""Obtiene todos los escudos válidos actualmente en la escena"""
+	var escudos_vivas: Array[Node] = []
+	for nodo in get_tree().get_nodes_in_group("escudos"):
+		if is_instance_valid(nodo) and not nodo.is_queued_for_deletion():
+			if nodo.get("es_escudo_enemigo") != true:
+				escudos_vivas.append(nodo)
+	_escudos_cache = escudos_vivas
 	return _escudos_cache
 
 

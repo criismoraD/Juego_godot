@@ -1,12 +1,12 @@
 9cad1ddce9e5a63143ba340c9520626b
-::res://::1785389448
+::res://::1785519738
 AGENTS.md::TextFile::-1::1781128029::0::1::::<><><>0<>0<><>::
 benchmark_flash.gd::GDScript::2185948660191727877::1781590280::0::1::::<>SceneTree<><>0<>0<><>::
 default_bus_layout.tres::AudioBusLayout::7322597709299964657::1783569429::0::1::::<><><>0<>0<><>::
 editor_out.txt::TextFile::-1::1782277297::0::1::::<><><>0<>0<><>::
 ejemplo.tscn::PackedScene::5637653832188714360::1781590280::0::1::::<><><>0<>0<><>::uid://dgatsttvqixnc::::res://Scenes/Characters/Goblin.tscn
 err.txt::TextFile::-1::1781595233::0::1::::<><><>0<>0<><>::
-export_presets.cfg::TextFile::-1::1785023662::0::1::::<><><>0<>0<><>::
+export_presets.cfg::TextFile::-1::1785396680::0::1::::<><><>0<>0<><>::
 Historial_Tecnico.md::TextFile::-1::1783734286::0::1::::<><><>0<>0<><>::
 out.txt::TextFile::-1::1783450117::0::1::::<><><>0<>0<><>::
 out_gltf.txt::TextFile::-1::1782263062::0::1::::<><><>0<>0<><>::
@@ -174,27 +174,27 @@ test1_D.jpg::CompressedTexture2D::7679734606546486948::1785392049::1785392231::1
 test2_D.jpg::CompressedTexture2D::150336788055223605::1785392053::1785392236::1::::<><><>0<>0<>17b74770b0ef353c150b402ad3b33c24<>res://.godot/imported/test2_D.jpg-194b0f72b7e60e7c9947ca43af60fdb4.s3tc.ctex<*>res://.godot/imported/test2_D.jpg-194b0f72b7e60e7c9947ca43af60fdb4.etc2.ctex::
 ::res://Entities/::1784004335
 fondo trasparencia.png::CompressedTexture2D::7383738718636979942::1784004242::1784004335::1::::<><><>0<>0<>e640797b779823ab6558c60a5dfb7261<>res://.godot/imported/fondo trasparencia.png-d7d54f1d50f88e0ab259bef382b6e208.ctex::
-::res://Entities/AllyArcher/::1785389737
-AllyArcher.gd::GDScript::3851442448662772849::1782713161::0::1::::AllyArcher<>Node3D<><>0<>0<><>::
+::res://Entities/AllyArcher/::1785458164
+AllyArcher.gd::GDScript::3851442448662772849::1785455123::0::1::::AllyArcher<>Node3D<><>0<>0<><>::
 AllyArcher.tscn::PackedScene::252956188968612317::1782494201::0::1::::<><><>0<>0<><>::uid://bu4wxu00nghsr::::res://Entities/AllyArcher/AllyArcher.gd<>uid://6o783pm488cs::::res://Entities/AllyArcher/ARQUERA_ALIADA.glb<>uid://npoldnoqi57p::::res://Entities/Player/GEO_ARCO_ANIMADO.fbx<>uid://djhvryeb0mwjb::::res://Entities/Player/FLECHA.fbx
 ARQUERA_ALIADA.glb::PackedScene::2206758810714413554::1782442315::1782442470::1::::<><><>0<>0<>483ddeb8741628928301fd3775509492<>res://.godot/imported/ARQUERA_ALIADA.glb-6fb6a37646eeb8ec79746f4abe62a24d.scn::uid://c6vhgautduyud::::res://Entities/AllyArcher/ARQUERA_ALIADA_MATERIAL.tres
-ARQUERA_ALIADA_MATERIAL.tres::StandardMaterial3D::6992483218477440827::1785389737::0::1::::<><><>0<>0<><>::uid://53uso155no13::::res://Entities/AllyArcher/ARQUERA_ALIADA_modddif_image_0.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+ARQUERA_ALIADA_MATERIAL.tres::StandardMaterial3D::6992483218477440827::1785458163::0::1::::<><><>0<>0<><>::uid://53uso155no13::::res://Entities/AllyArcher/ARQUERA_ALIADA_modddif_image_0.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 ARQUERA_ALIADA_modddif_image_0.png::CompressedTexture2D::2164715147295760336::1771713957::1781590137::1::::<><><>0<>0<>8af4dec0778adb31e5959d04b9be44e4<>res://.godot/imported/ARQUERA_ALIADA_modddif_image_0.png-3eac88b361e63abd2d2dc849bb8eb48f.s3tc.ctex<*>res://.godot/imported/ARQUERA_ALIADA_modddif_image_0.png-3eac88b361e63abd2d2dc849bb8eb48f.etc2.ctex::
-::res://Entities/Enemies/::1785395251
-EnemyBase.gd::GDScript::7969837616539559336::1785022016::0::1::::EnemyBase<>CharacterBody3D<><>0<>0<><>::
+::res://Entities/Enemies/::1785447718
+EnemyBase.gd::GDScript::7969837616539559336::1785449016::0::1::::EnemyBase<>CharacterBody3D<><>0<>0<><>::
 ::res://Entities/Enemies/Canonero/::1781590139
 Canonero.gd::GDScript::7829893425512809133::1781589793::0::1::::Canonero<>EnemyBase<><>0<>0<><>::
 CANONERO.glb::PackedScene::1584391491783512811::1776469572::1781590139::1::::<><><>0<>0<>c49b8646eb68268a8a529044324f2046<>res://.godot/imported/CANONERO.glb-d5bc15eb1ab323f3fce1f1a381838d02.scn::
 Canonero.tscn::PackedScene::9173610424050779988::1781589793::0::1::::<><><>0<>0<><>::uid://djs4g3cscohfx::::res://Entities/Enemies/Canonero/Canonero.gd<>uid://wtqxxa2i2xkd::::res://Assets/Canonero/CANONERO.glb
 CANONERO_D.jpg::CompressedTexture2D::2715419089685093530::1776469572::1781590138::1::::<><><>0<>0<>9be7ce4a2b1d42594e5ee9eb07b7aee7<>res://.godot/imported/CANONERO_D.jpg-02fc8e40dcd3495917642fa9f7e8fd4c.ctex::
-::res://Entities/Enemies/GARGOLA/::1785389736
+::res://Entities/Enemies/GARGOLA/::1785458163
 ffuego gargola 2.mp3::AudioStreamMP3::294669388575837864::1785021703::1785021964::1::::<><><>0<>0<>15eb5f08de096a25310a5ffffc3a24da<>res://.godot/imported/ffuego gargola 2.mp3-bdf39120e77b04e17dac1ff932c5ac2f.mp3str::
 ffuego gargola.mp3::AudioStreamMP3::3408248639379186400::1785021701::1785021964::1::::<><><>0<>0<>0d0437d91de8a56caf8dd18901de6a12<>res://.godot/imported/ffuego gargola.mp3-40a458f3ec879b6927b4d71002c0aff2.mp3str::
 Gargola.gd::GDScript::102334537858173926::1785390246::0::1::::Gargola<>EnemyBase<><>0<>0<><>::
 GARGOLA.glb::PackedScene::7241262672947389838::1783569107::1785388951::1::::<><><>0<>0<>f022bd0b78a91ecdb38b1aea8f552185<>res://.godot/imported/GARGOLA.glb-2023a8160870ebf2c684950dde0e7a2c.scn::uid://cqje54hoj6sun::::res://Entities/Enemies/GARGOLA/GARGOLA_MAT.tres
 Gargola.tscn::PackedScene::1386546196870225557::1785023649::0::1::::<><><>0<>0<><>::uid://bpto1y2rdkfm::::res://Entities/Enemies/GARGOLA/Gargola.gd<>uid://dbfyskh3r1hgg::::res://Entities/Enemies/GARGOLA/GARGOLA.glb
 GARGOLA_D.jpg::CompressedTexture2D::7063863431411956984::1783569107::1785021966::1::::<><><>0<>0<>beae772ec2008b4b8b4659fc64887aac<>res://.godot/imported/GARGOLA_D.jpg-cb04c94033fe9ed011fd7e28f1c6c516.s3tc.ctex<*>res://.godot/imported/GARGOLA_D.jpg-cb04c94033fe9ed011fd7e28f1c6c516.etc2.ctex::
-GARGOLA_MAT.tres::StandardMaterial3D::5914740241809618949::1785389736::0::1::::<><><>0<>0<><>::uid://c7v12fjaetrxo::::res://Entities/Enemies/GARGOLA/GARGOLA_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+GARGOLA_MAT.tres::StandardMaterial3D::5914740241809618949::1785458163::0::1::::<><><>0<>0<><>::uid://c7v12fjaetrxo::::res://Entities/Enemies/GARGOLA/GARGOLA_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 IMPACTO_FUEGO_01.mp3::AudioStreamMP3::9184509651479944253::1785021695::1785021964::1::::<><><>0<>0<>12e8ae2f2d33bd9137b21c4138e30b27<>res://.godot/imported/IMPACTO_FUEGO_01.mp3-9a4448cf6ecf36747f616056ba177dc5.mp3str::
 IMPACTO_FUEGO_02.mp3::AudioStreamMP3::4082860235585038024::1785021699::1785021964::1::::<><><>0<>0<>8cefc51a8466a1c964b7dad38f90884b<>res://.godot/imported/IMPACTO_FUEGO_02.mp3-85b652aee0ef99ada716c24abfe2042d.mp3str::
 IMPACTO_HERIDA_01.mp3::AudioStreamMP3::4271013637708104390::1783716416::1785021964::1::::<><><>0<>0<>9da79e2a9b5992938b1bbeb8d011abe9<>res://.godot/imported/IMPACTO_HERIDA_01.mp3-1359e17c248663d006e9304d8792841d.mp3str::
@@ -202,7 +202,7 @@ IMPACTO_HERIDA_02.mp3::AudioStreamMP3::54451997455460964::1783714680::1785021964
 Muerte new1.mp3::AudioStreamMP3::652762642790345216::1783716421::1785021964::1::::<><><>0<>0<>2c5c0c1ae1b6e9b3e3c5aa2aeedbd296<>res://.godot/imported/Muerte new1.mp3-e0aa4be1200702633d317ba8f55dcaa5.mp3str::
 Muerte new2.mp3::AudioStreamMP3::913883175306214971::1783716424::1785021964::1::::<><><>0<>0<>ab3f33ee095951a0c3f5043b690b96c1<>res://.godot/imported/Muerte new2.mp3-9e400cc87a65214282e67be71a7b9c4b.mp3str::
 PIEDRA_D.jpg::CompressedTexture2D::4296988244029709061::1783450117::1785021965::1::::<><><>0<>0<>77e391dce5eb0c12c987b7f1b8850dc0<>res://.godot/imported/PIEDRA_D.jpg-9e4ee43d448b0527ecfed551b10f7b8d.ctex::
-::res://Entities/Enemies/Goblin/::1785389735
+::res://Entities/Enemies/Goblin/::1785458162
 BALLESTA_GOBLING.png::CompressedTexture2D::6119313455652291910::1771705776::1781590136::1::::<><><>0<>0<>87609cb3a4d9367c8da13840f4eb8330<>res://.godot/imported/BALLESTA_GOBLING.png-6b02aa9e76b781b57ec44504e7085d75.s3tc.ctex<*>res://.godot/imported/BALLESTA_GOBLING.png-6b02aa9e76b781b57ec44504e7085d75.etc2.ctex::
 BALLES_GOBLING.glb::PackedScene::2869035537247437549::1781055278::1782357439::1::::<><><>0<>0<>d7df5b690c951dd28d336067f09f9088<>res://.godot/imported/BALLES_GOBLING.glb-ff1693446341037e1242546b73cbef43.scn::uid://4fxlfonkc6n0::::res://Entities/Enemies/Goblin/Hand Crossbow.tres
 BALLES_GOBLING_D.jpg::CompressedTexture2D::8240428659521510621::1782357346::1782357351::1::::<><><>0<>0<>afdb30f08f337b4e68fe209f390d29ba<>res://.godot/imported/BALLES_GOBLING_D.jpg-89135dc16fd9ee8e56b7e2f7cbf72a3b.ctex::
@@ -211,10 +211,10 @@ DISPARO_Ballesta 2.mp3::AudioStreamMP3::2542977122986053442::1765692020::1781590
 DISPARO_Ballesta 3.mp3::AudioStreamMP3::5914337508201314978::1765692024::1781590131::1::::<><><>0<>0<>7e80c710380e095f1b8e40b8fb5bc15f<>res://.godot/imported/DISPARO_Ballesta 3.mp3-8beec5d4f7fcff86e7034933b3f70355.mp3str::
 Goblin.gd::GDScript::1936611442003945761::1782363446::0::1::::Goblin<>EnemyBase<><>0<>0<><>::
 Goblin.tscn::PackedScene::7581581908331151800::1782363293::0::1::::<><><>0<>0<><>::uid://2udyb44rvi8h::::res://Entities/Enemies/Goblin/Goblin.gd<>uid://k3nj0crucrl::::res://Entities/Enemies/Goblin/GOBLING_REMASTER_ANIMACIONES.glb<>uid://bg41ujege14mr::::res://Entities/Enemies/Goblin/BALLES_GOBLING.glb
-GOBLING_MATERIAL.tres::StandardMaterial3D::6455470289717315026::1785389735::0::1::::<><><>0<>0<><>::uid://b5vqmmr7mb50j::::res://Entities/Enemies/Goblin/GOBLING_REMASTER_ANIMACIONES_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+GOBLING_MATERIAL.tres::StandardMaterial3D::6455470289717315026::1785458162::0::1::::<><><>0<>0<><>::uid://b5vqmmr7mb50j::::res://Entities/Enemies/Goblin/GOBLING_REMASTER_ANIMACIONES_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 GOBLING_REMASTER_ANIMACIONES.glb::PackedScene::22367580103461637::1782357554::1782357559::1::::<><><>0<>0<>42aa9b6181bb6c0900b5bc99319d3d41<>res://.godot/imported/GOBLING_REMASTER_ANIMACIONES.glb-fddbc45f6e3fb18cad2d7b0b6e741d62.scn::uid://cx8cwgkqemwry::::res://Entities/Enemies/Goblin/GOBLING_MATERIAL.tres
 GOBLING_REMASTER_ANIMACIONES_D.jpg::CompressedTexture2D::4536431485092371291::1782357554::1782357623::1::::<><><>0<>0<>16794b181388f6e40c173a37a12fedd6<>res://.godot/imported/GOBLING_REMASTER_ANIMACIONES_D.jpg-37ebebf897048ae3296953fe7a40dd48.s3tc.ctex<*>res://.godot/imported/GOBLING_REMASTER_ANIMACIONES_D.jpg-37ebebf897048ae3296953fe7a40dd48.etc2.ctex::
-Hand Crossbow.tres::StandardMaterial3D::2047214773687971871::1785389735::0::1::::<><><>0<>0<><>::uid://ctgig0swr1cmg::::res://Entities/Enemies/Goblin/BALLESTA_GOBLING.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+Hand Crossbow.tres::StandardMaterial3D::2047214773687971871::1785458162::0::1::::<><><>0<>0<><>::uid://ctgig0swr1cmg::::res://Entities/Enemies/Goblin/BALLESTA_GOBLING.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 MUERTE_GOBLING_1.mp3::AudioStreamMP3::4817214894543204253::1772679643::1781590131::1::::<><><>0<>0<>78fb1f0f6b3a2141c9588a2cf062dbb0<>res://.godot/imported/MUERTE_GOBLING_1.mp3-b2323e4a39ace960f7738154f01bf91e.mp3str::
 MUERTE_GOBLING_2.mp3::AudioStreamMP3::8369709136216053247::1772679643::1781590131::1::::<><><>0<>0<>48585151e9c575b76848687d1c887ea4<>res://.godot/imported/MUERTE_GOBLING_2.mp3-6f198f85fbf3ca99f8ad0129a8ca9fc1.mp3str::
 MUERTE_GOBLING_3.mp3::AudioStreamMP3::6022143758113025547::1772679643::1781590131::1::::<><><>0<>0<>2992bf1f104d9a70323dec55efedc009<>res://.godot/imported/MUERTE_GOBLING_3.mp3-d52fdf7f4fbf7af6563c659dc3f249f4.mp3str::
@@ -223,19 +223,19 @@ RISA_GOBLING_3.mp3::AudioStreamMP3::4423902210855563664::1772674150::1781590131:
 TEX_BALLESTA.png::CompressedTexture2D::4274446134929097730::1765320244::1781590136::1::::<><><>0<>0<>135eafd785b9d6b8e3c4b677ff7027d8<>res://.godot/imported/TEX_BALLESTA.png-2b56b3cd569c2fec25b615ff953209cb.s3tc.ctex<*>res://.godot/imported/TEX_BALLESTA.png-2b56b3cd569c2fec25b615ff953209cb.etc2.ctex::
 VIROTE_BALLESTA.glb::PackedScene::4594060168850177944::1770696666::1781590146::1::::<><><>0<>0<>9a8fcb7ff46c53e5a759cf59cd480d34<>res://.godot/imported/VIROTE_BALLESTA.glb-31ebe2bb6b0a6b598b75c62e2aee6277.scn::uid://bagucxh6snbwu::::res://Entities/Enemies/Goblin/VIROTE_BALLESTA_Arrows_Base_color.jpg
 VIROTE_BALLESTA_Arrows_Base_color.jpg::CompressedTexture2D::2400026081944348076::1772677633::1781590136::1::::<><><>0<>0<>ed0978f35aff3f4e557a3e3feb39fb2b<>res://.godot/imported/VIROTE_BALLESTA_Arrows_Base_color.jpg-ee9c018f65c6bfc1b4c616d031da82bf.s3tc.ctex<*>res://.godot/imported/VIROTE_BALLESTA_Arrows_Base_color.jpg-ee9c018f65c6bfc1b4c616d031da82bf.etc2.ctex::
-::res://Entities/Enemies/GoblinGirl/::1785389735
-ARCO_GIRL_GOBLING.tres::StandardMaterial3D::1690410796136542247::1785389735::0::1::::<><><>0<>0<><>::uid://csb84bcbk522p::::res://Entities/Enemies/GoblinGirl/ARCO_GOBLING_GIRL_texture_20250901.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+::res://Entities/Enemies/GoblinGirl/::1785458163
+ARCO_GIRL_GOBLING.tres::StandardMaterial3D::1690410796136542247::1785458163::0::1::::<><><>0<>0<><>::uid://csb84bcbk522p::::res://Entities/Enemies/GoblinGirl/ARCO_GOBLING_GIRL_texture_20250901.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 ARCO_GOBLING_GIRL.glb::PackedScene::7059187147824659850::1770779933::1781590146::1::::<><><>0<>0<>b9fb1d24829023e41bc90ee98cb85ccf<>res://.godot/imported/ARCO_GOBLING_GIRL.glb-bbf03ea12a686797ebf722e46bf7ff68.scn::uid://yc323txyoxut::::res://Entities/Enemies/GoblinGirl/ARCO_GIRL_GOBLING.tres
 ARCO_GOBLING_GIRL_texture_20250901.png::CompressedTexture2D::6040360435082349121::1770780009::1781590137::1::::<><><>0<>0<>46c6ce9312f63cd927a26a0aecb82ae7<>res://.godot/imported/ARCO_GOBLING_GIRL_texture_20250901.png-8fb8c36f9f01b701a778a7fb0c3f96b9.s3tc.ctex<*>res://.godot/imported/ARCO_GOBLING_GIRL_texture_20250901.png-8fb8c36f9f01b701a778a7fb0c3f96b9.etc2.ctex::
 GEO_GOBLIN_GIRL.fbx::PackedScene::1001025722363961154::1770784459::1781590145::1::::<><><>0<>0<>a8416dd9fd1c142c2c3cabf6ab08f0d9<>res://.godot/imported/GEO_GOBLIN_GIRL.fbx-d6baf45911933b1342b439bc4342fc2b.scn::uid://bpcfmhg61sn8w::::res://Entities/Enemies/GoblinGirl/MAT_GOBLIN_GIRL.tres
 GoblinGirl.gd::GDScript::8563748019935779130::1782193685::0::1::::GoblinGirl<>EnemyBase<><>0<>0<><>::
 GoblinGirl.tscn::PackedScene::7714972509048186782::1782189500::0::1::::<><><>0<>0<><>::uid://dualxct8nv4di::::res://Entities/Enemies/GoblinGirl/GoblinGirl.gd<>uid://oi50n8vycsh3::::res://Entities/Enemies/GoblinGirl/GEO_GOBLIN_GIRL.fbx<>uid://c7tr1s2bag5ww::::res://Entities/Enemies/GoblinGirl/ARCO_GOBLING_GIRL.glb<>uid://dcri1fif5ky1b::::res://Entities/Projectiles/GoblinGirlArrow.tscn
-MAT_GOBLIN_GIRL.tres::StandardMaterial3D::3443707486638641468::1785389735::0::1::::<><><>0<>0<><>::uid://bmoykq05w0dx0::::res://Entities/Enemies/GoblinGirl/TEX_GOBLIN_GIRL.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+MAT_GOBLIN_GIRL.tres::StandardMaterial3D::3443707486638641468::1785458162::0::1::::<><><>0<>0<><>::uid://bmoykq05w0dx0::::res://Entities/Enemies/GoblinGirl/TEX_GOBLIN_GIRL.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 SFX_goblin_girl_death1.mp3::AudioStreamMP3::1345688058730659426::1765586028::1781590131::1::::<><><>0<>0<>2bbe559ef517aedf075b38eefc730cbd<>res://.godot/imported/SFX_goblin_girl_death1.mp3-4de2b9a99c07d62b331786d333041db1.mp3str::
 SFX_goblin_girl_death2.mp3::AudioStreamMP3::3304551787141318546::1765585997::1781590131::1::::<><><>0<>0<>11ed78e89dddf5e5264c2f469c3d80cc<>res://.godot/imported/SFX_goblin_girl_death2.mp3-d4a1e38d5bccb336cd811731c2d4ff0a.mp3str::
 SFX_goblin_girl_death3.mp3::AudioStreamMP3::6337184634421293242::1765585958::1781590131::1::::<><><>0<>0<>3998bc3e8b1c45594da91a55041d25a8<>res://.godot/imported/SFX_goblin_girl_death3.mp3-59a08c96e22943ba97b167d57b76b2cc.mp3str::
 TEX_GOBLIN_GIRL.jpg::CompressedTexture2D::3259064042058932315::1765580648::1781590136::1::::<><><>0<>0<>4add9d15fd6f1f9f92e3f6c3f7b126be<>res://.godot/imported/TEX_GOBLIN_GIRL.jpg-806b956984749fefde19e1d455cf8d67.s3tc.ctex<*>res://.godot/imported/TEX_GOBLIN_GIRL.jpg-806b956984749fefde19e1d455cf8d67.etc2.ctex::
-::res://Entities/Enemies/ImpEnemy/::1785389735
+::res://Entities/Enemies/ImpEnemy/::1785458163
 EXPLOCION_Muerte1.mp3::AudioStreamMP3::9146421395940025442::1772679644::1781590131::1::::<><><>0<>0<>6cf80770e77c5bfd6d76dcbe84dc5bed<>res://.godot/imported/EXPLOCION_Muerte1.mp3-8a3589024a7b6e0643062f88b6aad44e.mp3str::
 EXPLOCION_Muerte2.mp3::AudioStreamMP3::8371705001185039113::1772679644::1781590131::1::::<><><>0<>0<>975349229fa0b71dbdd340a6d4eb9f68<>res://.godot/imported/EXPLOCION_Muerte2.mp3-1e5a87921886fe0c84a91bcc40df84a4.mp3str::
 EXPLOCION_Muerte3.mp3::AudioStreamMP3::7842895237085056985::1772679644::1781590131::1::::<><><>0<>0<>68d1c5f2ea1a53226d9c0f2ffdc78a66<>res://.godot/imported/EXPLOCION_Muerte3.mp3-e0481f67d29fb9e8393bea601db2a565.mp3str::
@@ -243,29 +243,29 @@ ImpEnemy.gd::GDScript::4013037005465316980::1782542373::0::1::::ImpEnemy<>EnemyB
 ImpEnemy.tscn::PackedScene::7293365386847772882::1782543546::0::1::::<><><>0<>0<><>::uid://bxf7er7bffp6c::::res://Entities/Enemies/ImpEnemy/ImpEnemy.gd<>uid://cmdq85od8x1yy::::res://Entities/Enemies/ImpEnemy/IMP_ENEMIGO.glb
 IMP_ENEMIGO.glb::PackedScene::5622332624897001432::1782425150::1782425153::1::::<><><>0<>0<>456cd320a3da4863762a5f623e1f53fc<>res://.godot/imported/IMP_ENEMIGO.glb-dc0197d8403a93dce739e51ae29bfaa4.scn::uid://c3vx31dcdct1e::::res://Entities/Enemies/ImpEnemy/MAT_IMP.tres
 IMP_ENEMIGO_texture_pbr_20250901.png::CompressedTexture2D::7829934819550196087::1775977284::1781590136::1::::<><><>0<>0<>4d4050152117c13e07549e093f9bb48f<>res://.godot/imported/IMP_ENEMIGO_texture_pbr_20250901.png-fccb3ef4513ea3833fd74746c3c86df5.s3tc.ctex<*>res://.godot/imported/IMP_ENEMIGO_texture_pbr_20250901.png-fccb3ef4513ea3833fd74746c3c86df5.etc2.ctex::
-MAT_IMP.tres::StandardMaterial3D::6782928785485828228::1785389735::0::1::::<><><>0<>0<><>::uid://djs45aggfa1lj::::res://Entities/Enemies/ImpEnemy/IMP_ENEMIGO_texture_pbr_20250901.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+MAT_IMP.tres::StandardMaterial3D::6782928785485828228::1785458163::0::1::::<><><>0<>0<><>::uid://djs45aggfa1lj::::res://Entities/Enemies/ImpEnemy/IMP_ENEMIGO_texture_pbr_20250901.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 MUERTE_IMP1.mp3::AudioStreamMP3::578392755953483504::1770858836::1781590131::1::::<><><>0<>0<>94375d71dc374ea4984070f84997c9d5<>res://.godot/imported/MUERTE_IMP1.mp3-7bae2b4fab6d79c6db31f1d38ce1f67c.mp3str::
 MUERTE_IMP2.mp3::AudioStreamMP3::4448890875942725292::1770858856::1781590131::1::::<><><>0<>0<>121bb3c7c666b57acc6606adb207ab75<>res://.godot/imported/MUERTE_IMP2.mp3-374821d8031ebca96eca0e4f5aa1817e.mp3str::
 TRIDENTE PROYECTIL.fbx::PackedScene::8832187376136236297::1770869664::1781590144::1::::<><><>0<>0<>4e3f4a93ac91169af45e165d0fa7cf25<>res://.godot/imported/TRIDENTE PROYECTIL.fbx-0266c80e5f616040a6c1cb94fee48a37.scn::
 TRIDENTE_SHOT.mp3::AudioStreamMP3::4236543333033110841::1770874616::1781590131::1::::<><><>0<>0<>79ff5c9f5e542f848c6d7e7a8517ca45<>res://.godot/imported/TRIDENTE_SHOT.mp3-4ac451ef19eeb7e3a601849adf682993.mp3str::
-::res://Entities/Enemies/ImpEnemyEstandarte/::1785389737
+::res://Entities/Enemies/ImpEnemyEstandarte/::1785458164
 a.jpg::CompressedTexture2D::3652687043524990882::1776062467::1781590137::1::::<><><>0<>0<>b085844c710acf60c7e0c90df6b4d3c6<>res://.godot/imported/a.jpg-c7efb8f50444e1cc3254c94ed221ffd5.ctex::
 ImpEnemyEstandarte.tscn::PackedScene::324436610344615532::1782362675::0::1::::<><><>0<>0<><>::uid://q2sqnc42chlo::::res://Entities/Enemies/ImpEnemyEstandarte/ImpEstandarte.gd<>uid://buaa1ic8ykxrq::::res://Entities/Enemies/ImpEnemyEstandarte/IMP_ESTANDARTE.001.glb<>uid://cb5c0w2ly2s3e::::res://Entities/Environment/Estandarte/Estandarte.tscn<>uid://c7tr1s2bag5ww::::res://Entities/Enemies/GoblinGirl/ARCO_GOBLING_GIRL.glb<>uid://dwto33rqm8v41::::res://Entities/Projectiles/ImpEstandarteArrow.tscn
 ImpEstandarte.gd::GDScript::1179881863387362944::1782710429::0::1::::ImpEstandarte<>EnemyBase<><>0<>0<><>::
 IMP_ESTANDARTE.001.glb::PackedScene::3790244411903547294::1782245329::1782247316::1::::<><><>0<>0<>fc6c8bcc5294d900625ea09155ff15d6<>res://.godot/imported/IMP_ESTANDARTE.001.glb-de0220dd9bbc31825749a4209a8e3327.scn::uid://vwaalxbb186a::::res://Entities/Enemies/ImpEnemyEstandarte/IMP_ESTANDARTE.001_MAT.tres
 IMP_ESTANDARTE.001_D.jpg::CompressedTexture2D::1870493561947491520::1775978229::1781590136::1::::<><><>0<>0<>ee43d7c0c08216f47cffe2796b2ae38f<>res://.godot/imported/IMP_ESTANDARTE.001_D.jpg-180c197e74201b49943bf3b8fb61f285.s3tc.ctex<*>res://.godot/imported/IMP_ESTANDARTE.001_D.jpg-180c197e74201b49943bf3b8fb61f285.etc2.ctex::
-IMP_ESTANDARTE.001_MAT.tres::StandardMaterial3D::1519382640323181154::1785389737::0::1::::<><><>0<>0<><>::uid://1wc0xtmb7txw::::res://Entities/Enemies/ImpEnemyEstandarte/IMP_ESTANDARTE.001_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+IMP_ESTANDARTE.001_MAT.tres::StandardMaterial3D::1519382640323181154::1785458164::0::1::::<><><>0<>0<><>::uid://1wc0xtmb7txw::::res://Entities/Enemies/ImpEnemyEstandarte/IMP_ESTANDARTE.001_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 IMP_ESTANDARTE_MUERTE.mp3::AudioStreamMP3::9218155640703380259::1775841793::1781590131::1::::<><><>0<>0<>cc8da3524317b22ed37f39d70207f833<>res://.godot/imported/IMP_ESTANDARTE_MUERTE.mp3-fb8e564c7f54353eaf90a0ccb78876f7.mp3str::
-::res://Entities/Enemies/ImpShieldGirl/::1785389736
+::res://Entities/Enemies/ImpShieldGirl/::1785458163
 A.jpg::CompressedTexture2D::8280162855334040416::1772345645::1781590136::1::::<><><>0<>0<>5005f018afced452913bcd74c049f1e7<>res://.godot/imported/A.jpg-1605d83670f41e8bb3d46f060fc1b3b7.ctex::
 EscudoImp.tscn::PackedScene::204969379001685145::1781589865::0::1::::<><><>0<>0<><>::uid://c2ljsyetfeom7::::res://Entities/Enemies/ImpShieldGirl/ESCUDO_IMP.glb
 EscudoImpRoto.gd::GDScript::1959387135282161822::1782543348::0::1::::<>Node3D<><>0<>0<><>::
 EscudoImpRoto.tscn::PackedScene::-1::1781589865::0::1::::<><><>0<>0<><>::res://Entities/Enemies/ImpShieldGirl/EscudoImpRoto.gd<>uid://dlxubjxbu2m5d::::res://Entities/Enemies/ImpShieldGirl/IMP_ESCUDO_ROTO.glb
 ESCUDO_IMP.glb::PackedScene::6691228165742670016::1772343667::1781590144::1::::<><><>0<>0<>157be2728777908272c17d65e3e56716<>res://.godot/imported/ESCUDO_IMP.glb-c2e878b3f3546636015674d01fd74d97.scn::uid://ddu5ruihthdor::::res://Entities/Enemies/ImpShieldGirl/ESCUDO_IMP_MAT.tres
-ESCUDO_IMP_MAT.tres::StandardMaterial3D::7412969068523128641::1785389736::0::1::::<><><>0<>0<><>::uid://sxukwir0h551::::res://Entities/Enemies/ImpShieldGirl/ESCUDO_IMP_TEX.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+ESCUDO_IMP_MAT.tres::StandardMaterial3D::7412969068523128641::1785458163::0::1::::<><><>0<>0<><>::uid://sxukwir0h551::::res://Entities/Enemies/ImpShieldGirl/ESCUDO_IMP_TEX.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 ESCUDO_IMP_TEX.jpg::CompressedTexture2D::1312113240300595958::1772343225::1781590135::1::::<><><>0<>0<>d9968ad381448c81474981af2bca90d0<>res://.godot/imported/ESCUDO_IMP_TEX.jpg-a634c4a8972bdc55bad8b3bd521c0f3b.s3tc.ctex<*>res://.godot/imported/ESCUDO_IMP_TEX.jpg-a634c4a8972bdc55bad8b3bd521c0f3b.etc2.ctex::
 GIRL_IMP_ESCUDO.glb::PackedScene::3725011925478050556::1780981543::1781590139::1::::<><><>0<>0<>c367072f04902d8dbb74e81a65800606<>res://.godot/imported/GIRL_IMP_ESCUDO.glb-6e74b1d0b3888428ceec4b4ec6025c93.scn::uid://bj7vk2oi1hnt2::::res://Entities/Enemies/ImpShieldGirl/GIRL_IMP_ESCUDO.tres
-GIRL_IMP_ESCUDO.tres::StandardMaterial3D::3085474719508684717::1785389736::0::1::::<><><>0<>0<><>::uid://c0iwdc6mgwtnd::::res://Entities/Enemies/ImpShieldGirl/TEX_IMP_SHIELDDIFUSO.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+GIRL_IMP_ESCUDO.tres::StandardMaterial3D::3085474719508684717::1785458163::0::1::::<><><>0<>0<><>::uid://c0iwdc6mgwtnd::::res://Entities/Enemies/ImpShieldGirl/TEX_IMP_SHIELDDIFUSO.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 IMPACTO_IMP_ESCUDO_01.mp3::AudioStreamMP3::7532320024059401839::1777698217::1781590131::1::::<><><>0<>0<>6a4c136ecae6eb8a11cb7f706afaf22c<>res://.godot/imported/IMPACTO_IMP_ESCUDO_01.mp3-31fc173ef59c76ffb0b6b1d77b968670.mp3str::
 IMPACTO_IMP_ESCUDO_02.mp3::AudioStreamMP3::6535952602543136782::1772679643::1781590131::1::::<><><>0<>0<>c0092deaa754525def9edba5334ee109<>res://.godot/imported/IMPACTO_IMP_ESCUDO_02.mp3-0859a08098a13b515c6febb20aa819ff.mp3str::
 ImpShieldGirl.gd::GDScript::9896517560469701::1785390257::0::1::::ImpShieldGirl<>CharacterBody3D<><>0<>0<><>::
@@ -274,12 +274,9 @@ IMP_ESCUDO_ROTO.glb::PackedScene::7980036653404159527::1781065397::1781590139::1
 MUERTE_IMP_ESCUDO_01.mp3::AudioStreamMP3::3351667162781698693::1777698217::1781590131::1::::<><><>0<>0<>6321901c09bd6b6d0af921ee7b0ae706<>res://.godot/imported/MUERTE_IMP_ESCUDO_01.mp3-f317612e666cc5de34f93cf7ed6a254e.mp3str::
 MUERTE_IMP_ESCUDO_2.mp3::AudioStreamMP3::1372421946427428582::1777698217::1781590131::1::::<><><>0<>0<>89fbe23d09dbde470247ca89b3453315<>res://.godot/imported/MUERTE_IMP_ESCUDO_2.mp3-475efd7bfa97fe59cb155d9642450d38.mp3str::
 TEX_IMP_SHIELDDIFUSO.jpg::CompressedTexture2D::6545418765081834201::1772348903::1781590135::1::::<><><>0<>0<>748827f9586336c3a5534b9542d0e652<>res://.godot/imported/TEX_IMP_SHIELDDIFUSO.jpg-83a5acbb84791e7808c13804bc4caeb6.s3tc.ctex<*>res://.godot/imported/TEX_IMP_SHIELDDIFUSO.jpg-83a5acbb84791e7808c13804bc4caeb6.etc2.ctex::
-::res://Entities/Enemies/LONKO/::1785395405
-Lonko.gd::GDScript::1619470278562694600::1785395684::0::1::::Lonko<>EnemyBase<><>0<>0<><>::
-Lonko.tscn::PackedScene::7948973780535159386::1785395689::0::1::::<><><>0<>0<><>::uid://c20ct5mhmed6j::::res://LONKO/Lonko.gd<>uid://cqlywcwj0vwhw::::res://LONKO/LONKO.glb<>uid://c7tr1s2bag5ww::::res://Entities/Enemies/GoblinGirl/ARCO_GOBLING_GIRL.glb<>uid://dcri1fif5ky1b::::res://Entities/Projectiles/GoblinGirlArrow.tscn
-::res://Entities/Environment/::1785389735
+::res://Entities/Environment/::1785458162
 CubeController.gd::GDScript::602119187578043256::1777736791::0::1::::<>Node3D<><>0<>1<><>::
-new_environment.tres::Environment::7932913288131251313::1785389735::0::1::::<><><>0<>0<><>::uid://bgc5rl13dopuj::::res://Entities/Environment/Background/sky_2.png
+new_environment.tres::Environment::7932913288131251313::1785458162::0::1::::<><><>0<>0<><>::uid://bgc5rl13dopuj::::res://Entities/Environment/Background/sky_2.png
 ::res://Entities/Environment/Background/::1781590138
 background_mountains.png::CompressedTexture2D::5861255207226012040::1765435948::1781590135::1::::<><><>0<>0<>f2e57146ae87e3ee09216842858c028d<>res://.godot/imported/background_mountains.png-2c25a5b06cef1661d27d0deb0e78e8b5.s3tc.ctex<*>res://.godot/imported/background_mountains.png-2c25a5b06cef1661d27d0deb0e78e8b5.etc2.ctex::
 background_mountains_02.jpeg::CompressedTexture2D::8735315219596764880::1765692396::1781590135::1::::<><><>0<>0<>33214b2dd7daac18b7253b8cd04919c0<>res://.godot/imported/background_mountains_02.jpeg-eb40dbc9d576ab0d22c49ea2e0fab858.s3tc.ctex<*>res://.godot/imported/background_mountains_02.jpeg-eb40dbc9d576ab0d22c49ea2e0fab858.etc2.ctex::
@@ -311,10 +308,10 @@ BarreraEscalera_INFERIOR.gd::GDScript::3712212183237298180::1781589793::0::1::::
 BarreraEscalera_SUPERIOR.gd::GDScript::6044492649838836825::1781589793::0::1::::BarreraEscaleraSuperior<>Area3D<><>0<>1<><>::
 ESCALERA.gd::GDScript::54334400709492644::1777736791::0::1::::<>Area3D<><>0<>0<><>::
 ESCALERA.tscn::PackedScene::6031644243175814387::1781589865::0::1::::<><><>0<>0<><>::uid://1k454om2fo3::::res://Entities/Environment/ESCALERA/ESCALERA.gd<>uid://c3a82usvqjtvx::::res://Entities/Environment/Ladder/GEO_ESCALERA.fbx<>uid://bs5huexvygdku::::res://Entities/Environment/ESCALERA/BarreraEscalera_INFERIOR.gd<>uid://csd8576k2v1a0::::res://Entities/Environment/ESCALERA/BarreraEscalera_SUPERIOR.gd
-::res://Entities/Environment/Escudo/::1785389736
+::res://Entities/Environment/Escudo/::1785458163
 ESCUDO2.glb::PackedScene::1689376236261856484::1781129230::1784002772::1::::<><><>0<>0<>a8b36f990245cd4d0e1b51d03c2e105f<>res://.godot/imported/ESCUDO2.glb-7d577ff92c5ce7cb747ff041d100904e.scn::uid://bner43n6goist::::res://Entities/Environment/Escudo/ESCUDO2_MAT.tres
 ESCUDO2_D.jpg::CompressedTexture2D::1722850048926779099::1781129230::1781590137::1::::<><><>0<>0<>533c79a36daccab8f2eac3b5d683afab<>res://.godot/imported/ESCUDO2_D.jpg-8929c04b0a18536a1beaad01cf443e87.s3tc.ctex<*>res://.godot/imported/ESCUDO2_D.jpg-8929c04b0a18536a1beaad01cf443e87.etc2.ctex::
-ESCUDO2_MAT.tres::StandardMaterial3D::3308218631057370759::1785389736::0::1::::<><><>0<>0<><>::uid://ystdaody0wgp::::res://Entities/Environment/Escudo/ESCUDO2_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+ESCUDO2_MAT.tres::StandardMaterial3D::3308218631057370759::1785458163::0::1::::<><><>0<>0<><>::uid://ystdaody0wgp::::res://Entities/Environment/Escudo/ESCUDO2_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 Escudo.gd::GDScript::4481636549204236274::1782543351::0::1::::EscudoDestruible<>StaticBody3D<><>0<>0<><>::
 Escudo.tscn::PackedScene::9134578492108652379::1784003131::0::1::::<><><>0<>0<><>::uid://ycl1ro422pd1::::res://Entities/Environment/Escudo/ESCUDO2.glb<>uid://b4365tp1donxq::::res://Entities/Environment/Escudo/Escudo.gd
 Escudonivel3.glb::PackedScene::4174931180011812196::1781136910::1784002764::1::::<><><>0<>0<>0e7b95d39ae3063222b0565c3c1c3e52<>res://.godot/imported/Escudonivel3.glb-5f965a6c7b823beccceaddd8ea312830.scn::uid://bi75w45xtwdd5::::res://Entities/Environment/Escudo/Escudonivel3_MAT.tres
@@ -332,28 +329,28 @@ escudo_roto.glb::PackedScene::5742293481797415091::1781136910::1784002728::1::::
 ESCUDO_ROTO.mp3::AudioStreamMP3::1924114776643065783::1770840300::1781590131::1::::<><><>0<>0<>65cd5f4a0afc60e860a0b599ce295b00<>res://.godot/imported/ESCUDO_ROTO.mp3-9daad5e26a81112b226a4c5b18bf0d55.mp3str::
 IMPACTO_ESCUDO_BALLESTA.mp3::AudioStreamMP3::4095677509620672709::1765692009::1781590131::1::::<><><>0<>0<>6cbab7f18ca83db7576ed709af2fb3e7<>res://.godot/imported/IMPACTO_ESCUDO_BALLESTA.mp3-b993d64e6f4e41d0fdbf66046daac9e5.mp3str::
 IMPACTO_ESCUDO_FLECHA.mp3::AudioStreamMP3::338428733982968151::1765692013::1781590131::1::::<><><>0<>0<>326a3732a0bf60c6dcf0bd9cb25f7eba<>res://.godot/imported/IMPACTO_ESCUDO_FLECHA.mp3-ab1f50e9a66457eca9c5f69ee247cc3b.mp3str::
-MAT_shield.tres::StandardMaterial3D::3806306849449744349::1785389736::0::1::::<><><>0<>0<><>::uid://cvrgrrde6ak3f::::res://Entities/Environment/Escudo/escudo_partes_escudo_partes_TEX_shield_basecolor.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+MAT_shield.tres::StandardMaterial3D::3806306849449744349::1785458163::0::1::::<><><>0<>0<><>::uid://cvrgrrde6ak3f::::res://Entities/Environment/Escudo/escudo_partes_escudo_partes_TEX_shield_basecolor.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 MDL_shield.fbx::PackedScene::2522559960738917365::1765413861::1781590141::1::::<><><>0<>0<>14e431f622b14a6f834b97b2299dcc2e<>res://.godot/imported/MDL_shield.fbx-a0212b9dfa87183479199e2b4fa4cf3a.scn::uid://buh2k2i7xhabt::::res://Entities/Environment/Escudo/MAT_shield.tres
-::res://Entities/Environment/Estandarte/::1785389737
+::res://Entities/Environment/Estandarte/::1785458164
 estandarte.glb::PackedScene::8982813265362466572::1782264779::1782264782::1::::<><><>0<>0<>2e6ec70cab26809f49cabbb5a69e4b7c<>res://.godot/imported/estandarte.glb-2fc21b2ed480a35e0ae7defb16c887a8.scn::
 Estandarte.tscn::PackedScene::4905128820235550204::1782362721::0::1::::<><><>0<>0<><>::uid://d08lvfebk5a4c::::res://Entities/Environment/Estandarte/estandarte.glb<>uid://5swvbw7wqnfd::::res://Entities/Environment/Estandarte/wind_flag.gdshader<>uid://d13dht4nsfggi::::res://Entities/Environment/Estandarte/estandarte_D.jpg<>uid://qjnb7cj6gshw::::res://Entities/Environment/Estandarte/estandarte_MAT.tres
 estandarte_D.jpg::CompressedTexture2D::9042170257675351572::1782262598::1782262749::1::::<><><>0<>0<>1e03988d264b0c34ed3486288b1ba74a<>res://.godot/imported/estandarte_D.jpg-5366cdf9037b59bf7fb3dd9b96f894e1.s3tc.ctex<*>res://.godot/imported/estandarte_D.jpg-5366cdf9037b59bf7fb3dd9b96f894e1.etc2.ctex::
 estandarte_MAT.tres::StandardMaterial3D::1142393688982340620::1782264401::0::1::::<><><>0<>0<><>::uid://d13dht4nsfggi::::res://Entities/Environment/Estandarte/estandarte_D.jpg
-wind_flag.gdshader::Shader::2144197472219936833::1785389737::0::1::::<><><>0<>0<><>::
+wind_flag.gdshader::Shader::2144197472219936833::1785458164::0::1::::<><><>0<>0<><>::
 ::res://Entities/Environment/ESTATUA_NIVEL06/::1781590143
 ESTATUA_NIVEL06.glb::PackedScene::4228354227642728983::1781244445::1781590143::1::::<><><>0<>0<>45d25ee3ea81361a678d33f10c12cc84<>res://.godot/imported/ESTATUA_NIVEL06.glb-c1672436aa1da1d87517a8b7cbf8b830.scn::uid://dbfgek1ihfct::::res://Entities/Environment/ESTATUA_NIVEL06/ESTATUA_NIVEL06_MAT.tres
 ESTATUA_NIVEL06_D.jpg::CompressedTexture2D::4587081635555498609::1781244445::1781590137::1::::<><><>0<>0<>f758c2d066547a6de1642526939751c6<>res://.godot/imported/ESTATUA_NIVEL06_D.jpg-1a0ea7d568982c3f86b9f55317c6bfc4.s3tc.ctex<*>res://.godot/imported/ESTATUA_NIVEL06_D.jpg-1a0ea7d568982c3f86b9f55317c6bfc4.etc2.ctex::
 ESTATUA_NIVEL06_MAT.tres::StandardMaterial3D::212945435129156067::1781589865::0::1::::<><><>0<>0<><>::uid://b6matgnqaym7b::::res://Entities/Environment/ESTATUA_NIVEL06/ESTATUA_NIVEL06_D.jpg
-::res://Entities/Environment/Floor/::1781590143
+::res://Entities/Environment/Floor/::1785458128
 ALTURA01.jpeg::CompressedTexture2D::8466422073402506767::1768279378::1781590133::1::::<><><>0<>0<>cd386fedd9c88e81fc629eba782b35a2<>res://.godot/imported/ALTURA01.jpeg-6f75626cc471adcf331d61057d0368de.s3tc.ctex<*>res://.godot/imported/ALTURA01.jpeg-6f75626cc471adcf331d61057d0368de.etc2.ctex::
 COLOR PISO 1.jpeg::CompressedTexture2D::2942207695947179000::1766474361::1781590134::1::::<><><>0<>0<>e0efb4f40f9ad263a306fbf48e43d281<>res://.godot/imported/COLOR PISO 1.jpeg-70c22dd05ec967e9b8692b180b74cccd.ctex::
 DIFUSO01.jpeg::CompressedTexture2D::2343692885821981812::1768279308::1781590133::1::::<><><>0<>0<>3b475cc70f3f88a574cbc921f3bea149<>res://.godot/imported/DIFUSO01.jpeg-792dcba754cf59bd82691568b81e92be.s3tc.ctex<*>res://.godot/imported/DIFUSO01.jpeg-792dcba754cf59bd82691568b81e92be.etc2.ctex::
-PISO ALIADO.glb::PackedScene::3226776596168130109::1777700475::1781590143::1::::<><><>0<>0<>31f1d8c41c55a1657cd1b911ac25380f<>res://.godot/imported/PISO ALIADO.glb-c90bf673f7530e9b582989da258a7525.scn::uid://cokani123hvge::::res://Entities/Environment/Floor/PISO ALIADO_M.tres
+PISO ALIADO.glb::PackedScene::3226776596168130109::1777700475::1785458127::1::::<><><>0<>0<>430e14fe8de29a073287c83571ec585a<>res://.godot/imported/PISO ALIADO.glb-c90bf673f7530e9b582989da258a7525.scn::uid://cokani123hvge::::res://Entities/Environment/Floor/PISO ALIADO_M.tres
 PISO ALIADO_D.jpg::CompressedTexture2D::9077465655487369175::1777700475::1781590132::1::::<><><>0<>0<>d39244bac208cbbcf8fe630da44399f4<>res://.godot/imported/PISO ALIADO_D.jpg-39a5c58c4ada13c68e995860a793a7ef.s3tc.ctex<*>res://.godot/imported/PISO ALIADO_D.jpg-39a5c58c4ada13c68e995860a793a7ef.etc2.ctex::
 PISO ALIADO_M.tres::StandardMaterial3D::5776152632796206332::1781589793::0::1::::<><><>0<>0<><>::uid://d2lgsejoff3k2::::res://Entities/Environment/Floor/PISO ALIADO_D.jpg
 PISO-01_DISPLACEMENT.jpeg::CompressedTexture2D::7871709478728011983::1766474616::1781590133::1::::<><><>0<>0<>1f30e21e88a15d2873f892ffe542cdfc<>res://.godot/imported/PISO-01_DISPLACEMENT.jpeg-45eb1e88904be2d683e3fb54efaa44af.ctex::
 PISO-01_NORMAL.jpeg::CompressedTexture2D::1921596385995301100::1766474798::1781590133::1::::<><><>0<>0<>24b7b4cb6d3f8d7b6e39dc679b5f6ef4<>res://.godot/imported/PISO-01_NORMAL.jpeg-838480c23a5fc83c769d2596b1a1da04.ctex::
-PISO.glb::PackedScene::5071518139891796285::1776466408::1781590141::1::::<><><>0<>0<>2c78c8992ec33fc6b14b0f05e4bf514e<>res://.godot/imported/PISO.glb-f18212a9241cd2f1fc0397075e963889.scn::uid://bnpufauv07uav::::res://Entities/Environment/Floor/PISO_M.tres
+PISO.glb::PackedScene::5071518139891796285::1776466408::1785458128::1::::<><><>0<>0<>c3df9746e919be8c9a820bfcc601eac8<>res://.godot/imported/PISO.glb-f18212a9241cd2f1fc0397075e963889.scn::uid://bnpufauv07uav::::res://Entities/Environment/Floor/PISO_M.tres
 PISO_D.jpg::CompressedTexture2D::214033245953622213::1776466408::1781590132::1::::<><><>0<>0<>90c0e7eafad37f99c72af14e7a017c4a<>res://.godot/imported/PISO_D.jpg-2af401c98dc97733fb87e31fe947da0a.s3tc.ctex<*>res://.godot/imported/PISO_D.jpg-2af401c98dc97733fb87e31fe947da0a.etc2.ctex::
 PISO_M.tres::StandardMaterial3D::3331064618008193941::1781589866::0::1::::<><><>0<>0<><>::uid://dbxdjkucn4y0::::res://Entities/Environment/Floor/PISO_D.jpg
 PISO_MAT.tres::StandardMaterial3D::2349319666807334137::1781589866::0::1::::<><><>0<>0<><>::uid://dbxdjkucn4y0::::res://Entities/Environment/Floor/PISO_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
@@ -377,9 +374,9 @@ Yelmo fachero.glb::PackedScene::6564850396359777814::1771704702::1781590147::1::
 hojas.png::CompressedTexture2D::3773740114056468870::1781931823::1783450990::1::::<><><>0<>0<>2db7a912fdaebeead783ac2670d249a2<>res://.godot/imported/hojas.png-89181e997f1e17a01eb6c659cc19b798.s3tc.ctex<*>res://.godot/imported/hojas.png-89181e997f1e17a01eb6c659cc19b798.etc2.ctex::
 HojasPlane.tscn::PackedScene::-1::1781935211::0::1::::<><><>0<>0<><>::uid://c5e3f4h5j6k7l::::res://Entities/Environment/Hojas/MAT_hojas.tres
 MAT_hojas.tres::StandardMaterial3D::6888474727677504123::1783450117::0::1::::<><><>0<>0<><>::uid://bt1a7ijdc6c7g::::res://Entities/Environment/Hojas/hojas.png
-::res://Entities/Environment/Ladder/::1785389736
+::res://Entities/Environment/Ladder/::1785458163
 COLOR_ESCALERA.png::CompressedTexture2D::2005449135528687983::1655086255::1781590131::1::::<><><>0<>0<>52a0e26ab6f6398c400c1cd3de10dd8a<>res://.godot/imported/COLOR_ESCALERA.png-7b4c69879cc775d5a5e2da8d0c3a7a6b.s3tc.ctex<*>res://.godot/imported/COLOR_ESCALERA.png-7b4c69879cc775d5a5e2da8d0c3a7a6b.etc2.ctex::
-ESCALERAS.tres::StandardMaterial3D::4459092878976913857::1785389736::0::1::::<><><>0<>0<><>::uid://3tpppelfqemx::::res://Entities/Environment/Ladder/COLOR_ESCALERA.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+ESCALERAS.tres::StandardMaterial3D::4459092878976913857::1785458163::0::1::::<><><>0<>0<><>::uid://3tpppelfqemx::::res://Entities/Environment/Ladder/COLOR_ESCALERA.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 GEO_ESCALERA.fbx::PackedScene::6740181945697218453::1655086939::1781590146::1::::<><><>0<>0<>db814ab16ed834d047941a55c66eda70<>res://.godot/imported/GEO_ESCALERA.fbx-43d945bcd88d76b89a9901a4cab8cf09.scn::uid://b4sauxecq462h::::res://Entities/Environment/Ladder/ESCALERAS.tres
 ::res://Entities/Environment/Luciernagas/::1781589793
 LuciernagasPlane.tscn::PackedScene::-1::1781589866::0::1::::<><><>0<>0<><>::res://Entities/Environment/Luciernagas/MAT_luciernagas.tres
@@ -395,8 +392,8 @@ Pilar_modddif_image_0.png::CompressedTexture2D::993746141718598336::1772682086::
 ::res://Entities/Environment/PlataformaOneway/::1781589952
 PlataformaOneway.gd::GDScript::4985019129955355713::1777736791::0::1::::PlataformaOneway<>AnimatableBody3D<><>0<>0<><>::
 PlataformaOneway.tscn::PackedScene::1542227507709389093::1781589866::0::1::::<><><>0<>0<><>::uid://c8mp7piy23m4g::::res://Entities/Environment/Platform/MDL_platform.fbx<>uid://cda1siqoj1unx::::res://Entities/Environment/PlataformaOneway/PlataformaOneway.gd<>uid://bvqsqxa01xudr::::res://Entities/Environment/Platform/MAT_platform.tres
-::res://Entities/Environment/Platform/::1785389737
-MAT_platform.tres::StandardMaterial3D::3894539131937623103::1785389737::0::1::::<><><>0<>0<><>::uid://c8a3xwj83p4la::::res://Entities/Environment/Platform/TEX_platform_basecolor.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+::res://Entities/Environment/Platform/::1785458163
+MAT_platform.tres::StandardMaterial3D::3894539131937623103::1785458163::0::1::::<><><>0<>0<><>::uid://c8a3xwj83p4la::::res://Entities/Environment/Platform/TEX_platform_basecolor.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 MDL_platform.fbx::PackedScene::7114814442122775840::1765420008::1781590144::1::::<><><>0<>0<>72d23de37b629eafdceadaa5f3f9205c<>res://.godot/imported/MDL_platform.fbx-e4455b2390585d2f2cdd65f7fc09c721.scn::uid://bvqsqxa01xudr::::res://Entities/Environment/Platform/MAT_platform.tres
 TEX_platform_basecolor.png::CompressedTexture2D::7090815527452897154::1765413481::1781590132::1::::<><><>0<>0<>2b4a309b9dcebb591071cdc097af6126<>res://.godot/imported/TEX_platform_basecolor.png-45ae4b26f1d6fbcc8b463d61de6cb4e0.s3tc.ctex<*>res://.godot/imported/TEX_platform_basecolor.png-45ae4b26f1d6fbcc8b463d61de6cb4e0.etc2.ctex::
 ::res://Entities/Environment/RampaSubida/::1783575398
@@ -404,8 +401,8 @@ Escena_rampa_nivel3.tscn::PackedScene::3369360421801437294::1781589866::0::1::::
 RAMPA_SUBIDA_NIVEL3.glb::PackedScene::2275627348816833677::1781130813::1783575398::1::::<><><>0<>0<>3260d5d6a45aeb482ee5cc63f72c054c<>res://.godot/imported/RAMPA_SUBIDA_NIVEL3.glb-2c666b395ae8e078c75f3fd25e8d3af9.scn::uid://btlkmk65effag::::res://Entities/Environment/RampaSubida/RAMPA_SUBIDA_NIVEL3_MAT.tres
 RAMPA_SUBIDA_NIVEL3_D.jpg::CompressedTexture2D::8027893096836056963::1781130813::1781590131::1::::<><><>0<>0<>a82af376e4d632bd4f10798187620165<>res://.godot/imported/RAMPA_SUBIDA_NIVEL3_D.jpg-450bc37cee0ab3799890c34c42db686c.s3tc.ctex<*>res://.godot/imported/RAMPA_SUBIDA_NIVEL3_D.jpg-450bc37cee0ab3799890c34c42db686c.etc2.ctex::
 RAMPA_SUBIDA_NIVEL3_MAT.tres::StandardMaterial3D::3743346042055945986::1781589866::0::1::::<><><>0<>0<><>::uid://dmm1hx0as4ygp::::res://Entities/Environment/RampaSubida/RAMPA_SUBIDA_NIVEL3_D.jpg
-::res://Entities/Environment/SpikeTrap/::1785389737
-MAT_spike_trap.tres::StandardMaterial3D::7717345285339329445::1785389737::0::1::::<><><>0<>0<><>::uid://cfsjj5kf3pi7y::::res://Entities/Environment/SpikeTrap/TEX_spike_trap_basecolor.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+::res://Entities/Environment/SpikeTrap/::1785458163
+MAT_spike_trap.tres::StandardMaterial3D::7717345285339329445::1785458163::0::1::::<><><>0<>0<><>::uid://cfsjj5kf3pi7y::::res://Entities/Environment/SpikeTrap/TEX_spike_trap_basecolor.png<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 MDL_spike_trap.fbx::PackedScene::6488831042404987916::1765413759::1781590140::1::::<><><>0<>0<>acbdd5cc9cc65a9b006a1a1a51240e4c<>res://.godot/imported/MDL_spike_trap.fbx-2a22e456d5cae1c3f5b36d4dc5bf0e80.scn::uid://dh7lsxa6fx1kb::::res://Entities/Environment/SpikeTrap/MAT_spike_trap.tres
 PINCHO.glb::PackedScene::6946920803515874404::1771711269::1784002871::1::::<><><>0<>0<>45032843161af510108207ec7616e594<>res://.godot/imported/PINCHO.glb-2a5900ba10bc50f4a11947e593ffce04.scn::uid://i4advh0tq6ty::::res://Entities/Environment/SpikeTrap/PINCHO_MATERIAL.tres
 PINCHO_MATERIAL.tres::StandardMaterial3D::621384176319632554::1781589866::0::1::::<><><>0<>0<><>::uid://b4ca034aknly::::res://Entities/Environment/SpikeTrap/PINCHO_modddif_image_2_mdl.png
@@ -418,8 +415,8 @@ estatua.png::CompressedTexture2D::452264269768570550::1764647018::1781590135::1:
 ESTATUA_.MEDEA.glb::PackedScene::6589208680728379340::1771704894::1781590139::1::::<><><>0<>0<>e468fe2f6f45fe7444a9d4e85f000f66<>res://.godot/imported/ESTATUA_.MEDEA.glb-fcac340f5535b096a86d5d1f501b701d.scn::uid://bngq8bydynpk5::::res://Entities/Environment/Statue/MATERIAL_ESTATUA_MEDEA.tres
 ESTAUTA_MEDEA_TEXTURA.png::CompressedTexture2D::7179259683210461663::1771704865::1781590135::1::::<><><>0<>0<>cc827a49391bdc1bf638358452bd35e7<>res://.godot/imported/ESTAUTA_MEDEA_TEXTURA.png-a5c46e849c6cd51336a3480310cfca90.s3tc.ctex<*>res://.godot/imported/ESTAUTA_MEDEA_TEXTURA.png-a5c46e849c6cd51336a3480310cfca90.etc2.ctex::
 MATERIAL_ESTATUA_MEDEA.tres::StandardMaterial3D::3312292410362568822::1781589866::0::1::::<><><>0<>0<><>::uid://dajxmf67slwcl::::res://Entities/Environment/Statue/ESTAUTA_MEDEA_TEXTURA.png
-::res://Entities/Environment/TORRE/::1784002969
-TORRE.glb::PackedScene::4237937473257098483::1775012974::1784002969::1::::<><><>0<>0<>25d6f23f5c7c11f559e4a7c06a6d1941<>res://.godot/imported/TORRE.glb-98c6a8c5557c078fb99b5a31f448ea97.scn::uid://djjgbtutpuqm2::::res://Entities/Environment/TORRE/TORRE_M.tres
+::res://Entities/Environment/TORRE/::1785458129
+TORRE.glb::PackedScene::4237937473257098483::1775012974::1785458129::1::::<><><>0<>0<>751c8701fb41e3385a7325949775b81e<>res://.godot/imported/TORRE.glb-98c6a8c5557c078fb99b5a31f448ea97.scn::uid://djjgbtutpuqm2::::res://Entities/Environment/TORRE/TORRE_M.tres
 TORRE_D.jpg::CompressedTexture2D::1648706963245922025::1775015502::1781590134::1::::<><><>0<>0<>0b49f2f7808c775c5bb335b2d8e4a37d<>res://.godot/imported/TORRE_D.jpg-cf1d06511676679b554fc018f65f1efb.s3tc.ctex<*>res://.godot/imported/TORRE_D.jpg-cf1d06511676679b554fc018f65f1efb.etc2.ctex::
 TORRE_M.tres::StandardMaterial3D::7809908161082500451::1781589866::0::1::::<><><>0<>0<><>::uid://xqv70ady1mtd::::res://Entities/Environment/TORRE/TORRE_D.jpg
 ::res://Entities/Environment/torre_2/::1781589793
@@ -433,12 +430,12 @@ TRONCO_modddif_image_0.png::CompressedTexture2D::7625674485262686338::1771713970
 TRONO_NIVEL06.glb::PackedScene::1733852443526004541::1781245091::1781590144::1::::<><><>0<>0<>3ce42b48f4c03f83ca1ad80f59801ae4<>res://.godot/imported/TRONO_NIVEL06.glb-424549de25df3728651ef50774eea38a.scn::uid://cf06i5jgmyxcn::::res://Entities/Environment/TRONO_NIVEL_06/TRONO_NIVEL06_MAT.tres
 TRONO_NIVEL06_D.jpg::CompressedTexture2D::3448814210320181265::1781245091::1781590134::1::::<><><>0<>0<>95c4d4d1423b58177d6a6ee14b185ef5<>res://.godot/imported/TRONO_NIVEL06_D.jpg-5f536cec459d245993e114ff3f83b699.s3tc.ctex<*>res://.godot/imported/TRONO_NIVEL06_D.jpg-5f536cec459d245993e114ff3f83b699.etc2.ctex::
 TRONO_NIVEL06_MAT.tres::StandardMaterial3D::5177293132448220589::1781589866::0::1::::<><><>0<>0<><>::uid://bpevp35gj3ijp::::res://Entities/Environment/TRONO_NIVEL_06/TRONO_NIVEL06_D.jpg
-::res://Entities/Environment/Water/::1785389737
-Water.tres::ShaderMaterial::6096477244328387526::1785389737::0::1::::<><><>0<>0<><>::uid://c1q2svqubxbb5::::res://System/Shaders/Water.gdshader
-WaterPlane.tscn::PackedScene::6420344647585025328::1781589866::0::1::::<><><>0<>0<><>::uid://cs4gdbqaiqnek::::res://Entities/Environment/Water/Water.tres
-::res://Entities/Player/::1785389735
-ARQUERA_MATERIAL.tres::StandardMaterial3D::5970897640125713736::1785389735::0::1::::<><><>0<>0<><>::uid://5qjul1pb1fl::::res://Entities/Player/PROTA_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
-Arrows.tres::StandardMaterial3D::8676066424283929411::1785389735::0::1::::<><><>0<>0<><>::uid://50ejbphynn2t::::res://Entities/Player/Arrows_Base_color.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+::res://Entities/Environment/Water/::1785458163
+Water.tres::ShaderMaterial::6096477244328387526::1785458163::0::1::::<><><>0<>0<><>::uid://c1q2svqubxbb5::::res://System/Shaders/Water.gdshader
+WaterPlane.tscn::PackedScene::6420344647585025328::1785457354::0::1::::<><><>0<>0<><>::uid://cs4gdbqaiqnek::::res://Entities/Environment/Water/Water.tres
+::res://Entities/Player/::1785458162
+ARQUERA_MATERIAL.tres::StandardMaterial3D::5970897640125713736::1785458162::0::1::::<><><>0<>0<><>::uid://5qjul1pb1fl::::res://Entities/Player/PROTA_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+Arrows.tres::StandardMaterial3D::8676066424283929411::1785458162::0::1::::<><><>0<>0<><>::uid://50ejbphynn2t::::res://Entities/Player/Arrows_Base_color.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 Arrows_Base_color.jpg::CompressedTexture2D::2157533769154739173::1765142290::1781590134::1::::<><><>0<>0<>bc9ef63cc66eccea07822d05bb7db37e<>res://.godot/imported/Arrows_Base_color.jpg-a669a025a492d05990694d724c8fe420.s3tc.ctex<*>res://.godot/imported/Arrows_Base_color.jpg-a669a025a492d05990694d724c8fe420.etc2.ctex::
 DAÑO_PERSONAJE0.mp3::AudioStreamMP3::1036679013576256173::1765426709::1781590131::1::::<><><>0<>0<>e36d0fa4a40a49751ccb8dd2a79bb271<>res://.godot/imported/DAÑO_PERSONAJE0.mp3-4ba64282f7e642df33914ec725203ebc.mp3str::
 DAÑO_PERSONAJE1.mp3::AudioStreamMP3::296065663874637363::1765691884::1781590131::1::::<><><>0<>0<>5056b421d6d5a50fc88450513dba9b0f<>res://.godot/imported/DAÑO_PERSONAJE1.mp3-734d7ad56304bca2f4bcb2fed3c797ee.mp3str::
@@ -456,7 +453,7 @@ Player_Interior.gd::GDScript::3537276997901156898::1783450117::0::1::::PlayerInt
 Player_Interior.tscn::PackedScene::4803401415932813113::1783450117::0::1::::<><><>0<>0<><>::res://Entities/Player/Player_Interior.gd<>uid://uqh6g6f3e2n4::::res://Entities/Player/PROTA.glb
 PROTA.glb::PackedScene::1437287658679842307::1782453500::1782453605::1::::<><><>0<>0<>c082ebd51fa265dd0ef9d68cd0693562<>res://.godot/imported/PROTA.glb-490d58ec4acfa33bc8193ff227102ba3.scn::uid://crcl2un7te63e::::res://Entities/Player/ARQUERA_MATERIAL.tres
 PROTA_D.jpg::CompressedTexture2D::62919945312487829::1782496601::1782496603::1::::<><><>0<>0<>e7c88473ffa1c821cf1f0fa600be627d<>res://.godot/imported/PROTA_D.jpg-aff0b0bbf12b6270ec3ac04bd9651e23.s3tc.ctex<*>res://.godot/imported/PROTA_D.jpg-aff0b0bbf12b6270ec3ac04bd9651e23.etc2.ctex::
-Recurve Bow 2.tres::StandardMaterial3D::4002360596230766824::1785389735::0::1::::<><><>0<>0<><>::uid://gpcwpod4t72y::::res://Entities/Player/DIF_ARCO_PROTA.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+Recurve Bow 2.tres::StandardMaterial3D::4002360596230766824::1785458162::0::1::::<><><>0<>0<><>::uid://gpcwpod4t72y::::res://Entities/Player/DIF_ARCO_PROTA.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 RISA_PERSONAJE.mp3::AudioStreamMP3::1757341523886191282::1770840318::1781590131::1::::<><><>0<>0<>82fc070af5ac600ad8ec8c53d1c70a88<>res://.godot/imported/RISA_PERSONAJE.mp3-98abc3642a8016c19801441da7c75a18.mp3str::
 SFX_player_death.mp3::AudioStreamMP3::2116868185167739359::1765426729::1781590131::1::::<><><>0<>0<>abf9866a6b0bc0cbb9746b52a644c55a<>res://.godot/imported/SFX_player_death.mp3-c8d26b5d3ddd91aac14b31ab87a1f517.mp3str::
 TENSADO_CUERDA1.mp3::AudioStreamMP3::8420209366915444063::1765691983::1781590131::1::::<><><>0<>0<>44f02d7faf5310daea91ed531429386c<>res://.godot/imported/TENSADO_CUERDA1.mp3-422e3c96fc0d72f6b5b6896dcbb454ac.mp3str::
@@ -471,15 +468,15 @@ EnemyProjectileBase.gd::GDScript::8260030368547835989::1783663480::0::1::::Enemy
 FLECHA_ARQUERA_ENEMIGA.glb::PackedScene::8315134508780169698::1782710148::1783450994::1::::<><><>0<>0<>5f0007a8fdbc98d16e0150cfa8a94062<>res://.godot/imported/FLECHA_ARQUERA_ENEMIGA.glb-ad85a8fd519ceb3497e76a0c3d979a9a.scn::
 Flecha_Gobling_Estandarte.glb::PackedScene::5673842828179243022::1782710116::1783450994::1::::<><><>0<>0<>269ffbc94662560ce41c64606f39a42e<>res://.godot/imported/Flecha_Gobling_Estandarte.glb-2aba81bbf3472ed27ef17dfcdb0786bf.scn::
 GargolaProjectile.gd::GDScript::3271202205826788847::1785022464::0::1::::GargolaProjectile<>Area3D<><>0<>0<><>::
-GargolaProjectile.tscn::PackedScene::5126283240793745185::1783450117::0::1::::<><><>0<>0<><>::res://Entities/Projectiles/GargolaProjectile.gd
+GargolaProjectile.tscn::PackedScene::5126283240793745185::1785452943::0::1::::<><><>0<>0<><>::res://Entities/Projectiles/GargolaProjectile.gd
 GoblinArrow.gd::GDScript::8437817612729047311::1781589793::0::1::::GoblinArrowProjectile<>Area3D<><>0<>0<><>::
-GoblinArrow.tscn::PackedScene::4035780734191292457::1781589793::0::1::::<><><>0<>0<><>::uid://dshlvgshwhfhv::::res://Entities/Projectiles/GoblinArrow.gd
+GoblinArrow.tscn::PackedScene::4035780734191292457::1785452917::0::1::::<><><>0<>0<><>::uid://dshlvgshwhfhv::::res://Entities/Projectiles/GoblinArrow.gd
 GoblinGirlArrow.gd::GDScript::4083492783454885853::1782710439::0::1::::GoblinGirlArrowProjectile<>Area3D<><>0<>0<><>::
-GoblinGirlArrow.tscn::PackedScene::7335266602000918053::1783450117::0::1::::<><><>0<>0<><>::uid://dqp6bym8k0nbe::::res://Entities/Projectiles/FLECHA_ARQUERA_ENEMIGA.glb<>uid://bygcsae7ly4dt::::res://Entities/Projectiles/GoblinGirlArrow.gd
+GoblinGirlArrow.tscn::PackedScene::7335266602000918053::1785452909::0::1::::<><><>0<>0<><>::uid://dqp6bym8k0nbe::::res://Entities/Projectiles/FLECHA_ARQUERA_ENEMIGA.glb<>uid://bygcsae7ly4dt::::res://Entities/Projectiles/GoblinGirlArrow.gd
 ImpEstandarteArrow.gd::GDScript::2636759712311233359::1782710436::0::1::::ImpEstandarteArrowProjectile<>Area3D<><>0<>0<><>::
-ImpEstandarteArrow.tscn::PackedScene::8743541326231023184::1783450117::0::1::::<><><>0<>0<><>::uid://bdtjbuugjjkh8::::res://Entities/Projectiles/ImpEstandarteArrow.gd<>uid://cm3pmk7uvpqpi::::res://Entities/Projectiles/Flecha_Gobling_Estandarte.glb
+ImpEstandarteArrow.tscn::PackedScene::8743541326231023184::1785452925::0::1::::<><><>0<>0<><>::uid://bdtjbuugjjkh8::::res://Entities/Projectiles/ImpEstandarteArrow.gd<>uid://cm3pmk7uvpqpi::::res://Entities/Projectiles/Flecha_Gobling_Estandarte.glb
 ImpTrident.gd::GDScript::6840646119358644094::1781589793::0::1::::ImpTridentProjectile<>Area3D<><>0<>0<><>::
-ImpTrident.tscn::PackedScene::7648537987626383845::1781589866::0::1::::<><><>0<>0<><>::uid://c4pwpbeps05b3::::res://Entities/Projectiles/ImpTrident.gd<>uid://dx3m3ob2uudwr::::res://Entities/Enemies/ImpEnemy/TRIDENTE PROYECTIL.fbx
+ImpTrident.tscn::PackedScene::7648537987626383845::1785452934::0::1::::<><><>0<>0<><>::uid://c4pwpbeps05b3::::res://Entities/Projectiles/ImpTrident.gd<>uid://dx3m3ob2uudwr::::res://Entities/Enemies/ImpEnemy/TRIDENTE PROYECTIL.fbx
 ::res://ESTATUAS/::1784778306
 01.glb::PackedScene::1615610476133682358::1784777619::1784778116::1::::<><><>0<>0<>623642ec4b9e5b6ef43deb2bc8aa1ad5<>res://.godot/imported/01.glb-776ca0dd6b007a498c0771c9a12ac218.scn::uid://ghdrk6dinhuu::::res://ESTATUAS/01_MAT.tres
 01_D.jpg::CompressedTexture2D::8928729474938359622::1784777619::1784777880::1::::<><><>0<>0<>f23d50bd697a36705d8eabd5ed611716<>res://.godot/imported/01_D.jpg-531be1d5e3be8603a0defbf6eaffc119.s3tc.ctex<*>res://.godot/imported/01_D.jpg-531be1d5e3be8603a0defbf6eaffc119.etc2.ctex::
@@ -488,27 +485,31 @@ ImpTrident.tscn::PackedScene::7648537987626383845::1781589866::0::1::::<><><>0<>
 03_D.jpg::CompressedTexture2D::8223968014164422947::1784777596::1784777987::1::::<><><>0<>0<>c6d7b4c810db755d297c221ad921e540<>res://.godot/imported/03_D.jpg-fa3b9eded1401cf915ad8da858c0c91d.s3tc.ctex<*>res://.godot/imported/03_D.jpg-fa3b9eded1401cf915ad8da858c0c91d.etc2.ctex::
 04_D.jpg::CompressedTexture2D::1690989195108923445::1784777603::1784777995::1::::<><><>0<>0<>481de681d56950c2081af87666b9728f<>res://.godot/imported/04_D.jpg-092d8f6abdda5d976d4e21db7158ceba.s3tc.ctex<*>res://.godot/imported/04_D.jpg-092d8f6abdda5d976d4e21db7158ceba.etc2.ctex::
 ::res://Levels/::1782541263
-::res://Levels/NIVEL01/::1785395173
-NIVEL01.gd::GDScript::4319226379365817180::1785022349::0::1::::<>Node3D<><>0<>0<><>::
-NIVEL01.tscn::PackedScene::8409816514634111825::1785395173::0::1::::<><><>0<>0<><>::uid://dla06m2nrcawf::::res://Entities/Environment/new_environment.tres<>uid://bsmclkfyqk3dr::::res://Entities/Player/Player.tscn<>uid://dhksy0vksfyqc::::res://System/Core/WaveSpawner.gd<>uid://dh6gp8m68vbd3::::res://Entities/Enemies/GoblinGirl/GoblinGirl.tscn<>uid://dgatsttvqixnc::::res://Entities/Enemies/Goblin/Goblin.tscn<>uid://db57wrw5vlbsc::::res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn<>uid://cr61kgfu7qhp0::::res://Entities/Environment/ESCALERA/ESCALERA.tscn<>uid://d3x1a2b3c4d5e::::res://Entities/Enemies/Canonero/Canonero.tscn<>uid://dcqn4obnv8xjm::::res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn<>uid://c7a4c82odgcle::::res://Entities/Environment/BarreraLimite/BarreraLimite.tscn<>uid://d3e4f5g6h7i8j::::res://Entities/Environment/Escudo/Escudo.tscn<>uid://v8ci5ta3tkkr::::res://Entities/Environment/PlataformaOneway/PlataformaOneway.tscn<>uid://c0gtu2yrqpnxw::::res://UI/GameUI.tscn<>uid://bvx7egiurhae4::::res://UI/Assets/1frame.png<>uid://yaua7cp2sunt::::res://System/Videos/FONDo.ogv<>uid://cbygqy1b5iiw7::::res://Entities/Environment/torre_2/torre_2.tscn<>res://Entities/Environment/FogPlane/FogPlane.tscn<>uid://ca65fjxn6rl4a::::res://Entities/Environment/BUSTO_BRONCE/busto_bronce.tscn<>uid://cxqcex5ugbppo::::res://Entities/Environment/Water/WaterPlane.tscn<>uid://c20j7pudi7arc::::res://Entities/Environment/BASE_ARQUERA/BASE_ARQUERA.tscn<>uid://dusffdtovx70::::res://Entities/AllyArcher/AllyArcher.tscn<>uid://d36lv4hhnbipo::::res://Entities/Environment/TRONCO/Tronco.tscn<>uid://dx6jgap4y6f5n::::res://Entities/Environment/Pilar/Pilar.glb<>uid://c58e1g5wgh0iy::::res://Entities/Environment/SpikeTrap/PINCHO.glb<>uid://d05x62q81630g::::res://UI/Protagonista/CAPA1_V.png<>uid://ceixfsg6pedjp::::res://Entities/Environment/Floor/PISO.glb<>uid://bl8cslg28i16h::::res://Entities/Environment/Floor/PISO ALIADO.glb<>uid://bmei2xlho4of8::::res://Entities/Environment/MuroPlataforma/Muro_Plataforma.tscn<>uid://boae4yg408kxa::::res://Entities/Environment/RampaSubida/Escena_rampa_nivel3.tscn<>uid://bjn66i0gdcsyf::::res://Entities/Environment/Escudo/Escudo_enemigo.tscn<>res://Entities/Environment/Hojas/HojasPlane.tscn<>uid://ce4x7k7odgcle::::res://Entities/Environment/BarreraLimite/BarreraDestruyeFlechas.tscn<>uid://t0whis8d7cuv::::res://Entities/Enemies/GARGOLA/Gargola.tscn<>uid://b7v8x2y1w4n0k::::res://UI/UI_Vida_Protagonista.tscn<>uid://c5b8r2a3c4e5f::::res://Bracero/Bracero.tscn<>uid://dq8p4q0wjyuaw::::res://LONKO/PILAR_LONKO.glb<>uid://b2sja6x1bvy7e::::res://Levels/NIVEL01/NIVEL01.gd
+::res://Levels/NIVEL01/::1785457490
+NIVEL01.gd::GDScript::4319226379365817180::1785457236::0::1::::<>Node3D<><>0<>0<><>::
+NIVEL01.tscn::PackedScene::8409816514634111825::1785457490::0::1::::<><><>0<>0<><>::uid://dla06m2nrcawf::::res://Entities/Environment/new_environment.tres<>uid://bsmclkfyqk3dr::::res://Entities/Player/Player.tscn<>uid://dhksy0vksfyqc::::res://System/Core/WaveSpawner.gd<>uid://dh6gp8m68vbd3::::res://Entities/Enemies/GoblinGirl/GoblinGirl.tscn<>uid://dgatsttvqixnc::::res://Entities/Enemies/Goblin/Goblin.tscn<>uid://db57wrw5vlbsc::::res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn<>uid://cr61kgfu7qhp0::::res://Entities/Environment/ESCALERA/ESCALERA.tscn<>uid://d3x1a2b3c4d5e::::res://Entities/Enemies/Canonero/Canonero.tscn<>uid://dcqn4obnv8xjm::::res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn<>uid://c7a4c82odgcle::::res://Entities/Environment/BarreraLimite/BarreraLimite.tscn<>uid://d3e4f5g6h7i8j::::res://Entities/Environment/Escudo/Escudo.tscn<>uid://v8ci5ta3tkkr::::res://Entities/Environment/PlataformaOneway/PlataformaOneway.tscn<>uid://c0gtu2yrqpnxw::::res://UI/GameUI.tscn<>uid://bvx7egiurhae4::::res://UI/Assets/1frame.png<>uid://yaua7cp2sunt::::res://System/Videos/FONDo.ogv<>uid://cbygqy1b5iiw7::::res://Entities/Environment/torre_2/torre_2.tscn<>res://Entities/Environment/FogPlane/FogPlane.tscn<>uid://ca65fjxn6rl4a::::res://Entities/Environment/BUSTO_BRONCE/busto_bronce.tscn<>uid://cxqcex5ugbppo::::res://Entities/Environment/Water/WaterPlane.tscn<>uid://c20j7pudi7arc::::res://Entities/Environment/BASE_ARQUERA/BASE_ARQUERA.tscn<>uid://dusffdtovx70::::res://Entities/AllyArcher/AllyArcher.tscn<>uid://d36lv4hhnbipo::::res://Entities/Environment/TRONCO/Tronco.tscn<>uid://dx6jgap4y6f5n::::res://Entities/Environment/Pilar/Pilar.glb<>uid://c58e1g5wgh0iy::::res://Entities/Environment/SpikeTrap/PINCHO.glb<>uid://d05x62q81630g::::res://UI/Protagonista/CAPA1_V.png<>uid://ceixfsg6pedjp::::res://Entities/Environment/Floor/PISO.glb<>uid://bl8cslg28i16h::::res://Entities/Environment/Floor/PISO ALIADO.glb<>uid://bmei2xlho4of8::::res://Entities/Environment/MuroPlataforma/Muro_Plataforma.tscn<>uid://boae4yg408kxa::::res://Entities/Environment/RampaSubida/Escena_rampa_nivel3.tscn<>uid://bjn66i0gdcsyf::::res://Entities/Environment/Escudo/Escudo_enemigo.tscn<>res://Entities/Environment/Hojas/HojasPlane.tscn<>uid://ce4x7k7odgcle::::res://Entities/Environment/BarreraLimite/BarreraDestruyeFlechas.tscn<>uid://t0whis8d7cuv::::res://Entities/Enemies/GARGOLA/Gargola.tscn<>uid://b7v8x2y1w4n0k::::res://UI/UI_Vida_Protagonista.tscn<>uid://c5b8r2a3c4e5f::::res://Bracero/Bracero.tscn<>uid://b2sja6x1bvy7e::::res://Levels/NIVEL01/NIVEL01.gd
 ::res://Levels/NIVEL06_ASALTO/::1783450117
 FONDO_NIVEL06_.png::CompressedTexture2D::2153326256150593842::1781242722::1781590133::1::::<><><>0<>0<>18f65ffcea5b7cbe66bc99e747292a02<>res://.godot/imported/FONDO_NIVEL06_.png-8e23632a9a78954fce2dde5e91129349.ctex::
 NIVEL06_ASALTO.tscn::PackedScene::2328276764747878763::1783450117::0::1::::<><><>0<>0<><>::uid://b2sja6x1bvy7e::::res://Levels/NIVEL01/NIVEL01.gd<>uid://dla06m2nrcawf::::res://Entities/Environment/new_environment.tres<>uid://bsmclkfyqk3dr::::res://Entities/Player/Player.tscn<>uid://dhksy0vksfyqc::::res://System/Core/WaveSpawner.gd<>uid://dgatsttvqixnc::::res://Entities/Enemies/Goblin/Goblin.tscn<>uid://dh6gp8m68vbd3::::res://Entities/Enemies/GoblinGirl/GoblinGirl.tscn<>uid://db57wrw5vlbsc::::res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn<>uid://d3x1a2b3c4d5e::::res://Entities/Enemies/Canonero/Canonero.tscn<>uid://dcqn4obnv8xjm::::res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn<>uid://c7a4c82odgcle::::res://Entities/Environment/BarreraLimite/BarreraLimite.tscn<>uid://5xc768bu5og5::::res://Levels/NIVEL06_ASALTO/FONDO_NIVEL06_.png<>uid://c0gtu2yrqpnxw::::res://UI/GameUI.tscn<>uid://bl8cslg28i16h::::res://Entities/Environment/Floor/PISO ALIADO.glb<>uid://bgart4lvvsl43::::res://Entities/Environment/GEAMA_NIVEL_06/GEMA_NIVEL06.glb<>uid://b1iim2cocmmmp::::res://Entities/Environment/ESTATUA_NIVEL06/ESTATUA_NIVEL06.glb<>uid://cxqcex5ugbppo::::res://Entities/Environment/Water/WaterPlane.tscn<>uid://c20j7pudi7arc::::res://Entities/Environment/BASE_ARQUERA/BASE_ARQUERA.tscn<>uid://yx5kcwysxdn6::::res://Entities/Environment/TRONO_NIVEL_06/TRONO_NIVEL06.glb<>uid://bu66x144x50gy::::res://Entities/Environment/CARNE_NIVEL06/CARNE_NIVEL_06.glb<>uid://d36lv4hhnbipo::::res://Entities/Environment/Tronco/Tronco.tscn<>uid://d05x62q81630g::::res://UI/Protagonista/CAPA1_V.png<>res://Entities/Environment/Luciernagas/LuciernagasPlane.tscn
-::res://Levels/NIVEL_DEBUG/::1783569698
-NIVEL_DEBUG.gd::GDScript::701459688788404869::1785395542::0::1::::<>Node3D<><>0<>0<><>::
-NIVEL_DEBUG.tscn::PackedScene::8409816514634111825::1784003410::0::1::::<><><>0<>0<><>::uid://dla06m2nrcawf::::res://Entities/Environment/new_environment.tres<>uid://bsmclkfyqk3dr::::res://Entities/Player/Player.tscn<>uid://dhksy0vksfyqc::::res://System/Core/WaveSpawner.gd<>uid://dh6gp8m68vbd3::::res://Entities/Enemies/GoblinGirl/GoblinGirl.tscn<>uid://dgatsttvqixnc::::res://Entities/Enemies/Goblin/Goblin.tscn<>uid://db57wrw5vlbsc::::res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn<>uid://cr61kgfu7qhp0::::res://Entities/Environment/ESCALERA/ESCALERA.tscn<>uid://d3x1a2b3c4d5e::::res://Entities/Enemies/Canonero/Canonero.tscn<>uid://dcqn4obnv8xjm::::res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn<>uid://c7a4c82odgcle::::res://Entities/Environment/BarreraLimite/BarreraLimite.tscn<>uid://d3e4f5g6h7i8j::::res://Entities/Environment/Escudo/Escudo.tscn<>uid://v8ci5ta3tkkr::::res://Entities/Environment/PlataformaOneway/PlataformaOneway.tscn<>uid://c0gtu2yrqpnxw::::res://UI/GameUI.tscn<>uid://bvx7egiurhae4::::res://UI/Assets/1frame.png<>uid://yaua7cp2sunt::::res://System/Videos/FONDo.ogv<>uid://cbygqy1b5iiw7::::res://Entities/Environment/torre_2/torre_2.tscn<>res://Entities/Environment/FogPlane/FogPlane.tscn<>uid://ca65fjxn6rl4a::::res://Entities/Environment/BUSTO_BRONCE/busto_bronce.tscn<>uid://cxqcex5ugbppo::::res://Entities/Environment/Water/WaterPlane.tscn<>uid://c20j7pudi7arc::::res://Entities/Environment/BASE_ARQUERA/BASE_ARQUERA.tscn<>uid://dusffdtovx70::::res://Entities/AllyArcher/AllyArcher.tscn<>uid://d36lv4hhnbipo::::res://Entities/Environment/TRONCO/Tronco.tscn<>uid://dx6jgap4y6f5n::::res://Entities/Environment/Pilar/Pilar.glb<>uid://c58e1g5wgh0iy::::res://Entities/Environment/SpikeTrap/PINCHO.glb<>uid://d05x62q81630g::::res://UI/Protagonista/CAPA1_V.png<>uid://ceixfsg6pedjp::::res://Entities/Environment/Floor/PISO.glb<>uid://bl8cslg28i16h::::res://Entities/Environment/Floor/PISO ALIADO.glb<>uid://bmei2xlho4of8::::res://Entities/Environment/MuroPlataforma/Muro_Plataforma.tscn<>uid://boae4yg408kxa::::res://Entities/Environment/RampaSubida/Escena_rampa_nivel3.tscn<>uid://bjn66i0gdcsyf::::res://Entities/Environment/Escudo/Escudo_enemigo.tscn<>res://Entities/Environment/Hojas/HojasPlane.tscn<>uid://ce4x7k7odgcle::::res://Entities/Environment/BarreraLimite/BarreraDestruyeFlechas.tscn<>uid://t0whis8d7cuv::::res://Entities/Enemies/GARGOLA/Gargola.tscn<>uid://j8166allu14t::::res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.gd
-::res://LONKO/::1785396058
+::res://Levels/NIVEL_DEBUG/::1785460011
+NIVEL_DEBUG.gd::GDScript::701459688788404869::1785457236::0::1::::<>Node3D<><>0<>0<><>::
+NIVEL_DEBUG.tscn::PackedScene::8409816514634111825::1785460011::0::1::::<><><>0<>0<><>::uid://dla06m2nrcawf::::res://Entities/Environment/new_environment.tres<>uid://bsmclkfyqk3dr::::res://Entities/Player/Player.tscn<>uid://dhksy0vksfyqc::::res://System/Core/WaveSpawner.gd<>uid://dh6gp8m68vbd3::::res://Entities/Enemies/GoblinGirl/GoblinGirl.tscn<>uid://dgatsttvqixnc::::res://Entities/Enemies/Goblin/Goblin.tscn<>uid://db57wrw5vlbsc::::res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn<>uid://cr61kgfu7qhp0::::res://Entities/Environment/ESCALERA/ESCALERA.tscn<>uid://d3x1a2b3c4d5e::::res://Entities/Enemies/Canonero/Canonero.tscn<>uid://dcqn4obnv8xjm::::res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn<>uid://c7a4c82odgcle::::res://Entities/Environment/BarreraLimite/BarreraLimite.tscn<>uid://d3e4f5g6h7i8j::::res://Entities/Environment/Escudo/Escudo.tscn<>uid://v8ci5ta3tkkr::::res://Entities/Environment/PlataformaOneway/PlataformaOneway.tscn<>uid://c0gtu2yrqpnxw::::res://UI/GameUI.tscn<>uid://bvx7egiurhae4::::res://UI/Assets/1frame.png<>uid://yaua7cp2sunt::::res://System/Videos/FONDo.ogv<>uid://cbygqy1b5iiw7::::res://Entities/Environment/torre_2/torre_2.tscn<>res://Entities/Environment/FogPlane/FogPlane.tscn<>uid://ca65fjxn6rl4a::::res://Entities/Environment/BUSTO_BRONCE/busto_bronce.tscn<>uid://cxqcex5ugbppo::::res://Entities/Environment/Water/WaterPlane.tscn<>uid://c20j7pudi7arc::::res://Entities/Environment/BASE_ARQUERA/BASE_ARQUERA.tscn<>uid://d36lv4hhnbipo::::res://Entities/Environment/TRONCO/Tronco.tscn<>uid://dx6jgap4y6f5n::::res://Entities/Environment/Pilar/Pilar.glb<>uid://c58e1g5wgh0iy::::res://Entities/Environment/SpikeTrap/PINCHO.glb<>uid://d05x62q81630g::::res://UI/Protagonista/CAPA1_V.png<>uid://ceixfsg6pedjp::::res://Entities/Environment/Floor/PISO.glb<>uid://bl8cslg28i16h::::res://Entities/Environment/Floor/PISO ALIADO.glb<>res://Entities/Environment/Hojas/HojasPlane.tscn<>uid://ce4x7k7odgcle::::res://Entities/Environment/BarreraLimite/BarreraDestruyeFlechas.tscn<>uid://t0whis8d7cuv::::res://Entities/Enemies/GARGOLA/Gargola.tscn<>uid://j8166allu14t::::res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.gd
+::res://LONKO/::1785462293
 Daño.mp3::AudioStreamMP3::3846550117848668993::1785395089::1785396087::1::::<><><>0<>0<>405641ed879fad0ba62b4d577c7d01ff<>res://.godot/imported/Daño.mp3-a88294acae0d801836c574ee2c4bf78e.mp3str::
-Lonko.gd::GDScript::7596375785143568815::1785395684::0::1::::Lonko<>EnemyBase<><>0<>0<><>::
+Lonko.gd::GDScript::7596375785143568815::1785462202::0::1::::Lonko<>EnemyBase<><>0<>0<><>::
 LONKO.glb::PackedScene::5920067655657256372::1785394534::1785394563::1::::<><><>0<>0<>02a471c79534cc95576f9871e5e15dac<>res://.godot/imported/LONKO.glb-0bae5ce5d39571b049241d36477778df.scn::uid://sdu4m1hqr0hy::::res://LONKO/LONKO_MAT.tres
-Lonko.tscn::PackedScene::3661158652193460910::1785395689::0::1::::<><><>0<>0<><>::uid://dgh0g1o0duntf::::res://LONKO/Lonko.gd<>uid://cqlywcwj0vwhw::::res://LONKO/LONKO.glb<>uid://c7tr1s2bag5ww::::res://Entities/Enemies/GoblinGirl/ARCO_GOBLING_GIRL.glb<>uid://dcri1fif5ky1b::::res://Entities/Projectiles/GoblinGirlArrow.tscn
+Lonko.tscn::PackedScene::3661158652193460910::1785459518::0::1::::<><><>0<>0<><>::uid://dgh0g1o0duntf::::res://LONKO/Lonko.gd<>uid://cqlywcwj0vwhw::::res://LONKO/LONKO.glb<>uid://c7tr1s2bag5ww::::res://Entities/Enemies/GoblinGirl/ARCO_GOBLING_GIRL.glb<>uid://dcri1fif5ky1b::::res://Entities/Projectiles/GoblinGirlArrow.tscn
 LONKO_D.jpg::CompressedTexture2D::7031743988982860725::1784780587::1784780618::1::::<><><>0<>0<>d900d0461f3681762f22238ce0d1384a<>res://.godot/imported/LONKO_D.jpg-8247b3497e03a1190bc1bf0f302978d9.s3tc.ctex<*>res://.godot/imported/LONKO_D.jpg-8247b3497e03a1190bc1bf0f302978d9.etc2.ctex::
-LONKO_MAT.tres::StandardMaterial3D::1270859117410576722::1785395548::0::1::::<><><>0<>0<><>::uid://c7gh2cl2dd4n6::::res://LONKO/LONKO_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+LONKO_MAT.tres::StandardMaterial3D::1270859117410576722::1785458163::0::1::::<><><>0<>0<><>::uid://c7gh2cl2dd4n6::::res://LONKO/LONKO_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 Muerte.mp3::AudioStreamMP3::2809412345619303823::1785395091::1785396087::1::::<><><>0<>0<>92b3873058172e67e6d2ba48dcf265a2<>res://.godot/imported/Muerte.mp3-b1013aff4a4b8c648a14058dc72e6e9b.mp3str::
+PilarLonko.tscn::PackedScene::7064282854699127319::1785461053::0::1::::<><><>0<>0<><>::uid://dq8p4q0wjyuaw::::res://LONKO/PILAR_LONKO.glb<>uid://bjxftvx58na0x::::res://LONKO/PilarLonkoBody.gd
+PilarLonkoBody.gd::GDScript::3065939619755320929::1785462318::0::1::::PilarLonkoBody<>StaticBody3D<><>0<>0<><>::
 PILAR_LONKO.glb::PackedScene::8351371438092818358::1785394928::1785395171::1::::<><><>0<>0<>bcbc98512bb4ca9e538f8a3f15c9d775<>res://.godot/imported/PILAR_LONKO.glb-b3e5d97e5e2578fabb9d6f340c415d57.scn::uid://c56ayof623ihf::::res://LONKO/PILAR_LONKO_MAT.tres
 PILAR_LONKO_D.jpg::CompressedTexture2D::7545132889824226336::1785394929::1785394963::1::::<><><>0<>0<>2543892db76242de921a6fb2f98004f4<>res://.godot/imported/PILAR_LONKO_D.jpg-ba9bd180f51f0207f1c190723e37db77.s3tc.ctex<*>res://.godot/imported/PILAR_LONKO_D.jpg-ba9bd180f51f0207f1c190723e37db77.etc2.ctex::
 PILAR_LONKO_MAT.tres::StandardMaterial3D::6942545990453357507::1785394961::0::1::::<><><>0<>0<><>::uid://dfq6ibhatlbka::::res://LONKO/PILAR_LONKO_D.jpg
-Soccer Trip.fbx::PackedScene::1836128832558016396::1785394359::1785394360::1::::<><><>0<>0<>f10dcc7aa4139066668cd587234fe238<>res://.godot/imported/Soccer Trip.fbx-aedd2670e9bcab58581b560fba825fc9.scn::
+ROCAS.png::CompressedTexture2D::7469325549226848601::1785459400::1785459425::1::::<><><>0<>0<>3fa8e49add3ec36bba609dc42e65e71f<>res://.godot/imported/ROCAS.png-8370271c951f390b465286044a7e6e11.ctex::
+Sonido impacto pilar.mp3::AudioStreamMP3::1486307482074116869::1785462183::1785462293::1::::<><><>0<>0<>98aaab061125298a65ebe7048b964df8<>res://.godot/imported/Sonido impacto pilar.mp3-9a5215b5b11ac3f224d6658c2f925522.mp3str::
+Sonido pilar emergiendo.mp3::AudioStreamMP3::4725553751758610505::1785456873::1785456932::1::::<><><>0<>0<>71934d3e194035e75b3468d7997b162b<>res://.godot/imported/Sonido pilar emergiendo.mp3-92972491692f6a0f24b7af8424bcb785.mp3str::
 ::res://Nivel_Interior/::1783450997
 CAMA.glb::PackedScene::4489013387922790424::1783450117::1783450994::1::::<><><>0<>0<>453c43e69cdb2b72bac7e530c70368fb<>res://.godot/imported/CAMA.glb-8aac8ec7a72bce041fdaee9a1d199b7f.scn::uid://ddy7yeika6yyh::::res://Nivel_Interior/CAMA_MAT.tres
 CAMA_D.jpg::CompressedTexture2D::8190546278498573373::1783450117::1783450990::1::::<><><>0<>0<>ef60990594ac8078b7bb4099c57ebcb2<>res://.godot/imported/CAMA_D.jpg-382204ec1c2fe1804438740d8347d49f.s3tc.ctex<*>res://.godot/imported/CAMA_D.jpg-382204ec1c2fe1804438740d8347d49f.etc2.ctex::
@@ -520,12 +521,12 @@ ESCUDO_ORNAMENTO.glb::PackedScene::8782026319335344403::1783450117::1783450997::
 ESCUDO_ORNAMENTO_D.jpg::CompressedTexture2D::7489424971083756814::1783450117::1783450990::1::::<><><>0<>0<>9a87cc9d36325dbae7bb30d304a24c8a<>res://.godot/imported/ESCUDO_ORNAMENTO_D.jpg-28093a2944be15d0c74346a27e82dd5c.s3tc.ctex<*>res://.godot/imported/ESCUDO_ORNAMENTO_D.jpg-28093a2944be15d0c74346a27e82dd5c.etc2.ctex::
 ESCUDO_ORNAMENTO_MAT.tres::StandardMaterial3D::2030797226972864635::1783450117::0::1::::<><><>0<>0<><>::uid://dex6y8yusvtwo::::res://Nivel_Interior/ESCUDO_ORNAMENTO_D.jpg
 Interio.tscn::PackedScene::7232058038404018241::1783450117::0::1::::<><><>0<>0<><>::uid://demr1bp8i36gj::::res://Nivel_Interior/Esctrucutra.glb<>uid://dxecxqd34tdkl::::res://Nivel_Interior/ESCUDO_ORNAMENTO.glb<>uid://b47rnohfxphm3::::res://Nivel_Interior/CAMA.glb<>uid://cao2k4m8x3p10::::res://Entities/Player/Player_Interior.tscn
-::res://Pocion/::1785392591
-Posion.gd::GDScript::7914234856418841213::1785392619::0::1::::Posion<>Area3D<><>0<>1<><>::
+::res://Pocion/::1785458163
+Posion.gd::GDScript::7914234856418841213::1785449022::0::1::::Posion<>Area3D<><>0<>1<><>::
 POSION.glb::PackedScene::2903815477745450621::1785389452::1785389495::1::::<><><>0<>0<>e1e3436273616876ffbbbda80b87a2cf<>res://.godot/imported/POSION.glb-54ea79dcc6881093a6e660b6a138db45.scn::uid://t0a53d8s657t::::res://Pocion/POSION_MAT.tres
 Posion.tscn::PackedScene::3501651264967556716::1785392591::0::1::::<><><>0<>0<><>::uid://dk0yj6k7h0j6d::::res://Pocion/Posion.gd<>uid://bhmvofwvnrh0x::::res://Pocion/POSION.glb
 POSION_D.jpg::CompressedTexture2D::9128875935240931852::1785389452::1785389467::1::::<><><>0<>0<>1f45da706d0fe2d1b9356e3c6be2122b<>res://.godot/imported/POSION_D.jpg-2e7c2b402ea44ad3083b508a134d2bd0.s3tc.ctex<*>res://.godot/imported/POSION_D.jpg-2e7c2b402ea44ad3083b508a134d2bd0.etc2.ctex::
-POSION_MAT.tres::StandardMaterial3D::1385252523604151107::1785391554::0::1::::<><><>0<>0<><>::uid://d3cdiumkabmpw::::res://Pocion/POSION_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
+POSION_MAT.tres::StandardMaterial3D::1385252523604151107::1785458163::0::1::::<><><>0<>0<><>::uid://d3cdiumkabmpw::::res://Pocion/POSION_D.jpg<>uid://ctu2vbbxnfkr7::::res://System/Shaders/TOON_LINEANEGRA.gdshader
 Sonido posion.mp3::AudioStreamMP3::8141818354217386801::1785390108::1785390156::1::::<><><>0<>0<>a2f5d00ff8f6c69c0e41526aadbd1ec9<>res://.godot/imported/Sonido posion.mp3-0f25b15de3206116205dda31ad0cf79d.mp3str::
 ::res://System/::1781589864
 ::res://System/Audio/::1780430395
@@ -538,13 +539,13 @@ VICTORY.mp3::AudioStreamMP3::6032321054631332936::1772684185::1781590131::1::::<
 AudioManager.gd::GDScript::2595074493854250641::1785022452::0::1::::<>Node<><>0<>0<><>::
 ProjectilePool.gd::GDScript::2013133559299875075::1780952401::0::1::::ProjectilePool<>RefCounted<><>0<>0<><>::
 WaveSpawner.gd::GDScript::7672364845012920906::1785395278::0::1::::WaveSpawner<>Node3D<><>0<>0<><>::
-::res://System/Shaders/::1785389735
+::res://System/Shaders/::1785458162
 Displacement.gdshader::Shader::7499196347405367486::1781570256::0::1::::<><><>0<>0<><>::
 dissolve.gdshader::Shader::2114933392406191765::1781570256::0::1::::<><><>0<>0<><>::
 fog_plane.gdshader::Shader::4732817513622910063::1781570256::0::1::::<><><>0<>0<><>::
 luciernagas.gdshader::Shader::1512308363711091495::1781570256::0::1::::<><><>0<>0<><>::
 sombra_personaje.gdshader::Shader::6584480921063414699::1781332858::0::1::::<><><>0<>0<><>::
-TOON_LINEANEGRA.gdshader::Shader::6149393867197460642::1785389735::0::1::::<><><>0<>0<><>::
+TOON_LINEANEGRA.gdshader::Shader::6149393867197460642::1785458162::0::1::::<><><>0<>0<><>::
 TOON_PROYECTIL_LINEA.gdshader::Shader::7056531586900085349::1781334124::0::1::::<><><>0<>0<><>::
 victory_curtain.gdshader::Shader::7600857077493475982::1782950707::0::1::::<><><>0<>0<><>::
 Water.gdshader::Shader::6632453977753156876::1771699771::0::1::::<><><>0<>0<><>::
@@ -589,27 +590,27 @@ test_ui_instrucciones_mouse.gd::GDScript::7837634709769394404::1785021813::0::1:
 test_ui_vida_protagonista.gd::GDScript::7999271430927876958::1785020950::0::1::::<>Node<><>0<>0<><>::
 test_wave_spawner.gd::GDScript::885751805802539401::1782426224::0::1::::<>Node<><>0<>0<><>::
 ::res://Tools/::1783450117
-::res://Translations/::1785395595
-translations.ar.translation::OptimizedTranslation::3028601733360671036::1785395595::0::1::::<><><>0<>0<><>::
-translations.binary.translation::OptimizedTranslation::7012693047407012323::1785395595::0::1::::<><><>0<>0<><>::
-translations.csv::Translation::3459224298925831148::1785395573::1785395595::1::::<><><>0<>0<>28af4be081e2d6c275adec66538dc8c7<>res://Translations/translations.es.translation<*>res://Translations/translations.en.translation<*>res://Translations/translations.pt.translation<*>res://Translations/translations.fr.translation<*>res://Translations/translations.zh.translation<*>res://Translations/translations.ja.translation<*>res://Translations/translations.ru.translation<*>res://Translations/translations.de.translation<*>res://Translations/translations.ko.translation<*>res://Translations/translations.it.translation<*>res://Translations/translations.pl.translation<*>res://Translations/translations.ar.translation<*>res://Translations/translations.qu.translation<*>res://Translations/translations.binary.translation::
-translations.de.translation::OptimizedTranslation::8970478905966551628::1785395595::0::1::::<><><>0<>0<><>::
-translations.en.translation::OptimizedTranslation::8623829145915168769::1785395595::0::1::::<><><>0<>0<><>::
-translations.es.translation::OptimizedTranslation::8523534482091446882::1785395595::0::1::::<><><>0<>0<><>::
-translations.fr.translation::OptimizedTranslation::3150075672984076985::1785395595::0::1::::<><><>0<>0<><>::
-translations.it.translation::OptimizedTranslation::4556469100512819225::1785395595::0::1::::<><><>0<>0<><>::
-translations.ja.translation::OptimizedTranslation::8759924793219790997::1785395595::0::1::::<><><>0<>0<><>::
-translations.ko.translation::OptimizedTranslation::9221210953634283816::1785395595::0::1::::<><><>0<>0<><>::
-translations.pl.translation::OptimizedTranslation::2671106111120813747::1785395595::0::1::::<><><>0<>0<><>::
-translations.pt.translation::OptimizedTranslation::1908210599472024113::1785395595::0::1::::<><><>0<>0<><>::
-translations.qu.translation::OptimizedTranslation::8861761704721702673::1785395595::0::1::::<><><>0<>0<><>::
-translations.ru.translation::OptimizedTranslation::385025205358276782::1785395595::0::1::::<><><>0<>0<><>::
-translations.zh.translation::OptimizedTranslation::2730769841533177999::1785395595::0::1::::<><><>0<>0<><>::
+::res://Translations/::1785396547
+translations.ar.translation::OptimizedTranslation::3028601733360671036::1785396547::0::1::::<><><>0<>0<><>::
+translations.binary.translation::OptimizedTranslation::7012693047407012323::1785396547::0::1::::<><><>0<>0<><>::
+translations.csv::Translation::3459224298925831148::1785396533::1785396547::1::::<><><>0<>0<>28af4be081e2d6c275adec66538dc8c7<>res://Translations/translations.es.translation<*>res://Translations/translations.en.translation<*>res://Translations/translations.pt.translation<*>res://Translations/translations.fr.translation<*>res://Translations/translations.zh.translation<*>res://Translations/translations.ja.translation<*>res://Translations/translations.ru.translation<*>res://Translations/translations.de.translation<*>res://Translations/translations.ko.translation<*>res://Translations/translations.it.translation<*>res://Translations/translations.pl.translation<*>res://Translations/translations.ar.translation<*>res://Translations/translations.qu.translation<*>res://Translations/translations.binary.translation::
+translations.de.translation::OptimizedTranslation::8970478905966551628::1785396547::0::1::::<><><>0<>0<><>::
+translations.en.translation::OptimizedTranslation::8623829145915168769::1785396546::0::1::::<><><>0<>0<><>::
+translations.es.translation::OptimizedTranslation::8523534482091446882::1785396546::0::1::::<><><>0<>0<><>::
+translations.fr.translation::OptimizedTranslation::3150075672984076985::1785396547::0::1::::<><><>0<>0<><>::
+translations.it.translation::OptimizedTranslation::4556469100512819225::1785396547::0::1::::<><><>0<>0<><>::
+translations.ja.translation::OptimizedTranslation::8759924793219790997::1785396547::0::1::::<><><>0<>0<><>::
+translations.ko.translation::OptimizedTranslation::9221210953634283816::1785396547::0::1::::<><><>0<>0<><>::
+translations.pl.translation::OptimizedTranslation::2671106111120813747::1785396547::0::1::::<><><>0<>0<><>::
+translations.pt.translation::OptimizedTranslation::1908210599472024113::1785396546::0::1::::<><><>0<>0<><>::
+translations.qu.translation::OptimizedTranslation::8861761704721702673::1785396547::0::1::::<><><>0<>0<><>::
+translations.ru.translation::OptimizedTranslation::385025205358276782::1785396547::0::1::::<><><>0<>0<><>::
+translations.zh.translation::OptimizedTranslation::2730769841533177999::1785396547::0::1::::<><><>0<>0<><>::
 ::res://UI/::1785395594
 DialogoComic.gd::GDScript::8400116281728518938::1785020918::0::1::::DialogoComic<>CanvasLayer<><>0<>0<><>::
 Dialogo_Emisario_Parte1.tscn::PackedScene::7838918490777243384::1785020900::0::1::::<><><>0<>0<><>::uid://drxcxng0eisja::::res://UI/DialogoComic.gd<>uid://c0i7h4twlpeon::::res://UI/Protagonista/IMP_ICON.png<>uid://byl8he8upuuiv::::res://Entities/Environment/Escudo/IMPACTO_ESCUDO_BALLESTA.mp3
 Dialogo_Protagonista.tscn::PackedScene::5333480190378778127::1785020892::0::1::::<><><>0<>0<><>::uid://drxcxng0eisja::::res://UI/DialogoComic.gd<>uid://wqonca7ysvbp::::res://UI/Protagonista/PROTA_NORMAL.png<>uid://byl8he8upuuiv::::res://Entities/Environment/Escudo/IMPACTO_ESCUDO_BALLESTA.mp3<>uid://qgmhf0dv4kf4::::res://UI/Protagonista/PROTA_ENOJADA.png
-GameUI.gd::GDScript::8844307192095941425::1785395602::0::1::::<>CanvasLayer<><>0<>0<><>::
+GameUI.gd::GDScript::8844307192095941425::1785452901::0::1::::<>CanvasLayer<><>0<>0<><>::
 GameUI.tscn::PackedScene::6541139519602179952::1781589794::0::1::::<><><>0<>0<><>::res://UI/GameUI.gd
 IntroScene.gd::GDScript::5277135435795925607::1781589794::0::1::::<>Control<><>0<>0<><>::
 IntroScene.tscn::PackedScene::1597357679157724480::1784251588::0::1::::<><><>0<>0<><>::res://UI/IntroScene.gd<>uid://cq7q4f5au4ep1::::res://WIP.png
@@ -619,7 +620,7 @@ ResultadoPacifista.gd::GDScript::4118315948141537465::1777736791::0::1::::Result
 Resultado_Pacifista.tscn::PackedScene::3217192120198933457::1781589794::0::1::::<><><>0<>0<><>::uid://byw7cdv07kt3f::::res://UI/ResultadoPacifista.gd<>uid://b1f72q7bfw53k::::res://UI/Protagonista/PASIFISTA.jpeg
 SplashScreen.gd::GDScript::2374342788652306959::1785021379::0::1::::<>Control<><>0<>0<><>::
 SplashScreen.tscn::PackedScene::2774286863869060483::1781589794::0::1::::<><><>0<>0<><>::uid://83fcxep0sdwx::::res://UI/SplashScreen.gd<>uid://dd5lt6avm0ojb::::res://UI/Assets/SPLASH_SCREEN.jpeg
-UIGameOver.gd::GDScript::38514437195758637::1785395587::0::1::::UIGameOver<>CanvasLayer<><>0<>0<><>::
+UIGameOver.gd::GDScript::38514437195758637::1785396302::0::1::::UIGameOver<>CanvasLayer<><>0<>0<><>::
 UI_Vida_Protagonista.gd::GDScript::7360212139216698742::1785392208::0::1::::UIVidaProtagonista<>CanvasLayer<><>0<>0<><>::
 UI_Vida_Protagonista.tscn::PackedScene::4677861803384134552::1784780250::0::1::::<><><>0<>0<><>::uid://dc4lvbdfme0vi::::res://UI/UI_Vida_Protagonista.gd<>uid://tnt51rpoblb7::::res://UI_VIDA/BARRA_VIDA.png<>uid://c5kekyonkla78::::res://UI_VIDA/corazon.png
 ::res://UI/Assets/::1783450992
@@ -646,12 +647,12 @@ corazon.png::CompressedTexture2D::6899412462770008825::1784778756::1784778761::1
 Projectiles_showcase.tscn::PackedScene::3252101086769372945::1783573559::0::1::::<><><>0<>0<><>::
 ::res://VFX/Misc/::1783573558
 Trail3D.gd::GDScript::5580986675910478773::1783572949::0::1::::Trail3D<>MeshInstance3D<><>0<>1<><>::
-::res://VFX/Objects/::1785389736
+::res://VFX/Objects/::1785458163
 fireball_mesh_st.obj::Mesh::8740537766278155487::1783572949::1783573561::1::::<><><>0<>0<>aeac15fff5088b05b165b9cf447ad9ac<>res://.godot/imported/fireball_mesh_st.obj-5912c4cbb6a496c600032b29343e108c.mesh<*>res://.godot/imported/fireball_mesh_st.obj-5912c4cbb6a496c600032b29343e108c.mesh::
 m_FireBall_std.tres::ShaderMaterial::4096819063300344858::1783572949::0::1::::<><><>0<>0<><>::uid://weruu5m2fm8b::::res://VFX/Shaders/s_FireHead_B.tres<>uid://sfqnk8pph4px::::res://VFX/Textures/T_VFX_Noise_075.png<>uid://ceq0q2hrh3ppu::::res://VFX/Textures/gradients/g2d_typeA.tres
 m_fireb_blast.obj::Mesh::546971331559063649::1783572949::1783573561::1::::<><><>0<>0<>fd6659096d09c731734ae795ca50f578<>res://.godot/imported/m_fireb_blast.obj-6e801a90a56c6337aadce43e2cd8d595.mesh<*>res://.godot/imported/m_fireb_blast.obj-6e801a90a56c6337aadce43e2cd8d595.mesh::
 m_fireStrikeHead.tres::ShaderMaterial::3227670359624812952::1785022210::0::1::::<><><>0<>0<><>::uid://c1660p2rs4lfs::::res://VFX/Shaders/s_ProjectileSoft_B_Disp.tres<>uid://8fk5k1sbqvwh::::res://VFX/Textures/T_VFX_Noise_019.png<>uid://bf1l1noj81h8o::::res://VFX/Textures/gradients/g_fireTypeC.tres
-m_fireTrail1.tres::ShaderMaterial::6699815673019749287::1785389736::0::1::::<><><>0<>0<><>::uid://blb7a2rnt06sr::::res://VFX/Shaders/s_Trail_Fire_shader.tres
+m_fireTrail1.tres::ShaderMaterial::6699815673019749287::1785458163::0::1::::<><><>0<>0<><>::uid://blb7a2rnt06sr::::res://VFX/Shaders/s_Trail_Fire_shader.tres
 m_lightening_std.tres::ShaderMaterial::5057566409212270843::1785022210::0::1::::<><><>0<>0<><>::uid://c44g48gk8odif::::res://VFX/Shaders/s_ProjectileSoft_Disp.tres<>uid://fy14scbokp5b::::res://VFX/Textures/T_VFX_Z70.png
 m_Trail_lightening_1.tres::ShaderMaterial::7058873676593555853::1785022210::0::1::::<><><>0<>0<><>::uid://cyvjn3wruj6o2::::res://VFX/Shaders/s_Trail_TypeB.tres<>uid://cpqjrilmucb6g::::res://VFX/Textures/T_VFX_thunder_texture.png
 sm_box2.obj::Mesh::366576322042834349::1783572949::1783573561::1::::<><><>0<>0<>3cd2e013d81eaec6ca60598ba591c40c<>res://.godot/imported/sm_box2.obj-8404381de6af9a77fad1c3d7dabb25e4.mesh<*>res://.godot/imported/sm_box2.obj-8404381de6af9a77fad1c3d7dabb25e4.mesh::
@@ -689,28 +690,28 @@ VFX_Hit_fire_2.tscn::PackedScene::7207492770363018727::1783572949::0::1::::<><><
 VFX_Hit_fire_3.tscn::PackedScene::6503368362628393733::1783572949::0::1::::<><><>0<>0<><>::uid://c6v1yetmqgcge::::res://VFX/Shaders/s_Disolver.tres<>uid://b6il5gww07dde::::res://VFX/Textures/T_VFX_sparks112.jpg<>uid://doh03dwac2t7s::::res://VFX/Textures/T_VFX_1spark123.jpg<>uid://wfv84ppram2u::::res://VFX/Objects/sm_plane_cross1a.obj<>uid://cqn0iqbcvqk0u::::res://VFX/Shaders/s_Disolver_advanced.tres<>uid://sfqnk8pph4px::::res://VFX/Textures/T_VFX_Noise_075.png<>uid://bir7usclykamj::::res://VFX/Shaders/s_simple_p.tres<>uid://dpmtajh5fi8hk::::res://VFX/Textures/T_vfx_irl12.png
 VFX_Hit_hadouken.tscn::PackedScene::4500124533457651018::1783572949::0::1::::<><><>0<>0<><>::uid://daujdcco55xno::::res://VFX/Textures/T_VFX_Hit141.png<>uid://37uw72x6ut54::::res://VFX/Textures/T_VFX_Hit66.png<>uid://b28qeeghrupsv::::res://VFX/Shaders/s_basic_disolve_p.tres<>uid://b7e1qv3j3h652::::res://VFX/Textures/T_VFX_Flare_15.PNG<>uid://c6v1yetmqgcge::::res://VFX/Shaders/s_Disolver.tres<>uid://b6il5gww07dde::::res://VFX/Textures/T_VFX_sparks112.jpg<>uid://cqn0iqbcvqk0u::::res://VFX/Shaders/s_Disolver_advanced.tres<>uid://cqb68vqjl2kdg::::res://VFX/Textures/T_VFX_SparklesF21.jpg<>uid://bmup158xeod3p::::res://VFX/Textures/T_VFX_sparks42.jpg<>uid://duw012h2iv0tn::::res://VFX/Objects/sm_plane_pivoted1.obj<>uid://brn5dcf7n7ycq::::res://VFX/Textures/T_VFX_Wave114.jpg<>uid://wfv84ppram2u::::res://VFX/Objects/sm_plane_cross1a.obj<>uid://sfqnk8pph4px::::res://VFX/Textures/T_VFX_Noise_075.png
 vfx_std_fire_ball.tscn::PackedScene::1472573721186571908::1783572949::0::1::::<><><>0<>0<><>::uid://bymsang3xqpwc::::res://VFX/Objects/m_FireBall_std.tres<>uid://h17sj3khce5v::::res://VFX/Objects/m_fireb_blast.obj<>uid://p2lb8wpdkavu::::res://VFX/Shaders/s_FireTrail.tres<>uid://dgt06oi35wq30::::res://VFX/Textures/gradients/g_traild.tres<>uid://cafyyv1wwcbqx::::res://VFX/Textures/T_VFX_FireBall_Tail1.jpg<>uid://bpf8re2if2yu3::::res://VFX/Shaders/s_FireHeader.tres<>uid://c6v1yetmqgcge::::res://VFX/Shaders/s_Disolver.tres<>uid://cqb68vqjl2kdg::::res://VFX/Textures/T_VFX_SparklesF21.jpg
-::res://VFX/Shaders/::1785389736
+::res://VFX/Shaders/::1785458163
 s_basic_disolve_p.tres::VisualShader::4350622762567627845::1785022210::0::1::::<><><>0<>0<><>::
-s_Disolver.tres::VisualShader::6993669193877636168::1785389736::0::1::::<><><>0<>0<><>::
+s_Disolver.tres::VisualShader::6993669193877636168::1785458163::0::1::::<><><>0<>0<><>::
 s_Disolver_advanced.tres::VisualShader::5924232829605880030::1785022210::0::1::::<><><>0<>0<><>::
 s_Disolver_soft.tres::VisualShader::732240226830798397::1785022210::0::1::::<><><>0<>0<><>::
 s_dualColor_masked.tres::VisualShader::4749839574116413834::1785022210::0::1::::<><><>0<>0<><>::
-s_fireball_shader.tres::VisualShader::8607882257456212800::1785389736::0::1::::<><><>0<>0<><>::uid://sfqnk8pph4px::::res://VFX/Textures/T_VFX_Noise_075.png
+s_fireball_shader.tres::VisualShader::8607882257456212800::1785458163::0::1::::<><><>0<>0<><>::uid://sfqnk8pph4px::::res://VFX/Textures/T_VFX_Noise_075.png
 s_FireHeader.tres::VisualShader::3451609498465936780::1785022210::0::1::::<><><>0<>0<><>::
 s_FireHeader_blink.tres::VisualShader::8871496183772583801::1785022210::0::1::::<><><>0<>0<><>::
-s_FireHeader_shader.tres::VisualShader::8290396509430490661::1785389736::0::1::::<><><>0<>0<><>::
+s_FireHeader_shader.tres::VisualShader::8290396509430490661::1785458163::0::1::::<><><>0<>0<><>::
 s_FireHead_B.tres::VisualShader::1553481073200732395::1785022209::0::1::::<><><>0<>0<><>::
 s_FireHead_TypeK.tres::VisualShader::3769075950806926911::1785022210::0::1::::<><><>0<>0<><>::
 s_FireHead_TypeK_auto.tres::VisualShader::2622620304314511958::1785022210::0::1::::<><><>0<>0<><>::
 s_FireHead_TypeW.tres::VisualShader::1063797536259957238::1785022210::0::1::::<><><>0<>0<><>::
 s_FireTrail.tres::VisualShader::1109242294586621758::1785022210::0::1::::<><><>0<>0<><>::
-s_Fire_Special_p.tres::VisualShader::6745091031978911376::1785389736::0::1::::<><><>0<>0<><>::
+s_Fire_Special_p.tres::VisualShader::6745091031978911376::1785458163::0::1::::<><><>0<>0<><>::
 s_ProjectileSoft_B_Disp.tres::VisualShader::6663674714331860304::1785022210::0::1::::<><><>0<>0<><>::
 s_ProjectileSoft_Disp.tres::VisualShader::6868602620775104097::1785022210::0::1::::<><><>0<>0<><>::uid://sfqnk8pph4px::::res://VFX/Textures/T_VFX_Noise_075.png
-s_simple_p.tres::VisualShader::2985005463305167697::1785389736::0::1::::<><><>0<>0<><>::
-s_single_masked_p.tres::VisualShader::6182941300692437588::1785389736::0::1::::<><><>0<>0<><>::
-s_Trail_dynamic.tres::VisualShader::4038595032330355764::1785389736::0::1::::<><><>0<>0<><>::
-s_Trail_Fire_shader.tres::VisualShader::3162506730243242825::1785389735::0::1::::<><><>0<>0<><>::uid://4brcnxrpup27::::res://VFX/Textures/T_FireTrail.jpg
+s_simple_p.tres::VisualShader::2985005463305167697::1785458163::0::1::::<><><>0<>0<><>::
+s_single_masked_p.tres::VisualShader::6182941300692437588::1785458163::0::1::::<><><>0<>0<><>::
+s_Trail_dynamic.tres::VisualShader::4038595032330355764::1785458163::0::1::::<><><>0<>0<><>::
+s_Trail_Fire_shader.tres::VisualShader::3162506730243242825::1785458163::0::1::::<><><>0<>0<><>::uid://4brcnxrpup27::::res://VFX/Textures/T_FireTrail.jpg
 s_Trail_TypeB.tres::VisualShader::6501296721228916635::1785022210::0::1::::<><><>0<>0<><>::
 ::res://VFX/Textures/::1783573561
 T_basic1_vfx.PNG::CompressedTexture2D::4670599485082310029::1783572950::1783573560::1::::<><><>0<>0<>31d178cc3900560af6fabedad2f9aebe<>res://.godot/imported/T_basic1_vfx.PNG-76b0b44bea7869a622c5a43433a111b5.s3tc.ctex<*>res://.godot/imported/T_basic1_vfx.PNG-76b0b44bea7869a622c5a43433a111b5.etc2.ctex::
