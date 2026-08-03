@@ -143,9 +143,15 @@ func _process(delta: float) -> void:
 
 func _on_continue_pressed() -> void:
 	restart_requested.emit()
-	
+
+	# Eliminar enemigos y proyectiles sobrantes en pantalla
+	for grp in ["enemies", "enemy_projectiles", "projectiles"]:
+		for node in get_tree().get_nodes_in_group(grp):
+			if is_instance_valid(node):
+				node.queue_free()
+
 	# Despausar juego y desmutear audio antes de reiniciar
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
 	get_tree().paused = false
-	
+
 	get_tree().reload_current_scene()

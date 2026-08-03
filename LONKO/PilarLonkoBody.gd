@@ -5,8 +5,8 @@ extends StaticBody3D
 ## Recibe impactos de las flechas del jugador, emite destello de daño y destruye el pilar si la vida llega a 0.
 
 var lonko_ref: Node = null
-var vida_pilar: float = 13.0
-var vida_maxima: float = 13.0
+@export var vida_maxima: float = 13.0  ## Vida máxima del pilar (modificable libremente en el Inspector de PilarLonko.tscn)
+@export var vida_pilar: float = 13.0   ## Vida actual del pilar
 var es_escudo_enemigo: bool = true  ## Marca este objeto como obstáculo enemigo (flechas enemigas lo ignoran, flechas del jugador lo dañan)
 var es_pilar_enemigo: bool = true
 var sfx_impacto_pilar_stream: AudioStream = preload("res://LONKO/Sonido impacto pilar.mp3")
@@ -17,12 +17,17 @@ var _mesh_instances: Array[MeshInstance3D] = []
 func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("escudos")
+	vida_pilar = vida_maxima
 
 
-func inicializar(lonko: Node, vida_max: float) -> void:
+func inicializar(lonko: Node, vida_max_override: float = -1.0) -> void:
 	lonko_ref = lonko
-	vida_maxima = vida_max
-	vida_pilar = vida_max
+	# Si se modificó la vida en el Inspector de PilarLonko.tscn (diferente de 13.0),
+	# se respeta su valor personalizado. De lo contrario, se usa vida_max_override.
+	if vida_maxima == 13.0 and vida_max_override > 0.0:
+		vida_maxima = vida_max_override
+
+	vida_pilar = vida_maxima
 
 	_mesh_instances.clear()
 	_original_materials.clear()

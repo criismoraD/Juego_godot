@@ -1224,10 +1224,11 @@ func _crear_panel_controles_spawn():
 	style.border_color = Color(0.3, 0.3, 0.4, 1.0)
 	panel.add_theme_stylebox_override("panel", style)
 	
-	# Posicionamiento: Esquina superior izquierda
-	panel.anchor_left = 0.0
+	# Posicionamiento: Esquina superior derecha
+	panel.anchor_left = 1.0
 	panel.anchor_top = 0.0
-	panel.offset_left = 20
+	panel.anchor_right = 1.0
+	panel.offset_left = -280
 	panel.offset_top = 20
 	panel.custom_minimum_size = Vector2(260, 0)
 	
@@ -1386,6 +1387,10 @@ func _crear_panel_controles_spawn():
 	
 	# Añadir al game_ui
 	game_ui.add_child(panel)
+
+	# Spawn pausado por defecto: no empiezan las oleadas hasta pulsar ▶️ INICIAR
+	wave_spawner.detener_spawning()
+	_actualizar_estado_spawner_label("PAUSADO")
 
 
 func _actualizar_estado_spawner_label(estado: String):

@@ -196,6 +196,10 @@ func _on_body_entered(body):
 	if tipo_dueño == TipoFlecha.JUGADOR:
 		# Las flechas del jugador dañan enemigos - daño fijo de 1
 		if body.has_method("take_damage") and body.is_in_group("enemies"):
+			if ("_is_invulnerable" in body and body._is_invulnerable) or ("is_invulnerable" in body and body.is_invulnerable):
+				if _ray_ccd: _ray_ccd.add_exception(body)
+				return  # Pasa de largo a través del enemigo invulnerable
+
 			# Guardar posición del impacto para las partículas de sangre
 			if body.has_method("set") and "last_hit_position" in body:
 				body.last_hit_position = global_position

@@ -270,7 +270,7 @@ func _spawn_goblin():
 	spawn_pos.y += randf_range(-0.2, 0.2)
 
 	# Añadir al mundo
-	get_tree().root.add_child(goblin)
+	_obtener_nodo_padre_spawn().add_child(goblin)
 	goblin.global_position = spawn_pos
 
 	# Conectar señal de muerte
@@ -285,6 +285,13 @@ func _spawn_goblin():
 	goblins_spawned_in_wave += 1
 
 	goblin_spawneado.emit(goblin)
+
+
+func _obtener_nodo_padre_spawn() -> Node:
+	var root := get_tree().current_scene
+	if root and is_instance_valid(root):
+		return root
+	return get_parent() if get_parent() else get_tree().root
 
 
 func _on_goblin_died(goblin):
@@ -412,7 +419,7 @@ func _spawn_shield_imp():
 	var spawn_pos = global_position
 	spawn_pos.y += altura_spawn
 
-	get_tree().root.add_child(shield_imp)
+	_obtener_nodo_padre_spawn().add_child(shield_imp)
 	shield_imp.global_position = spawn_pos
 
 	# Conectar señal de muerte
@@ -463,7 +470,7 @@ func spawn_pacificos(
 		# Offset escalonado: el primero en X base, los siguientes más atrás
 		spawn_pos.x += i * offset_entre
 
-		get_tree().root.add_child(enemigo)
+		_obtener_nodo_padre_spawn().add_child(enemigo)
 		enemigo.global_position = spawn_pos
 
 		if enemigo.has_signal("died"):

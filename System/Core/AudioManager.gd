@@ -450,9 +450,40 @@ func stop_all():
 	if is_instance_valid(sfx_player_3d):
 		sfx_player_3d.stop()
 	for p in sfx_pool:
-		p.stop()
+		if is_instance_valid(p):
+			p.stop()
 	for p in sfx_3d_pool:
-		p.stop()
+		if is_instance_valid(p):
+			p.stop()
+	var tree := get_tree()
+	if tree:
+		for node in tree.get_nodes_in_group("pausable_audio"):
+			if is_instance_valid(node) and (node is AudioStreamPlayer or node is AudioStreamPlayer3D):
+				node.stop()
+
+
+## Pausa o reanuda todos los sonidos y la música activas en el juego
+func pause_all_sfx(p_paused: bool) -> void:
+	if is_instance_valid(sfx_player):
+		sfx_player.stream_paused = p_paused
+	if is_instance_valid(sfx_player_3d):
+		sfx_player_3d.stream_paused = p_paused
+	if is_instance_valid(music_player):
+		music_player.stream_paused = p_paused
+
+	for p in sfx_pool:
+		if is_instance_valid(p):
+			p.stream_paused = p_paused
+
+	for p3d in sfx_3d_pool:
+		if is_instance_valid(p3d):
+			p3d.stream_paused = p_paused
+
+	var tree := get_tree()
+	if tree:
+		for node in tree.get_nodes_in_group("pausable_audio"):
+			if is_instance_valid(node) and (node is AudioStreamPlayer or node is AudioStreamPlayer3D):
+				node.stream_paused = p_paused
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

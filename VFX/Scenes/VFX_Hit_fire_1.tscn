@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://cdhyyv6yp6xos"]
+[gd_scene format=3 uid="uid://cdhyyv6yp6xos"]
 
 [ext_resource type="Shader" uid="uid://cudce0x8gpu7m" path="res://VFX/Shaders/s_single_masked_p.tres" id="1_gk5yq"]
 [ext_resource type="Texture2D" uid="uid://bbgosuppf8sbh" path="res://VFX/Textures/T_VFX_simple_1.png" id="2_8u82a"]
@@ -64,11 +64,11 @@ gradient = SubResource("Gradient_6rts0")
 render_priority = 0
 shader = ExtResource("3_sjo8h")
 shader_parameter/Distortion_Speed_xy = Vector2(1, 1)
-shader_parameter/Distortion_Div = 5.0
-shader_parameter/Proximity_Fade = 0.5
 shader_parameter/Distortioner_Texture = ExtResource("4_1l0gh")
+shader_parameter/Distortion_Div = 5.0
 shader_parameter/Texture = ExtResource("5_h7ib6")
 shader_parameter/Gradient_1D_texture = SubResource("GradientTexture1D_xidh4")
+shader_parameter/Proximity_Fade = 0.5
 
 [sub_resource type="Curve" id="Curve_jyvwk"]
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.504587, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -113,11 +113,11 @@ alpha_curve = SubResource("CurveTexture_ctmgg")
 render_priority = -1
 shader = ExtResource("3_sjo8h")
 shader_parameter/Distortion_Speed_xy = Vector2(1, 1)
-shader_parameter/Distortion_Div = 5.0
-shader_parameter/Proximity_Fade = 1.0
 shader_parameter/Distortioner_Texture = ExtResource("4_1l0gh")
+shader_parameter/Distortion_Div = 5.0
 shader_parameter/Texture = ExtResource("6_g11ji")
 shader_parameter/Gradient_1D_texture = SubResource("GradientTexture1D_xidh4")
+shader_parameter/Proximity_Fade = 1.0
 
 [sub_resource type="Curve" id="Curve_0020q"]
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.434251, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -219,12 +219,12 @@ tracks/4/keys = {
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_h8mtp"]
 _data = {
-"Init": SubResource("Animation_4cfrg")
+&"Init": SubResource("Animation_4cfrg")
 }
 
-[node name="VFX_Hit_Fire1" type="Node3D"]
+[node name="VFX_Hit_Fire1" type="Node3D" unique_id=964991464]
 
-[node name="sparks" type="GPUParticles3D" parent="."]
+[node name="sparks" type="GPUParticles3D" parent="." unique_id=1501838975]
 material_override = SubResource("ShaderMaterial_0w0hc")
 cast_shadow = 0
 emitting = false
@@ -237,7 +237,7 @@ local_coords = true
 process_material = SubResource("ParticleProcessMaterial_vuiw1")
 draw_pass_1 = SubResource("QuadMesh_fxfxg")
 
-[node name="FireCenter" type="GPUParticles3D" parent="."]
+[node name="FireCenter" type="GPUParticles3D" parent="." unique_id=704262351]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.219483)
 material_override = SubResource("ShaderMaterial_tyv2g")
 cast_shadow = 0
@@ -251,7 +251,7 @@ local_coords = true
 process_material = SubResource("ParticleProcessMaterial_ns03y")
 draw_pass_1 = SubResource("QuadMesh_2d0ax")
 
-[node name="FireRing" type="GPUParticles3D" parent="."]
+[node name="FireRing" type="GPUParticles3D" parent="." unique_id=534562100]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.219483)
 material_override = SubResource("ShaderMaterial_w3ro7")
 cast_shadow = 0
@@ -265,13 +265,11 @@ local_coords = true
 process_material = SubResource("ParticleProcessMaterial_fyikp")
 draw_pass_1 = SubResource("QuadMesh_2d0ax")
 
-[node name="OmniLight3D" type="OmniLight3D" parent="."]
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=2124408881]
 visible = false
 light_color = Color(1, 0.6, 0.254902, 1)
 light_energy = 0.0
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-"": SubResource("AnimationLibrary_h8mtp")
-}
-autoplay = "Init"
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1205162765]
+libraries/ = SubResource("AnimationLibrary_h8mtp")
+autoplay = &"Init"

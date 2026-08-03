@@ -967,9 +967,11 @@ func _toggle_pause():
 	if is_paused:
 		pause_btn.text = "▶️ PLAY"
 		_style_button(pause_btn, Color(0.2, 0.6, 0.3))
+		AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
 	else:
 		pause_btn.text = "⏸️ PAUSA"
 		_style_button(pause_btn, Color(0.5, 0.3, 0.6))
+		AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
 
 
 func _toggle_god_mode():

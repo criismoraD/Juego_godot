@@ -13,7 +13,7 @@ use_hdr = true
 
 [sub_resource type="Gradient" id="Gradient_djgjd"]
 offsets = PackedFloat32Array(0, 0.462541)
-colors = PackedColorArray(0.072, 0.2, 1, 1, 0.5, 1, 5, 1)
+colors = PackedColorArray(0.2, 1, 0.2, 1, 0.4, 1.4, 0.4, 1)
 
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_8yfiq"]
 gradient = SubResource("Gradient_djgjd")
