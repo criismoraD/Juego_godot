@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bos8me38800d5"
+path="res://.godot/imported/ffuego gargola.mp3-dc0f22b3c71067e6f3fc6845ccbe4617.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Gargola/ffuego gargola.mp3"
+dest_files=["res://.godot/imported/ffuego gargola.mp3-dc0f22b3c71067e6f3fc6845ccbe4617.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

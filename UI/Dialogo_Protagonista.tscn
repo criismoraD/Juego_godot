@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://drxcxng0eisja" path="res://UI/DialogoComic.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://UI/Protagonista/PROTA_NORMAL.png" id="2_tex_normal"]
-[ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Entities/Environment/Escudo/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
+[ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
 [ext_resource type="Texture2D" uid="uid://qgmhf0dv4kf4" path="res://UI/Protagonista/PROTA_ENOJADA.png" id="4_tex_enojada"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]

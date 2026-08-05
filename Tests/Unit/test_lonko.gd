@@ -1,6 +1,6 @@
 extends GutTest
 
-const LONKO_SCENE: PackedScene = preload("res://LONKO/Lonko.tscn")
+const LONKO_SCENE: PackedScene = preload("res://Entities/Enemigo_Lonko/Lonko.tscn")
 
 var scene_root: Node3D
 

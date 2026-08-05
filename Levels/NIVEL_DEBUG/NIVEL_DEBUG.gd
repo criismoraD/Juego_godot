@@ -49,7 +49,7 @@ var transicion_carteles_en_progreso: bool = false
 # === REFERENCIAS ===
 @onready
 var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
-var escena_imp_estandarte: PackedScene = preload("res://Entities/Enemies/ImpEnemyEstandarte/ImpEnemyEstandarte.tscn")
+var escena_imp_estandarte: PackedScene = preload("res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn")
 var escena_dialogo_inicio_protagonista: PackedScene = preload(
 	"res://UI/Dialogo_Protagonista.tscn"
 )
@@ -58,7 +58,7 @@ var escena_dialogo_emisario_parte1: PackedScene = preload(
 )
 var escena_resultado_pacifista: PackedScene = preload("res://UI/Resultado_Pacifista.tscn")
 var sfx_habla_dialogo: AudioStream = preload(
-	"res://Entities/Environment/Escudo/IMPACTO_ESCUDO_BALLESTA.mp3"
+	"res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3"
 )
 var estados_proceso_jugador: Dictionary = {}
 var estados_proceso_dialogo: Dictionary = {}
@@ -634,7 +634,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.probabilidad_imp = 0.33
 		wave_spawner.probabilidad_goblin_girl = 0.33
 		# Restaurar goblin base (ballesta)
-		wave_spawner.escena_goblin = preload("res://Entities/Enemies/Goblin/Goblin.tscn")
+		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.max_imp_escudo_activos = 1
 		wave_spawner.intervalo_check_escudo = 8.0
@@ -643,7 +643,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.probabilidad_imp = 0.0
 		wave_spawner.probabilidad_canonero = 0.0
 		wave_spawner.probabilidad_goblin_girl = 0.5
-		wave_spawner.escena_goblin = preload("res://Entities/Enemies/Goblin/Goblin.tscn")
+		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.max_imp_escudo_activos = 2
 		wave_spawner.intervalo_check_escudo = 6.0

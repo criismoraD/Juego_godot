@@ -126,13 +126,13 @@ func test_reconstruir_todos_escudos_mantiene_tipo_y_nombre():
 	main_scene.add_child(parent_node)
 	
 	# Instanciar escudo base real
-	var esc_base_scene = load("res://Entities/Environment/Escudo/Escudo.tscn")
+	var esc_base_scene = load("res://Entities/Ambiente_Escudo/Escudo.tscn")
 	var esc_base = esc_base_scene.instantiate()
 	esc_base.name = "EscudoBaseTest"
 	parent_node.add_child(esc_base)
 	
 	# Instanciar escudo enemigo real
-	var esc_enem_scene = load("res://Entities/Environment/Escudo/Escudo_enemigo.tscn")
+	var esc_enem_scene = load("res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn")
 	var esc_enem = esc_enem_scene.instantiate()
 	esc_enem.name = "EscudoEnemigoTest"
 	parent_node.add_child(esc_enem)

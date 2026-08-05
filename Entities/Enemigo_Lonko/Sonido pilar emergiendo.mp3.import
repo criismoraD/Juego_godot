@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b8ldgd68l0nyn"
+path="res://.godot/imported/Sonido pilar emergiendo.mp3-c7c458aacff864ad3a1775d07ea51193.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Lonko/Sonido pilar emergiendo.mp3"
+dest_files=["res://.godot/imported/Sonido pilar emergiendo.mp3-c7c458aacff864ad3a1775d07ea51193.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

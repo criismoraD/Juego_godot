@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bner43n6goist"]
+
+[ext_resource type="Texture2D" uid="uid://ystdaody0wgp" path="res://Entities/Ambiente_Escudo/ESCUDO2_D.jpg" id="1_1okq7"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_fkvbx"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_grjdq"]
+render_priority = 0
+shader = ExtResource("2_fkvbx")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 5.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_grjdq")
+shading_mode = 0
+albedo_texture = ExtResource("1_1okq7")

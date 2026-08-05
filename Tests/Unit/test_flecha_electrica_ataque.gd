@@ -1,6 +1,6 @@
 extends GutTest
 
-const FLECHA_ELECTRICA_ATAQUE_SCENE: PackedScene = preload("res://LONKO/Flecha_Electrica_Ataque.tscn")
+const FLECHA_ELECTRICA_ATAQUE_SCENE: PackedScene = preload("res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.tscn")
 
 var scene_root: Node3D
 

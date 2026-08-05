@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var PlayerScript = load("res://Entities/Player/Player.gd")
+var PlayerScript = load("res://Entities/Jugador_Arquera/Player.gd")
 var _player: Player = null
 
 # Mock para AudioManager

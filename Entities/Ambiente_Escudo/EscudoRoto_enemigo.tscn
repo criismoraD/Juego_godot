@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://b0j0sxggm2ju2"]
+
+[ext_resource type="PackedScene" uid="uid://cn2uy8kc36wgx" path="res://Entities/Ambiente_Escudo/escudo_roto.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://cnnuiuduusg61" path="res://Entities/Ambiente_Escudo/EscudoRoto.gd" id="2_physics"]
+[ext_resource type="Material" uid="uid://bi75w45xtwdd5" path="res://Entities/Ambiente_Escudo/Escudonivel3_MAT.tres" id="3_material"]
+
+[node name="EscudoRoto_enemigo" type="Node3D" unique_id=1349536759]
+script = ExtResource("2_physics")
+material_escudo = ExtResource("3_material")
+
+[node name="escudo_roto" parent="." unique_id=368307024 instance=ExtResource("1_model")]

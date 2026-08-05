@@ -2,8 +2,8 @@ extends "res://addons/gut/test.gd"
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 
-var goblin_arrow_scene: PackedScene = preload("res://Entities/Projectiles/GoblinArrow.tscn")
-var goblin_girl_arrow_scene: PackedScene = preload("res://Entities/Projectiles/GoblinGirlArrow.tscn")
+var goblin_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
+var goblin_girl_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
 
 
 func after_each() -> void:

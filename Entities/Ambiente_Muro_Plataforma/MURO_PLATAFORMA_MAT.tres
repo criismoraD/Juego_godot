@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://haea1cv8sf4t"]
+
+[ext_resource type="Texture2D" uid="uid://cyxfsh8u1l830" path="res://Entities/Ambiente_Muro_Plataforma/MURO_PLATAFORMA_D.jpg" id="1_gqoki"]
+
+[resource]
+albedo_texture = ExtResource("1_gqoki")

@@ -50,20 +50,20 @@ func _ready():
 	add_to_group("wave_spawners")
 	# Cargar escenas si no están asignadas
 	if not escena_goblin:
-		escena_goblin = preload("res://Entities/Enemies/Goblin/Goblin.tscn")
+		escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 	if not escena_goblin_girl:
-		escena_goblin_girl = preload("res://Entities/Enemies/GoblinGirl/GoblinGirl.tscn")
+		escena_goblin_girl = preload("res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn")
 	if not escena_imp:
-		escena_imp = preload("res://Entities/Enemies/ImpEnemy/ImpEnemy.tscn")
+		escena_imp = preload("res://Entities/Enemigo_Imp/ImpEnemy.tscn")
 	if not escena_canonero:
-		escena_canonero = preload("res://Entities/Enemies/Canonero/Canonero.tscn")
+		escena_canonero = preload("res://Entities/Enemigo_Canonero/Canonero.tscn")
 	if not escena_gargola:
-		escena_gargola = preload("res://Entities/Enemies/GARGOLA/Gargola.tscn")
+		escena_gargola = preload("res://Entities/Enemigo_Gargola/Gargola.tscn")
 	if not escena_lonko:
-		escena_lonko = preload("res://LONKO/Lonko.tscn")
+		escena_lonko = preload("res://Entities/Enemigo_Lonko/Lonko.tscn")
 
 	if not escena_imp_escudo:
-		escena_imp_escudo = preload("res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.tscn")
+		escena_imp_escudo = preload("res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.tscn")
 
 	# Iniciar primera oleada después de un delay
 	wave_cooldown = 2.0

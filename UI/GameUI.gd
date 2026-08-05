@@ -49,8 +49,8 @@ var shields_enabled: bool = true
 var allies_enabled: bool = true
 # === OPTIMIZACIÓN ===
 var _wave_update_timer: float = 0.0
-var escudo_scene: PackedScene = preload("res://Entities/Environment/Escudo/Escudo.tscn")
-var posion_scene_debug: PackedScene = preload("res://Pocion/Posion.tscn")
+var escudo_scene: PackedScene = preload("res://Entities/Ambiente_Escudo/Escudo.tscn")
+var posion_scene_debug: PackedScene = preload("res://Entities/Item_Pocion/Posion.tscn")
 var escudos_originales: Array = []  # [{transform, parent_path}]
 var _escudos_cache: Array[Node] = []
 var btn_toggle_shields: Button
@@ -188,16 +188,16 @@ func _find_capa001():
 func _scan_outline_materials():
 	# Lista de materiales conocidos con outline (Preload para evitar E/S síncrona en runtime)
 	var materials = [
-		preload("res://Entities/Player/ARQUERA_MATERIAL.tres"),
-		preload("res://Entities/Player/Arrows.tres"),
-		preload("res://Entities/Environment/Ladder/ESCALERAS.tres"),
-		preload("res://Entities/Enemies/Goblin/Hand Crossbow.tres"),
-		preload("res://Entities/Enemies/Goblin/GOBLING_MATERIAL.tres"),
-		preload("res://Entities/Enemies/GoblinGirl/MAT_GOBLIN_GIRL.tres"),
-		preload("res://Entities/Environment/Platform/MAT_platform.tres"),
-		preload("res://Entities/Environment/Escudo/MAT_shield.tres"),
-		preload("res://Entities/Environment/SpikeTrap/MAT_spike_trap.tres"),
-		preload("res://Entities/Player/Recurve Bow 2.tres")
+		preload("res://Entities/Jugador_Arquera/ARQUERA_MATERIAL.tres"),
+		preload("res://Entities/Jugador_Arquera/Arrows.tres"),
+		preload("res://Entities/Ambiente_Escalera/ESCALERAS.tres"),
+		preload("res://Entities/Enemigo_Goblin/Hand Crossbow.tres"),
+		preload("res://Entities/Enemigo_Goblin/GOBLING_MATERIAL.tres"),
+		preload("res://Entities/Enemigo_Goblin_Girl/MAT_GOBLIN_GIRL.tres"),
+		preload("res://Entities/Ambiente_Plataforma/MAT_platform.tres"),
+		preload("res://Entities/Ambiente_Escudo/MAT_shield.tres"),
+		preload("res://Entities/Ambiente_Pinchos/MAT_spike_trap.tres"),
+		preload("res://Entities/Jugador_Arquera/Recurve Bow 2.tres")
 	]
 
 	for mat in materials:
@@ -1794,7 +1794,7 @@ func _toggle_curtain_debug():
 	add_child(overlay)
 
 	var cortinilla = TextureRect.new()
-	cortinilla.texture = load("res://Entities/fondo trasparencia.png")
+	cortinilla.texture = load("res://Recursos_Compartidos/fondo trasparencia.png")
 	cortinilla.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	cortinilla.stretch_mode = TextureRect.STRETCH_SCALE
 	
@@ -1821,7 +1821,7 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 
 	# 2. Crear TextureRect con fondo trasparencia.png
 	var cortinilla = TextureRect.new()
-	cortinilla.texture = load("res://Entities/fondo trasparencia.png")
+	cortinilla.texture = load("res://Recursos_Compartidos/fondo trasparencia.png")
 	cortinilla.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	cortinilla.stretch_mode = TextureRect.STRETCH_SCALE
 	

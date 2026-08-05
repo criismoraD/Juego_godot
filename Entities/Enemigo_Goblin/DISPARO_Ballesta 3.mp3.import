@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cqi7jlroemfha"
+path="res://.godot/imported/DISPARO_Ballesta 3.mp3-86cfab9154bb90c3478716f05aca9e64.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Goblin/DISPARO_Ballesta 3.mp3"
+dest_files=["res://.godot/imported/DISPARO_Ballesta 3.mp3-86cfab9154bb90c3478716f05aca9e64.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

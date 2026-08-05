@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-const GARGOLA_SCENE: PackedScene = preload("res://Entities/Enemies/GARGOLA/Gargola.tscn")
+const GARGOLA_SCENE: PackedScene = preload("res://Entities/Enemigo_Gargola/Gargola.tscn")
 
 var gargola: Node3D = null
 

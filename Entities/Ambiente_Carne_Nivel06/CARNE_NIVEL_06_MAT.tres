@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://n2nejoy4djxe"]
+
+[ext_resource type="Texture2D" uid="uid://cusgl482quwv" path="res://Entities/Ambiente_Carne_Nivel06/CARNE_NIVEL_06_D.jpg" id="1_kb5s3"]
+
+[resource]
+albedo_texture = ExtResource("1_kb5s3")

@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var AllyArcherScript = load("res://Entities/AllyArcher/AllyArcher.gd")
+var AllyArcherScript = load("res://Entities/Aliada_Arquera/AllyArcher.gd")
 var _ally: AllyArcher = null
 
 # Mock para AudioManager

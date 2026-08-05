@@ -1,9 +1,0 @@
-[gd_scene load_steps=3 format=3 uid="uid://dgqn4obnv8xjn_roto"]
-
-[ext_resource type="Script" path="res://Entities/Enemies/ImpShieldGirl/EscudoImpRoto.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://dlxubjxbu2m5d" path="res://Entities/Enemies/ImpShieldGirl/IMP_ESCUDO_ROTO.glb" id="2_model"]
-
-[node name="EscudoImpRoto" type="Node3D"]
-script = ExtResource("1_script")
-
-[node name="escudo_partes" parent="." instance=ExtResource("2_model")]

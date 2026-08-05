@@ -1,6 +1,6 @@
 extends GutTest
 
-const GARGOLA_PROJECTILE_SCENE: PackedScene = preload("res://Entities/Projectiles/GargolaProjectile.tscn")
+const GARGOLA_PROJECTILE_SCENE: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
 
 var scene_root: Node3D
 

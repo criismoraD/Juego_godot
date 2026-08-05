@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://b7v8x2y1w4n0k"]
 
 [ext_resource type="Script" uid="uid://dc4lvbdfme0vi" path="res://UI/UI_Vida_Protagonista.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://tnt51rpoblb7" path="res://UI_VIDA/BARRA_VIDA.png" id="2_barra"]
-[ext_resource type="Texture2D" uid="uid://c5kekyonkla78" path="res://UI_VIDA/corazon.png" id="3_corazon"]
+[ext_resource type="Texture2D" uid="uid://tnt51rpoblb7" path="res://UI/Vida/BARRA_VIDA.png" id="2_barra"]
+[ext_resource type="Texture2D" uid="uid://c5kekyonkla78" path="res://UI/Vida/corazon.png" id="3_corazon"]
 
 [node name="UIVidaProtagonista" type="CanvasLayer" unique_id=2104918274]
 layer = 100

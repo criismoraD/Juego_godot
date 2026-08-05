@@ -1,6 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://dbfgek1ihfct"]
-
-[ext_resource type="Texture2D" uid="uid://b6matgnqaym7b" path="res://Entities/Environment/ESTATUA_NIVEL06/ESTATUA_NIVEL06_D.jpg" id="1_ayr6r"]
-
-[resource]
-albedo_texture = ExtResource("1_ayr6r")

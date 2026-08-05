@@ -1,6 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://b5xb00yyqvc2e"]
-
-[ext_resource type="Texture2D" uid="uid://dhoedvvor7trg" path="res://Bracero/test1_D.jpg" id="1_iylvx"]
-
-[resource]
-albedo_texture = ExtResource("1_iylvx")

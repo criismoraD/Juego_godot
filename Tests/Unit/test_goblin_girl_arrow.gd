@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var goblin_girl_arrow_script = preload("res://Entities/Projectiles/GoblinGirlArrow.gd")
+var goblin_girl_arrow_script = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.gd")
 
 
 func test_initialize_sets_direction_and_scales_velocity() -> void:

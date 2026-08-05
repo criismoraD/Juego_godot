@@ -1,8 +1,8 @@
 extends "res://addons/gut/test.gd"
 
-var PosionScript = load("res://Pocion/Posion.gd")
-var PlayerScript = load("res://Entities/Player/Player.gd")
-var ImpShieldGirlScript = load("res://Entities/Enemies/ImpShieldGirl/ImpShieldGirl.gd")
+var PosionScript = load("res://Entities/Item_Pocion/Posion.gd")
+var PlayerScript = load("res://Entities/Jugador_Arquera/Player.gd")
+var ImpShieldGirlScript = load("res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.gd")
 
 var _posion: Posion = null
 var _player: Player = null

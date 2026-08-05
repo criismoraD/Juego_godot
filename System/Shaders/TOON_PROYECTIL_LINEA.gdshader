@@ -8,14 +8,19 @@ uniform float outline_width = 25.0; // Grosor en píxeles de pantalla
 
 void vertex() {
 	if (!Toon_Proyectiles_Enemigos_Activo) {
-		POSITION = vec4(0.0);
+		VERTEX = vec3(0.0);
+		POSITION = vec4(2.0, 2.0, 2.0, 1.0);
 	} else {
 		vec4 clip_position = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
 		vec3 clip_normal = mat3(PROJECTION_MATRIX) * (mat3(MODELVIEW_MATRIX) * NORMAL);
 
 		// Clamp depth to keep outline size consistent
 		float depth_scale = clamp(clip_position.w, 0.5, 5.0);
-		vec2 offset = normalize(clip_normal.xy) / VIEWPORT_SIZE * depth_scale * outline_width * 2.0;
+		vec2 offset = vec2(0.0);
+		float norm_len = length(clip_normal.xy);
+		if (norm_len > 0.0001) {
+			offset = (clip_normal.xy / norm_len) / VIEWPORT_SIZE * depth_scale * outline_width * 2.0;
+		}
 
 		clip_position.xy += offset;
 		POSITION = clip_position;

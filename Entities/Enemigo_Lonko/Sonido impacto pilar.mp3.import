@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://vf8jc0hkmf7r"
+path="res://.godot/imported/Sonido impacto pilar.mp3-e9f70030f576448907598e85c366bf1d.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Lonko/Sonido impacto pilar.mp3"
+dest_files=["res://.godot/imported/Sonido impacto pilar.mp3-e9f70030f576448907598e85c366bf1d.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

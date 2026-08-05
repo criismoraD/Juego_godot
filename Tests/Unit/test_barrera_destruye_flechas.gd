@@ -1,8 +1,8 @@
 extends "res://addons/gut/test.gd"
 
-var BarreraScript = load("res://Entities/Environment/BarreraLimite/BarreraDestruyeFlechas.gd")
-var ArrowScene = load("res://Entities/Projectiles/Arrow.tscn")
-var AllyArrowScene = load("res://Entities/Projectiles/AllyArrow.tscn")
+var BarreraScript = load("res://Entities/Ambiente_Barrera_Limite/BarreraDestruyeFlechas.gd")
+var ArrowScene = load("res://Entities/Proyectil_Flecha/Arrow.tscn")
+var AllyArrowScene = load("res://Entities/Proyectil_Flecha_Aliada/AllyArrow.tscn")
 
 var _barrera: StaticBody3D = null
 var _arrow: Area3D = null
@@ -73,7 +73,7 @@ func test_ally_arrow_destroyed_by_barrier():
 
 func test_enemy_walks_out_of_barrier():
 	# Arrange: Crear un enemigo y colocarlo en la posición de la barrera
-	var EnemyBaseScript = load("res://Entities/Enemies/EnemyBase.gd")
+	var EnemyBaseScript = load("res://System/Core/EnemyBase.gd")
 	var enemy = EnemyBaseScript.new()
 	# Añadir al árbol para que _physics_process y get_tree() funcionen
 	get_tree().root.add_child(enemy)

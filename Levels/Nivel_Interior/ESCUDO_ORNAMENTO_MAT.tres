@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://36y60jg1h228"]
+
+[ext_resource type="Texture2D" uid="uid://dex6y8yusvtwo" path="res://Levels/Nivel_Interior/ESCUDO_ORNAMENTO_D.jpg" id="1_ybmvf"]
+
+[resource]
+albedo_texture = ExtResource("1_ybmvf")

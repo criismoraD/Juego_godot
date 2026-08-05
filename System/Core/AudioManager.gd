@@ -86,111 +86,111 @@ func _load_all_sounds():
 	# SONIDOS DEL JUGADOR
 	# ═══════════════════════════════════════════════════════════════════════════════
 	sfx_streams["player_hurt"] = [
-		load("res://Entities/Player/DAÑO_PERSONAJE0.mp3"),
-		load("res://Entities/Player/DAÑO_PERSONAJE1.mp3"),
-		load("res://Entities/Player/DAÑO_PERSONAJE3.mp3")
+		load("res://Entities/Jugador_Arquera/DAÑO_PERSONAJE0.mp3"),
+		load("res://Entities/Jugador_Arquera/DAÑO_PERSONAJE1.mp3"),
+		load("res://Entities/Jugador_Arquera/DAÑO_PERSONAJE3.mp3")
 	]
 
-	sfx_streams["player_death"] = [load("res://Entities/Player/SFX_player_death.mp3")]
+	sfx_streams["player_death"] = [load("res://Entities/Jugador_Arquera/SFX_player_death.mp3")]
 
 	sfx_streams["player_shoot"] = [
-		load("res://Entities/Player/DISPARO_FLECHA1.mp3"),
-		load("res://Entities/Player/DISPARO_FLECHA2.mp3")
+		load("res://Entities/Jugador_Arquera/DISPARO_FLECHA1.mp3"),
+		load("res://Entities/Jugador_Arquera/DISPARO_FLECHA2.mp3")
 	]
 
 	sfx_streams["bow_tension"] = [
-		load("res://Entities/Player/TENSADO_CUERDA1.mp3"),
-		load("res://Entities/Player/TENSADO_CUERDA2.mp3")
+		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA1.mp3"),
+		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA2.mp3")
 	]
 
-	sfx_streams["bow_hold"] = [load("res://Entities/Player/MANTENER_ARCO.mp3")]
+	sfx_streams["bow_hold"] = [load("res://Entities/Jugador_Arquera/MANTENER_ARCO.mp3")]
 
-	sfx_streams["player_laugh"] = [load("res://Entities/Player/RISA_PERSONAJE.mp3")]
+	sfx_streams["player_laugh"] = [load("res://Entities/Jugador_Arquera/RISA_PERSONAJE.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
 	# ═══════════════════════════════════════════════════════════════════════════════
 	sfx_streams["goblin_shoot"] = [
-		load("res://Entities/Enemies/Goblin/DISPARO_Ballesta 1.mp3"),
-		load("res://Entities/Enemies/Goblin/DISPARO_Ballesta 2.mp3"),
-		load("res://Entities/Enemies/Goblin/DISPARO_Ballesta 3.mp3")
+		load("res://Entities/Enemigo_Goblin/DISPARO_Ballesta 1.mp3"),
+		load("res://Entities/Enemigo_Goblin/DISPARO_Ballesta 2.mp3"),
+		load("res://Entities/Enemigo_Goblin/DISPARO_Ballesta 3.mp3")
 	]
 
 	sfx_streams["goblin_death"] = [
-		load("res://Entities/Enemies/Goblin/MUERTE_GOBLING_1.mp3"),
-		load("res://Entities/Enemies/Goblin/MUERTE_GOBLING_2.mp3"),
-		load("res://Entities/Enemies/Goblin/MUERTE_GOBLING_3.mp3"),
-		load("res://Entities/Enemies/Goblin/MUERTE_GOBLING_4.mp3")
+		load("res://Entities/Enemigo_Goblin/MUERTE_GOBLING_1.mp3"),
+		load("res://Entities/Enemigo_Goblin/MUERTE_GOBLING_2.mp3"),
+		load("res://Entities/Enemigo_Goblin/MUERTE_GOBLING_3.mp3"),
+		load("res://Entities/Enemigo_Goblin/MUERTE_GOBLING_4.mp3")
 	]
 
-	sfx_streams["goblin_laugh"] = [load("res://Entities/Enemies/Goblin/RISA_GOBLING_3.mp3")]
+	sfx_streams["goblin_laugh"] = [load("res://Entities/Enemigo_Goblin/RISA_GOBLING_3.mp3")]
 
 	sfx_streams["goblin_girl_shoot"] = sfx_streams["player_shoot"]  # Usa el mismo arco
 
 	sfx_streams["goblin_girl_death"] = [
-		load("res://Entities/Enemies/GoblinGirl/SFX_goblin_girl_death1.mp3"),
-		load("res://Entities/Enemies/GoblinGirl/SFX_goblin_girl_death2.mp3"),
-		load("res://Entities/Enemies/GoblinGirl/SFX_goblin_girl_death3.mp3")
+		load("res://Entities/Enemigo_Goblin_Girl/SFX_goblin_girl_death1.mp3"),
+		load("res://Entities/Enemigo_Goblin_Girl/SFX_goblin_girl_death2.mp3"),
+		load("res://Entities/Enemigo_Goblin_Girl/SFX_goblin_girl_death3.mp3")
 	]
 
 	sfx_streams["imp_death"] = [
-		load("res://Entities/Enemies/ImpEnemy/MUERTE_IMP1.mp3"),
-		load("res://Entities/Enemies/ImpEnemy/MUERTE_IMP2.mp3")
+		load("res://Entities/Enemigo_Imp/MUERTE_IMP1.mp3"),
+		load("res://Entities/Enemigo_Imp/MUERTE_IMP2.mp3")
 	]
 
 	sfx_streams["explosion_muerte"] = [
-		load("res://Entities/Enemies/ImpEnemy/EXPLOCION_Muerte1.mp3"),
-		load("res://Entities/Enemies/ImpEnemy/EXPLOCION_Muerte2.mp3"),
-		load("res://Entities/Enemies/ImpEnemy/EXPLOCION_Muerte3.mp3")
+		load("res://Entities/Enemigo_Imp/EXPLOCION_Muerte1.mp3"),
+		load("res://Entities/Enemigo_Imp/EXPLOCION_Muerte2.mp3"),
+		load("res://Entities/Enemigo_Imp/EXPLOCION_Muerte3.mp3")
 	]
 
-	sfx_streams["trident_shot"] = [load("res://Entities/Enemies/ImpEnemy/TRIDENTE_SHOT.mp3")]
+	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]
 
 	sfx_streams["shield_imp_impact"] = [
-		load("res://Entities/Enemies/ImpShieldGirl/IMPACTO_IMP_ESCUDO_01.mp3"),
-		load("res://Entities/Enemies/ImpShieldGirl/IMPACTO_IMP_ESCUDO_02.mp3")
+		load("res://Entities/Enemigo_Imp_Escudo/IMPACTO_IMP_ESCUDO_01.mp3"),
+		load("res://Entities/Enemigo_Imp_Escudo/IMPACTO_IMP_ESCUDO_02.mp3")
 	]
 
 	sfx_streams["shield_imp_death"] = [
-		load("res://Entities/Enemies/ImpShieldGirl/MUERTE_IMP_ESCUDO_01.mp3"),
-		load("res://Entities/Enemies/ImpShieldGirl/MUERTE_IMP_ESCUDO_2.mp3")
+		load("res://Entities/Enemigo_Imp_Escudo/MUERTE_IMP_ESCUDO_01.mp3"),
+		load("res://Entities/Enemigo_Imp_Escudo/MUERTE_IMP_ESCUDO_2.mp3")
 	]
 
 	sfx_streams["gargola_fire"] = [
-		load("res://Entities/Enemies/GARGOLA/ffuego gargola.mp3"),
-		load("res://Entities/Enemies/GARGOLA/ffuego gargola 2.mp3")
+		load("res://Entities/Enemigo_Gargola/ffuego gargola.mp3"),
+		load("res://Entities/Enemigo_Gargola/ffuego gargola 2.mp3")
 	]
 
 	sfx_streams["gargola_impacto"] = [
-		load("res://Entities/Enemies/GARGOLA/IMPACTO_FUEGO_01.mp3"),
-		load("res://Entities/Enemies/GARGOLA/IMPACTO_FUEGO_02.mp3")
+		load("res://Entities/Enemigo_Gargola/IMPACTO_FUEGO_01.mp3"),
+		load("res://Entities/Enemigo_Gargola/IMPACTO_FUEGO_02.mp3")
 	]
 
 	sfx_streams["gargola_herida"] = [
-		load("res://Entities/Enemies/GARGOLA/IMPACTO_HERIDA_01.mp3"),
-		load("res://Entities/Enemies/GARGOLA/IMPACTO_HERIDA_02.mp3")
+		load("res://Entities/Enemigo_Gargola/IMPACTO_HERIDA_01.mp3"),
+		load("res://Entities/Enemigo_Gargola/IMPACTO_HERIDA_02.mp3")
 	]
 
 	sfx_streams["gargola_death"] = [
-		load("res://Entities/Enemies/GARGOLA/Muerte new1.mp3"),
-		load("res://Entities/Enemies/GARGOLA/Muerte new2.mp3")
+		load("res://Entities/Enemigo_Gargola/Muerte new1.mp3"),
+		load("res://Entities/Enemigo_Gargola/Muerte new2.mp3")
 	]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE AMBIENTE / ESCUDOS
 	# ═══════════════════════════════════════════════════════════════════════════════
 	sfx_streams["shield_hit_crossbow"] = [
-		load("res://Entities/Environment/Escudo/IMPACTO_ESCUDO_BALLESTA.mp3")
+		load("res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3")
 	]
 
 	sfx_streams["shield_hit_arrow"] = [
-		load("res://Entities/Environment/Escudo/IMPACTO_ESCUDO_FLECHA.mp3")
+		load("res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_FLECHA.mp3")
 	]
 
 	# Alias genérico para compatibilidad
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
 
-	sfx_streams["shield_break"] = [load("res://Entities/Environment/Escudo/ESCUDO_ROTO.mp3")]
+	sfx_streams["shield_break"] = [load("res://Entities/Ambiente_Escudo/ESCUDO_ROTO.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# MÚSICA

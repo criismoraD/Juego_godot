@@ -1,6 +1,6 @@
 extends GutTest
 
-const MARCA_REF = preload("res://LONKO/Marca_Zona_Caida.gd")
+const MARCA_REF = preload("res://Entities/Enemigo_Lonko/Marca_Zona_Caida.gd")
 
 var scene_root: Node3D
 

@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-var instrucciones_scene_path: String = "res://UI_INSTRUCCIONES/UI_INSTRUCCIONES_Mouse.tscn"
+var instrucciones_scene_path: String = "res://UI/Instrucciones/UI_INSTRUCCIONES_Mouse.tscn"
 
 
 func test_inicializacion_instrucciones_mouse() -> void:

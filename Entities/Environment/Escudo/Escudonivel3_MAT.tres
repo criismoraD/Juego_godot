@@ -1,7 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bi75w45xtwdd5"]
-
-[ext_resource type="Texture2D" uid="uid://ciay5ej7qdq4k" path="res://Entities/Environment/Escudo/Escudonivel3_D.jpg" id="1_hl8io"]
-
-[resource]
-shading_mode = 0
-albedo_texture = ExtResource("1_hl8io")

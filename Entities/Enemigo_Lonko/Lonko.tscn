@@ -1,0 +1,161 @@
+[gd_scene format=3 uid="uid://bsfq0o2kq6ows"]
+
+[ext_resource type="Script" uid="uid://dgh0g1o0duntf" path="res://Entities/Enemigo_Lonko/Lonko.gd" id="1_lonko"]
+[ext_resource type="PackedScene" uid="uid://cqlywcwj0vwhw" path="res://Entities/Enemigo_Lonko/LONKO.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="3_bow"]
+[ext_resource type="PackedScene" uid="uid://dcri1fif5ky1b" path="res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn" id="4_arrow"]
+[ext_resource type="PackedScene" uid="uid://cn070hn37ncul" path="res://Entities/Enemigo_Lonko/Flecha_Electrica.tscn" id="5_vfx_manual"]
+[ext_resource type="Texture2D" uid="uid://co802i012y46f" path="res://Entities/Enemigo_Lonko/humo pisada.png" id="6_polvo"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lonko"]
+radius = 0.35
+height = 1.0251954
+
+[sub_resource type="Gradient" id="Grad_polvo"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 1, 0.9, 1, 1, 1, 0.5, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradTex_polvo"]
+gradient = SubResource("Grad_polvo")
+
+[sub_resource type="Curve" id="Curve_size_polvo"]
+_data = [Vector2(0, 0.4), 0.0, 1.5, 0, 0, Vector2(0.4, 1.1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTex_size_polvo"]
+curve = SubResource("Curve_size_polvo")
+
+[sub_resource type="ParticleProcessMaterial" id="PPM_polvo"]
+emission_shape = 3
+emission_box_extents = Vector3(0.22, 0.02, 0.22)
+direction = Vector3(0, 1, 0)
+spread = 60.0
+initial_velocity_min = 0.3
+initial_velocity_max = 0.7
+gravity = Vector3(0, 0.3, 0)
+scale_min = 0.8
+scale_max = 1.3
+scale_curve = SubResource("CurveTex_size_polvo")
+color_ramp = SubResource("GradTex_polvo")
+
+[sub_resource type="StandardMaterial3D" id="Mat_polvo"]
+render_priority = 2
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("6_polvo")
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_polvo"]
+material = SubResource("Mat_polvo")
+size = Vector2(0.65, 0.65)
+
+[node name="Lonko" type="CharacterBody3D" unique_id=2008123910]
+collision_layer = 4
+script = ExtResource("1_lonko")
+radio_marca_caida = 0.5
+altura_pilar_offset = 3.0
+debug_pitch_deg = -90.0
+velocidad_caminar = 1.5
+distancia_minima_caminar = 4.5
+distancia_maxima_caminar = 9.0
+vida_maxima = 5
+altura_spawn_flecha = 0.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1943347810]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5125977, 0)
+shape = SubResource("CapsuleShape3D_lonko")
+
+[node name="LONKO" parent="." unique_id=1820795103 instance=ExtResource("2_glb")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+
+[node name="Armature" parent="LONKO" index="0" unique_id=1048752254]
+transform = Transform3D(0.00999999, 0, 0, 0, -4.3711346e-10, -0.00999999, 0, 0.00999999, -4.3711346e-10, 0, 0, 0)
+
+[node name="Skeleton3D" parent="LONKO/Armature" index="0" unique_id=1269417501]
+bones/0/position = Vector3(-1.1654605, -0.4657755, -41.85689)
+bones/0/rotation = Quaternion(-0.5862399, 0.34187028, -0.38595447, 0.62488943)
+bones/1/position = Vector3(5.789079, -2.1694143, 0.37194744)
+bones/1/rotation = Quaternion(0.23171447, 0.16830143, 0.9287534, -0.23537266)
+bones/2/position = Vector3(8.822394e-07, 22.526602, -3.8352027e-08)
+bones/2/rotation = Quaternion(-0.34307033, 0.039535616, -0.010643442, 0.938417)
+bones/3/rotation = Quaternion(0.59545684, 0.017213853, -0.16024233, 0.78705615)
+bones/4/position = Vector3(1.782521e-06, 9.7759, -5.736706e-07)
+bones/4/rotation = Quaternion(0.3326687, -0.14238761, 0.050886843, 0.93084264)
+bones/6/rotation = Quaternion(-0.16350578, 0.25400302, 0.9367436, 0.17680399)
+bones/7/position = Vector3(-3.1933718e-07, 22.40568, 9.285556e-07)
+bones/7/rotation = Quaternion(-0.35641113, -0.06103477, 0.038609967, 0.9315339)
+bones/8/position = Vector3(-2.1252072e-06, 15.664393, 1.854929e-06)
+bones/8/rotation = Quaternion(0.55044997, -0.046417505, 0.11066609, 0.82619816)
+bones/9/rotation = Quaternion(0.35539082, 0.14031106, -0.05105009, 0.92271566)
+bones/11/position = Vector3(5.9604645e-08, 3.905807, -0.17724401)
+bones/11/rotation = Quaternion(0.10858144, -0.0032125288, 0.034904063, 0.9934695)
+bones/12/rotation = Quaternion(0.05108984, -0.0073182373, 0.023850214, 0.99838245)
+bones/13/position = Vector3(1.1920929e-07, 5.213097, 6.556511e-07)
+bones/13/rotation = Quaternion(0.05103337, -0.008036553, 0.02425359, 0.99837005)
+bones/14/rotation = Quaternion(0.55165374, 0.45121974, -0.47199905, 0.5189372)
+bones/15/position = Vector3(4.2788456e-06, 8.32907, -1.8777223e-06)
+bones/15/rotation = Quaternion(0.48299325, 0.025900813, -0.13637535, 0.86455095)
+bones/16/position = Vector3(-5.8336457e-07, 9.601474, 9.000571e-06)
+bones/16/rotation = Quaternion(0.101151906, -0.14681776, 0.32545227, 0.92859775)
+bones/17/position = Vector3(1.6171003e-07, 12.8710785, -1.7325824e-06)
+bones/17/rotation = Quaternion(-0.16771312, -0.24704568, 0.06093874, 0.95243233)
+bones/18/position = Vector3(1.7312797e-06, 8.671351, 4.27541e-06)
+bones/18/rotation = Quaternion(0.0067012217, 0.0023554387, 0.0042678257, 0.9999657)
+bones/19/position = Vector3(2.384187e-06, 0.7248988, -1.0430795e-06)
+bones/19/rotation = Quaternion(0.08381144, -0.005193061, 0.114416465, 0.9898775)
+bones/20/position = Vector3(0.25819492, 1.0712166, -0.087681085)
+bones/20/rotation = Quaternion(0.09397277, -0.04498698, -0.1939904, 0.9754553)
+bones/21/position = Vector3(-0.10413301, 0.7322006, -0.2485295)
+bones/22/position = Vector3(-1.3113022e-06, 5.864733, 6.2954336e-06)
+bones/22/rotation = Quaternion(-0.008641379, -0.012867703, -0.03258066, 0.99934894)
+bones/23/position = Vector3(8.34465e-07, 6.785858, -4.8023567)
+bones/23/rotation = Quaternion(-0.14460829, -0.4565986, 0.061582055, 0.8756791)
+bones/24/position = Vector3(2.9802322e-07, 15.866198, -11.228522)
+bones/25/rotation = Quaternion(0.5425922, -0.47487167, 0.51051617, 0.4684697)
+bones/26/position = Vector3(-2.385499e-06, 8.329074, -4.469506e-06)
+bones/26/rotation = Quaternion(0.39316863, 0.3581682, 0.12939227, 0.836894)
+bones/27/position = Vector3(3.2594698e-07, 9.641695, -2.8680315e-06)
+bones/27/rotation = Quaternion(0.009423904, 0.0031615528, -0.39712942, 0.91770875)
+bones/28/rotation = Quaternion(-0.0032268425, 0.091296986, -0.0009612627, 0.9958181)
+bones/29/position = Vector3(2.5883965e-06, 4.2035193, 3.824238e-06)
+bones/29/rotation = Quaternion(0.5044107, -0.044387706, 0.06733714, 0.85968906)
+bones/30/position = Vector3(1.6689313e-06, 2.9185872, 1.7881307e-06)
+bones/30/rotation = Quaternion(0.6835052, 0.03765215, 0.07040634, 0.72556597)
+bones/31/position = Vector3(-0.23343813, 1.8589197, 0.0653407)
+bones/31/rotation = Quaternion(0.28903002, -0.01552969, 0.20337422, 0.9353392)
+
+[node name="BoneAttachment3D_Bow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" index="1" unique_id=253504640]
+transform = Transform3D(0.5460531, -0.06251223, 0.83541524, 0.52955955, 0.79846674, -0.28638855, -0.6491484, 0.59878546, 0.46910885, -9.147048, 26.197918, -42.572136)
+bone_name = "mixamorig_RightHand"
+bone_idx = 28
+
+[node name="ARCO_GOBLING_GIRL" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Bow" unique_id=1734146513 instance=ExtResource("3_bow")]
+transform = Transform3D(10.135045, -52.896595, -11.145901, -51.477585, -5.9819875, -18.419403, 16.50271, 13.826282, -50.61121, -1.1256943, 7.041935, -0.88827133)
+
+[node name="BoneAttachment3D_Arrow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" index="2" unique_id=253504641]
+transform = Transform3D(-0.90220237, 0.40724766, 0.14205897, -0.14728746, -0.6004634, 0.78597116, 0.40538615, 0.6881816, 0.60172176, 12.6305, -18.183788, -43.606476)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
+
+[node name="FlechaElectricaVFX_Manual" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=146018264 instance=ExtResource("5_vfx_manual")]
+transform = Transform3D(3.54945, 24.708939, -1.3674251, 5.921002, -2.189244, -24.18985, -24.027977, 3.1105702, -6.162877, 6.116825, 26.849491, -3.1260643)
+
+[node name="FlechaMano" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=1101558565 instance=ExtResource("4_arrow")]
+transform = Transform3D(6.588788, -89.10347, -10.823942, 89.30569, 7.596483, -8.172351, 9.004547, -10.142159, 88.97219, 4.370201, 31.560211, 5.4091187)
+visible = false
+
+[node name="Particulas_Pisada" type="GPUParticles3D" parent="." unique_id=1565899052]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+emitting = false
+amount = 14
+lifetime = 0.55
+randomness = 0.15
+process_material = SubResource("PPM_polvo")
+draw_pass_1 = SubResource("QuadMesh_polvo")
+
+[editable path="LONKO"]

@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-class TestableGoblin extends "res://Entities/Enemies/Goblin/Goblin.gd":
+class TestableGoblin extends "res://Entities/Enemigo_Goblin/Goblin.gd":
 	# Evitar dependencias de inicialización de AudioManager u otros Singletons en test
 	func _on_state_dying():
 		collision_layer = 0

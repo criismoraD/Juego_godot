@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bgbjvpjkta2mm"
+path="res://.godot/imported/Sonido rayo ult.mp3-9ea54d4153822cc3420445cb0ae39605.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Lonko/Sonido rayo ult.mp3"
+dest_files=["res://.godot/imported/Sonido rayo ult.mp3-9ea54d4153822cc3420445cb0ae39605.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

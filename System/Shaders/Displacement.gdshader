@@ -102,21 +102,24 @@ void vertex() {
 	// Stone Side Sampling (Biplanar)
 	// We mix X and Z based on the normal's horizontal components
 	float side_balance = abs(NORMAL.x) / (abs(NORMAL.x) + abs(NORMAL.z) + 0.0001);
-	float h_stone_x = texture(displacement_texture, uv_stone_side_x).r;
-	float h_stone_z = texture(displacement_texture, uv_stone_side_z).r;
+	float h_stone_x = textureLod(displacement_texture, uv_stone_side_x, 0.0).r;
+	float h_stone_z = textureLod(displacement_texture, uv_stone_side_z, 0.0).r;
 	float h_stone = mix(h_stone_z, h_stone_x, side_balance);
 	
 	// Grass Triplanar Sampling
-	float h_grass_y = texture(grass_displacement_texture, uv_grass_top).r;
-	float h_grass_x = texture(grass_displacement_texture, uv_grass_side_x).r;
-	float h_grass_z = texture(grass_displacement_texture, uv_grass_side_z).r;
+	float h_grass_y = textureLod(grass_displacement_texture, uv_grass_top, 0.0).r;
+	float h_grass_x = textureLod(grass_displacement_texture, uv_grass_side_x, 0.0).r;
+	float h_grass_z = textureLod(grass_displacement_texture, uv_grass_side_z, 0.0).r;
 	float h_grass = h_grass_y * triplanar_powers.y + h_grass_x * triplanar_powers.x + h_grass_z * triplanar_powers.z;
 	
 	// Final Blend
 	float height = mix(h_stone, h_grass, top_mix);
 	
-	// Apply
-	VERTEX += normalize(VERTEX) * height * mix(displacement_scale_xz, displacement_scale_y, abs(NORMAL.y));
+	// Apply safely without NaN when VERTEX is at origin
+	float vert_len = length(VERTEX);
+	if (vert_len > 0.0001) {
+		VERTEX += (VERTEX / vert_len) * height * mix(displacement_scale_xz, displacement_scale_y, abs(NORMAL.y));
+	}
 }
 
 void fragment() {
