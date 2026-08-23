@@ -182,9 +182,15 @@ func _es_impacto_directo(nodo: Node) -> bool:
 		return true
 	if hit_target_directo.is_ancestor_of(nodo) or nodo.is_ancestor_of(hit_target_directo):
 		return true
-	# Caso especial pilar de Lonko
-	if (nodo is PilarLonkoBody or "es_pilar_enemigo" in nodo) and ("Pilar" in hit_target_directo.name or hit_target_directo.get_parent() == nodo.get_parent()):
-		return true
+	# Caso especial pilar de Lonko: si el impacto directo fue contra el contenedor
+	# PilarLonko (Node3D) o contra su malla hermana PILAR_LONKO, mapear al
+	# PilarBody hijo correspondiente PERO solo para ese pilar especifico.
+	if nodo is PilarLonkoBody or "es_pilar_enemigo" in nodo:
+		var pilar_parent: Node = nodo.get_parent()
+		if pilar_parent and hit_target_directo == pilar_parent:
+			return true
+		if is_instance_valid(hit_target_directo.get_parent()) and hit_target_directo.get_parent() == pilar_parent:
+			return true
 	return false
 
 
