@@ -43,6 +43,11 @@ enum State { WALKING, SHOOTING, DYING, DEAD }
 @export var particulas_escala_min: float = 0.005
 @export var particulas_escala_max: float = 0.02
 @export_range(0.0, 1.0, 0.1) var particulas_detener_emision: float = 0.7
+# === CONFIGURACIÓN - SANGRE ===
+@export_category("Sangre")
+@export var tiene_sangre: bool = true
+@export var escena_sangre: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+@export var offset_sangre: Vector3 = Vector3.ZERO  ## Offset adicional de ajuste para el spawn de la sangre
 # === CONFIGURACIÓN - SOMBRA ===
 @export_category("Sombra")
 @export var sombra_opacidad: float = 1.0
@@ -66,6 +71,8 @@ var target_walk_distance: float = 0.0
 var shoot_timer: float = 0.0
 var original_materials: Array = []
 var _test_floor_normal_override = null
+var last_hit_position: Vector3 = Vector3.ZERO
+var last_hit_direction: Vector3 = Vector3.ZERO
 # === EFECTO DE DISOLUCIÓN ===
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 var is_dissolving: bool = false
@@ -89,7 +96,11 @@ func _ready():
 	health = vida_maxima
 	target_walk_distance = randf_range(distancia_minima_caminar, distancia_maxima_caminar)
 
-	_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
+	_cached_mesh_instances.clear()
+	for child in find_children("*", "MeshInstance3D", true, false):
+		if child.find_parent("PartesExplotadas") != null:
+			continue
+		_cached_mesh_instances.append(child)
 	_cached_particles = find_children("*", "GPUParticles3D", true, false)
 
 	_red_flash_material = StandardMaterial3D.new()
@@ -400,6 +411,41 @@ func _on_state_dying():
 	collision_layer = 0
 	collision_mask = 0
 	set_physics_process(false)
+	if tiene_sangre:
+		_spawn_blood_splash()
+
+
+func _spawn_blood_splash(custom_modulate: Color = Color.WHITE) -> void:
+	if not tiene_sangre or not escena_sangre:
+		return
+
+	var splash_pos: Vector3 = last_hit_position
+	if splash_pos == Vector3.ZERO:
+		var bone_pos: Vector3 = _get_hips_global_position()
+		if bone_pos != Vector3.ZERO:
+			splash_pos = bone_pos
+		else:
+			splash_pos = global_position + Vector3(0.0, 0.4, 0.0)
+	else:
+		splash_pos += offset_sangre
+
+	var splash_node = escena_sangre.instantiate()
+	if not splash_node:
+		return
+
+	var target_parent: Node = get_tree().current_scene
+	if not target_parent:
+		target_parent = get_parent()
+	if not target_parent:
+		target_parent = self
+
+	target_parent.add_child(splash_node)
+
+	if splash_node.has_method("setup"):
+		splash_node.setup(splash_pos, last_hit_direction, custom_modulate)
+	elif splash_node is Node3D:
+		splash_node.global_position = splash_pos
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -557,6 +603,11 @@ func _die():
 	for child in get_children():
 		if child is Area3D and child.name.contains("Arrow"):
 			child.queue_free()
+
+	if "murio_por_explosion" in self and self.murio_por_explosion:
+		_cleanup_all_materials()
+		queue_free()
+		return
 
 	_start_dissolve_effect()
 

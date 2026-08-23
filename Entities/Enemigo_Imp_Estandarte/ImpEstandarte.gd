@@ -64,6 +64,7 @@ var escala_original_global_flecha_mano: Vector3 = Vector3.ONE
 
 func _on_enemy_ready():
 	# Configuración base del Imp (sin usar lógica de tridente)
+	escena_sangre = preload("res://VFX/Scenes/BloodSplashEmbajador.tscn")
 	color_borde_disolucion = Color(0.7, 0.0, 0.0)
 	rastrear_jugador = true
 
@@ -237,10 +238,7 @@ func _throw_projectile():
 
 
 func _on_state_dying():
-	# Base de EnemyBase: desactivar física/colisiones
-	collision_layer = 0
-	collision_mask = 0
-	set_physics_process(false)
+	super._on_state_dying()
 
 	_reproducir_sonido_muerte_estandarte()
 	AudioManager.play_sfx("explosion_muerte")
@@ -249,7 +247,6 @@ func _on_state_dying():
 
 	var anim_length = _get_animation_duration("IMP_MUERTE")
 	_play_animation("IMP_MUERTE")
-	_crear_explosion_sangre()
 
 	var tiempo_total = max(anim_length, tiempo_antes_disolver)
 	get_tree().create_timer(tiempo_total).timeout.connect(_on_death_timer_timeout)
@@ -331,73 +328,6 @@ func _on_hit_timer_timeout() -> void:
 		espera_entrada_disparo = 0.0
 		shoot_timer = 0.0
 		_iniciar_ciclo_disparo()
-
-
-func _crear_explosion_sangre():
-	var particles := GPUParticles3D.new()
-	particles.name = "BloodExplosion"
-	particles.amount = 15
-	particles.lifetime = 0.8
-	particles.one_shot = true
-	particles.explosiveness = 1.0
-	particles.randomness = 0.5
-	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-
-	var process_mat := ParticleProcessMaterial.new()
-	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	process_mat.emission_sphere_radius = 0.2
-	process_mat.direction = Vector3(0, 1, 0)
-	process_mat.spread = 180.0
-	process_mat.initial_velocity_min = 2.0
-	process_mat.initial_velocity_max = 5.0
-	process_mat.gravity = Vector3(0, -6.0, 0)
-	process_mat.damping_min = 1.0
-	process_mat.damping_max = 3.0
-	process_mat.scale_min = escala_sangre_min
-	process_mat.scale_max = escala_sangre_max
-
-	var gradient := Gradient.new()
-	gradient.set_color(0, Color(0.7, 0.0, 0.0, 1.0))
-	gradient.add_point(0.3, Color(0.5, 0.0, 0.0, 0.9))
-	gradient.set_color(1, Color(0.2, 0.0, 0.0, 0.0))
-	var gradient_tex := GradientTexture1D.new()
-	gradient_tex.gradient = gradient
-	process_mat.color_ramp = gradient_tex
-
-	particles.process_material = process_mat
-
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
-	var blood_mat := StandardMaterial3D.new()
-	blood_mat.albedo_color = Color(0.6, 0.0, 0.0)
-	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	blood_mat.emission_enabled = true
-	blood_mat.emission = Color(0.5, 0.0, 0.0)
-	blood_mat.emission_energy_multiplier = 1.5
-	blood_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	blood_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sphere.material = blood_mat
-	particles.draw_pass_1 = sphere
-
-	add_child(particles)
-	var bone_pos = _get_hips_global_position()
-	if bone_pos != Vector3.ZERO:
-		particles.global_position = bone_pos
-	else:
-		particles.position = Vector3(0, 0.3, 0)
-	particles.emitting = true
-
-	var gpos = particles.global_position
-	remove_child(particles)
-	get_tree().root.add_child(particles)
-	particles.global_position = gpos
-
-	get_tree().create_timer(2.0).timeout.connect(
-		func():
-			if is_instance_valid(particles) and particles.is_inside_tree():
-				particles.queue_free()
-	)
 
 
 func _cachear_visuales_arma():

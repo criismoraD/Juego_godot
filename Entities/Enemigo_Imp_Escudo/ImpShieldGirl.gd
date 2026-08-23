@@ -43,6 +43,9 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export_category("Drops")
 @export var posion_scene: PackedScene = preload("res://Entities/Item_Pocion/Posion.tscn")
 @export_range(0.0, 1.0, 0.01) var posion_drop_chance: float = 1.0  ## 100% de probabilidad de dropear poción
+@export_category("Sangre")
+@export var tiene_sangre: bool = true
+@export var escena_sangre: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -58,6 +61,8 @@ var model_root: Node3D  ## Nodo raíz del modelo del personaje
 var current_state: State = State.WALKING
 var escudo_vida_actual: int = 3
 var health: int = 1
+var last_hit_position: Vector3 = Vector3.ZERO
+var last_hit_direction: Vector3 = Vector3.ZERO
 var enemigo_protegido: Node3D = null  ## Referencia al enemigo que estamos protegiendo
 var spawn_position: Vector3 = Vector3.ZERO  ## Posición de spawn original
 var is_dissolving: bool = false
@@ -458,8 +463,9 @@ func take_damage(_amount: float):
 		return
 
 	if escudo_vida_actual > 0:
-		# El escudo absorbe el daño
-		escudo_vida_actual -= 1
+		# El escudo absorbe todo el daño recibido (la flecha explosiva hace 9 y lo destruye de 1 tiro)
+		var dano_aplicado: int = int(_amount) if _amount > 0.0 else 1
+		escudo_vida_actual -= dano_aplicado
 		_flash_escudo()
 
 		if escudo_vida_actual > 0:
@@ -541,6 +547,23 @@ func _on_dying():
 	collision_layer = 0
 	collision_mask = 0
 	set_physics_process(false)
+
+	if tiene_sangre and escena_sangre:
+		var splash_pos: Vector3 = last_hit_position
+		if splash_pos == Vector3.ZERO:
+			splash_pos = global_position + Vector3(0.0, 0.4, 0.0)
+		var splash_node = escena_sangre.instantiate()
+		if splash_node:
+			var target_parent: Node = get_tree().current_scene
+			if not target_parent:
+				target_parent = get_parent()
+			if not target_parent:
+				target_parent = self
+			target_parent.add_child(splash_node)
+			if splash_node.has_method("setup"):
+				splash_node.setup(splash_pos, last_hit_direction)
+			elif splash_node is Node3D:
+				splash_node.global_position = splash_pos
 
 	AudioManager.play_sfx("shield_imp_death")
 	_drop_pocion()

@@ -90,8 +90,8 @@ func _find_mesh_instance(node: Node):
 		_find_mesh_instance(child)
 
 
-func recibir_golpe():
-	golpes_recibidos += 1
+func recibir_golpe(amount: int = 1):
+	golpes_recibidos += amount
 
 	# Reproducir sonido de daño al escudo
 	AudioManager.play_shield_hit()

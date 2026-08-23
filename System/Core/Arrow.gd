@@ -12,6 +12,17 @@ const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 enum TipoFlecha { JUGADOR, ENEMIGO }
 @export var tipo_dueño: TipoFlecha = TipoFlecha.JUGADOR
 
+# === FLECHA EXPLOSIVA ===
+@export_category("Flecha Explosiva")
+@export var es_explosiva: bool = false:
+	set(value):
+		es_explosiva = value
+		if es_explosiva and is_inside_tree():
+			_crear_destello_punta()
+@export var dano_base_explosiva: float = 3.0  ## Daño base en área (3)
+@export var bono_dano_estructuras: float = 6.0  ## Bono contra estructuras y escudos (+6 = 9 total)
+@export var radio_explosion: float = 4.84  ## Radio del área de efecto ampliado (4.84m)
+
 # === ESTADO INTERNO ===
 var velocity: Vector3 = Vector3.ZERO
 var power: float = 0.0
@@ -22,6 +33,7 @@ var _ray_ccd: RayCast3D
 var _last_ccd_pos: Vector3 = Vector3.ZERO  # OPT: Posición del último CCD check
 const CCD_MIN_MOVE: float = 0.05  # OPT: Distancia mínima antes de re-chequear CCD
 var gameplay_z_plane: float = 0.0
+var _destello_punta_creado: bool = false
 
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
@@ -41,6 +53,9 @@ func _ready():
 
 	for mesh in _cached_mesh_instances:
 		mesh.add_to_group("outline_meshes")
+
+	if es_explosiva:
+		_crear_destello_punta()
 
 	# Inicializar RayCast para detección continua (anti-tunneling)
 	var ray = RayCast3D.new()
@@ -144,6 +159,11 @@ func _on_body_entered(body):
 	if is_stuck:
 		return
 
+	# Ignorar cuerpos ocultos o desactivados
+	if not body.is_visible_in_tree():
+		if _ray_ccd: _ray_ccd.add_exception(body)
+		return
+
 	if body.is_in_group("barrera_destruye_flechas"):
 		# La barrera solo elimina la flecha: sin sonido ni VFX de impacto.
 		_safe_destroy(true)
@@ -151,6 +171,31 @@ func _on_body_entered(body):
 
 	# Ignorar al jugador si es flecha del jugador (para que no se pegue al salir)
 	if tipo_dueño == TipoFlecha.JUGADOR and body.is_in_group("player"):
+		return
+
+	# Ignorar aliados (NPC) — las flechas los atraviesan
+	if body.is_in_group("allies"):
+		if _ray_ccd: _ray_ccd.add_exception(body)
+		return
+
+	# Ignorar defensas y escudos aliados si la flecha es del jugador/aliadas
+	if tipo_dueño == TipoFlecha.JUGADOR:
+		if body.has_method("recibir_golpe") or body.is_in_group("escudos"):
+			var es_enemigo: bool = false
+			if "es_escudo_enemigo" in body:
+				es_enemigo = body.es_escudo_enemigo
+			elif "es_pilar_enemigo" in body:
+				es_enemigo = body.es_pilar_enemigo
+			elif body.is_in_group("enemies"):
+				es_enemigo = true
+
+			if not es_enemigo:
+				if _ray_ccd: _ray_ccd.add_exception(body)
+				return # Ignora el escudo / defensa aliada y pasa de largo sin interactuar
+
+	# Si es flecha explosiva, impacta y explota en área contra cualquier cuerpo o superficie enemiga/suelo
+	if es_explosiva:
+		_explotar(body)
 		return
 
 	# Interacción con escudos
@@ -178,11 +223,6 @@ func _on_body_entered(body):
 	
 	# Por si acaso, si es un escudo sin el método (no debería pasar)
 	if body.is_in_group("escudos"):
-		if _ray_ccd: _ray_ccd.add_exception(body)
-		return
-
-	# Ignorar aliados (NPC) — las flechas los atraviesan
-	if body.is_in_group("allies"):
 		if _ray_ccd: _ray_ccd.add_exception(body)
 		return
 
@@ -217,6 +257,20 @@ func _on_body_entered(body):
 func _on_area_entered(area: Area3D):
 	if is_stuck:
 		return
+
+	if es_explosiva:
+		var parent_node := area.get_parent()
+		var target: Node = parent_node if parent_node else area
+		
+		# Ignorar aliados y defensas aliadas
+		if target.is_in_group("allies") or target.is_in_group("player"):
+			return
+		if ("es_escudo_enemigo" in target and not target.es_escudo_enemigo):
+			return
+
+		if target.is_in_group("enemies") or target.is_in_group("escudos") or target is StaticBody3D or target is AnimatableBody3D:
+			_explotar(target)
+			return
 
 	# Detectar ArrowDetector de PlataformaOneway para pegar la flecha
 	if area.name == "ArrowDetector":
@@ -564,3 +618,64 @@ func initialize(target_direction: Vector3, arrow_speed: float):
 
 	var angle = atan2(dir.y, dir.x)
 	rotation = Vector3(0, 0, angle)
+
+
+func _crear_destello_punta() -> void:
+	if _destello_punta_creado:
+		return
+	_destello_punta_creado = true
+
+	# Luz roja brillante en la punta
+	var red_light := OmniLight3D.new()
+	red_light.name = "RedTipLight"
+	red_light.position = Vector3(0.4, 0.0, 0.0)
+	red_light.light_color = Color(1.0, 0.12, 0.08)
+	red_light.light_energy = 4.0
+	red_light.omni_range = 2.0
+	add_child(red_light)
+
+	# Esfera incandescente roja en la punta
+	var tip_mesh := MeshInstance3D.new()
+	tip_mesh.name = "RedTipMesh"
+	tip_mesh.position = Vector3(0.42, 0.0, 0.0)
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.06
+	sphere.height = 0.12
+	tip_mesh.mesh = sphere
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.2, 0.1)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.1, 0.05)
+	mat.emission_energy_multiplier = 6.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	tip_mesh.material_override = mat
+	add_child(tip_mesh)
+
+
+func _explotar(hit_target: Node = null) -> void:
+	if _destroying:
+		return
+
+	# Screen shake doble por explosión
+	var game_feel = get_tree().root.get_node_or_null("GameFeel")
+	if game_feel and game_feel.has_method("on_player_shoot"):
+		game_feel.on_player_shoot()
+		game_feel.on_player_shoot()
+
+	# Instanciar la escena dedicada de explosión (permite ajustar el collider visualmente)
+	var explosion_scene: PackedScene = preload("res://Entities/Flecha_Explosiva/ExplosionFlechaExplosiva.tscn")
+	if explosion_scene:
+		var expl := explosion_scene.instantiate() as ExplosionFlechaExplosiva
+		if expl:
+			expl.dano_base = dano_base_explosiva
+			expl.bono_dano_estructuras = bono_dano_estructuras
+			expl.hit_target_directo = hit_target
+			expl.position = global_position
+			var root := get_tree().current_scene
+			if not root:
+				root = get_tree().root
+			root.add_child(expl)
+			expl.global_position = global_position
+
+	_safe_destroy()

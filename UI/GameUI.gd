@@ -37,6 +37,10 @@ var btn_solo_ggirl: Button
 var btn_solo_lonko: Button
 var btn_spawn_escudo: Button
 var btn_spawn_posion: Button
+var btn_spawn_flecha_explosiva: Button
+var flecha_explosiva_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
+var vignette_rect: ColorRect = null
+var _vignette_tween: Tween = null
 # === TOGGLE UI ===
 var bottom_panel: Control
 var toggle_ui_btn: Button
@@ -106,6 +110,7 @@ var resolution_labels: Array = [
 
 
 func _ready():
+	add_to_group("game_ui")
 	layer = 100
 	_Aplicar_Calidad(0)
 	outlines_enabled = true
@@ -207,6 +212,21 @@ func _scan_outline_materials():
 
 func _create_ui():
 	# ═══════════════════════════════════════════════════════════════════════════
+	# VIÑETEADO EN LOS BORDES DE LA PANTALLA (Activo solo en Evento Cuerno)
+	# ═══════════════════════════════════════════════════════════════════════════
+	vignette_rect = ColorRect.new()
+	vignette_rect.name = "VignetteOverlay"
+	vignette_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vignette_mat := ShaderMaterial.new()
+	vignette_mat.shader = preload("res://System/Shaders/vignette.gdshader")
+	vignette_mat.set_shader_parameter("vignette_color", Color(0.28, 0.04, 0.42, 1.0))
+	vignette_mat.set_shader_parameter("vignette_opacity", 0.75)
+	vignette_rect.material = vignette_mat
+	vignette_rect.modulate.a = 0.0  # Oculto por defecto
+	add_child(vignette_rect)
+
+	# ═══════════════════════════════════════════════════════════════════════════
 	# PANEL SUPERIOR - VIDA
 	# ═══════════════════════════════════════════════════════════════════════════
 	health_container = HBoxContainer.new()
@@ -256,331 +276,6 @@ func _create_ui():
 	wave_progress.add_theme_stylebox_override("background", bg_style)
 	wave_progress.add_theme_stylebox_override("fill", fg_style)
 	wave_container.add_child(wave_progress)
-
-	# ═══════════════════════════════════════════════════════════════════════════
-	# BOTÓN TOGGLE UI (ESQUINA SUPERIOR DERECHA)
-	# ═══════════════════════════════════════════════════════════════════════════
-	toggle_ui_btn = Button.new()
-	toggle_ui_btn.name = "ToggleUIBtn"
-	toggle_ui_btn.text = "🔼 UI"
-	toggle_ui_btn.custom_minimum_size = Vector2(60, 28)
-	toggle_ui_btn.anchor_left = 1.0
-	toggle_ui_btn.anchor_right = 1.0
-	toggle_ui_btn.offset_left = -70
-	toggle_ui_btn.offset_right = -10
-	toggle_ui_btn.offset_top = 10
-	toggle_ui_btn.offset_bottom = 38
-	toggle_ui_btn.visible = debug_ui_enabled
-	toggle_ui_btn.pressed.connect(_toggle_bottom_panel)
-	_style_button(toggle_ui_btn, Color(0.3, 0.3, 0.4))
-	add_child(toggle_ui_btn)
-
-	# ═══════════════════════════════════════════════════════════════════════════
-	# PANEL INFERIOR - CONTROLES (2 FILAS)
-	# ═══════════════════════════════════════════════════════════════════════════
-	bottom_panel = Control.new()
-	bottom_panel.name = "BottomPanel"
-	bottom_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	bottom_panel.anchor_top = 1.0
-	bottom_panel.anchor_bottom = 1.0
-	bottom_panel.offset_top = -100
-	bottom_panel.offset_bottom = -5
-	bottom_panel.visible = false
-	add_child(bottom_panel)
-
-	var vbox_rows = VBoxContainer.new()
-	vbox_rows.name = "RowsContainer"
-	vbox_rows.add_theme_constant_override("separation", 4)
-	vbox_rows.set_anchors_preset(Control.PRESET_CENTER)
-	vbox_rows.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	vbox_rows.grow_vertical = Control.GROW_DIRECTION_BOTH
-	bottom_panel.add_child(vbox_rows)
-
-	# ═══════════════ FILA 1: Controles principales ═══════════════
-	var hbox = HBoxContainer.new()
-	hbox.name = "Row1"
-	hbox.add_theme_constant_override("separation", 6)
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox_rows.add_child(hbox)
-
-	# --- PAUSA ---
-	pause_btn = Button.new()
-	pause_btn.text = "⏸️ PAUSA"
-	pause_btn.custom_minimum_size = Vector2(85, 32)
-	pause_btn.pressed.connect(_toggle_pause)
-	_style_button(pause_btn, Color(0.5, 0.3, 0.6))
-	hbox.add_child(pause_btn)
-
-	# --- GOD MODE ---
-	god_mode_btn = Button.new()
-	god_mode_btn.text = "GOD: OFF"
-	god_mode_btn.custom_minimum_size = Vector2(80, 32)
-	god_mode_btn.pressed.connect(_toggle_god_mode)
-	_style_button(god_mode_btn, Color(0.2, 0.4, 0.8))
-	hbox.add_child(god_mode_btn)
-
-	# Actualizar estado inicial
-	if player and player.get("modo_dios"):
-		god_mode_btn.text = "GOD: ON"
-		_style_button(god_mode_btn, Color(0.8, 0.6, 0.1))
-
-	# --- REINICIAR ---
-	restart_btn = Button.new()
-	restart_btn.text = "🔄 REINICIAR"
-	restart_btn.custom_minimum_size = Vector2(95, 32)
-	restart_btn.pressed.connect(_restart_game)
-	_style_button(restart_btn, Color(0.7, 0.2, 0.2))
-	hbox.add_child(restart_btn)
-
-	# --- SALIR ---
-	quit_btn = Button.new()
-	quit_btn.text = "❌ SALIR"
-	quit_btn.custom_minimum_size = Vector2(75, 32)
-	quit_btn.pressed.connect(_quit_game)
-	_style_button(quit_btn, Color(0.8, 0.2, 0.2))
-	hbox.add_child(quit_btn)
-
-	# --- SEPARADOR ---
-	var sep1 = VSeparator.new()
-	sep1.custom_minimum_size.x = 8
-	hbox.add_child(sep1)
-
-	# --- BGM SELECTOR ---
-	var bgm_label = Label.new()
-	bgm_label.text = "BGM:"
-	hbox.add_child(bgm_label)
-
-	var btn_m1 = Button.new()
-	btn_m1.text = "1"
-	btn_m1.custom_minimum_size = Vector2(28, 32)
-	btn_m1.pressed.connect(func(): _play_music(1))
-	_style_button(btn_m1, Color(0.3, 0.5, 0.3))
-	hbox.add_child(btn_m1)
-
-	var btn_m2 = Button.new()
-	btn_m2.text = "2"
-	btn_m2.custom_minimum_size = Vector2(28, 32)
-	btn_m2.pressed.connect(func(): _play_music(2))
-	_style_button(btn_m2, Color(0.3, 0.5, 0.3))
-	hbox.add_child(btn_m2)
-
-	var btn_mute = Button.new()
-	btn_mute.text = "🔇"
-	btn_mute.custom_minimum_size = Vector2(28, 32)
-	btn_mute.pressed.connect(func(): _play_music(0))
-	_style_button(btn_mute, Color(0.2, 0.2, 0.2))
-	hbox.add_child(btn_mute)
-
-	# --- SEPARADOR ---
-	var sep2 = VSeparator.new()
-	sep2.custom_minimum_size.x = 8
-	hbox.add_child(sep2)
-
-	# --- VOLUMEN BGM ---
-	var vol_bgm_label = Label.new()
-	vol_bgm_label.text = "🎵"
-	hbox.add_child(vol_bgm_label)
-
-	bgm_slider = HSlider.new()
-	bgm_slider.min_value = 0
-	bgm_slider.max_value = 100
-	bgm_slider.value = 50
-	bgm_slider.custom_minimum_size = Vector2(55, 20)
-	bgm_slider.value_changed.connect(_on_bgm_volume_changed)
-	hbox.add_child(bgm_slider)
-
-	# --- VOLUMEN SFX ---
-	var vol_sfx_label = Label.new()
-	vol_sfx_label.text = "🔊"
-	hbox.add_child(vol_sfx_label)
-
-	sfx_slider = HSlider.new()
-	sfx_slider.min_value = 0
-	sfx_slider.max_value = 100
-	sfx_slider.value = 70
-	sfx_slider.custom_minimum_size = Vector2(55, 20)
-	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
-	hbox.add_child(sfx_slider)
-
-	# --- SEPARADOR ---
-	var sep3 = VSeparator.new()
-	sep3.custom_minimum_size.x = 8
-	hbox.add_child(sep3)
-
-	# --- BOTONES DE CONTROL DE SPAWN ---
-	btn_iguales = Button.new()
-	btn_iguales.text = "⚖️ IGUALES"
-	btn_iguales.custom_minimum_size = Vector2(80, 32)
-	btn_iguales.pressed.connect(_toggle_equal_spawn)
-	_style_button(btn_iguales, Color(0.4, 0.4, 0.5))
-	hbox.add_child(btn_iguales)
-
-	btn_solo_imp = Button.new()
-	btn_solo_imp.text = "👹 IMP"
-	btn_solo_imp.custom_minimum_size = Vector2(60, 32)
-	btn_solo_imp.pressed.connect(func(): _set_spawn_type(2))
-	_style_button(btn_solo_imp, Color(0.4, 0.4, 0.5))
-	hbox.add_child(btn_solo_imp)
-
-	btn_solo_goblin = Button.new()
-	btn_solo_goblin.text = "🧟 GOBLIN"
-	btn_solo_goblin.custom_minimum_size = Vector2(75, 32)
-	btn_solo_goblin.pressed.connect(func(): _set_spawn_type(0))
-	_style_button(btn_solo_goblin, Color(0.4, 0.4, 0.5))
-	hbox.add_child(btn_solo_goblin)
-
-	btn_solo_ggirl = Button.new()
-	btn_solo_ggirl.text = "🧝 G.GIRL"
-	btn_solo_ggirl.custom_minimum_size = Vector2(75, 32)
-	btn_solo_ggirl.pressed.connect(func(): _set_spawn_type(1))
-	_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
-	hbox.add_child(btn_solo_ggirl)
-
-	btn_solo_lonko = Button.new()
-	btn_solo_lonko.text = "🏹 LONKO"
-	btn_solo_lonko.custom_minimum_size = Vector2(75, 32)
-	btn_solo_lonko.pressed.connect(func(): _set_spawn_type(6))
-	_style_button(btn_solo_lonko, Color(0.4, 0.4, 0.5))
-	hbox.add_child(btn_solo_lonko)
-
-	# --- FORZAR SPAWN ESCUDO ---
-	btn_spawn_escudo = Button.new()
-	btn_spawn_escudo.text = "\U0001F6E1\uFE0F ESCUDO"
-	btn_spawn_escudo.custom_minimum_size = Vector2(85, 32)
-	btn_spawn_escudo.pressed.connect(
-		func():
-			if wave_spawner and wave_spawner.has_method("forzar_spawn_escudo"):
-				wave_spawner.forzar_spawn_escudo()
-	)
-	_style_button(btn_spawn_escudo, Color(0.5, 0.3, 0.6))
-	hbox.add_child(btn_spawn_escudo)
-
-	# --- FORZAR SPAWN POCIÓN ---
-	btn_spawn_posion = Button.new()
-	btn_spawn_posion.text = "🧪 POCIÓN"
-	btn_spawn_posion.custom_minimum_size = Vector2(85, 32)
-	btn_spawn_posion.pressed.connect(_spawn_posion_debug)
-	_style_button(btn_spawn_posion, Color(0.7, 0.15, 0.35))
-	hbox.add_child(btn_spawn_posion)
-
-	# Sincronizar estado inicial
-	_update_spawn_buttons()
-
-	# ═══════════════ FILA 2: Escudos, Aliadas, Toggles ═══════════════
-	var hbox2 = HBoxContainer.new()
-	hbox2.name = "Row2"
-	hbox2.add_theme_constant_override("separation", 6)
-	hbox2.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox_rows.add_child(hbox2)
-
-	# --- DESTRUIR ESCUDOS ---
-	var btn_destroy_shields = Button.new()
-	btn_destroy_shields.text = "💥 DESTRUIR ESCUDOS"
-	btn_destroy_shields.custom_minimum_size = Vector2(135, 32)
-	btn_destroy_shields.pressed.connect(_destruir_todos_escudos)
-	_style_button(btn_destroy_shields, Color(0.7, 0.2, 0.2))
-	hbox2.add_child(btn_destroy_shields)
-
-	# --- RECONSTRUIR ESCUDOS ---
-	var btn_rebuild_shields = Button.new()
-	btn_rebuild_shields.text = "🛡️ RECONSTRUIR ESCUDOS"
-	btn_rebuild_shields.custom_minimum_size = Vector2(155, 32)
-	btn_rebuild_shields.pressed.connect(_reconstruir_todos_escudos)
-	_style_button(btn_rebuild_shields, Color(0.3, 0.6, 0.3))
-	hbox2.add_child(btn_rebuild_shields)
-
-	# --- SEPARADOR ---
-	var sep_toggles = VSeparator.new()
-	sep_toggles.custom_minimum_size.x = 8
-	hbox2.add_child(sep_toggles)
-
-	# --- TOGGLE OUTLINE GLOBAL ---
-	outline_btn = Button.new()
-	outline_btn.text = "✏️ BORDES: GLOBAL ON"
-	outline_btn.custom_minimum_size = Vector2(170, 32)
-	outline_btn.disabled = false
-	outline_btn.tooltip_text = "Activar/Desactivar contorno global"
-	outline_btn.pressed.connect(_toggle_outlines)
-	_style_button(outline_btn, Color(0.1, 0.6, 0.5))
-	hbox2.add_child(outline_btn)
-
-	# --- TOGGLE OUTLINE PROYECTILES ---
-	outline_proy_btn = Button.new()
-	outline_proy_btn.text = "✏️ BORDES PROY: ON"
-	outline_proy_btn.custom_minimum_size = Vector2(170, 32)
-	outline_proy_btn.disabled = false
-	outline_proy_btn.tooltip_text = "Activar/Desactivar contorno en proyectiles enemigos"
-	outline_proy_btn.pressed.connect(_toggle_outlines_proyectiles)
-	_style_button(outline_proy_btn, Color(0.15, 0.55, 0.6))
-	hbox2.add_child(outline_proy_btn)
-
-	# --- TOGGLE ESCUDOS ---
-	btn_toggle_shields = Button.new()
-	btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
-	btn_toggle_shields.custom_minimum_size = Vector2(115, 32)
-	btn_toggle_shields.pressed.connect(_toggle_escudos)
-	_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
-	hbox2.add_child(btn_toggle_shields)
-
-	# --- TOGGLE ALIADAS ---
-	btn_toggle_allies = Button.new()
-	btn_toggle_allies.text = "🏹 ALIADAS: ON"
-	btn_toggle_allies.custom_minimum_size = Vector2(115, 32)
-	btn_toggle_allies.pressed.connect(_toggle_aliadas)
-	_style_button(btn_toggle_allies, Color(0.3, 0.6, 0.5))
-	hbox2.add_child(btn_toggle_allies)
-
-	# --- REVIVIR ALIADAS ---
-	btn_revive_allies = Button.new()
-	btn_revive_allies.text = "💚 REVIVIR ALIADAS"
-	btn_revive_allies.custom_minimum_size = Vector2(145, 32)
-	btn_revive_allies.pressed.connect(_revivir_aliadas)
-	_style_button(btn_revive_allies, Color(0.2, 0.55, 0.35))
-	hbox2.add_child(btn_revive_allies)
-
-	# --- MATAR ALIADAS ---
-	btn_kill_allies = Button.new()
-	btn_kill_allies.text = "💔 MATAR ALIADAS"
-	btn_kill_allies.custom_minimum_size = Vector2(145, 32)
-	btn_kill_allies.pressed.connect(_matar_aliadas)
-	_style_button(btn_kill_allies, Color(0.65, 0.25, 0.25))
-	hbox2.add_child(btn_kill_allies)
-
-	# --- SEPARADOR ---
-	var sep_blood = VSeparator.new()
-	sep_blood.custom_minimum_size.x = 8
-	hbox2.add_child(sep_blood)
-
-	# --- TOGGLE SANGRE IMP ---
-	var btn_blood_toggle = Button.new()
-	btn_blood_toggle.name = "BloodToggleBtn"
-	btn_blood_toggle.text = "🩸 SANGRE: MORADA"
-	btn_blood_toggle.custom_minimum_size = Vector2(130, 32)
-	btn_blood_toggle.pressed.connect(_toggle_imp_blood_color)
-	_style_button(btn_blood_toggle, Color(0.4, 0.1, 0.5))
-	hbox2.add_child(btn_blood_toggle)
-
-	# --- OPACIDAD CAPA001 (FogPlane) ---
-	var sep_capa = VSeparator.new()
-	sep_capa.custom_minimum_size.x = 8
-	hbox2.add_child(sep_capa)
-
-	var lbl_capa = Label.new()
-	lbl_capa.text = "CAPA001 α:"
-	hbox2.add_child(lbl_capa)
-
-	capa001_opacity_slider = HSlider.new()
-	capa001_opacity_slider.min_value = 0.0
-	capa001_opacity_slider.max_value = 1.0
-	capa001_opacity_slider.step = 0.01
-	capa001_opacity_slider.custom_minimum_size = Vector2(90, 20)
-	capa001_opacity_slider.value = _obtener_opacidad_capa001_actual()
-	capa001_opacity_slider.value_changed.connect(_on_capa001_opacity_changed)
-	hbox2.add_child(capa001_opacity_slider)
-
-	capa001_opacity_value_label = Label.new()
-	capa001_opacity_value_label.text = "%.2f" % capa001_opacity_slider.value
-	hbox2.add_child(capa001_opacity_value_label)
 
 	# ═══════════════════════════════════════════════════════════════════════════
 	# PANEL DE PAUSA (OCULTO POR DEFECTO)
@@ -706,6 +401,17 @@ func _create_pause_panel():
 	)
 	_style_button(btn_oleada_4, Color(0.3, 0.5, 0.7))
 	hbox_levels.add_child(btn_oleada_4)
+
+	var btn_oleada_5 = Button.new()
+	btn_oleada_5.text = "Oleada 5"
+	btn_oleada_5.custom_minimum_size = Vector2(110, 40)
+	btn_oleada_5.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_cambio_oleada_debug(5)
+	)
+	_style_button(btn_oleada_5, Color(0.7, 0.2, 0.5))
+	hbox_levels.add_child(btn_oleada_5)
 
 	# Fila de Navegación de Nivees (Debug)
 	var hbox_nav_debug = HBoxContainer.new()
@@ -888,7 +594,10 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 	if not is_instance_valid(root_node):
 		return
 
-	if numero_oleada == 4:
+	if numero_oleada == 5:
+		if root_node.has_method("debug_ir_a_oleada_5"):
+			root_node.call("debug_ir_a_oleada_5")
+	elif numero_oleada == 4:
 		if root_node.has_method("debug_ir_a_oleada_4"):
 			root_node.call("debug_ir_a_oleada_4")
 	elif numero_oleada == 3:
@@ -942,36 +651,37 @@ func _style_button(btn: Button, color: Color):
 
 
 func _toggle_bottom_panel():
-	if not debug_ui_enabled:
+	if not is_instance_valid(bottom_panel):
 		return
 
 	bottom_panel.visible = not bottom_panel.visible
-	if bottom_panel.visible:
-		toggle_ui_btn.text = "🔽 UI"
-	else:
-		toggle_ui_btn.text = "🔼 UI"
+	if is_instance_valid(toggle_ui_btn):
+		toggle_ui_btn.text = "🔽 UI" if bottom_panel.visible else "🔼 UI"
 
 
 func set_bottom_panel_visible(p_visible: bool) -> void:
-	if not debug_ui_enabled or not bottom_panel:
+	if not is_instance_valid(bottom_panel):
 		return
 	bottom_panel.visible = p_visible
-	toggle_ui_btn.text = "🔽 UI" if p_visible else "🔼 UI"
+	if is_instance_valid(toggle_ui_btn):
+		toggle_ui_btn.text = "🔽 UI" if p_visible else "🔼 UI"
 
 
 func _toggle_pause():
 	is_paused = not is_paused
 	get_tree().paused = is_paused
-	pause_panel.visible = is_paused
+	if is_instance_valid(pause_panel):
+		pause_panel.visible = is_paused
 
-	if is_paused:
-		pause_btn.text = "▶️ PLAY"
-		_style_button(pause_btn, Color(0.2, 0.6, 0.3))
-		AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
-	else:
-		pause_btn.text = "⏸️ PAUSA"
-		_style_button(pause_btn, Color(0.5, 0.3, 0.6))
-		AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
+	if is_instance_valid(pause_btn):
+		if is_paused:
+			pause_btn.text = "▶️ PLAY"
+			_style_button(pause_btn, Color(0.2, 0.6, 0.3))
+			AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
+		else:
+			pause_btn.text = "⏸️ PAUSA"
+			_style_button(pause_btn, Color(0.5, 0.3, 0.6))
+			AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
 
 
 func _toggle_god_mode():
@@ -980,12 +690,13 @@ func _toggle_god_mode():
 
 	player.modo_dios = not player.modo_dios
 
-	if player.modo_dios:
-		god_mode_btn.text = "GOD: ON"
-		_style_button(god_mode_btn, Color(0.8, 0.6, 0.1))
-	else:
-		god_mode_btn.text = "GOD: OFF"
-		_style_button(god_mode_btn, Color(0.2, 0.4, 0.8))
+	if is_instance_valid(god_mode_btn):
+		if player.modo_dios:
+			god_mode_btn.text = "GOD: ON"
+			_style_button(god_mode_btn, Color(0.8, 0.6, 0.1))
+		else:
+			god_mode_btn.text = "GOD: OFF"
+			_style_button(god_mode_btn, Color(0.2, 0.4, 0.8))
 
 
 func _restart_game():
@@ -1097,41 +808,48 @@ func _set_spawn_type(tipo: int):
 
 
 func _update_spawn_buttons():
+	if not is_instance_valid(btn_iguales):
+		return
+
 	var spawner = _find_wave_spawner()
 	var igual_on = spawner and spawner.probabilidad_igual
 	var tipo = spawner.forzar_tipo_enemigo if spawner else -1
 
 	# Botón IGUALES
-	if igual_on:
-		btn_iguales.text = "⚖️ IGUALES: ON"
-		_style_button(btn_iguales, Color(0.2, 0.7, 0.3))
-	else:
-		btn_iguales.text = "⚖️ IGUALES"
-		_style_button(btn_iguales, Color(0.4, 0.4, 0.5))
+	if is_instance_valid(btn_iguales):
+		if igual_on:
+			btn_iguales.text = "⚖️ IGUALES: ON"
+			_style_button(btn_iguales, Color(0.2, 0.7, 0.3))
+		else:
+			btn_iguales.text = "⚖️ IGUALES"
+			_style_button(btn_iguales, Color(0.4, 0.4, 0.5))
 
 	# Botón IMP
-	if tipo == 2:
-		btn_solo_imp.text = "👹 IMP ✓"
-		_style_button(btn_solo_imp, Color(0.7, 0.2, 0.2))
-	else:
-		btn_solo_imp.text = "👹 IMP"
-		_style_button(btn_solo_imp, Color(0.4, 0.4, 0.5))
+	if is_instance_valid(btn_solo_imp):
+		if tipo == 2:
+			btn_solo_imp.text = "👹 IMP ✓"
+			_style_button(btn_solo_imp, Color(0.7, 0.2, 0.2))
+		else:
+			btn_solo_imp.text = "👹 IMP"
+			_style_button(btn_solo_imp, Color(0.4, 0.4, 0.5))
 
 	# Botón GOBLIN
-	if tipo == 0:
-		btn_solo_goblin.text = "🧟 GOBLIN ✓"
-		_style_button(btn_solo_goblin, Color(0.3, 0.6, 0.2))
-	else:
-		btn_solo_goblin.text = "🧟 GOBLIN"
-		_style_button(btn_solo_goblin, Color(0.4, 0.4, 0.5))
+	if is_instance_valid(btn_solo_goblin):
+		if tipo == 0:
+			btn_solo_goblin.text = "🧟 GOBLIN ✓"
+			_style_button(btn_solo_goblin, Color(0.3, 0.6, 0.2))
+		else:
+			btn_solo_goblin.text = "🧟 GOBLIN"
+			_style_button(btn_solo_goblin, Color(0.4, 0.4, 0.5))
 
 	# Botón G.GIRL
-	if tipo == 1:
-		btn_solo_ggirl.text = "🧝 G.GIRL ✓"
-		_style_button(btn_solo_ggirl, Color(0.6, 0.2, 0.6))
-	else:
-		btn_solo_ggirl.text = "🧝 G.GIRL"
-		_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
+	if is_instance_valid(btn_solo_ggirl):
+		if tipo == 1:
+			btn_solo_ggirl.text = "🧝 G.GIRL ✓"
+			_style_button(btn_solo_ggirl, Color(0.6, 0.2, 0.6))
+		else:
+			btn_solo_ggirl.text = "🧝 G.GIRL"
+			_style_button(btn_solo_ggirl, Color(0.4, 0.4, 0.5))
 
 	# Botón LONKO
 	if is_instance_valid(btn_solo_lonko):
@@ -1531,12 +1249,13 @@ func _toggle_escudos():
 				if child is CollisionShape3D:
 					child.disabled = not shields_enabled
 
-	if shields_enabled:
-		btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
-		_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
-	else:
-		btn_toggle_shields.text = "🛡️ ESCUDOS: OFF"
-		_style_button(btn_toggle_shields, Color(0.4, 0.4, 0.4))
+	if is_instance_valid(btn_toggle_shields):
+		if shields_enabled:
+			btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
+			_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
+		else:
+			btn_toggle_shields.text = "🛡️ ESCUDOS: OFF"
+			_style_button(btn_toggle_shields, Color(0.4, 0.4, 0.4))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1648,12 +1367,13 @@ func _toggle_aliadas():
 		if ally is AllyArcher:
 			_aplicar_estado_aliada(ally)
 
-	if allies_enabled:
-		btn_toggle_allies.text = "🏹 ALIADAS: ON"
-		_style_button(btn_toggle_allies, Color(0.3, 0.6, 0.5))
-	else:
-		btn_toggle_allies.text = "🏹 ALIADAS: OFF"
-		_style_button(btn_toggle_allies, Color(0.4, 0.4, 0.4))
+	if is_instance_valid(btn_toggle_allies):
+		if allies_enabled:
+			btn_toggle_allies.text = "🏹 ALIADAS: ON"
+			_style_button(btn_toggle_allies, Color(0.3, 0.6, 0.5))
+		else:
+			btn_toggle_allies.text = "🏹 ALIADAS: OFF"
+			_style_button(btn_toggle_allies, Color(0.4, 0.4, 0.4))
 
 
 func _guardar_plantillas_aliadas():
@@ -1955,3 +1675,51 @@ func _spawn_posion_debug() -> void:
 
 	scene_root.add_child(posion)
 	posion.global_position = Vector3(0.0, spawn_y, 0.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEBUG: SPAWN FLECHA EXPLOSIVA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+func _spawn_flecha_explosiva_debug() -> void:
+	if not flecha_explosiva_scene_debug:
+		push_warning("[GameUI] flecha_explosiva_scene_debug no está asignado.")
+		return
+
+	var scene_root := get_tree().current_scene
+	if not scene_root:
+		push_warning("[GameUI] No hay escena activa para instanciar el power-up.")
+		return
+
+	var item := flecha_explosiva_scene_debug.instantiate() as Node3D
+	if not item:
+		push_warning("[GameUI] No se pudo instanciar PowerUpFlechaExplosiva.tscn.")
+		return
+
+	var spawn_y: float = 1.0
+	if player and "global_position" in player:
+		spawn_y = player.global_position.y
+
+	scene_root.add_child(item)
+	item.global_position = Vector3(0.0, spawn_y, 0.0)
+
+
+## Activa el oscurecimiento con viñeteado morado oscuro durante el evento del cuerno con transición gradual
+func activar_efecto_viñeta_cuerno(duracion: float = 3.8) -> void:
+	if not is_instance_valid(vignette_rect):
+		return
+
+	if _vignette_tween and _vignette_tween.is_valid():
+		_vignette_tween.kill()
+
+	_vignette_tween = create_tween()
+	# Transición de entrada gradual y sedosa desde el valor actual hacia 1.0
+	var tiempo_fade_in: float = 1.2 * (1.0 - vignette_rect.modulate.a)
+	_vignette_tween.tween_property(vignette_rect, "modulate:a", 1.0, max(0.2, tiempo_fade_in)) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Mantiene el efecto visible
+	_vignette_tween.tween_interval(max(0.8, duracion - 2.4))
+	# Transición de salida suave (fade-out gradual en 1.3 segundos)
+	_vignette_tween.tween_property(vignette_rect, "modulate:a", 0.0, 1.3) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

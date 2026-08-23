@@ -1,6 +1,7 @@
 class_name Player
 extends CharacterBody3D
 signal health_changed(new_health: int)
+signal flechas_explosivas_changed(cantidad: int)
 signal died
 enum AimState { NONE, DRAWING, AIMING, SHOOTING }
 enum MoveState { GROUND, AIR, LANDING, CLIMBING, DEAD }
@@ -9,6 +10,9 @@ const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 const COYOTE_TIME: float = 0.15
 const JUMP_BUFFER_TIME: float = 0.12
 # === SEÑALES ===
+@export_category("Munición Especial")
+@export var flechas_explosivas: int = 0  ## Cantidad de flechas explosivas acumuladas
+
 @export_category("Movimiento")
 @export var velocidad_caminar: float = 0.5  # Velocidad al caminar
 @export var velocidad_correr: float = 1.0  # Velocidad al correr
@@ -1015,6 +1019,11 @@ func start_shooting():
 	charge_time = 0.0
 
 
+func agregar_flechas_explosivas(cantidad: int = 10) -> void:
+	flechas_explosivas += cantidad
+	flechas_explosivas_changed.emit(flechas_explosivas)
+
+
 func spawn_arrow_projectile():
 	if not arrow_scene:
 		return
@@ -1026,6 +1035,15 @@ func spawn_arrow_projectile():
 
 	# Instanciar la flecha
 	var arrow_instance = arrow_scene.instantiate()
+
+	# Si quedan flechas explosivas, descontar y configurar la flecha
+	var es_flecha_explosiva: bool = false
+	if flechas_explosivas > 0:
+		flechas_explosivas -= 1
+		flechas_explosivas_changed.emit(flechas_explosivas)
+		es_flecha_explosiva = true
+		if "es_explosiva" in arrow_instance:
+			arrow_instance.es_explosiva = true
 
 	# Obtener dirección hacia el mouse
 	var shoot_dir = data["velocity"].normalized()
@@ -1056,8 +1074,8 @@ func spawn_arrow_projectile():
 	# GAME FEEL: Screen shake al disparar
 	if has_node("/root/GameFeel"):
 		get_node("/root/GameFeel").on_player_shoot()
-		if es_potencia_maxima:
-			# Sacudida doble para potencia máxima
+		if es_potencia_maxima or es_flecha_explosiva:
+			# Sacudida doble para potencia máxima o flecha explosiva
 			get_node("/root/GameFeel").on_player_shoot()
 
 	# GAME FEEL: Partículas de disparo (DESACTIVADO)
@@ -1391,6 +1409,25 @@ func _die():
 
 	# Reproducir sonido de muerte
 	AudioManager.play_sfx("player_death")
+	_crear_splash_sangre_muerte()
+
+
+func _crear_splash_sangre_muerte() -> void:
+	var blood_scene: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+	if not blood_scene:
+		return
+	var splash = blood_scene.instantiate() as BloodSplash2D
+	if not splash:
+		return
+
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(splash)
+	else:
+		get_parent().add_child(splash)
+
+	# Dirección invertida (hacia la izquierda -X) acorde a proyectiles enemigos que impactan desde la derecha
+	splash.setup(global_position + Vector3(0.0, 0.8, 0.0), Vector3.LEFT, Color.WHITE)
 
 
 func _wait_for_ground_death():

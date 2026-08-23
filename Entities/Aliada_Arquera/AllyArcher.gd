@@ -10,17 +10,17 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP }
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos vivos para empezar a disparar
 @export_category("Disparo")
-@export var tiempo_carga_min: float = 1.0  ## Carga mínima (potencia baja)
+@export var tiempo_carga_min: float = 0.5  ## Carga mínima (potencia baja)
 @export_category("Tiempo_carga_max")
-@export var tiempo_carga_max: float = 2.0  ## Carga máxima (potencia alta)
+@export var tiempo_carga_max: float = 1.0  ## Carga máxima (potencia alta)
 @export var potencia_minima: float = 5.0
 @export var potencia_maxima: float = 12.0
 @export var altura_spawn_flecha: float = 1.2
 @export_range(0.0, 30.0, 1.0) var angulo_disparo_min: float = 5.0  ## Ángulo mínimo de elevación (grados)
 @export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 35.0  ## Ángulo máximo de elevación (grados)
 @export_category("Tiempos")
-@export var idle_min: float = 1.0  ## Segundos mínimos en idle entre ciclos
-@export var idle_max: float = 2.0  ## Segundos máximos en idle entre ciclos
+@export var idle_min: float = 0.4  ## Segundos mínimos en idle entre ciclos
+@export var idle_max: float = 0.9  ## Segundos máximos en idle entre ciclos
 @export_category("Vida")
 @export var vida_maxima: int = 2
 @export_category("Debug")
@@ -46,6 +46,7 @@ var state_timer: float = 0.0
 var _blink_timer: float = 0.0
 var charge_duration: float = 0.0
 var health: int = 1
+var flechas_explosivas: int = 0  ## Contador interno de flechas explosivas
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 static var _cached_wave_spawner: Node = null
@@ -294,29 +295,29 @@ func _cambiar_estado(nuevo: State):
 			state_timer = randf_range(idle_min, idle_max)
 			_ocultar_flecha()
 		State.RELOADING:
-			# Tomar flecha — el arco empieza a tensarse tras un desfase
-			_play_anim("TOMAR_FLECHA", 0.3)
-			_play_bow_anim("ARCO_IDLE", 0.3)
-			var tomar_dur = _get_anim_length("TOMAR_FLECHA")
-			state_timer = tomar_dur + 0.1
+			# Tomar flecha más rápido (1.6x)
+			_play_anim("TOMAR_FLECHA", 0.2, 1.6)
+			_play_bow_anim("ARCO_IDLE", 0.2, 1.6)
+			var tomar_dur = _get_anim_length("TOMAR_FLECHA") / 1.6
+			state_timer = tomar_dur + 0.05
 			_mostrar_flecha()
 			# Desfase: iniciar ARCO_TENSAR a mitad de TOMAR_FLECHA
 			get_tree().create_timer(tomar_dur * 0.4).timeout.connect(
 				func():
 					if is_instance_valid(self) and current_state == State.RELOADING:
-						_play_bow_anim("ARCO_TENSAR", 0.3)
+						_play_bow_anim("ARCO_TENSAR", 0.2, 1.6)
 			)
 		State.AIMING:
-			# Apuntar — arco ya tenso, solo mantener pose
-			_play_anim("APUNTAR_IDLE", 0.3)
+			# Apuntar — arco ya tenso, carga rápida
+			_play_anim("APUNTAR_IDLE", 0.2, 1.4)
 			charge_duration = randf_range(tiempo_carga_min, tiempo_carga_max)
 			state_timer = charge_duration
 			AudioManager.play_sfx("bow_tension", -6.0)
 		State.SHOOTING:
-			# Disparar
-			_play_anim("DISPARO", 0.15)
-			_play_bow_anim("ARCO_DISPARO", 0.15)
-			state_timer = _get_anim_length("DISPARO") + 0.2
+			# Disparar con salida rápida (1.6x)
+			_play_anim("DISPARO", 0.1, 1.6)
+			_play_bow_anim("ARCO_DISPARO", 0.1, 1.6)
+			state_timer = (_get_anim_length("DISPARO") / 1.6) + 0.1
 			_ocultar_flecha()
 		State.DYING:
 			_on_dying()
@@ -387,6 +388,10 @@ func _contar_enemigos_vivos() -> int:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+func agregar_flechas_explosivas(cantidad: int = 5) -> void:
+	flechas_explosivas += cantidad
+
+
 func _disparar():
 	if not arrow_scene:
 		return
@@ -408,6 +413,11 @@ func _disparar():
 
 	# Crear flecha
 	var arrow = arrow_scene.instantiate()
+	if flechas_explosivas > 0:
+		flechas_explosivas -= 1
+		if "es_explosiva" in arrow:
+			arrow.es_explosiva = true
+
 	arrow.initialize(direction, speed)
 	get_tree().root.add_child(arrow)
 	arrow.global_position = spawn_pos
@@ -432,6 +442,9 @@ func _ocultar_flecha():
 # DAÑO Y MUERTE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+var last_hit_position: Vector3 = Vector3.ZERO
+var last_hit_direction: Vector3 = Vector3.LEFT
+
 
 func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD or current_state == State.GETTING_UP:
@@ -439,7 +452,7 @@ func take_damage(amount: float):
 
 	health -= int(amount)
 
-	# Reproducir animación de daño si sigue vivo
+	# Reproducir animación de daño si sigue vivo (la sangre solo sale al morir)
 	if health > 0:
 		_play_anim("DAÑO_HIT", 0.05)
 		AudioManager.play_sfx("player_hurt")
@@ -475,9 +488,30 @@ func revivir() -> void:
 	_cambiar_estado(State.GETTING_UP)
 
 
+func _crear_splash_sangre() -> void:
+	var blood_scene: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+	if not blood_scene:
+		return
+	var splash = blood_scene.instantiate() as BloodSplash2D
+	if not splash:
+		return
+
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(splash)
+	elif get_parent():
+		get_parent().add_child(splash)
+
+	var spawn_pos := last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0.0, 0.8, 0.0))
+	# Invertir dirección: el proyectil impacta viniendo de la derecha hacia la izquierda (-X)
+	var dir := last_hit_direction if not last_hit_direction.is_zero_approx() else Vector3.LEFT
+	splash.setup(spawn_pos, dir, Color.WHITE)
+
+
 func _on_dying():
 	set_process(false)
 	_ocultar_flecha()
+	_crear_splash_sangre()
 
 	# Desactivar hitbox
 	if hitbox_body:

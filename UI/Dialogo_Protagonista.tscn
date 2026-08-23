@@ -1,9 +1,8 @@
 [gd_scene format=3 uid="uid://ch8tv0jcwn6vb"]
 
 [ext_resource type="Script" uid="uid://drxcxng0eisja" path="res://UI/DialogoComic.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://UI/Protagonista/PROTA_NORMAL.png" id="2_tex_normal"]
+[ext_resource type="Texture2D" uid="uid://dk74spg47cqta" path="res://UI/Protagonista/Eryn_beta.png" id="2_tex_eryn"]
 [ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
-[ext_resource type="Texture2D" uid="uid://qgmhf0dv4kf4" path="res://UI/Protagonista/PROTA_ENOJADA.png" id="4_tex_enojada"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]
 content_margin_left = 14.0
@@ -29,7 +28,7 @@ audio_stream = ExtResource("3_audio")
 audio_volume_db = -16.0
 audio_pitch_scale = 1.1
 paginas_texto = PackedStringArray("DIALOGO_PROTA_P1", "DIALOGO_PROTA_P2")
-paginas_imagenes = Array[Texture2D]([ExtResource("2_tex_normal"), ExtResource("4_tex_enojada")])
+paginas_imagenes = Array[Texture2D]([ExtResource("2_tex_eryn"), ExtResource("2_tex_eryn")])
 metadata/_edit_vertical_guides_ = [774.0]
 
 [node name="Fondo" type="ColorRect" parent="." unique_id=1393562762]
@@ -60,12 +59,12 @@ anchor_left = 0.16
 anchor_top = 0.08
 anchor_right = 0.16
 anchor_bottom = 0.08
-offset_left = -23.199982
-offset_top = -47.4
-offset_right = 488.80002
-offset_bottom = 503.00003
+offset_left = -75.19998
+offset_top = -48.4
+offset_right = 436.80002
+offset_bottom = 502.00003
 mouse_filter = 2
-texture = ExtResource("2_tex_normal")
+texture = ExtResource("2_tex_eryn")
 expand_mode = 1
 stretch_mode = 5
 

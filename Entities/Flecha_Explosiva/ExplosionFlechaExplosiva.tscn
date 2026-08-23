@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://qouq85w3dh56"]
+
+[ext_resource type="Script" uid="uid://wrip4eqcey4k" path="res://Entities/Flecha_Explosiva/ExplosionFlechaExplosiva.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://6okj4uhag0tm" path="res://assets/BinbunVFX_Vol2/ExplosionFX/effects/air/vfx_air_explosion_01.tscn" id="2_vfx"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.75
+
+[node name="ExplosionFlechaExplosiva" type="Area3D" unique_id=471100566]
+collision_layer = 0
+collision_mask = 3
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=503815201]
+shape = SubResource("SphereShape3D_1")
+
+[node name="vfx_air_explosion_01" parent="." unique_id=281361346 instance=ExtResource("2_vfx")]
+transform = Transform3D(0.22, 0, 0, 0, 0.22, 0, 0, 0, 0.22, 0, 0, 0)

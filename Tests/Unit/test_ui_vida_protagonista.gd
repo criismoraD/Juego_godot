@@ -66,3 +66,32 @@ func test_actualizar_vida_oculta_corazones_segun_dano() -> void:
 	assert_false(ui_vida.corazon_02.visible)
 	assert_false(ui_vida.corazon_03.visible)
 	assert_false(ui_vida.corazon_04.visible)
+
+
+func test_contador_flechas_explosivas_visibilidad_y_conteo() -> void:
+	# Arrange
+	var ui_vida = load(ui_vida_scene_path).instantiate() as UIVidaProtagonista
+	add_child_autofree(ui_vida)
+	await wait_seconds(0.1)
+
+	# Assert inicial: Debe estar oculto por defecto
+	assert_not_null(ui_vida.contador_flechas_explosivas, "El nodo contador_flechas_explosivas debe existir")
+	assert_false(ui_vida.contador_flechas_explosivas.visible, "El contador debe estar oculto por defecto (0 flechas)")
+
+	# Act: Sumar 10 flechas
+	ui_vida.actualizar_flechas_explosivas(10)
+
+	# Assert
+	assert_true(ui_vida.contador_flechas_explosivas.visible, "El contador debe ser visible cuando hay flechas (>0)")
+	assert_eq(ui_vida.contador_flechas_explosivas.text, "10", "El texto debe mostrar '10'")
+
+	# Act: Disminuir a 3 flechas
+	ui_vida.actualizar_flechas_explosivas(3)
+	assert_true(ui_vida.contador_flechas_explosivas.visible)
+	assert_eq(ui_vida.contador_flechas_explosivas.text, "3", "El texto debe mostrar '3'")
+
+	# Act: Bajar a 0 flechas
+	ui_vida.actualizar_flechas_explosivas(0)
+
+	# Assert: Debe ocultarse al llegar a 0
+	assert_false(ui_vida.contador_flechas_explosivas.visible, "El contador debe ocultarse cuando llega a 0")

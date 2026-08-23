@@ -1201,59 +1201,76 @@ func _set_collision_recursivo(nodo: Node, activo: bool) -> void:
 func _crear_panel_controles_spawn():
 	if not game_ui:
 		return
-		
-	# Panel contenedor principal
-	var panel = PanelContainer.new()
+
+	# ═══════════════════════════════════════════════════════════════════════════
+	# 1. BOTÓN TOGGLE FLOTANTE (ESQUINA SUPERIOR DERECHA)
+	# ═══════════════════════════════════════════════════════════════════════════
+	var btn_toggle := Button.new()
+	btn_toggle.name = "BtnToggleDebugPanel"
+	btn_toggle.text = "🛠️ DEBUG"
+	btn_toggle.custom_minimum_size = Vector2(90, 30)
+	btn_toggle.anchor_left = 1.0
+	btn_toggle.anchor_top = 0.0
+	btn_toggle.anchor_right = 1.0
+	btn_toggle.offset_left = -98
+	btn_toggle.offset_top = 8
+	btn_toggle.offset_right = -8
+	btn_toggle.offset_bottom = 38
+
+	var toggle_style := StyleBoxFlat.new()
+	toggle_style.bg_color = Color(0.18, 0.20, 0.28, 0.95)
+	toggle_style.set_corner_radius_all(6)
+	toggle_style.set_border_width_all(2)
+	toggle_style.border_color = Color(0.45, 0.5, 0.7, 0.9)
+	btn_toggle.add_theme_stylebox_override("normal", toggle_style)
+	game_ui.add_child(btn_toggle)
+
+	# ═══════════════════════════════════════════════════════════════════════════
+	# 2. PANEL CONTENEDOR FLOTANTE UNIFICADO
+	# ═══════════════════════════════════════════════════════════════════════════
+	var panel := PanelContainer.new()
 	panel.name = "DebugSpawnPanel"
-	
-	# Estilo del panel
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.12, 0.16, 0.85) # Fondo oscuro semitransparente
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = Color(0.3, 0.3, 0.4, 1.0)
-	panel.add_theme_stylebox_override("panel", style)
-	
-	# Posicionamiento: Esquina superior derecha
 	panel.anchor_left = 1.0
 	panel.anchor_top = 0.0
 	panel.anchor_right = 1.0
-	panel.offset_left = -280
-	panel.offset_top = 20
-	panel.custom_minimum_size = Vector2(260, 0)
-	
-	# Layout vertical
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
-	panel.add_child(vbox)
-	
-	# Título
-	var label = Label.new()
-	label.text = "🛠️ CONTROL DE SPAWN"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
-	vbox.add_child(label)
-	
-	# Separador
-	var sep = HSeparator.new()
-	vbox.add_child(sep)
-	
-	# Fila 1: Botones de estado (Pausar/Reanudar)
-	var hbox_status = HBoxContainer.new()
+	panel.offset_left = -295
+	panel.offset_top = 44
+	panel.offset_right = -8
+	panel.custom_minimum_size = Vector2(285, 0)
+	panel.visible = true  # Visible por defecto en nivel debug
+
+	btn_toggle.pressed.connect(func():
+		panel.visible = not panel.visible
+		btn_toggle.text = "✖ OCULTAR" if panel.visible else "🛠️ DEBUG"
+	)
+
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.08, 0.12, 0.96)
+	panel_style.set_corner_radius_all(8)
+	panel_style.set_content_margin_all(10)
+	panel_style.set_border_width_all(2)
+	panel_style.border_color = Color(0.35, 0.38, 0.55, 0.9)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var vbox_main := VBoxContainer.new()
+	vbox_main.add_theme_constant_override("separation", 6)
+	panel.add_child(vbox_main)
+
+	# --- TÍTULO ---
+	var label_titulo := Label.new()
+	label_titulo.text = "🛠️ CONTROL DE SPAWN & DEBUG"
+	label_titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_titulo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	vbox_main.add_child(label_titulo)
+
+	vbox_main.add_child(HSeparator.new())
+
+	# --- FILA 1: BOTONES DE ESTADO (PAUSAR / INICIAR) ---
+	var hbox_status := HBoxContainer.new()
 	hbox_status.add_theme_constant_override("separation", 6)
-	vbox.add_child(hbox_status)
-	
-	var btn_pausar = Button.new()
+	vbox_main.add_child(hbox_status)
+
+	var btn_pausar := Button.new()
 	btn_pausar.text = "⏸️ PAUSAR"
 	btn_pausar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_pausar.pressed.connect(func():
@@ -1261,8 +1278,8 @@ func _crear_panel_controles_spawn():
 		_actualizar_estado_spawner_label("PAUSADO")
 	)
 	hbox_status.add_child(btn_pausar)
-	
-	var btn_reanudar = Button.new()
+
+	var btn_reanudar := Button.new()
 	btn_reanudar.text = "▶️ INICIAR"
 	btn_reanudar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_reanudar.pressed.connect(func():
@@ -1271,37 +1288,33 @@ func _crear_panel_controles_spawn():
 		_actualizar_estado_spawner_label("ACTIVO")
 	)
 	hbox_status.add_child(btn_reanudar)
-	
-	# Label de estado actual del spawner
-	var label_estado = Label.new()
+
+	var label_estado := Label.new()
 	label_estado.name = "LabelEstadoSpawner"
-	label_estado.text = "Estado: ACTIVO"
+	label_estado.text = "Estado: PAUSADO"
 	label_estado.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label_estado.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
-	vbox.add_child(label_estado)
-	
-	# Separador 2
-	var sep2 = HSeparator.new()
-	vbox.add_child(sep2)
-	
-	# Fila 2: Selector de tipo de enemigo (como botones y labels)
-	# Forzar de entrada el tipo Lonko en el spawner al construir el panel
+	label_estado.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	vbox_main.add_child(label_estado)
+
+	vbox_main.add_child(HSeparator.new())
+
+	# --- FILA 2: SELECTOR DE TIPO DE ENEMIGO ---
 	wave_spawner.forzar_tipo_enemigo = 6
 	wave_spawner.probabilidad_igual = false
 
-	var label_tipo = Label.new()
+	var label_tipo := Label.new()
 	label_tipo.text = "Tipo a spawnear:\n🏹 Lonko"
 	label_tipo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	label_tipo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(label_tipo)
-	
-	var grid_tipos = GridContainer.new()
+	vbox_main.add_child(label_tipo)
+
+	var grid_tipos := GridContainer.new()
 	grid_tipos.columns = 2
 	grid_tipos.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid_tipos.add_theme_constant_override("h_separation", 8)
-	grid_tipos.add_theme_constant_override("v_separation", 8)
-	vbox.add_child(grid_tipos)
-	
+	grid_tipos.add_theme_constant_override("h_separation", 6)
+	grid_tipos.add_theme_constant_override("v_separation", 6)
+	vbox_main.add_child(grid_tipos)
+
 	var opciones = [
 		{"nombre": "🎲 Todos (Azar)", "id": -1},
 		{"nombre": "🏹 Gob Ballesta", "id": 0},
@@ -1312,83 +1325,166 @@ func _crear_panel_controles_spawn():
 		{"nombre": "🦅 Gárgola", "id": 5},
 		{"nombre": "🏹 Lonko", "id": 6}
 	]
-	
+
 	for opt in opciones:
-		var btn = Button.new()
+		var btn := Button.new()
 		btn.text = opt["nombre"]
-		btn.custom_minimum_size = Vector2(112, 35)
+		btn.custom_minimum_size = Vector2(125, 28)
 		btn.add_theme_font_size_override("font_size", 11)
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.set_meta("tipo_id", opt["id"])
 		btn.set_meta("tipo_nombre", opt["nombre"])
-		
-		# Estilo inicial (Lonko destacado por defecto)
-		var init_style = StyleBoxFlat.new()
+
+		var init_style := StyleBoxFlat.new()
 		if opt["id"] == 6:
-			init_style.bg_color = Color(0.9, 0.4, 0.1, 1.0) # Naranja destacado
-			init_style.border_width_left = 2
-			init_style.border_width_top = 2
-			init_style.border_width_right = 2
-			init_style.border_width_bottom = 2
+			init_style.bg_color = Color(0.9, 0.4, 0.1, 1.0)
+			init_style.set_border_width_all(2)
 			init_style.border_color = Color(1.0, 1.0, 1.0, 0.9)
 		else:
-			init_style.bg_color = Color(0.18, 0.18, 0.22, 0.95) # Color base oscuro
-		init_style.corner_radius_top_left = 4
-		init_style.corner_radius_top_right = 4
-		init_style.corner_radius_bottom_right = 4
-		init_style.corner_radius_bottom_left = 4
+			init_style.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+		init_style.set_corner_radius_all(4)
 		btn.add_theme_stylebox_override("normal", init_style)
-		
+
 		btn.pressed.connect(func():
-			var tid = btn.get_meta("tipo_id")
-			var tnombre = btn.get_meta("tipo_nombre")
+			var tid: int = btn.get_meta("tipo_id")
+			var tnombre: String = btn.get_meta("tipo_nombre")
 			if tid == -1:
 				wave_spawner.forzar_tipo_enemigo = -1
 				wave_spawner.probabilidad_igual = true
 			else:
 				wave_spawner.forzar_tipo_enemigo = tid
-			
+
 			label_tipo.text = "Tipo a spawnear:\n" + tnombre
 			for b in grid_tipos.get_children():
 				if b is Button:
-					var b_id = b.get_meta("tipo_id")
-					var b_style = StyleBoxFlat.new()
+					var b_id: int = b.get_meta("tipo_id")
+					var b_style := StyleBoxFlat.new()
 					if b_id == tid:
-						b_style.bg_color = Color(0.2, 0.5, 0.8, 1.0) # Azul destacado
-						b_style.border_width_left = 2
-						b_style.border_width_top = 2
-						b_style.border_width_right = 2
-						b_style.border_width_bottom = 2
+						b_style.bg_color = Color(0.2, 0.5, 0.8, 1.0)
+						b_style.set_border_width_all(2)
 						b_style.border_color = Color(1.0, 1.0, 1.0, 0.9)
 					else:
-						b_style.bg_color = Color(0.18, 0.18, 0.22, 0.95) # Color base oscuro
-					b_style.corner_radius_top_left = 4
-					b_style.corner_radius_top_right = 4
-					b_style.corner_radius_bottom_right = 4
-					b_style.corner_radius_bottom_left = 4
+						b_style.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+					b_style.set_corner_radius_all(4)
 					b.add_theme_stylebox_override("normal", b_style)
 		)
 		grid_tipos.add_child(btn)
-	
-	# Botón Spawnear Uno
-	var btn_spawn_uno = Button.new()
+
+	var btn_spawn_uno := Button.new()
 	btn_spawn_uno.text = "➕ SPAWNEAR UNO"
-	var style_spawn = StyleBoxFlat.new()
+	btn_spawn_uno.custom_minimum_size = Vector2(0, 30)
+	var style_spawn := StyleBoxFlat.new()
 	style_spawn.bg_color = Color(0.2, 0.5, 0.2, 1.0)
-	style_spawn.corner_radius_top_left = 4
-	style_spawn.corner_radius_top_right = 4
-	style_spawn.corner_radius_bottom_left = 4
-	style_spawn.corner_radius_bottom_right = 4
+	style_spawn.set_corner_radius_all(4)
 	btn_spawn_uno.add_theme_stylebox_override("normal", style_spawn)
 	btn_spawn_uno.pressed.connect(func():
 		wave_spawner.forzar_spawn()
 	)
-	vbox.add_child(btn_spawn_uno)
-	
-	# Añadir al game_ui
+	vbox_main.add_child(btn_spawn_uno)
+
+	vbox_main.add_child(HSeparator.new())
+
+	# --- SECCIÓN 3: ACCIONES, CONSUMIBLES Y DEFENSAS ---
+	var label_acciones := Label.new()
+	label_acciones.text = "⚡ ACCIONES & DEFENSAS"
+	label_acciones.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_acciones.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	vbox_main.add_child(label_acciones)
+
+	var grid_items := GridContainer.new()
+	grid_items.columns = 3
+	grid_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid_items.add_theme_constant_override("h_separation", 4)
+	grid_items.add_theme_constant_override("v_separation", 4)
+	vbox_main.add_child(grid_items)
+
+	var btn_pocion := Button.new()
+	btn_pocion.text = "🧪 Poción"
+	btn_pocion.custom_minimum_size = Vector2(84, 26)
+	btn_pocion.add_theme_font_size_override("font_size", 11)
+	btn_pocion.pressed.connect(func(): if game_ui: game_ui._spawn_posion_debug())
+	grid_items.add_child(btn_pocion)
+
+	var btn_flecha_exp := Button.new()
+	btn_flecha_exp.text = "💥 Flecha Exp"
+	btn_flecha_exp.custom_minimum_size = Vector2(84, 26)
+	btn_flecha_exp.add_theme_font_size_override("font_size", 11)
+	btn_flecha_exp.pressed.connect(func(): if game_ui: game_ui._spawn_flecha_explosiva_debug())
+	grid_items.add_child(btn_flecha_exp)
+
+	var btn_debug_exp := Button.new()
+	var update_exp_btn := func():
+		if ExplosionFlechaExplosiva.debug_collider_global:
+			btn_debug_exp.text = "🎯 Col Exp: ON"
+			btn_debug_exp.add_theme_color_override("font_color", Color(1.0, 0.4, 1.0))
+		else:
+			btn_debug_exp.text = "🎯 Col Exp: OFF"
+			btn_debug_exp.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	update_exp_btn.call()
+	btn_debug_exp.custom_minimum_size = Vector2(84, 26)
+	btn_debug_exp.add_theme_font_size_override("font_size", 11)
+	btn_debug_exp.pressed.connect(func():
+		ExplosionFlechaExplosiva.debug_collider_global = not ExplosionFlechaExplosiva.debug_collider_global
+		update_exp_btn.call()
+	)
+	grid_items.add_child(btn_debug_exp)
+
+	var btn_cuerno := Button.new()
+	btn_cuerno.text = "📯 Cuerno"
+	btn_cuerno.custom_minimum_size = Vector2(84, 26)
+	btn_cuerno.add_theme_font_size_override("font_size", 11)
+	btn_cuerno.pressed.connect(func(): if wave_spawner and wave_spawner.has_method("_iniciar_evento_cuerno"): wave_spawner._iniciar_evento_cuerno())
+	grid_items.add_child(btn_cuerno)
+
+	var btn_destr_escudos := Button.new()
+	btn_destr_escudos.text = "💥 -Escudos"
+	btn_destr_escudos.custom_minimum_size = Vector2(84, 26)
+	btn_destr_escudos.add_theme_font_size_override("font_size", 11)
+	btn_destr_escudos.pressed.connect(func(): if game_ui: game_ui._destruir_todos_escudos())
+	grid_items.add_child(btn_destr_escudos)
+
+	var btn_reconst_escudos := Button.new()
+	btn_reconst_escudos.text = "🛡️ +Escudos"
+	btn_reconst_escudos.custom_minimum_size = Vector2(84, 26)
+	btn_reconst_escudos.add_theme_font_size_override("font_size", 11)
+	btn_reconst_escudos.pressed.connect(func(): if game_ui: game_ui._reconstruir_todos_escudos())
+	grid_items.add_child(btn_reconst_escudos)
+
+	var btn_god := Button.new()
+	btn_god.text = "🛡️ God Mode"
+	btn_god.custom_minimum_size = Vector2(84, 26)
+	btn_god.add_theme_font_size_override("font_size", 11)
+	btn_god.pressed.connect(func(): if game_ui: game_ui._toggle_god_mode())
+	grid_items.add_child(btn_god)
+
+	vbox_main.add_child(HSeparator.new())
+
+	# --- SECCIÓN 4: SISTEMA ---
+	var hbox_sistema := HBoxContainer.new()
+	hbox_sistema.add_theme_constant_override("separation", 6)
+	vbox_main.add_child(hbox_sistema)
+
+	var btn_pausa := Button.new()
+	btn_pausa.text = "⏸️ PAUSA"
+	btn_pausa.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_pausa.pressed.connect(func(): if game_ui: game_ui._toggle_pause())
+	hbox_sistema.add_child(btn_pausa)
+
+	var btn_reiniciar := Button.new()
+	btn_reiniciar.text = "🔄 REINICIAR"
+	btn_reiniciar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_reiniciar.pressed.connect(func(): if game_ui: game_ui._restart_game())
+	hbox_sistema.add_child(btn_reiniciar)
+
+	var btn_salir := Button.new()
+	btn_salir.text = "❌ SALIR"
+	btn_salir.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_salir.pressed.connect(func(): if game_ui: game_ui._quit_game())
+	hbox_sistema.add_child(btn_salir)
+
 	game_ui.add_child(panel)
 
-	# Spawn pausado por defecto: no empiezan las oleadas hasta pulsar ▶️ INICIAR
+	# Spawn pausado por defecto
 	wave_spawner.detener_spawning()
 	_actualizar_estado_spawner_label("PAUSADO")
 

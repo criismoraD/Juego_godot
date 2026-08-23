@@ -42,8 +42,12 @@ const TIEMPO_LANZAR_FLECHA: float = 0.35
 @export var pilar_lonko_scene: PackedScene = preload("res://Entities/Enemigo_Lonko/PilarLonko.tscn")  ## Escena configurable del pilar
 @export var altura_pilar_offset: float = 3.2  ## Altura final de Lonko sobre el pilar (ajustable manualmente en Inspector)
 @export var escala_pilar: float = 3.0         ## Escala del pilar (3.0x por defecto)
-@export var vida_pilar_max: float = 13.0      ## Vida del pilar (13 HP de resistencia)
+@export var vida_pilar_max: float = 15.0      ## Vida del pilar (15 HP de resistencia)
 @export var textura_rocas_pilar: Texture2D = null  ## Textura opcional para partículas de rocas en el suelo
+
+@export_category("Drops - Lonko")
+@export var power_up_explosivo_scene: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
+@export_range(0.0, 1.0, 0.01) var drop_chance_flecha_explosiva: float = 0.30  ## 30% de probabilidad de dropear power-up
 
 @export_category("Debug Tracking - Lonko")
 @export var debug_tracking_override: bool = false  ## Activar para usar el slider de ángulo manualmente
@@ -67,6 +71,7 @@ var _pilar_invocado: bool = false
 var _pilar_desplegado: bool = false
 var _pilar_fue_destruido_primero: bool = false
 var _tween_flecha: Tween = null
+var _tween_subida: Tween = null
 var _reached_position: bool = false
 var _cached_spawn_pos: Vector3 = Vector3.ZERO
 var _particulas_pilar: GPUParticles3D = null
@@ -409,11 +414,11 @@ func _iniciar_secuencia_pilar() -> void:
 			pilar_body.inicializar(self, vida_pilar_max)
 
 			# Animar la emergencia del pilar Y la elevación de Lonko a la par
-			var tween := create_tween()
-			tween.set_parallel(true)
-			tween.tween_property(_instancia_pilar, "global_position:y", base_y, duracion_real) \
+			_tween_subida = create_tween()
+			_tween_subida.set_parallel(true)
+			_tween_subida.tween_property(_instancia_pilar, "global_position:y", base_y, duracion_real) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			tween.tween_property(self, "global_position:y", base_y + altura_pilar, duracion_real) \
+			_tween_subida.tween_property(self, "global_position:y", base_y + altura_pilar, duracion_real) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 	# 4. Bamboleo sutil estilo terremoto (duración reducida 2 segundos menos)
@@ -584,6 +589,7 @@ func _iniciar_secuencia_disparo() -> void:
 	var tiempo_recarga_actual: float = randf_range(tiempo_recarga_min, tiempo_recarga_max)
 	if _apuntar_arriba:
 		# El tiro eléctrico carga exactamente lo que dura "Cargando SP.mp3" (2 s)
+		_is_invulnerable = true  # Invulnerable durante la preparación y ejecución de la ulti
 		tiempo_recarga_actual = tiempo_recarga_electrica
 		_reproducir_sonido_cargando_sp()
 
@@ -599,6 +605,8 @@ func _iniciar_secuencia_disparo() -> void:
 
 	await get_tree().create_timer(tiempo_recarga_actual, false).timeout
 	if current_state != State.SHOOTING or _is_taking_damage or not is_instance_valid(self):
+		if _apuntar_arriba:
+			_is_invulnerable = false
 		return
 
 	# Capturar posición de spawn al final de RECARGA
@@ -612,6 +620,8 @@ func _iniciar_secuencia_disparo() -> void:
 
 	await get_tree().create_timer(TIEMPO_LANZAR_FLECHA, false).timeout
 	if current_state != State.SHOOTING or _is_taking_damage or not is_instance_valid(self):
+		if _apuntar_arriba:
+			_is_invulnerable = false
 		return
 
 	_disparar_proyectil()
@@ -620,9 +630,13 @@ func _iniciar_secuencia_disparo() -> void:
 	await get_tree().create_timer(tiempo_restante, false).timeout
 
 	if not is_instance_valid(self) or current_state != State.SHOOTING:
+		if _apuntar_arriba:
+			_is_invulnerable = false
 		return
 
 	_is_shooting = false
+	if _apuntar_arriba:
+		_is_invulnerable = false
 	_apuntar_arriba = false
 	_reset_spine_rotation()
 
@@ -887,13 +901,19 @@ func _propagar_config_electrica(arrow: FlechaElectricaAtaque) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func take_damage(amount: float) -> void:
-	if current_state == State.DYING or current_state == State.DEAD or _is_invulnerable:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	if _is_invulnerable and amount < 900.0:
 		return
 
 	health -= int(amount)
 	_flash_red()
 
 	if health <= 0:
+		if _tween_subida and _tween_subida.is_valid():
+			_tween_subida.kill()
+			_tween_subida = null
 		_change_state(State.DYING)
 	else:
 		_is_taking_damage = true
@@ -932,6 +952,7 @@ func _on_state_dying() -> void:
 	_reset_spine_rotation()
 	_reproducir_sonido_muerte()
 	_hundir_y_disolver_pilar()
+	_drop_power_up()
 
 	super._on_state_dying()
 
@@ -945,11 +966,35 @@ func _on_state_dying() -> void:
 	)
 
 
+func _drop_power_up() -> void:
+	if not power_up_explosivo_scene:
+		return
+	if randf() > drop_chance_flecha_explosiva:
+		return
+	var item := power_up_explosivo_scene.instantiate() as Node3D
+	if not item:
+		return
+	var target_parent := get_tree().current_scene
+	if target_parent:
+		target_parent.add_child(item)
+	elif get_parent():
+		get_parent().add_child(item)
+	item.global_position = global_position + Vector3(0.0, 0.5, 0.0)
+
+
 func _on_pilar_destruido() -> void:
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
 	_pilar_fue_destruido_primero = true
+	_is_invulnerable = false
+
+	# Detener inmediatamente la subida si fue destruido en pleno ascenso
+	if _tween_subida and _tween_subida.is_valid():
+		_tween_subida.kill()
+		_tween_subida = null
+
+	_detener_particulas_pilar()
 
 	# Cambiar el modelo 3D visual por PILAR_DESTRUIDO.glb
 	if _instancia_pilar and is_instance_valid(_instancia_pilar) and pilar_destruido_scene:
@@ -963,8 +1008,9 @@ func _on_pilar_destruido() -> void:
 			dest_mesh.name = "PILAR_DESTRUIDO"
 			_instancia_pilar.add_child(dest_mesh)
 
-	# Al ser destruido el pilar, matar a Lonko. Su función _on_state_dying() ejecutará la animación y desintegración unificada
-	take_damage(999.0)
+	# Al ser destruido el pilar, matar a Lonko inmediatamente
+	health = 0
+	_change_state(State.DYING)
 
 
 func _crear_particulas_rocas_destruccion(spawn_pos: Vector3) -> void:

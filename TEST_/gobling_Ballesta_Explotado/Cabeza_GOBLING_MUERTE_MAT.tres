@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dgpocgefbexep"]
+
+[ext_resource type="Texture2D" uid="uid://cuqmhyv1ugm23" path="res://TEST_/gobling_Ballesta_Explotado/Cabeza_GOBLING_MUERTE_D.jpg" id="1_p741l"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_wrjuh"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0bm7g"]
+render_priority = 0
+shader = ExtResource("2_wrjuh")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_0bm7g")
+albedo_texture = ExtResource("1_p741l")

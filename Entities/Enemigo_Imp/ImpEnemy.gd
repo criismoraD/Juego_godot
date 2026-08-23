@@ -118,9 +118,6 @@ func _on_state_dying():
 	var anim_length = _get_animation_duration(chosen_death)
 	_play_animation(chosen_death)
 
-	# === EXPLOSIÓN DE SANGRE ===
-	_crear_explosion_sangre()
-
 	# Iniciar disolución después de la animación de muerte + tiempo extra
 	var tiempo_total = max(anim_length, tiempo_antes_disolver)
 	get_tree().create_timer(tiempo_total).timeout.connect(
@@ -130,94 +127,10 @@ func _on_state_dying():
 	)
 
 
-func _crear_explosion_sangre():
-	var particles = GPUParticles3D.new()
-	particles.name = "BloodExplosion"
-	particles.amount = 15
-	particles.lifetime = 0.8
-	particles.one_shot = true
-	particles.explosiveness = 1.0
-	particles.randomness = 0.5
-	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+func _spawn_blood_splash(custom_modulate: Color = Color.WHITE) -> void:
+	var color_final: Color = Color(0.8, 0.3, 1.0) if sangre_morada else Color.WHITE
+	super._spawn_blood_splash(color_final)
 
-	var process_mat = ParticleProcessMaterial.new()
-	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	process_mat.emission_sphere_radius = 0.2
-	process_mat.direction = Vector3(0, 1, 0)
-	process_mat.spread = 180.0
-	process_mat.initial_velocity_min = 2.0
-	process_mat.initial_velocity_max = 5.0
-	process_mat.gravity = Vector3(0, -6.0, 0)
-	process_mat.damping_min = 1.0
-	process_mat.damping_max = 3.0
-	process_mat.scale_min = escala_sangre_min
-	process_mat.scale_max = escala_sangre_max
-
-	# Color de sangre: rojo o morado según toggle
-	var color_base: Color
-	var color_mid: Color
-	var color_end: Color
-	var color_albedo: Color
-	var color_emission: Color
-	if sangre_morada:
-		color_base = Color(0.4, 0.0, 0.5, 1.0)
-		color_mid = Color(0.3, 0.0, 0.4, 0.9)
-		color_end = Color(0.15, 0.0, 0.2, 0.0)
-		color_albedo = Color(0.35, 0.0, 0.45)
-		color_emission = Color(0.3, 0.0, 0.4)
-	else:
-		color_base = Color(0.6, 0.0, 0.0, 1.0)
-		color_mid = Color(0.4, 0.0, 0.0, 0.9)
-		color_end = Color(0.2, 0.0, 0.0, 0.0)
-		color_albedo = Color(0.5, 0.0, 0.0)
-		color_emission = Color(0.4, 0.0, 0.0)
-
-	var gradient = Gradient.new()
-	gradient.set_color(0, color_base)
-	gradient.add_point(0.3, color_mid)
-	gradient.set_color(1, color_end)
-	var gradient_tex = GradientTexture1D.new()
-	gradient_tex.gradient = gradient
-	process_mat.color_ramp = gradient_tex
-
-	particles.process_material = process_mat
-
-	# Mesh esfera para cada gota
-	var sphere = SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
-	var blood_mat = StandardMaterial3D.new()
-	blood_mat.albedo_color = color_albedo
-	blood_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	blood_mat.emission_enabled = true
-	blood_mat.emission = color_emission
-	blood_mat.emission_energy_multiplier = 1.5
-	blood_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	blood_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sphere.material = blood_mat
-	particles.draw_pass_1 = sphere
-
-	# Posicionar en el centro del cuerpo
-	add_child(particles)
-	var bone_pos = _get_hips_global_position()
-	if bone_pos != Vector3.ZERO:
-		particles.global_position = bone_pos
-	else:
-		particles.position = Vector3(0, 0.3, 0)
-	particles.emitting = true
-
-	# Reparentar al mundo para que no desaparezca con el enemigo
-	var gpos = particles.global_position
-	remove_child(particles)
-	get_tree().root.add_child(particles)
-	particles.global_position = gpos
-
-	# Limpiar después de que terminen
-	get_tree().create_timer(2.0).timeout.connect(
-		func():
-			if is_instance_valid(particles) and particles.is_inside_tree():
-				particles.queue_free()
-	)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

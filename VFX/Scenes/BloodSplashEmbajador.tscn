@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://5c25ydheabfc"]
+
+[ext_resource type="Script" path="res://VFX/Scenes/BloodSplash2D.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://VFX/Textures/T_BloodSplash_Embajador.png" id="2_tex"]
+
+[node name="BloodSplashEmbajador" type="AnimatedSprite3D"]
+billboard = 1
+shaded = false
+render_priority = 1
+script = ExtResource("1_script")
+texture_strip = ExtResource("2_tex")
+frame_count = 10
+frame_size = Vector2i(110, 78)
+custom_fps = 16.0

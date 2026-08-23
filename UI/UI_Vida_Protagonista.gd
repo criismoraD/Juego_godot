@@ -6,6 +6,7 @@ extends CanvasLayer
 @onready var corazon_02: TextureRect = %Corazon02
 @onready var corazon_03: TextureRect = %Corazon03
 @onready var corazon_04: TextureRect = %Corazon04
+@onready var contador_flechas_explosivas: Label = %ContadorFlechasExplosivas
 
 var _last_vida: int = -1
 var _corazones_list: Array[TextureRect] = []
@@ -20,6 +21,10 @@ func _ready() -> void:
 	for corazon in _corazones_list:
 		if is_instance_valid(corazon):
 			corazon.pivot_offset = corazon.size * 0.5
+
+	if is_instance_valid(contador_flechas_explosivas):
+		contador_flechas_explosivas.pivot_offset = contador_flechas_explosivas.size * 0.5
+		contador_flechas_explosivas.visible = false
 
 	_buscar_y_conectar_player()
 
@@ -47,12 +52,37 @@ func _conectar_player(player: Node) -> void:
 	if player.has_signal("health_changed"):
 		if not player.health_changed.is_connected(_on_health_changed):
 			player.health_changed.connect(_on_health_changed)
+	if player.has_signal("flechas_explosivas_changed"):
+		if not player.flechas_explosivas_changed.is_connected(actualizar_flechas_explosivas):
+			player.flechas_explosivas_changed.connect(actualizar_flechas_explosivas)
 	if "health" in player:
 		actualizar_vida(int(player.health))
+	if "flechas_explosivas" in player:
+		actualizar_flechas_explosivas(int(player.flechas_explosivas))
 
 
 func _on_health_changed(new_health: int) -> void:
 	actualizar_vida(new_health)
+
+
+## Actualiza el contador de flechas explosivas en la UI de vida.
+## Por defecto permanece oculto y solo aparece al tener munición (> 0). Al llegar a 0 desaparece.
+func actualizar_flechas_explosivas(cantidad: int) -> void:
+	if not is_instance_valid(contador_flechas_explosivas):
+		return
+
+	if cantidad <= 0:
+		contador_flechas_explosivas.visible = false
+	else:
+		contador_flechas_explosivas.visible = true
+		contador_flechas_explosivas.text = str(cantidad)
+		contador_flechas_explosivas.pivot_offset = contador_flechas_explosivas.size * 0.5
+
+		# Animación punch scale al ganar o gastar flechas
+		var tween := create_tween()
+		contador_flechas_explosivas.scale = Vector2(1.3, 1.3)
+		tween.tween_property(contador_flechas_explosivas, "scale", Vector2.ONE, 0.22) \
+			.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 
 ## Actualiza la vida únicamente animando al ganar o perder corazones.

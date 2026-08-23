@@ -109,9 +109,9 @@ environment/defaults/glow_use_bicubic_upscale=false
 
 Toon_LineaNegra_Activo={
 "type": "bool",
-"value": false
+"value": true
 }
 Toon_Proyectiles_Enemigos_Activo={
 "type": "bool",
-"value": false
+"value": true
 }

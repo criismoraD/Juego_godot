@@ -39,9 +39,6 @@ enum FaseCombate { IDLE, CARGA, ATAQUE }
 
 const COLOR_ANTICIPACION: Color = Color(1.491, 0.277, 0.55)
 
-var last_hit_position: Vector3 = Vector3.ZERO
-var last_hit_direction: Vector3 = Vector3.ZERO
-
 var altura_base: float = 4.3
 var oscilacion_fase: float = 0.0
 var fase_combate: int = FaseCombate.IDLE
@@ -107,6 +104,8 @@ func _on_enemy_ready():
 
 	# Color místico para partículas de disolución
 	color_borde_disolucion = Color(0.4, 0.2, 0.8)
+	# Excluida de efectos de sangre
+	tiene_sangre = false
 
 	scale = Vector3(0.9, 0.9, 0.9)
 	_crear_punto_spawn()
@@ -141,12 +140,17 @@ func take_damage(amount: float) -> void:
 	
 	# Reproducir sonido de impacto/herida
 	AudioManager.play_sfx("gargola_herida")
+
+	# Spawnear animación de explosión en spritesheet 3x4 en lugar de sangre
+	var spawn_pos: Vector3 = last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0, 0.4, 0))
+	ImpactoGargolaVFX.spawn(self, spawn_pos)
 	
 	super.take_damage(amount)
 
 
 func _on_state_dying():
 	_apagar_omni_light()
+
 	# La Gárgola se convierte en ragdoll (trapo) al morir, sin textura de piedra.
 	_activar_ragdoll()
 	tiempo_ragdoll_activo = 0.0

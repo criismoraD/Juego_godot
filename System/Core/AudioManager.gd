@@ -144,6 +144,14 @@ func _load_all_sounds():
 		load("res://Entities/Enemigo_Imp/EXPLOCION_Muerte3.mp3")
 	]
 
+	sfx_streams["explosion_flecha_explosiva"] = [
+		load("res://TEST_/explocion_flecha_explociva.mp3")
+	]
+
+	sfx_streams["cuerno_guerra"] = [
+		load("res://TEST_/Cuerno de guerra.mp3")
+	]
+
 	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]
 
 	sfx_streams["shield_imp_impact"] = [
@@ -191,6 +199,7 @@ func _load_all_sounds():
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
 
 	sfx_streams["shield_break"] = [load("res://Entities/Ambiente_Escudo/ESCUDO_ROTO.mp3")]
+	sfx_streams["sangre_splash"] = [load("res://TEST_/gobling_Ballesta_Explotado/Sangre_splash.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# MÚSICA
@@ -275,6 +284,9 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		elif sound_name == "explosion_muerte":
 			# Explosión 3x más fuerte
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 10.0
+		elif sound_name == "sangre_splash":
+			# Splash de sangre balanceado para evitar volumen excesivo o duplicado
+			volume_to_use = sfx_volume_db - 6.0
 
 		temp_player.volume_db = volume_to_use + volume_boost_db
 		temp_player.bus = "Master"

@@ -4,6 +4,7 @@ extends Node3D
 signal oleada_iniciada(numero_oleada: int)
 signal oleada_completada(numero_oleada: int)
 signal goblin_spawneado(goblin: Node)
+signal evento_cuerno_iniciado
 @export_category("Spawner")
 @export var escena_goblin: PackedScene  # Escena del goblin a instanciar
 @export var escena_goblin_girl: PackedScene  # Escena de la goblin girl
@@ -40,8 +41,11 @@ var shield_spawn_timer: float = 5.0  ## Timer para spawn de escudo
 var enemigos_muertos_en_oleada: int = 0  ## Contador de muertos para la UI
 var max_shield_imps_to_spawn_this_wave: int = 0
 var shield_imps_spawned_this_wave: int = 0
-var oleada_combate: int = 0  ## Nivel/Oleada de combate configurada desde el nivel (1, 2, 3, 4)
+var oleada_combate: int = 0  ## Nivel/Oleada de combate configurada desde el nivel (1, 2, 3, 4, 5)
 var cola_spawn: Array[PackedScene] = []  ## Cola de enemigos prediseñada para la oleada activa
+var evento_cuerno_activado: bool = false
+var evento_cuerno_en_progreso: bool = false
+var refuerzos_cuerno_spawneados: int = 0
 
 # === SEÑALES ===
 
@@ -78,7 +82,8 @@ func _process(delta):
 		spawn_timer -= delta
 		if spawn_timer <= 0 and (spawn_infinito or goblins_spawned_in_wave < enemigos_por_oleada):
 			_spawn_goblin()
-			spawn_timer = intervalo_aparicion
+			var intervalo_actual: float = (intervalo_aparicion / 2.0) if evento_cuerno_en_progreso else intervalo_aparicion
+			spawn_timer = intervalo_actual
 
 		# Verificar si la oleada terminó (OPT: solo si ya spawneamos todos y no es infinito)
 		if not spawn_infinito and goblins_spawned_in_wave >= enemigos_por_oleada:
@@ -97,6 +102,9 @@ func _start_wave():
 	spawn_timer = 0.0  # Spawn inmediato al iniciar oleada
 	
 	shield_imps_spawned_this_wave = 0
+	evento_cuerno_activado = false
+	evento_cuerno_en_progreso = false
+	refuerzos_cuerno_spawneados = 0
 
 	_generar_cola_spawn()
 
@@ -149,6 +157,20 @@ func _generar_cola_spawn() -> void:
 		# Poner una gárgola al frente de la cola (sale primero)
 		pool.push_front(escena_gargola)
 		pool.pop_back()
+
+	elif wave_num == 5:
+		# Oleada 5: 40 enemigos totales
+		# 11 Lonko (mínimo 10), 4 Imp Escudo, 7 Gárgolas, 9 Arqueras Goblin, 9 Goblins Ballesta. Total = 40.
+		for i in range(11):
+			pool.append(escena_lonko)
+		for i in range(4):
+			pool.append(escena_imp_escudo)
+		for i in range(7):
+			pool.append(escena_gargola)
+		for i in range(9):
+			pool.append(escena_goblin_girl)
+		for i in range(9):
+			pool.append(escena_goblin)
 
 	else:
 		return
@@ -244,14 +266,22 @@ func _spawn_goblin():
 		"[WaveSpawner] Spawning enemy. Total spawned so far in wave: %d / %d"
 		% [goblins_spawned_in_wave, enemigos_por_oleada]
 	)
+	# Trigger del Evento de Cuerno en Oleada 5 al haber spawneado 12 enemigos
+	if oleada_combate == 5 and not evento_cuerno_activado and goblins_spawned_in_wave >= 12:
+		_iniciar_evento_cuerno()
+
+	if evento_cuerno_en_progreso:
+		refuerzos_cuerno_spawneados += 1
+		if refuerzos_cuerno_spawneados >= 10:
+			evento_cuerno_en_progreso = false
+
 	# Elegir qué tipo de enemigo spawnear
 	var scene_to_spawn: PackedScene
 
 	if not cola_spawn.is_empty():
 		scene_to_spawn = cola_spawn.pop_front()
-	elif oleada_combate == 4:
-		# Oleada 4 usa SOLO cola prediseñada (8 imp, 8 arquera, 7 gárgola).
-		# Evitar fallback que spawnea ballesteros.
+	elif oleada_combate == 4 or oleada_combate == 5:
+		# Oleadas 4 y 5 usan SOLO cola prediseñada
 		return
 	else:
 		scene_to_spawn = _elegir_escena_probabilidades()
@@ -370,7 +400,7 @@ func get_active_shield_imps() -> Array:
 
 
 func _check_shield_imp_spawn(delta):
-	if oleada_combate in [1, 2, 3, 4]:
+	if oleada_combate in [1, 2, 3, 4, 5]:
 		return
 	if max_shield_imps_to_spawn_this_wave > 0:
 		return
@@ -378,6 +408,123 @@ func _check_shield_imp_spawn(delta):
 	if shield_spawn_timer > 0:
 		return
 	shield_spawn_timer = intervalo_check_escudo
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EVENTO DE CUERNO PROCEDURAL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func generar_sonido_cuerno_procedural() -> AudioStreamWAV:
+	var sample_rate := 22050
+	var duration := 2.2
+	var num_samples := int(sample_rate * duration)
+	var byte_array := PackedByteArray()
+	byte_array.resize(num_samples * 2)
+
+	var f0 := 174.61  # F3 (tono clásico de cuerno de guerra)
+	for i in range(num_samples):
+		var t := float(i) / float(sample_rate)
+		
+		# Envolvente de volumen (crescendo y decrescendo)
+		var env := 1.0
+		if t < 0.25:
+			env = t / 0.25
+		elif t > (duration - 0.7):
+			env = (duration - t) / 0.7
+		env = clamp(env, 0.0, 1.0)
+		
+		# Modulación de frecuencia (swell / vibrato)
+		var vibrato := sin(t * 5.5 * TAU) * 1.5
+		var pitch := f0 + vibrato
+		
+		# Síntesis aditiva armónica de metales / cuerno
+		var s1 := sin(pitch * 1.0 * TAU * t) * 0.50
+		var s2 := sin(pitch * 2.0 * TAU * t) * 0.30
+		var s3 := sin(pitch * 3.0 * TAU * t) * 0.20
+		var s4 := sin(pitch * 4.0 * TAU * t) * 0.10
+		var s5 := sin(pitch * 5.0 * TAU * t) * 0.05
+		var sample := (s1 + s2 + s3 + s4 + s5) * env * 0.8
+		
+		var sample_int := int(clamp(sample * 32767.0, -32768.0, 32767.0))
+		byte_array.encode_s16(i * 2, sample_int)
+
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = false
+	wav.data = byte_array
+	return wav
+
+
+func reproducir_sonido_cuerno() -> void:
+	# Activar viñeteado rojo durante el evento del cuerno por ~3 segundos en la UI
+	var game_ui = get_tree().get_first_node_in_group("game_ui")
+	if game_ui and game_ui.has_method("activar_efecto_viñeta_cuerno"):
+		game_ui.activar_efecto_viñeta_cuerno(3.0)
+
+	var cuerno_stream: AudioStream = load("res://TEST_/Cuerno de guerra.mp3")
+	if cuerno_stream:
+		var player := AudioStreamPlayer.new()
+		player.stream = cuerno_stream
+		player.volume_db = 2.0
+		player.bus = "Master"
+		var root := get_tree().current_scene
+		if root:
+			root.add_child(player)
+		else:
+			add_child(player)
+		player.play()
+
+		# Desvanecimiento (fade out) al sonido del cuerno
+		var duracion_audio: float = cuerno_stream.get_length() if cuerno_stream.has_method("get_length") else 4.0
+		if duracion_audio <= 0.0:
+			duracion_audio = 4.0
+		var tiempo_fade_inicio: float = max(1.0, duracion_audio - 1.5)
+		var tween := player.create_tween()
+		tween.tween_interval(tiempo_fade_inicio)
+		tween.tween_property(player, "volume_db", -40.0, duracion_audio - tiempo_fade_inicio) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.finished.connect(func():
+			if is_instance_valid(player):
+				player.stop()
+				player.queue_free()
+		)
+
+
+func _iniciar_evento_cuerno() -> void:
+	evento_cuerno_activado = true
+	evento_cuerno_en_progreso = true
+	refuerzos_cuerno_spawneados = 0
+	evento_cuerno_iniciado.emit()
+	reproducir_sonido_cuerno()
+
+	# Reorganizar la cola para que los próximos 10 spawns sean ráfaga intercalada de 1 Goblin Girl y 1 Goblin Ballesta (5 de cada uno)
+	var burst: Array[PackedScene] = []
+	for i in range(5):
+		burst.append(escena_goblin_girl)
+		burst.append(escena_goblin)
+
+	burst.append_array(cola_spawn)
+	cola_spawn = burst
+
+	# Si el spawner está en pausa o inactivo, spawnear la ráfaga de 10 goblins progresivamente
+	if not is_wave_active:
+		var routine := func():
+			for i in range(10):
+				if not is_instance_valid(self) or not is_inside_tree():
+					return
+				var escena_a_spawnear: PackedScene = escena_goblin_girl if (i % 2 == 0) else escena_goblin
+				if escena_a_spawnear:
+					var enemy = escena_a_spawnear.instantiate()
+					var spawn_pos = global_position
+					spawn_pos.y += altura_spawn
+					_obtener_nodo_padre_spawn().add_child(enemy)
+					enemy.global_position = spawn_pos
+					if enemy.has_signal("died"):
+						enemy.died.connect(_on_goblin_died.bind(enemy))
+					active_goblins.append(enemy)
+				await get_tree().create_timer(0.35, false).timeout
+		routine.call()
 
 	# Limpiar referencias inválidas
 	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar GC
