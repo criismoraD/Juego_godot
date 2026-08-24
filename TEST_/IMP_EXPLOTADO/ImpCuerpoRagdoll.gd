@@ -12,6 +12,8 @@ signal ragdoll_detenido
 @export var masa_total: float = 16.0
 @export var impulso_inicial_defecto: Vector3 = Vector3(0.0, 3.5, 0.0)
 @export var tiempo_antes_disolver: float = 3.0  ## Segundos tras iniciar_disolucion_automatica()
+@export var velocidad_maxima_hueso: float = 20.0  ## Límite de velocidad lineal por hueso (m/s) anti-divergencia
+@export var radio_contencion_metros: float = 4.0  ## Radio máximo desde el origen del ragdoll (anti-estiramiento)
 
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
@@ -20,6 +22,21 @@ var simulator: PhysicalBoneSimulator3D = null
 var is_ragdoll_active: bool = false
 var _physical_bones: Array[PhysicalBone3D] = []
 var _initial_transform: Transform3D
+
+# === Partículas moradas al desaparecer (configuradas por ImpEnemy) ===
+var p_configurado: bool = false
+var p_color: Color = Color(0.4, 0.0, 0.5)
+var p_cantidad: int = 240
+var p_vida: float = 2.0
+var p_caja: Vector3 = Vector3(0.2, 0.5, 0.1)
+var p_dispersion: float = 20.0
+var p_vel_min: float = 0.1
+var p_vel_max: float = 0.5
+var p_gravedad: Vector3 = Vector3(0, 0.1, 0)
+var p_intensidad: float = 3.0
+var p_offset_y: float = 0.3
+var p_escala_min: float = 0.005
+var p_escala_max: float = 0.02
 
 
 func _ready() -> void:
@@ -108,6 +125,29 @@ func detener_ragdoll() -> void:
 	ragdoll_detenido.emit()
 
 
+## Watchdog anti-divergencia: mientras el ragdoll está activo, limita la velocidad
+## de cada hueso y los mantiene dentro del radio de contención. Si una articulación
+## diverge (modelo estirado por toda la pantalla), este guardia lo frena al frame
+## siguiente sin esperar a que la física se rompa visualmente.
+func _physics_process(_delta: float) -> void:
+	if not is_ragdoll_active:
+		return
+
+	var origen := global_position
+	var velocidad_max_cuad: float = velocidad_maxima_hueso * velocidad_maxima_hueso
+	for pb in _physical_bones:
+		if not is_instance_valid(pb):
+			continue
+
+		if pb.linear_velocity.length_squared() > velocidad_max_cuad:
+			pb.linear_velocity = pb.linear_velocity.limit_length(velocidad_maxima_hueso)
+
+		var desvio := pb.global_position - origen
+		if desvio.length() > radio_contencion_metros:
+			pb.global_position = origen + desvio.limit_length(radio_contencion_metros)
+			pb.linear_velocity = -desvio.normalized() * minf(pb.linear_velocity.length(), 2.0)
+
+
 ## Reinicia el modelo a su posición original
 func reiniciar() -> void:
 	detener_ragdoll()
@@ -122,6 +162,18 @@ func reiniciar() -> void:
 				pb.angular_velocity = Vector3.ZERO
 
 
+## Centro actual del cadáver: promedio de las posiciones globales de los huesos físicos.
+## Útil para colocar efectos en la última posición del cuerpo mientras yace en el suelo.
+func obtener_centro_cadaver() -> Vector3:
+	var suma := Vector3.ZERO
+	var cantidad := 0
+	for pb in _physical_bones:
+		if is_instance_valid(pb):
+			suma += pb.global_position
+			cantidad += 1
+	return suma / float(cantidad) if cantidad > 0 else global_position
+
+
 ## Programa la disolución del ragdoll (llamado por el enemigo al morir desmembrado).
 func iniciar_disolucion_automatica(color_disolucion: Color = Color(0.4, 0.0, 0.5)) -> void:
 	get_tree().create_timer(tiempo_antes_disolver).timeout.connect(
@@ -131,7 +183,56 @@ func iniciar_disolucion_automatica(color_disolucion: Color = Color(0.4, 0.0, 0.5
 	)
 
 
+## Recibe la configuración de las partículas de disolución (mismo efecto que la
+## muerte normal del Imp) para emitirlas en la última posición del cadáver.
+func configurar_particulas_desaparicion(
+	color_: Color,
+	cantidad_: int,
+	vida_: float,
+	caja_: Vector3,
+	dispersion_: float,
+	vel_min_: float,
+	vel_max_: float,
+	gravedad_: Vector3,
+	intensidad_: float,
+	offset_y_: float,
+	escala_min_: float,
+	escala_max_: float
+) -> void:
+	p_color = color_
+	p_cantidad = cantidad_
+	p_vida = vida_
+	p_caja = caja_
+	p_dispersion = dispersion_
+	p_vel_min = vel_min_
+	p_vel_max = vel_max_
+	p_gravedad = gravedad_
+	p_intensidad = intensidad_
+	p_offset_y = offset_y_
+	p_escala_min = escala_min_
+	p_escala_max = escala_max_
+	p_configurado = true
+
+
 func _disolver(color_disolucion: Color) -> void:
+	# Partículas moradas en la ÚLTIMA posición del cadáver al momento de desaparecer
+	if p_configurado:
+		ImpEnemy.crear_particulas_disolucion(
+			self,
+			obtener_centro_cadaver(),
+			p_color,
+			p_cantidad,
+			p_vida,
+			p_caja,
+			p_dispersion,
+			p_vel_min,
+			p_vel_max,
+			p_gravedad,
+			p_escala_min,
+			p_escala_max,
+			p_intensidad,
+			p_offset_y
+		)
 	var materiales: Array[Dictionary] = []
 	for m in find_children("*", "MeshInstance3D", true, false):
 		var mesh_inst := m as MeshInstance3D

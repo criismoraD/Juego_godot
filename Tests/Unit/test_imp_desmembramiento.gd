@@ -71,7 +71,61 @@ func test_muerte_explosiva_libera_al_imp():
 	imp.murio_por_explosion = true
 	imp.call("_on_state_dying")
 	await get_tree().process_frame
+	await get_tree().process_frame
 	assert_true(imp.is_queued_for_deletion(), "El Imp debe liberarse tras el desmembramiento")
+
+
+func test_muerte_explosiva_genera_sangre_animada_igual_que_goblin():
+	var sprites_antes := get_tree().root.find_children("*", "Sprite3D", true, false).size()
+
+	imp.murio_por_explosion = true
+	imp.call("_on_state_dying")
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var sprites := get_tree().root.find_children("*", "Sprite3D", true, false)
+	assert_gt(sprites.size(), sprites_antes, "Debe spawnear el sprite de sangre animada al explotar")
+
+	var sangre: Sprite3D = null
+	for s in sprites:
+		var sprite := s as Sprite3D
+		if sprite and sprite.vframes == 14:
+			sangre = sprite
+			break
+	assert_not_null(sangre, "Debe existir un Sprite3D de sangre con los mismos 14 cuadros verticales que el Goblin")
+	if sangre:
+		assert_eq(sangre.hframes, 1, "La sangre debe tener 1 columna como el efecto del Goblin")
+		assert_true(sangre.billboard == BaseMaterial3D.BILLBOARD_ENABLED, "La sangre debe mirar a la cámara")
+
+
+func test_muerte_explosiva_difiere_particulas_hasta_desaparicion_del_cadaver():
+	imp.murio_por_explosion = true
+	imp.call("_on_state_dying")
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	# Las partículas deben esperar a que el cadáver (ragdoll) desaparezca,
+	# no aparecer en el instante de la explosión.
+	assert_null(
+		get_tree().root.find_child("ParticulasDisolucionExplosiva", true, false),
+		"Las partículas NO deben aparecer al instante de la explosión"
+	)
+
+	# Emisión directa: mismo efecto que se disparará al desaparecer el cadáver
+	imp._spawn_particulas_disolucion_explosiva(imp.global_position)
+	await get_tree().process_frame
+
+	var particulas := get_tree().root.find_child("ParticulasDisolucionExplosiva", true, false) as GPUParticles3D
+	assert_not_null(particulas, "Debe spawnear el efecto de partículas de disolución al explotar")
+	if particulas:
+		assert_true(particulas.emitting, "Las partículas moradas deben estar emitiendo al explotar")
+		var mesh := particulas.draw_pass_1 as SphereMesh
+		assert_not_null(mesh, "El draw pass debe ser la esfera de partículas de disolución")
+		if mesh:
+			var mat := mesh.material as StandardMaterial3D
+			assert_not_null(mat, "La esfera debe tener material emisivo")
+			if mat:
+				assert_eq(mat.emission, Color(0.4, 0.0, 0.5), "Las partículas deben ser moradas como en la muerte normal")
 
 
 func test_muerte_normal_NO_desmemra():

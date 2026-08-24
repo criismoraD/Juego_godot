@@ -4,6 +4,18 @@ extends EnemyBase
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 
+## Sangre de muerte explosiva: idéntica al desmembramiento del Goblin ballestero
+## (Sangre_explosion.png, 14 cuadros verticales animados en Sprite3D billboard).
+const SANGRE_EXPLOSION_TEX: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_explosion.png")
+const SANGRE_FRAMES: int = 14
+const SANGRE_SEGUNDOS_POR_FRAME: float = 0.04
+const SANGRE_PIXEL_SIZE: float = 0.0070
+const SANGRE_OFFSET_Y: float = 0.40
+## Duración de la disolución normal (igual a EnemyBase.duracion_disolucion por defecto)
+const DURACION_EMISION_DISOLUCION: float = 1.0
+## Factor de cese de emisión (igual a particulas_detener_emision del Imp)
+const FACTOR_DETENER_EMISION: float = 0.5
+
 ## Imp enemigo: Camina hacia la izquierda, se detiene y lanza proyectiles.
 ## Usa animaciones CAMINAR, LANZAR01/LANZAR2. Partículas de muerte ROJAS.
 # === CONFIGURACIÓN ESPECÍFICA DEL IMP ===
@@ -109,7 +121,12 @@ func _on_state_shooting():
 
 func _on_state_dying():
 	if murio_por_explosion:
-		_ejecutar_desmembramiento_explosivo()
+		# Diferido: al morir por explosión se llega aquí desde el callback de
+		# colisión de la flecha. Reparentar nodos e iniciar la simulación del
+		# ragdoll DURANTE el flush de la física corrompe los PhysicalBone3D y
+		# estira el modelo por toda la pantalla. Ejecutar fuera del paso de
+		# física lo evita.
+		_ejecutar_desmembramiento_explosivo.call_deferred()
 		return
 
 	super._on_state_dying()
@@ -153,10 +170,10 @@ func _ejecutar_desmembramiento_explosivo() -> void:
 	if model:
 		model.visible = false
 
-	# 2. Audio + sangre
+	# 2. Audio + sangre (mismo efecto de sangre que el Goblin ballestero al explotar)
 	AudioManager.play_sfx("explosion_muerte")
 	AudioManager.play_sfx("sangre_splash")
-	_spawn_blood_splash()
+	_spawn_sangre_animada(global_position)
 
 	# 3. Dirección de expulsión según el punto de impacto de la explosión
 	var push_dir: float = 1.0
@@ -209,8 +226,187 @@ func _ejecutar_desmembramiento_explosivo() -> void:
 		var rot_cabeza := randf_range(8.0, 20.0) * (-1.0 if randf() < 0.5 else 1.0)
 		contenedor.iniciar_vuelo(vel_cabeza, rot_cabeza)
 
-	# 6. Eliminar la entidad sin tocar las piezas ya extraídas
+	# 6. Configurar el ragdoll para que, al comenzar a desaparecer (disolución),
+	# emita las partículas moradas en la ÚLTIMA posición del cadáver.
+	# Si no hay ragdoll (fallback), emitirlas aquí mismo y liberar la entidad.
+	if ragdoll:
+		ragdoll.configurar_particulas_desaparicion(
+			color_borde_disolucion,
+			particulas_cantidad * 3,
+			particulas_vida,
+			particulas_caja,
+			particulas_dispersion,
+			particulas_velocidad_min,
+			particulas_velocidad_max,
+			particulas_gravedad,
+			intensidad_emision,
+			particulas_offset_y,
+			particulas_escala_min,
+			particulas_escala_max
+		)
+	else:
+		var centro_fallback := _get_hips_global_position()
+		if centro_fallback == Vector3.ZERO:
+			centro_fallback = global_position
+		_spawn_particulas_disolucion_explosiva(centro_fallback)
+
 	queue_free()
+
+
+## Mismo efecto de sangre que el Goblin ballestero al explotar:
+## sprite 3D con los 14 cuadros verticales de Sangre_explosion.png animados en bucle único.
+func _spawn_sangre_animada(pos: Vector3) -> void:
+	if not SANGRE_EXPLOSION_TEX:
+		return
+
+	var sprite := Sprite3D.new()
+	sprite.texture = SANGRE_EXPLOSION_TEX
+	sprite.vframes = SANGRE_FRAMES
+	sprite.hframes = 1
+	sprite.frame = 0
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.shaded = false
+	sprite.render_priority = 3
+	sprite.no_depth_test = false
+	sprite.pixel_size = SANGRE_PIXEL_SIZE
+
+	var root := get_tree().current_scene
+	if not root:
+		root = get_tree().root
+	root.add_child(sprite)
+	sprite.global_position = pos + Vector3(0.0, SANGRE_OFFSET_Y, 0.0)
+
+	var anim_task := func():
+		for f in range(SANGRE_FRAMES):
+			if not is_instance_valid(sprite) or not sprite.is_inside_tree():
+				return
+			sprite.frame = f
+			await sprite.get_tree().create_timer(SANGRE_SEGUNDOS_POR_FRAME, false).timeout
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+
+	anim_task.call()
+
+
+## Mismo efecto de partículas de disolución que la muerte normal del Imp
+## (morado por defecto vía color_borde_disolucion). Wrapper de instancia que
+## delega en el builder estático crear_particulas_disolucion().
+func _spawn_particulas_disolucion_explosiva(pos_hips: Vector3) -> void:
+	crear_particulas_disolucion(
+		self,
+		pos_hips,
+		color_borde_disolucion,
+		particulas_cantidad * 3,
+		particulas_vida,
+		particulas_caja,
+		particulas_dispersion,
+		particulas_velocidad_min,
+		particulas_velocidad_max,
+		particulas_gravedad,
+		particulas_escala_min,
+		particulas_escala_max,
+		intensidad_emision,
+		particulas_offset_y
+	)
+
+
+## Builder estático: partículas de disolución idénticas a la muerte normal
+## (EnemyBase._create_dissolve_particles). Nodo independiente en la escena para
+## sobrevivir al queue_free() del cuerpo; lo usa también el ragdoll al desaparecer.
+static func crear_particulas_disolucion(
+	dueno: Node,
+	pos_base: Vector3,
+	color_particulas: Color,
+	cantidad: int,
+	vida: float,
+	caja: Vector3,
+	dispersion: float,
+	vel_min: float,
+	vel_max: float,
+	gravedad: Vector3,
+	escala_min: float,
+	escala_max: float,
+	intensidad: float,
+	offset_y: float
+) -> void:
+	if dueno == null or not is_instance_valid(dueno):
+		return
+
+	var particles := GPUParticles3D.new()
+	particles.name = "ParticulasDisolucionExplosiva"
+	particles.amount = cantidad
+	particles.lifetime = vida
+	particles.one_shot = false
+	particles.explosiveness = 0.0
+	particles.randomness = 0.3
+
+	var process_mat := ParticleProcessMaterial.new()
+	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process_mat.emission_box_extents = caja
+	process_mat.direction = Vector3(0, 1, 0)
+	process_mat.spread = dispersion
+	process_mat.initial_velocity_min = vel_min
+	process_mat.initial_velocity_max = vel_max
+	process_mat.gravity = gravedad
+	# Variación aleatoria de tamaño entre partículas (rango normalizado)
+	process_mat.scale_min = 0.5
+	process_mat.scale_max = 1.5
+
+	var gradient := Gradient.new()
+	gradient.set_color(0, color_particulas)
+	gradient.set_color(
+		1, Color(color_particulas.r, color_particulas.g, color_particulas.b, 0.0)
+	)
+	var gradient_tex := GradientTexture1D.new()
+	gradient_tex.gradient = gradient
+	process_mat.color_ramp = gradient_tex
+
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0, 0.2))
+	scale_curve.add_point(Vector2(0.3, 1.0))
+	scale_curve.add_point(Vector2(1.0, 0.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	process_mat.scale_curve = scale_tex
+
+	particles.process_material = process_mat
+
+	# El tamaño del mesh controla directamente el tamaño visual de las partículas
+	var avg_radius: float = (escala_min + escala_max) / 2.0
+	var sphere := SphereMesh.new()
+	sphere.radius = avg_radius
+	sphere.height = avg_radius * 2.0
+
+	var part_mat := StandardMaterial3D.new()
+	part_mat.albedo_color = color_particulas
+	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	part_mat.emission_enabled = true
+	part_mat.emission = color_particulas
+	part_mat.emission_energy_multiplier = intensidad
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material = part_mat
+
+	particles.draw_pass_1 = sphere
+
+	var root := dueno.get_tree().current_scene
+	if not root:
+		root = dueno.get_tree().root
+	root.add_child(particles)
+	particles.global_position = pos_base + Vector3(0, offset_y, 0)
+	particles.emitting = true
+
+	# Mismos tiempos que la muerte normal: dejar de emitir y luego autodestruirse
+	dueno.get_tree().create_timer(DURACION_EMISION_DISOLUCION * FACTOR_DETENER_EMISION).timeout.connect(
+		func():
+			if is_instance_valid(particles):
+				particles.emitting = false
+	)
+	dueno.get_tree().create_timer(DURACION_EMISION_DISOLUCION + vida + 0.5).timeout.connect(
+		func():
+			if is_instance_valid(particles):
+				particles.queue_free()
+	)
 
 
 

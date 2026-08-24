@@ -168,6 +168,69 @@ func test_articulaciones_enlazan_huesos_fisicos():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 5. Watchdog anti-estiramiento (divergencia de articulaciones)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func test_limites_watchdog_configurados_y_sanos():
+	assert_gt(ragdoll.velocidad_maxima_hueso, 0.0, "velocidad_maxima_hueso debe ser positiva")
+	assert_gt(ragdoll.radio_contencion_metros, 1.0, "radio_contencion_metros debe superar la envergadura del cuerpo (~0.55 m)")
+
+
+func test_watchdog_limita_velocidad_extrema_de_huesos():
+	ragdoll.activar_ragdoll(Vector3.ZERO)
+	var hueso := _obtener_huesos()[0]
+	hueso.linear_velocity = Vector3(500.0, 500.0, 0.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert_true(
+		hueso.linear_velocity.length() <= ragdoll.velocidad_maxima_hueso + 0.01,
+		"El watchdog debe limitar la velocidad del hueso a velocidad_maxima_hueso"
+	)
+
+
+func test_watchdog_contiene_huesos_fuera_del_radio():
+	ragdoll.activar_ragdoll(Vector3.ZERO)
+	var hueso := _obtener_huesos()[0]
+	hueso.global_position = ragdoll.global_position + Vector3(50.0, 0.0, 0.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert_lt(
+		hueso.global_position.distance_to(ragdoll.global_position),
+		ragdoll.radio_contencion_metros + 0.1,
+		"El watchdog debe devolver el hueso al radio de contencion"
+	)
+
+
+func test_obtener_centro_cadaver_cerca_del_origen_del_ragdoll():
+	var centro: Vector3 = ragdoll.obtener_centro_cadaver()
+	assert_lt(
+		centro.distance_to(ragdoll.global_position),
+		1.0,
+		"El centro del cadaver debe quedar junto al ragdoll (escala metro)"
+	)
+
+
+func test_disolver_emite_particulas_en_ultima_posicion_del_cadaver():
+	ragdoll.configurar_particulas_desaparicion(
+		Color(0.4, 0.0, 0.5), 30, 1.0, Vector3(0.2, 0.5, 0.1), 20.0,
+		0.1, 0.5, Vector3.ZERO, 3.0, 0.3, 0.005, 0.02
+	)
+	var centro_esperado: Vector3 = ragdoll.obtener_centro_cadaver()
+	ragdoll._disolver(Color(0.4, 0.0, 0.5))
+	await get_tree().process_frame
+
+	var particulas := get_tree().root.find_child("ParticulasDisolucionExplosiva", true, false) as GPUParticles3D
+	assert_not_null(particulas, "Al desaparecer el cadáver deben emitirse las partículas moradas")
+	if particulas:
+		assert_true(particulas.emitting, "Las partículas deben estar emitiendo")
+		assert_lt(
+			particulas.global_position.distance_to(centro_esperado + Vector3(0, 0.3, 0)),
+			0.05,
+			"Las partículas deben aparecer en la última posición del cadáver"
+		)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════════════
 
