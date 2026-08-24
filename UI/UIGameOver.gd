@@ -6,6 +6,9 @@ extends CanvasLayer
 
 signal restart_requested
 
+## Ruta del último nivel donde se mostró Game Over (persiste entre recargas de escena)
+static var ultima_escena_jugada: String = ""
+
 var background: ColorRect = null
 var title_label: Label = null
 var btn_continue: Button = null
@@ -16,6 +19,11 @@ var _anim_time: float = 0.0
 func _ready() -> void:
 	layer = 200
 	process_mode = PROCESS_MODE_ALWAYS
+
+	# Recordar el nivel donde ocurrió la muerte para poder reiniciarlo
+	var escena_actual := get_tree().current_scene
+	if escena_actual and escena_actual.scene_file_path != "":
+		ultima_escena_jugada = escena_actual.scene_file_path
 
 	# Pausar el árbol del juego para que los enemigos y aliados dejen de disparar y moverse
 	get_tree().paused = true
@@ -154,4 +162,8 @@ func _on_continue_pressed() -> void:
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
 	get_tree().paused = false
 
-	get_tree().reload_current_scene()
+	# Reiniciar el ÚLTIMO NIVEL JUGADO (guardado al mostrarse Game Over)
+	if ultima_escena_jugada != "":
+		get_tree().change_scene_to_file(ultima_escena_jugada)
+	else:
+		get_tree().reload_current_scene()
