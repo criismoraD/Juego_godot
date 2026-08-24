@@ -105,6 +105,23 @@ var is_shot_locked: bool = false  # Flag de bloqueo de disparo temporal
 ## Cuando true (mapa de debug), no se inicia el disparo si el cursor está sobre
 ## un Control interactivo (panel/botones), para que clicar opciones no dispare.
 var disparo_bloqueado_por_ui: bool = false
+
+## Cursor de mira personalizado durante la partida
+const TEXTURA_CURSOR_MIRA: String = "res://TEST_/Mira mouse.png"
+## Los cursores de hardware no soportan imágenes grandes (512px): se reduce
+const TAMANO_CURSOR_PX: int = 75
+
+var _textura_cursor_mira: Texture2D = null
+var _cursor_sistema_activo: bool = false
+
+
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_PAUSED:
+			# Menú de pausa / Game Over: cursor por defecto del sistema
+			_set_cursor_sistema(true)
+		NOTIFICATION_UNPAUSED:
+			_set_cursor_sistema(false)
 # === AUDIO ===
 # Gestionado por AudioManager (singleton)
 # === GAME FEEL ===
@@ -118,6 +135,9 @@ func _ready():
 	anim_tree = find_child("AnimationTree", true, false)
 	skeleton = find_child("Skeleton3D", true, false)
 	_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
+
+	# Cursor de mira personalizado durante la partida
+	_aplicar_cursor_mira()
 
 	# Añadir layer 10 al collision_mask para colisionar con BarreraLimite (bit 9)
 	# y remover layer 4 (Enemy Projectiles, bit 3) para no colisionar físicamente con proyectiles enemigos
@@ -495,6 +515,9 @@ func _process(delta):
 	# Actualizar visibilidad del debug de hitbox en tiempo real
 	if hitbox_debug_mesh:
 		hitbox_debug_mesh.visible = mostrar_hitbox
+	# En el mapa debug, cursor del sistema mientras se usa el panel de spawn/debug
+	if disparo_bloqueado_por_ui:
+		_set_cursor_sistema(_mouse_sobre_control_ui())
 	# Actualizar estados visuales y UI
 	_process_gameplay(delta)
 
@@ -792,6 +815,48 @@ func _mouse_sobre_control_ui() -> bool:
 		and hovered.is_visible_in_tree()
 		and hovered.mouse_filter == Control.MOUSE_FILTER_STOP
 	)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CURSOR DE MIRA (partida)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Cambia el cursor del sistema por la mira personalizada mientras el jugador
+## está en partida. La imagen se reduce a TAMANO_CURSOR_PX (los cursores de
+## hardware no soportan 512px) y el hotspot queda en el centro de la mira.
+func _aplicar_cursor_mira() -> void:
+	if _textura_cursor_mira == null:
+		var tex := load(TEXTURA_CURSOR_MIRA) as Texture2D
+		if tex == null:
+			return
+
+		var imagen := tex.get_image()
+		if imagen == null:
+			return
+		if imagen.is_compressed():
+			imagen.decompress()
+		imagen.resize(TAMANO_CURSOR_PX, TAMANO_CURSOR_PX, Image.INTERPOLATE_LANCZOS)
+		_textura_cursor_mira = ImageTexture.create_from_image(imagen)
+
+	var mitad := TAMANO_CURSOR_PX / 2.0
+	Input.set_custom_mouse_cursor(_textura_cursor_mira, Input.CURSOR_ARROW, Vector2(mitad, mitad))
+
+
+## Alterna entre el cursor del sistema (null) y la mira personalizada,
+## sin tocar el cursor si ya está en el estado pedido.
+func _set_cursor_sistema(activo: bool) -> void:
+	if _cursor_sistema_activo == activo:
+		return
+	_cursor_sistema_activo = activo
+	if activo:
+		Input.set_custom_mouse_cursor(null)
+	else:
+		_aplicar_cursor_mira()
+
+
+## Al salir de la partida se restaura el cursor por defecto del sistema.
+func _exit_tree():
+	Input.set_custom_mouse_cursor(null)
 
 
 func control_visual_state(delta):
