@@ -20,7 +20,7 @@ func before_each():
 func test_power_up_initialization():
 	# Assert
 	assert_not_null(_power_up, "El power-up de flecha explosiva debe instanciarse correctamente")
-	assert_eq(_power_up.municion_a_otorgar_jugador, 10, "Debe otorgar 10 flechas al jugador")
+	assert_eq(_power_up.municion_a_otorgar_jugador, 5, "Debe otorgar 5 flechas al jugador")
 	assert_eq(_power_up.municion_a_otorgar_aliadas, 5, "Debe otorgar 5 flechas a cada aliada")
 	assert_eq(_power_up.tiempo_en_pantalla, 3.0, "El tiempo de auto-consumo debe ser de 3.0 segundos")
 	assert_eq(_power_up.velocidad_rotacion_y, 3.0, "La velocidad de rotación continua debe ser de 3.0 rad/s")
@@ -33,12 +33,12 @@ func test_power_up_consumo_jugador():
 	_power_up._auto_consumir()
 
 	# Assert
-	assert_eq(_player.flechas_explosivas, 10, "El jugador debe tener 10 flechas explosivas acumuladas tras el consumo")
+	assert_eq(_player.flechas_explosivas, 5, "El jugador debe tener 5 flechas explosivas acumuladas tras el consumo")
 
 	# Act: Consumir un segundo power-up (acumulación)
 	_power_up.current_state = PowerUpFlechaExplosiva.State.IDLE
 	_power_up._auto_consumir()
-	assert_eq(_player.flechas_explosivas, 20, "Las flechas explosivas deben acumularse (+10 -> 20)")
+	assert_eq(_player.flechas_explosivas, 10, "Las flechas explosivas deben acumularse (+5 -> 10)")
 
 func test_power_up_distribucion_aliadas():
 	# Arrange
