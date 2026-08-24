@@ -101,6 +101,28 @@ func _ejecutar_explosion_desmembramiento() -> void:
 		else:
 			push_dir = 1.0
 
+	# 5b. Ballesta: se desprende del brazo y sale volando con el resto de piezas
+	var ballesta := get_node_or_null("GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D/BoneAttachment3D/BALLES_GOBLING") as Node3D
+	if ballesta:
+		var tr_ballesta: Transform3D = ballesta.global_transform
+		ballesta.get_parent().remove_child(ballesta)
+
+		var cont_ballesta := GoblinPiezaFisica.new()
+		root_scene.add_child(cont_ballesta)
+		cont_ballesta.global_transform = tr_ballesta
+
+		ballesta.transform = Transform3D.IDENTITY
+		ballesta.visible = true
+		for m in ballesta.find_children("*", "MeshInstance3D", true, false):
+			m.visible = true
+			m.material_override = null
+		cont_ballesta.add_child(ballesta)
+
+		cont_ballesta.iniciar_vuelo(
+			Vector3(push_dir * randf_range(2.4, 4.4), randf_range(4.2, 6.2), 0.0),
+			randf_range(-16.0, 16.0)
+		)
+
 	# 6. Gestionar partes del cuerpo desmembrado
 	var partes_root = get_node_or_null("PartesExplotadas") as Node3D
 	if partes_root:

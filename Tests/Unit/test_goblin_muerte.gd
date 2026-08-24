@@ -44,3 +44,25 @@ func test_goblin_muerte_por_explosion_triggers_explosive_behavior() -> void:
 				has_stream_playing = true
 				break
 		assert_true(has_stream_playing, "Debe haberse emitido un sonido de muerte explosiva")
+
+
+func test_muerte_por_explosion_lanza_la_ballesta() -> void:
+	# Arrange
+	goblin.murio_por_explosion = true
+	var piezas_antes := get_tree().root.find_children("*", "GoblinPiezaFisica", true, false).size()
+
+	# Act
+	goblin._on_state_dying()
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	# Assert: se generan piezas físicas y la ballesta viaja en una de ellas
+	var piezas := get_tree().root.find_children("*", "GoblinPiezaFisica", true, false)
+	assert_gt(piezas.size(), piezas_antes, "La muerte explosiva debe lanzar piezas físicas")
+
+	var ballesta_lanzada: bool = false
+	for p in piezas:
+		if p.find_child("BALLES_GOBLING", true, false):
+			ballesta_lanzada = true
+			break
+	assert_true(ballesta_lanzada, "La ballesta debe salir volando en una pieza física")
