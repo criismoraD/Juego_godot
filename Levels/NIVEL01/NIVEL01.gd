@@ -47,6 +47,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 var estado_actual: int = NivelEstado.NIVEL_0
 var enemigos_pacificos: Array = []  ## Los 3 enemigos del nivel 0
 var imp_estandarte: Node3D = null  ## Referencia al imp que lleva el estandarte
+var oleada_debug_pendiente: int = 0  ## Oleada solicitada por debug: se aplica tras el intro y el evento del embajador
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
 # === REFERENCIAS ===
@@ -161,12 +162,11 @@ func _ready():
 
 	await get_tree().process_frame
 
-	# Si se solicitó una oleada específica desde el menú de pausa / debug
-	if GameUI.oleada_inicial_solicitada > 0:
-		var oleada_destino: int = GameUI.oleada_inicial_solicitada
-		GameUI.oleada_inicial_solicitada = 0
-		_iniciar_oleada_debug(oleada_destino)
-		return
+	# Si se solicitó una oleada específica desde el menú de pausa / debug, se
+	# DIFIERE: primero se reproducen el diálogo inicial y el evento del goblin
+	# embajador; el salto de oleada se aplica al comenzar el combate.
+	oleada_debug_pendiente = GameUI.oleada_inicial_solicitada
+	GameUI.oleada_inicial_solicitada = 0
 
 	# Detener el spawner automático desde el inicio para evitar aparición previa al diálogo.
 	wave_spawner.detener_spawning()
@@ -633,6 +633,16 @@ func _on_pacifico_danado():
 
 
 func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
+	# Salto de oleada por debug: se aplica recién aquí, tras el diálogo inicial
+	# y el evento del goblin embajador. Los pacíficos (imp embajador + 2
+	# arqueras) quedan EXCLUYIDOS de la limpieza para que no desaparezcan al
+	# convertirse en hostiles.
+	if oleada_debug_pendiente > 0:
+		var oleada_destino: int = oleada_debug_pendiente
+		oleada_debug_pendiente = 0
+		_iniciar_oleada_debug(oleada_destino, enemigos_pacificos)
+		return
+
 	oleada_combate_actual = 1
 	_aplicar_perfil_render_combate()
 	# Los supervivientes ya están en active_goblins del spawner.
@@ -1050,7 +1060,7 @@ func debug_ir_a_oleada_5() -> void:
 	_iniciar_oleada_debug(5)
 
 
-func _iniciar_oleada_debug(numero_oleada: int) -> void:
+func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) -> void:
 	if not is_instance_valid(wave_spawner):
 		return
 
@@ -1058,7 +1068,8 @@ func _iniciar_oleada_debug(numero_oleada: int) -> void:
 	get_tree().call_group("ui_instrucciones", "queue_free")
 	get_tree().call_group("ui_vida_protagonista", "mostrar")
 
-	_limpiar_nodos_combate_spawneados()
+	# Los excluidos (embajadores convertidos en hostiles) sobreviven a la limpieza
+	_limpiar_nodos_combate_spawneados(excluir_de_limpieza)
 
 	enemigos_pacificos.clear()
 	imp_estandarte = null
@@ -1212,7 +1223,13 @@ func _set_aliadas_modo_pacifico():
 				hitbox.collision_layer = 0  # Sin colisión
 
 
-func _limpiar_nodos_combate_spawneados() -> void:
+func _limpiar_nodos_combate_spawneados(excluir: Array = []) -> void:
+	# IDs a preservar (ej.: los pacíficos/embajadores que acaban de volverse hostiles)
+	var ids_excluidos: Dictionary = {}
+	for nodo in excluir:
+		if is_instance_valid(nodo):
+			ids_excluidos[nodo.get_instance_id()] = true
+
 	var nodos_limpiados: Dictionary = {}
 	for grupo in GRUPOS_LIMPIEZA_COMBATE:
 		for nodo in get_tree().get_nodes_in_group(grupo):
@@ -1221,6 +1238,8 @@ func _limpiar_nodos_combate_spawneados() -> void:
 
 			var id_nodo: int = nodo.get_instance_id()
 			if nodos_limpiados.has(id_nodo):
+				continue
+			if ids_excluidos.has(id_nodo):
 				continue
 
 			nodos_limpiados[id_nodo] = true
