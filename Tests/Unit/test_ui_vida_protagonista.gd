@@ -98,3 +98,32 @@ func test_contador_flechas_explosivas_visibilidad_y_conteo() -> void:
 
 	# Assert: Debe ocultarse al llegar a 0
 	assert_false(ui_vida.contador_flechas_explosivas.visible, "El contador debe ocultarse cuando llega a 0")
+
+
+func test_icono_flecha_explosiva_visibilidad_junto_al_contador() -> void:
+	# Arrange
+	var ui_vida = load(ui_vida_scene_path).instantiate() as UIVidaProtagonista
+	add_child_autofree(ui_vida)
+	await wait_seconds(0.1)
+
+	# Assert inicial: ícono oculto sin munición
+	assert_not_null(ui_vida.icono_flechas_explosivas, "El nodo icono_flechas_explosivas debe existir")
+	assert_false(ui_vida.icono_flechas_explosivas.visible, "El ícono debe estar oculto por defecto (0 flechas)")
+
+	# Act: Sumar 10 flechas
+	ui_vida.actualizar_flechas_explosivas(10)
+
+	# Assert: ícono y contador visibles juntos
+	assert_true(ui_vida.icono_flechas_explosivas.visible, "El ícono debe ser visible cuando hay flechas")
+	assert_true(ui_vida.contador_flechas_explosivas.visible, "El contador debe seguir visible")
+	assert_true(
+		ui_vida.icono_flechas_explosivas.texture != null,
+		"El ícono debe tener la textura del power-up asignada"
+	)
+
+	# Act: Bajar a 0 flechas
+	ui_vida.actualizar_flechas_explosivas(0)
+
+	# Assert: ícono oculto al agotarse la munición
+	assert_false(ui_vida.icono_flechas_explosivas.visible, "El ícono debe desaparecer al llegar a 0")
+	assert_false(ui_vida.contador_flechas_explosivas.visible)
