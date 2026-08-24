@@ -18,6 +18,11 @@ const FLECHA_ELECTRICA_SCENE = preload("res://Entities/Enemigo_Lonko/Flecha_Elec
 const TIEMPO_DISPARO: float = 0.8
 const TIEMPO_LANZAR_FLECHA: float = 0.35
 
+## Humo de pisadas: spritesheet SmokeFX Lite 1A-1 (tira horizontal 9x1 de 64px)
+const TEXTURA_HUMO_PISADAS: String = "res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png"
+const HUMO_PISADAS_FRAMES_H: int = 9
+const HUMO_PISADAS_FRAMES_V: int = 1
+
 @export_category("Combate - Lonko")
 @export var tiempo_recarga_min: float = 1.5
 @export var tiempo_recarga_max: float = 3.0
@@ -115,9 +120,13 @@ func _configurar_particulas_pisada() -> void:
 		return
 
 	var mat := StandardMaterial3D.new()
-	var tex := load("res://Entities/Enemigo_Lonko/humo pisada.png") as Texture2D
+	var tex := load(TEXTURA_HUMO_PISADAS) as Texture2D
 	if tex:
 		mat.albedo_texture = tex
+		# Spritesheet animado: tira horizontal 9x1 (SmokeFX Lite 1A-1)
+		mat.particles_anim_h_frames = HUMO_PISADAS_FRAMES_H
+		mat.particles_anim_v_frames = HUMO_PISADAS_FRAMES_V
+		mat.particles_anim_loop = false
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -128,7 +137,7 @@ func _configurar_particulas_pisada() -> void:
 
 	var mesh := QuadMesh.new()
 	mesh.material = mat
-	mesh.size = Vector2(0.364, 0.364)  # Reducido un 30% adicional
+	mesh.size = Vector2(0.6552, 0.6552)  # +80% sobre 0.364
 	_particulas_pisada.draw_pass_1 = mesh
 
 	var pm := ParticleProcessMaterial.new()
@@ -137,14 +146,19 @@ func _configurar_particulas_pisada() -> void:
 	pm.initial_velocity_min = 0.2
 	pm.initial_velocity_max = 0.5
 	pm.gravity = Vector3(0.0, 0.2, 0.0)
-	pm.scale_min = 0.45  # Reducido un 30% adicional
-	pm.scale_max = 0.73
+	pm.scale_min = 0.81  # +80% sobre 0.45
+	pm.scale_max = 1.314  # +80% sobre 0.73
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
 	pm.emission_box_extents = Vector3(0.16, 0.02, 0.16)
+	# Animación del spritesheet: un ciclo completo por partícula, con desfase aleatorio
+	pm.anim_speed_min = 1.0
+	pm.anim_speed_max = 1.0
+	pm.anim_offset_min = 0.0
+	pm.anim_offset_max = 1.0
 
 	var grad := Gradient.new()
-	grad.set_color(0, Color(1, 1, 1, 0.85))
-	grad.set_color(1, Color(1, 1, 1, 0.0))
+	grad.set_color(0, Color(0.5, 0.5, 0.5, 0.85))  # Gris
+	grad.set_color(1, Color(0.5, 0.5, 0.5, 0.0))
 	var grad_tex := GradientTexture1D.new()
 	grad_tex.gradient = grad
 	pm.color_ramp = grad_tex

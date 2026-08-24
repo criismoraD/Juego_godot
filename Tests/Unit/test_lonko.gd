@@ -84,3 +84,27 @@ func test_lonko_tiro_electrico_cada_3() -> void:
 
 	lonko.queue_free()
 	await get_tree().process_frame
+
+
+func test_humo_pisadas_usa_spritesheet_smokefx() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+
+	# Act
+	var particulas := lonko.find_child("Particulas_Pisada", true, false) as GPUParticles3D
+
+	# Assert: el humo usa el spritesheet SmokeFX Lite 9x1
+	assert_not_null(particulas, "Lonko debe tener el nodo Particulas_Pisada")
+	if particulas:
+		var quad := particulas.draw_pass_1 as QuadMesh
+		assert_not_null(quad, "El draw pass debe ser un QuadMesh")
+		if quad and quad.material is StandardMaterial3D:
+			var mat := quad.material as StandardMaterial3D
+			assert_eq(mat.particles_anim_h_frames, 9, "El spritesheet debe tener 9 cuadros horizontales")
+			assert_eq(mat.particles_anim_v_frames, 1, "El spritesheet debe tener 1 fila vertical")
+			assert_false(mat.particles_anim_loop, "La animación del humo no debe iterar")
+
+	lonko.queue_free()
+	await get_tree().process_frame
