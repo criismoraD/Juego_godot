@@ -29,6 +29,37 @@ func test_material_dano_hereda_sombreado_y_outline() -> void:
 		)
 
 
+func test_sombra_solo_en_escudos_enemigos() -> void:
+	# Arrange: escudo del jugador (neutral)
+	var escudo_jugador = ESCUDO_SCENE.instantiate()
+	add_child_autofree(escudo_jugador)
+	await get_tree().process_frame
+
+	# Assert: el escudo del jugador NO debe tener sombra
+	assert_eq(
+		escudo_jugador.find_children("*", "SombraPersonaje", true, false).size(), 0,
+		"Los escudos del jugador NO deben tener sombra"
+	)
+
+	# Arrange: escudo enemigo
+	var escudo_enemigo = ESCUDO_SCENE.instantiate()
+	escudo_enemigo.es_escudo_enemigo = true
+	add_child_autofree(escudo_enemigo)
+	await get_tree().process_frame
+
+	# Assert: el escudo enemigo SÍ debe tener sombra
+	var sombras := escudo_enemigo.find_children("*", "SombraPersonaje", true, false)
+	assert_gt(sombras.size(), 0, "Los escudos enemigos deben tener sombra falsa circular")
+	if sombras.size() > 0:
+		var sombra := sombras[0] as SombraPersonaje
+		assert_gt(sombra.tamano.x, 0.0, "La sombra debe tener tamaño positivo")
+		assert_eq(
+			sombra.prioridad_render, -128,
+			"La sombra debe renderizarse con prioridad mínima para quedar DEBAJO del modelo"
+		)
+		assert_lt(sombra.offset_y, 0.0, "El offset Y debe ser negativo (pegada al suelo)")
+
+
 func test_flash_y_dano_no_dejan_material_negro_permanente() -> void:
 	# Arrange
 	var escudo = ESCUDO_SCENE.instantiate()

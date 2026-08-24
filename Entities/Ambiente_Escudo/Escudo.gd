@@ -43,6 +43,11 @@ signal destruido
 @export var particulas_gravedad: Vector3 = Vector3(0, 0.1, 0)
 @export var particulas_escala_min: float = 0.005
 @export var particulas_escala_max: float = 0.02
+@export_category("Sombra")
+@export var sombra_tamano: Vector2 = Vector2(0.9, 0.9)  ## Tamaño de la sombra falsa circular
+@export var sombra_opacidad: float = 1.0
+@export var sombra_suavizado: float = 0.8
+@export var sombra_offset_y: float = -0.01  ## Offset vertical (negativo = más pegada al suelo, bajo el modelo)
 # Estado interno
 var golpes_recibidos: int = 0
 var mesh_instance: MeshInstance3D
@@ -85,6 +90,18 @@ func _ready():
 		material_dano.emission_enabled = true
 		material_dano.emission = color_dano
 		material_dano.emission_energy_multiplier = 0.0
+
+	# Sombra falsa circular (igual que la de los enemigos), SOLO en los escudos enemigos
+	if es_escudo_enemigo:
+		var _sombra := SombraPersonaje.new()
+		_sombra.tamano = sombra_tamano
+		_sombra.opacidad = sombra_opacidad
+		_sombra.suavizado = sombra_suavizado
+		_sombra.offset_y = sombra_offset_y
+		# Prioridad mínima: la sombra se dibuja ANTES que cualquier otro
+		# transparente y siempre queda POR DEBAJO del modelo 3D.
+		_sombra.prioridad_render = -128
+		add_child(_sombra)
 
 
 func _find_mesh_instance(node: Node):

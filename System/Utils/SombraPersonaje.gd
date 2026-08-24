@@ -20,6 +20,7 @@ extends Node3D
 @export var escala_minima: float = 0.5
 @export var mascara_colision: int = 65 ## Capa 1 (Mundo) y Capa 7 (Plataformas Permanente)
 @export var heredar_escala_padre: bool = false
+@export var prioridad_render: int = 0  ## Orden en el pase transparente (menor = se dibuja antes, queda debajo)
 
 var _mesh: MeshInstance3D
 var _material: ShaderMaterial
@@ -51,6 +52,7 @@ func _crear_mesh() -> void:
 
 	_material = ShaderMaterial.new()
 	_material.shader = shader
+	_material.render_priority = prioridad_render
 	_material.set_shader_parameter("opacidad", opacidad)
 	_material.set_shader_parameter("suavizado", suavizado)
 	_material.set_shader_parameter("corte_izq", 0.0)
