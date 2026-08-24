@@ -102,6 +102,9 @@ var is_invulnerable: bool = false
 var invulnerability_timer: float = 0.0
 var shot_cancelled: bool = false  # Flag para cancelar disparo cuando nos dañan
 var is_shot_locked: bool = false  # Flag de bloqueo de disparo temporal
+## Cuando true (mapa de debug), no se inicia el disparo si el cursor está sobre
+## un Control interactivo (panel/botones), para que clicar opciones no dispare.
+var disparo_bloqueado_por_ui: bool = false
 # === AUDIO ===
 # Gestionado por AudioManager (singleton)
 # === GAME FEEL ===
@@ -780,6 +783,17 @@ func update_charge_bar_position():
 		charge_bar.visible = false
 
 
+## True si el cursor está sobre un Control interactivo (botón/panel con
+## MOUSE_FILTER_STOP). Se usa para no disparar al clicar opciones de la UI.
+func _mouse_sobre_control_ui() -> bool:
+	var hovered := get_viewport().gui_get_hovered_control()
+	return (
+		hovered != null
+		and hovered.is_visible_in_tree()
+		and hovered.mouse_filter == Control.MOUSE_FILTER_STOP
+	)
+
+
 func control_visual_state(delta):
 	# BLOQUEAR TODO SI ESTAMOS MUERTOS
 	if is_dead:
@@ -831,6 +845,11 @@ func control_visual_state(delta):
 				shot_cancelled = false
 
 			if Input.is_action_just_pressed("click_izquierdo"):
+				# Mapa de debug: ignorar el clic si cae sobre un control de UI
+				# (panel de spawn/debug), para que seleccionar opciones no dispare.
+				if disparo_bloqueado_por_ui and _mouse_sobre_control_ui():
+					return
+
 				# Bloquear disparo si el disparo fue cancelado (debe soltar y volver a presionar)
 				if shot_cancelled:
 					return

@@ -155,6 +155,9 @@ func _ready():
 		player_node.flechas_explosivas = 5
 		if player_node.has_signal("flechas_explosivas_changed"):
 			player_node.flechas_explosivas_changed.emit(5)
+		# En el mapa debug, clicar el panel de control de spawn no debe disparar
+		if "disparo_bloqueado_por_ui" in player_node:
+			player_node.disparo_bloqueado_por_ui = true
 
 	get_tree().call_group("ui_vida_protagonista", "mostrar")
 
