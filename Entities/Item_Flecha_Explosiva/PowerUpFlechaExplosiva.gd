@@ -3,8 +3,9 @@ class_name PowerUpFlechaExplosiva
 extends Area3D
 
 ## Power-Up de Flecha Explosiva con rotación continua 360°, luz ígnea parpadeante y squash & stretch procedimental.
-## Se consume AUTOMÁTICAMENTE después de 3 segundos (o al contacto del jugador) otorgando un stack de 5 municiones explosivas al jugador
+## Se consume AUTOMÁTICAMENTE después de 3 segundos (o al contacto del jugador) otorgando un stack de 10 municiones explosivas al jugador
 ## y 5 municiones explosivas a cada arquera aliada en pantalla.
+## Excepción: el drop del Goblin Ballestero configura 5 municiones para el jugador (ver Goblin.municion_drop_jugador).
 ## Caída con aceleración realista (EASE_IN) y frenado de golpe al tocar el suelo.
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -18,7 +19,7 @@ enum State { IDLE, DISSOLVING }
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 @export_category("Munición")
-@export var municion_a_otorgar_jugador: int = 5  ## Otorga 5 flechas explosivas al jugador
+@export var municion_a_otorgar_jugador: int = 10  ## Otorga 10 flechas explosivas al jugador (el drop del Goblin lo reduce a 5)
 @export var municion_a_otorgar_aliadas: int = 5  ## Otorga 5 flechas explosivas a cada aliada
 @export var tiempo_en_pantalla: float = 3.0  ## Segundos antes de auto-consumirse
 @export var tiempo_escala_spawn: float = 0.4  ## Duración del escalado orgánico (0 a 1) al aparecer

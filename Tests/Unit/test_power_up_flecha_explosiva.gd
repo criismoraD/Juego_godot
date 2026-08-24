@@ -20,7 +20,7 @@ func before_each():
 func test_power_up_initialization():
 	# Assert
 	assert_not_null(_power_up, "El power-up de flecha explosiva debe instanciarse correctamente")
-	assert_eq(_power_up.municion_a_otorgar_jugador, 5, "Debe otorgar 5 flechas al jugador")
+	assert_eq(_power_up.municion_a_otorgar_jugador, 10, "Por defecto debe otorgar 10 flechas al jugador")
 	assert_eq(_power_up.municion_a_otorgar_aliadas, 5, "Debe otorgar 5 flechas a cada aliada")
 	assert_eq(_power_up.tiempo_en_pantalla, 3.0, "El tiempo de auto-consumo debe ser de 3.0 segundos")
 	assert_eq(_power_up.velocidad_rotacion_y, 3.0, "La velocidad de rotación continua debe ser de 3.0 rad/s")
@@ -33,12 +33,67 @@ func test_power_up_consumo_jugador():
 	_power_up._auto_consumir()
 
 	# Assert
-	assert_eq(_player.flechas_explosivas, 5, "El jugador debe tener 5 flechas explosivas acumuladas tras el consumo")
+	assert_eq(_player.flechas_explosivas, 10, "El jugador debe tener 10 flechas explosivas acumuladas tras el consumo")
 
 	# Act: Consumir un segundo power-up (acumulación)
 	_power_up.current_state = PowerUpFlechaExplosiva.State.IDLE
 	_power_up._auto_consumir()
-	assert_eq(_player.flechas_explosivas, 10, "Las flechas explosivas deben acumularse (+5 -> 10)")
+	assert_eq(_player.flechas_explosivas, 20, "Las flechas explosivas deben acumularse (+10 -> 20)")
+
+
+func test_drop_de_goblin_otorga_solo_5_al_jugador():
+	# Arrange: drop garantizado y escena limpia de otros power-ups
+	var goblin = GoblinScript.new()
+	goblin.drop_chance_flecha_explosiva = 1.0
+	add_child_autofree(goblin)
+	assert_eq(goblin.municion_drop_jugador, 5, "El Goblin debe configurar 5 como excepción")
+	_limpiar_powerups_previos()
+
+	# Act
+	goblin._drop_power_up()
+	await get_tree().process_frame
+
+	# Assert: el ítem dropeado por el Goblin queda configurado con 5
+	var item_goblin := _buscar_item_dropeado()
+	assert_not_null(item_goblin, "El Goblin debe dropear el power-up")
+	if item_goblin:
+		assert_eq(int(item_goblin.municion_a_otorgar_jugador), 5, "El drop del Goblin debe sumar solo 5 al contador")
+		item_goblin.free()
+
+
+func test_drop_por_defecto_lonko_y_otros_otorgan_10():
+	# Arrange: Lonko con drop garantizado
+	var lonko = LonkoScript.new()
+	lonko.drop_chance_flecha_explosiva = 1.0
+	add_child_autofree(lonko)
+	_limpiar_powerups_previos()
+
+	# Act
+	lonko._drop_power_up()
+	await get_tree().process_frame
+
+	# Assert: sin configuración especial, el ítem mantiene las 10 por defecto
+	var item_lonko := _buscar_item_dropeado()
+	assert_not_null(item_lonko, "La Lonko debe dropear el power-up")
+	if item_lonko:
+		assert_eq(int(item_lonko.municion_a_otorgar_jugador), 10, "Los drops que no son del Goblin deben sumar 10")
+		item_lonko.free()
+
+
+## Elimina power-ups residuales para que las búsquedas de drops sean exactas.
+func _limpiar_powerups_previos() -> void:
+	for it in get_tree().root.find_children("*", "Area3D", true, false):
+		if it is PowerUpFlechaExplosiva and it != _power_up:
+			it.free()
+	await get_tree().process_frame
+
+
+## Busca un PowerUpFlechaExplosiva distinto de la instancia base del before_each.
+func _buscar_item_dropeado() -> Node:
+	for it in get_tree().root.find_children("*", "Area3D", true, false):
+		if it is PowerUpFlechaExplosiva and it != _power_up:
+			return it
+	return null
 
 func test_power_up_distribucion_aliadas():
 	# Arrange

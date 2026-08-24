@@ -14,6 +14,8 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 @export_category("Drops - Goblin")
 @export var power_up_explosivo_scene: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 @export_range(0.0, 1.0, 0.01) var drop_chance_flecha_explosiva: float = 0.05  ## 5% de probabilidad de drop
+## Munición que otorga EL DROP DE ESTE enemigo al jugador (excepción: 5 en vez de 10)
+@export var municion_drop_jugador: int = 5
 
 # === REFERENCIAS ESPECÍFICAS ===
 var goblin_arrow_scene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
@@ -209,6 +211,9 @@ func _drop_power_up() -> void:
 	var item := power_up_explosivo_scene.instantiate() as Node3D
 	if not item:
 		return
+	# Excepción Goblin Ballestero: su drop solo suma 5 al contador del jugador
+	if "municion_a_otorgar_jugador" in item:
+		item.municion_a_otorgar_jugador = municion_drop_jugador
 	var target_parent := get_tree().current_scene
 	if target_parent:
 		target_parent.add_child(item)
