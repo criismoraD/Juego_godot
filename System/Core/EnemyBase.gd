@@ -507,26 +507,37 @@ func take_damage(amount: float):
 
 
 func _flash_red():
+	# Mallas SIN overrides de superficie propios (típico en GLB): su flash se
+	# aplica vía material_override y debe limpiarse al restaurar, o el enemigo
+	# queda teñido/oculto para siempre tras el primer golpe.
+	var meshes_sin_override: Array = []
 	for mesh in _cached_mesh_instances:
 		if not is_instance_valid(mesh):
 			continue
-		for i in range(mesh.get_surface_override_material_count()):
-			mesh.set_surface_override_material(i, _red_flash_material)
-		if mesh.get_surface_override_material_count() == 0:
+		if mesh.get_surface_override_material_count() > 0:
+			for i in range(mesh.get_surface_override_material_count()):
+				mesh.set_surface_override_material(i, _red_flash_material)
+		else:
+			meshes_sin_override.append(mesh)
 			mesh.material_override = _red_flash_material
 
 	get_tree().create_timer(0.08).timeout.connect(
 		func():
 			if is_instance_valid(self) and is_inside_tree():
-				_reset_materials()
+				_reset_materials(meshes_sin_override)
 	)
 
 
-func _reset_materials():
+func _reset_materials(meshes_sin_override: Array = []):
 	# Restaurar los materiales originales guardados en _store_original_materials()
 	for item in original_materials:
 		if is_instance_valid(item["mesh"]):
 			item["mesh"].set_surface_override_material(item["index"], item["material"])
+
+	# Limpiar el material_override de las mallas que no tenían override propio
+	for mesh in meshes_sin_override:
+		if is_instance_valid(mesh):
+			mesh.material_override = null
 
 
 ## Limpia TODOS los materiales del nodo y sus hijos antes de queue_free()
