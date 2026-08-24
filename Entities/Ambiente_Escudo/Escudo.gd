@@ -77,6 +77,11 @@ func _ready():
 			# Copiar propiedades del original
 			material_dano.albedo_texture = material_original.albedo_texture
 			material_dano.albedo_color = material_original.albedo_color
+			# Heredar sombreado y outline: los escudos usan UNSHADED con un
+			# next_pass de línea negra (TOON_LINEANEGRA). Sombrearlos de nuevo
+			# los vuelve negros en escenas con poca luz (mapa debug).
+			material_dano.shading_mode = material_original.shading_mode
+			material_dano.next_pass = material_original.next_pass
 		material_dano.emission_enabled = true
 		material_dano.emission = color_dano
 		material_dano.emission_energy_multiplier = 0.0
