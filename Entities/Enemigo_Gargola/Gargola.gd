@@ -39,6 +39,11 @@ enum FaseCombate { IDLE, CARGA, ATAQUE }
 
 const COLOR_ANTICIPACION: Color = Color(1.491, 0.277, 0.55)
 
+## Tope de la velocidad angular correctora del active-ragdoll (rad/s).
+## Dividir diff_euler por delta sin límite produce picos enormes que azotan
+## los miembros y estiran la piel del modelo durante la caída.
+const MAX_VELOCIDAD_ANGULAR_CORRECCION: float = 10.0
+
 var altura_base: float = 4.3
 var oscilacion_fase: float = 0.0
 var fase_combate: int = FaseCombate.IDLE
@@ -60,6 +65,9 @@ var ragdoll_hueso_raiz: String = ""
 ## esqueleto construya las articulaciones y no exploten por error inicial.
 var ragdoll_inicio_pendiente: bool = false
 var ragdoll_relajado: bool = false
+## True cuando la física de huesos ya conduce al cadáver: el CharacterBody3D
+## deja de caer por su cuenta y se ancla al trapo (evita doble movimiento).
+var ragdoll_simulacion_activa: bool = false
 
 # === REFERENCIAS ===
 var gargola_projectile_scene: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
@@ -98,6 +106,7 @@ func _on_enemy_ready():
 	tiempo_ragdoll_activo = 0.0
 	ragdoll_listo_para_disolucion = false
 	ragdoll_relajado = false
+	ragdoll_simulacion_activa = false
 
 	# Apunta recto, no necesita tracking de torso (vuela)
 	rastrear_jugador = false
@@ -238,6 +247,9 @@ func _iniciar_simulacion_ragdoll() -> void:
 	
 	_aplicar_impulso_de_impacto()
 
+	# A partir de aquí la física de huesos conduce al cadáver
+	ragdoll_simulacion_activa = true
+
 
 func _aplicar_impulso_de_impacto() -> void:
 	if last_hit_direction.is_zero_approx():
@@ -324,20 +336,23 @@ func _physics_process(delta):
 
 
 func _procesar_muerte(delta: float) -> void:
-	# Aplicar gravedad del proyecto para que la gárgola caiga cinemáticamente
-	# y la pose animada descienda con ella de forma natural.
-	velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
-	# Desaceleración suave del impulso de impacto en X
-	velocity.x = move_toward(velocity.x, 0.0, delta * 3.0)
-	velocity.z = 0.0
-	
-	# Mover el CharacterBody3D principal hacia abajo
-	move_and_slide()
-
 	# Arrancar la simulacion un frame despues de crear los huesos (ver _activar_ragdoll).
 	if ragdoll_inicio_pendiente:
 		_iniciar_simulacion_ragdoll()
-		
+
+	if ragdoll_simulacion_activa:
+		# El cadáver lo lleva la física de los huesos: anclar el CharacterBody3D
+		# al centro del trapo. Caer por cuenta propia EN PARALELO diverge del
+		# ragdoll y estira la piel entre huesos animados y huesos simulados.
+		global_position = _get_hips_global_position()
+	else:
+		# Caída cinemática breve hasta que arranque la simulación
+		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+		# Desaceleración suave del impulso de impacto en X
+		velocity.x = move_toward(velocity.x, 0.0, delta * 3.0)
+		velocity.z = 0.0
+		move_and_slide()
+
 	tiempo_ragdoll_activo += delta
 	
 	# Transición gradual de Animación a Ragdoll (Active Ragdoll Blend de 100% a 0%)
@@ -355,10 +370,11 @@ func _procesar_muerte(delta: float) -> void:
 					# Calcular la posición animada global del hueso en el esqueleto
 					var pose_animada_global = skeleton.global_transform * skeleton.get_bone_global_pose(bone_idx)
 					
-					# Alinear rotación aplicando una velocidad angular correctora basada en los ángulos de Euler
+					# Alinear rotación aplicando una velocidad angular correctora basada en los ángulos de Euler.
+					# Con tope: sin él, diff/delta genera picos que azotan los brazos y estiran el modelo.
 					var diff_rot = pose_animada_global.basis * pb.global_transform.basis.inverse()
-					var diff_euler = diff_rot.get_euler()
-					pb.angular_velocity = (diff_euler / delta) * blend + pb.angular_velocity * (1.0 - blend)
+					var correccion_angular = (diff_rot.get_euler() / delta).limit_length(MAX_VELOCIDAD_ANGULAR_CORRECCION)
+					pb.angular_velocity = correccion_angular * blend + pb.angular_velocity * (1.0 - blend)
 						
 	# Al finalizar el blend (1.5 segundos), congelamos definitivamente el AnimationPlayer
 	# y relajamos los joints para que colapsen completamente sobre el suelo.

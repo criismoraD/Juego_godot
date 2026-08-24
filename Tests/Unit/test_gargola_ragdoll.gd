@@ -137,3 +137,36 @@ func test_get_hips_no_es_zero():
 		pos, Vector3.ZERO,
 		"_get_hips_global_position no debe retornar Vector3.ZERO"
 	)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. Anti-estiramiento: cuerpo anclado al trapo y corrección angular con tope
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func test_simulacion_activa_ancla_cuerpo_al_trapo():
+	await get_tree().process_frame
+	var scripted := gargola as Gargola
+	scripted.health = 0
+	scripted._change_state(scripted.State.DYING)
+	scripted._physics_process(1.0 / 60.0)
+	assert_true(
+		scripted.ragdoll_simulacion_activa,
+		"Tras arrancar la simulación, el cuerpo debe pasar a modo anclado al ragdoll"
+	)
+	assert_almost_eq(
+		scripted.global_position.distance_to(scripted._get_hips_global_position()),
+		0.0, 0.01,
+		"El CharacterBody debe quedar pegado al centro del trapo (sin doble caída)"
+	)
+
+
+func test_tope_velocidad_angular_correctora_configurado():
+	var scripted := gargola as Gargola
+	assert_gt(
+		scripted.MAX_VELOCIDAD_ANGULAR_CORRECCION, 0.0,
+		"El tope de corrección angular debe ser positivo"
+	)
+	assert_lt(
+		scripted.MAX_VELOCIDAD_ANGULAR_CORRECCION, 30.0,
+		"El tope debe ser moderado para evitar azotes que estiren el modelo"
+	)
