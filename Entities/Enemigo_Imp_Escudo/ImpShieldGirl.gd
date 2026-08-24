@@ -48,6 +48,14 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export var escena_sangre: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
+
+# === HUMO DE RETIRADA (mismo efecto que la arquera Lonko al correr) ===
+const TEXTURA_HUMO_RETIRADA: String = "res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png"
+const HUMO_FRAMES_H: int = 9
+const HUMO_FRAMES_V: int = 1
+const HUMO_TAMANO_QUAD: float = 0.6552
+const HUMO_ESCALA_MIN: float = 0.81
+const HUMO_ESCALA_MAX: float = 1.314
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -80,6 +88,7 @@ var _estado_previo: State = State.WALKING
 var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva
 var _impulso_explosivo_activo: bool = false  ## True durante el vuelo parabólico del cadáver
 var _estado_antes_de_morir: State = State.WALKING  ## Estado previo a DYING (¿murió en retirada?)
+var humo_retirada: GPUParticles3D = null  ## Humo de pisadas al correr en retirada
 
 
 func _get_cached_wave_spawner() -> Node:
@@ -137,8 +146,89 @@ func _ready():
 	var _sombra := SombraPersonaje.new()
 	add_child(_sombra)
 
+	# Humo de pisadas (se emite solo al correr en retirada)
+	_configurar_humo_retirada()
+
 	# Buscar enemigo a proteger después de un frame (para que todos estén listos)
 	call_deferred("_buscar_enemigo_a_proteger")
+
+
+## Crea el humo de pisadas idéntico al de la arquera Lonko (spritesheet
+## SmokeFX Lite, gris). Se emite únicamente corriendo en retirada.
+func _configurar_humo_retirada() -> void:
+	humo_retirada = GPUParticles3D.new()
+	humo_retirada.name = "HumoRetirada"
+	humo_retirada.emitting = false
+	humo_retirada.amount = 16
+	humo_retirada.lifetime = 1.15
+	humo_retirada.position = Vector3(0.0, 0.08, 0.0)
+
+	var mat := StandardMaterial3D.new()
+	var tex := load(TEXTURA_HUMO_RETIRADA) as Texture2D
+	if tex:
+		mat.albedo_texture = tex
+		mat.particles_anim_h_frames = HUMO_FRAMES_H
+		mat.particles_anim_v_frames = HUMO_FRAMES_V
+		mat.particles_anim_loop = false
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.billboard_keep_scale = true
+	mat.render_priority = 2
+
+	var mesh := QuadMesh.new()
+	mesh.material = mat
+	mesh.size = Vector2(HUMO_TAMANO_QUAD, HUMO_TAMANO_QUAD)
+	humo_retirada.draw_pass_1 = mesh
+
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0.0, 1.0, 0.0)
+	pm.spread = 50.0
+	pm.initial_velocity_min = 0.2
+	pm.initial_velocity_max = 0.5
+	pm.gravity = Vector3(0.0, 0.2, 0.0)
+	pm.scale_min = HUMO_ESCALA_MIN
+	pm.scale_max = HUMO_ESCALA_MAX
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(0.16, 0.02, 0.16)
+	pm.anim_speed_min = 1.0
+	pm.anim_speed_max = 1.0
+	pm.anim_offset_min = 0.0
+	pm.anim_offset_max = 1.0
+
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.5, 0.5, 0.5, 0.85))  # Gris
+	grad.set_color(1, Color(0.5, 0.5, 0.5, 0.0))
+	var grad_tex := GradientTexture1D.new()
+	grad_tex.gradient = grad
+	pm.color_ramp = grad_tex
+
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.25), 0.0, 1.2)
+	curve.add_point(Vector2(0.3, 1.0), 0.2, -0.4)
+	curve.add_point(Vector2(0.65, 0.6), -0.6, -0.8)
+	curve.add_point(Vector2(1.0, 0.0), -1.2, 0.0)
+	var curve_tex := CurveTexture.new()
+	curve_tex.curve = curve
+	pm.scale_curve = curve_tex
+
+	humo_retirada.process_material = pm
+	add_child(humo_retirada)
+
+
+## Emite el humo SOLO mientras corre en retirada (FLEEING/ESCAPING) y en movimiento.
+func _actualizar_humo_retirada() -> void:
+	if not is_instance_valid(humo_retirada):
+		return
+	var corriendo: bool = (
+		(current_state == State.FLEEING or current_state == State.ESCAPING)
+		and absf(velocity.x) > 0.1
+		and current_state != State.DYING
+		and current_state != State.DEAD
+	)
+	humo_retirada.emitting = corriendo
 
 
 func _aplicar_rotacion_modelo():
@@ -282,6 +372,7 @@ func _physics_process(delta):
 		State.DEAD:
 			pass
 
+	_actualizar_humo_retirada()
 	move_and_slide()
 
 

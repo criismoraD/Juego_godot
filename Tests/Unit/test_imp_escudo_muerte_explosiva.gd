@@ -67,3 +67,32 @@ func test_explosion_sin_retirada_no_aplica_parabola():
 	# Assert
 	assert_false(imp._impulso_explosivo_activo, "Fuera de retirada no debe haber vuelo parabólico")
 	assert_false(imp.is_physics_processing(), "La física debe permanecer desactivada")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Humo de retirada (mismo efecto que la Lonko al correr)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func test_humo_retirada_existe_y_apagado_por_defecto():
+	assert_not_null(imp.humo_retirada, "Debe existir el nodo HumoRetirada")
+	if imp.humo_retirada:
+		assert_false(imp.humo_retirada.emitting, "El humo debe iniciar apagado")
+
+
+func test_humo_retirada_emite_solo_corriendo_en_retirada():
+	# Corriendo en retirada → emite
+	imp._cambiar_estado(ImpShieldGirl.State.FLEEING)
+	imp.velocity.x = 1.0
+	imp._actualizar_humo_retirada()
+	assert_true(imp.humo_retirada.emitting, "Debe emitir humo corriendo en retirada")
+
+	# Defendiendo → no emite
+	imp._cambiar_estado(ImpShieldGirl.State.DEFENDING)
+	imp._actualizar_humo_retirada()
+	assert_false(imp.humo_retirada.emitting, "Defendiendo no debe emitir humo")
+
+	# Retirada pero detenida → no emite
+	imp._cambiar_estado(ImpShieldGirl.State.ESCAPING)
+	imp.velocity.x = 0.0
+	imp._actualizar_humo_retirada()
+	assert_false(imp.humo_retirada.emitting, "En retirada pero sin moverse no debe emitir humo")
