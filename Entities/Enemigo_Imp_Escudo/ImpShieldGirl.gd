@@ -77,6 +77,9 @@ var Tiempo_Flee_Acumulado: float = 0.0
 var rotation_tween: Tween
 var _died_emitted: bool = false
 var _estado_previo: State = State.WALKING
+var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva
+var _impulso_explosivo_activo: bool = false  ## True durante el vuelo parabólico del cadáver
+var _estado_antes_de_morir: State = State.WALKING  ## Estado previo a DYING (¿murió en retirada?)
 
 
 func _get_cached_wave_spawner() -> Node:
@@ -268,7 +271,14 @@ func _physics_process(delta):
 		State.FLEEING:
 			_process_fleeing(delta)
 		State.DYING:
-			velocity.x = 0
+			if _impulso_explosivo_activo:
+				# Parábola del cadáver: conserva el empuje en el aire, frena al aterrizar
+				if is_on_floor():
+					velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
+				else:
+					velocity.x = move_toward(velocity.x, 0.0, delta * 0.8)
+			else:
+				velocity.x = 0
 		State.DEAD:
 			pass
 
@@ -419,6 +429,8 @@ func _process_fleeing(delta):
 func _cambiar_estado(nuevo: State):
 	if nuevo == State.SHIELD_HIT and current_state != State.SHIELD_HIT:
 		_estado_previo = current_state
+	if nuevo == State.DYING:
+		_estado_antes_de_morir = current_state
 	current_state = nuevo
 	match nuevo:
 		State.WALKING:
@@ -576,6 +588,15 @@ func _on_dying():
 		if model:
 			model.rotation_degrees.y = rotacion_y_modelo - 180.0
 
+	# Muerte por explosión en retirada (sin escudo, huyendo): mantener la
+	# animación de muerte pero el cuerpo sale volando en parábola hacia la
+	# derecha (mismo comportamiento que la GoblinGirl).
+	if murio_por_explosion and escudo_vida_actual <= 0 and (
+		_estado_antes_de_morir == State.FLEEING or _estado_antes_de_morir == State.ESCAPING
+	):
+		_aplicar_impulso_explosivo()
+		murio_por_explosion = false
+
 	# Elegir muerte aleatoria de los exports
 	var chosen = anim_muertes[randi() % anim_muertes.size()]
 	_play_animation(chosen)
@@ -586,6 +607,27 @@ func _on_dying():
 			if is_instance_valid(self) and is_inside_tree():
 				_start_dissolve()
 	)
+
+
+## Impulso de la explosión (estilo GoblinGirl): reactiva la física del cuerpo
+## con un pequeño salto hacia arriba y empuje lateral; la gravedad dibuja la
+## parábola mientras suena la animación de muerte.
+func _aplicar_impulso_explosivo() -> void:
+	_impulso_explosivo_activo = true
+	set_physics_process(true)
+	collision_layer = 0  # Nadie colisiona contra el cadáver
+	collision_mask = 1   # Pero él sí colisiona contra el suelo para aterrizar
+
+	# Dirección de expulsión según el punto de impacto de la explosión
+	var push_dir: float = 1.0
+	if last_hit_position != Vector3.ZERO:
+		var dx: float = global_position.x - last_hit_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+
+	velocity.x = push_dir * randf_range(1.6, 2.4)  # Caer hacia la derecha
+	velocity.y = randf_range(2.0, 2.8)             # Elevarse un poco
+	velocity.z = 0.0
 
 
 func _start_dissolve():
