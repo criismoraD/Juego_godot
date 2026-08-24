@@ -18,6 +18,7 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP }
 @export var altura_spawn_flecha: float = 1.2
 @export_range(0.0, 30.0, 1.0) var angulo_disparo_min: float = 5.0  ## Ángulo mínimo de elevación (grados)
 @export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 35.0  ## Ángulo máximo de elevación (grados)
+@export_range(1.0, 3.0, 0.05) var multiplicador_potencia_volador: float = 1.6  ## Fuerza extra al disparar a enemigos voladores (trayectoria más plana)
 @export_category("Tiempos")
 @export var idle_min: float = 0.4  ## Segundos mínimos en idle entre ciclos
 @export var idle_max: float = 0.9  ## Segundos máximos en idle entre ciclos
@@ -50,6 +51,7 @@ var flechas_explosivas: int = 0  ## Contador interno de flechas explosivas
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 static var _cached_wave_spawner: Node = null
+var _spine_bone_idx: int = -1  ## Hueso del torso para el apuntado visual hacia arriba
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -64,6 +66,13 @@ func _ready():
 	model_root = find_child("ArqueraModel", false, false)
 	if model_root:
 		_original_model_y_rot = model_root.rotation.y
+
+	# Hueso del torso para el apuntado visual (mismo rig que la protagonista)
+	skeleton = find_child("Skeleton3D", true, false)
+	if skeleton:
+		_spine_bone_idx = skeleton.find_bone("mixamorig_Spine1")
+		if _spine_bone_idx == -1:
+			_spine_bone_idx = skeleton.find_bone("mixamorig_Spine")
 
 	_setup_animation_player()
 	_buscar_arrow_node()
@@ -206,6 +215,7 @@ func _crear_hitbox():
 
 func _process(delta):
 	if current_state == State.DYING or current_state == State.DEAD:
+		_restaurar_torso()
 		return
 
 	match current_state:
@@ -219,6 +229,48 @@ func _process(delta):
 			_process_shooting(delta)
 		State.GETTING_UP:
 			_process_getting_up(delta)
+
+	# Apuntado visual del torso hacia la gárgola (como la protagonista)
+	_actualizar_apuntado_torso()
+
+
+## Inclina el torso hacia la gárgola objetivo mientras apunta/dispara, con la
+## misma convención que la protagonista (pitch negativo sobre FORWARD, hueso
+## mixamorig_Spine1, multiplicación local). Sin objetivo, restaura la pose.
+func _actualizar_apuntado_torso() -> void:
+	if not skeleton or _spine_bone_idx == -1:
+		return
+
+	var objetivo := _obtener_gargola_objetivo()
+	var en_estados_disparo := (
+		current_state == State.RELOADING
+		or current_state == State.AIMING
+		or current_state == State.SHOOTING
+	)
+
+	if objetivo == null or not en_estados_disparo:
+		_restaurar_torso()
+		return
+
+	var my_pos: Vector3 = global_position + Vector3(0, 0.5, 0)
+	var target_pos: Vector3 = objetivo.global_position + Vector3(0, 0.3, 0)
+	var dy: float = target_pos.y - my_pos.y
+	var dx: float = absf(target_pos.x - my_pos.x)
+	# Pitch negativo = arco hacia arriba (misma convención que Player)
+	var pitch: float = clampf(-atan2(maxf(dy, 0.0), maxf(dx, 0.1)), deg_to_rad(-70.0), 0.0)
+
+	skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
+	var pose_actual: Transform3D = skeleton.get_bone_global_pose(_spine_bone_idx)
+	var pitch_rotation := Quaternion(Vector3.FORWARD, pitch)
+	var nueva_basis: Basis = pose_actual.basis * Basis(pitch_rotation)
+	skeleton.set_bone_global_pose_override(
+		_spine_bone_idx, Transform3D(nueva_basis, pose_actual.origin), 1.0, false
+	)
+
+
+func _restaurar_torso() -> void:
+	if skeleton and _spine_bone_idx != -1:
+		skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
 
 
 ## IDLE: esperar 1-2s, luego ir a RELOADING (tomar flecha)
@@ -383,6 +435,37 @@ func _contar_enemigos_vivos() -> int:
 	return count
 
 
+## Busca la gárgola (enemigo volador) viva más cercana frente a la arquera.
+## Las gárgolas vuelan alto (3.3-5.2 m): el arco a ciego nunca las alcanza,
+## así que requieren apuntado directo.
+func _obtener_gargola_objetivo() -> Node3D:
+	var enemies = []
+
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
+	else:
+		enemies = EnemyBase.active_enemies_cache
+
+	var mejor: Node3D = null
+	var menor_dist: float = INF
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
+			continue
+		if not (enemy is Gargola):
+			continue
+		if enemy.current_state == EnemyBase.State.DYING or enemy.current_state == EnemyBase.State.DEAD:
+			continue
+		# Solo enemigos delante (a la derecha de la arquera)
+		if enemy.global_position.x <= global_position.x:
+			continue
+		var dist: float = absf(enemy.global_position.x - global_position.x)
+		if dist < menor_dist:
+			menor_dist = dist
+			mejor = enemy
+	return mejor
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISPARO (siempre hacia la derecha)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -403,13 +486,45 @@ func _disparar():
 	if arrow_node and is_instance_valid(arrow_node):
 		spawn_pos = arrow_node.global_position
 
-	# Dirección: siempre a la DERECHA con ángulo aleatorio hacia arriba
-	var angulo = deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
-	var direction = Vector3(cos(angulo), sin(angulo), 0).normalized()
-
 	# Potencia proporcional al tiempo de carga
 	var power_ratio = clamp(charge_duration / tiempo_carga_max, 0.0, 1.0)
 	var speed = lerp(potencia_minima, potencia_maxima, power_ratio)
+
+	var direction: Vector3
+	var objetivo_volador := _obtener_gargola_objetivo()
+	if objetivo_volador:
+		# Más fuerza contra enemigos voladores: trayectoria más plana y directa
+		speed *= multiplicador_potencia_volador
+		# Gárgola detectada: solución balística iterativa con predicción de
+		# movimiento para que las flechas la alcancen con facilidad.
+		var objetivo_pos: Vector3 = objetivo_volador.global_position + Vector3(0, 0.3, 0)
+		var gravedad: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+		var vel_objetivo: Vector3 = Vector3.ZERO
+		var v_obj = objetivo_volador.get("velocity")
+		if v_obj is Vector3:
+			vel_objetivo = Vector3(v_obj.x, 0.0, 0.0)  # La oscilación vertical es posicional
+
+		# 3 pasadas: estimar tiempo de vuelo → predecir posición futura → recomputar
+		var punto_apuntado: Vector3 = objetivo_pos
+		var tiempo_vuelo: float = 0.0
+		for _i in range(3):
+			var delta_pos: Vector3 = punto_apuntado - spawn_pos
+			var distancia: float = delta_pos.length()
+			tiempo_vuelo = distancia / maxf(speed, 0.1)
+			punto_apuntado = objetivo_pos + vel_objetivo * tiempo_vuelo
+
+		var delta_final: Vector3 = punto_apuntado - spawn_pos
+		var dist_final: float = maxf(delta_final.length(), 0.1)
+		direction = delta_final.normalized()
+		direction.y += 0.5 * gravedad * tiempo_vuelo * tiempo_vuelo / dist_final
+		# Dispersión mínima natural
+		direction.y += randf_range(-0.015, 0.015)
+		direction.x += randf_range(-0.01, 0.01)
+		direction = direction.normalized()
+	else:
+		# Sin gárgolas: arco a ciego hacia la derecha (comportamiento original)
+		var angulo = deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
+		direction = Vector3(cos(angulo), sin(angulo), 0).normalized()
 
 	# Crear flecha
 	var arrow = arrow_scene.instantiate()
