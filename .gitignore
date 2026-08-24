@@ -6,6 +6,8 @@
 __pycache__/
 *.o
 *.obj
+# Excepción: mallas VFX del juego (sin ellas las escenas no cargan)
+!VFX/Objects/*.obj
 *.class
 *.exe
 *.dll
