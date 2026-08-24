@@ -28,6 +28,8 @@ var anim_timer: float = 0.0
 var has_fired_this_cycle: bool = false
 var esta_agachada: bool = false
 var en_animacion_disparo: bool = false
+var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: impulso en parábola al morir
+var _impulso_explosivo_activo: bool = false  ## True durante el vuelo parabólico del cadáver
 # === REFERENCIAS ESPECÍFICAS ===
 var goblin_girl_arrow_scene = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
 var escena_flecha_visual_mano = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
@@ -118,6 +120,12 @@ func _on_state_dying():
 	_actualizar_visibilidad_flecha_mano(false)
 	AudioManager.play_sfx("goblin_girl_death")
 
+	# Muerte por explosión: mantener la animación normal pero el cuerpo
+	# recibe el impulso (se eleva un poco y cae en parábola hacia la derecha)
+	if murio_por_explosion:
+		_aplicar_impulso_explosivo()
+		murio_por_explosion = false
+
 	# Elegir aleatoriamente entre las 3 animaciones de muerte
 	var death_anims = ["MUERTE1", "MUERTE2", "MUERTE3"]
 	var chosen_death = death_anims[randi() % death_anims.size()]
@@ -129,6 +137,40 @@ func _on_state_dying():
 			if is_instance_valid(self) and is_inside_tree():
 				_die()
 	)
+
+
+## Impulso de la explosión: reactiva la física del cuerpo y le da un pequeño
+## salto hacia arriba con empuje lateral. La gravedad del EnemyBase dibuja la
+## parábola mientras suena la animación de muerte normal.
+func _aplicar_impulso_explosivo() -> void:
+	_impulso_explosivo_activo = true
+	set_physics_process(true)
+	collision_layer = 0  # Nadie colisiona contra el cadáver
+	collision_mask = 1   # Pero él sí colisiona contra el suelo para aterrizar
+
+	# Dirección de expulsión según el punto de impacto de la explosión
+	var push_dir: float = 1.0
+	if last_hit_position != Vector3.ZERO:
+		var dx: float = global_position.x - last_hit_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+
+	velocity.x = push_dir * randf_range(1.6, 2.4)  # Caer hacia la derecha
+	velocity.y = randf_range(2.0, 2.8)             # Elevarse un poco
+	velocity.z = 0.0
+
+
+## Durante la muerte con impulso: conserva el empuje lateral en el aire y
+## frena al aterrizar para que no patine; la gravedad la aplica el EnemyBase.
+func _process_dying(delta: float) -> void:
+	if not _impulso_explosivo_activo:
+		velocity.x = 0
+		return
+
+	if is_on_floor():
+		velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
+	else:
+		velocity.x = move_toward(velocity.x, 0.0, delta * 0.8)
 
 
 func take_damage(amount: float) -> void:
