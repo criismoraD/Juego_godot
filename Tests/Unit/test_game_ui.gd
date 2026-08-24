@@ -170,6 +170,49 @@ func test_reconstruir_todos_escudos_mantiene_tipo_y_nombre():
 	main_scene.free()
 
 
+func test_reconstruir_escudo_enemigo_destruido():
+	# Arrange
+	var main_scene = Node3D.new()
+	get_tree().root.add_child(main_scene)
+
+	var parent_node = Node3D.new()
+	parent_node.name = "ContenedorEscudos"
+	main_scene.add_child(parent_node)
+
+	var esc_enem = load("res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn").instantiate()
+	esc_enem.name = "EscudoEnemigoTest"
+	parent_node.add_child(esc_enem)
+
+	var game_ui = GameUIScript.new()
+	main_scene.add_child(game_ui)
+	await wait_seconds(0.1)
+
+	# Guardar originales (debe INCLUIR al escudo enemigo) y destruirlo
+	game_ui._guardar_posiciones_escudos()
+	await wait_seconds(0.05)
+	var guardado_enemigo: bool = false
+	for data in game_ui.escudos_originales:
+		if data["name"] == "EscudoEnemigoTest":
+			guardado_enemigo = true
+	assert_true(guardado_enemigo, "El escudo enemigo debe guardarse en escudos_originales")
+
+	esc_enem.queue_free()
+	await wait_seconds(0.1)
+
+	# Act: reconstruir (como al reiniciar nivel / iniciar oleada)
+	game_ui._reconstruir_todos_escudos()
+	await wait_seconds(0.1)
+
+	# Assert: el escudo enemigo destruido vuelve, conservando su tipo
+	var nuevo_enem = parent_node.get_node_or_null("EscudoEnemigoTest")
+	assert_not_null(nuevo_enem, "El escudo enemigo destruido debe reconstruirse")
+	if nuevo_enem:
+		assert_true(nuevo_enem.get("es_escudo_enemigo"), "El escudo reconstruido debe seguir siendo enemigo")
+
+	# Limpieza
+	main_scene.free()
+
+
 func test_mostrar_cortinilla_debug_crea_overlay() -> void:
 	# Arrange
 	add_child(_game_ui)

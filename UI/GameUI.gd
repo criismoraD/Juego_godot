@@ -1094,8 +1094,8 @@ func _guardar_posiciones_escudos():
 	var nodos_escudo = get_tree().get_nodes_in_group("escudos")
 	for escudo in nodos_escudo:
 		if is_instance_valid(escudo):
-			if escudo.get("es_escudo_enemigo") == true:
-				continue
+			# Guardar TODOS los escudos, incluidos los enemigos: deben
+			# reconstruirse también al reiniciar/reiniciar oleada.
 			_escudos_cache.append(escudo)
 			escudos_originales.append(
 				{
@@ -1127,11 +1127,11 @@ func _reconstruir_todos_escudos():
 				continue
 			roto.queue_free()
 
-	# 2. Mapear escudos activos actualmente en el mapa
-	var escudos_activos = _get_valid_escudos()
+	# 2. Mapear TODOS los escudos activos actualmente en el mapa
+	# (incluidos los enemigos: si siguen intactos NO deben duplicarse)
 	var nombres_activos: Dictionary = {}
-	for esc in escudos_activos:
-		if is_instance_valid(esc):
+	for esc in get_tree().get_nodes_in_group("escudos"):
+		if is_instance_valid(esc) and not esc.is_queued_for_deletion():
 			nombres_activos[esc.name] = esc
 
 	# 3. Recorrer la lista de escudos originales y recrear SOLO los faltantes/rotos
