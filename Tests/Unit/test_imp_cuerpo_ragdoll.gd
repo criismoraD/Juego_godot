@@ -168,6 +168,48 @@ func test_articulaciones_enlazan_huesos_fisicos():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 4b. Rigidez anti-efecto-goma (brazos que no aletean)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func test_joints_con_limites_lineales_cerrados():
+	for j in ragdoll.find_children("*", "Generic6DOFJoint3D", true, false):
+		for ax in ["x", "y", "z"]:
+			assert_true(
+				j.get("linear_limit_%s/enabled" % ax),
+				"%s eje %s: límite lineal debe estar activo" % [j.name, ax]
+			)
+			assert_true(
+				j.get("linear_limit_%s/upper_distance" % ax) <= 0.05,
+				"%s eje %s: los huesos no deben poder separarse (efecto goma)" % [j.name, ax]
+			)
+
+
+func test_resorte_angular_de_brazos_amortiguado():
+	var revisados: int = 0
+	for j in ragdoll.find_children("*", "Generic6DOFJoint3D", true, false):
+		if not ragdoll._es_joint_de_brazo(j.name):
+			continue
+		revisados += 1
+		for ax in ["x", "y", "z"]:
+			assert_gte(
+				j.get("angular_spring_%s/damping" % ax),
+				15.0,
+				"%s eje %s: el resorte del brazo debe estar amortiguado" % [j.name, ax]
+			)
+	assert_gt(revisados, 0, "Debe existir al menos una articulación de brazo")
+
+
+func test_huesos_de_brazos_con_damp_angular_extra():
+	var revisados: int = 0
+	for pb in _obtener_huesos():
+		if not ragdoll._es_hueso_de_brazo(String(pb.bone_name)):
+			continue
+		revisados += 1
+		assert_gte(pb.angular_damp, 5.0, "%s debe tener damp angular extra" % pb.name)
+	assert_gt(revisados, 0, "Debe existir al menos un hueso de brazo")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # 5. Watchdog anti-estiramiento (divergencia de articulaciones)
 # ═══════════════════════════════════════════════════════════════════════════════
 

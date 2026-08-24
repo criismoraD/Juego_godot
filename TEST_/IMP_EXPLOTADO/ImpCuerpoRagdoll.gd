@@ -17,6 +17,14 @@ signal ragdoll_detenido
 
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
+## Límite lineal por eje en las articulaciones (m). El default de Godot es ±0.5 m:
+## sin este ajuste los huesos se separan y vuelven como de goma.
+const LIMITE_LINEAL_ARTICULACION: float = 0.01
+## Amortiguación del resorte angular en articulaciones de brazos (anti-flail).
+const AMORTIGUACION_ANGULAR_BRAZOS: float = 18.0
+## Amortiguación angular extra para los huesos físicos de brazos.
+const ANGULAR_DAMP_HUESO_BRAZO: float = 6.0
+
 var skeleton: Skeleton3D = null
 var simulator: PhysicalBoneSimulator3D = null
 var is_ragdoll_active: bool = false
@@ -64,6 +72,53 @@ func _buscar_nodos() -> void:
 				pb.collision_mask = 1  # Colisiona contra el suelo
 				_physical_bones.append(pb)
 		_aplicar_masas()
+
+	_rigidizar_articulaciones()
+
+
+## Anti-efecto-goma:
+## 1. Cierra los límites LINEALES de todas las articulaciones (el default de Godot,
+##    ±0.5 m por eje, permite que los huesos se separen y reboten elásticamente).
+## 2. Aumenta la amortiguación del resorte angular y del hueso en los BRAZOS,
+##    que son las piezas que más aletean al activarse el ragdoll.
+func _rigidizar_articulaciones() -> void:
+	for j in find_children("*", "Generic6DOFJoint3D", true, false):
+		var joint := j as Generic6DOFJoint3D
+		if not joint:
+			continue
+
+		var es_brazo := _es_joint_de_brazo(joint.name)
+
+		for ax in ["x", "y", "z"]:
+			joint.set("linear_limit_%s/enabled" % ax, true)
+			joint.set("linear_limit_%s/upper_distance" % ax, LIMITE_LINEAL_ARTICULACION)
+			joint.set("linear_limit_%s/lower_distance" % ax, -LIMITE_LINEAL_ARTICULACION)
+
+			if es_brazo:
+				joint.set("angular_spring_%s/damping" % ax, AMORTIGUACION_ANGULAR_BRAZOS)
+
+	if ANGULAR_DAMP_HUESO_BRAZO > 0.0:
+		for pb in _physical_bones:
+			if is_instance_valid(pb) and _es_hueso_de_brazo(String(pb.bone_name)):
+				pb.angular_damp = ANGULAR_DAMP_HUESO_BRAZO
+
+
+## True si la articulación pertenece a la cadena de un brazo.
+func _es_joint_de_brazo(nombre_joint: String) -> bool:
+	return (
+		nombre_joint.contains("Shoulder")
+		or nombre_joint.contains("Arm")
+		or nombre_joint.contains("Hand")
+	)
+
+
+## True si el hueso físico pertenece a la cadena de un brazo.
+func _es_hueso_de_brazo(nombre_hueso: String) -> bool:
+	return (
+		nombre_hueso.contains("Shoulder")
+		or nombre_hueso.contains("Arm")
+		or nombre_hueso.contains("Hand")
+	)
 
 
 ## Distribuye masa_total entre los huesos proporcional al volumen de su cápsula.
