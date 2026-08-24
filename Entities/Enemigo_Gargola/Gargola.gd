@@ -150,9 +150,12 @@ func take_damage(amount: float) -> void:
 	# Reproducir sonido de impacto/herida
 	AudioManager.play_sfx("gargola_herida")
 
-	# Spawnear animación de explosión en spritesheet 3x4 en lugar de sangre
-	var spawn_pos: Vector3 = last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0, 0.4, 0))
-	ImpactoGargolaVFX.spawn(self, spawn_pos)
+	# Destello de explosión SOLO en golpes no letales:
+	# al golpe de muerte no le corresponde destello.
+	if health - int(amount) > 0:
+		# Spawnear animación de explosión en spritesheet 3x4 en lugar de sangre
+		var spawn_pos: Vector3 = last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0, 0.4, 0))
+		ImpactoGargolaVFX.spawn(self, spawn_pos)
 	
 	super.take_damage(amount)
 

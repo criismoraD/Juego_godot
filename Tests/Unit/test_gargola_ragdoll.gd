@@ -170,3 +170,41 @@ func test_tope_velocidad_angular_correctora_configurado():
 		scripted.MAX_VELOCIDAD_ANGULAR_CORRECCION, 30.0,
 		"El tope debe ser moderado para evitar azotes que estiren el modelo"
 	)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 6. Sin destello al morir
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func test_golpe_letal_no_genera_destello():
+	await get_tree().process_frame
+	var scripted := gargola as Gargola
+	scripted.health = 2
+	var antes := _contar_destellos()
+
+	scripted.take_damage(10.0)
+
+	assert_eq(scripted.current_state, scripted.State.DYING, "El golpe debe resultar letal")
+	assert_eq(
+		_contar_destellos(), antes,
+		"Al morir NO debe aparecer el destello de explosión"
+	)
+
+
+func test_golpe_no_letal_mantiene_destello_de_impacto():
+	await get_tree().process_frame
+	var scripted := gargola as Gargola
+	scripted.health = 5
+	var antes := _contar_destellos()
+
+	scripted.take_damage(1.0)
+
+	assert_ne(scripted.current_state, scripted.State.DYING, "El golpe no debe matar")
+	assert_eq(
+		_contar_destellos(), antes + 1,
+		"Los golpes normales deben conservar el destello de impacto"
+	)
+
+
+func _contar_destellos() -> int:
+	return get_tree().root.find_children("*", "ImpactoGargolaVFX", true, false).size()
