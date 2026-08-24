@@ -168,3 +168,37 @@ func test_reconstruir_todos_escudos_mantiene_tipo_y_nombre():
 	
 	# Limpieza
 	main_scene.free()
+
+
+func test_mostrar_cortinilla_debug_crea_overlay() -> void:
+	# Arrange
+	add_child(_game_ui)
+
+	# Act
+	_game_ui.mostrar_cortinilla_debug(0.1)
+
+	# Assert
+	var overlay = _game_ui.get_node_or_null("PantallaVictoriaCortinilla")
+	assert_not_null(overlay, "Debe crear el nodo overlay de la cortinilla")
+	if overlay:
+		assert_eq(overlay.layer, 210, "El overlay debe estar en la capa 210")
+		var cortinilla = overlay.get_child(0) as TextureRect
+		assert_not_null(cortinilla, "Debe contener el TextureRect de la cortinilla")
+
+	await wait_seconds(0.3)
+	remove_child(_game_ui)
+
+
+func test_ejecutar_cambio_oleada_guarda_solicitud() -> void:
+	# Arrange
+	add_child(_game_ui)
+	GameUIScript.oleada_inicial_solicitada = 0
+
+	# Act
+	_game_ui._ejecutar_cambio_oleada_debug(3)
+
+	# Assert
+	assert_eq(GameUIScript.oleada_inicial_solicitada, 3, "Debe registrar la oleada inicial solicitada al cambiar desde fuera de NIVEL01")
+	GameUIScript.oleada_inicial_solicitada = 0
+	remove_child(_game_ui)
+

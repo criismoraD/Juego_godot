@@ -46,6 +46,7 @@ var enemigos_pacificos: Array = []  ## Los 3 enemigos del nivel 0
 var imp_estandarte: Node3D = null  ## Referencia al imp que lleva el estandarte
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
+var _aliadas_activas: bool = true
 # === REFERENCIAS ===
 @onready
 var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
@@ -147,6 +148,15 @@ func _ready():
 	if game_ui:
 		game_ui.set_bottom_panel_visible(true)
 		game_ui.set_modo_minimo(false)
+
+	# Iniciar jugador con 5 flechas explosivas para pruebas y mostrar HUD
+	var player_node = get_tree().get_first_node_in_group("player")
+	if player_node:
+		player_node.flechas_explosivas = 5
+		if player_node.has_signal("flechas_explosivas_changed"):
+			player_node.flechas_explosivas_changed.emit(5)
+
+	get_tree().call_group("ui_vida_protagonista", "mostrar")
 
 	# Activar aliadas por defecto (para combate)
 	_set_aliadas_activas(true)
@@ -910,19 +920,29 @@ func debug_mostrar_carteles_transicion() -> void:
 
 
 func debug_ir_a_oleada_1() -> void:
-	_iniciar_oleada_debug(1)
+	_ir_a_oleada_juego_normal(1)
 
 
 func debug_ir_a_oleada_2() -> void:
-	_iniciar_oleada_debug(2)
+	_ir_a_oleada_juego_normal(2)
 
 
 func debug_ir_a_oleada_3() -> void:
-	_iniciar_oleada_debug(3)
+	_ir_a_oleada_juego_normal(3)
 
 
 func debug_ir_a_oleada_4() -> void:
-	_iniciar_oleada_debug(4)
+	_ir_a_oleada_juego_normal(4)
+
+
+func debug_ir_a_oleada_5() -> void:
+	_ir_a_oleada_juego_normal(5)
+
+
+func _ir_a_oleada_juego_normal(numero_oleada: int) -> void:
+	GameUI.oleada_inicial_solicitada = numero_oleada
+	AudioManager.stop_all()
+	get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
 
 
 func _iniciar_oleada_debug(numero_oleada: int) -> void:
@@ -1035,10 +1055,13 @@ func _mostrar_victoria_con_continuar(mensaje: String):
 
 func _iniciar_oleadas_libres():
 	estado_actual = NivelEstado.OLEADAS_LIBRES
-	_log_debug("[NIVEL01] Oleadas libres iniciadas — Gárgola por defecto para Debug")
+	_log_debug("[NIVEL_DEBUG] Oleadas libres iniciadas — Imp por defecto para Debug")
 
-	# Forzar tipo de enemigo 5 (Gárgola) para pruebas de Ragdoll
-	wave_spawner.forzar_tipo_enemigo = 5
+	if not is_instance_valid(wave_spawner):
+		return
+
+	# Forzar tipo de enemigo 2 (Imp Normal) para pruebas por defecto
+	wave_spawner.forzar_tipo_enemigo = 2
 	wave_spawner.probabilidad_igual = false
 	wave_spawner.enemigos_por_oleada = 8
 	wave_spawner.intervalo_aparicion = 4.0
@@ -1048,8 +1071,9 @@ func _iniciar_oleadas_libres():
 	wave_spawner.oleada_combate = 0
 	wave_spawner.current_wave = 0
 	wave_spawner.goblins_spawned_in_wave = 0
-	wave_spawner.is_wave_active = false
+	wave_spawner.is_wave_active = true
 	wave_spawner.wave_cooldown = 1.0
+	wave_spawner.iniciar_spawning()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1057,27 +1081,57 @@ func _iniciar_oleadas_libres():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _set_aliadas_activas(activas: bool):
+func _set_aliadas_activas(activas: bool) -> void:
 	for ally in AllyArcher.active_allies_cache:
-		if ally is AllyArcher:
-			ally.visible = activas
-			ally.set_process(activas)
-			ally.set_physics_process(activas)
-			var hitbox = ally.get("hitbox_body")
-			if hitbox and is_instance_valid(hitbox):
-				hitbox.collision_layer = 2 if activas else 0
-
-
-## Arqueras visibles en pose IDLE pero sin disparar
-func _set_aliadas_modo_pacifico():
-	for ally in AllyArcher.active_allies_cache:
-		if ally is AllyArcher:
-			ally.visible = true
-			ally.set_process(false)  # No disparan
+		if not is_instance_valid(ally) or not (ally is AllyArcher):
+			continue
+		ally.visible = activas
+		if not activas:
+			ally.set_process(false)
 			ally.set_physics_process(false)
 			var hitbox = ally.get("hitbox_body")
 			if hitbox and is_instance_valid(hitbox):
-				hitbox.collision_layer = 0  # Sin colisión
+				hitbox.collision_layer = 0
+		else:
+			var esta_muerta: bool = (
+				ally.current_state == AllyArcher.State.DEAD
+				or ally.current_state == AllyArcher.State.DYING
+			)
+			ally.set_process(not esta_muerta)
+			ally.set_physics_process(not esta_muerta)
+			var hitbox = ally.get("hitbox_body")
+			if hitbox and is_instance_valid(hitbox):
+				hitbox.collision_layer = 0 if esta_muerta else 2
+
+
+func _toggle_aliadas_visibles() -> void:
+	_aliadas_activas = not _aliadas_activas
+	_set_aliadas_activas(_aliadas_activas)
+
+
+func _revivir_aliadas_debug() -> void:
+	for ally in AllyArcher.active_allies_cache:
+		if not is_instance_valid(ally) or not (ally is AllyArcher):
+			continue
+		if ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING:
+			ally.revivir()
+		else:
+			ally.health = ally.vida_maxima
+		if _aliadas_activas:
+			ally.visible = true
+
+
+## Arqueras visibles en pose IDLE pero sin disparar
+func _set_aliadas_modo_pacifico() -> void:
+	for ally in AllyArcher.active_allies_cache:
+		if not is_instance_valid(ally) or not (ally is AllyArcher):
+			continue
+		ally.visible = true
+		ally.set_process(false)  # No disparan
+		ally.set_physics_process(false)
+		var hitbox = ally.get("hitbox_body")
+		if hitbox and is_instance_valid(hitbox):
+			hitbox.collision_layer = 0  # Sin colisión
 
 
 func _limpiar_nodos_combate_spawneados() -> void:
@@ -1299,11 +1353,11 @@ func _crear_panel_controles_spawn():
 	vbox_main.add_child(HSeparator.new())
 
 	# --- FILA 2: SELECTOR DE TIPO DE ENEMIGO ---
-	wave_spawner.forzar_tipo_enemigo = 6
+	wave_spawner.forzar_tipo_enemigo = 2
 	wave_spawner.probabilidad_igual = false
 
 	var label_tipo := Label.new()
-	label_tipo.text = "Tipo a spawnear:\n🏹 Lonko"
+	label_tipo.text = "Tipo a spawnear:\n😈 Imp Normal"
 	label_tipo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	label_tipo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox_main.add_child(label_tipo)
@@ -1336,8 +1390,8 @@ func _crear_panel_controles_spawn():
 		btn.set_meta("tipo_nombre", opt["nombre"])
 
 		var init_style := StyleBoxFlat.new()
-		if opt["id"] == 6:
-			init_style.bg_color = Color(0.9, 0.4, 0.1, 1.0)
+		if opt["id"] == 2:
+			init_style.bg_color = Color(0.2, 0.5, 0.8, 1.0)
 			init_style.set_border_width_all(2)
 			init_style.border_color = Color(1.0, 1.0, 1.0, 0.9)
 		else:
@@ -1348,11 +1402,14 @@ func _crear_panel_controles_spawn():
 		btn.pressed.connect(func():
 			var tid: int = btn.get_meta("tipo_id")
 			var tnombre: String = btn.get_meta("tipo_nombre")
-			if tid == -1:
-				wave_spawner.forzar_tipo_enemigo = -1
-				wave_spawner.probabilidad_igual = true
-			else:
-				wave_spawner.forzar_tipo_enemigo = tid
+			if wave_spawner:
+				wave_spawner.cola_spawn.clear()
+				wave_spawner.evento_cuerno_en_progreso = false
+				if tid == -1:
+					wave_spawner.forzar_tipo_enemigo = -1
+					wave_spawner.probabilidad_igual = true
+				else:
+					wave_spawner.forzar_tipo_enemigo = tid
 
 			label_tipo.text = "Tipo a spawnear:\n" + tnombre
 			for b in grid_tipos.get_children():
@@ -1381,6 +1438,71 @@ func _crear_panel_controles_spawn():
 		wave_spawner.forzar_spawn()
 	)
 	vbox_main.add_child(btn_spawn_uno)
+
+	vbox_main.add_child(HSeparator.new())
+
+	# --- SECCIÓN: CONTADOR DE MUNICIÓN EXPLOSIVA ---
+	var label_ammo_sec := Label.new()
+	label_ammo_sec.text = "🏹 MUNICIÓN EXPLOSIVA"
+	label_ammo_sec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_ammo_sec.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
+	vbox_main.add_child(label_ammo_sec)
+
+	var hbox_ammo := HBoxContainer.new()
+	hbox_ammo.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox_ammo.add_theme_constant_override("separation", 6)
+	vbox_main.add_child(hbox_ammo)
+
+	var label_ammo := Label.new()
+	label_ammo.name = "LabelAmmoDebug"
+	var p_cur = get_tree().get_first_node_in_group("player")
+	var ammo_count: int = p_cur.flechas_explosivas if p_cur and "flechas_explosivas" in p_cur else 5
+	label_ammo.text = "💥 Flechas: " + str(ammo_count)
+	label_ammo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	label_ammo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox_ammo.add_child(label_ammo)
+
+	var btn_ammo_minus := Button.new()
+	btn_ammo_minus.text = "-1"
+	btn_ammo_minus.custom_minimum_size = Vector2(30, 24)
+	btn_ammo_minus.pressed.connect(func():
+		var p = get_tree().get_first_node_in_group("player")
+		if p and "flechas_explosivas" in p:
+			p.flechas_explosivas = max(0, p.flechas_explosivas - 1)
+			if p.has_signal("flechas_explosivas_changed"):
+				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+	)
+	hbox_ammo.add_child(btn_ammo_minus)
+
+	var btn_ammo_plus := Button.new()
+	btn_ammo_plus.text = "+1"
+	btn_ammo_plus.custom_minimum_size = Vector2(30, 24)
+	btn_ammo_plus.pressed.connect(func():
+		var p = get_tree().get_first_node_in_group("player")
+		if p and "flechas_explosivas" in p:
+			p.flechas_explosivas += 1
+			if p.has_signal("flechas_explosivas_changed"):
+				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+	)
+	hbox_ammo.add_child(btn_ammo_plus)
+
+	var btn_ammo_plus5 := Button.new()
+	btn_ammo_plus5.text = "+5"
+	btn_ammo_plus5.custom_minimum_size = Vector2(32, 24)
+	btn_ammo_plus5.pressed.connect(func():
+		var p = get_tree().get_first_node_in_group("player")
+		if p and "flechas_explosivas" in p:
+			p.flechas_explosivas += 5
+			if p.has_signal("flechas_explosivas_changed"):
+				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+	)
+	hbox_ammo.add_child(btn_ammo_plus5)
+
+	if p_cur and p_cur.has_signal("flechas_explosivas_changed"):
+		p_cur.flechas_explosivas_changed.connect(func(cnt: int):
+			if is_instance_valid(label_ammo):
+				label_ammo.text = "💥 Flechas: " + str(cnt)
+		)
 
 	vbox_main.add_child(HSeparator.new())
 
@@ -1457,6 +1579,42 @@ func _crear_panel_controles_spawn():
 	btn_god.pressed.connect(func(): if game_ui: game_ui._toggle_god_mode())
 	grid_items.add_child(btn_god)
 
+	var btn_toggle_aliadas := Button.new()
+	var update_aliadas_btn := func():
+		if _aliadas_activas:
+			btn_toggle_aliadas.text = "🏹 Aliadas: ON"
+			btn_toggle_aliadas.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+		else:
+			btn_toggle_aliadas.text = "🏹 Aliadas: OFF"
+			btn_toggle_aliadas.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	update_aliadas_btn.call()
+	btn_toggle_aliadas.custom_minimum_size = Vector2(84, 26)
+	btn_toggle_aliadas.add_theme_font_size_override("font_size", 11)
+	btn_toggle_aliadas.pressed.connect(func():
+		_toggle_aliadas_visibles()
+		update_aliadas_btn.call()
+	)
+	grid_items.add_child(btn_toggle_aliadas)
+
+	var btn_revivir_aliadas := Button.new()
+	btn_revivir_aliadas.text = "❤️ Revivir"
+	btn_revivir_aliadas.custom_minimum_size = Vector2(84, 26)
+	btn_revivir_aliadas.add_theme_font_size_override("font_size", 11)
+	btn_revivir_aliadas.pressed.connect(func():
+		_revivir_aliadas_debug()
+	)
+	grid_items.add_child(btn_revivir_aliadas)
+
+	var btn_cortinilla := Button.new()
+	btn_cortinilla.text = "🎭 Cortinilla"
+	btn_cortinilla.custom_minimum_size = Vector2(84, 26)
+	btn_cortinilla.add_theme_font_size_override("font_size", 11)
+	btn_cortinilla.pressed.connect(func():
+		if game_ui and game_ui.has_method("mostrar_cortinilla_debug"):
+			game_ui.mostrar_cortinilla_debug(3.0)
+	)
+	grid_items.add_child(btn_cortinilla)
+
 	vbox_main.add_child(HSeparator.new())
 
 	# --- SECCIÓN 4: SISTEMA ---
@@ -1484,9 +1642,10 @@ func _crear_panel_controles_spawn():
 
 	game_ui.add_child(panel)
 
-	# Spawn pausado por defecto
-	wave_spawner.detener_spawning()
-	_actualizar_estado_spawner_label("PAUSADO")
+	# Spawn activo por defecto
+	wave_spawner.iniciar_spawning()
+	wave_spawner.is_wave_active = true
+	_actualizar_estado_spawner_label("ACTIVO")
 
 
 func _actualizar_estado_spawner_label(estado: String):

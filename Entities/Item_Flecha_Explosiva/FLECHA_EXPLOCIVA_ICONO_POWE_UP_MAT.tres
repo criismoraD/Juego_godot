@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d0ytifwesr38e"]
+
+[ext_resource type="Texture2D" uid="uid://d20phlp04aec7" path="res://Entities/Item_Flecha_Explosiva/FLECHA_EXPLOCIVA_ICONO_POWE_UP_D.jpg" id="1_xre60"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_fjryy"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bxdb3"]
+render_priority = 0
+shader = ExtResource("2_fjryy")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_bxdb3")
+shading_mode = 0
+albedo_texture = ExtResource("1_xre60")

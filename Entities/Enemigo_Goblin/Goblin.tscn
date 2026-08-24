@@ -3,10 +3,10 @@
 [ext_resource type="Script" uid="uid://2udyb44rvi8h" path="res://Entities/Enemigo_Goblin/Goblin.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://k3nj0crucrl" path="res://Entities/Enemigo_Goblin/GOBLING_REMASTER_ANIMACIONES.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://bg41ujege14mr" path="res://Entities/Enemigo_Goblin/BALLES_GOBLING.glb" id="3_088pw"]
-[ext_resource type="PackedScene" uid="uid://ba3am7tn32s5x" path="res://TEST_/gobling_Ballesta_Explotado/Piernas_GOBLING_MUERTE.glb" id="4_piernas"]
-[ext_resource type="PackedScene" uid="uid://dftvddswjhkcr" path="res://TEST_/gobling_Ballesta_Explotado/Cabeza_GOBLING_MUERTE.glb" id="5_cabeza"]
-[ext_resource type="PackedScene" uid="uid://bidywox2rsf5c" path="res://TEST_/gobling_Ballesta_Explotado/Brazo_01_GOBLING_MUERTE.glb" id="6_brazo1"]
-[ext_resource type="PackedScene" uid="uid://bfayt5mqq4wcs" path="res://TEST_/gobling_Ballesta_Explotado/Brazo_02_GOBLING_MUERTE.glb" id="7_brazo2"]
+[ext_resource type="PackedScene" uid="uid://ba3am7tn32s5x" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Piernas_GOBLING_MUERTE.glb" id="4_piernas"]
+[ext_resource type="PackedScene" uid="uid://dftvddswjhkcr" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Cabeza_GOBLING_MUERTE.glb" id="5_cabeza"]
+[ext_resource type="PackedScene" uid="uid://bidywox2rsf5c" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_01_GOBLING_MUERTE.glb" id="6_brazo1"]
+[ext_resource type="PackedScene" uid="uid://bfayt5mqq4wcs" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_02_GOBLING_MUERTE.glb" id="7_brazo2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_goblin"]
 radius = 0.16748047

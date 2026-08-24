@@ -42,6 +42,7 @@ var throw_anim_timer: float = 0.0  ## Timer para el momento exacto de lanzamient
 var throw_anim_duration: float = 0.0  ## Duración total de la animación actual
 var current_throw_time: float = 0.0  ## Segundo exacto de lanzamiento para la animación actual
 var va_a_correr: bool = false  ## Determina si el Imp corre o camina en esta aparición
+var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: activa desmembramiento con ragdoll
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOOKS DE ENEMYBASE
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -74,8 +75,8 @@ func _aplicar_material_imp():
 		return
 	var meshes = find_children("*", "MeshInstance3D", true, false)
 	for mesh in meshes:
-		# No sobreescribir materiales de accesorios (casco, estandarte, etc.)
-		if _es_hijo_de_bone_attachment(mesh):
+		# No sobreescribir materiales de accesorios ni piezas desmembradas (cuerpo ragdoll o cabeza)
+		if _es_hijo_de_bone_attachment(mesh) or mesh.find_parent("RagdollImp") != null or mesh.find_parent("CabezaImp") != null or mesh.find_parent("PartesExplotadas") != null:
 			continue
 		mesh.material_override = material_imp
 
@@ -107,6 +108,10 @@ func _on_state_shooting():
 
 
 func _on_state_dying():
+	if murio_por_explosion:
+		_ejecutar_desmembramiento_explosivo()
+		return
+
 	super._on_state_dying()
 	# Sonido de muerte del Imp + explosión
 	AudioManager.play_sfx("imp_death")
@@ -130,6 +135,82 @@ func _on_state_dying():
 func _spawn_blood_splash(custom_modulate: Color = Color.WHITE) -> void:
 	var color_final: Color = Color(0.8, 0.3, 1.0) if sangre_morada else Color.WHITE
 	super._spawn_blood_splash(color_final)
+
+
+## Muerte por flecha explosiva: la cabeza sale disparada y el cuerpo
+## se reemplaza por el ragdoll ImpCuerpoRagdoll activado en la posición actual.
+func _ejecutar_desmembramiento_explosivo() -> void:
+	collision_layer = 0
+	collision_mask = 0
+	set_physics_process(false)
+
+	var root_scene := get_tree().current_scene
+	if not root_scene:
+		root_scene = get_tree().root
+
+	# 1. Ocultar el modelo intacto
+	var model := get_node_or_null("ImpModel") as Node3D
+	if model:
+		model.visible = false
+
+	# 2. Audio + sangre
+	AudioManager.play_sfx("explosion_muerte")
+	AudioManager.play_sfx("sangre_splash")
+	_spawn_blood_splash()
+
+	# 3. Dirección de expulsión según el punto de impacto de la explosión
+	var push_dir: float = 1.0
+	if last_hit_position != Vector3.ZERO:
+		var dx: float = global_position.x - last_hit_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+
+	# 4. Ragdoll: reparentar a la escena, mostrar y activar con rotación en Z e impulso moderado
+	var ragdoll := get_node_or_null("RagdollImp") as ImpCuerpoRagdoll
+	if ragdoll:
+		var tr_ragdoll: Transform3D = ragdoll.global_transform
+		ragdoll.get_parent().remove_child(ragdoll)
+		root_scene.add_child(ragdoll)
+		# Conservar orientación base (-90°) y aplicar variación aleatoria de rotación en Z entre -10° y +30°
+		var rot_z_rad: float = deg_to_rad(randf_range(-10.0, 30.0))
+		var base_basis: Basis = tr_ragdoll.basis.orthonormalized().rotated(Vector3(0, 0, 1), rot_z_rad)
+		ragdoll.global_transform = Transform3D(base_basis, tr_ragdoll.origin)
+		ragdoll.visible = true
+		for m in ragdoll.find_children("*", "MeshInstance3D", true, false):
+			m.material_override = null
+		# Impulso moderado para caída y rebote natural sin saltar excesivamente alto
+		var impulse_cuerpo := Vector3(
+			push_dir * randf_range(1.2, 2.2),
+			randf_range(1.0, 1.8),
+			0.0
+		)
+		ragdoll.activar_ragdoll(impulse_cuerpo)
+		ragdoll.iniciar_disolucion_automatica(color_borde_disolucion)
+
+	# 5. Cabeza: contenedor físico con vuelo parabólico
+	var cabeza := get_node_or_null("CabezaImp") as Node3D
+	if cabeza:
+		var tr_cabeza: Transform3D = cabeza.global_transform
+		var local_tr_cabeza: Transform3D = cabeza.transform
+		cabeza.get_parent().remove_child(cabeza)
+		var contenedor := ImpPiezaFisica.new()
+		root_scene.add_child(contenedor)
+		contenedor.global_position = tr_cabeza.origin
+		cabeza.transform = Transform3D(local_tr_cabeza.basis, Vector3.ZERO)
+		cabeza.visible = true
+		for m in cabeza.find_children("*", "MeshInstance3D", true, false):
+			m.material_override = null
+		contenedor.add_child(cabeza)
+		var vel_cabeza := Vector3(
+			push_dir * randf_range(2.2, 5.5),
+			randf_range(3.8, 7.2),
+			0.0
+		)
+		var rot_cabeza := randf_range(8.0, 20.0) * (-1.0 if randf() < 0.5 else 1.0)
+		contenedor.iniciar_vuelo(vel_cabeza, rot_cabeza)
+
+	# 6. Eliminar la entidad sin tocar las piezas ya extraídas
+	queue_free()
 
 
 

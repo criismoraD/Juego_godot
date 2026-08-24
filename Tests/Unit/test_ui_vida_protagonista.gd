@@ -46,8 +46,9 @@ func test_actualizar_vida_oculta_corazones_segun_dano() -> void:
 	assert_true(ui_vida.corazon_03.visible, "Corazon03 visible a 4 HP")
 	assert_true(ui_vida.corazon_04.visible, "Corazon04 visible a 4 HP")
 
-	# Vida = 3: Se oculta 1 corazón (Corazon04)
+	# Vida = 3: Se oculta 1 corazón (Corazon04) tras animación
 	ui_vida.actualizar_vida(3)
+	await wait_seconds(0.4)
 	assert_true(ui_vida.corazon_01.visible)
 	assert_true(ui_vida.corazon_02.visible)
 	assert_true(ui_vida.corazon_03.visible)
@@ -55,6 +56,7 @@ func test_actualizar_vida_oculta_corazones_segun_dano() -> void:
 
 	# Vida = 2: Se ocultan 2 corazones
 	ui_vida.actualizar_vida(2)
+	await wait_seconds(0.4)
 	assert_true(ui_vida.corazon_01.visible)
 	assert_true(ui_vida.corazon_02.visible)
 	assert_false(ui_vida.corazon_03.visible, "Corazon03 debe ocultarse al bajar a 2 HP")
@@ -62,6 +64,7 @@ func test_actualizar_vida_oculta_corazones_segun_dano() -> void:
 
 	# Vida = 0: Todos ocultos
 	ui_vida.actualizar_vida(0)
+	await wait_seconds(0.4)
 	assert_false(ui_vida.corazon_01.visible)
 	assert_false(ui_vida.corazon_02.visible)
 	assert_false(ui_vida.corazon_03.visible)

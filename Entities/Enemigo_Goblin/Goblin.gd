@@ -80,8 +80,9 @@ func _ejecutar_explosion_desmembramiento() -> void:
 	if model:
 		model.visible = false
 
-	# 2. Reproducir audio de impacto y sangre con volumen balanceado
+	# 2. Reproducir audio de impacto, muerte explosiva y sangre con volumen balanceado
 	AudioManager.play_sfx("sangre_splash")
+	AudioManager.play_sfx("goblin_explosive_death")
 
 	# 3. Spawnear animación de sangre 2D (14 cuadros verticales de Sangre_explosion.png)
 	_spawn_sangre_animada(global_position)
@@ -167,7 +168,7 @@ func _ejecutar_explosion_desmembramiento() -> void:
 
 
 func _spawn_sangre_animada(pos: Vector3) -> void:
-	var tex: Texture2D = preload("res://TEST_/gobling_Ballesta_Explotado/Sangre_explosion.png")
+	var tex: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_explosion.png")
 	if not tex:
 		return
 
@@ -180,7 +181,7 @@ func _spawn_sangre_animada(pos: Vector3) -> void:
 	sprite.shaded = false
 	sprite.render_priority = 3
 	sprite.no_depth_test = false
-	sprite.pixel_size = 0.0035  # Tamaño visible e impactante
+	sprite.pixel_size = 0.0070  # Tamaño duplicado para mayor impacto visual
 
 	var root := get_tree().current_scene
 	if not root:

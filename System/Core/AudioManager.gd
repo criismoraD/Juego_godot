@@ -37,6 +37,7 @@ var player_kill_count: int = 0
 func _ready():
 	_setup_players()
 	_load_all_sounds()
+	ShaderGlobals.asegurar_outline_global(true)
 
 	# La música se inicia desde la escena correspondiente
 	# (antes se auto-reproducía aquí)
@@ -123,6 +124,12 @@ func _load_all_sounds():
 		load("res://Entities/Enemigo_Goblin/MUERTE_GOBLING_4.mp3")
 	]
 
+	sfx_streams["goblin_explosive_death"] = [
+		load("res://Entities/Enemigo_Goblin/GOBLING_MUERTE_EXPLOSIVA_1.mp3"),
+		load("res://Entities/Enemigo_Goblin/GOBLING_MUERTE_EXPLOSIVA_2.mp3")
+	]
+	sfx_streams["gobling_muerte_explosiva"] = sfx_streams["goblin_explosive_death"]
+
 	sfx_streams["goblin_laugh"] = [load("res://Entities/Enemigo_Goblin/RISA_GOBLING_3.mp3")]
 
 	sfx_streams["goblin_girl_shoot"] = sfx_streams["player_shoot"]  # Usa el mismo arco
@@ -145,11 +152,11 @@ func _load_all_sounds():
 	]
 
 	sfx_streams["explosion_flecha_explosiva"] = [
-		load("res://TEST_/explocion_flecha_explociva.mp3")
+		load("res://System/Audio/SFX/explocion_flecha_explociva.mp3")
 	]
 
 	sfx_streams["cuerno_guerra"] = [
-		load("res://TEST_/Cuerno de guerra.mp3")
+		load("res://System/Audio/SFX/Cuerno de guerra.mp3")
 	]
 
 	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]
@@ -199,7 +206,7 @@ func _load_all_sounds():
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
 
 	sfx_streams["shield_break"] = [load("res://Entities/Ambiente_Escudo/ESCUDO_ROTO.mp3")]
-	sfx_streams["sangre_splash"] = [load("res://TEST_/gobling_Ballesta_Explotado/Sangre_splash.mp3")]
+	sfx_streams["sangre_splash"] = [load("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_splash.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# MÚSICA
@@ -272,6 +279,9 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		elif sound_name in ["goblin_death", "goblin_girl_death"]:
 			# Usar volumen de daño a enemigos
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume)
+		elif sound_name in ["goblin_explosive_death", "gobling_muerte_explosiva"]:
+			# Muerte explosiva de goblin aumentada un 50% (+3.5 dB)
+			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 3.5
 		elif sound_name == "imp_death":
 			# Imp muerte al doble de volumen
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 6.0

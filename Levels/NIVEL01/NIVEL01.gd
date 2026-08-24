@@ -161,6 +161,13 @@ func _ready():
 
 	await get_tree().process_frame
 
+	# Si se solicitó una oleada específica desde el menú de pausa / debug
+	if GameUI.oleada_inicial_solicitada > 0:
+		var oleada_destino: int = GameUI.oleada_inicial_solicitada
+		GameUI.oleada_inicial_solicitada = 0
+		_iniciar_oleada_debug(oleada_destino)
+		return
+
 	# Detener el spawner automático desde el inicio para evitar aparición previa al diálogo.
 	wave_spawner.detener_spawning()
 

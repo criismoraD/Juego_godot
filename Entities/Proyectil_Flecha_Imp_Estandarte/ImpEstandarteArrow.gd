@@ -13,7 +13,7 @@ var _velocidad_base_capturada: bool = false
 
 func _init() -> void:
 	color_proyectil = IMP_ESTANDARTE_ARROW_RED
-	outline_width = 10.0
+	outline_width = 20.0
 
 
 func _ready() -> void:

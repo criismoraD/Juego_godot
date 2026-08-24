@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://ca65fjxn6rl4a" path="res://Entities/Ambiente_Busto_Bronce/busto_bronce.tscn" id="17_qcvbp"]
 [ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Entities/Ambiente_Agua/WaterPlane.tscn" id="18_gpjsk"]
 [ext_resource type="PackedScene" uid="uid://c20j7pudi7arc" path="res://Entities/Ambiente_Base_Arquera/BASE_ARQUERA.tscn" id="19_mbwsw"]
+[ext_resource type="PackedScene" uid="uid://dusffdtovx70" path="res://Entities/Aliada_Arquera/AllyArcher.tscn" id="20_cayny"]
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Entities/Ambiente_Tronco/Tronco.tscn" id="25_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Entities/Ambiente_Pilar/Pilar.glb" id="25_koe3n"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Entities/Ambiente_Pinchos/PINCHO.glb" id="25_qcvbp"]
@@ -94,6 +95,7 @@ size = 0.01
 
 [node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_1cr8j")]
 transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 0)
+flechas_explosivas = 5
 color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
 escala_min_salto = 0.01
 escala_max_salto = 0.05
@@ -440,6 +442,16 @@ fuerza_vertical = 0.0
 torque_min = 0.0
 torque_max = 0.5
 tiempo_congelar = 4.0
+
+[node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.8802323, 3.1431754, 0)
+tiempo_carga_max = 2.0
+idle_max = 2.0
+
+[node name="AllyArcher2" parent="." unique_id=1802001803 instance=ExtResource("20_cayny")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.1104116, 1.585446, 0)
+tiempo_carga_max = 2.0
+idle_max = 2.0
 
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1883993, -0.20376292, 4.204008)

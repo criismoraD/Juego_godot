@@ -4,13 +4,13 @@ extends Node3D
 ## Controlador del efecto de desmembramiento/explosión del Goblin de Ballesta.
 ## Spawnea las 4 partes 3D dispersas con impulsos físicos y reproduce el sprite animado Sangre_explosion.png (14 frames verticales) y el SFX Sangre_splash.mp3.
 
-const SANGRE_TEX := preload("res://TEST_/gobling_Ballesta_Explotado/Sangre_explosion.png")
-const SFX_SPLASH := preload("res://TEST_/gobling_Ballesta_Explotado/Sangre_splash.mp3")
+const SANGRE_TEX := preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_explosion.png")
+const SFX_SPLASH := preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_splash.mp3")
 
-const BRAZO_1_SCENE := preload("res://TEST_/gobling_Ballesta_Explotado/Brazo_01_GOBLING_MUERTE.glb")
-const BRAZO_2_SCENE := preload("res://TEST_/gobling_Ballesta_Explotado/Brazo_02_GOBLING_MUERTE.glb")
-const CABEZA_SCENE := preload("res://TEST_/gobling_Ballesta_Explotado/Cabeza_GOBLING_MUERTE.glb")
-const PIERNAS_SCENE := preload("res://TEST_/gobling_Ballesta_Explotado/Piernas_GOBLING_MUERTE.glb")
+const BRAZO_1_SCENE := preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_01_GOBLING_MUERTE.glb")
+const BRAZO_2_SCENE := preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_02_GOBLING_MUERTE.glb")
+const CABEZA_SCENE := preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Cabeza_GOBLING_MUERTE.glb")
+const PIERNAS_SCENE := preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Piernas_GOBLING_MUERTE.glb")
 
 
 func _ready() -> void:
@@ -50,7 +50,7 @@ func _spawn_sangre_animada() -> void:
 	sprite.shaded = false
 	sprite.render_priority = 2
 	sprite.no_depth_test = false
-	sprite.scale = Vector3(1.1, 1.1, 1.1)
+	sprite.scale = Vector3(2.2, 2.2, 2.2)  # Duplicado de 1.1 para mayor impacto visual
 
 	var sf := SpriteFrames.new()
 	sf.add_animation(&"default")

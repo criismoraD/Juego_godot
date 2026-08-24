@@ -278,7 +278,9 @@ func _spawn_goblin():
 	# Elegir qué tipo de enemigo spawnear
 	var scene_to_spawn: PackedScene
 
-	if not cola_spawn.is_empty():
+	if forzar_tipo_enemigo != -1:
+		scene_to_spawn = _elegir_escena_probabilidades()
+	elif not cola_spawn.is_empty():
 		scene_to_spawn = cola_spawn.pop_front()
 	elif oleada_combate == 4 or oleada_combate == 5:
 		# Oleadas 4 y 5 usan SOLO cola prediseñada
@@ -462,7 +464,7 @@ func reproducir_sonido_cuerno() -> void:
 	if game_ui and game_ui.has_method("activar_efecto_viñeta_cuerno"):
 		game_ui.activar_efecto_viñeta_cuerno(3.0)
 
-	var cuerno_stream: AudioStream = load("res://TEST_/Cuerno de guerra.mp3")
+	var cuerno_stream: AudioStream = load("res://System/Audio/SFX/Cuerno de guerra.mp3")
 	if cuerno_stream:
 		var player := AudioStreamPlayer.new()
 		player.stream = cuerno_stream
@@ -513,7 +515,10 @@ func _iniciar_evento_cuerno() -> void:
 			for i in range(10):
 				if not is_instance_valid(self) or not is_inside_tree():
 					return
-				var escena_a_spawnear: PackedScene = escena_goblin_girl if (i % 2 == 0) else escena_goblin
+				var escena_a_spawnear: PackedScene = (
+					cola_spawn.pop_front() if not cola_spawn.is_empty()
+					else (escena_goblin_girl if (i % 2 == 0) else escena_goblin)
+				)
 				if escena_a_spawnear:
 					var enemy = escena_a_spawnear.instantiate()
 					var spawn_pos = global_position
@@ -524,6 +529,7 @@ func _iniciar_evento_cuerno() -> void:
 						enemy.died.connect(_on_goblin_died.bind(enemy))
 					active_goblins.append(enemy)
 				await get_tree().create_timer(0.35, false).timeout
+			evento_cuerno_en_progreso = false
 		routine.call()
 
 	# Limpiar referencias inválidas

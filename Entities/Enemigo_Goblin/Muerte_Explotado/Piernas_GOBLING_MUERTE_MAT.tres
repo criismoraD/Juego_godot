@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://drqrq2v50hipj"]
+
+[ext_resource type="Texture2D" uid="uid://bgej6lt2toga5" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Piernas_GOBLING_MUERTE_D.jpg" id="1_72op2"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_3wt5t"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_f0h3i"]
+render_priority = 0
+shader = ExtResource("2_3wt5t")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_f0h3i")
+albedo_texture = ExtResource("1_72op2")

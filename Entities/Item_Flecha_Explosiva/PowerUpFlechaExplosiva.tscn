@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c7m8x4w32v1op"]
 
 [ext_resource type="Script" path="res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.gd" id="1_powerup"]
-[ext_resource type="PackedScene" uid="uid://7bxrreweenov" path="res://TEST_/FLECHA_EXPLOCIVA_ICONO_POWE_UP.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://7bxrreweenov" path="res://Entities/Item_Flecha_Explosiva/FLECHA_EXPLOCIVA_ICONO_POWE_UP.glb" id="2_glb"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_powerup"]
 radius = 0.4

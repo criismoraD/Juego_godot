@@ -10,7 +10,7 @@ func _ready() -> void:
 	no_depth_test = false
 	scale = Vector3(0.38, 0.38, 0.38)  ## Reducido 3 veces para ajustarse al tamaño del cuerpo de la Gárgola
 
-	var tex: Texture2D = preload("res://TEST_/ExplosionSpritesheet.png")
+	var tex: Texture2D = preload("res://VFX/Textures/ExplosionSpritesheet.png")
 	if tex:
 		var sf := SpriteFrames.new()
 		sf.add_animation(&"default")

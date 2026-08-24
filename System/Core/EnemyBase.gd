@@ -98,7 +98,7 @@ func _ready():
 
 	_cached_mesh_instances.clear()
 	for child in find_children("*", "MeshInstance3D", true, false):
-		if child.find_parent("PartesExplotadas") != null:
+		if child.find_parent("PartesExplotadas") != null or child.find_parent("RagdollImp") != null or child.find_parent("CabezaImp") != null:
 			continue
 		_cached_mesh_instances.append(child)
 	_cached_particles = find_children("*", "GPUParticles3D", true, false)

@@ -1,3 +1,4 @@
+class_name GameUI
 extends CanvasLayer
 ## UI del Juego - Separada del Player
 ## Contiene: Vida, God Mode, Reiniciar, BGM, Volumen, Pausa, Toggle Bordes
@@ -7,6 +8,7 @@ const WAVE_UPDATE_INTERVAL: float = 0.25  # Actualizar progreso de oleada 4 vece
 const RUTA_SHADER_OUTLINE := "res://System/Shaders/TOON_LINEANEGRA.gdshader"
 const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
 const OUTLINE_WIDTH_RUNTIME := 20.0
+static var oleada_inicial_solicitada: int = 0
 
 @export_category("Debug")
 @export var debug_ui_enabled: bool = true
@@ -448,13 +450,6 @@ func _create_pause_panel():
 	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
 	hbox_nav_debug.add_child(debug_btn)
 
-	var cortinilla_btn = Button.new()
-	cortinilla_btn.text = "🎭 Cortinilla"
-	cortinilla_btn.custom_minimum_size = Vector2(170, 40)
-	cortinilla_btn.pressed.connect(_toggle_curtain_debug)
-	_style_button(cortinilla_btn, Color(0.35, 0.25, 0.45))
-	hbox_nav_debug.add_child(cortinilla_btn)
-
 	# ═══════════════ CALIDAD GRÁFICA ═══════════════
 	var sep_calidad = HSeparator.new()
 	sep_calidad.custom_minimum_size = Vector2(200, 10)
@@ -590,6 +585,18 @@ func _on_player_died():
 
 
 func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
+	var current_scene = get_tree().current_scene
+	var current_scene_path: String = current_scene.scene_file_path if current_scene else ""
+
+	if not current_scene_path.ends_with("NIVEL01.tscn"):
+		oleada_inicial_solicitada = numero_oleada
+		if is_paused:
+			is_paused = false
+			get_tree().paused = false
+		AudioManager.stop_all()
+		get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
+		return
+
 	var root_node = _get_scene_root()
 	if not is_instance_valid(root_node):
 		return
@@ -1500,12 +1507,10 @@ func set_modo_minimo(activo: bool):
 		bottom_panel.visible = false
 
 
-func _toggle_curtain_debug():
-	# Toggle: si ya existe una cortinilla de debug, la elimina; si no, la crea.
+func mostrar_cortinilla_debug(duracion: float = 3.0) -> void:
 	var existing = get_node_or_null("PantallaVictoriaCortinilla")
-	if existing:
+	if existing and is_instance_valid(existing):
 		existing.queue_free()
-		return
 
 	var overlay = CanvasLayer.new()
 	overlay.layer = 210
@@ -1518,8 +1523,8 @@ func _toggle_curtain_debug():
 	cortinilla.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	cortinilla.stretch_mode = TextureRect.STRETCH_SCALE
 	
-	# En debug la mostramos completamente extendida
-	cortinilla.anchor_left = 0.0
+	# Posición inicial: oculta a la derecha
+	cortinilla.anchor_left = 1.0
 	cortinilla.anchor_right = 1.0
 	cortinilla.anchor_top = 0.0
 	cortinilla.anchor_bottom = 1.0
@@ -1529,6 +1534,27 @@ func _toggle_curtain_debug():
 	cortinilla.offset_top = 0
 	cortinilla.offset_bottom = 0
 	overlay.add_child(cortinilla)
+
+	# Animación de entrada: desliza de derecha a izquierda
+	var tween_in = create_tween()
+	tween_in.tween_property(cortinilla, "anchor_left", 0.0, 0.6)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
+
+	# Esperar la duración solicitada (3 segundos)
+	await get_tree().create_timer(duracion, false).timeout
+	if not is_instance_valid(overlay) or not is_instance_valid(cortinilla):
+		return
+
+	# Animación de salida: regresa a la derecha
+	var tween_out = create_tween()
+	tween_out.tween_property(cortinilla, "anchor_left", 1.0, 0.6)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_IN_OUT)
+
+	await tween_out.finished
+	if is_instance_valid(overlay):
+		overlay.queue_free()
 
 
 func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):

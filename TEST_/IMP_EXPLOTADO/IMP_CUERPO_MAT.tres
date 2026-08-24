@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c0hyhpqho0fel"]
+
+[ext_resource type="Texture2D" uid="uid://7gdbsuomq7xu" path="res://TEST_/IMP_EXPLOTADO/IMP_CUERPO_D.jpg" id="1_5kj34"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_14gi7"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xd4co"]
+render_priority = 0
+shader = ExtResource("2_14gi7")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 5.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_xd4co")
+albedo_texture = ExtResource("1_5kj34")
