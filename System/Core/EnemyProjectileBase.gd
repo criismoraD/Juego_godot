@@ -3,6 +3,7 @@ extends Area3D
 
 const CAMERA_UTILS_REF = preload("res://System/Utils/CameraUtils.gd")
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
+const DURACION_DESVANECIMIENTO: float = 0.6
 const DEFAULT_OFFSCREEN_MARGIN_X: float = 200.0
 const DEFAULT_OFFSCREEN_MARGIN_TOP: float = 200.0
 const DEFAULT_OFFSCREEN_MARGIN_BOTTOM: float = 200.0
@@ -32,6 +33,7 @@ var offscreen_margin_bottom: float = DEFAULT_OFFSCREEN_MARGIN_BOTTOM
 
 var _cached_mesh_instances: Array[Node] = []
 var _destroying: bool = false
+var _desvaneciendose: bool = false  ## True durante la transición de transparencia clavado
 var _lifecycle_id: int = 0
 var gameplay_z_plane: float = 0.0
 
@@ -172,6 +174,7 @@ func _activar_desde_pool() -> void:
 
 	_lifecycle_id += 1
 	_destroying = false
+	_desvaneciendose = false
 	is_stuck = false
 	visible = true
 	monitorable = true
@@ -282,8 +285,47 @@ func _programar_destruccion_pegada() -> void:
 	get_tree().create_timer(tiempo_pegada).timeout.connect(
 		func() -> void:
 			if is_instance_valid(self ) and is_inside_tree() and _lifecycle_id == lifecycle_id:
-				_devolver_o_liberar()
+				_desvanecer_y_liberar()
 	)
+
+
+## Transición de transparencia al dejar de estar clavado (terreno/escudo):
+## desvanece el alfa de sus materiales gradualmente antes de devolverse al pool.
+func _desvanecer_y_liberar() -> void:
+	if _desvaneciendose:
+		return
+	_desvaneciendose = true
+	_detener_trail()
+
+	var materiales: Array[StandardMaterial3D] = []
+	for mesh in _cached_mesh_instances:
+		if not is_instance_valid(mesh) or not (mesh is MeshInstance3D):
+			continue
+		var orig: Material = mesh.material_override
+		if orig == null and mesh.mesh:
+			orig = mesh.mesh.surface_get_material(0)
+		var mat := StandardMaterial3D.new()
+		if orig is StandardMaterial3D:
+			mat = (orig as StandardMaterial3D).duplicate()
+		# Sin contorno durante el desvanecimiento y con alfa animable
+		mat.next_pass = null
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mesh.material_override = mat
+		materiales.append(mat)
+
+	var tween := create_tween()
+	tween.tween_method(
+		func(alfa: float):
+			for m in materiales:
+				if is_instance_valid(m):
+					var c := m.albedo_color
+					c.a = alfa
+					m.albedo_color = c
+					if m.emission_enabled:
+						m.emission_energy_multiplier = 3.0 * alfa
+	, 1.0, 0.0, DURACION_DESVANECIMIENTO
+	)
+	tween.tween_callback(_devolver_o_liberar)
 
 
 func _reparent_to_shield(shield: Node3D, saved_transform: Transform3D) -> void:

@@ -1,6 +1,7 @@
 extends Area3D
 class_name ArrowProjectile
 const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
+const DURACION_DESVANECIMIENTO: float = 0.6
 
 # === CONFIGURACIÓN (Español) ===
 @export_category("Física")
@@ -37,6 +38,7 @@ var _destello_punta_creado: bool = false
 
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
+var _desvaneciendose: bool = false  ## True durante la transición de transparencia clavada
 
 
 func _ready():
@@ -294,13 +296,54 @@ func _stick_to_surface():
 	if trail:
 		trail.emitting = false
 
-	# Programar destrucción después de un tiempo
+	# Programar desvanecimiento después de un tiempo clavada (sin borrado brusco)
 	get_tree().create_timer(tiempo_pegada).timeout.connect(
 		func():
 			if is_instance_valid(self) and is_inside_tree():
-				_cleanup_materials()
-				queue_free()
+				_desvanecer_y_liberar()
 	)
+
+
+## Transición de transparencia al dejar de estar clavada (terreno/escudo):
+## desvanece el alfa de sus materiales gradualmente antes de liberarse.
+func _desvanecer_y_liberar() -> void:
+	if _desvaneciendose:
+		return
+	_desvaneciendose = true
+
+	var trail = get_node_or_null("TrailParticles")
+	if trail:
+		trail.emitting = false
+
+	var materiales: Array[StandardMaterial3D] = []
+	for mesh in _cached_mesh_instances:
+		if not is_instance_valid(mesh):
+			continue
+		var orig: Material = mesh.material_override
+		if orig == null and mesh.mesh:
+			orig = mesh.mesh.surface_get_material(0)
+		var mat := StandardMaterial3D.new()
+		if orig is StandardMaterial3D:
+			mat = (orig as StandardMaterial3D).duplicate()
+		# Sin contorno durante el desvanecimiento y con alfa animable
+		mat.next_pass = null
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mesh.material_override = mat
+		materiales.append(mat)
+
+	var tween := create_tween()
+	tween.tween_method(
+		func(alfa: float):
+			for m in materiales:
+				if is_instance_valid(m):
+					var c := m.albedo_color
+					c.a = alfa
+					m.albedo_color = c
+					if m.emission_enabled:
+						m.emission_energy_multiplier = 3.0 * alfa
+	, 1.0, 0.0, DURACION_DESVANECIMIENTO
+	)
+	tween.tween_callback(queue_free)
 
 
 func _stick_to_shield(shield: Node3D):
@@ -332,21 +375,19 @@ func _reparent_to_shield(shield: Node3D, glob_trans: Transform3D):
 	shield.add_child(self)
 	global_transform = glob_trans
 
-	# Conectar señal de destrucción del escudo para auto-destruirse
+	# Conectar señal de destrucción del escudo para desvanecerse
 	if shield.has_signal("destruido"):
 		shield.destruido.connect(
 			func():
 				if is_instance_valid(self):
-					_cleanup_materials()
-					queue_free()
+					_desvanecer_y_liberar()
 		)
 
-	# Programar destrucción después de un tiempo
+	# Programar desvanecimiento después de un tiempo clavada en el escudo
 	get_tree().create_timer(tiempo_pegada).timeout.connect(
 		func():
 			if is_instance_valid(self) and is_inside_tree():
-				_cleanup_materials()
-				queue_free()
+				_desvanecer_y_liberar()
 	)
 
 
