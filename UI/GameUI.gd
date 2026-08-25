@@ -601,6 +601,17 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 	if not is_instance_valid(root_node):
 		return
 
+	# "Ir a la Oleada 1" desde NIVEL01 = reiniciar el nivel completo:
+	# reproduce el diálogo inicial y el evento del imp embajador.
+	if numero_oleada == 1:
+		oleada_inicial_solicitada = 1
+		if is_paused:
+			is_paused = false
+			get_tree().paused = false
+		AudioManager.stop_all()
+		get_tree().reload_current_scene()
+		return
+
 	if numero_oleada == 5:
 		if root_node.has_method("debug_ir_a_oleada_5"):
 			root_node.call("debug_ir_a_oleada_5")
