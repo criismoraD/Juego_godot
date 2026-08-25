@@ -1022,8 +1022,8 @@ func _punto_cubierto_para_precarga(normalizado: Vector2) -> Vector3:
 
 
 ## Instancia una escena brevemente (0.3 s) en el punto cubierto, a escala mini
-## para que quepa completa dentro del área del HUD: se dibuja, compila sus
-## pipelines de shader y se libera sin que el jugador lo note.
+## y con el proceso congelado (sin gravedad ni animación: no caen ni se mueven),
+## pero igual se dibujan y compilan sus pipelines de shader sin que se note.
 func _precalentar_instancia_breve(escena: PackedScene, punto: Vector3) -> void:
 	if not escena:
 		return
@@ -1031,6 +1031,7 @@ func _precalentar_instancia_breve(escena: PackedScene, punto: Vector3) -> void:
 	add_child(instancia)
 	instancia.global_position = punto
 	instancia.scale = Vector3.ONE * ESCALA_PRECALENTA
+	instancia.process_mode = Node.PROCESS_MODE_DISABLED
 	get_tree().create_timer(0.3).timeout.connect(
 		func():
 			if is_instance_valid(instancia):
