@@ -37,6 +37,7 @@ const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 @export_category("Daño - Imp Estandarte")
 @export var usar_animacion_hit: bool = true
 @export var volumen_hit_imp_db: float = -7.0
+@export_range(1.0, 3.0, 0.05) var velocidad_animacion_hit: float = 1.5  ## Animación de impacto más rápida = se recupera antes para volver a atacar
 @export_category("Muerte - Imp Estandarte")
 @export var tiempo_antes_disolver: float = 1.8
 @export var escala_sangre_min: float = 0.015  ## Escala mínima de las partículas de sangre al morir
@@ -312,9 +313,10 @@ func _reproducir_hit_aleatorio():
 
 	var hits = ["IMP_HIT_01", "IMP_HIT_02", "IMP_HIT_03"]
 	var anim_hit: String = hits[randi() % hits.size()]
-	_play_animation(anim_hit)
+	# Animación acelerada: se recupera antes para volver a atacar
+	_play_animation(anim_hit, -1.0, velocidad_animacion_hit)
 
-	var dur_hit = _get_animation_duration(anim_hit)
+	var dur_hit = _get_animation_duration(anim_hit) / velocidad_animacion_hit
 	get_tree().create_timer(max(0.15, dur_hit)).timeout.connect(_on_hit_timer_timeout)
 
 

@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://evfonwb77vsu"]
+﻿[gd_scene format=3 uid="uid://evfonwb77vsu"]
 
 [ext_resource type="Script" uid="uid://q2sqnc42chlo" path="res://Entities/Enemigo_Imp_Estandarte/ImpEstandarte.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://buaa1ic8ykxrq" path="res://Entities/Enemigo_Imp_Estandarte/IMP_ESTANDARTE.001.glb" id="2_model"]
@@ -23,7 +23,7 @@ escala_gravedad_caida = 0.4
 velocidad_caminar = 0.8
 distancia_minima_caminar = 5.0
 distancia_maxima_caminar = 11.0
-vida_maxima = 6
+vida_maxima = 8
 color_borde_disolucion = Color(0.44634634, 0, 0.06520962, 1)
 particulas_velocidad_max = 0.5
 particulas_detener_emision = 0.5
