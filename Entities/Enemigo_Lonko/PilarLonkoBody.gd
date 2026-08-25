@@ -60,7 +60,7 @@ func _reproducir_sonido_impacto() -> void:
 	if sfx_impacto_pilar_stream:
 		var player := AudioStreamPlayer.new()
 		player.stream = sfx_impacto_pilar_stream
-		player.volume_db = 0.0
+		player.volume_db = -2.5  # -25% (~-2.5 dB)
 		player.bus = "Master"
 		var root := get_tree().current_scene
 		if root:

@@ -1167,7 +1167,7 @@ func _reproducir_sonido_explosion(spawn_pos: Vector3) -> void:
 
 	var player := AudioStreamPlayer3D.new()
 	player.stream = stream
-	player.volume_db = 0.0
+	player.volume_db = -2.5  # -25% (~-2.5 dB)
 	player.unit_size = 10.0
 	player.max_distance = 50.0
 	player.bus = "Master"
@@ -1303,7 +1303,7 @@ func _reproducir_sonido_pilar() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_pilar_stream
-	player.volume_db = 0.0
+	player.volume_db = -2.5  # -25% (~-2.5 dB)
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
@@ -1320,7 +1320,7 @@ func _reproducir_sonido_cargando_sp() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_cargando_sp_stream
-	player.volume_db = -12.0  # Volumen reducido un 50% adicional (-12 dB)
+	player.volume_db = -14.5  # -12 dB previo -2.5 dB adicionales = -25% extra
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
@@ -1337,7 +1337,7 @@ func _reproducir_sonido_dano() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_dano_stream
-	player.volume_db = -2.5  ## Reducido un 40%
+	player.volume_db = -5.0  # -2.5 dB previo -2.5 dB adicionales = -25% extra
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
@@ -1354,7 +1354,7 @@ func _reproducir_sonido_muerte() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_muerte_stream
-	player.volume_db = -2.5  ## Reducido un 40%
+	player.volume_db = -5.0  # -2.5 dB previo -2.5 dB adicionales = -25% extra
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:

@@ -240,7 +240,7 @@ func _reproducir_sonido_rayo() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = SFX_RAYO_ULT_STREAM
-	player.volume_db = 0.0
+	player.volume_db = -2.5  # -25% (~-2.5 dB)
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
