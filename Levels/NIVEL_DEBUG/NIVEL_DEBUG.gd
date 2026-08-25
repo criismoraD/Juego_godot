@@ -627,9 +627,12 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 
 	# Mostrar elementos del nivel 3 en oleadas 3 y 4
 	var activa_nivel3 := (numero_oleada == 3 or numero_oleada == 4)
-	_set_elemento_nivel3_activo(escena_rampa_nivel3, activa_nivel3)
-	_set_elemento_nivel3_activo(muro_plataforma, activa_nivel3)
-	_set_elemento_nivel3_activo(muro_plataforma2, activa_nivel3)
+	if is_instance_valid(escena_rampa_nivel3):
+		_set_elemento_nivel3_activo(escena_rampa_nivel3, activa_nivel3)
+	if is_instance_valid(muro_plataforma):
+		_set_elemento_nivel3_activo(muro_plataforma, activa_nivel3)
+	if is_instance_valid(muro_plataforma2):
+		_set_elemento_nivel3_activo(muro_plataforma2, activa_nivel3)
 	if is_instance_valid(escudo_enemigo):
 		_set_elemento_nivel3_activo(escudo_enemigo, activa_nivel3)
 
@@ -1249,7 +1252,9 @@ func _set_juego_pausado_dialogo(bloqueado: bool):
 		estados_proceso_dialogo.clear()
 
 
-func _set_elemento_nivel3_activo(nodo: Node, activo: bool) -> void:
+func _set_elemento_nivel3_activo(nodo, activo: bool) -> void:
+	# Sin tipado en el parámetro: los nodos pueden estar previamente liberados
+	# (eliminados en oleada 5+); is_instance_valid filtra ese caso de forma segura.
 	if not is_instance_valid(nodo):
 		return
 	nodo.visible = activo
