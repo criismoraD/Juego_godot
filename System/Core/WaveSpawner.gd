@@ -475,7 +475,7 @@ func reproducir_sonido_cuerno() -> void:
 	if cuerno_stream:
 		var player := AudioStreamPlayer.new()
 		player.stream = cuerno_stream
-		player.volume_db = 2.0
+		player.volume_db = 0.0  # -2 dB: 20% menos que el volumen anterior
 		player.bus = "Master"
 		var root := get_tree().current_scene
 		if root:
