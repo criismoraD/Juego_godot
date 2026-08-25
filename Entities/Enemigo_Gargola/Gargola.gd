@@ -157,21 +157,17 @@ func take_damage(amount: float) -> void:
 	# Reproducir sonido de impacto/herida
 	AudioManager.play_sfx("gargola_herida")
 
-	# Destello de explosión SOLO en golpes no letales:
-	# al golpe de muerte no le corresponde destello.
-	if health - int(amount) > 0:
-		# Spawnear animación de explosión en spritesheet 3x4 en lugar de sangre
-		var spawn_pos: Vector3 = last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0, 0.4, 0))
-		ImpactoGargolaVFX.spawn(self, spawn_pos)
-	
+	# VFXHit_01 sutil y naranjo en cada impacto de flecha (normal o explosiva)
+	_spawn_vfx_hit_01_impacto()
+
 	super.take_damage(amount)
 
 
 func _on_state_dying():
 	_apagar_omni_light()
 
-	# VFXHit_01 en el punto de muerte (antes del ragdoll para capturar posición exacta).
-	_spawn_vfx_hit_01_muerte()
+	# Destello eliminado por pedido (ya no se spawnea VFXHit_01 en muerte)
+	# _spawn_vfx_hit_01_muerte()
 
 	# La Gárgola se convierte en ragdoll (trapo) al morir, sin textura de piedra.
 	_activar_ragdoll()
@@ -180,6 +176,35 @@ func _on_state_dying():
 	# Reproducir sonido de muerte
 	AudioManager.play_sfx("gargola_death")
 	_drop_pocion()
+
+
+func _spawn_vfx_hit_01_impacto() -> void:
+	if not vfx_hit_01_scene:
+		return
+	var vfx: Node3D = vfx_hit_01_scene.instantiate() as Node3D
+	if not vfx:
+		return
+	# Punto de impacto real de la flecha, fallback centro del cuerpo
+	var pos_impacto: Vector3 = last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0.0, 0.4, 0.0))
+	# 90% más pequeño (0.18 -> 0.018 ≈ 0.02) sutil y naranjo
+	vfx.scale = Vector3(0.02, 0.02, 0.02)
+	var parent_escena := get_tree().current_scene
+	if parent_escena == null:
+		parent_escena = get_tree().root
+	parent_escena.add_child(vfx)
+	vfx.global_position = pos_impacto
+	if "primary_color" in vfx:
+		vfx.set("primary_color", Color(1.0, 0.45, 0.0))
+	if "secondary_color" in vfx:
+		vfx.set("secondary_color", Color(1.0, 0.65, 0.15))
+	if "one_shot" in vfx:
+		vfx.set("one_shot", true)
+	if vfx.has_method("play"):
+		vfx.call("play")
+	get_tree().create_timer(2.0).timeout.connect(func():
+		if is_instance_valid(vfx):
+			vfx.queue_free()
+	)
 
 
 func _spawn_vfx_hit_01_muerte() -> void:
@@ -191,8 +216,8 @@ func _spawn_vfx_hit_01_muerte() -> void:
 	var pos_muerte: Vector3 = _get_hips_global_position()
 	if pos_muerte.is_zero_approx():
 		pos_muerte = global_position + Vector3(0.0, 0.4, 0.0)
-	# Más pequeño y naranjo (pedido)
-	vfx.scale = Vector3(0.65, 0.65, 0.65)
+	# Muy pequeño (80% + reducción extra solicitada)
+	vfx.scale = Vector3(0.05, 0.05, 0.05)
 	var parent_escena := get_tree().current_scene
 	if parent_escena == null:
 		parent_escena = get_tree().root
