@@ -173,6 +173,20 @@ func _ready():
 	# Crear el panel de control de spawn flotante
 	_crear_panel_controles_spawn()
 
+	# Oleada 5+: eliminación forzosa de escudos enemigos (tras la reconstrucción
+	# de GameUI) — el nivel debug tampoco tiene defensas activas en la 5.
+	if wave_spawner and not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
+		wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
+
+
+## Excepción forzosa: en la oleada 5 (y posteriores) NO existen defensas en
+## terreno enemigo. Se ejecuta tras la reconstrucción de GameUI.
+func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
+	if wave_spawner == null or not is_instance_valid(wave_spawner):
+		return
+	if wave_spawner.oleada_combate >= 5 and is_instance_valid(escudo_enemigo):
+		escudo_enemigo.queue_free()
+
 
 func _ajustar_subviewports_3d() -> void:
 	var tamano_viewport := get_viewport().get_visible_rect().size

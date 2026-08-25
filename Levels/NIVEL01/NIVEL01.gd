@@ -790,6 +790,11 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
 		wave_spawner.oleada_completada.connect(_on_nivel1_completado)
+	# Conectado DESPUÉS del handler de reconstrucción de GameUI (hijo listo antes):
+	# garantiza que en oleada 5+ se ELIMINEN los escudos enemigos aunque la
+	# reconstrucción los haya re-instanciado un instante antes.
+	if not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
+		wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
 
 	# Iniciar el spawning (los enemigos pacíficos supervivientes ya cuentan)
 	wave_spawner.current_wave = 0
@@ -810,6 +815,18 @@ func _monitorear_nivel_1():
 		and wave_spawner.active_goblins.is_empty()
 	):
 		_on_nivel1_completado(1)
+
+
+## Excepción forzosa: en la oleada 5 (y posteriores) NO existen defensas en
+## terreno enemigo. Se ejecuta tras la reconstrucción de GameUI, así que
+## elimina cualquier escudo enemigo presente sin excepciones.
+func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
+	if wave_spawner == null or not is_instance_valid(wave_spawner):
+		return
+	if wave_spawner.oleada_combate >= 5:
+		for nodo in [escudo_enemigo, escudo_enemigo2, escudo_enemigo3]:
+			if is_instance_valid(nodo):
+				nodo.queue_free()
 
 
 func _on_nivel1_completado(_numero_oleada: int):
