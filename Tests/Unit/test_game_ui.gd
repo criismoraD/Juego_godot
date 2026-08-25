@@ -213,6 +213,49 @@ func test_reconstruir_escudo_enemigo_destruido():
 	main_scene.free()
 
 
+func test_reconstruir_omitir_enemigos_deja_escudo_enemigo_eliminado():
+	# Arrange: escudo enemigo y escudo jugador destruidos
+	var main_scene = Node3D.new()
+	get_tree().root.add_child(main_scene)
+	var parent_node = Node3D.new()
+	parent_node.name = "ContenedorEscudos"
+	main_scene.add_child(parent_node)
+
+	var esc_enem = load("res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn").instantiate()
+	esc_enem.name = "EscudoEnemigoTest"
+	parent_node.add_child(esc_enem)
+	var esc_base = load("res://Entities/Ambiente_Escudo/Escudo.tscn").instantiate()
+	esc_base.name = "EscudoBaseTest"
+	parent_node.add_child(esc_base)
+
+	var game_ui = GameUIScript.new()
+	main_scene.add_child(game_ui)
+	await wait_seconds(0.1)
+
+	game_ui._guardar_posiciones_escudos()
+	await wait_seconds(0.05)
+	esc_enem.queue_free()
+	esc_base.queue_free()
+	await wait_seconds(0.1)
+
+	# Act: reconstruir omitiendo enemigos (transición a oleada 5)
+	game_ui._reconstruir_todos_escudos(true)
+	await wait_seconds(0.1)
+
+	# Assert: el escudo enemigo permanece eliminado; el del jugador vuelve
+	assert_null(
+		parent_node.get_node_or_null("EscudoEnemigoTest"),
+		"Desde la oleada 5 el escudo enemigo debe permanecer eliminado"
+	)
+	assert_not_null(
+		parent_node.get_node_or_null("EscudoBaseTest"),
+		"El escudo del jugador sí debe reconstruirse"
+	)
+
+	# Limpieza
+	main_scene.free()
+
+
 func test_mostrar_cortinilla_debug_crea_overlay() -> void:
 	# Arrange
 	add_child(_game_ui)

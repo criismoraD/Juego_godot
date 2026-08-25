@@ -786,8 +786,10 @@ func _find_wave_spawner() -> Node:
 	return wave_spawner
 
 
-func _on_oleada_iniciada_reconstruir_escudos(_num_oleada: int) -> void:
-	_reconstruir_todos_escudos()
+func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
+	# Desde la oleada 5 los elementos del nivel 3 (incluido el escudo enemigo)
+	# permanecen ocultos por diseño: NO reconstruir escudos enemigos ahí.
+	_reconstruir_todos_escudos(num_oleada >= 5)
 
 
 func _toggle_equal_spawn():
@@ -1117,8 +1119,9 @@ func _destruir_todos_escudos():
 			escudo.recibir_golpe()
 
 
-func _reconstruir_todos_escudos():
-	"""Re-instancia ÚNICAMENTE los escudos que han sido destruidos/rotos"""
+func _reconstruir_todos_escudos(omitir_enemigos: bool = false):
+	"""Re-instancia ÚNICAMENTE los escudos que han sido destruidos/rotos.
+	omitir_enemigos=true (oleada 5+): los escudos enemigos permanecen eliminados."""
 	# 1. Eliminar restos de escudos rotos que queden en escena
 	var escudos_rotos = get_tree().get_nodes_in_group("escudos_rotos")
 	for roto in escudos_rotos:
@@ -1152,6 +1155,11 @@ func _reconstruir_todos_escudos():
 
 		if nuevo_escudo == null:
 			nuevo_escudo = escudo_scene.instantiate()
+
+		# Oleada 5+: los escudos enemigos permanecen eliminados
+		if omitir_enemigos and nuevo_escudo.get("es_escudo_enemigo") == true:
+			nuevo_escudo.free()
+			continue
 
 		var parent = get_node_or_null(data["parent_path"])
 		if parent and is_instance_valid(parent):
