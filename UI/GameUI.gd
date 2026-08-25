@@ -43,6 +43,9 @@ var btn_spawn_flecha_explosiva: Button
 var flecha_explosiva_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 var vignette_rect: ColorRect = null
 var _vignette_tween: Tween = null
+const TEXTURA_ICONO_PUERTA: Texture2D = preload("res://TEST_/Icono puerta.png")
+var _icono_puerta: TextureRect = null
+var _tween_icono_puerta: Tween = null
 # === TOGGLE UI ===
 var bottom_panel: Control
 var toggle_ui_btn: Button
@@ -801,6 +804,46 @@ func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
 	# Desde la oleada 5 los elementos del nivel 3 (incluido el escudo enemigo)
 	# permanecen ocultos por diseño: NO reconstruir escudos enemigos ahí.
 	_reconstruir_todos_escudos(num_oleada >= 5)
+	# El icono puerta desaparece al empezar cualquier oleada
+	_ocultar_icono_puerta()
+
+
+## Icono puerta pulsante (latido lento) sobre la puerta de la torre, visible
+## mientras la cortinilla de fin de oleada está activa.
+func _mostrar_icono_puerta(overlay: CanvasLayer) -> void:
+	_ocultar_icono_puerta()
+
+	_icono_puerta = TextureRect.new()
+	_icono_puerta.texture = TEXTURA_ICONO_PUERTA
+	_icono_puerta.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_icono_puerta.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icono_puerta.anchor_left = 0.0
+	_icono_puerta.anchor_right = 0.0
+	_icono_puerta.anchor_top = 0.0
+	_icono_puerta.anchor_bottom = 0.0
+	_icono_puerta.offset_left = 240.0   # Sobre la puerta de la torre
+	_icono_puerta.offset_top = 755.0
+	_icono_puerta.offset_right = 360.0
+	_icono_puerta.offset_bottom = 875.0
+	_icono_puerta.pivot_offset = Vector2(60.0, 60.0)  # Centro para el palpito
+	overlay.add_child(_icono_puerta)
+
+	# Palpitar lento: latido de 1.2 s (crece y vuelve)
+	var tween_icono := _icono_puerta.create_tween().set_loops()
+	tween_icono.tween_property(_icono_puerta, "scale", Vector2(1.12, 1.12), 0.6) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween_icono.tween_property(_icono_puerta, "scale", Vector2.ONE, 0.6) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## Oculta el icono puerta y detiene su palpito (al empezar una oleada).
+func _ocultar_icono_puerta() -> void:
+	if _tween_icono_puerta and _tween_icono_puerta.is_valid():
+		_tween_icono_puerta.kill()
+	_tween_icono_puerta = null
+	if _icono_puerta and is_instance_valid(_icono_puerta):
+		_icono_puerta.queue_free()
+	_icono_puerta = null
 
 
 func _toggle_equal_spawn():
@@ -1583,6 +1626,9 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 	overlay.name = "PantallaVictoriaCortinilla"
 	overlay.add_to_group("pantalla_victoria_cortinilla")
 	add_child(overlay)
+
+	# 1b. Icono puerta pulsante (llama la atención para salir al mapa)
+	_mostrar_icono_puerta(overlay)
 
 	# 2. Crear TextureRect con fondo trasparencia.png
 	var cortinilla = TextureRect.new()
