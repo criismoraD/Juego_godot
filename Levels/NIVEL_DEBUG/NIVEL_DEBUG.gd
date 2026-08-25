@@ -16,7 +16,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = ["enemy_projectiles", "enemies", 
 @export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
 @export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 25  ## Enemigos totales en la Oleada 3
-@export var total_enemigos_oleada_4: int = 27  ## Enemigos totales en la Oleada 4 (9 imp, 9 arquera, 9 gárgola)
+@export var total_enemigos_oleada_4: int = 30  ## Enemigos totales en la Oleada 4 (9 imp, 9 arquera, 9 gárgola)
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0

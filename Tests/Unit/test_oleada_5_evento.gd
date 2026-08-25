@@ -91,3 +91,40 @@ func test_evento_cuerno_disparo_y_rafaga_refuerzos():
 
 	assert_eq(burst_goblins, 5, "La ráfaga del cuerno debe tener 5 Goblins Ballesta al frente")
 	assert_eq(burst_girls, 5, "La ráfaga del cuerno debe tener 5 Arqueras Goblin al frente")
+
+
+func test_evento_cuerno_oleada_4_rafaga_5_mas_5_mas_imp_escudo_fijo():
+	# Arrange
+	_spawner.oleada_combate = 4
+	_spawner._generar_cola_spawn()
+	var cola_previa: int = _spawner.cola_spawn.size()
+	var escudos_previos: int = _spawner.shield_imps_activos.size()
+
+	# Act: evento de cuerno de la oleada 4 (ráfaga 5+5 + 1 imp de escudo fijo)
+	_spawner._iniciar_evento_cuerno(10, true)
+
+	# Assert: banderas activas
+	assert_true(_spawner.evento_cuerno_activado, "El evento de cuerno debe activarse en oleada 4")
+	assert_true(_spawner.evento_cuerno_en_progreso, "El evento debe estar en progreso")
+	assert_eq(_spawner.refuerzos_cuerno_total, 10, "La ráfaga debe ser de 10 refuerzos")
+
+	# Ráfaga 5+5 al frente de la cola
+	var burst_goblins := 0
+	var burst_girls := 0
+	for i in range(10):
+		var scene = _spawner.cola_spawn[i]
+		if scene == _spawner.escena_goblin:
+			burst_goblins += 1
+		elif scene == _spawner.escena_goblin_girl:
+			burst_girls += 1
+	assert_eq(burst_goblins, 5, "La ráfaga debe tener 5 Goblins Ballesta al frente")
+	assert_eq(burst_girls, 5, "La ráfaga debe tener 5 Arqueras Goblin al frente")
+
+	# La cola crece exactamente 10 (el imp de escudo va FUERA de la cola)
+	assert_eq(_spawner.cola_spawn.size(), cola_previa + 10, "La cola debe crecer exactamente 10")
+
+	# Imp de escudo fijo spawneado directamente
+	assert_eq(
+		_spawner.shield_imps_activos.size(), escudos_previos + 1,
+		"El evento debe incluir fijo 1 Imp de Escudo"
+	)

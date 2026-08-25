@@ -19,12 +19,13 @@ const SPAWN_OFFSET_LOCAL: Vector3 = Vector3(0.0, 0.1, 0.3)
 
 # === CONFIGURACIÓN COMBATE ===
 @export_category("Combate - Gargola")
-@export var intervalo_disparo: float = 3.0
+@export var intervalo_disparo: float = 2.0
 @export var velocidad_proyectil: float = 9.0
 @export var dispersion_min_radianes: float = 0.07
 @export var dispersion_max_radianes: float = 0.15
 @export var num_proyectiles: int = 1
 @export var tiempo_disparo_en_atacar: float = 0.4
+@export_range(1.0, 3.0, 0.05) var multiplicador_velocidad_acelerada: float = 1.5  ## Velocidad de la variante acelerada (50% de las gárgolas entra acelerada)
 
 # === CONFIGURACIÓN RAGDOLL (muerte como trapo) ===
 @export_category("Ragdoll - Gargola")
@@ -103,6 +104,11 @@ func _on_enemy_ready():
 	else:
 		altura_base = altura_spawn_alta
 	oscilacion_fase = randf() * TAU
+
+	# Dos velocidades de entrada: la mitad entran aceleradas
+	if randf() < 0.5:
+		velocidad_caminar *= multiplicador_velocidad_acelerada
+
 	tiempo_ragdoll_activo = 0.0
 	ragdoll_listo_para_disolucion = false
 	ragdoll_relajado = false

@@ -45,6 +45,7 @@ var oleada_combate: int = 0  ## Nivel/Oleada de combate configurada desde el niv
 var cola_spawn: Array[PackedScene] = []  ## Cola de enemigos prediseñada para la oleada activa
 var evento_cuerno_activado: bool = false
 var evento_cuerno_en_progreso: bool = false
+var refuerzos_cuerno_total: int = 10  ## Cantidad de refuerzos que trae el evento de cuerno activo
 var refuerzos_cuerno_spawneados: int = 0
 
 # === SEÑALES ===
@@ -146,15 +147,15 @@ func _generar_cola_spawn() -> void:
 			pool.append(escena_goblin)
 
 	elif wave_num == 4:
-		# Oleada 4: 9 imp, 9 goblin arquera, 9 gárgola. Total: 27 (números fijos).
-		# La primera en salir siempre es una gárgola.
-		for i in range(9):
+		# Oleada 4: 10 imp, 10 goblin arquera, 10 g�rgola. Total: 30 (n�meros fijos).
+		# La primera en salir siempre es una g�rgola.
+		for i in range(10):
 			pool.append(escena_gargola)
-		for i in range(9):
+		for i in range(10):
 			pool.append(escena_imp)
-		for i in range(9):
+		for i in range(10):
 			pool.append(escena_goblin_girl)
-		# Poner una gárgola al frente de la cola (sale primero)
+		# Poner una g�rgola al frente de la cola (sale primero)
 		pool.push_front(escena_gargola)
 		pool.pop_back()
 
@@ -266,13 +267,19 @@ func _spawn_goblin():
 		"[WaveSpawner] Spawning enemy. Total spawned so far in wave: %d / %d"
 		% [goblins_spawned_in_wave, enemigos_por_oleada]
 	)
-	# Trigger del Evento de Cuerno en Oleada 5 al haber spawneado 12 enemigos
-	if oleada_combate == 5 and not evento_cuerno_activado and goblins_spawned_in_wave >= 12:
-		_iniciar_evento_cuerno()
+	# Trigger del Evento de Cuerno: Oleada 5 al haber 12 spawns, Oleada 4 al haber 10
+	if (
+		not evento_cuerno_activado
+		and (
+			(oleada_combate == 5 and goblins_spawned_in_wave >= 12)
+			or (oleada_combate == 4 and goblins_spawned_in_wave >= 10)
+		)
+	):
+		_iniciar_evento_cuerno(10, oleada_combate == 4)
 
 	if evento_cuerno_en_progreso:
 		refuerzos_cuerno_spawneados += 1
-		if refuerzos_cuerno_spawneados >= 10:
+		if refuerzos_cuerno_spawneados >= refuerzos_cuerno_total:
 			evento_cuerno_en_progreso = false
 
 	# Elegir qué tipo de enemigo spawnear
@@ -493,26 +500,32 @@ func reproducir_sonido_cuerno() -> void:
 		)
 
 
-func _iniciar_evento_cuerno() -> void:
+func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fijo: bool = false) -> void:
 	evento_cuerno_activado = true
 	evento_cuerno_en_progreso = true
 	refuerzos_cuerno_spawneados = 0
+	refuerzos_cuerno_total = max(1, cantidad_refuerzos)
 	evento_cuerno_iniciado.emit()
 	reproducir_sonido_cuerno()
 
-	# Reorganizar la cola para que los próximos 10 spawns sean ráfaga intercalada de 1 Goblin Girl y 1 Goblin Ballesta (5 de cada uno)
+	# Reorganizar la cola para que los próximos spawns sean ráfaga intercalada
+	# de Goblin Girl y Goblin Ballesta (mitad de cada uno)
 	var burst: Array[PackedScene] = []
-	for i in range(5):
+	for i in range(int(ceil(refuerzos_cuerno_total / 2.0))):
 		burst.append(escena_goblin_girl)
 		burst.append(escena_goblin)
 
 	burst.append_array(cola_spawn)
 	cola_spawn = burst
 
-	# Si el spawner está en pausa o inactivo, spawnear la ráfaga de 10 goblins progresivamente
+	# La oleada 4 incluye fijo 1 Imp de Escudo con el evento
+	if incluir_imp_escudo_fijo:
+		_spawnear_imp_escudo_fijo()
+
+	# Si el spawner está en pausa o inactivo, spawnear la ráfaga progresivamente
 	if not is_wave_active:
 		var routine := func():
-			for i in range(10):
+			for i in range(refuerzos_cuerno_total):
 				if not is_instance_valid(self) or not is_inside_tree():
 					return
 				var escena_a_spawnear: PackedScene = (
@@ -584,6 +597,24 @@ func _spawn_shield_imp():
 
 	if is_wave_active:
 		goblins_spawned_in_wave += 1
+
+
+## Spawn directo y garantizado de 1 Imp de Escudo (refuerzo fijo del evento
+## de cuerno de la oleada 4), sin pasar por la cola ni los límites de oleada.
+func _spawnear_imp_escudo_fijo() -> void:
+	if not escena_imp_escudo:
+		return
+
+	var shield_imp = escena_imp_escudo.instantiate()
+	var spawn_pos = global_position
+	spawn_pos.y += altura_spawn
+	_obtener_nodo_padre_spawn().add_child(shield_imp)
+	shield_imp.global_position = spawn_pos
+
+	if shield_imp.has_signal("died"):
+		shield_imp.died.connect(_on_shield_imp_died.bind(shield_imp))
+	shield_imps_activos.append(shield_imp)
+	active_goblins.append(shield_imp)
 
 
 func _on_shield_imp_died(shield_imp):
