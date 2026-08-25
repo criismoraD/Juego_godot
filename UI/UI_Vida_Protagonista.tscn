@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dc4lvbdfme0vi" path="res://UI/UI_Vida_Protagonista.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://tnt51rpoblb7" path="res://UI/Vida/BARRA_VIDA.png" id="2_barra"]
 [ext_resource type="Texture2D" uid="uid://c5kekyonkla78" path="res://UI/Vida/corazon.png" id="3_corazon"]
-[ext_resource type="Texture2D" path="res://TEST_/FLECHA EXPLOSIVA ICONO/icono power up flecha explosiva.png" id="4_icono"]
+[ext_resource type="Texture2D" uid="uid://ca2oup8vc34l1" path="res://TEST_/FLECHA EXPLOSIVA ICONO/icono power up flecha explosiva.png" id="4_icono"]
 
 [node name="UIVidaProtagonista" type="CanvasLayer" unique_id=2104918274]
 layer = 100
@@ -80,12 +80,11 @@ stretch_mode = 5
 
 [node name="ContadorFlechasExplosivas" type="Label" parent="ContenedorVida/BarraVida" unique_id=314159265]
 unique_name_in_owner = true
-visible = false
 layout_mode = 0
-offset_left = 320.0
-offset_top = 105.0
-offset_right = 395.0
-offset_bottom = 190.0
+offset_left = 322.0
+offset_top = 103.0
+offset_right = 397.0
+offset_bottom = 188.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -99,12 +98,11 @@ vertical_alignment = 1
 
 [node name="IconoFlechaExplosiva" type="TextureRect" parent="ContenedorVida/BarraVida" unique_id=314159266]
 unique_name_in_owner = true
-visible = false
 layout_mode = 0
-offset_left = 384.0
-offset_top = 116.0
-offset_right = 458.0
-offset_bottom = 186.0
+offset_left = 379.0
+offset_top = 109.0
+offset_right = 459.34286
+offset_bottom = 185.0
 texture = ExtResource("4_icono")
 expand_mode = 1
 stretch_mode = 5
