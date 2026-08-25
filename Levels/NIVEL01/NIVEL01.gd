@@ -759,6 +759,10 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
 		wave_spawner.oleada_completada.connect(_on_nivel1_completado)
+	# Conectado DESPUÉS del handler de GameUI: se ejecuta tras cada
+	# reconstrucción de escudos para re-aplicar el gating de la oleada.
+	if not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_aplicar_gating):
+		wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_aplicar_gating)
 
 	# Iniciar el spawning (los enemigos pacíficos supervivientes ya cuentan)
 	wave_spawner.current_wave = 0
@@ -781,8 +785,15 @@ func _monitorear_nivel_1():
 		_on_nivel1_completado(1)
 
 
-func _on_nivel1_completado(_numero_oleada: int):
-	if estado_actual != NivelEstado.NIVEL_1:
+## Re-aplica el gating de visibilidad tras la reconstrucción de escudos de
+## GameUI: desde la oleada 5 el escudo enemigo permanece oculto e inactivo
+## (el nivel 5 no tiene defensas activas de ninguna manera).
+func _on_oleada_iniciada_aplicar_gating(num_oleada: int) -> void:
+	if num_oleada >= 5 and is_instance_valid(escudo_enemigo):
+		_set_elemento_nivel3_activo(escudo_enemigo, false)
+
+
+func _on_nivel1_completado(_numero_oleada: int):	if estado_actual != NivelEstado.NIVEL_1:
 		return
 
 	wave_spawner.detener_spawning()
