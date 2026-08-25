@@ -101,9 +101,13 @@ func _ejecutar_explosion_desmembramiento() -> void:
 		else:
 			push_dir = 1.0
 
-	# 5b. Ballesta: se desprende del brazo y sale volando con el resto de piezas
+	# 5b. Ballesta: se desprende del brazo y sale volando con el resto de piezas.
+	# EXCEPCIÓN oleada 5: allí la ballesta flotante molesta (aparece "de la nada"
+	# entre los pilares Lonko) → desaparece junto con el modelo.
+	var spawner_ref := _get_cached_wave_spawner()
+	var en_oleada_5: bool = spawner_ref != null and spawner_ref.oleada_combate == 5
 	var ballesta := get_node_or_null("GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D/BoneAttachment3D/BALLES_GOBLING") as Node3D
-	if ballesta:
+	if ballesta and not en_oleada_5:
 		var tr_ballesta: Transform3D = ballesta.global_transform
 		ballesta.get_parent().remove_child(ballesta)
 
