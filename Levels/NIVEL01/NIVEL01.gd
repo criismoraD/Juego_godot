@@ -51,12 +51,12 @@ var oleada_debug_pendiente: int = 0  ## Oleada solicitada por debug: se aplica t
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
 # === REFERENCIAS ===
-const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 const ESCENA_TRIDENTE_IMP: PackedScene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
 const ESCENA_FLECHA_GOBLIN: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
 const ESCENA_PROYECTIL_GARGOLA: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
 const ESCENA_GOBLIN_BALLESTA: PackedScene = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 const ESCALA_PRECALENTA: float = 0.05  ## Escala mini de las instancias de warm-up (caben dentro del HUD)
+var _viewport_precarga: SubViewport = null  ## Viewport invisible para compilar shaders sin mostrar nada
 @onready
 var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
 var escena_imp_estandarte: PackedScene = preload("res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn")
@@ -984,34 +984,27 @@ func _mostrar_inter_nivel_continuar():
 ## mientras el cartel de transición está en pantalla (evita tirones y caídas
 ## de FPS al aparecer por primera vez: compila shaders y carga dependencias).
 func _precargar_elementos_oleada(numero_oleada_siguiente: int) -> void:
-	var punto := _punto_cubierto_para_precarga(Vector2(0.07, 0.10))  # Tras el retrato del HUD
-	if punto == Vector3.INF:
-		return
 	match numero_oleada_siguiente:
 		3:
-			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo, punto)
+			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo)
 		4:
-			_precalentar_instancia_breve(wave_spawner.escena_gargola, punto)
+			_precalentar_instancia_breve(wave_spawner.escena_gargola)
 			# El primer ataque de la gárgola compila el pipeline de su proyectil
-			_precalentar_instancia_breve(ESCENA_PROYECTIL_GARGOLA, punto)
-			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo, punto)
+			_precalentar_instancia_breve(ESCENA_PROYECTIL_GARGOLA)
+			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo)
 		5:
-			_precalentar_instancia_breve(wave_spawner.escena_lonko, punto)
-			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo, punto)
+			_precalentar_instancia_breve(wave_spawner.escena_lonko)
+			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo)
 		_:
 			pass
 
 
 ## Warm-up de shaders durante el diálogo de intro: instancia brevemente los
-## enemigos y proyectiles del nivel en un punto CUBIERTO por el panel del
-## diálogo, para que la GPU compile sus pipelines sin tirones en combate.
+## enemigos y proyectiles del nivel.
 func _precalentar_combate_con_retraso(delay: float) -> void:
 	get_tree().create_timer(delay).timeout.connect(
 		func():
 			if not is_inside_tree():
-				return
-			var punto := _punto_cubierto_para_precarga(Vector2(0.5, 0.30))  # Tras el panel del diálogo
-			if punto == Vector3.INF:
 				return
 			for escena in [
 				wave_spawner.escena_imp,
@@ -1021,39 +1014,50 @@ func _precalentar_combate_con_retraso(delay: float) -> void:
 				ESCENA_TRIDENTE_IMP,
 				ESCENA_FLECHA_GOBLIN,
 			]:
-				_precalentar_instancia_breve(escena, punto)
+				_precalentar_instancia_breve(escena)
 	)
 
 
-## Punto del mundo que la cámara dibuja justo detrás de un elemento opaco del
-## HUD (normalizado 0-1 en pantalla): sirve para compilar shaders sin que el
-## jugador note nada. Devuelve Vector3.INF si no hay cámara.
-func _punto_cubierto_para_precarga(normalizado: Vector2) -> Vector3:
-	var camera: Camera3D = CameraUtilsRef.obtener_camara_juego(self)
-	if camera == null:
-		return Vector3.INF
-	var punto_pantalla: Vector2 = get_viewport().get_visible_rect().size * normalizado
-	var origen: Vector3 = camera.project_ray_origin(punto_pantalla)
-	var dir: Vector3 = camera.project_ray_normal(punto_pantalla)
-	return origen + dir * 8.0
-
-
-## Instancia una escena brevemente (0.3 s) en el punto cubierto, a escala mini
-## y con el proceso congelado (sin gravedad ni animación: no caen ni se mueven),
-## pero igual se dibujan y compilan sus pipelines de shader sin que se note.
-func _precalentar_instancia_breve(escena: PackedScene, punto: Vector3) -> void:
+## Instancia una escena brevemente (0.35 s) dentro de un SubViewport INVISIBLE:
+## se dibuja (compila sus shaders y sube texturas) pero su salida jamás se
+## muestra en pantalla. Proceso congelado: sin gravedad ni animación.
+func _precalentar_instancia_breve(escena: PackedScene) -> void:
 	if not escena:
 		return
+	if _viewport_precarga == null or not is_instance_valid(_viewport_precarga):
+		_crear_viewport_precarga()
+
 	var instancia = escena.instantiate()
-	add_child(instancia)
-	instancia.global_position = punto
+	_viewport_precarga.add_child(instancia)
+	instancia.position = Vector3(randf_range(-0.4, 0.4), randf_range(-0.2, 0.2), randf_range(-0.3, 0.3))
 	instancia.scale = Vector3.ONE * ESCALA_PRECALENTA
 	instancia.process_mode = Node.PROCESS_MODE_DISABLED
-	get_tree().create_timer(0.3).timeout.connect(
+	get_tree().create_timer(0.35).timeout.connect(
 		func():
 			if is_instance_valid(instancia):
 				instancia.queue_free()
 	)
+
+
+## Crea el SubViewport de precarga: cámara y luz propias, mundo aislado
+## (own_world_3d) y sin contenedor que muestre su textura.
+func _crear_viewport_precarga() -> void:
+	_viewport_precarga = SubViewport.new()
+	_viewport_precarga.name = "ViewportPrecargaShaders"
+	_viewport_precarga.size = Vector2i(256, 256)
+	_viewport_precarga.transparent_bg = true
+	_viewport_precarga.own_world_3d = true
+	_viewport_precarga.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(_viewport_precarga)
+
+	var camara := Camera3D.new()
+	camara.position = Vector3(0, 0, 2.5)
+	_viewport_precarga.add_child(camara)
+	camara.make_current()
+
+	var luz := DirectionalLight3D.new()
+	luz.rotation_degrees = Vector3(-45.0, 30.0, 0.0)
+	_viewport_precarga.add_child(luz)
 
 
 func _mostrar_cartel_nivel_2() -> void:
