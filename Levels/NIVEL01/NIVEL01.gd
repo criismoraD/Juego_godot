@@ -690,6 +690,14 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	if is_instance_valid(escudo_enemigo):
 		_set_elemento_nivel3_activo(escudo_enemigo, activa_nivel3)
 
+	# Oleada 5 en adelante: SIN defensas en terreno enemigo, sin excepciones.
+	# Eliminación definitiva (no solo ocultarlas) para que ninguna ruta pueda
+	# volver a mostrarlas; un reinicio de nivel las restaura desde la escena.
+	if numero_oleada >= 5:
+		for nodo_defensa in [escudo_enemigo, escena_rampa_nivel3, muro_plataforma, muro_plataforma2]:
+			if is_instance_valid(nodo_defensa):
+				nodo_defensa.queue_free()
+
 	if numero_oleada == 1:
 		# Oleada 1: solo Imp + GoblinGirl
 		wave_spawner.probabilidad_imp = 0.5
