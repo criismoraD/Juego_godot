@@ -45,7 +45,7 @@ func _on_state_dying():
 		return
 
 	super._on_state_dying()
-	AudioManager.play_sfx("goblin_death")
+	AudioManager.play_sfx("goblin_death", -2.0)  # -2 dB: 20% menos que el volumen anterior
 	_drop_power_up()
 
 	# Elegir aleatoriamente entre las 3 animaciones de muerte

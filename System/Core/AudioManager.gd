@@ -276,7 +276,10 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		if sound_name == "player_hurt" or sound_name == "player_death":
 			# Usar volumen de daño al jugador
 			volume_to_use = _get_specific_volume_db(player_hurt_volume)
-		elif sound_name in ["goblin_death", "goblin_girl_death"]:
+		elif sound_name == "goblin_death":
+			# Muerte normal del goblin ballestero reducida un 20% (-1.9 dB)
+			volume_to_use = _get_specific_volume_db(enemy_damage_volume) - 1.9
+		elif sound_name == "goblin_girl_death":
 			# Usar volumen de daño a enemigos
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume)
 		elif sound_name in ["goblin_explosive_death", "gobling_muerte_explosiva"]:
