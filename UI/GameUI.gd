@@ -797,10 +797,11 @@ func _find_wave_spawner() -> Node:
 	return wave_spawner
 
 
-func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
-	# Desde la oleada 5 los elementos del nivel 3 (incluido el escudo enemigo)
-	# permanecen ocultos por diseño: NO reconstruir escudos enemigos ahí.
-	_reconstruir_todos_escudos(num_oleada >= 5)
+func _on_oleada_iniciada_reconstruir_escudos(_num_oleada: int) -> void:
+	# Los escudos ENEMIGOS destruidos permanecen eliminados durante toda la
+	# partida: no reaparecen al iniciar oleadas. Solo un reinicio del nivel
+	# (recarga de escena) los restaura desde la escena.
+	_reconstruir_todos_escudos(true)
 
 
 func _toggle_equal_spawn():
