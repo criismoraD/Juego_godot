@@ -50,6 +50,7 @@ var imp_estandarte: Node3D = null  ## Referencia al imp que lleva el estandarte
 var oleada_debug_pendiente: int = 0  ## Oleada solicitada por debug: se aplica tras el intro y el evento del embajador
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
+var _aliadas_activas: bool = true  ## Estado de aliadas para modo debug
 # === REFERENCIAS ===
 const ESCENA_TRIDENTE_IMP: PackedScene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
 const ESCENA_FLECHA_GOBLIN: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
@@ -170,6 +171,36 @@ func _ready():
 	_precalentar_vfx_shaders()
 
 	await get_tree().process_frame
+
+	# --- MODO DEBUG solicitado desde menú escape (botón Nivel Debug) ---
+	# Predominancia NIVEL01: si se entra por el botón debug del pause, se activa
+	# el panel de control de spawn flotante y el modo oleadas libres directamente,
+	# sin pasar por el diálogo pacifista. El panel solo aparece en este modo.
+	if GameUI.modo_debug_solicitado:
+		GameUI.modo_debug_solicitado = false
+		GameUI.oleada_inicial_solicitada = 0
+		oleada_debug_pendiente = 0
+		# UI debug mínima
+		if game_ui:
+			game_ui.set_bottom_panel_visible(true)
+			if game_ui.has_method("set_modo_minimo"):
+				game_ui.set_modo_minimo(false)
+		var _dbg_player = get_tree().get_first_node_in_group("player")
+		if _dbg_player:
+			if "flechas_explosivas" in _dbg_player:
+				_dbg_player.flechas_explosivas = 5
+				if _dbg_player.has_signal("flechas_explosivas_changed"):
+					_dbg_player.flechas_explosivas_changed.emit(5)
+			if "disparo_bloqueado_por_ui" in _dbg_player:
+				_dbg_player.disparo_bloqueado_por_ui = true
+		get_tree().call_group("ui_vida_protagonista", "mostrar")
+		_set_aliadas_activas(true)
+		AudioManager.play_music(2)
+		_iniciar_oleadas_libres()
+		_crear_panel_controles_spawn()
+		if wave_spawner and not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
+			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
+		return
 
 	# Si se solicitó una oleada específica desde el menú de pausa / debug, se
 	# DIFIERE: primero se reproducen el diálogo inicial y el evento del goblin
@@ -1239,6 +1270,9 @@ func _victoria_pacifista():
 
 	wave_spawner.detener_spawning()
 
+	# Ocultar la UI del tutorial para que el diálogo pacifista se aprecie sin obstáculos
+	get_tree().call_group("ui_instrucciones", "queue_free")
+
 	# Reproducir música de victoria (sin loop)
 	AudioManager.play_music(4, false)  # VICTORY.mp3
 
@@ -1349,6 +1383,369 @@ func _set_aliadas_modo_pacifico():
 			var hitbox = ally.get("hitbox_body")
 			if hitbox and is_instance_valid(hitbox):
 				hitbox.collision_layer = 0  # Sin colisión
+
+
+func _toggle_aliadas_visibles() -> void:
+	_aliadas_activas = not _aliadas_activas
+	_set_aliadas_activas(_aliadas_activas)
+
+
+func _revivir_aliadas_debug() -> void:
+	for ally in AllyArcher.active_allies_cache:
+		if not is_instance_valid(ally) or not (ally is AllyArcher):
+			continue
+		if ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING:
+			ally.revivir()
+		else:
+			ally.health = ally.vida_maxima
+		if _aliadas_activas:
+			ally.visible = true
+
+
+func _crear_panel_controles_spawn() -> void:
+	if not game_ui:
+		return
+	var btn_toggle := Button.new()
+	btn_toggle.name = "BtnToggleDebugPanel"
+	btn_toggle.text = "🛠️ DEBUG"
+	btn_toggle.custom_minimum_size = Vector2(90, 30)
+	btn_toggle.anchor_left = 1.0
+	btn_toggle.anchor_top = 0.0
+	btn_toggle.anchor_right = 1.0
+	btn_toggle.offset_left = -98
+	btn_toggle.offset_top = 8
+	btn_toggle.offset_right = -8
+	btn_toggle.offset_bottom = 38
+	var toggle_style := StyleBoxFlat.new()
+	toggle_style.bg_color = Color(0.18, 0.20, 0.28, 0.95)
+	toggle_style.set_corner_radius_all(6)
+	toggle_style.set_border_width_all(2)
+	toggle_style.border_color = Color(0.45, 0.5, 0.7, 0.9)
+	btn_toggle.add_theme_stylebox_override("normal", toggle_style)
+	game_ui.add_child(btn_toggle)
+	var panel := PanelContainer.new()
+	panel.name = "DebugSpawnPanel"
+	panel.anchor_left = 1.0
+	panel.anchor_top = 0.0
+	panel.anchor_right = 1.0
+	panel.offset_left = -295
+	panel.offset_top = 44
+	panel.offset_right = -8
+	panel.custom_minimum_size = Vector2(285, 0)
+	panel.visible = true
+	btn_toggle.pressed.connect(func():
+		panel.visible = not panel.visible
+		btn_toggle.text = "✖ OCULTAR" if panel.visible else "🛠️ DEBUG"
+	)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.08, 0.12, 0.96)
+	panel_style.set_corner_radius_all(8)
+	panel_style.set_content_margin_all(10)
+	panel_style.set_border_width_all(2)
+	panel_style.border_color = Color(0.35, 0.38, 0.55, 0.9)
+	panel.add_theme_stylebox_override("panel", panel_style)
+	var vbox_main := VBoxContainer.new()
+	vbox_main.add_theme_constant_override("separation", 6)
+	panel.add_child(vbox_main)
+	var label_titulo := Label.new()
+	label_titulo.text = "🛠️ CONTROL DE SPAWN & DEBUG"
+	label_titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_titulo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	vbox_main.add_child(label_titulo)
+	vbox_main.add_child(HSeparator.new())
+	var hbox_status := HBoxContainer.new()
+	hbox_status.add_theme_constant_override("separation", 6)
+	vbox_main.add_child(hbox_status)
+	var btn_pausar := Button.new()
+	btn_pausar.text = "⏸️ PAUSAR"
+	btn_pausar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_pausar.pressed.connect(func():
+		wave_spawner.detener_spawning()
+		_actualizar_estado_spawner_label("PAUSADO")
+	)
+	hbox_status.add_child(btn_pausar)
+	var btn_reanudar := Button.new()
+	btn_reanudar.text = "▶️ INICIAR"
+	btn_reanudar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_reanudar.pressed.connect(func():
+		wave_spawner.iniciar_spawning()
+		wave_spawner.is_wave_active = true
+		_actualizar_estado_spawner_label("ACTIVO")
+	)
+	hbox_status.add_child(btn_reanudar)
+	var label_estado := Label.new()
+	label_estado.name = "LabelEstadoSpawner"
+	label_estado.text = "Estado: PAUSADO"
+	label_estado.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_estado.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	vbox_main.add_child(label_estado)
+	vbox_main.add_child(HSeparator.new())
+	wave_spawner.forzar_tipo_enemigo = 2
+	wave_spawner.probabilidad_igual = false
+	var label_tipo := Label.new()
+	label_tipo.text = "Tipo a spawnear:\n😈 Imp Normal"
+	label_tipo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	label_tipo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox_main.add_child(label_tipo)
+	var grid_tipos := GridContainer.new()
+	grid_tipos.columns = 2
+	grid_tipos.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid_tipos.add_theme_constant_override("h_separation", 6)
+	grid_tipos.add_theme_constant_override("v_separation", 6)
+	vbox_main.add_child(grid_tipos)
+	var opciones = [
+		{"nombre": "🎲 Todos (Azar)", "id": -1},
+		{"nombre": "🏹 Gob Ballesta", "id": 0},
+		{"nombre": "👧 Goblin Girl", "id": 1},
+		{"nombre": "😈 Imp Normal", "id": 2},
+		{"nombre": "💣 Cañonero", "id": 3},
+		{"nombre": "🛡️ Imp Escudo", "id": 4},
+		{"nombre": "🦅 Gárgola", "id": 5},
+		{"nombre": "🏹 Lonko", "id": 6}
+	]
+	for opt in opciones:
+		var btn := Button.new()
+		btn.text = opt["nombre"]
+		btn.custom_minimum_size = Vector2(125, 28)
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.set_meta("tipo_id", opt["id"])
+		btn.set_meta("tipo_nombre", opt["nombre"])
+		var init_style := StyleBoxFlat.new()
+		if opt["id"] == 2:
+			init_style.bg_color = Color(0.2, 0.5, 0.8, 1.0)
+			init_style.set_border_width_all(2)
+			init_style.border_color = Color(1.0, 1.0, 1.0, 0.9)
+		else:
+			init_style.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+		init_style.set_corner_radius_all(4)
+		btn.add_theme_stylebox_override("normal", init_style)
+		btn.pressed.connect(func():
+			var tid: int = btn.get_meta("tipo_id")
+			var tnombre: String = btn.get_meta("tipo_nombre")
+			if wave_spawner:
+				wave_spawner.cola_spawn.clear()
+				wave_spawner.evento_cuerno_en_progreso = false
+				if tid == -1:
+					wave_spawner.forzar_tipo_enemigo = -1
+					wave_spawner.probabilidad_igual = true
+				else:
+					wave_spawner.forzar_tipo_enemigo = tid
+			label_tipo.text = "Tipo a spawnear:\n" + tnombre
+			for b in grid_tipos.get_children():
+				if b is Button:
+					var b_id: int = b.get_meta("tipo_id")
+					var b_style := StyleBoxFlat.new()
+					if b_id == tid:
+						b_style.bg_color = Color(0.2, 0.5, 0.8, 1.0)
+						b_style.set_border_width_all(2)
+						b_style.border_color = Color(1.0, 1.0, 1.0, 0.9)
+					else:
+						b_style.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+					b_style.set_corner_radius_all(4)
+					b.add_theme_stylebox_override("normal", b_style)
+		)
+		grid_tipos.add_child(btn)
+	var btn_spawn_uno := Button.new()
+	btn_spawn_uno.text = "➕ SPAWNEAR UNO"
+	btn_spawn_uno.custom_minimum_size = Vector2(0, 30)
+	var style_spawn := StyleBoxFlat.new()
+	style_spawn.bg_color = Color(0.2, 0.5, 0.2, 1.0)
+	style_spawn.set_corner_radius_all(4)
+	btn_spawn_uno.add_theme_stylebox_override("normal", style_spawn)
+	btn_spawn_uno.pressed.connect(func():
+		wave_spawner.forzar_spawn()
+	)
+	vbox_main.add_child(btn_spawn_uno)
+	vbox_main.add_child(HSeparator.new())
+	var label_ammo_sec := Label.new()
+	label_ammo_sec.text = "🏹 MUNICIÓN EXPLOSIVA"
+	label_ammo_sec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_ammo_sec.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
+	vbox_main.add_child(label_ammo_sec)
+	var hbox_ammo := HBoxContainer.new()
+	hbox_ammo.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox_ammo.add_theme_constant_override("separation", 6)
+	vbox_main.add_child(hbox_ammo)
+	var label_ammo := Label.new()
+	label_ammo.name = "LabelAmmoDebug"
+	var p_cur = get_tree().get_first_node_in_group("player")
+	var ammo_count: int = p_cur.flechas_explosivas if p_cur and "flechas_explosivas" in p_cur else 5
+	label_ammo.text = "💥 Flechas: " + str(ammo_count)
+	label_ammo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	label_ammo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox_ammo.add_child(label_ammo)
+	var btn_ammo_minus := Button.new()
+	btn_ammo_minus.text = "-1"
+	btn_ammo_minus.custom_minimum_size = Vector2(30, 24)
+	btn_ammo_minus.pressed.connect(func():
+		var p = get_tree().get_first_node_in_group("player")
+		if p and "flechas_explosivas" in p:
+			p.flechas_explosivas = max(0, p.flechas_explosivas - 1)
+			if p.has_signal("flechas_explosivas_changed"):
+				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+	)
+	hbox_ammo.add_child(btn_ammo_minus)
+	var btn_ammo_plus := Button.new()
+	btn_ammo_plus.text = "+1"
+	btn_ammo_plus.custom_minimum_size = Vector2(30, 24)
+	btn_ammo_plus.pressed.connect(func():
+		var p = get_tree().get_first_node_in_group("player")
+		if p and "flechas_explosivas" in p:
+			p.flechas_explosivas += 1
+			if p.has_signal("flechas_explosivas_changed"):
+				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+	)
+	hbox_ammo.add_child(btn_ammo_plus)
+	var btn_ammo_plus5 := Button.new()
+	btn_ammo_plus5.text = "+5"
+	btn_ammo_plus5.custom_minimum_size = Vector2(32, 24)
+	btn_ammo_plus5.pressed.connect(func():
+		var p = get_tree().get_first_node_in_group("player")
+		if p and "flechas_explosivas" in p:
+			p.flechas_explosivas += 5
+			if p.has_signal("flechas_explosivas_changed"):
+				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+	)
+	hbox_ammo.add_child(btn_ammo_plus5)
+	if p_cur and p_cur.has_signal("flechas_explosivas_changed"):
+		p_cur.flechas_explosivas_changed.connect(func(cnt: int):
+			if is_instance_valid(label_ammo):
+				label_ammo.text = "💥 Flechas: " + str(cnt)
+		)
+	vbox_main.add_child(HSeparator.new())
+	var label_acciones := Label.new()
+	label_acciones.text = "⚡ ACCIONES & DEFENSAS"
+	label_acciones.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_acciones.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	vbox_main.add_child(label_acciones)
+	var grid_items := GridContainer.new()
+	grid_items.columns = 3
+	grid_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid_items.add_theme_constant_override("h_separation", 4)
+	grid_items.add_theme_constant_override("v_separation", 4)
+	vbox_main.add_child(grid_items)
+	var btn_pocion := Button.new()
+	btn_pocion.text = "🧪 Poción"
+	btn_pocion.custom_minimum_size = Vector2(84, 26)
+	btn_pocion.add_theme_font_size_override("font_size", 11)
+	btn_pocion.pressed.connect(func(): if game_ui: game_ui._spawn_posion_debug())
+	grid_items.add_child(btn_pocion)
+	var btn_flecha_exp := Button.new()
+	btn_flecha_exp.text = "💥 Flecha Exp"
+	btn_flecha_exp.custom_minimum_size = Vector2(84, 26)
+	btn_flecha_exp.add_theme_font_size_override("font_size", 11)
+	btn_flecha_exp.pressed.connect(func(): if game_ui: game_ui._spawn_flecha_explosiva_debug())
+	grid_items.add_child(btn_flecha_exp)
+	var btn_debug_exp := Button.new()
+	var update_exp_btn := func():
+		if ExplosionFlechaExplosiva.debug_collider_global:
+			btn_debug_exp.text = "🎯 Col Exp: ON"
+			btn_debug_exp.add_theme_color_override("font_color", Color(1.0, 0.4, 1.0))
+		else:
+			btn_debug_exp.text = "🎯 Col Exp: OFF"
+			btn_debug_exp.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	update_exp_btn.call()
+	btn_debug_exp.custom_minimum_size = Vector2(84, 26)
+	btn_debug_exp.add_theme_font_size_override("font_size", 11)
+	btn_debug_exp.pressed.connect(func():
+		ExplosionFlechaExplosiva.debug_collider_global = not ExplosionFlechaExplosiva.debug_collider_global
+		update_exp_btn.call()
+	)
+	grid_items.add_child(btn_debug_exp)
+	var btn_cuerno := Button.new()
+	btn_cuerno.text = "📯 Cuerno"
+	btn_cuerno.custom_minimum_size = Vector2(84, 26)
+	btn_cuerno.add_theme_font_size_override("font_size", 11)
+	btn_cuerno.pressed.connect(func(): if wave_spawner and wave_spawner.has_method("_iniciar_evento_cuerno"): wave_spawner._iniciar_evento_cuerno())
+	grid_items.add_child(btn_cuerno)
+	var btn_destr_escudos := Button.new()
+	btn_destr_escudos.text = "💥 -Escudos"
+	btn_destr_escudos.custom_minimum_size = Vector2(84, 26)
+	btn_destr_escudos.add_theme_font_size_override("font_size", 11)
+	btn_destr_escudos.pressed.connect(func(): if game_ui: game_ui._destruir_todos_escudos())
+	grid_items.add_child(btn_destr_escudos)
+	var btn_reconst_escudos := Button.new()
+	btn_reconst_escudos.text = "🛡️ +Escudos"
+	btn_reconst_escudos.custom_minimum_size = Vector2(84, 26)
+	btn_reconst_escudos.add_theme_font_size_override("font_size", 11)
+	btn_reconst_escudos.pressed.connect(func(): if game_ui: game_ui._reconstruir_todos_escudos())
+	grid_items.add_child(btn_reconst_escudos)
+	var btn_god := Button.new()
+	btn_god.text = "🛡️ God Mode"
+	btn_god.custom_minimum_size = Vector2(84, 26)
+	btn_god.add_theme_font_size_override("font_size", 11)
+	btn_god.pressed.connect(func(): if game_ui: game_ui._toggle_god_mode())
+	grid_items.add_child(btn_god)
+	var btn_toggle_aliadas := Button.new()
+	var update_aliadas_btn := func():
+		if _aliadas_activas:
+			btn_toggle_aliadas.text = "🏹 Aliadas: ON"
+			btn_toggle_aliadas.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+		else:
+			btn_toggle_aliadas.text = "🏹 Aliadas: OFF"
+			btn_toggle_aliadas.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	update_aliadas_btn.call()
+	btn_toggle_aliadas.custom_minimum_size = Vector2(84, 26)
+	btn_toggle_aliadas.add_theme_font_size_override("font_size", 11)
+	btn_toggle_aliadas.pressed.connect(func():
+		_toggle_aliadas_visibles()
+		update_aliadas_btn.call()
+	)
+	grid_items.add_child(btn_toggle_aliadas)
+	var btn_revivir_aliadas := Button.new()
+	btn_revivir_aliadas.text = "❤️ Revivir"
+	btn_revivir_aliadas.custom_minimum_size = Vector2(84, 26)
+	btn_revivir_aliadas.add_theme_font_size_override("font_size", 11)
+	btn_revivir_aliadas.pressed.connect(func():
+		_revivir_aliadas_debug()
+	)
+	grid_items.add_child(btn_revivir_aliadas)
+	var btn_cortinilla := Button.new()
+	btn_cortinilla.text = "🎭 Cortinilla"
+	btn_cortinilla.custom_minimum_size = Vector2(84, 26)
+	btn_cortinilla.add_theme_font_size_override("font_size", 11)
+	btn_cortinilla.pressed.connect(func():
+		if game_ui and game_ui.has_method("mostrar_cortinilla_debug"):
+			game_ui.mostrar_cortinilla_debug(3.0)
+	)
+	grid_items.add_child(btn_cortinilla)
+	vbox_main.add_child(HSeparator.new())
+	var hbox_sistema := HBoxContainer.new()
+	hbox_sistema.add_theme_constant_override("separation", 6)
+	vbox_main.add_child(hbox_sistema)
+	var btn_pausa := Button.new()
+	btn_pausa.text = "⏸️ PAUSA"
+	btn_pausa.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_pausa.pressed.connect(func(): if game_ui: game_ui._toggle_pause())
+	hbox_sistema.add_child(btn_pausa)
+	var btn_reiniciar := Button.new()
+	btn_reiniciar.text = "🔄 REINICIAR"
+	btn_reiniciar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_reiniciar.pressed.connect(func(): if game_ui: game_ui._restart_game())
+	hbox_sistema.add_child(btn_reiniciar)
+	var btn_salir := Button.new()
+	btn_salir.text = "❌ SALIR"
+	btn_salir.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_salir.pressed.connect(func(): if game_ui: game_ui._quit_game())
+	hbox_sistema.add_child(btn_salir)
+	game_ui.add_child(panel)
+	wave_spawner.iniciar_spawning()
+	wave_spawner.is_wave_active = true
+	_actualizar_estado_spawner_label("ACTIVO")
+
+
+func _actualizar_estado_spawner_label(estado: String) -> void:
+	var panel = game_ui.get_node_or_null("DebugSpawnPanel") if game_ui else null
+	if not panel:
+		return
+	var label = panel.find_child("LabelEstadoSpawner", true, false) as Label
+	if label:
+		label.text = "Estado: " + estado
+		if estado == "ACTIVO":
+			label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+		else:
+			label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 
 
 func _limpiar_nodos_combate_spawneados(excluir: Array = []) -> void:

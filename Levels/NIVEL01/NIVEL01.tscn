@@ -110,7 +110,7 @@ velocidad_escalar_bajar = 0.5
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 2102294179) index="0" unique_id=817961625]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1816638673) index="0" unique_id=238452699]
 bones/0/position = Vector3(4.172325e-07, -0.35407498, -40.838314)
 bones/0/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
 bones/1/rotation = Quaternion(-0.05186307, 0, 0, 0.9986542)
@@ -279,7 +279,7 @@ texture = SubResource("ViewportTexture_gfe6n")
 transform = Transform3D(3.705421, 0.46153456, -3.6189556, -0.6427276, 5.1601257, 3.7732615e-08, 3.591205, 0.44730818, 3.7340539, 5.822, -2.15, -30.774483)
 
 [node name="012" parent="SubViewportFondo3D/BUSTO_BRONCE2" index="1" unique_id=920637542]
-transform = Transform3D(0.9999997, -1.1175871e-08, 2.9802322e-08, 3.7252903e-09, 1, -3.3527613e-08, -2.9802322e-08, 3.7252903e-09, 1, 1.2622467, 0.15722108, 1.8187907)
+transform = Transform3D(0.9206672, -0.063800424, 0.38509852, 0.016579714, 0.9920535, 0.12471877, -0.3899953, -0.1084398, 0.9144094, 0.23271704, 0.028986394, 0.74830914)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="SubViewportFondo3D/BUSTO_BRONCE2/012" index="1" unique_id=900513883]
 transform = Transform3D(0.07183692, -0.13120604, -0.12085824, 0.06142813, -0.10412672, 0.14955424, -0.16747627, -0.09447154, 0.0030139051, -0.55454445, 1.494175, 0.030014038)
@@ -468,7 +468,7 @@ tiempo_congelar = 4.0
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="TORRE" index="0" unique_id=483243664]
+[node name="TORRE" parent="TORRE" index="0" unique_id=835723112]
 layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]

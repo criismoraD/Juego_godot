@@ -9,6 +9,7 @@ const RUTA_SHADER_OUTLINE := "res://System/Shaders/TOON_LINEANEGRA.gdshader"
 const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
 const OUTLINE_WIDTH_RUNTIME := 20.0
 static var oleada_inicial_solicitada: int = 0
+static var modo_debug_solicitado: bool = false  ## Activar panel debug en NIVEL01 al entrar por menú escape
 
 @export_category("Debug")
 @export var debug_ui_enabled: bool = true
@@ -440,15 +441,16 @@ func _create_pause_panel():
 	hbox_nav_debug.add_child(lvl6_btn)
 
 	var debug_btn = Button.new()
-	debug_btn.text = "🔧 Ir al Nivel Debug"
-	debug_btn.custom_minimum_size = Vector2(170, 40)
+	debug_btn.text = "🔧 Modo Debug (NIVEL01)"
+	debug_btn.custom_minimum_size = Vector2(190, 40)
 	debug_btn.pressed.connect(
 		func():
 			if is_paused:
 				is_paused = false
 				get_tree().paused = false
 			AudioManager.stop_all()
-			get_tree().change_scene_to_file("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.tscn")
+			GameUI.modo_debug_solicitado = true
+			get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
 	)
 	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
 	hbox_nav_debug.add_child(debug_btn)
@@ -821,11 +823,33 @@ func _mostrar_icono_puerta(overlay: CanvasLayer) -> void:
 	_icono_puerta.anchor_right = 0.0
 	_icono_puerta.anchor_top = 0.0
 	_icono_puerta.anchor_bottom = 0.0
-	_icono_puerta.offset_left = 240.0   # Sobre la puerta de la torre
-	_icono_puerta.offset_top = 755.0
-	_icono_puerta.offset_right = 360.0
-	_icono_puerta.offset_bottom = 875.0
-	_icono_puerta.pivot_offset = Vector2(60.0, 60.0)  # Centro para el palpito
+	# Icono 110x110 posicionado sobre la puerta de la torre (dinámico con fallback fijo)
+	var icon_size := Vector2(110.0, 110.0)
+	var center_pos := Vector2(300.0, 815.0)  # Fallback: centro del icono sobre puerta (245+55, 760+55)
+	var root_scene := get_tree().current_scene
+	if root_scene:
+		var torre := root_scene.find_child("TORRE", true, false) as Node3D
+		var cam: Camera3D = get_viewport().get_camera_3d()
+		if not cam:
+			cam = root_scene.find_child("PRESPECTIVA", true, false) as Camera3D
+		if not cam:
+			cam = root_scene.find_child("CamaraFondoDOF", true, false) as Camera3D
+		if torre and cam and cam.is_inside_tree():
+			# Puerta en el frente de la torre (local Z ~0.35, Y ~0.15)
+			var door_local := Vector3(0.0, 0.15, 0.35)
+			var door_world: Vector3 = torre.to_global(door_local)
+			if not cam.is_position_behind(door_world):
+				var sp: Vector2 = cam.unproject_position(door_world)
+				var vp_size: Vector2 = get_viewport().get_visible_rect().size
+				if vp_size.x > 0 and vp_size.y > 0:
+					sp.x = clamp(sp.x, icon_size.x * 0.5, vp_size.x - icon_size.x * 0.5)
+					sp.y = clamp(sp.y, icon_size.y * 0.5, vp_size.y - icon_size.y * 0.5)
+					center_pos = sp
+	_icono_puerta.offset_left = center_pos.x - icon_size.x * 0.5
+	_icono_puerta.offset_top = center_pos.y - icon_size.y * 0.5
+	_icono_puerta.offset_right = center_pos.x + icon_size.x * 0.5
+	_icono_puerta.offset_bottom = center_pos.y + icon_size.y * 0.5
+	_icono_puerta.pivot_offset = icon_size * 0.5
 	overlay.add_child(_icono_puerta)
 
 	# Palpitar lento: latido de 1.2 s (crece y vuelve)

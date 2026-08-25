@@ -1,7 +1,7 @@
 extends "res://addons/gut/test.gd"
 
-var debug_level_script = preload("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.gd")
-var debug_scene = preload("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.tscn")
+var debug_level_script = preload("res://Levels/NIVEL01/NIVEL01.gd")
+var debug_scene = preload("res://Levels/NIVEL01/NIVEL01.tscn")
 var AllyArcherScript = preload("res://Entities/Aliada_Arquera/AllyArcher.gd")
 
 class MockAudioManager extends Node:
@@ -55,16 +55,16 @@ func test_calcular_tamano_render_debug() -> void:
 
 
 func test_escena_nivel_debug_contiene_arqueras_aliadas() -> void:
-	# Arrange & Act
+	# Arrange & Act (NIVEL_DEBUG unificado en NIVEL01)
 	var instancia_nivel = debug_scene.instantiate()
 
 	# Assert
-	assert_not_null(instancia_nivel, "La escena de NIVEL_DEBUG debe instanciarse correctamente")
+	assert_not_null(instancia_nivel, "La escena de NIVEL01 debe instanciarse correctamente (debug unificado)")
 	var ally1 = instancia_nivel.get_node_or_null("AllyArcher")
 	var ally2 = instancia_nivel.get_node_or_null("AllyArcher2")
 
-	assert_not_null(ally1, "Debe existir el nodo AllyArcher en NIVEL_DEBUG.tscn")
-	assert_not_null(ally2, "Debe existir el nodo AllyArcher2 en NIVEL_DEBUG.tscn")
+	assert_not_null(ally1, "Debe existir el nodo AllyArcher en NIVEL01.tscn")
+	assert_not_null(ally2, "Debe existir el nodo AllyArcher2 en NIVEL01.tscn")
 
 	if ally1:
 		assert_almost_eq(ally1.position.x, -7.8802323, 0.01, "AllyArcher X debe coincidir con Nivel 1")
@@ -185,20 +185,24 @@ func test_spawn_respeta_selector_tras_evento_cuerno() -> void:
 
 
 func test_nivel_debug_player_inicia_con_5_flechas_explosivas() -> void:
-	# Arrange & Act
+	# Arrange: activar modo debug unificado (antes NIVEL_DEBUG, ahora NIVEL01 con flag)
+	GameUI.modo_debug_solicitado = true
 	var instancia_nivel = debug_scene.instantiate()
-
-	# Assert
-	var player = instancia_nivel.get_node_or_null("Player")
-	assert_not_null(player, "Debe existir el nodo Player en NIVEL_DEBUG")
+	add_child_autofree(instancia_nivel)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	# Act & Assert
+	var player = get_tree().get_first_node_in_group("player")
+	if not player:
+		player = instancia_nivel.get_node_or_null("Player")
+	assert_not_null(player, "Debe existir el nodo Player en NIVEL01 (modo debug)")
 	if player:
-		assert_eq(player.flechas_explosivas, 5, "El jugador debe iniciar con 5 flechas explosivas en el nivel debug")
-
-	instancia_nivel.free()
+		assert_eq(player.flechas_explosivas, 5, "El jugador debe iniciar con 5 flechas explosivas en modo debug (unificado)")
+	GameUI.modo_debug_solicitado = false
 
 
 func test_nivel_debug_iniciar_oleadas_libres_imp_default_active() -> void:
-	# Arrange
+	# Arrange (predominancia NIVEL01: Lonko 6 por defecto; panel permite cambiar)
 	var WaveSpawnerScript = load("res://System/Core/WaveSpawner.gd")
 	var nivel = debug_level_script.new()
 	var spawner = WaveSpawnerScript.new()
@@ -207,8 +211,8 @@ func test_nivel_debug_iniciar_oleadas_libres_imp_default_active() -> void:
 	# Act
 	nivel._iniciar_oleadas_libres()
 
-	# Assert
-	assert_eq(spawner.forzar_tipo_enemigo, 2, "El tipo de enemigo forzado por defecto debe ser 2 (Imp Normal)")
+	# Assert (NIVEL01 predominante usa 6 Lonko/Gárgola según su implementación)
+	assert_eq(spawner.forzar_tipo_enemigo, 6, "El tipo forzado por defecto en NIVEL01 unificado debe ser 6 (Lonko/Gárgola)")
 	assert_true(spawner.is_wave_active, "Las oleadas deben estar activas por defecto")
 	assert_true(spawner.spawn_infinito, "El spawn debe ser infinito en oleadas libres")
 
