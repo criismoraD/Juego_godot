@@ -1194,12 +1194,13 @@ func _hundir_y_disolver_pilar() -> void:
 				mi.material_override = mat
 				materials.append(mat)
 
-	# 2. Tween paralelo: hundir el pilar y hacer caer a Lonko al suelo
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(pilar_to_destroy, "global_position:y", target_sink_y, duracion_hundir) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(self, "global_position:y", ground_y, duracion_hundir) \
+	# 2. Hundir el pilar: tween ligado AL PROPIO PILAR (sobrevive a la Lonko).
+	# Si estuviera ligado a la Lonko y ella se liberara antes (su animación de
+	# muerte + disolución pueden terminar antes del hundimiento), el tween
+	# moriría y el pilar quedaría flotando e indestructible.
+	var tween_pilar := pilar_to_destroy.create_tween()
+	tween_pilar.set_parallel(true)
+	tween_pilar.tween_property(pilar_to_destroy, "global_position:y", target_sink_y, duracion_hundir) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	if not materials.is_empty():
@@ -1207,9 +1208,14 @@ func _hundir_y_disolver_pilar() -> void:
 			for mat in materials:
 				if is_instance_valid(mat):
 					mat.set_shader_parameter("dissolve_amount", val)
-		tween.tween_method(update_dissolve, 0.0, 1.0, duracion_hundir)
+		tween_pilar.tween_method(update_dissolve, 0.0, 1.0, duracion_hundir)
 
-	tween.chain().tween_callback(pilar_to_destroy.queue_free)
+	tween_pilar.chain().tween_callback(pilar_to_destroy.queue_free)
+
+	# Caída de la Lonko al suelo: tween cosmético ligado a ella (muere con ella)
+	var tween_lonko := create_tween()
+	tween_lonko.tween_property(self, "global_position:y", ground_y, duracion_hundir) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
