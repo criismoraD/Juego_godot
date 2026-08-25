@@ -56,6 +56,7 @@ const ESCENA_TRIDENTE_IMP: PackedScene = preload("res://Entities/Proyectil_Tride
 const ESCENA_FLECHA_GOBLIN: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
 const ESCENA_PROYECTIL_GARGOLA: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
 const ESCENA_GOBLIN_BALLESTA: PackedScene = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
+const ESCALA_PRECALENTA: float = 0.05  ## Escala mini de las instancias de warm-up (caben dentro del HUD)
 @onready
 var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
 var escena_imp_estandarte: PackedScene = preload("res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn")
@@ -966,7 +967,7 @@ func _mostrar_inter_nivel_continuar():
 ## mientras el cartel de transición está en pantalla (evita tirones y caídas
 ## de FPS al aparecer por primera vez: compila shaders y carga dependencias).
 func _precargar_elementos_oleada(numero_oleada_siguiente: int) -> void:
-	var punto := _punto_cubierto_para_precarga(Vector2(0.13, 0.12))  # Tras el retrato del HUD
+	var punto := _punto_cubierto_para_precarga(Vector2(0.07, 0.10))  # Tras el retrato del HUD
 	if punto == Vector3.INF:
 		return
 	match numero_oleada_siguiente:
@@ -992,7 +993,7 @@ func _precalentar_combate_con_retraso(delay: float) -> void:
 		func():
 			if not is_inside_tree():
 				return
-			var punto := _punto_cubierto_para_precarga(Vector2(0.5, 0.18))  # Tras el panel del diálogo
+			var punto := _punto_cubierto_para_precarga(Vector2(0.5, 0.30))  # Tras el panel del diálogo
 			if punto == Vector3.INF:
 				return
 			for escena in [
@@ -1020,14 +1021,16 @@ func _punto_cubierto_para_precarga(normalizado: Vector2) -> Vector3:
 	return origen + dir * 8.0
 
 
-## Instancia una escena brevemente (0.3 s) en el punto cubierto: se dibuja,
-## compila sus pipelines de shader y se libera sin que el jugador lo note.
+## Instancia una escena brevemente (0.3 s) en el punto cubierto, a escala mini
+## para que quepa completa dentro del área del HUD: se dibuja, compila sus
+## pipelines de shader y se libera sin que el jugador lo note.
 func _precalentar_instancia_breve(escena: PackedScene, punto: Vector3) -> void:
 	if not escena:
 		return
 	var instancia = escena.instantiate()
 	add_child(instancia)
 	instancia.global_position = punto
+	instancia.scale = Vector3.ONE * ESCALA_PRECALENTA
 	get_tree().create_timer(0.3).timeout.connect(
 		func():
 			if is_instance_valid(instancia):
