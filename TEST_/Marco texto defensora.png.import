@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2jcodms0wq3a"
-path="res://.godot/imported/Dialogos defensoras.png-442d24a30a54ca2b9cabebeeea93fe9c.ctex"
+uid="uid://dh1cvcs524hoe"
+path="res://.godot/imported/Marco texto defensora.png-0cfbdee11c4d8a66bc661996e9c6aa48.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://TEST_/Dialogos defensoras.png"
-dest_files=["res://.godot/imported/Dialogos defensoras.png-442d24a30a54ca2b9cabebeeea93fe9c.ctex"]
+source_file="res://TEST_/Marco texto defensora.png"
+dest_files=["res://.godot/imported/Marco texto defensora.png-0cfbdee11c4d8a66bc661996e9c6aa48.ctex"]
 
 [params]
 
