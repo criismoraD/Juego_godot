@@ -73,6 +73,7 @@ var ragdoll_simulacion_activa: bool = false
 # === REFERENCIAS ===
 var gargola_projectile_scene: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
 var vfx_anticipacion_fire_scene: PackedScene = preload("res://VFX/Scenes/VFX_Anticipation_fire_3.tscn")
+var vfx_hit_01_scene: PackedScene = preload("res://HitFXFree/assets/BinbunVFX_Vol2/StylizedHitFX/effects/hit/vfx_hit_01.tscn")
 
 @export_category("Drops")
 @export var posion_scene: PackedScene = preload("res://Entities/Item_Pocion/Posion.tscn")
@@ -169,6 +170,9 @@ func take_damage(amount: float) -> void:
 func _on_state_dying():
 	_apagar_omni_light()
 
+	# VFXHit_01 en el punto de muerte (antes del ragdoll para capturar posición exacta).
+	_spawn_vfx_hit_01_muerte()
+
 	# La Gárgola se convierte en ragdoll (trapo) al morir, sin textura de piedra.
 	_activar_ragdoll()
 	tiempo_ragdoll_activo = 0.0
@@ -176,6 +180,38 @@ func _on_state_dying():
 	# Reproducir sonido de muerte
 	AudioManager.play_sfx("gargola_death")
 	_drop_pocion()
+
+
+func _spawn_vfx_hit_01_muerte() -> void:
+	if not vfx_hit_01_scene:
+		return
+	var vfx: Node3D = vfx_hit_01_scene.instantiate() as Node3D
+	if not vfx:
+		return
+	var pos_muerte: Vector3 = _get_hips_global_position()
+	if pos_muerte.is_zero_approx():
+		pos_muerte = global_position + Vector3(0.0, 0.4, 0.0)
+	# Más pequeño y naranjo (pedido)
+	vfx.scale = Vector3(0.65, 0.65, 0.65)
+	var parent_escena := get_tree().current_scene
+	if parent_escena == null:
+		parent_escena = get_tree().root
+	parent_escena.add_child(vfx)
+	vfx.global_position = pos_muerte
+	# Color naranjo: primario vivo, secundario cálido
+	if "primary_color" in vfx:
+		vfx.set("primary_color", Color(1.0, 0.45, 0.0))
+	if "secondary_color" in vfx:
+		vfx.set("secondary_color", Color(1.0, 0.65, 0.15))
+	# Asegurar reproducción única y limpieza automática (main dura 1.6s)
+	if "one_shot" in vfx:
+		vfx.set("one_shot", true)
+	if vfx.has_method("play"):
+		vfx.call("play")
+	get_tree().create_timer(2.0).timeout.connect(func():
+		if is_instance_valid(vfx):
+			vfx.queue_free()
+	)
 
 
 func _drop_pocion() -> void:
