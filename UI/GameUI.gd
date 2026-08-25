@@ -427,11 +427,7 @@ func _create_pause_panel():
 	lvl6_btn.custom_minimum_size = Vector2(170, 40)
 	lvl6_btn.pressed.connect(
 		func():
-			if is_paused:
-				is_paused = false
-				get_tree().paused = false
-			AudioManager.stop_all()
-			get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
+			ir_a_nivel_con_cortina("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
 	)
 	_style_button(lvl6_btn, Color(0.6, 0.4, 0.1))
 	hbox_nav_debug.add_child(lvl6_btn)
@@ -441,11 +437,7 @@ func _create_pause_panel():
 	debug_btn.custom_minimum_size = Vector2(170, 40)
 	debug_btn.pressed.connect(
 		func():
-			if is_paused:
-				is_paused = false
-				get_tree().paused = false
-			AudioManager.stop_all()
-			get_tree().change_scene_to_file("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.tscn")
+			ir_a_nivel_con_cortina("res://Levels/NIVEL_DEBUG/NIVEL_DEBUG.tscn")
 	)
 	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
 	hbox_nav_debug.add_child(debug_btn)
@@ -1768,3 +1760,36 @@ func activar_efecto_viñeta_cuerno(duracion: float = 3.8) -> void:
 	# Transición de salida suave (fade-out gradual en 1.3 segundos)
 	_vignette_tween.tween_property(vignette_rect, "modulate:a", 0.0, 1.3) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## Cortina de transición (isla) que PRECARGA la escena destino en un hilo
+## mientras la cortina cubre la pantalla: al cambiar, la escena ya está en
+## memoria y no hay tirón ni caída de FPS.
+func ir_a_nivel_con_cortina(path_escena: String, duracion: float = 1.0) -> void:
+	var cortina := CanvasLayer.new()
+	cortina.layer = 250
+	var fondo := TextureRect.new()
+	fondo.texture = load("res://UI/Assets/pantalla trancision isla.png")
+	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fondo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fondo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	cortina.add_child(fondo)
+	add_child(cortina)
+
+	ResourceLoader.load_threaded_request(path_escena, "", true)
+
+	await get_tree().create_timer(duracion).timeout
+
+	var escena: PackedScene = null
+	if ResourceLoader.load_threaded_get_status(path_escena) == ResourceLoader.THREAD_LOAD_LOADED:
+		var recurso = ResourceLoader.load_threaded_get(path_escena)
+		if recurso is PackedScene:
+			escena = recurso
+	if escena == null:
+		escena = load(path_escena)
+
+	if is_paused:
+		is_paused = false
+		get_tree().paused = false
+	AudioManager.stop_all()
+	get_tree().change_scene_to_packed(escena)

@@ -952,8 +952,42 @@ func _mostrar_inter_nivel_continuar():
 		transicion_carteles_en_progreso = false
 
 
+## Precarga en segundo plano los enemigos NUEVOS de la oleada que viene,
+## mientras el cartel de transición está en pantalla (evita tirones y caídas
+## de FPS al aparecer por primera vez: compila shaders y carga dependencias).
+func _precargar_elementos_oleada(numero_oleada_siguiente: int) -> void:
+	match numero_oleada_siguiente:
+		3:
+			_precalentar_enemigo_para_oleada(wave_spawner.escena_imp_escudo)
+		4:
+			_precalentar_enemigo_para_oleada(wave_spawner.escena_gargola)
+			_precalentar_enemigo_para_oleada(wave_spawner.escena_imp_escudo)
+		5:
+			_precalentar_enemigo_para_oleada(wave_spawner.escena_lonko)
+			_precalentar_enemigo_para_oleada(wave_spawner.escena_imp_escudo)
+		_:
+			pass
+
+
+## Instancia un enemigo fuera de cámara brevemente para compilar sus shaders
+## y cargar sus dependencias antes de que aparezca en combate (mismo patrón
+## que _precalentar_vfx_shaders).
+func _precalentar_enemigo_para_oleada(escena: PackedScene) -> void:
+	if not escena:
+		return
+	var instancia = escena.instantiate()
+	add_child(instancia)
+	instancia.global_position = Vector3(0, -200, 0)  # Fuera de cámara
+	get_tree().create_timer(0.25).timeout.connect(
+		func():
+			if is_instance_valid(instancia):
+				instancia.queue_free()
+	)
+
+
 func _mostrar_cartel_nivel_2() -> void:
 	_limpiar_carteles_transicion()
+	_precargar_elementos_oleada(3)
 	var overlay := CanvasLayer.new()
 	overlay.layer = 205
 	overlay.name = "CartelNivel2"
@@ -975,6 +1009,7 @@ func _mostrar_cartel_nivel_2() -> void:
 
 func _mostrar_cartel_nivel_3() -> void:
 	_limpiar_carteles_transicion()
+	_precargar_elementos_oleada(4)
 	var overlay := CanvasLayer.new()
 	overlay.layer = 205
 	overlay.name = "CartelNivel3"
@@ -994,6 +1029,7 @@ func _mostrar_cartel_nivel_3() -> void:
 
 func _mostrar_cartel_nivel_4() -> void:
 	_limpiar_carteles_transicion()
+	_precargar_elementos_oleada(5)
 	var overlay := CanvasLayer.new()
 	overlay.layer = 205
 	overlay.name = "CartelNivel4"
@@ -1013,8 +1049,7 @@ func _mostrar_cartel_nivel_4() -> void:
 
 func _mostrar_cartel_nivel_5() -> void:
 	_limpiar_carteles_transicion()
-	var overlay := CanvasLayer.new()
-	overlay.layer = 205
+	var overlay := CanvasLayer.new()	overlay.layer = 205
 	overlay.name = "CartelNivel5"
 	add_child(overlay)
 
