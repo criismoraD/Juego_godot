@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Material" path="res://Entities/Ambiente_Pajaros/MAT_pajaros.tres" id="1_mat_pajaros"]
+[ext_resource type="Script" path="res://Entities/Ambiente_Pajaros/PajarosCiclo.gd" id="2_ciclo"]
 
 [sub_resource type="Gradient" id="Gradient_Pajaros"]
 offsets = PackedFloat32Array(0, 0.12, 0.88, 1)
@@ -21,11 +22,11 @@ initial_velocity_max = 2.2
 angular_velocity_min = 0.0
 angular_velocity_max = 0.0
 gravity = Vector3(0.01, 0.008, 0)
-scale_min = 0.68
-scale_max = 0.95
+scale_min = 0.42
+scale_max = 0.58
 color_ramp = SubResource("GradientTexture1D_Pajaros")
-anim_speed_min = 1.65
-anim_speed_max = 2.05
+anim_speed_min = 4.9
+anim_speed_max = 6.3
 anim_offset_max = 1.0
 anim_offset_min = 0.0
 turbulence_enabled = false
@@ -34,9 +35,9 @@ damping_max = 0.03
 
 [sub_resource type="QuadMesh" id="QuadMesh_Pajaros"]
 material = ExtResource("1_mat_pajaros")
-size = Vector2(1.75, 1.75)
+size = Vector2(0.95, 0.95)
 
-[node name="PajarosPlane" type="GPUParticles3D"]
+[node name="PajarosPlane" type="GPUParticles3D" script=ExtResource("2_ciclo")]
 layers = 2
 amount = 8
 lifetime = 18.0

@@ -591,7 +591,7 @@ transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.9744
 amount = 100
 
 [node name="PajarosPlane" parent="." unique_id=250802196 instance=ExtResource("37_pajaros")]
-transform = Transform3D(0.44929424, 0, 0, 0, 0.43727946, 0, 0, 0, 0.40797263, -5.8943696, 2.9, -29.81196)
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -9.071, 2.9, -6.77036)
 
 [node name="BarreraDestruyeFlechas" parent="." unique_id=1852478489 instance=ExtResource("33_jrbhj")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.775, 4.765, 0)
