@@ -4,10 +4,10 @@
 [ext_resource type="PackedScene" uid="uid://6o783pm488cs" path="res://Entities/Aliada_Arquera/ARQUERA_ALIADA.glb" id="2_fbx"]
 [ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx" id="3_mijgs"]
 [ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="4_0j5r4"]
+[ext_resource type="PackedScene" uid="uid://b7vyk4r3e2f5x" path="res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn" id="5_exp"]
 
 [node name="AllyArcher" type="Node3D" unique_id=606928033]
 script = ExtResource("1_script")
-enemigos_minimos = 1
 tiempo_carga_max = 3.0
 potencia_minima = 2.0
 potencia_maxima = 10.0
@@ -16,7 +16,7 @@ idle_max = 3.0
 [node name="ArqueraModel" parent="." unique_id=163697560 instance=ExtResource("2_fbx")]
 transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
 
-[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(163697560, 1059277820) index="0" unique_id=1086952406]
+[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(163697560, 910112507) index="0" unique_id=2054306173]
 bones/0/position = Vector3(3.9206305, -0.28547502, -47.730186)
 bones/0/rotation = Quaternion(-0.48509288, -0.49657726, 0.5094042, 0.5085306)
 bones/1/rotation = Quaternion(0.050693147, -0.0134334015, -0.071015865, 0.9960956)
@@ -152,5 +152,10 @@ bone_idx = 11
 
 [node name="FLECHA" parent="ArqueraModel/Armature/Skeleton3D/BoneAttachment3D2" unique_id=1664429341 instance=ExtResource("4_0j5r4")]
 transform = Transform3D(-3.4923973, 28.37379, -20.192366, -33.705936, 2.349918, 9.131689, 8.758602, 20.356949, 27.090229, -6.2751083, -23.098284, 10.871281)
+visible = false
+
+[node name="FlechaExplosiva" parent="ArqueraModel/Armature/Skeleton3D/BoneAttachment3D2" unique_id=1664429342 instance=ExtResource("5_exp")]
+transform = Transform3D(9.82306, -89.37675, 3.9131985, 86.74785, 10.478277, 21.56453, -21.8708, 1.4181252, 87.29065, -4.870514, -7.3920517, 6.594063)
+visible = false
 
 [editable path="ArqueraModel"]

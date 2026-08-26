@@ -812,52 +812,66 @@ func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
 
 ## Icono puerta pulsante (latido lento) sobre la puerta de la torre, visible
 ## mientras la cortinilla de fin de oleada está activa.
-func _mostrar_icono_puerta(overlay: CanvasLayer) -> void:
+func _mostrar_icono_puerta(overlay: CanvasLayer = null) -> void:
 	_ocultar_icono_puerta()
 
-	_icono_puerta = TextureRect.new()
-	_icono_puerta.texture = TEXTURA_ICONO_PUERTA
-	_icono_puerta.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_icono_puerta.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_icono_puerta.anchor_left = 0.0
-	_icono_puerta.anchor_right = 0.0
-	_icono_puerta.anchor_top = 0.0
-	_icono_puerta.anchor_bottom = 0.0
-	# Icono 110x110 posicionado sobre la puerta de la torre (dinámico con fallback fijo)
-	var icon_size := Vector2(110.0, 110.0)
-	var center_pos := Vector2(300.0, 815.0)  # Fallback: centro del icono sobre puerta (245+55, 760+55)
-	var root_scene := get_tree().current_scene
-	if root_scene:
-		var torre := root_scene.find_child("TORRE", true, false) as Node3D
-		var cam: Camera3D = get_viewport().get_camera_3d()
-		if not cam:
-			cam = root_scene.find_child("PRESPECTIVA", true, false) as Camera3D
-		if not cam:
-			cam = root_scene.find_child("CamaraFondoDOF", true, false) as Camera3D
-		if torre and cam and cam.is_inside_tree():
-			# Puerta en el frente de la torre (local Z ~0.35, Y ~0.15)
-			var door_local := Vector3(0.0, 0.15, 0.35)
-			var door_world: Vector3 = torre.to_global(door_local)
-			if not cam.is_position_behind(door_world):
-				var sp: Vector2 = cam.unproject_position(door_world)
-				var vp_size: Vector2 = get_viewport().get_visible_rect().size
-				if vp_size.x > 0 and vp_size.y > 0:
-					sp.x = clamp(sp.x, icon_size.x * 0.5, vp_size.x - icon_size.x * 0.5)
-					sp.y = clamp(sp.y, icon_size.y * 0.5, vp_size.y - icon_size.y * 0.5)
-					center_pos = sp
-	_icono_puerta.offset_left = center_pos.x - icon_size.x * 0.5
-	_icono_puerta.offset_top = center_pos.y - icon_size.y * 0.5
-	_icono_puerta.offset_right = center_pos.x + icon_size.x * 0.5
-	_icono_puerta.offset_bottom = center_pos.y + icon_size.y * 0.5
-	_icono_puerta.pivot_offset = icon_size * 0.5
-	overlay.add_child(_icono_puerta)
+	# 1. Buscar si ya existe el nodo en la escena UI (colocado manualmente en el editor de escenas)
+	_icono_puerta = get_node_or_null("%IconoPuerta") as TextureRect
+	if not _icono_puerta:
+		_icono_puerta = find_child("IconoPuerta", true, false) as TextureRect
+
+	if _icono_puerta:
+		_icono_puerta.visible = true
+		if overlay and _icono_puerta.get_parent() != overlay:
+			_icono_puerta.top_level = true
+	else:
+		# Fallback dinámico si no existiera en la escena
+		_icono_puerta = TextureRect.new()
+		_icono_puerta.texture = TEXTURA_ICONO_PUERTA
+		_icono_puerta.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_icono_puerta.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_icono_puerta.anchor_left = 0.0
+		_icono_puerta.anchor_right = 0.0
+		_icono_puerta.anchor_top = 0.0
+		_icono_puerta.anchor_bottom = 0.0
+		var icon_size := Vector2(110.0, 110.0)
+		var center_pos := Vector2(300.0, 815.0)
+		var root_scene := get_tree().current_scene
+		if root_scene:
+			var torre := root_scene.find_child("TORRE", true, false) as Node3D
+			var cam: Camera3D = get_viewport().get_camera_3d()
+			if not cam:
+				cam = root_scene.find_child("PRESPECTIVA", true, false) as Camera3D
+			if not cam:
+				cam = root_scene.find_child("CamaraFondoDOF", true, false) as Camera3D
+			if torre and cam and cam.is_inside_tree():
+				var door_local := Vector3(0.0, 0.15, 0.35)
+				var door_world: Vector3 = torre.to_global(door_local)
+				if not cam.is_position_behind(door_world):
+					var sp: Vector2 = cam.unproject_position(door_world)
+					var vp_size: Vector2 = get_viewport().get_visible_rect().size
+					if vp_size.x > 0 and vp_size.y > 0:
+						sp.x = clamp(sp.x, icon_size.x * 0.5, vp_size.x - icon_size.x * 0.5)
+						sp.y = clamp(sp.y, icon_size.y * 0.5, vp_size.y - icon_size.y * 0.5)
+						center_pos = sp
+		_icono_puerta.offset_left = center_pos.x - icon_size.x * 0.5
+		_icono_puerta.offset_top = center_pos.y - icon_size.y * 0.5
+		_icono_puerta.offset_right = center_pos.x + icon_size.x * 0.5
+		_icono_puerta.offset_bottom = center_pos.y + icon_size.y * 0.5
+		_icono_puerta.pivot_offset = icon_size * 0.5
+		if overlay:
+			overlay.add_child(_icono_puerta)
+		else:
+			add_child(_icono_puerta)
 
 	# Palpitar lento: latido de 1.2 s (crece y vuelve)
-	var tween_icono := _icono_puerta.create_tween().set_loops()
-	tween_icono.tween_property(_icono_puerta, "scale", Vector2(1.12, 1.12), 0.6) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween_icono.tween_property(_icono_puerta, "scale", Vector2.ONE, 0.6) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if _icono_puerta:
+		_icono_puerta.scale = Vector2.ONE
+		_tween_icono_puerta = _icono_puerta.create_tween().set_loops()
+		_tween_icono_puerta.tween_property(_icono_puerta, "scale", Vector2(1.12, 1.12), 0.6) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_tween_icono_puerta.tween_property(_icono_puerta, "scale", Vector2.ONE, 0.6) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 ## Oculta el icono puerta y detiene su palpito (al empezar una oleada).
@@ -866,8 +880,12 @@ func _ocultar_icono_puerta() -> void:
 		_tween_icono_puerta.kill()
 	_tween_icono_puerta = null
 	if _icono_puerta and is_instance_valid(_icono_puerta):
-		_icono_puerta.queue_free()
-	_icono_puerta = null
+		_icono_puerta.scale = Vector2.ONE
+		if _icono_puerta.is_inside_tree() and (_icono_puerta == get_node_or_null("%IconoPuerta") or _icono_puerta.name == "IconoPuerta"):
+			_icono_puerta.visible = false
+		else:
+			_icono_puerta.queue_free()
+			_icono_puerta = null
 
 
 func _toggle_equal_spawn():

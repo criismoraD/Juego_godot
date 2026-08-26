@@ -67,12 +67,16 @@ const JUMP_BUFFER_TIME: float = 0.12
 var eje_disparo: int = 0
 # === HITBOX / COLISIÓN ===
 var arrow_scene = preload("res://Entities/Proyectil_Flecha/Arrow.tscn")
+var explosive_arrow_scene = preload("res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn")
 # --- REFERENCIAS ---
 var anim_tree: AnimationTree
 var skeleton: Skeleton3D
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer  # AnimationPlayer del arco
 var arrow_node: Node3D  # Nodo de la flecha para visibilidad
+var explosive_arrow_node: Node3D  # Nodo de la flecha explosiva visual
+var _arrow_base_scale: Vector3 = Vector3(40.0, 40.0, 40.0)
+var _explosive_arrow_base_scale: Vector3 = Vector3(40.0, 40.0, 40.0)
 # --- ESTADO ---
 var current_aim_state = AimState.NONE
 var state_timer = 0.0
@@ -180,7 +184,9 @@ func _ready():
 	# Buscar nodo de la flecha
 	arrow_node = find_child("FLECHA", true, false)
 	if arrow_node:
+		_arrow_base_scale = arrow_node.scale
 		arrow_node.visible = false
+	_setup_explosive_arrow_visual()
 
 	# Buscar Armature para rotación de escalera
 	armature_node = find_child("Armature", true, false)
@@ -889,8 +895,7 @@ func control_visual_state(delta):
 			if current_state != null and current_state != "none":
 				anim_tree.set(upper_path, "none")
 
-			if arrow_node:
-				arrow_node.visible = false  # Asegurar oculta
+			_ocultar_flecha_visual()
 
 			var current = float(anim_tree.get(blend_path))
 			if current > 0.0:
@@ -945,10 +950,8 @@ func control_visual_state(delta):
 				play_bow_animation("ARCO_TENSAR")
 				# Reproducir sonido de tensar cuerda (se puede detener)
 				AudioManager.play_bow_tension()
-				# Mostrar la flecha y resetear escala
-				if arrow_node:
-					arrow_node.visible = true
-					arrow_node.scale = Vector3.ZERO  # Empezar pequeña
+				# Mostrar la flecha correspondiente y resetear escala
+				_mostrar_flecha_visual(0.0)
 
 		AimState.DRAWING:
 			var current = float(anim_tree.get(blend_path))
@@ -979,15 +982,11 @@ func control_visual_state(delta):
 				charge_bar.visible = true
 
 				# Asegurar escala final
-				if arrow_node:
-					arrow_node.scale = Vector3(40.0, 40.0, 40.0)
+				_mostrar_flecha_visual(1.0)
 
 			# Mostrar trayectoria y actualizar escala de flecha
-
-			if arrow_node:
-				var progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0)
-				var scale_val = progress * 40.0
-				arrow_node.scale = Vector3(scale_val, scale_val, scale_val)
+			var progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0)
+			_mostrar_flecha_visual(progress)
 
 		AimState.AIMING:
 			if float(anim_tree.get(blend_path)) != 1.0:
@@ -1049,8 +1048,7 @@ func control_visual_state(delta):
 				# Detener animación del arco
 				stop_bow_animation()
 				# Ocultar la flecha y trayectoria
-				if arrow_node:
-					arrow_node.visible = false
+				_ocultar_flecha_visual()
 
 
 var shoot_anim_duration = 1.0  # Valor por defecto
@@ -1071,8 +1069,7 @@ func start_shooting():
 	play_bow_animation("ARCO_DISPARO")
 
 	# Ocultar la flecha visual (se "disparó")
-	if arrow_node:
-		arrow_node.visible = false
+	_ocultar_flecha_visual()
 
 	# Obtener duración real de la animación
 	if anim_player and anim_player.has_animation("Armature|Armature|DISPARAR"):
@@ -1117,17 +1114,22 @@ func spawn_arrow_projectile():
 	if not data["valid"]:
 		return
 
-	# Instanciar la flecha
-	var arrow_instance = arrow_scene.instantiate()
-
 	# Si quedan flechas explosivas, descontar y configurar la flecha
 	var es_flecha_explosiva: bool = false
 	if flechas_explosivas > 0:
 		flechas_explosivas -= 1
 		flechas_explosivas_changed.emit(flechas_explosivas)
 		es_flecha_explosiva = true
-		if "es_explosiva" in arrow_instance:
-			arrow_instance.es_explosiva = true
+
+	# Instanciar la flecha (explosiva o estándar)
+	var arrow_instance: Node = null
+	if es_flecha_explosiva and explosive_arrow_scene:
+		arrow_instance = explosive_arrow_scene.instantiate()
+	else:
+		arrow_instance = arrow_scene.instantiate()
+
+	if "es_explosiva" in arrow_instance:
+		arrow_instance.es_explosiva = es_flecha_explosiva
 
 	# Obtener dirección hacia el mouse
 	var shoot_dir = data["velocity"].normalized()
@@ -1340,8 +1342,7 @@ func _cancel_current_shot():
 		if charge_bar:
 			charge_bar.visible = false
 
-		if arrow_node:
-			arrow_node.visible = false
+		_ocultar_flecha_visual()
 
 		if anim_tree:
 			anim_tree.set("parameters/UpperBody/transition_request", "none")
@@ -1349,6 +1350,71 @@ func _cancel_current_shot():
 
 		reset_torso_bone()
 		stop_bow_animation()
+
+
+func _setup_explosive_arrow_visual() -> void:
+	# 1. Buscar si ya existe en la escena del jugador (nodo FlechaExplosiva o Flecha_Explosiva2)
+	explosive_arrow_node = find_child("FlechaExplosiva", true, false) as Node3D
+	if not explosive_arrow_node:
+		explosive_arrow_node = find_child("Flecha_Explosiva*", true, false) as Node3D
+	if not explosive_arrow_node:
+		explosive_arrow_node = find_child("FLECHA_EXPLOSIVA*", true, false) as Node3D
+	if not explosive_arrow_node:
+		explosive_arrow_node = find_child("Flecha_Electrica*", true, false) as Node3D
+
+	# 2. Si no existía en la escena, instanciarla dinámicamente como respaldo
+	if not explosive_arrow_node and arrow_node and arrow_node.get_parent():
+		var parent_attach = arrow_node.get_parent()
+		var glb_scene = load("res://TEST_/Flecha_Explosiva.glb") as PackedScene
+		if glb_scene:
+			explosive_arrow_node = glb_scene.instantiate() as Node3D
+			explosive_arrow_node.name = "Flecha_Explosiva2"
+			parent_attach.add_child(explosive_arrow_node)
+			var rot_adj = Basis(Vector3.UP, deg_to_rad(-90.0))
+			explosive_arrow_node.transform = Transform3D(
+				arrow_node.transform.basis * rot_adj * (0.305 / 0.4),
+				arrow_node.transform.origin
+			)
+			var tip_light := OmniLight3D.new()
+			tip_light.name = "RedTipLight"
+			tip_light.light_color = Color(1.0, 0.15, 0.08)
+			tip_light.light_energy = 3.5
+			tip_light.omni_range = 1.5
+			tip_light.position = Vector3(0.0, 0.0, 0.45)
+			explosive_arrow_node.add_child(tip_light)
+
+	if explosive_arrow_node:
+		if explosive_arrow_node.scale.length_squared() > 0.001:
+			_explosive_arrow_base_scale = explosive_arrow_node.scale
+		elif arrow_node and arrow_node.scale.length_squared() > 0.001:
+			_explosive_arrow_base_scale = arrow_node.scale
+		else:
+			_explosive_arrow_base_scale = Vector3(40.0, 40.0, 40.0)
+		explosive_arrow_node.visible = false
+
+
+func _mostrar_flecha_visual(factor_progreso: float = 1.0) -> void:
+	if not explosive_arrow_node:
+		_setup_explosive_arrow_visual()
+	var es_explosiva: bool = (flechas_explosivas > 0)
+	if es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+		if arrow_node and is_instance_valid(arrow_node):
+			arrow_node.visible = false
+		explosive_arrow_node.visible = true
+		explosive_arrow_node.scale = _explosive_arrow_base_scale * factor_progreso
+	else:
+		if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+			explosive_arrow_node.visible = false
+		if arrow_node and is_instance_valid(arrow_node):
+			arrow_node.visible = true
+			arrow_node.scale = _arrow_base_scale * factor_progreso
+
+
+func _ocultar_flecha_visual() -> void:
+	if arrow_node and is_instance_valid(arrow_node):
+		arrow_node.visible = false
+	if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+		explosive_arrow_node.visible = false
 
 
 func _play_hit_animation():

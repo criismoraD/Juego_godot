@@ -60,6 +60,146 @@ func test_lonko_take_damage_and_death() -> void:
 	await get_tree().process_frame
 
 
+func test_lonko_yaw_objetivo_segun_estado() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+
+	# Assert: estado base mira a la izquierda
+	assert_eq(lonko._obtener_yaw_objetivo_grados(), -90.0, "Yaw base debe ser -90 (izquierda)")
+
+	# Act: activar la corrección de la pausa IDLE
+	lonko._correccion_idle_activa = true
+
+	# Assert: debe sumar la corrección configurable sobre la base
+	assert_eq(
+		lonko._obtener_yaw_objetivo_grados(),
+		-90.0 + lonko.correccion_yaw_idle,
+		"En pausa IDLE debe sumar correccion_yaw_idle al yaw base"
+	)
+
+	# Act: activar la secuencia del pilar (mayor prioridad)
+	lonko._girando_hacia_fondo = true
+
+	# Assert: el pilar gana aunque la corrección siga activa
+	assert_eq(
+		lonko._obtener_yaw_objetivo_grados(),
+		180.0,
+		"Durante el pilar debe mirar al fondo aunque haya corrección idle activa"
+	)
+
+	# Boundary: corrección personalizada distinta de 180
+	lonko._girando_hacia_fondo = false
+	lonko.correccion_yaw_idle = -90.0
+	assert_eq(lonko._obtener_yaw_objetivo_grados(), -180.0, "Corrección personalizada debe respetarse")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_flags_yaw_se_apagan_al_morir() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+	lonko._correccion_idle_activa = true
+	lonko._girando_hacia_fondo = true
+
+	# Act: daño letal durante la secuencia del pilar
+	lonko.take_damage(999.0)
+
+	# Assert: muerte limpia ambos flags para no morir mirando al fondo
+	assert_eq(lonko.current_state, Lonko.State.DYING, "Daño letal debe dejar el estado en DYING")
+	assert_false(lonko._correccion_idle_activa, "La corrección idle debe apagarse al morir")
+	assert_false(lonko._girando_hacia_fondo, "El giro hacia el fondo debe apagarse al morir")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_espejo_idle_invierte_scale_x() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+	var escala_original_x: float = lonko._escala_original_modelo.x
+
+	# Act & Assert: sin corrección activa, escala positiva original
+	lonko._correccion_idle_activa = false
+	lonko._aplicar_espejo_idle()
+	await get_tree().create_timer(lonko.DURACION_ESPEJO_SG + 0.1).timeout
+	assert_gt(lonko._lonko_modelo.scale.x, 0.0, "Sin corrección idle la escala X debe ser positiva")
+
+	# Act: corrección activa + espejo habilitado
+	lonko.espejar_modelo_idle = true
+	lonko._correccion_idle_activa = true
+	lonko._aplicar_espejo_idle()
+	await get_tree().create_timer(lonko.DURACION_ESPEJO_SG + 0.1).timeout
+
+	# Assert: escala X negativa (mirada invertida), magnitud original preservada
+	assert_lt(lonko._lonko_modelo.scale.x, 0.0, "Con corrección idle y espejo la escala X debe ser negativa")
+	assert_eq(abs(lonko._lonko_modelo.scale.x), escala_original_x, "La magnitud de la escala X debe conservarse")
+
+	# Boundary: espejo deshabilitado restaura escala positiva aunque haya corrección
+	lonko.espejar_modelo_idle = false
+	lonko._aplicar_espejo_idle()
+	await get_tree().create_timer(lonko.DURACION_ESPEJO_SG + 0.1).timeout
+	assert_gt(lonko._lonko_modelo.scale.x, 0.0, "Con espejo deshabilitado la escala X debe volver a positiva")
+
+	# Cleanup: apagar corrección y restaurar estado visual
+	lonko._correccion_idle_activa = false
+	lonko._aplicar_espejo_idle()
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_debe_rastrear_jugador_gate() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+
+	# Assert: caminando no rastrea
+	assert_false(lonko._debe_rastrear_jugador(), "En WALKING no debe rastrear")
+
+	# Act & Assert: disparo normal rastrea
+	lonko.current_state = Lonko.State.SHOOTING
+	lonko.rastrear_jugador = true
+	lonko._is_invulnerable = false
+	assert_true(lonko._debe_rastrear_jugador(), "En SHOOTING con tracking activo debe rastrear")
+
+	# Act & Assert (regresión del bug del especial): apuntar arriba gana a la invulnerabilidad
+	lonko._is_invulnerable = true
+	lonko._apuntar_arriba = true
+	assert_true(
+		lonko._debe_rastrear_jugador(),
+		"Con _apuntar_arriba debe rastrear aunque esté invulnerable (apuntado al cielo)"
+	)
+
+	# Boundary: el daño interrumpe incluso el apuntado al cielo
+	lonko._is_taking_damage = true
+	assert_false(lonko._debe_rastrear_jugador(), "Recibiendo daño no debe rastrear")
+	lonko._is_taking_damage = false
+	assert_true(lonko._debe_rastrear_jugador(), "Tras recuperar control vuelve a rastrear al cielo")
+
+	# Boundary: debug override tiene máxima prioridad
+	lonko.current_state = Lonko.State.WALKING
+	lonko.debug_tracking_override = true
+	assert_true(lonko._debe_rastrear_jugador(), "El override de debug fuerza el tracking")
+
+	# Boundary: sin tracking de jugador no rastrea
+	lonko.debug_tracking_override = false
+	lonko._apuntar_arriba = false
+	lonko._is_invulnerable = false
+	lonko.rastrear_jugador = false
+	lonko.current_state = Lonko.State.SHOOTING
+	assert_false(lonko._debe_rastrear_jugador(), "Sin rastrear_jugador no debe rastrear")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
 func test_lonko_tiro_electrico_cada_3() -> void:
 	# Arrange
 	var lonko := LONKO_SCENE.instantiate() as Lonko

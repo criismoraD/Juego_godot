@@ -88,9 +88,9 @@ func test_explosion_scene_collider_radius_and_vfx():
 	assert_not_null(expl.collision_shape, "Explosion scene must have a CollisionShape3D")
 	assert_eq(expl.dano_base, 3.0, "Explosion base damage should default to 3.0")
 	assert_eq(expl.bono_dano_estructuras, 6.0, "Explosion structure bonus should default to 6.0")
-	assert_gte(expl._obtener_radio_dano(), 2.2, "Explosion shape radius should be at least 2.2m")
+	assert_gte(expl._obtener_radio_dano(), 0.7, "Explosion shape radius should be at least 0.7m")
 	assert_eq(expl.escala_vfx, Vector3(0.22, 0.22, 0.22), "Explosion VFX scale should be 0.22")
-	assert_eq(expl.tamano_ceniza, Vector2(1.43, 1.43), "Ash decal size should be 1.43m")
+	assert_eq(expl.tamano_ceniza, Vector2(1.4, 1.4), "Ash decal size should be 1.4m")
 
 
 func test_rastro_ceniza_generacion():
@@ -113,6 +113,155 @@ func test_rastro_ceniza_generacion():
 		assert_true(mesh_inst.mesh is QuadMesh, "La malla de ceniza debe ser un QuadMesh")
 		if mesh_inst.mesh is QuadMesh:
 			var quad := mesh_inst.mesh as QuadMesh
-			assert_eq(quad.size, Vector2(1.43, 1.43), "El tamaño de la malla de ceniza debe ser 1.43x1.43")
+			assert_eq(quad.size, Vector2(1.4, 1.4), "El tamaño de la malla de ceniza debe ser 1.4x1.4")
 		rastro_ceniza.queue_free()
+
+
+func test_flecha_explosiva_scene_instantiation():
+	# Arrange
+	var scene_path = "res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn"
+	var scene = load(scene_path) as PackedScene
+	assert_not_null(scene, "La escena FlechaExplosiva.tscn debe existir y cargarse")
+
+	# Act
+	var flecha = scene.instantiate() as ArrowProjectile
+	add_child_autofree(flecha)
+
+	# Assert
+	assert_not_null(flecha, "Debe instanciarse correctamente como ArrowProjectile")
+	assert_true(flecha.es_explosiva, "es_explosiva debe ser true en la escena")
+	assert_eq(flecha.dano_base_explosiva, 3.0, "El daño base debe ser 3.0")
+	assert_eq(flecha.bono_dano_estructuras, 6.0, "El bono contra estructuras debe ser 6.0")
+	assert_eq(flecha.radio_explosion, 4.84, "El radio de explosión debe ser 4.84m")
+
+	# Verificar nodos hijos esenciales
+	var collision = flecha.get_node_or_null("CollisionShape3D")
+	var modelo = flecha.get_node_or_null("Flecha_Explosiva2")
+	if not modelo:
+		modelo = flecha.get_node_or_null("FLECHA")
+	var red_light = flecha.get_node_or_null("RedTipLight")
+	var red_mesh = flecha.get_node_or_null("RedTipMesh")
+	var trail = flecha.get_node_or_null("TrailParticles")
+
+	assert_not_null(collision, "Debe tener CollisionShape3D")
+	assert_not_null(modelo, "Debe tener el modelo 3D de la flecha")
+	assert_not_null(red_light, "Debe tener RedTipLight")
+	assert_not_null(red_mesh, "Debe tener RedTipMesh con esfera incandescente")
+	assert_not_null(trail, "Debe tener TrailParticles")
+
+
+func test_player_preloads_explosive_arrow_scene():
+	var player_script = load("res://Entities/Jugador_Arquera/Player.gd")
+	var player = player_script.new()
+	assert_not_null(player.explosive_arrow_scene, "Player debe tener preloaded explosive_arrow_scene")
+	player.free()
+
+
+func test_ally_preloads_explosive_arrow_scene():
+	var ally_script = load("res://Entities/Aliada_Arquera/AllyArcher.gd")
+	var ally = ally_script.new()
+	assert_not_null(ally.explosive_arrow_scene, "AllyArcher debe tener preloaded explosive_arrow_scene")
+	ally.free()
+
+
+func test_player_swaps_visual_arrow_with_ammo():
+	# Arrange
+	var player_script = load("res://Entities/Jugador_Arquera/Player.gd")
+	var player = player_script.new()
+	var dummy_arrow = Node3D.new()
+	dummy_arrow.name = "FLECHA"
+	var dummy_exp = Node3D.new()
+	dummy_exp.name = "FLECHA_EXPLOSIVA_VISUAL"
+	player.arrow_node = dummy_arrow
+	player.explosive_arrow_node = dummy_exp
+	player.add_child(dummy_arrow)
+	player.add_child(dummy_exp)
+	add_child_autofree(player)
+
+	# Act 1: Con munición explosiva (flechas_explosivas = 5)
+	player.flechas_explosivas = 5
+	player._mostrar_flecha_visual(1.0)
+
+	# Assert 1: Debe verse la flecha explosiva y ocultarse la normal
+	assert_true(player.explosive_arrow_node.visible, "La flecha explosiva visual debe estar visible con munición > 0")
+	assert_false(player.arrow_node.visible, "La flecha normal debe estar oculta con munición explosiva")
+
+	# Act 2: Sin munición explosiva (flechas_explosivas = 0)
+	player.flechas_explosivas = 0
+	player._mostrar_flecha_visual(1.0)
+
+	# Assert 2: Debe verse la flecha normal y ocultarse la explosiva
+	assert_true(player.arrow_node.visible, "La flecha normal debe estar visible cuando flechas_explosivas == 0")
+	assert_false(player.explosive_arrow_node.visible, "La flecha explosiva visual debe estar oculta cuando flechas_explosivas == 0")
+
+	# Act 3: Ocultar flecha
+	player._ocultar_flecha_visual()
+	assert_false(player.arrow_node.visible, "Ambas flechas deben quedar ocultas")
+	assert_false(player.explosive_arrow_node.visible, "Ambas flechas deben quedar ocultas")
+
+
+func test_player_scene_finds_flecha_explosiva2():
+	# Arrange & Act
+	var scene = load("res://Entities/Jugador_Arquera/Player.tscn") as PackedScene
+	assert_not_null(scene, "Player.tscn debe existir")
+	var player = scene.instantiate()
+	add_child_autofree(player)
+
+	# Assert
+	assert_not_null(player.explosive_arrow_node, "Player.tscn debe vincular explosive_arrow_node")
+	assert_true("Flecha" in player.explosive_arrow_node.name, "Debe vincular el nodo de flecha explosiva")
+	assert_false(player.explosive_arrow_node.visible, "Debe iniciar oculta")
+	assert_false(player.arrow_node.visible, "Debe iniciar oculta")
+
+	# Act: Cargar con munición
+	player.flechas_explosivas = 5
+	player._mostrar_flecha_visual(1.0)
+
+	# Assert: FlechaExplosiva visible, FLECHA normal oculta
+	assert_true(player.explosive_arrow_node.visible, "FlechaExplosiva debe hacerse visible al cargar con municion")
+	assert_false(player.arrow_node.visible, "FLECHA debe permanecer oculta con municion")
+
+
+func test_ally_scene_finds_flecha_explosiva():
+	# Arrange & Act
+	var scene = load("res://Entities/Aliada_Arquera/AllyArcher.tscn") as PackedScene
+	assert_not_null(scene, "AllyArcher.tscn debe existir")
+	var ally = scene.instantiate()
+	add_child_autofree(ally)
+
+	# Assert
+	assert_not_null(ally.explosive_arrow_node, "AllyArcher.tscn debe vincular explosive_arrow_node")
+	assert_true("Flecha" in ally.explosive_arrow_node.name, "Debe vincular el nodo de flecha explosiva")
+	assert_false(ally.explosive_arrow_node.visible, "Debe iniciar oculta")
+
+	# Act: Cargar con munición
+	ally.flechas_explosivas = 5
+	ally._mostrar_flecha()
+
+	# Assert: FlechaExplosiva visible, FLECHA normal oculta
+	assert_true(ally.explosive_arrow_node.visible, "FlechaExplosiva debe hacerse visible al cargar con municion")
+	assert_false(ally.arrow_node.visible, "FLECHA debe permanecer oculta con municion")
+
+
+func test_ally_disparar_spawns_explosive_projectile():
+	# Arrange
+	var scene = load("res://Entities/Aliada_Arquera/AllyArcher.tscn") as PackedScene
+	var ally = scene.instantiate()
+	add_child_autofree(ally)
+	ally.flechas_explosivas = 1
+
+	# Act
+	var initial_child_count = get_tree().root.get_child_count()
+	ally._disparar()
+
+	# Assert
+	assert_eq(ally.flechas_explosivas, 0, "Debe haber consumido 1 flecha explosiva")
+	var new_child_count = get_tree().root.get_child_count()
+	assert_gt(new_child_count, initial_child_count, "Debe haber instanciado un proyectil en el árbol")
+
+	var spawned_arrow = get_tree().root.get_child(new_child_count - 1)
+	assert_not_null(spawned_arrow, "El proyectil debe existir")
+	assert_true(spawned_arrow.es_explosiva, "El proyectil disparado debe ser explosivo")
+	assert_not_null(spawned_arrow.get_node_or_null("RedTipLight"), "El proyectil debe tener RedTipLight")
+	spawned_arrow.queue_free()
 

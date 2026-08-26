@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d6iye0nn38ej"]
+
+[ext_resource type="Texture2D" uid="uid://cgns8sydu21t2" path="res://TEST_/Flecha_Explosiva_D.jpg" id="1_13x2u"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_17xjt"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ald73"]
+render_priority = 0
+shader = ExtResource("2_17xjt")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_ald73")
+shading_mode = 0
+albedo_texture = ExtResource("1_13x2u")

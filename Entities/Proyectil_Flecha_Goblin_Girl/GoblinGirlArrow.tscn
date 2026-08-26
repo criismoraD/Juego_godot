@@ -14,10 +14,10 @@ script = ExtResource("2_script")
 color_proyectil = Color(0.65574586, 0.00038822263, 0.6724104, 1)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1969468802]
-transform = Transform3D(-3.860866e-08, 0.8832632, 0, -0.8832632, -3.860866e-08, 0, 0, 0, 0.8832632, -0.030178815, 1.3191577e-09, 0)
+transform = Transform3D(-3.860866e-08, 0.8832632, 0, -0.8832632, -3.860866e-08, 0, 0, 0, 0.8832632, 0.29158846, 1.3191577e-09, 0)
 shape = SubResource("CapsuleShape_arrow")
 
 [node name="ArrowModel" type="Node3D" parent="." unique_id=745921720]
 
 [node name="FLECHA_ARQUERA_ENEMIGA" parent="." unique_id=61408180 instance=ExtResource("2_0feol")]
-transform = Transform3D(-8.742278e-08, 0, 0.6106571, 0, 1.7377698, 0, -2, 0, -2.6692668e-08, -0.012586936, 0, 0)
+transform = Transform3D(-8.742278e-08, 0, 0.6106571, 0, 1.7377698, 0, -2, 0, -2.6692668e-08, 0.297046, 0, 0)

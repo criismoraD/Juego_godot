@@ -193,6 +193,9 @@ func _ready():
 					_dbg_player.flechas_explosivas_changed.emit(5)
 			if "disparo_bloqueado_por_ui" in _dbg_player:
 				_dbg_player.disparo_bloqueado_por_ui = true
+		for ally in AllyArcher.active_allies_cache:
+			if is_instance_valid(ally) and ally is AllyArcher:
+				ally.flechas_explosivas = 5
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
 		_set_aliadas_activas(true)
 		AudioManager.play_music(2)
@@ -1584,6 +1587,9 @@ func _crear_panel_controles_spawn() -> void:
 			p.flechas_explosivas = max(0, p.flechas_explosivas - 1)
 			if p.has_signal("flechas_explosivas_changed"):
 				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+			for ally in AllyArcher.active_allies_cache:
+				if is_instance_valid(ally) and ally is AllyArcher:
+					ally.flechas_explosivas = p.flechas_explosivas
 	)
 	hbox_ammo.add_child(btn_ammo_minus)
 	var btn_ammo_plus := Button.new()
@@ -1595,6 +1601,9 @@ func _crear_panel_controles_spawn() -> void:
 			p.flechas_explosivas += 1
 			if p.has_signal("flechas_explosivas_changed"):
 				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+			for ally in AllyArcher.active_allies_cache:
+				if is_instance_valid(ally) and ally is AllyArcher:
+					ally.flechas_explosivas = p.flechas_explosivas
 	)
 	hbox_ammo.add_child(btn_ammo_plus)
 	var btn_ammo_plus5 := Button.new()
@@ -1606,6 +1615,9 @@ func _crear_panel_controles_spawn() -> void:
 			p.flechas_explosivas += 5
 			if p.has_signal("flechas_explosivas_changed"):
 				p.flechas_explosivas_changed.emit(p.flechas_explosivas)
+			for ally in AllyArcher.active_allies_cache:
+				if is_instance_valid(ally) and ally is AllyArcher:
+					ally.flechas_explosivas = p.flechas_explosivas
 	)
 	hbox_ammo.add_child(btn_ammo_plus5)
 	if p_cur and p_cur.has_signal("flechas_explosivas_changed"):

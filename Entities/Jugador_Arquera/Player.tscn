@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://uqh6g6f3e2n4" path="res://Entities/Jugador_Arquera/PROTA.glb" id="2_fbx"]
 [ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx" id="3_o5en2"]
 [ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="4_7pt4t"]
+[ext_resource type="PackedScene" uid="uid://b7vyk4r3e2f5x" path="res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn" id="4_ed4ab"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.4
@@ -30,7 +31,7 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="ArqueraModel" parent="." unique_id=1511312856 instance=ExtResource("2_fbx")]
 transform = Transform3D(-1.2807438e-07, 0, 2.93, 0, 2.93, 0, -2.93, 0, -1.2807438e-07, 0, -0.065, 0)
 
-[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 171212619) index="0" unique_id=1244104876]
+[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 2102294179) index="0" unique_id=817961625]
 bones/0/position = Vector3(1.7202649, -1.0863959, -37.875916)
 bones/0/rotation = Quaternion(-0.4808957, -0.49690458, 0.51365864, 0.5079173)
 bones/1/rotation = Quaternion(-0.0034312792, -0.01955576, -0.06884759, 0.9974296)
@@ -140,8 +141,12 @@ transform = Transform3D(0.4229946, -0.6129182, 0.667387, 0.24166031, 0.7861537, 
 bone_name = "mixamorig_RightHand"
 bone_idx = 34
 
+[node name="FlechaExplosiva" parent="ArqueraModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=466263060 instance=ExtResource("4_ed4ab")]
+transform = Transform3D(21.314404, -54.572502, 68.319336, 61.66345, -40.47536, -51.568996, 61.994457, 59.021896, 27.804655, 4.354744, 18.74981, 10.834429)
+
 [node name="FLECHA" parent="ArqueraModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=1873166664 instance=ExtResource("4_7pt4t")]
 transform = Transform3D(-10.504959, 38.515537, -2.4899244, -29.470072, -9.670731, -25.25851, -24.923117, -4.7990274, 30.916132, -0.49650955, 3.162592, -0.08917618)
+visible = false
 
 [node name="AnimationTree" type="AnimationTree" parent="ArqueraModel" unique_id=1879798461]
 callback_mode_process = 0

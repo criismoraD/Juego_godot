@@ -32,7 +32,7 @@ shader_parameter/Scale = Vector2(0.5, 1)
 shader_parameter/Trail_Speed = Vector2(4, 0)
 shader_parameter/Texture2DParameter = ExtResource("6_hl3a4")
 
-[sub_resource type="ImmediateMesh" id="ImmediateMesh_xhofk"]
+[sub_resource type="ImmediateMesh" id="ImmediateMesh_s668o"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gkdsd"]
 render_priority = 0
@@ -77,10 +77,8 @@ collision_mask = 3
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, -3.0867966e-08, 0.70617676)
 shape = SubResource("CapsuleShape3D_rtp86")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1073429850]
-
 [node name="TBHead" type="MeshInstance3D" parent="." unique_id=1098249373]
-transform = Transform3D(-0.727, 0, -1.3841e-07, 0, 0.727, 0, 6.35564e-08, 0, -1.58323, 0, 0, 0)
+transform = Transform3D(-0.727, 0, -1.3841e-07, 0, 0.727, 0, 6.35564e-08, 0, -1.58323, 0.0009162426, -0.012943268, -0.015787601)
 sorting_offset = 1.0
 material_override = ExtResource("1_nvpu6")
 cast_shadow = 0
@@ -88,14 +86,14 @@ mesh = ExtResource("2_vqces")
 skeleton = NodePath("../../..")
 
 [node name="MHeader" type="MeshInstance3D" parent="." unique_id=348584253]
-transform = Transform3D(-1.43155e-07, 0, -1, 0, 1, 0, 3.275, 0, -4.37114e-08, 0, 0, 0)
+transform = Transform3D(-1.4315481e-07, 0, -1, 0, 1, 0, 3.275, 0, -4.371139e-08, 0, 0, 0)
 material_override = SubResource("ShaderMaterial_rec5w")
 cast_shadow = 0
 mesh = SubResource("SphereMesh_5xhtc")
 skeleton = NodePath("../..")
 
 [node name="Trail1_static" type="MeshInstance3D" parent="." unique_id=719177717]
-transform = Transform3D(-2.37553e-07, -0.707107, 0.707107, 0, 0.707107, 0.707107, -5.43457, 3.09086e-08, -3.09086e-08, 0, 0, 2.53354)
+transform = Transform3D(-2.375526e-07, -0.707107, 0.7071069, 0, 0.7071069, 0.707107, -5.43457, 3.0908627e-08, -3.0908623e-08, 0, 0, 2.53354)
 material_override = ExtResource("4_34tcr")
 cast_shadow = 0
 mesh = SubResource("QuadMesh_p7v2y")
@@ -106,7 +104,7 @@ transform = Transform3D(0.900067, 0, -0.435751, 0, 1, 0, 0.435751, 0, 0.900067, 
 visible = false
 material_override = SubResource("ShaderMaterial_qk5ma")
 cast_shadow = 0
-mesh = SubResource("ImmediateMesh_xhofk")
+mesh = SubResource("ImmediateMesh_s668o")
 skeleton = NodePath("../..")
 script = ExtResource("7_0tsj2")
 fromWidth = 1.0

@@ -30,11 +30,13 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP }
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
 var arrow_scene = preload("res://Entities/Proyectil_Flecha_Aliada/AllyArrow.tscn")
+var explosive_arrow_scene = preload("res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn")
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer
 var skeleton: Skeleton3D
 var arrow_node: Node3D
+var explosive_arrow_node: Node3D
 var hitbox_body: StaticBody3D
 var model_root: Node3D
 var _original_model_y_rot: float = 0.0
@@ -188,6 +190,29 @@ func _buscar_arrow_node():
 	arrow_node = find_child("FLECHA", true, false)
 	if not arrow_node:
 		arrow_node = find_child("BoneAttach_Flecha", true, false)
+	if arrow_node and arrow_node.get_parent():
+		var parent_attach = arrow_node.get_parent()
+		explosive_arrow_node = parent_attach.get_node_or_null("FLECHA_EXPLOSIVA_VISUAL") as Node3D
+		if not explosive_arrow_node:
+			var glb_scene = load("res://TEST_/Flecha_Explosiva.glb") as PackedScene
+			if glb_scene:
+				explosive_arrow_node = glb_scene.instantiate() as Node3D
+				explosive_arrow_node.name = "FLECHA_EXPLOSIVA_VISUAL"
+				parent_attach.add_child(explosive_arrow_node)
+				var rot_adj = Basis(Vector3.UP, deg_to_rad(-90.0))
+				explosive_arrow_node.transform = Transform3D(
+					arrow_node.transform.basis * rot_adj * (0.305 / 0.4),
+					arrow_node.transform.origin
+				)
+				var tip_light := OmniLight3D.new()
+				tip_light.name = "RedTipLight"
+				tip_light.light_color = Color(1.0, 0.15, 0.08)
+				tip_light.light_energy = 3.5
+				tip_light.omni_range = 1.5
+				tip_light.position = Vector3(0.0, 0.0, 0.45)
+				explosive_arrow_node.add_child(tip_light)
+		if explosive_arrow_node:
+			explosive_arrow_node.visible = false
 
 
 func _crear_hitbox():
@@ -479,14 +504,22 @@ func _disparar():
 	if not arrow_scene:
 		return
 
+	# 1. Determinar si se dispara flecha explosiva
+	var es_explosiva: bool = false
+	if flechas_explosivas > 0:
+		flechas_explosivas -= 1
+		es_explosiva = true
+
 	AudioManager.play_sfx("player_shoot", -6.0)
 
-	# Posición de spawn
+	# 2. Posición de spawn según el nodo visual activo
 	var spawn_pos = global_position + Vector3(0, altura_spawn_flecha, 0)
-	if arrow_node and is_instance_valid(arrow_node):
+	if es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+		spawn_pos = explosive_arrow_node.global_position
+	elif arrow_node and is_instance_valid(arrow_node):
 		spawn_pos = arrow_node.global_position
 
-	# Potencia proporcional al tiempo de carga
+	# 3. Potencia proporcional al tiempo de carga
 	var power_ratio = clamp(charge_duration / tiempo_carga_max, 0.0, 1.0)
 	var speed = lerp(potencia_minima, potencia_maxima, power_ratio)
 
@@ -526,12 +559,15 @@ func _disparar():
 		var angulo = deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
 		direction = Vector3(cos(angulo), sin(angulo), 0).normalized()
 
-	# Crear flecha
-	var arrow = arrow_scene.instantiate()
-	if flechas_explosivas > 0:
-		flechas_explosivas -= 1
-		if "es_explosiva" in arrow:
-			arrow.es_explosiva = true
+	# 4. Instanciar la flecha (escena explosiva dedicada o proyectil aliado)
+	var arrow: Node = null
+	if es_explosiva and explosive_arrow_scene:
+		arrow = explosive_arrow_scene.instantiate()
+	else:
+		arrow = arrow_scene.instantiate()
+
+	if "es_explosiva" in arrow:
+		arrow.es_explosiva = es_explosiva
 
 	arrow.initialize(direction, speed)
 	get_tree().root.add_child(arrow)
@@ -544,13 +580,23 @@ func _disparar():
 
 
 func _mostrar_flecha():
-	if arrow_node and is_instance_valid(arrow_node):
-		arrow_node.visible = true
+	var es_explosiva: bool = (flechas_explosivas > 0)
+	if es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+		if arrow_node and is_instance_valid(arrow_node):
+			arrow_node.visible = false
+		explosive_arrow_node.visible = true
+	else:
+		if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+			explosive_arrow_node.visible = false
+		if arrow_node and is_instance_valid(arrow_node):
+			arrow_node.visible = true
 
 
 func _ocultar_flecha():
 	if arrow_node and is_instance_valid(arrow_node):
 		arrow_node.visible = false
+	if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+		explosive_arrow_node.visible = false
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -42,6 +42,12 @@ var _desvaneciendose: bool = false  ## True durante la transición de transparen
 
 
 func _ready():
+	if get_parent() is BoneAttachment3D or is_in_group("visual_only"):
+		set_physics_process(false)
+		set_deferred("monitoring", false)
+		set_deferred("monitorable", false)
+		return
+
 	world_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 	var player = get_tree().get_first_node_in_group("player")
@@ -662,7 +668,8 @@ func initialize(target_direction: Vector3, arrow_speed: float):
 
 
 func _crear_destello_punta() -> void:
-	if _destello_punta_creado:
+	if _destello_punta_creado or has_node("RedTipLight"):
+		_destello_punta_creado = true
 		return
 	_destello_punta_creado = true
 

@@ -34,10 +34,6 @@ const FACTOR_DETENER_EMISION: float = 0.5
 @export var tiempo_antes_disolver: float = 1.8  ## Tiempo antes de empezar disolución
 @export var escala_sangre_min: float = 0.015  ## Escala mínima de las partículas de sangre al morir
 @export var escala_sangre_max: float = 0.03   ## Escala máxima de las partículas de sangre al morir
-@export_category("Retroceso")
-@export var tiempo_retroceder: float = 1.5  ## Duración que se reproduce la animación RETROCEDER tras LANZAR01
-@export var offset_post_lanzar: float = 0.3  ## Salto instantáneo de posición al terminar LANZAR01 (antes de RETROCEDER)
-@export var desplazamiento_retroceder: float = 0.3  ## Movimiento gradual total durante la animación RETROCEDER
 @export var velocidad_correr: float = 1.2  ## Velocidad de movimiento cuando corre (1.2 por defecto)
 # === COLOR DE SANGRE (compartido entre todos los Imps) ===
 static var sangre_morada: bool = true  ## Toggle rojo/morado para la sangre (morada por defecto)
@@ -47,8 +43,6 @@ var material_imp: Material = preload("res://Entities/Enemigo_Imp/MAT_IMP.tres")
 var is_throwing: bool = false  ## True durante la animación de lanzar
 var has_thrown: bool = false  ## True después de lanzar en este ciclo
 var is_idle_pause: bool = false  ## True durante la pausa IDLE entre lanzamientos
-var is_retreating: bool = false  ## True durante la animación RETROCEDER
-var retreat_timer: float = 0.0  ## Timer para la duración de RETROCEDER
 var current_throw_anim: String = ""  ## Nombre de la animación de lanzamiento actual
 var throw_anim_timer: float = 0.0  ## Timer para el momento exacto de lanzamiento
 var throw_anim_duration: float = 0.0  ## Duración total de la animación actual
@@ -430,26 +424,6 @@ func _process_shooting(delta):
 		# Esperar a que termine la animación completa
 		if throw_anim_timer >= throw_anim_duration:
 			is_throwing = false
-			# Si fue LANZAR01, ejecutar RETROCEDER antes del IDLE
-			if current_throw_anim == "LANZAR01":
-				is_retreating = true
-				retreat_timer = tiempo_retroceder
-				# Salto instantáneo de posición (offset post-lanzar)
-				global_position.x += offset_post_lanzar
-				_play_animation("RETROCEDER")
-			else:
-				# LANZAR2 → directo a pausa IDLE
-				is_idle_pause = true
-				shoot_timer = randf_range(pausa_idle_min, pausa_idle_max)
-				_play_animation("IDLE")
-	elif is_retreating:
-		# === FASE RETROCEDER: animación de retroceso tras LANZAR01 ===
-		# Desplazamiento gradual durante la animación RETROCEDER
-		var velocidad_retroceso = desplazamiento_retroceder / tiempo_retroceder
-		global_position.x += velocidad_retroceso * delta
-		retreat_timer -= delta
-		if retreat_timer <= 0:
-			is_retreating = false
 			is_idle_pause = true
 			shoot_timer = randf_range(pausa_idle_min, pausa_idle_max)
 			_play_animation("IDLE")

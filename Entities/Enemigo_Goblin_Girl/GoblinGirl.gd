@@ -39,6 +39,10 @@ var attachment_flecha_mano: BoneAttachment3D = null
 var flecha_visual_mano: Node3D = null
 var escala_original_flecha_mano: Vector3 = Vector3.ONE
 var escala_original_global_flecha_mano: Vector3 = Vector3.ONE
+## Pose local base de la flecha en mano (la afinada en el editor o la creada
+## por código). Fuente de verdad para restaurar durante la animación de disparo,
+## en lugar de pisar la posición con offset_flecha_mano (= 0,0,0 por defecto).
+var _pose_base_flecha_mano: Transform3D = Transform3D.IDENTITY
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOOKS DE ENEMYBASE
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -428,6 +432,9 @@ func _configurar_flecha_visual_mano():
 	if flecha_visual_mano:
 		flecha_visual_mano.visible = false
 		escala_original_flecha_mano = flecha_visual_mano.scale
+		# Capturar la pose afinada en el editor: la animación de disparo debe
+		# restaurar ESTA pose, no offset_flecha_mano (que vale 0,0,0 por defecto).
+		_pose_base_flecha_mano = flecha_visual_mano.transform
 		# Incrementado en un 10% según solicitud del usuario
 		escala_original_global_flecha_mano = (flecha_visual_mano.global_transform.basis.get_scale() * 1.10).abs()
 		return
@@ -460,6 +467,7 @@ func _configurar_flecha_visual_mano():
 	flecha_visual_mano.position = offset_flecha_mano
 	flecha_visual_mano.rotation_degrees = rotacion_flecha_mano_grados
 	flecha_visual_mano.scale = escala_flecha_mano
+	_pose_base_flecha_mano = flecha_visual_mano.transform
 	# Forzar actualización de transform para que calcule la escala global
 	flecha_visual_mano.force_update_transform()
 	escala_original_flecha_mano = escala_flecha_mano
@@ -523,16 +531,16 @@ func _actualizar_flecha_mano_durante_animacion():
 		# Efecto juice: vibración/temblor por tensión al final del tensado (t > 0.8)
 		if t > 0.8:
 			var shake_intensity: float = (t - 0.8) * 0.012
-			flecha_visual_mano.position = offset_flecha_mano + Vector3(
+			flecha_visual_mano.position = _pose_base_flecha_mano.origin + Vector3(
 				randf_range(-shake_intensity, shake_intensity),
 				randf_range(-shake_intensity, shake_intensity),
 				randf_range(-shake_intensity, shake_intensity)
 			)
 		else:
-			flecha_visual_mano.position = offset_flecha_mano
+			flecha_visual_mano.position = _pose_base_flecha_mano.origin
 	else:
 		flecha_visual_mano.visible = false
-		flecha_visual_mano.position = offset_flecha_mano
+		flecha_visual_mano.position = _pose_base_flecha_mano.origin
 
 
 func _ease_out_back(x: float) -> float:

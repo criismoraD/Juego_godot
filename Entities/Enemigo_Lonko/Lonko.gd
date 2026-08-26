@@ -17,6 +17,10 @@ const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 const FLECHA_ELECTRICA_SCENE = preload("res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.tscn")
 const TIEMPO_DISPARO: float = 0.8
 const TIEMPO_LANZAR_FLECHA: float = 0.35
+const YAW_BASE_IZQUIERDA: float = -90.0  ## Mirando a la izquierda (jugadora)
+const YAW_HACIA_FONDO: float = 180.0  ## Mirando al fondo durante la invocación del pilar
+const BLEND_ANIMACIONES: float = 0.2  ## Transición suave entre clips (evita el micro salto/parpadeo)
+const DURACION_ESPEJO_SG: float = 0.15  ## Duración del volteo suave de escala al entrar/salir del IDLE
 
 ## Humo de pisadas: spritesheet SmokeFX Lite 1A-1 (tira horizontal 9x1 de 64px)
 const TEXTURA_HUMO_PISADAS: String = "res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png"
@@ -58,6 +62,11 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 @export var debug_tracking_override: bool = false  ## Activar para usar el slider de ángulo manualmente
 @export_range(-90.0, 90.0, 0.5) var debug_pitch_deg: float = 0.0  ## Slider para probar la rotación en vivo
 
+@export_category("Orientación del Modelo - Lonko")
+@export_range(-360.0, 360.0, 5.0) var correccion_yaw_idle: float = 0.0  ## Giro extra en Y solo durante la pausa IDLE (con espejo activo dejar en 0: el espejo ya voltea el perfil a frente)
+@export var espejar_modelo_idle: bool = true  ## Espeja el modelo (scale.x negativo) durante la pausa IDLE para invertir la mirada
+@export_range(1.0, 30.0, 0.5) var suavidad_giro: float = 8.0  ## Velocidad del giro suave del modelo (lerp_angle, mismo patrón que Player)
+
 # Referencias
 var lonko_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
 var sfx_dano_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Daño.mp3")
@@ -95,6 +104,11 @@ var sfx_explosion_01: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOS
 var sfx_explosion_02: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION02.mp3")
 var _flecha_electrica_en_mano: FlechaElectricaAtaque = null  ## Proyectil eléctrico cargado en la mano durante la RECARGA
 var omni_light_sp: OmniLight3D = null  ## Luz lila que ilumina durante el ataque especial (similar a la Gárgola)
+var _lonko_modelo: Node3D = null  ## Modelo 3D cacheado (nodo LONKO)
+var _escala_original_modelo: Vector3 = Vector3.ONE  ## Escala del modelo capturada al spawn (para restaurar tras el espejo)
+var _girando_hacia_fondo: bool = false  ## True durante la invocación del pilar (mira al fondo)
+var _correccion_idle_activa: bool = false  ## True durante la pausa IDLE entre disparos (corrige el yaw del clip)
+var _tween_espejo: Tween = null  ## Volteo suave de escala X al entrar/salir del IDLE
 
 
 func _on_enemy_ready() -> void:
@@ -103,10 +117,14 @@ func _on_enemy_ready() -> void:
 	color_borde_disolucion = Color(0.2, 1.0, 0.2)  # Verde lima
 	rastrear_jugador = true
 
-	var lonko_model := get_node_or_null("LONKO") as Node3D
-	if lonko_model:
-		lonko_model.rotation_degrees.y = -90.0
-		lonko_model.scale = Vector3(0.85, 0.85, 0.85)  # Reducir tamaño un 15%
+	_lonko_modelo = get_node_or_null("LONKO") as Node3D
+	if _lonko_modelo:
+		_lonko_modelo.rotation_degrees.y = YAW_BASE_IZQUIERDA  # Spawn: orientación instantánea inicial
+		_lonko_modelo.scale = Vector3(0.85, 0.85, 0.85)  # Reducir tamaño un 15%
+		_escala_original_modelo = _lonko_modelo.scale
+
+	if anim_player:
+		anim_player.playback_default_blend_time = BLEND_ANIMACIONES
 
 	_configurar_flecha_mano()
 	_configurar_particulas_pisada()
@@ -230,20 +248,33 @@ func _recolorear_flecha_mano() -> void:
 # TRACKING - Rotación del torso hacia la jugadora
 # ═══════════════════════════════════════════════════════════════════════════════
 
-func _process(_delta: float) -> void:
-	super._process(_delta)
+func _process(delta: float) -> void:
+	super._process(delta)
+	_aplicar_yaw_suave(delta)
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
 	if _reached_position and _base_pos_pilar != Vector3.ZERO:
 		global_position.x = _base_pos_pilar.x
 		global_position.z = _base_pos_pilar.z
 
-	if debug_tracking_override:
-		_lonko_track_player()
-	elif current_state == State.SHOOTING and rastrear_jugador and not _is_taking_damage and not _is_invulnerable:
+	if _debe_rastrear_jugador():
 		_lonko_track_player()
 	else:
 		_reset_spine_rotation()
+
+
+## Decide si el torso debe rastrear/apuntar en este frame.
+## FIX ataque eléctrico: `_apuntar_arriba` tiene prioridad sobre la
+## invulnerabilidad (antes la rama del cielo era código muerto porque la
+## carga eléctrica activa `_is_invulnerable` y el gate viejo la bloqueaba).
+func _debe_rastrear_jugador() -> bool:
+	if debug_tracking_override:
+		return true
+	if _is_taking_damage:
+		return false
+	if _apuntar_arriba:
+		return true  # Apuntar al cielo durante toda la carga y disparo del especial
+	return current_state == State.SHOOTING and rastrear_jugador and not _is_invulnerable
 
 
 ## Polvo de pisadas: se activa mientras Lonko se desplaza por el escenario.
@@ -252,6 +283,43 @@ func _particulas_pisada_emitir() -> void:
 	_particulas_pisada.emitting = (
 		moviendose and not _is_taking_damage and current_state != State.DYING and current_state != State.DEAD
 	)
+
+
+## Yaw objetivo del modelo según el estado actual.
+## Prioridad: secuencia del pilar > corrección de idle > base (izquierda).
+func _obtener_yaw_objetivo_grados() -> float:
+	if _girando_hacia_fondo:
+		return YAW_HACIA_FONDO
+	if _correccion_idle_activa:
+		return YAW_BASE_IZQUIERDA + correccion_yaw_idle
+	return YAW_BASE_IZQUIERDA
+
+
+## Gira el modelo suavemente hacia el yaw objetivo (mismo patrón que
+## Player._apply_climbing_rotation: lerp_angle con factor escalado por delta).
+func _aplicar_yaw_suave(delta: float) -> void:
+	if not _lonko_modelo or not is_instance_valid(_lonko_modelo):
+		return
+	var yaw_actual: float = _lonko_modelo.rotation.y
+	var yaw_objetivo: float = deg_to_rad(_obtener_yaw_objetivo_grados())
+	_lonko_modelo.rotation.y = lerp_angle(yaw_actual, yaw_objetivo, suavidad_giro * delta)
+	_aplicar_espejo_idle()
+
+
+## Espeja el modelo (scale.x negativo) solo durante la pausa IDLE: el clip IDLE
+## está autorado con quiralidad invertida y la mirada sale hacia el lado contrario.
+## El volteo se anima (scale.x cruza por 0) para evitar un salto/parpadeo visual.
+func _aplicar_espejo_idle() -> void:
+	if not _lonko_modelo or not is_instance_valid(_lonko_modelo):
+		return
+	var objetivo_x: float = -absf(_escala_original_modelo.x) if (_correccion_idle_activa and espejar_modelo_idle) else absf(_escala_original_modelo.x)
+	if is_equal_approx(_lonko_modelo.scale.x, objetivo_x):
+		return
+	if _tween_espejo and _tween_espejo.is_valid():
+		_tween_espejo.kill()
+	_tween_espejo = create_tween()
+	_tween_espejo.tween_property(_lonko_modelo, "scale:x", objetivo_x, DURACION_ESPEJO_SG) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _lonko_track_player() -> void:
@@ -307,6 +375,7 @@ func _on_state_walking() -> void:
 		_change_state(State.SHOOTING)
 		return
 	_is_shooting = false
+	_correccion_idle_activa = false
 	_ocultar_flecha_mano()
 	_reset_spine_rotation()
 	if not _is_taking_damage:
@@ -384,11 +453,11 @@ func _iniciar_secuencia_pilar() -> void:
 	_crear_particulas_rocas_pilar(base_x, base_y, base_z)
 	_reproducir_sonido_pilar()
 
-	# Girar el modelo hacia el fondo durante la animación de subida
-	var lonko_model := get_node_or_null("LONKO") as Node3D
-	if lonko_model:
-		lonko_model.rotation_degrees.y = 180.0  # Mirar hacia el fondo
-		lonko_model.position = Vector3.ZERO
+	# Girar el modelo hacia el fondo durante la animación de subida (giro suave vía _process)
+	_correccion_idle_activa = false
+	_girando_hacia_fondo = true
+	if _lonko_modelo:
+		_lonko_modelo.position = Vector3.ZERO
 
 	var duracion_base: float = 9.5
 	var velocidad_anim: float = 1.15
@@ -475,10 +544,10 @@ func _iniciar_secuencia_pilar() -> void:
 	# Fijar posición final exacta en la cima del pilar
 	global_position = Vector3(base_x, base_y + altura_pilar, base_z)
 
-	# Reorientar hacia la izquierda (jugadora) para entrar en modo ataque
-	if lonko_model:
-		lonko_model.rotation_degrees.y = -90.0
-		lonko_model.position = Vector3.ZERO
+	# Reorientar hacia la izquierda (jugadora) con giro suave para entrar en modo ataque
+	_girando_hacia_fondo = false
+	if _lonko_modelo:
+		_lonko_modelo.position = Vector3.ZERO
 
 	_reset_camera_offset()
 	_is_invulnerable = false
@@ -594,6 +663,7 @@ func _reset_camera_offset() -> void:
 func _iniciar_secuencia_disparo() -> void:
 	_is_shooting = true
 	_has_released_arrow = false
+	_correccion_idle_activa = false
 	velocity = Vector3.ZERO
 
 	# El próximo tiro es eléctrico cada `cada_cuantos_tiros_electrico` disparos:
@@ -656,6 +726,8 @@ func _iniciar_secuencia_disparo() -> void:
 
 	# Pausa entre disparos, luego volver a disparar
 	if not _is_taking_damage:
+		# El clip IDLE trae un yaw interno distinto: aplicar la corrección suave mientras dure
+		_correccion_idle_activa = true
 		_play_animation("IDLE")
 		await get_tree().create_timer(pausa_entre_disparos, false).timeout
 		if not is_instance_valid(self) or current_state != State.SHOOTING:
@@ -933,6 +1005,7 @@ func take_damage(amount: float) -> void:
 		_is_taking_damage = true
 		_is_shooting = false
 		_apuntar_arriba = false
+		_correccion_idle_activa = false
 		velocity = Vector3.ZERO
 		_ocultar_flecha_mano()
 		_reset_spine_rotation()
@@ -962,6 +1035,8 @@ func take_damage(amount: float) -> void:
 func _on_state_dying() -> void:
 	_is_taking_damage = true
 	_apuntar_arriba = false
+	_correccion_idle_activa = false
+	_girando_hacia_fondo = false
 	_ocultar_flecha_mano()
 	_reset_spine_rotation()
 	_reproducir_sonido_muerte()
