@@ -309,17 +309,24 @@ render_target_update_mode = 4
 
 [node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="SubViewportFondo3D/SubViewport" unique_id=763944868]
 custom_minimum_size = Vector2(1504, 1080)
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 stream = ExtResource("16_nmxfx")
 autoplay = true
 expand = true
 loop = true
 
 [node name="TextureRect" type="TextureRect" parent="SubViewportFondo3D/SubViewport" unique_id=22287514]
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 texture = ExtResource("16_gfe6n")
+expand_mode = 1
 
 [node name="CamaraFondoDOF" type="Camera3D" parent="SubViewportFondo3D" unique_id=130995211]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
@@ -473,7 +480,7 @@ tiempo_congelar = 4.0
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="TORRE" index="0" unique_id=835723112]
+[node name="TORRE" parent="TORRE" index="0" unique_id=114528807]
 layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]

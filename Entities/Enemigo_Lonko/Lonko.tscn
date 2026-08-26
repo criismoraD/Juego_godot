@@ -73,10 +73,10 @@ shape = SubResource("CapsuleShape3D_lonko")
 [node name="LONKO" parent="." unique_id=1820795103 instance=ExtResource("2_glb")]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
 
-[node name="Armature" parent="LONKO" index="0" unique_id=28663726]
+[node name="Armature" parent="LONKO" index="0" unique_id=576774979]
 transform = Transform3D(0.00999999, 0, 0, 0, -4.3711346e-10, -0.00999999, 0, 0.00999999, -4.3711346e-10, 0, 0, 0)
 
-[node name="Skeleton3D" parent="LONKO/Armature" index="0" unique_id=475388057]
+[node name="Skeleton3D" parent="LONKO/Armature" index="0" unique_id=1645376976]
 bones/0/position = Vector3(-2.7696111, -0.019928455, -43.01988)
 bones/0/rotation = Quaternion(-0.48052633, 0.4972654, -0.51385766, 0.50771236)
 bones/1/position = Vector3(5.789077, -2.1693993, 0.37194714)
@@ -155,7 +155,7 @@ bone_name = "mixamorig_RightHand"
 bone_idx = 28
 
 [node name="ARCO_GOBLING_GIRL" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Bow" unique_id=1734146513 instance=ExtResource("3_bow")]
-transform = Transform3D(10.135045, -52.896595, -11.145901, -51.477585, -5.9819875, -18.419403, 16.50271, 13.826282, -50.61121, -1.1256943, 7.041935, -0.88827133)
+transform = Transform3D(0.18427354, -0.9617563, -0.20265274, -0.93595606, -0.10876341, -0.3348982, 0.30004925, 0.25138694, -0.9202038, -1.1256943, 7.041935, -0.88827133)
 
 [node name="BoneAttachment3D_Arrow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" index="2" unique_id=253504641]
 transform = Transform3D(0.21955073, 0.27604523, 0.9357327, -0.20106135, 0.951348, -0.23347661, -0.95465755, -0.13687967, 0.26437125, 5.515617, 37.362617, -66.69519)
