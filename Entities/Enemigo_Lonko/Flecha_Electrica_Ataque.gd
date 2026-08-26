@@ -137,8 +137,19 @@ func _iniciar_fase_espera() -> void:
 	monitorable = false
 	_traila_particles_off()
 
-	# Punto de caída aleatorio dentro de la zona aliada
-	_punto_caida = Vector3(randf_range(zona_caida_x_min, zona_caida_x_max), 0.0, zona_caida_z)
+	# Fijar el punto de caída en la ÚLTIMA posición conocida del jugador:
+	# si no se mueve, el rayo siempre acierta.
+	var objetivo: Node3D = null
+	var players := get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		objetivo = players[0] as Node3D
+	if objetivo and is_instance_valid(objetivo) and objetivo.is_inside_tree():
+		var px: float = clamp(objetivo.global_position.x, zona_caida_x_min, zona_caida_x_max)
+		var pz: float = zona_caida_z if absf(objetivo.global_position.z - zona_caida_z) > 1.5 else objetivo.global_position.z
+		_punto_caida = Vector3(px, 0.0, pz)
+	else:
+		# Fallback: punto aleatorio dentro de la zona aliada
+		_punto_caida = Vector3(randf_range(zona_caida_x_min, zona_caida_x_max), 0.0, zona_caida_z)
 
 	# Crear la marca con aros expandiéndose (RayCast al suelo, como las sombras).
 	var marca := MARCA_ZONA_CAIDA_REF.new()

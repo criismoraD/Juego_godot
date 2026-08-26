@@ -1,0 +1,181 @@
+[gd_scene load_steps=40 format=3]
+
+[ext_resource type="PackedScene" uid="uid://td17dkkecdok" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_01.tscn" id="2_0eef2"]
+[ext_resource type="PackedScene" uid="uid://nr4xbh8t1n2d" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_02.tscn" id="3_qhfgs"]
+[ext_resource type="PackedScene" uid="uid://brmnvx02xgur8" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_03.tscn" id="4_hivr6"]
+[ext_resource type="PackedScene" uid="uid://cocrrn7wicpsd" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn" id="5_u3efi"]
+[ext_resource type="PackedScene" uid="uid://btadyv2e2g17h" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_05.tscn" id="6_0eef2"]
+[ext_resource type="PackedScene" uid="uid://cn6egnpwess45" path="res://assets/BinbunVFX/magic_areas/effects/rim_area/rim_area_vfx_01.tscn" id="6_cceyr"]
+[ext_resource type="PackedScene" uid="uid://ctq2io8u2qfam" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_06.tscn" id="7_nbwjw"]
+[ext_resource type="PackedScene" uid="uid://douw4khr83wp0" path="res://assets/BinbunVFX/magic_areas/effects/rim_area/rim_area_vfx_02.tscn" id="7_nhhjd"]
+[ext_resource type="PackedScene" uid="uid://b3u7kcd374bnv" path="res://assets/BinbunVFX/magic_areas/effects/rim_area/rim_area_vfx_03.tscn" id="8_nbwjw"]
+[ext_resource type="PackedScene" uid="uid://bb22iem3wms10" path="res://assets/BinbunVFX/magic_areas/effects/rim_area/rim_area_vfx_04.tscn" id="9_7chdh"]
+[ext_resource type="PackedScene" uid="uid://bhjuo0rcw7itg" path="res://assets/BinbunVFX/magic_areas/effects/ripple_area/ripple_area_vfx_01.tscn" id="10_5p6q7"]
+[ext_resource type="PackedScene" uid="uid://dhhws0v0enxvm" path="res://assets/BinbunVFX/magic_areas/effects/ripple_area/ripple_area_vfx_02.tscn" id="11_76gph"]
+[ext_resource type="PackedScene" uid="uid://ckoqcgcsvqmq" path="res://assets/BinbunVFX/magic_areas/effects/rim_area/rim_area_vfx_05.tscn" id="11_qhfgs"]
+[ext_resource type="PackedScene" uid="uid://cwkk7xp1hda5f" path="res://assets/BinbunVFX/magic_areas/effects/ripple_area/ripple_area_vfx_03.tscn" id="12_vlbxu"]
+[ext_resource type="PackedScene" uid="uid://cqd3atirqd4nu" path="res://assets/BinbunVFX/magic_areas/effects/rim_area/rim_area_vfx_06.tscn" id="13_7chdh"]
+[ext_resource type="PackedScene" uid="uid://bmyya02fe0xca" path="res://assets/BinbunVFX/magic_areas/effects/ripple_area/ripple_area_vfx_04.tscn" id="13_vqpmm"]
+[ext_resource type="PackedScene" uid="uid://cpg32d003wnr3" path="res://assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_01.tscn" id="14_umiyk"]
+[ext_resource type="PackedScene" uid="uid://bcbva2i24t33v" path="res://assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_02.tscn" id="15_jjtpj"]
+[ext_resource type="PackedScene" uid="uid://d34q0e25eag87" path="res://assets/BinbunVFX/magic_areas/effects/ripple_area/ripple_area_vfx_05.tscn" id="16_hivr6"]
+[ext_resource type="PackedScene" uid="uid://j8p3424kofod" path="res://assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_03.tscn" id="16_wrej7"]
+[ext_resource type="PackedScene" uid="uid://c3vt8iy21j1w8" path="res://assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_04.tscn" id="17_3v3sa"]
+[ext_resource type="PackedScene" uid="uid://liir4wdh77ot" path="res://assets/BinbunVFX/magic_areas/effects/pillar_area/pillar_area_vfx_01.tscn" id="18_qgi2g"]
+[ext_resource type="PackedScene" uid="uid://c43uv1lury0kx" path="res://assets/BinbunVFX/magic_areas/effects/ripple_area/ripple_area_vfx_06.tscn" id="19_5p6q7"]
+[ext_resource type="PackedScene" uid="uid://d0umfhi8g2c0s" path="res://assets/BinbunVFX/magic_areas/effects/pillar_area/pillar_area_vfx_02.tscn" id="19_od1kw"]
+[ext_resource type="PackedScene" uid="uid://c3kkjw3cbrusd" path="res://assets/BinbunVFX/magic_areas/effects/pillar_area/pillar_area_vfx_03.tscn" id="20_ry1py"]
+[ext_resource type="PackedScene" uid="uid://jrkuewgdq1wy" path="res://assets/BinbunVFX/magic_areas/effects/pillar_area/pillar_area_vfx_04.tscn" id="21_mavyk"]
+[ext_resource type="PackedScene" uid="uid://cg7fjws14ep6e" path="res://assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_05.tscn" id="21_u3efi"]
+[ext_resource type="PackedScene" uid="uid://cfa8qh4442h1u" path="res://assets/BinbunVFX/magic_areas/effects/lift_area/lift_area_vfx_01.tscn" id="22_iyccy"]
+[ext_resource type="PackedScene" uid="uid://c2ev7my1hdmcc" path="res://assets/BinbunVFX/magic_areas/effects/lift_area/lift_area_vfx_02.tscn" id="23_8ov4d"]
+[ext_resource type="PackedScene" uid="uid://clb4kcvkf03dg" path="res://assets/BinbunVFX/magic_areas/effects/lift_area/lift_area_vfx_03.tscn" id="24_d0y4s"]
+[ext_resource type="PackedScene" uid="uid://1f3a32lul7c8" path="res://assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_06.tscn" id="25_76gph"]
+[ext_resource type="PackedScene" uid="uid://bog5oub0r0bea" path="res://assets/BinbunVFX/magic_areas/effects/lift_area/lift_area_vfx_04.tscn" id="25_qhujh"]
+[ext_resource type="PackedScene" uid="uid://b40yi52iejgp1" path="res://assets/BinbunVFX/magic_areas/effects/pillar_area/pillar_area_vfx_05.tscn" id="26_cceyr"]
+[ext_resource type="PackedScene" uid="uid://dd7yx3fyi5jb2" path="res://assets/BinbunVFX/magic_areas/effects/lift_area/lift_area_vfx_05.tscn" id="31_nhhjd"]
+[ext_resource type="PackedScene" uid="uid://c40b0vkk1sv22" path="res://assets/BinbunVFX/magic_areas/effects/pillar_area/pillar_area_vfx_06.tscn" id="31_vlbxu"]
+[ext_resource type="PackedScene" uid="uid://v05dbfm6yag4" path="res://assets/BinbunVFX/magic_areas/effects/lift_area/lift_area_vfx_06.tscn" id="37_vqpmm"]
+
+[sub_resource type="Environment" id="Environment_magic"]
+background_mode = 1
+background_color = Color(0.08, 0.07, 0.1, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 1.0
+glow_enabled = true
+glow_intensity = 0.6
+glow_bloom = 0.1
+
+[node name="MagicAreas" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_magic")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.5, -0.663414, -0.55667, -5.61943e-08, -0.642788, 0.766044, -0.866025, 0.383022, 0.321394, 0, 6, 0)
+light_energy = 0.8
+
+[node name="MainCamera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573577, 0, -0.573577, 0.819152, 12, 12, 26)
+fov = 45.0
+current = true
+
+[node name="Basic" type="Node3D" parent="."]
+
+[node name="BasicAreaVFX_01" parent="Basic" instance=ExtResource("2_0eef2")]
+
+[node name="BasicAreaVFX_02" parent="Basic" instance=ExtResource("3_qhfgs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0)
+
+[node name="BasicAreaVFX_03" parent="Basic" instance=ExtResource("4_hivr6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0)
+
+[node name="BasicAreaVFX_04" parent="Basic" instance=ExtResource("5_u3efi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 0)
+
+[node name="BasicAreaVFX_05" parent="Basic" instance=ExtResource("6_0eef2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 0)
+
+[node name="BasicAreaVFX_06" parent="Basic" instance=ExtResource("7_nbwjw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 0)
+
+[node name="Rim" type="Node3D" parent="."]
+
+[node name="RimAreaVFX_01" parent="Rim" instance=ExtResource("6_cceyr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+
+[node name="RimAreaVFX_02" parent="Rim" instance=ExtResource("7_nhhjd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 4)
+
+[node name="RimAreaVFX_03" parent="Rim" instance=ExtResource("8_nbwjw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 4)
+
+[node name="RimAreaVFX_04" parent="Rim" instance=ExtResource("9_7chdh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 4)
+
+[node name="RimAreaVFX_05" parent="Rim" instance=ExtResource("11_qhfgs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 4)
+
+[node name="RimAreaVFX_06" parent="Rim" instance=ExtResource("13_7chdh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 4)
+
+[node name="Ripple" type="Node3D" parent="."]
+
+[node name="RippleAreaVFX_01" parent="Ripple" instance=ExtResource("10_5p6q7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8)
+
+[node name="RippleAreaVFX_02" parent="Ripple" instance=ExtResource("11_76gph")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 8)
+
+[node name="RippleAreaVFX_03" parent="Ripple" instance=ExtResource("12_vlbxu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 8)
+
+[node name="RippleAreaVFX_04" parent="Ripple" instance=ExtResource("13_vqpmm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 8)
+
+[node name="RippleAreaVFX_05" parent="Ripple" instance=ExtResource("16_hivr6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 8)
+
+[node name="RippleAreaVFX_06" parent="Ripple" instance=ExtResource("19_5p6q7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 8)
+
+[node name="Pulse" type="Node3D" parent="."]
+
+[node name="PulseAreaVFX_01" parent="Pulse" instance=ExtResource("14_umiyk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12)
+
+[node name="PulseAreaVFX_02" parent="Pulse" instance=ExtResource("15_jjtpj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 12)
+
+[node name="PulseAreaVFX_03" parent="Pulse" instance=ExtResource("16_wrej7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 12)
+
+[node name="PulseAreaVFX_04" parent="Pulse" instance=ExtResource("17_3v3sa")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 12)
+
+[node name="PulseAreaVFX_05" parent="Pulse" instance=ExtResource("21_u3efi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 12)
+
+[node name="PulseAreaVFX_06" parent="Pulse" instance=ExtResource("25_76gph")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 12)
+
+[node name="Pillar" type="Node3D" parent="."]
+
+[node name="PillarAreaVFX_01" parent="Pillar" instance=ExtResource("18_qgi2g")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 0)
+
+[node name="PillarAreaVFX_02" parent="Pillar" instance=ExtResource("19_od1kw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 4)
+
+[node name="PillarAreaVFX_03" parent="Pillar" instance=ExtResource("20_ry1py")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 8)
+
+[node name="PillarAreaVFX_04" parent="Pillar" instance=ExtResource("21_mavyk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 12)
+
+[node name="PillarAreaVFX_05" parent="Pillar" instance=ExtResource("26_cceyr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 16)
+
+[node name="PillarAreaVFX_06" parent="Pillar" instance=ExtResource("31_vlbxu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, 6)
+
+[node name="Lift" type="Node3D" parent="."]
+
+[node name="LiftAreaVFX_01" parent="Lift" instance=ExtResource("22_iyccy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 0)
+
+[node name="LiftAreaVFX_02" parent="Lift" instance=ExtResource("23_8ov4d")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 4)
+
+[node name="LiftAreaVFX_03" parent="Lift" instance=ExtResource("24_d0y4s")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 8)
+
+[node name="LiftAreaVFX_04" parent="Lift" instance=ExtResource("25_qhujh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 12)
+
+[node name="LiftAreaVFX_05" parent="Lift" instance=ExtResource("31_nhhjd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 16)
+
+[node name="LiftAreaVFX_06" parent="Lift" instance=ExtResource("37_vqpmm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, 10)

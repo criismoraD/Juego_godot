@@ -185,6 +185,32 @@ func _setup_animation_player():
 		if bow_anim_player:
 			break
 
+	call_deferred("_aplicar_animaciones_protagonista")
+
+
+func _aplicar_animaciones_protagonista() -> void:
+	if not anim_player:
+		return
+	if get_tree() == null:
+		return
+	var prota: Node = get_tree().get_first_node_in_group("player")
+	if not prota:
+		return
+	var prota_ap: AnimationPlayer = prota.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if not prota_ap or prota_ap == anim_player:
+		return
+	for lib_name in prota_ap.get_animation_library_list():
+		var lib: AnimationLibrary = prota_ap.get_animation_library(lib_name)
+		if lib:
+			if not anim_player.has_animation_library(lib_name):
+				anim_player.add_animation_library(lib_name, lib)
+			else:
+				var existing_lib: AnimationLibrary = anim_player.get_animation_library(lib_name)
+				for anim_name in lib.get_animation_list():
+					if "CORRER" in anim_name or "RUN" in anim_name or "CAMINA" in anim_name:
+						if not existing_lib.has_animation(anim_name):
+							existing_lib.add_animation(anim_name, lib.get_animation(anim_name))
+
 
 func _buscar_arrow_node():
 	arrow_node = find_child("FLECHA", true, false)

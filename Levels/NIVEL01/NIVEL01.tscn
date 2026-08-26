@@ -111,7 +111,7 @@ velocidad_escalar_bajar = 0.5
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 295190646) index="0" unique_id=880638117]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 932135119) index="0" unique_id=166805227]
 bones/0/position = Vector3(4.172325e-07, -0.35407498, -40.838314)
 bones/0/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
 bones/1/rotation = Quaternion(-0.05186307, 0, 0, 0.9986542)
@@ -480,7 +480,7 @@ tiempo_congelar = 4.0
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="TORRE" index="0" unique_id=114528807]
+[node name="TORRE" parent="TORRE" index="0" unique_id=150145970]
 layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
@@ -591,7 +591,13 @@ transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.9744
 amount = 100
 
 [node name="PajarosPlane" parent="." unique_id=250802196 instance=ExtResource("37_pajaros")]
-transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -9.071, 2.9, -6.77036)
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -5.1262293, 4.0258794, -2.4745846)
+
+[node name="PajarosPlane2" parent="." unique_id=628851056 instance=ExtResource("37_pajaros")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -16.538982, 2.9, -17.962505)
+
+[node name="PajarosPlane3" parent="." unique_id=27604262 instance=ExtResource("37_pajaros")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 5.033394, 5.7284675, -17.962505)
 
 [node name="BarreraDestruyeFlechas" parent="." unique_id=1852478489 instance=ExtResource("33_jrbhj")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.775, 4.765, 0)

@@ -128,6 +128,7 @@ func _on_state_dying():
 	# recibe el impulso (se eleva un poco y cae en parábola hacia la derecha)
 	if murio_por_explosion:
 		_aplicar_impulso_explosivo()
+		_lanzar_arco_explosivo()
 		murio_por_explosion = false
 
 	# Elegir aleatoriamente entre las 3 animaciones de muerte
@@ -175,6 +176,45 @@ func _process_dying(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, delta * 0.8)
+
+
+## Muerte por explosión: el arco se desprende de la mano y sale volando
+## en parábola girando sobre sí mismo (mismo patrón que la ballesta del Goblin).
+func _lanzar_arco_explosivo() -> void:
+	var arco := find_child("ARCO_GOBLING_GIRL", true, false) as Node3D
+	if not arco:
+		return
+
+	var root_scene := get_tree().current_scene
+	if not root_scene:
+		root_scene = get_tree().root
+
+	# Dirección de expulsión según el punto de impacto de la explosión
+	var push_dir: float = 1.0
+	if last_hit_position != Vector3.ZERO:
+		var dx: float = global_position.x - last_hit_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+
+	var tr_arco: Transform3D = arco.global_transform
+	arco.get_parent().remove_child(arco)
+
+	var contenedor := GoblinPiezaFisica.new()
+	root_scene.add_child(contenedor)
+	contenedor.global_transform = tr_arco
+
+	arco.transform = Transform3D.IDENTITY
+	arco.visible = true
+	# Limpiar overrides (disolución/daño) para que el arco conserve su material
+	for m in arco.find_children("*", "MeshInstance3D", true, false):
+		m.visible = true
+		m.material_override = null
+	contenedor.add_child(arco)
+
+	contenedor.iniciar_vuelo(
+		Vector3(push_dir * randf_range(2.0, 3.6), randf_range(3.8, 5.6), 0.0),
+		randf_range(-14.0, 14.0)
+	)
 
 
 func take_damage(amount: float) -> void:

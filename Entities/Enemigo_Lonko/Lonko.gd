@@ -75,6 +75,11 @@ var sfx_pilar_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Sonido
 var sfx_cargando_sp_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Cargando SP.mp3")
 var flecha_visual_mano: Node3D = null
 var escala_original_flecha_mano: Vector3 = Vector3.ONE
+var _pose_base_flecha_mano: Transform3D = Transform3D.IDENTITY
+var _lonko_flecha_timer: float = 0.0
+var _lonko_flecha_duracion: float = 0.0
+var _lonko_flecha_activa: bool = false
+var bow_anim_player: AnimationPlayer = null
 
 # Estado interno
 var _is_shooting: bool = false
@@ -89,6 +94,7 @@ var _tween_subida: Tween = null
 var _reached_position: bool = false
 var _cached_spawn_pos: Vector3 = Vector3.ZERO
 var _particulas_pilar: GPUParticles3D = null
+var _particulas_humo_pilar: GPUParticles3D = null  ## Humo SmokeFX 1A-8 durante elevación
 var _particulas_pisada: GPUParticles3D = null  ## Polvo de las pisadas al correr
 var _instancia_pilar: Node3D = null
 var _base_pos_pilar: Vector3 = Vector3.ZERO
@@ -104,11 +110,16 @@ var sfx_explosion_01: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOS
 var sfx_explosion_02: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION02.mp3")
 var _flecha_electrica_en_mano: FlechaElectricaAtaque = null  ## Proyectil eléctrico cargado en la mano durante la RECARGA
 var omni_light_sp: OmniLight3D = null  ## Luz lila que ilumina durante el ataque especial (similar a la Gárgola)
+const VFX_CARGA_ULT_SCENE: PackedScene = preload("res://assets/BinbunVFX/magic_areas/effects/lift_area/lift_area_vfx_05.tscn")
+var _vfx_carga_ult: Node3D = null  ## Círculo mágico LiftAreaVFX_05 durante la carga del ult
+var _tween_vfx_carga: Tween = null
+var _tween_vfx_vib: Tween = null  ## Vibración frenética del núcleo de carga
 var _lonko_modelo: Node3D = null  ## Modelo 3D cacheado (nodo LONKO)
 var _escala_original_modelo: Vector3 = Vector3.ONE  ## Escala del modelo capturada al spawn (para restaurar tras el espejo)
 var _girando_hacia_fondo: bool = false  ## True durante la invocación del pilar (mira al fondo)
 var _correccion_idle_activa: bool = false  ## True durante la pausa IDLE entre disparos (corrige el yaw del clip)
 var _tween_espejo: Tween = null  ## Volteo suave de escala X al entrar/salir del IDLE
+var _pitch_suavizado_rad: float = 0.0  ## Para suavizar deformación ult
 
 
 func _on_enemy_ready() -> void:
@@ -204,8 +215,11 @@ func _configurar_flecha_mano() -> void:
 		return
 
 	escala_original_flecha_mano = flecha_visual_mano.scale
+	_pose_base_flecha_mano = flecha_visual_mano.transform
 	flecha_visual_mano.visible = false
 	flecha_visual_mano.scale = escala_original_flecha_mano * 0.01
+	# Configurar bow igual que GoblinGirl
+	_configurar_bow_lonko()
 
 	# El VFX manual (FlechaElectricaVFX_Manual) solo se muestra sincronizado con
 	# la flecha eléctrica en mano durante la RECARGA eléctrica.
@@ -214,6 +228,48 @@ func _configurar_flecha_mano() -> void:
 		vfx_manual.visible = false
 
 	_recolorear_flecha_mano.call_deferred()
+
+func _set_arco_visible(visible: bool) -> void:
+	var arco := find_child("ARCO_GOBLING_GIRL", true, false) as Node3D
+	if arco:
+		arco.visible = visible
+
+func _configurar_bow_lonko() -> void:
+	var bow_node := find_child("ARCO_GOBLING_GIRL", true, false)
+	if not bow_node:
+		return
+	var bow_players := bow_node.find_children("*", "AnimationPlayer", true, false)
+	if bow_players.size() > 0:
+		bow_anim_player = bow_players[0]
+
+func _play_bow_animation(anim_name: String, custom_blend: float = -1.0) -> void:
+	if not bow_anim_player:
+		return
+	var prefixes: Array[String] = ["", "ENEMY|", "ENEMY| ", "Recurve Bow 2 Armature|"]
+	for prefix in prefixes:
+		var full_name: String = prefix + anim_name
+		if bow_anim_player.has_animation(full_name):
+			bow_anim_player.play(full_name, custom_blend)
+			return
+	for a in bow_anim_player.get_animation_list():
+		if anim_name in a:
+			bow_anim_player.play(a, custom_blend)
+			return
+
+func _play_idle_invertido() -> void:
+	if not anim_player:
+		return
+	# Invertir IDLE: buscar nombre real y reproducir hacia atrás desde el final
+	var idle_name: String = "IDLE"
+	var real_name: StringName = idle_name
+	for n in anim_player.get_animation_list():
+		if idle_name in n:
+			real_name = n
+			break
+	var dur: float = _get_animation_duration(idle_name)
+	# Colocar al final y reproducir en reversa (from_end = true vía seek)
+	anim_player.seek(dur, true)
+	_play_animation(idle_name, 0.2, -1.0)
 
 
 func _recolorear_flecha_mano() -> void:
@@ -251,6 +307,7 @@ func _recolorear_flecha_mano() -> void:
 func _process(delta: float) -> void:
 	super._process(delta)
 	_aplicar_yaw_suave(delta)
+	_actualizar_flecha_mano_lonko(delta)
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
 	if _reached_position and _base_pos_pilar != Vector3.ZERO:
@@ -334,8 +391,8 @@ func _lonko_track_player() -> void:
 	var pitch_angle_rad: float = 0.0
 
 	if _apuntar_arriba:
-		# Disparo eléctrico: apuntar completamente hacia arriba, sin tracking
-		pitch_angle_rad = deg_to_rad(-90.0)
+		# Ult suavizada: -65° en vez de -90° para evitar deformación extrema de columna
+		pitch_angle_rad = deg_to_rad(-65.0)
 	elif debug_tracking_override:
 		pitch_angle_rad = deg_to_rad(debug_pitch_deg)
 	else:
@@ -354,6 +411,11 @@ func _lonko_track_player() -> void:
 		pitch_deg = clamp(pitch_deg, -60.0, 0.0)
 
 		pitch_angle_rad = deg_to_rad(pitch_deg)
+
+	# Suavizado ult: interpola pitch para no deformar brusco
+	var d_suav := get_process_delta_time()
+	_pitch_suavizado_rad = lerp_angle(_pitch_suavizado_rad, pitch_angle_rad, d_suav * 5.0)
+	pitch_angle_rad = _pitch_suavizado_rad
 
 	skeleton.set_bone_global_pose_override(spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
 	var bone_pose: Transform3D = skeleton.get_bone_global_pose(spine_bone_idx)
@@ -377,6 +439,7 @@ func _on_state_walking() -> void:
 	_is_shooting = false
 	_correccion_idle_activa = false
 	_ocultar_flecha_mano()
+	_play_bow_animation("ARCO_IDLE")
 	_reset_spine_rotation()
 	if not _is_taking_damage:
 		_play_random_run_animation()
@@ -443,6 +506,9 @@ func _iniciar_secuencia_pilar() -> void:
 	_is_invulnerable = true  ## Invulnerable a ataques y flechas atraviesan durante la subida
 	velocity = Vector3.ZERO
 	_base_pos_pilar = global_position
+	# Ocultar arco y flecha durante baile PILAR_SUBIDA
+	_set_arco_visible(false)
+	_ocultar_flecha_mano()
 
 	var base_x: float = _base_pos_pilar.x
 	var base_y: float = _base_pos_pilar.y
@@ -462,6 +528,7 @@ func _iniciar_secuencia_pilar() -> void:
 	var duracion_base: float = 9.5
 	var velocidad_anim: float = 1.15
 	var duracion_real: float = duracion_base / velocidad_anim
+	_crear_humo_pilar(base_x, base_y, base_z, duracion_real)
 
 	# 2. Animación PILAR_SUBIDA 15% más rápida
 	_play_animation("PILAR_SUBIDA", 0.2, velocidad_anim)
@@ -552,6 +619,7 @@ func _iniciar_secuencia_pilar() -> void:
 	_reset_camera_offset()
 	_is_invulnerable = false
 	_pilar_desplegado = true
+	_set_arco_visible(true)
 
 	# Entrar en modo ataque (disparo continuo)
 	if current_state == State.SHOOTING and not _is_taking_damage:
@@ -622,8 +690,119 @@ func _crear_particulas_rocas_pilar(bx: float, by: float, bz: float) -> void:
 			_particulas_pilar = null
 	)
 
+func _crear_humo_pilar(bx: float, by: float, bz: float, duracion: float, es_destruccion: bool = false) -> void:
+	# Humo SmokeFX 1A-8 en la base - para elevación pequeño/transparente, para destrucción grande/opaco
+	var tex_humo := load("res://TEST_/SmokeFX Lite SpriteSheet 1A-8.png") as Texture2D
+	if not tex_humo:
+		tex_humo = load("res://Entities/Enemigo_Lonko/humo pisada.png") as Texture2D
+	# FIX humo huérfano: liberar el humo anterior ANTES de crear otro
+	# (si no, la referencia se sobreescribe y el humo viejo emite para siempre)
+	_detener_humo_pilar()
+	_particulas_humo_pilar = GPUParticles3D.new()
+	_particulas_humo_pilar.name = "HumoPilar"
+	# Destrucción apenas más denso que la elevación (tamaño contenido)
+	_particulas_humo_pilar.amount = 26 if es_destruccion else 20
+	_particulas_humo_pilar.lifetime = 1.8 if es_destruccion else 1.6
+	_particulas_humo_pilar.one_shot = false
+	_particulas_humo_pilar.explosiveness = 0.1 if es_destruccion else 0.08
+	_particulas_humo_pilar.randomness = 0.48 if es_destruccion else 0.45
+	_particulas_humo_pilar.visibility_aabb = AABB(Vector3(-2.8, -1, -2.8), Vector3(5.6, 7, 5.6)) if es_destruccion else AABB(Vector3(-2.5, -1, -2.5), Vector3(5, 6, 5))
+
+	var pmat := ParticleProcessMaterial.new()
+	pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	if es_destruccion:
+		pmat.emission_box_extents = Vector3(0.55, 0.05, 0.55)
+		pmat.spread = 24.0
+		pmat.initial_velocity_min = 0.55
+		pmat.initial_velocity_max = 1.2
+		pmat.gravity = Vector3(0, 0.4, 0)
+		pmat.scale_min = 0.6
+		pmat.scale_max = 0.95
+	else:
+		pmat.emission_box_extents = Vector3(0.5, 0.05, 0.5)
+		pmat.spread = 22.0
+		pmat.initial_velocity_min = 0.5
+		pmat.initial_velocity_max = 1.1
+		pmat.gravity = Vector3(0, 0.35, 0)
+		pmat.scale_min = 0.55
+		pmat.scale_max = 0.85
+	pmat.direction = Vector3(0, 1, 0)
+	pmat.anim_speed_min = 0.85
+	pmat.anim_speed_max = 1.15
+	pmat.anim_offset_min = 0.0
+	pmat.anim_offset_max = 1.0
+	pmat.turbulence_enabled = true
+	pmat.turbulence_noise_strength = 0.012
+	pmat.turbulence_noise_scale = 4.0
+
+	var grad := Gradient.new()
+	if es_destruccion:
+		grad.set_color(0, Color(0.55, 0.55, 0.55, 0.72))
+		grad.set_color(1, Color(0.55, 0.55, 0.55, 0.0))
+	else:
+		grad.set_color(0, Color(0.55, 0.55, 0.55, 0.42))
+		grad.set_color(1, Color(0.55, 0.55, 0.55, 0.0))
+	var grad_tex := GradientTexture1D.new()
+	grad_tex.gradient = grad
+	pmat.color_ramp = grad_tex
+
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.25))
+	curve.add_point(Vector2(0.4, 1.0))
+	curve.add_point(Vector2(1.0, 0.0))
+	var curve_tex := CurveTexture.new()
+	curve_tex.curve = curve
+	pmat.scale_curve = curve_tex
+
+	_particulas_humo_pilar.process_material = pmat
+
+	var mat := StandardMaterial3D.new()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.billboard_keep_scale = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_texture = tex_humo
+	mat.particles_anim_h_frames = 8
+	mat.particles_anim_v_frames = 1
+	mat.particles_anim_loop = true
+	mat.render_priority = 1
+	mat.albedo_color = Color(1, 1, 1, 0.95) if es_destruccion else Color(1, 1, 1, 0.82)
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.35, 1.35) if es_destruccion else Vector2(1.15, 1.15)
+	quad.material = mat
+	_particulas_humo_pilar.draw_pass_1 = quad
+
+	var humo: GPUParticles3D = _particulas_humo_pilar  # Ref local: la limpieza NO depende de la Lonko
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(humo)
+		humo.global_position = Vector3(bx, by + 0.05, bz)
+		humo.emitting = true
+		# Auto-limpieza ligada al propio nodo de humo (captura local, no self):
+		# sobrevive a la muerte/liberación de la Lonko sin dejar humo persistente
+		root.get_tree().create_timer(duracion).timeout.connect(func():
+			if is_instance_valid(humo):
+				humo.emitting = false
+		)
+		root.get_tree().create_timer(duracion + 2.0).timeout.connect(func():
+			if is_instance_valid(humo):
+				humo.queue_free()
+		)
+
+func _detener_humo_pilar() -> void:
+	# Parada anticipada: deja de emitir ya; su propio timer de auto-limpieza lo libera
+	if _particulas_humo_pilar and is_instance_valid(_particulas_humo_pilar):
+		_particulas_humo_pilar.emitting = false
+	_particulas_humo_pilar = null
+
 
 func _detener_particulas_pilar() -> void:
+	if _particulas_humo_pilar and is_instance_valid(_particulas_humo_pilar):
+		_detener_humo_pilar()
 	if _particulas_pilar and is_instance_valid(_particulas_pilar):
 		_particulas_pilar.emitting = false
 		get_tree().create_timer(2.0).timeout.connect(func():
@@ -677,17 +856,20 @@ func _iniciar_secuencia_disparo() -> void:
 		tiempo_recarga_actual = tiempo_recarga_electrica
 		_reproducir_sonido_cargando_sp()
 
-	# 1. RECARGA: toma la flecha y la escala
+	# 1. RECARGA: toma la flecha y la escala - suavizada ult y post-daño
 	if _apuntar_arriba:
-		# Estirar la animación para que la pose dure toda la recarga lenta
+		# Ult: blend largo y velocidad natural (no estirar brusco que deforma)
 		var duracion_clip_recarga: float = max(0.1, _get_animation_duration("RECARGA"))
-		_play_animation("RECARGA", 0.2, duracion_clip_recarga / tiempo_recarga_actual)
+		_play_animation("RECARGA", 0.35, duracion_clip_recarga / tiempo_recarga_actual * 0.88)
 		_mostrar_flecha_electrica_en_mano(tiempo_recarga_actual)
+		_iniciar_vfx_carga_ult(tiempo_recarga_actual)
 	else:
-		_play_animation("RECARGA")
+		# Post-daño → RECARGA suave (evita snap de columna)
+		_play_animation("RECARGA", 0.35)
 		_mostrar_y_escalar_flecha_mano(tiempo_recarga_actual)
 
 	await get_tree().create_timer(tiempo_recarga_actual, false).timeout
+	_detener_vfx_carga_ult()
 	if current_state != State.SHOOTING or _is_taking_damage or not is_instance_valid(self):
 		if _apuntar_arriba:
 			_is_invulnerable = false
@@ -701,6 +883,7 @@ func _iniciar_secuencia_disparo() -> void:
 
 	# 2. DISPARO: suelta la flecha
 	_play_animation("DISPARO")
+	_play_bow_animation("ARCO_DISPARO")
 
 	await get_tree().create_timer(TIEMPO_LANZAR_FLECHA, false).timeout
 	if current_state != State.SHOOTING or _is_taking_damage or not is_instance_valid(self):
@@ -728,7 +911,8 @@ func _iniciar_secuencia_disparo() -> void:
 	if not _is_taking_damage:
 		# El clip IDLE trae un yaw interno distinto: aplicar la corrección suave mientras dure
 		_correccion_idle_activa = true
-		_play_animation("IDLE")
+		_play_idle_invertido()
+		_play_bow_animation("ARCO_IDLE")
 		await get_tree().create_timer(pausa_entre_disparos, false).timeout
 		if not is_instance_valid(self) or current_state != State.SHOOTING:
 			return
@@ -747,21 +931,26 @@ func _mostrar_y_escalar_flecha_mano(duracion_total: float) -> void:
 		return
 
 	flecha_visual_mano.visible = true
-	flecha_visual_mano.scale = escala_original_flecha_mano * 0.01
 	_set_flecha_mano_meshes_visible(true)
-
+	if _pose_base_flecha_mano == Transform3D.IDENTITY:
+		_pose_base_flecha_mano = flecha_visual_mano.transform
+	# Tensado cuerda idéntico a GoblinGirl + bow
+	_lonko_flecha_activa = true
+	_lonko_flecha_timer = 0.0
+	_lonko_flecha_duracion = duracion_total
+	_play_bow_animation("ARCO_TENSAR")
 	if _tween_flecha and _tween_flecha.is_valid():
 		_tween_flecha.kill()
-	_tween_flecha = create_tween()
-	_tween_flecha.tween_interval(1.0)
-	var duracion_escalado: float = max(0.2, duracion_total - 1.0)
-	_tween_flecha.tween_property(flecha_visual_mano, "scale", escala_original_flecha_mano, duracion_escalado) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween_flecha = null
+	flecha_visual_mano.scale = escala_original_flecha_mano * 0.01
 
 
 func _ocultar_flecha_mano() -> void:
+	_lonko_flecha_activa = false
+	_detener_vfx_carga_ult()
 	if _tween_flecha and _tween_flecha.is_valid():
 		_tween_flecha.kill()
+	_tween_flecha = null
 	_liberar_flecha_electrica_en_mano()
 	_apagar_luz_especial()
 	if not flecha_visual_mano:
@@ -769,9 +958,115 @@ func _ocultar_flecha_mano() -> void:
 	if flecha_visual_mano:
 		flecha_visual_mano.visible = false
 		flecha_visual_mano.scale = escala_original_flecha_mano * 0.01
+		if _pose_base_flecha_mano != Transform3D.IDENTITY:
+			flecha_visual_mano.position = _pose_base_flecha_mano.origin
+
+
+## Círculo mágico LiftAreaVFX_05 (BinbunVFX Magic Areas) bajo la Lonko durante
+## la carga del ult: colores rosa/magenta como referencia, crece al iniciar y
+## se desvanece al completar la carga.
+func _iniciar_vfx_carga_ult(duracion: float) -> void:
+	_detener_vfx_carga_ult()
+	if not VFX_CARGA_ULT_SCENE:
+		return
+	_vfx_carga_ult = VFX_CARGA_ULT_SCENE.instantiate() as Node3D
+	if not _vfx_carga_ult:
+		return
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(_vfx_carga_ult)
+	else:
+		get_tree().root.add_child(_vfx_carga_ult)
+	# Colores rosa/magenta de la referencia (deben asignarse tras add_child
+	# para que el VFXController propague a los materiales de los hijos)
+	_vfx_carga_ult.primary_color = Color(1.0, 0.45, 0.8)
+	_vfx_carga_ult.secondary_color = Color(1.0, 0.12, 0.55)
+	_vfx_carga_ult.light_color = Color(1.0, 0.3, 0.7)
+	# Escala anisotrópica: ancho reducido (X/Z) para calzar con el pilar (r=0.65),
+	# altura (Y) conservada para envolver a la Lonko
+	var escala_base := Vector3(0.38, 0.62, 0.38)
+	_vfx_carga_ult.scale = Vector3(0.02, 0.05, 0.02)
+	_vfx_carga_ult.global_position = Vector3(global_position.x, global_position.y + 0.05, global_position.z)
+	# Animación frenética: time_scale extremo acelera shaders y partículas (energía desbordada)
+	if "speed_scale" in _vfx_carga_ult:
+		_vfx_carga_ult.speed_scale = 4.5
+	_tween_vfx_carga = create_tween()
+	_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", escala_base, 0.12) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Vibración posicional frenética mientras carga (núcleo inestable)
+	_tween_vfx_vib = create_tween()
+	_tween_vfx_vib.set_loops()
+	_tween_vfx_vib.tween_property(_vfx_carga_ult, "position:x", global_position.x + 0.025, 0.04) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_tween_vfx_vib.tween_property(_vfx_carga_ult, "position:x", global_position.x - 0.025, 0.04) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Pulsos acelerados tipo latido cardíaco (cada vez más rápidos y violentos)
+	var pulsos: int = 10
+	var tiempo_pulsos: float = max(0.3, duracion - 0.45)
+	var intervalo: float = tiempo_pulsos / float(pulsos)
+	for i: int in range(pulsos):
+		# Intervalo decreciente: los últimos pulsos son casi instantáneos
+		var dur_pulso: float = intervalo * (1.0 - float(i) / float(pulsos) * 0.7)
+		var pico := escala_base + Vector3(0.07 + float(i) * 0.012, 0.05, 0.07 + float(i) * 0.012)
+		_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", pico, dur_pulso * 0.35) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", escala_base - Vector3(0.07, 0.0, 0.07), dur_pulso * 0.65) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# Implosión violenta final al disparar
+	_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", Vector3(1.4, escala_base.y * 2.2, 1.4), 0.06) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", Vector3(0.003, 0.005, 0.003), 0.06) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_tween_vfx_carga.tween_callback(_detener_vfx_carga_ult)
+
+
+func _detener_vfx_carga_ult() -> void:
+	if _tween_vfx_carga and _tween_vfx_carga.is_valid():
+		_tween_vfx_carga.kill()
+	_tween_vfx_carga = null
+	if _tween_vfx_vib and _tween_vfx_vib.is_valid():
+		_tween_vfx_vib.kill()
+	_tween_vfx_vib = null
+	if _vfx_carga_ult and is_instance_valid(_vfx_carga_ult):
+		_vfx_carga_ult.queue_free()
+	_vfx_carga_ult = null
 
 
 var _escala_original_vfx_manual: Vector3 = Vector3.ZERO
+
+# ── Tensado cuerda idéntico a GoblinGirl (usa mismo modelo ARCO_GOBLING_GIRL) ──
+func _actualizar_flecha_mano_lonko(delta: float) -> void:
+	if not _lonko_flecha_activa or not flecha_visual_mano or not is_instance_valid(flecha_visual_mano):
+		return
+	_lonko_flecha_timer += delta
+	var tiempo_tensa: float = 1.0
+	var tiempo_disparo: float = _lonko_flecha_duracion
+	if _lonko_flecha_timer < tiempo_tensa:
+		flecha_visual_mano.scale = escala_original_flecha_mano * 0.01
+		flecha_visual_mano.position = _pose_base_flecha_mano.origin
+		return
+	if _lonko_flecha_timer >= tiempo_disparo:
+		return
+	var dur: float = max(0.01, tiempo_disparo - tiempo_tensa)
+	var t: float = clampf((_lonko_flecha_timer - tiempo_tensa) / dur, 0.0, 1.0)
+	var t_eased: float = _ease_out_back(t)
+	# Mantener tamaño original: escala local (no global) para no heredar escala gigante del BoneAttachment
+	var target_scale: Vector3 = escala_original_flecha_mano * lerpf(0.01, 1.0, t_eased)
+	flecha_visual_mano.scale = target_scale
+	if t > 0.8:
+		var shake: float = (t - 0.8) * 0.012
+		flecha_visual_mano.position = _pose_base_flecha_mano.origin + Vector3(
+			randf_range(-shake, shake),
+			randf_range(-shake, shake),
+			randf_range(-shake, shake)
+		)
+	else:
+		flecha_visual_mano.position = _pose_base_flecha_mano.origin
+
+func _ease_out_back(x: float) -> float:
+	var c1: float = 1.70158
+	var c3: float = c1 + 1.0
+	return 1.0 + c3 * pow(x - 1.0, 3.0) + c1 * pow(x - 1.0, 2.0)
 
 
 ## Para el tiro eléctrico: muestra el proyectil Flecha_Electrica_Ataque en la mano
@@ -801,10 +1096,10 @@ func _mostrar_flecha_electrica_en_mano(duracion_total: float) -> void:
 		if _tween_flecha and _tween_flecha.is_valid():
 			_tween_flecha.kill()
 		_tween_flecha = create_tween()
-		_tween_flecha.tween_interval(1.0)
-		var duracion_escalado: float = max(0.2, duracion_total - 1.0)
+		_tween_flecha.tween_interval(0.6)
+		var duracion_escalado: float = max(0.3, duracion_total - 0.6)
 		_tween_flecha.tween_property(vfx_manual, "scale", _escala_original_vfx_manual, duracion_escalado) \
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 ## Muestra u oculta solo la flecha normal dentro del nodo FlechaMano
@@ -1021,6 +1316,11 @@ func take_damage(amount: float) -> void:
 			_is_taking_damage = false
 			if current_state == State.DYING or current_state == State.DEAD:
 				return
+			# Suavizado daño→ataque: blend largo y reset suave de columna
+			if anim_player:
+				anim_player.playback_default_blend_time = 0.4
+			_reset_spine_rotation()
+			_pitch_suavizado_rad = 0.0
 			if _pilar_desplegado:
 				_change_state(State.SHOOTING)
 			elif _pilar_invocado:
@@ -1029,6 +1329,10 @@ func take_damage(amount: float) -> void:
 				_change_state(State.SHOOTING)
 			else:
 				_on_state_walking()
+			# Restaurar blend normal tras transición
+			await get_tree().create_timer(0.4).timeout
+			if is_instance_valid(self) and anim_player:
+				anim_player.playback_default_blend_time = BLEND_ANIMACIONES
 		)
 
 
@@ -1038,6 +1342,7 @@ func _on_state_dying() -> void:
 	_correccion_idle_activa = false
 	_girando_hacia_fondo = false
 	_ocultar_flecha_mano()
+	_play_bow_animation("ARCO_IDLE")
 	_reset_spine_rotation()
 	_reproducir_sonido_muerte()
 	_hundir_y_disolver_pilar()
@@ -1219,6 +1524,8 @@ func _hundir_y_disolver_pilar() -> void:
 			if is_instance_valid(pilar_to_destroy):
 				pilar_to_destroy.rotation_degrees.z = 0.0
 		wobble_task.call()
+		# Humo base al enterrarse por flecha explosiva - más grande y opaco para apreciarse
+		_crear_humo_pilar(_base_pos_pilar.x, ground_y, _base_pos_pilar.z, duracion_hundir, true)
 
 		# Instanciar 4 explosiones (25% más pequeñas) + rocas negras (PIEDRAS_NEGRAS_ DESTRUCION.png) + SFX a lo largo del cuerpo
 		var exp_task := func():

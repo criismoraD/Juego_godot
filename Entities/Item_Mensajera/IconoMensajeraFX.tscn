@@ -1,0 +1,43 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Entities/Item_Mensajera/IconoMensajeraFX.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://TEST_/Icono mensajeraFX.png" id="2_icono"]
+[ext_resource type="PackedScene" uid="uid://ckoqcgcsvqmq" path="res://assets/BinbunVFX/magic_areas/effects/pillar_area/pillar_area_vfx_03.tscn" id="3_vfx"]
+
+[sub_resource type="SphereShape3D" id="SphereShape_pickup"]
+radius = 0.65
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_halo"]
+top_radius = 0.42
+bottom_radius = 0.5
+height = 0.04
+cap_top = true
+cap_bottom = true
+
+[node name="IconoMensajeraFX" type="Area3D"]
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("SphereShape_pickup")
+
+[node name="VFXLuz" parent="." instance=ExtResource("3_vfx")]
+transform = Transform3D(0.36, 0, 0, 0, 0.32, 0, 0, 0, 0.36, 0, 0, 0)
+primary_color = Color(0.78, 0.45, 1, 1)
+secondary_color = Color(0.55, 0.2, 1, 1)
+light_color = Color(0.62, 0.3, 1, 1)
+
+[node name="Icono" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+billboard = 1
+texture = ExtResource("2_icono")
+pixel_size = 0.00095
+shaded = false
+render_priority = 2
+
+[node name="HaloBase" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_halo")

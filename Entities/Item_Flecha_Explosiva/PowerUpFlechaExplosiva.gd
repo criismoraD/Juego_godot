@@ -200,22 +200,28 @@ func _auto_consumir() -> void:
 
 
 func _otorgar_municion_a_aliadas() -> void:
-	var processed := {}
-	for ally in AllyArcher.active_allies_cache:
-		if is_instance_valid(ally):
-			processed[ally] = true
-			if ally.has_method("agregar_flechas_explosivas"):
-				ally.agregar_flechas_explosivas(municion_a_otorgar_aliadas)
-			elif "flechas_explosivas" in ally:
-				ally.flechas_explosivas += municion_a_otorgar_aliadas
+	var processed: Dictionary = {}
+	for ally: Node in AllyArcher.active_allies_cache:
+		if not is_instance_valid(ally):
+			continue
+		if ally.has_meta("es_mensajera") and ally.get_meta("es_mensajera"):
+			continue
+		processed[ally] = true
+		if ally.has_method("agregar_flechas_explosivas"):
+			ally.agregar_flechas_explosivas(municion_a_otorgar_aliadas)
+		elif "flechas_explosivas" in ally:
+			ally.set("flechas_explosivas", int(ally.get("flechas_explosivas")) + municion_a_otorgar_aliadas)
 
-	var aliadas := get_tree().get_nodes_in_group("allies")
-	for aliada in aliadas:
-		if is_instance_valid(aliada) and not processed.has(aliada):
-			if aliada.has_method("agregar_flechas_explosivas"):
-				aliada.agregar_flechas_explosivas(municion_a_otorgar_aliadas)
-			elif "flechas_explosivas" in aliada:
-				aliada.flechas_explosivas += municion_a_otorgar_aliadas
+	var aliadas: Array[Node] = get_tree().get_nodes_in_group("allies")
+	for aliada: Node in aliadas:
+		if not is_instance_valid(aliada) or processed.has(aliada):
+			continue
+		if aliada.has_meta("es_mensajera") and aliada.get_meta("es_mensajera"):
+			continue
+		if aliada.has_method("agregar_flechas_explosivas"):
+			aliada.agregar_flechas_explosivas(municion_a_otorgar_aliadas)
+		elif "flechas_explosivas" in aliada:
+			aliada.set("flechas_explosivas", int(aliada.get("flechas_explosivas")) + municion_a_otorgar_aliadas)
 
 
 func _buscar_jugador() -> Node3D:

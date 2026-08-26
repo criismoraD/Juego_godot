@@ -841,8 +841,8 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		if is_instance_valid(escudo_enemigo3):
 			_set_elemento_nivel3_activo(escudo_enemigo3, false)
 
-		# Spawnear Power-Up inicial en el medio de la base enemiga
-		_spawn_power_up_inicial_oleada_5()
+		# Spawnear icono de mensajera: el jugador lo activa al pasar sobre él
+		_spawn_icono_mensajera_oleada_5()
 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
@@ -1914,19 +1914,129 @@ func _set_collision_recursivo(nodo: Node, activo: bool) -> void:
 		_set_collision_recursivo(child, activo)
 
 
-func _spawn_power_up_inicial_oleada_5() -> void:
+func _spawn_icono_mensajera_oleada_5() -> void:
+	# Icono flotante que invoca a la mensajera al que el jugador pase por encima
+	var icono_scene: PackedScene = preload("res://Entities/Item_Mensajera/IconoMensajeraFX.tscn")
+	if not icono_scene:
+		return
+	var icono: Node3D = icono_scene.instantiate() as Node3D
+	if not icono:
+		return
+	var pos := Vector3(-9.2, 0.25, 0.4)
+	var space_state := get_world_3d().direct_space_state
+	if space_state:
+		# Raycast bajo (desde y=2.0) para no atrapar plataformas/torre por encima:
+		# clava el icono al piso bajo de la puerta de la torre
+		var q := PhysicsRayQueryParameters3D.create(Vector3(pos.x, 2.0, pos.z), Vector3(pos.x, -4.0, pos.z))
+		q.collision_mask = 1
+		var hit: Dictionary = space_state.intersect_ray(q)
+		if hit and hit.has("position"):
+			pos.y = (hit.position as Vector3).y + 0.02
+		else:
+			pos.y = 0.17
+	add_child(icono)
+	icono.global_position = pos
+	if icono.has_signal("activada") and not icono.activada.is_connected(_iniciar_mensajera_oleada_5):
+		icono.activada.connect(_iniciar_mensajera_oleada_5)
+
+
+func _iniciar_mensajera_oleada_5() -> void:
+	# Nivel 5: nueva arquera aliada entra por izquierda, deja flecha explosiva y se marcha
+	var archer_scene: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
 	var power_up_scene: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
-	if not power_up_scene:
+	if not archer_scene or not power_up_scene:
 		return
-
-	var power_up := power_up_scene.instantiate() as Node3D
-	if not power_up:
+	var archer: Node3D = archer_scene.instantiate() as Node3D
+	if not archer:
 		return
-
-	# Posicionar en el medio del campo de batalla / base enemiga
-	var spawn_pos := Vector3(1.5, 1.2, 0.0)
-	if is_instance_valid(wave_spawner):
-		spawn_pos.y = wave_spawner.global_position.y
-
-	add_child(power_up)
-	power_up.global_position = spawn_pos
+	if "enemigos_minimos" in archer:
+		archer.enemigos_minimos = 999
+	archer.set_meta("es_mensajera", true)
+	var start_pos: Vector3 = Vector3(-12.8, 0.45, 0.4)
+	var entrega_pos: Vector3 = Vector3(-7.4, 0.45, 0.4)
+	var space_state := get_world_3d().direct_space_state
+	if space_state:
+		for p in [start_pos, entrega_pos]:
+			var q := PhysicsRayQueryParameters3D.create(Vector3(p.x, 6.0, p.z), Vector3(p.x, -4.0, p.z))
+			q.collision_mask = 1
+			var hit: Dictionary = space_state.intersect_ray(q)
+			if hit and hit.has("position"):
+				if p == start_pos:
+					start_pos.y = (hit.position as Vector3).y + 0.02
+				else:
+					entrega_pos.y = (hit.position as Vector3).y + 0.02
+	add_child(archer)
+	archer.scale = Vector3(0.3, 0.3, 0.3)
+	archer.global_position = start_pos
+	var prota: Node = get_tree().get_first_node_in_group("player")
+	if prota:
+		var prota_ap: AnimationPlayer = prota.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		var ally_ap: AnimationPlayer = archer.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if prota_ap and ally_ap:
+			for lib_name in prota_ap.get_animation_library_list():
+				var lib: AnimationLibrary = prota_ap.get_animation_library(lib_name)
+				if lib:
+					ally_ap.add_animation_library(lib_name, lib)
+	if archer.has_method("_play_anim"):
+		archer.call("_play_anim", "CORRER", 0.2)
+	var tween_in: Tween = create_tween()
+	tween_in.tween_property(archer, "global_position:x", entrega_pos.x, 2.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await tween_in.finished
+	if not is_instance_valid(archer):
+		return
+	var power_up: Node3D = power_up_scene.instantiate() as Node3D
+	if power_up:
+		if "municion_a_otorgar_jugador" in power_up:
+			power_up.municion_a_otorgar_jugador = 5
+		if "municion_a_otorgar_aliadas" in power_up:
+			power_up.municion_a_otorgar_aliadas = 5
+		add_child(power_up)
+		power_up.global_position = archer.global_position + Vector3(0.7, 0.3, 0.0)
+		var base_y: float = power_up.global_position.y
+		var tw: Tween = create_tween()
+		tw.tween_property(power_up, "global_position:y", base_y + 0.35, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.chain().tween_property(power_up, "global_position:y", base_y, 0.22).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(0.9).timeout
+	if not is_instance_valid(archer):
+		return
+	# Esperar a que aparezca algún enemigo en pantalla antes de disparar
+	while is_instance_valid(archer):
+		var enemies: Array[Node] = get_tree().get_nodes_in_group("enemies")
+		var hay_enemigo: bool = false
+		for e: Node in enemies:
+			if not is_instance_valid(e) or not e.is_inside_tree():
+				continue
+			if e is Node3D and (e as Node3D).global_position.x > -10.0 and (e as Node3D).global_position.x < 8.0:
+				hay_enemigo = true
+				break
+		if hay_enemigo:
+			break
+		await get_tree().create_timer(0.3).timeout
+	if not is_instance_valid(archer):
+		return
+	# Dispara 2 flechas cargadas al máximo (normales: es_mensajera evita explosivas)
+	if "enemigos_minimos" in archer:
+		archer.enemigos_minimos = 1
+	for _i in range(2):
+		await get_tree().create_timer(0.65).timeout
+		if is_instance_valid(archer):
+			if "charge_duration" in archer and "tiempo_carga_max" in archer:
+				archer.charge_duration = archer.tiempo_carga_max
+			if archer.has_method("_disparar"):
+				archer.call("_disparar")
+		await get_tree().create_timer(0.75).timeout
+	if "enemigos_minimos" in archer:
+		archer.enemigos_minimos = 999
+	await get_tree().create_timer(0.4).timeout
+	if not is_instance_valid(archer):
+		return
+	var model_out: Node3D = archer.get_node_or_null("ArqueraModel") as Node3D
+	if not model_out:
+		model_out = archer.find_child("ArqueraModel", true, false) as Node3D
+	if model_out:
+		model_out.scale.x = -abs(model_out.scale.x)
+	var tween_out: Tween = create_tween()
+	tween_out.tween_property(archer, "global_position:x", start_pos.x, 2.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tween_out.finished
+	if is_instance_valid(archer):
+		archer.queue_free()
