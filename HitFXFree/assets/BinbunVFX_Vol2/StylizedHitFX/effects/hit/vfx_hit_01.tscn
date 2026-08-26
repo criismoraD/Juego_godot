@@ -97,7 +97,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.3),
 "transitions": PackedFloat32Array(0.5, 1),
 "update": 0,
-"values": [Vector3(3, 3, 3), Vector3(0, 0, 0)]
+"values": [Vector3(0.3, 0.3, 0.3), Vector3(0, 0, 0)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -240,6 +240,8 @@ shader_parameter/emission = 2.0
 shader_parameter/emission_mult = 1.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_t0cbq"]
+radius = 0.1
+height = 0.2
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pyccv"]
 render_priority = 0
@@ -278,7 +280,7 @@ scale_curve = SubResource("CurveTexture_7ctnx")
 alpha_curve = SubResource("CurveTexture_ffe1e")
 
 [sub_resource type="QuadMesh" id="QuadMesh_o2nyg"]
-size = Vector2(2, 2)
+size = Vector2(0.2, 0.2)
 
 [sub_resource type="Gradient" id="Gradient_fjnus"]
 offsets = PackedFloat32Array(0, 0.9, 1)
@@ -327,8 +329,8 @@ curve = SubResource("Curve_putsl")
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_aaoak"]
 gravity = Vector3(0, 0, 0)
-scale_min = 2.0
-scale_max = 3.0
+scale_min = 0.2
+scale_max = 0.3
 scale_curve = SubResource("CurveTexture_x23ew")
 alpha_curve = SubResource("CurveTexture_6dt2h")
 
@@ -366,8 +368,8 @@ spread = 180.0
 initial_velocity_min = 0.01
 initial_velocity_max = 0.01
 gravity = Vector3(0, 0, 0)
-scale_min = 3.0
-scale_max = 5.0
+scale_min = 0.3
+scale_max = 0.5
 scale_curve = SubResource("CurveTexture_7aebx")
 alpha_curve = SubResource("CurveTexture_lyxse")
 
@@ -404,7 +406,7 @@ light_color = Color(1, 0.8, 0.4, 1)
 light_energy = 0.0
 light_indirect_energy = 0.0
 light_volumetric_fog_energy = 0.0
-omni_range = 3.0
+omni_range = 0.3
 script = ExtResource("5_6dt2h")
 light_mult = 0.0
 vfx_light_energy = 2.0

@@ -11,7 +11,15 @@ const COYOTE_TIME: float = 0.15
 const JUMP_BUFFER_TIME: float = 0.12
 # === SEÑALES ===
 @export_category("Munición Especial")
-@export var flechas_explosivas: int = 0  ## Cantidad de flechas explosivas acumuladas
+@export var flechas_explosivas: int = 0:
+	set(v):
+		flechas_explosivas = v
+		_actualizar_throttle_explosivo()  ## Histéresis 30/25
+## Throttle de drops explosivos: 30 entra en mitigación, 25 libera (histéresis para evitar flapping)
+var _explosive_drop_throttled: bool = false
+const UMBRAL_EXPLOSIVO_MAX: int = 30
+const UMBRAL_EXPLOSIVO_RELEASE: int = 25
+const DROP_CHANCE_MITIGADO: float = 0.05
 
 @export_category("Movimiento")
 @export var velocidad_caminar: float = 0.5  # Velocidad al caminar
@@ -1101,8 +1109,26 @@ func start_shooting():
 
 
 func agregar_flechas_explosivas(cantidad: int = 10) -> void:
-	flechas_explosivas += cantidad
+	flechas_explosivas += cantidad  # setter actualiza throttle
 	flechas_explosivas_changed.emit(flechas_explosivas)
+
+
+## Actualiza el flag de histéresis para mitigar drops explosivos
+func _actualizar_throttle_explosivo() -> void:
+	if not _explosive_drop_throttled and flechas_explosivas >= UMBRAL_EXPLOSIVO_MAX:
+		_explosive_drop_throttled = true
+	elif _explosive_drop_throttled and flechas_explosivas < UMBRAL_EXPLOSIVO_RELEASE:
+		_explosive_drop_throttled = false
+
+## True si el stock está en zona mitigada (30 hasta bajar a <25)
+func is_explosive_drop_throttled() -> bool:
+	return _explosive_drop_throttled
+
+## Devuelve la chance efectiva mitigada a 5% si está throttled
+func get_effective_explosive_drop_chance(base_chance: float) -> float:
+	if _explosive_drop_throttled:
+		return min(base_chance, DROP_CHANCE_MITIGADO)
+	return base_chance
 
 
 func spawn_arrow_projectile():

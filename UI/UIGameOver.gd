@@ -8,6 +8,8 @@ signal restart_requested
 
 ## Ruta del último nivel donde se mostró Game Over (persiste entre recargas de escena)
 static var ultima_escena_jugada: String = ""
+## Oleada donde murió (1-5) para continuar desde el principio de esa oleada
+static var ultima_oleada_jugada: int = 1
 
 var background: ColorRect = null
 var title_label: Label = null
@@ -24,6 +26,15 @@ func _ready() -> void:
 	var escena_actual := get_tree().current_scene
 	if escena_actual and escena_actual.scene_file_path != "":
 		ultima_escena_jugada = escena_actual.scene_file_path
+	# Recordar oleada donde murió (para Continuar desde esa oleada)
+	if escena_actual and "oleada_combate_actual" in escena_actual:
+		ultima_oleada_jugada = int(escena_actual.oleada_combate_actual)
+		ultima_oleada_jugada = clamp(ultima_oleada_jugada, 1, 5)
+	else:
+		var ws := get_tree().get_first_node_in_group("wave_spawners") if get_tree() else null
+		if ws and "oleada_combate" in ws:
+			ultima_oleada_jugada = int(ws.oleada_combate)
+			ultima_oleada_jugada = clamp(ultima_oleada_jugada, 1, 5)
 
 	# Pausar el árbol del juego para que los enemigos y aliados dejen de disparar y moverse
 	get_tree().paused = true
@@ -162,6 +173,9 @@ func _on_continue_pressed() -> void:
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
 	get_tree().paused = false
 
+	# Continuar desde el principio de la oleada donde murió (ej. nivel 4 → oleada 4)
+	if ultima_oleada_jugada >= 1 and ultima_oleada_jugada <= 5:
+		GameUI.continuar_desde_oleada = ultima_oleada_jugada
 	# Reiniciar el ÚLTIMO NIVEL JUGADO (guardado al mostrarse Game Over)
 	if ultima_escena_jugada != "":
 		get_tree().change_scene_to_file(ultima_escena_jugada)

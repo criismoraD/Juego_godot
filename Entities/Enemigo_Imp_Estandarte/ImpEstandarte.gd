@@ -180,7 +180,8 @@ func _iniciar_ciclo_disparo():
 	timer_animacion_disparo = 0.0
 	duracion_animacion_disparo = max(0.05, _get_animation_duration("IMP_DISPARO") / cadencia_actual)
 	_actualizar_visibilidad_flecha_mano(false)
-	_play_animation("IMP_DISPARO", -1.0, cadencia_actual)
+	# Blend 0.30 para que IMP_DISPARO (carga de flecha) entre suave desde HIT/IDLE y no falten frames
+	_play_animation("IMP_DISPARO", 0.30, cadencia_actual)
 
 
 func _obtener_multiplicador_cadencia() -> float:
@@ -313,8 +314,8 @@ func _reproducir_hit_aleatorio():
 
 	var hits = ["IMP_HIT_01", "IMP_HIT_02", "IMP_HIT_03"]
 	var anim_hit: String = hits[randi() % hits.size()]
-	# Animación acelerada: se recupera antes para volver a atacar
-	_play_animation(anim_hit, -1.0, velocidad_animacion_hit)
+	# Suavizado: blend 0.20 y velocidad 1.5 → no pop al entrar en HIT tras daño y al volver a DISPARO
+	_play_animation(anim_hit, 0.20, velocidad_animacion_hit)
 
 	var dur_hit = _get_animation_duration(anim_hit) / velocidad_animacion_hit
 	get_tree().create_timer(max(0.15, dur_hit)).timeout.connect(_on_hit_timer_timeout)

@@ -31,6 +31,7 @@
 [ext_resource type="PackedScene" uid="uid://boae4yg408kxa" path="res://Entities/Ambiente_Rampa_Subida/Escena_rampa_nivel3.tscn" id="30_qlcu2"]
 [ext_resource type="PackedScene" uid="uid://bjn66i0gdcsyf" path="res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn" id="31_lhtjo"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Hojas/HojasPlane.tscn" id="32_dapvp"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Pajaros/PajarosPlane.tscn" id="37_pajaros"]
 [ext_resource type="PackedScene" uid="uid://ce4x7k7odgcle" path="res://Entities/Ambiente_Barrera_Limite/BarreraDestruyeFlechas.tscn" id="33_jrbhj"]
 [ext_resource type="PackedScene" uid="uid://t0whis8d7cuv" path="res://Entities/Enemigo_Gargola/Gargola.tscn" id="34_gargola"]
 [ext_resource type="PackedScene" uid="uid://b7v8x2y1w4n0k" path="res://UI/UI_Vida_Protagonista.tscn" id="35_uivida"]
@@ -264,6 +265,7 @@ transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.150
 [node name="SubViewportFondo3D" type="SubViewport" parent="." unique_id=209823411]
 handle_input_locally = false
 size = Vector2i(1920, 1080)
+render_target_update_mode = 4
 
 [node name="FogPlane" parent="SubViewportFondo3D" unique_id=1524639475 instance=ExtResource("17_fogplane")]
 transform = Transform3D(0.19913417, 0, 0, 0, 0.15469623, 0, 0, 0, 1.0000006, 1.680629, -0.25954807, -35.018787)
@@ -303,6 +305,7 @@ visible = false
 
 [node name="SubViewport" type="SubViewport" parent="SubViewportFondo3D" unique_id=1162834119]
 size = Vector2i(1505, 1080)
+render_target_update_mode = 4
 
 [node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="SubViewportFondo3D/SubViewport" unique_id=763944868]
 custom_minimum_size = Vector2(1504, 1080)
@@ -333,6 +336,7 @@ transform = Transform3D(5.8257546, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -9.008
 [node name="SubViewportMedio3D" type="SubViewport" parent="." unique_id=164925320]
 transparent_bg = true
 size = Vector2i(1152, 648)
+render_target_update_mode = 4
 
 [node name="CamaraMedio" type="Camera3D" parent="SubViewportMedio3D" unique_id=912225740]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0601563, 3.265016, 40.971046)
@@ -346,6 +350,7 @@ size = 0.01
 transparent_bg = true
 handle_input_locally = false
 size = Vector2i(1920, 1080)
+render_target_update_mode = 4
 
 [node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
@@ -577,6 +582,9 @@ color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
 [node name="HojasPlane" parent="." unique_id=250802195 instance=ExtResource("32_dapvp")]
 transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.974465, -6.77036)
 amount = 100
+
+[node name="PajarosPlane" parent="." unique_id=250802196 instance=ExtResource("37_pajaros")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -9.071, 2.9, -6.77036)
 
 [node name="BarreraDestruyeFlechas" parent="." unique_id=1852478489 instance=ExtResource("33_jrbhj")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.775, 4.765, 0)

@@ -18,7 +18,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
 @export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 25  ## Enemigos totales en la Oleada 3
-@export var total_enemigos_oleada_4: int = 30  ## Enemigos totales en la Oleada 4 (9 imp, 9 arquera, 9 gárgola)
+@export var total_enemigos_oleada_4: int = 35  ## Enemigos totales en la Oleada 4 (10 imp, 10 goblin ballesta, 10 gárgola + 5 imp escudo 100%)
 @export var total_enemigos_oleada_5: int = 40  ## Enemigos totales en la Oleada 5 (40 enemigos)
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
@@ -201,6 +201,29 @@ func _ready():
 		AudioManager.play_music(2)
 		_iniciar_oleadas_libres()
 		_crear_panel_controles_spawn()
+		if wave_spawner and not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
+			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
+		return
+
+	# --- CONTINUAR DESDE GAME OVER: reinicia directo en la oleada donde murió ---
+	if GameUI.continuar_desde_oleada > 0:
+		var oleada_continuar: int = clamp(GameUI.continuar_desde_oleada, 1, 5)
+		GameUI.continuar_desde_oleada = 0
+		GameUI.oleada_inicial_solicitada = 0
+		oleada_debug_pendiente = 0
+		oleada_combate_actual = oleada_continuar
+		if game_ui and game_ui.has_method("set_modo_minimo"):
+			game_ui.set_modo_minimo(false)
+		get_tree().call_group("ui_vida_protagonista", "mostrar")
+		_set_aliadas_activas(true)
+		AudioManager.play_music(2)
+		var total_continuar: int = total_enemigos_nivel1
+		match oleada_continuar:
+			2: total_continuar = total_enemigos_oleada_2
+			3: total_continuar = total_enemigos_oleada_3
+			4: total_continuar = total_enemigos_oleada_4
+			5: total_continuar = total_enemigos_oleada_5
+		_configurar_oleada_combate(total_continuar, oleada_continuar)
 		if wave_spawner and not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
 			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
 		return
@@ -783,12 +806,12 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.max_imp_escudo_activos = 2
 		wave_spawner.intervalo_check_escudo = 6.0
 	elif numero_oleada == 4:
-		# Oleada 4: 9 Imp + 9 GoblinGirl (arquera) + 9 Gárgola. Solo estos 3 tipos.
+		# Oleada 4: 10 Imp + 10 Goblin ballesta (reemplaza arquera) + 10 Gárgola + 5 Imp escudo 100%.
 		wave_spawner.probabilidad_imp = 0.0
 		wave_spawner.probabilidad_goblin_girl = 0.0
 		wave_spawner.probabilidad_canonero = 0.0
-		wave_spawner.escena_goblin = wave_spawner.escena_goblin_girl
-		# Sin imps escudo en oleada 4
+		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")  # ballesta
+		# 5 imp escudo garantizados vía cola, sin spawn dinámico extra
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.max_imp_escudo_activos = 0
 		wave_spawner.intervalo_check_escudo = 999.0

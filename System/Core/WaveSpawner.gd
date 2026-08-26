@@ -147,15 +147,17 @@ func _generar_cola_spawn() -> void:
 			pool.append(escena_goblin)
 
 	elif wave_num == 4:
-		# Oleada 4: 10 imp, 10 goblin arquera, 10 g�rgola. Total: 30 (n�meros fijos).
-		# La primera en salir siempre es una g�rgola.
+		# Oleada 4: 10 imp, 10 goblin ballesta (reemplaza arquera), 10 gárgola + 5 imp escudo garantizados (100%). Total: 35.
+		# La primera en salir siempre es una gárgola.
+		for i in range(5):
+			pool.append(escena_imp_escudo)
 		for i in range(10):
 			pool.append(escena_gargola)
 		for i in range(10):
 			pool.append(escena_imp)
 		for i in range(10):
-			pool.append(escena_goblin_girl)
-		# Poner una g�rgola al frente de la cola (sale primero)
+			pool.append(escena_goblin)  # ballesta reemplaza a goblin_girl
+		# Poner una gárgola al frente de la cola (sale primero)
 		pool.push_front(escena_gargola)
 		pool.pop_back()
 
@@ -275,7 +277,7 @@ func _spawn_goblin():
 			or (oleada_combate == 4 and goblins_spawned_in_wave >= 10)
 		)
 	):
-		_iniciar_evento_cuerno(10, oleada_combate == 4)
+		_iniciar_evento_cuerno(10, false)  # Oleada 4 ya trae 5 escudo fijos en cola, no spawnear extra
 
 	if evento_cuerno_en_progreso:
 		refuerzos_cuerno_spawneados += 1
@@ -509,21 +511,53 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 	reproducir_sonido_cuerno()
 
 	# Reorganizar la cola para que los próximos spawns sean ráfaga intercalada
-	# de Goblin Girl y Goblin Ballesta (mitad de cada uno)
+	# de Goblin Girl y Goblin Ballesta (mitad de cada uno) — excepto Oleada 4 que usa solo ballesta
 	var burst: Array[PackedScene] = []
-	for i in range(int(ceil(refuerzos_cuerno_total / 2.0))):
-		burst.append(escena_goblin_girl)
-		burst.append(escena_goblin)
+	if oleada_combate == 4:
+		# Oleada 4: ráfaga 8x Goblin Ballesta + 2x Imp (10 total pedido)
+		for i in range(8):
+			burst.append(escena_goblin)
+		for i in range(2):
+			burst.append(escena_imp)
+		burst.shuffle()
+	else:
+		for i in range(int(ceil(refuerzos_cuerno_total / 2.0))):
+			burst.append(escena_goblin_girl)
+			burst.append(escena_goblin)
 
 	burst.append_array(cola_spawn)
 	cola_spawn = burst
 
-	# La oleada 4 incluye fijo 1 Imp de Escudo con el evento
+	# La oleada 4 incluye fijo 1 Imp de Escudo con el evento (desactivado, ya tiene 5 en cola)
 	if incluir_imp_escudo_fijo:
 		_spawnear_imp_escudo_fijo()
 
-	# Si el spawner está en pausa o inactivo, spawnear la ráfaga progresivamente
-	if not is_wave_active:
+	# Oleada 4: los 10 refuerzos salen DE GOLPE cuando suena el cuerno
+	if oleada_combate == 4:
+		var routine_golpe := func():
+			for i in range(refuerzos_cuerno_total):
+				if not is_instance_valid(self) or not is_inside_tree():
+					return
+				var escena_a_spawnear: PackedScene = cola_spawn.pop_front() if not cola_spawn.is_empty() else escena_goblin
+				if escena_a_spawnear:
+					var enemy = escena_a_spawnear.instantiate()
+					var spawn_pos = global_position
+					spawn_pos.y += altura_spawn
+					spawn_pos.y += randf_range(-0.2, 0.2)
+					_obtener_nodo_padre_spawn().add_child(enemy)
+					enemy.global_position = spawn_pos
+					if enemy.has_signal("died"):
+						enemy.died.connect(_on_goblin_died.bind(enemy))
+					active_goblins.append(enemy)
+					goblins_spawned_in_wave += 1
+					refuerzos_cuerno_spawneados += 1
+				# Tanda 0.20s entre cada uno de los 10 (2s total) — de golpe pero espaciado
+				await get_tree().create_timer(0.20, false).timeout
+			evento_cuerno_en_progreso = false
+			# Acelerador de spawn durante el evento ya no es necesario, ya salió la ráfaga
+		routine_golpe.call()
+	# Si el spawner está en pausa o inactivo (otras oleadas), spawnear la ráfaga progresivamente
+	elif not is_wave_active:
 		var routine := func():
 			for i in range(refuerzos_cuerno_total):
 				if not is_instance_valid(self) or not is_inside_tree():

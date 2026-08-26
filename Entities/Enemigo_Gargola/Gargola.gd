@@ -77,7 +77,7 @@ var vfx_hit_01_scene: PackedScene = preload("res://HitFXFree/assets/BinbunVFX_Vo
 
 @export_category("Drops")
 @export var posion_scene: PackedScene = preload("res://Entities/Item_Pocion/Posion.tscn")
-@export_range(0.0, 1.0, 0.01) var posion_drop_chance: float = 0.30  ## 30% de probabilidad de dropear poción
+@export_range(0.0, 1.0, 0.01) var posion_drop_chance: float = 0.05  ## 5% de probabilidad de dropear poción
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -186,8 +186,9 @@ func _spawn_vfx_hit_01_impacto() -> void:
 		return
 	# Punto de impacto real de la flecha, fallback centro del cuerpo
 	var pos_impacto: Vector3 = last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0.0, 0.4, 0.0))
-	# 90% más pequeño (0.18 -> 0.018 ≈ 0.02) sutil y naranjo
-	vfx.scale = Vector3(0.02, 0.02, 0.02)
+	# Aumentado a 3.0 vistoso (antes 2.2) → ~30% del original
+	vfx.scale = Vector3(3.0, 3.0, 3.0)
+	_reducir_vfx_hit_a_10_porciento(vfx)
 	var parent_escena := get_tree().current_scene
 	if parent_escena == null:
 		parent_escena = get_tree().root
@@ -216,8 +217,9 @@ func _spawn_vfx_hit_01_muerte() -> void:
 	var pos_muerte: Vector3 = _get_hips_global_position()
 	if pos_muerte.is_zero_approx():
 		pos_muerte = global_position + Vector3(0.0, 0.4, 0.0)
-	# Muy pequeño (80% + reducción extra solicitada)
-	vfx.scale = Vector3(0.05, 0.05, 0.05)
+	# FIX igual que impacto: parche .tscn a 10% + escalado runtime
+	vfx.scale = Vector3.ONE
+	_reducir_vfx_hit_a_10_porciento(vfx)
 	var parent_escena := get_tree().current_scene
 	if parent_escena == null:
 		parent_escena = get_tree().root
@@ -237,6 +239,62 @@ func _spawn_vfx_hit_01_muerte() -> void:
 		if is_instance_valid(vfx):
 			vfx.queue_free()
 	)
+
+
+func _reducir_vfx_hit_a_10_porciento(vfx: Node3D) -> void:
+	# Reduce TODOS los componentes internos un 90% (factor 0.1) para que el efecto
+	# no dependa del scale del padre (local_coords=false lo ignoraba).
+	# Si el .tscn ya está parcheado, esto queda en rango 0.03-0.05 y sigue siendo sutil.
+	const FACTOR: float = 0.1
+	for child in vfx.find_children("*", "GPUParticles3D", true, false):
+		if child is GPUParticles3D:
+			var p := child as GPUParticles3D
+			# Forzar local_coords para que futuros escalados del padre sí afecten
+			p.local_coords = true
+			# Escalar material de partículas
+			if p.process_material is ParticleProcessMaterial:
+				var pm := p.process_material as ParticleProcessMaterial
+				# Duplicar solo si aún tiene valores grandes (evita reducir dos veces si ya está parcheado)
+				if pm.scale_min > 0.5 or pm.scale_max > 0.5:
+					var dup := pm.duplicate() as ParticleProcessMaterial
+					dup.scale_min *= FACTOR
+					dup.scale_max *= FACTOR
+					p.process_material = dup
+			# Escalar Quad/Sphere del draw_pass (solo si aún tiene tamaño original >1.0)
+			if p.draw_pass_1 is QuadMesh:
+				var qm := p.draw_pass_1 as QuadMesh
+				if qm.size.x > 1.0:
+					var dup_qm := qm.duplicate() as QuadMesh
+					dup_qm.size *= FACTOR
+					p.draw_pass_1 = dup_qm
+			elif p.draw_pass_1 is SphereMesh:
+				var sm := p.draw_pass_1 as SphereMesh
+				if sm.radius > 0.4:
+					var dup_sm := sm.duplicate() as SphereMesh
+					dup_sm.radius *= FACTOR
+					dup_sm.height *= FACTOR
+					p.draw_pass_1 = dup_sm
+	for child in vfx.find_children("*", "MeshInstance3D", true, false):
+		if child is MeshInstance3D:
+			var mi := child as MeshInstance3D
+			if mi.mesh is SphereMesh:
+				var sm := mi.mesh as SphereMesh
+				if sm.radius > 0.3:
+					var dup := sm.duplicate() as SphereMesh
+					dup.radius *= FACTOR
+					dup.height *= FACTOR
+					mi.mesh = dup
+			elif mi.mesh is QuadMesh:
+				var qm := mi.mesh as QuadMesh
+				if qm.size.x > 1.0:
+					var dup := qm.duplicate() as QuadMesh
+					dup.size *= FACTOR
+					mi.mesh = dup
+	for child in vfx.find_children("*", "OmniLight3D", true, false):
+		if child is OmniLight3D:
+			var l := child as OmniLight3D
+			if l.omni_range > 0.5:
+				l.omni_range *= FACTOR
 
 
 func _drop_pocion() -> void:
@@ -498,7 +556,7 @@ func _procesar_combate(delta):
 				timer_combate = 0.0
 				ha_disparado_este_ciclo = false
 				ha_mostrado_anticipacion = false
-				_play_animation("CARGA_ATAQUE", -1.0, 1.0)
+				_play_animation("CARGA_ATAQUE", 0.25, 1.0)  # blend 0.25 suave desde FLY_IDLE
 
 		FaseCombate.CARGA:
 			var duracion_carga: float = _get_animation_duration("CARGA_ATAQUE")
@@ -512,10 +570,14 @@ func _procesar_combate(delta):
 			if timer_combate >= duracion_carga:
 				fase_combate = FaseCombate.ATAQUE
 				timer_combate = 0.0
-				_play_animation("ATACAR")
+				# ATACAR es de 1 frame → blend largo + velocidad reducida para que se vea natural (no pop)
+				_play_animation("ATACAR", 0.35, 0.55)
 
 		FaseCombate.ATAQUE:
+			# ATACAR de 1 frame da duración ~0.03s; forzamos mínimo 0.75s para suavizado y disparo a 0.4
 			var duracion_atacar: float = _get_animation_duration("ATACAR")
+			if duracion_atacar < 0.75:
+				duracion_atacar = 0.75
 			if not ha_disparado_este_ciclo and timer_combate >= tiempo_disparo_en_atacar:
 				_disparar_proyectiles()
 				ha_disparado_este_ciclo = true
@@ -524,7 +586,7 @@ func _procesar_combate(delta):
 				fase_combate = FaseCombate.IDLE
 				timer_combate = 0.0
 				_apagar_omni_light()
-				_play_animation("FLY_IDLE")
+				_play_animation("FLY_IDLE", 0.3, 1.0)
 
 
 func _empujar_si_en_barrera():

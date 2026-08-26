@@ -1058,7 +1058,8 @@ func _on_state_dying() -> void:
 func _drop_power_up() -> void:
 	if not power_up_explosivo_scene:
 		return
-	if randf() > drop_chance_flecha_explosiva:
+	var chance_efectiva := _get_effective_drop_chance(drop_chance_flecha_explosiva)
+	if randf() > chance_efectiva:
 		return
 	var item := power_up_explosivo_scene.instantiate() as Node3D
 	if not item:
@@ -1069,6 +1070,16 @@ func _drop_power_up() -> void:
 	elif get_parent():
 		get_parent().add_child(item)
 	item.global_position = global_position + Vector3(0.0, 0.5, 0.0)
+
+
+func _get_effective_drop_chance(base_chance: float) -> float:
+	var player := get_tree().get_first_node_in_group("player") if get_tree() else null
+	if player and player.has_method("get_effective_explosive_drop_chance"):
+		return player.get_effective_explosive_drop_chance(base_chance)
+	if player and "flechas_explosivas" in player and "is_explosive_drop_throttled" in player:
+		if player.is_explosive_drop_throttled():
+			return min(base_chance, 0.05)
+	return base_chance
 
 
 func _on_pilar_destruido() -> void:

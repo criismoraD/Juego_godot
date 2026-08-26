@@ -105,12 +105,12 @@ func _on_state_walking():
 
 
 func _on_state_shooting():
-	# Empieza con IDLE antes del primer lanzamiento
+	# Empieza con IDLE antes del primer lanzamiento — blend suave desde caminar
 	is_throwing = false
 	has_thrown = false
 	is_idle_pause = true
 	shoot_timer = randf_range(pausa_idle_min, pausa_idle_max)
-	_play_animation("IDLE")
+	_play_animation("IDLE", 0.3, 1.0)
 
 
 func _on_state_dying():
@@ -426,7 +426,7 @@ func _process_shooting(delta):
 			is_throwing = false
 			is_idle_pause = true
 			shoot_timer = randf_range(pausa_idle_min, pausa_idle_max)
-			_play_animation("IDLE")
+			_play_animation("IDLE", 0.35, 0.9)
 	elif is_idle_pause:
 		# === FASE IDLE: esperando entre lanzamientos ===
 		shoot_timer -= delta
@@ -442,7 +442,8 @@ func _start_throw_animation():
 	var lanzar_anims = ["LANZAR01", "LANZAR2"]
 	var chosen = lanzar_anims[randi() % lanzar_anims.size()]
 	current_throw_anim = chosen
-	_play_animation(chosen)
+	# Blend 0.25 desde IDLE y velocidad 0.95 para suavizar el tridente
+	_play_animation(chosen, 0.25, 0.95)
 	throw_anim_duration = _get_animation_duration(chosen)
 	# Cada animación tiene su propio timing de lanzamiento
 	if chosen == "LANZAR2":

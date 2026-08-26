@@ -35,6 +35,7 @@
 [ext_resource type="PackedScene" uid="uid://t0whis8d7cuv" path="res://Entities/Enemigo_Gargola/Gargola.tscn" id="34_gargola"]
 [ext_resource type="PackedScene" uid="uid://b7v8x2y1w4n0k" path="res://UI/UI_Vida_Protagonista.tscn" id="35_uivida"]
 [ext_resource type="PackedScene" uid="uid://c5b8r2a3c4e5f" path="res://Entities/Enemigo_Bracero/Bracero.tscn" id="36_omov4"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Pajaros/PajarosPlane.tscn" id="37_pajaros"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -264,6 +265,7 @@ transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.150
 [node name="SubViewportFondo3D" type="SubViewport" parent="." unique_id=209823411]
 handle_input_locally = false
 size = Vector2i(1920, 1080)
+render_target_update_mode = 4
 
 [node name="FogPlane" parent="SubViewportFondo3D" unique_id=1524639475 instance=ExtResource("17_fogplane")]
 transform = Transform3D(0.19913417, 0, 0, 0, 0.15469623, 0, 0, 0, 1.0000006, 1.680629, -0.25954807, -35.018787)
@@ -279,7 +281,7 @@ texture = SubResource("ViewportTexture_gfe6n")
 transform = Transform3D(3.705421, 0.46153456, -3.6189556, -0.6427276, 5.1601257, 3.7732615e-08, 3.591205, 0.44730818, 3.7340539, 5.822, -2.15, -30.774483)
 
 [node name="012" parent="SubViewportFondo3D/BUSTO_BRONCE2" index="1" unique_id=920637542]
-transform = Transform3D(0.9206672, -0.063800424, 0.38509852, 0.016579714, 0.9920535, 0.12471877, -0.3899953, -0.1084398, 0.9144094, 0.23271704, 0.028986394, 0.74830914)
+transform = Transform3D(0.8946598, -0.07065181, 0.4411258, 0.013340352, 0.99119985, 0.13169722, -0.44654828, -0.111939624, 0.8877298, 0.19106698, 0.07903123, 0.71204615)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="SubViewportFondo3D/BUSTO_BRONCE2/012" index="1" unique_id=900513883]
 transform = Transform3D(0.07183692, -0.13120604, -0.12085824, 0.06142813, -0.10412672, 0.14955424, -0.16747627, -0.09447154, 0.0030139051, -0.55454445, 1.494175, 0.030014038)
@@ -303,6 +305,7 @@ visible = false
 
 [node name="SubViewport" type="SubViewport" parent="SubViewportFondo3D" unique_id=1162834119]
 size = Vector2i(1505, 1080)
+render_target_update_mode = 4
 
 [node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="SubViewportFondo3D/SubViewport" unique_id=763944868]
 custom_minimum_size = Vector2(1504, 1080)
@@ -333,6 +336,7 @@ transform = Transform3D(5.8257546, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -9.008
 [node name="SubViewportMedio3D" type="SubViewport" parent="." unique_id=164925320]
 transparent_bg = true
 size = Vector2i(1152, 648)
+render_target_update_mode = 4
 
 [node name="CamaraMedio" type="Camera3D" parent="SubViewportMedio3D" unique_id=912225740]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0601563, 3.265016, 40.971046)
@@ -346,6 +350,7 @@ size = 0.01
 transparent_bg = true
 handle_input_locally = false
 size = Vector2i(1920, 1080)
+render_target_update_mode = 4
 
 [node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
@@ -468,7 +473,7 @@ tiempo_congelar = 4.0
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="TORRE" index="0" unique_id=114528807]
+[node name="TORRE" parent="TORRE" index="0" unique_id=835723112]
 layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
@@ -577,6 +582,9 @@ color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
 [node name="HojasPlane" parent="." unique_id=250802195 instance=ExtResource("32_dapvp")]
 transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.974465, -6.77036)
 amount = 100
+
+[node name="PajarosPlane" parent="." unique_id=250802196 instance=ExtResource("37_pajaros")]
+transform = Transform3D(0.44929424, 0, 0, 0, 0.43727946, 0, 0, 0, 0.40797263, -5.8943696, 2.9, -29.81196)
 
 [node name="BarreraDestruyeFlechas" parent="." unique_id=1852478489 instance=ExtResource("33_jrbhj")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.775, 4.765, 0)

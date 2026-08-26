@@ -1,0 +1,48 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Material" path="res://Entities/Ambiente_Pajaros/MAT_pajaros.tres" id="1_mat_pajaros"]
+
+[sub_resource type="Gradient" id="Gradient_Pajaros"]
+offsets = PackedFloat32Array(0, 0.12, 0.88, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_Pajaros"]
+gradient = SubResource("Gradient_Pajaros")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_Pajaros"]
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(1.2, 0.7, 0)
+emission_shape_offset = Vector3(0, 0, 0)
+direction = Vector3(1, 0.85, 0)
+spread = 9.0
+initial_velocity_min = 1.6
+initial_velocity_max = 2.2
+angular_velocity_min = 0.0
+angular_velocity_max = 0.0
+gravity = Vector3(0.01, 0.008, 0)
+scale_min = 0.68
+scale_max = 0.95
+color_ramp = SubResource("GradientTexture1D_Pajaros")
+anim_speed_min = 1.65
+anim_speed_max = 2.05
+anim_offset_max = 1.0
+anim_offset_min = 0.0
+turbulence_enabled = false
+damping_min = 0.01
+damping_max = 0.03
+
+[sub_resource type="QuadMesh" id="QuadMesh_Pajaros"]
+material = ExtResource("1_mat_pajaros")
+size = Vector2(1.75, 1.75)
+
+[node name="PajarosPlane" type="GPUParticles3D"]
+layers = 2
+amount = 8
+lifetime = 18.0
+preprocess = 9.0
+visibility_aabb = AABB(-5, -3, -1, 38, 28, 2)
+lifetime_randomness = 0.25
+local_coords = true
+process_material = SubResource("ParticleProcessMaterial_Pajaros")
+draw_pass_1 = SubResource("QuadMesh_Pajaros")

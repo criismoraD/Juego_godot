@@ -45,7 +45,7 @@ func _on_state_dying():
 		return
 
 	super._on_state_dying()
-	AudioManager.play_sfx("goblin_death", -2.0)  # -2 dB: 20% menos que el volumen anterior
+	AudioManager.play_sfx("goblin_death", -0.8)  # +15% vs -2.0 (≈+1.2 dB) pedido
 	_drop_power_up()
 
 	# Elegir aleatoriamente entre las 3 animaciones de muerte
@@ -84,7 +84,7 @@ func _ejecutar_explosion_desmembramiento() -> void:
 
 	# 2. Reproducir audio de impacto, muerte explosiva y sangre con volumen balanceado
 	AudioManager.play_sfx("sangre_splash")
-	AudioManager.play_sfx("goblin_explosive_death")
+	AudioManager.play_sfx("goblin_explosive_death", 2.3)  # +30% vs 0.0 (≈+2.3 dB) pedido
 
 	# 3. Spawnear animación de sangre 2D (14 cuadros verticales de Sangre_explosion.png)
 	_spawn_sangre_animada(global_position)
@@ -232,7 +232,8 @@ func _spawn_sangre_animada(pos: Vector3) -> void:
 func _drop_power_up() -> void:
 	if not power_up_explosivo_scene:
 		return
-	if randf() > drop_chance_flecha_explosiva:
+	var chance_efectiva := _get_effective_drop_chance(drop_chance_flecha_explosiva)
+	if randf() > chance_efectiva:
 		return
 	var item := power_up_explosivo_scene.instantiate() as Node3D
 	if not item:
@@ -246,6 +247,18 @@ func _drop_power_up() -> void:
 	elif get_parent():
 		get_parent().add_child(item)
 	item.global_position = global_position + Vector3(0.0, 0.5, 0.0)
+
+
+func _get_effective_drop_chance(base_chance: float) -> float:
+	# Mitiga a 5% si el jugador tiene >=30 flechas explosivas hasta bajar a <25 (histéresis en Player)
+	var player := get_tree().get_first_node_in_group("player") if get_tree() else null
+	if player and player.has_method("get_effective_explosive_drop_chance"):
+		return player.get_effective_explosive_drop_chance(base_chance)
+	if player and "flechas_explosivas" in player and "is_explosive_drop_throttled" in player:
+		if player.is_explosive_drop_throttled():
+			return min(base_chance, 0.05)
+	# Fallback sin Player: si no hay referencia, usar base
+	return base_chance
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
