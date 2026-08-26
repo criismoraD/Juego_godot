@@ -81,14 +81,12 @@ bones/0/position = Vector3(-2.7696111, -0.019928455, -43.01988)
 bones/0/rotation = Quaternion(-0.48052633, 0.4972654, -0.51385766, 0.50771236)
 bones/1/position = Vector3(5.789077, -2.1693993, 0.37194714)
 bones/1/rotation = Quaternion(0.152344, 0.2158361, 0.9510024, -0.16062537)
-bones/2/position = Vector3(8.822394e-07, 22.526602, -3.8352027e-08)
 bones/2/rotation = Quaternion(-0.1704595, 0.08765968, -0.008440071, 0.98142153)
 bones/3/rotation = Quaternion(0.43597344, 0.104880095, -0.18285158, 0.8749245)
 bones/4/position = Vector3(-2.4835725e-05, 9.775921, 0.0002771773)
 bones/4/rotation = Quaternion(0.33266726, -0.14238723, 0.050887834, 0.93084306)
 bones/5/position = Vector3(4.6387315e-05, 4.156209, -3.707409e-05)
 bones/6/position = Vector3(1.5497208e-06, 415.618, -8.3446514e-07)
-bones/6/rotation = Quaternion(-0.16350578, 0.25400302, 0.9367436, 0.17680399)
 bones/7/position = Vector3(-5.7890787, -2.1694114, 0.543427)
 bones/7/rotation = Quaternion(-0.3501424, 0.13241555, 0.90115464, 0.21860182)
 bones/8/position = Vector3(9.343078e-05, 22.40601, 1.2839226e-05)
@@ -97,15 +95,11 @@ bones/9/position = Vector3(-5.2896536e-05, 15.664186, -6.0559018e-05)
 bones/9/rotation = Quaternion(0.54958516, 0.025628371, 0.09504949, 0.8296174)
 bones/10/position = Vector3(1.2417906e-05, 9.579656, 9.302016e-05)
 bones/10/rotation = Quaternion(0.35539106, 0.14031175, -0.051049292, 0.9227155)
-bones/11/position = Vector3(5.9604645e-08, 3.905807, -0.17724401)
-bones/11/rotation = Quaternion(0.10858144, -0.0032125288, 0.034904063, 0.9934695)
 bones/12/position = Vector3(1.0609628e-05, 406.60812, -4.4107446e-06)
-bones/12/rotation = Quaternion(0.05108984, -0.0073182373, 0.023850214, 0.99838245)
 bones/13/position = Vector3(2.6077032e-08, 3.9058135, -0.1772446)
 bones/13/rotation = Quaternion(0.02566301, 0.014815256, 0.069761686, 0.99712354)
 bones/14/position = Vector3(-4.172325e-07, 4.561464, -1.9669533e-06)
 bones/14/rotation = Quaternion(0.024227101, 0.004168569, 0.0097186295, 0.99965054)
-bones/15/position = Vector3(4.2788456e-06, 8.32907, -1.8777223e-06)
 bones/15/rotation = Quaternion(0.02427839, 0.0037822323, 0.009776468, 0.9996503)
 bones/16/position = Vector3(4.0682883, 6.322429, 0.11852213)
 bones/16/rotation = Quaternion(0.39657512, 0.5603821, -0.38701957, 0.61556154)
@@ -122,16 +116,13 @@ bones/21/rotation = Quaternion(0.7804077, -0.09129186, -0.07452624, 0.61406475)
 bones/22/position = Vector3(0.25818753, 1.0711999, -0.08767763)
 bones/22/rotation = Quaternion(0.5907386, -0.09881154, -0.2706387, 0.7536703)
 bones/23/position = Vector3(-0.104127735, 0.7322126, -0.24852467)
-bones/23/rotation = Quaternion(-0.14460829, -0.4565986, 0.061582055, 0.8756791)
 bones/24/position = Vector3(2.8610232e-06, 78.020584, 4.7683716e-06)
 bones/25/position = Vector3(-1.8980354e-06, 5.864677, 3.4007064e-07)
 bones/25/rotation = Quaternion(-0.081974804, -0.05564254, -0.03692263, 0.99439466)
 bones/26/position = Vector3(1.1920929e-06, 6.7858405, -4.8023596)
 bones/26/rotation = Quaternion(-0.0022282014, -0.62779295, 0.064905375, 0.7756664)
 bones/27/position = Vector3(-1.6093254e-06, 15.865979, -11.228523)
-bones/27/rotation = Quaternion(0.009423904, 0.0031615528, -0.39712942, 0.91770875)
 bones/28/position = Vector3(-5.2452087e-06, 1943.7489, -4.2367676e-05)
-bones/28/rotation = Quaternion(-0.0032268425, 0.091296986, -0.0009612627, 0.9958181)
 bones/29/position = Vector3(-4.068289, 6.33128, -0.076574005)
 bones/29/rotation = Quaternion(0.44726261, -0.58282256, 0.38160264, 0.5609398)
 bones/30/position = Vector3(1.1121974e-05, 8.329287, -4.3804717e-05)
@@ -150,24 +141,23 @@ bones/36/position = Vector3(0.3131504, 2.1810634, 0.3824333)
 bones/37/position = Vector3(1.0967255e-05, 223.63695, 5.00679e-06)
 
 [node name="BoneAttachment3D_Bow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" index="1" unique_id=253504640]
-transform = Transform3D(0.670512, 0.6825567, 0.29073885, -0.43049884, 0.03879383, 0.901757, 0.6042213, -0.7298016, 0.31985164, 1319.7921, 84.38447, -1507.3501)
-bone_name = "mixamorig_RightHand"
-bone_idx = 28
+transform = Transform3D(0.8660319, 0.2583701, 0.42805716, -0.2669022, 0.96284366, -0.041172214, -0.42278975, -0.07859289, 0.9028129, 1.7275596, 24.463425, -62.64456)
+bone_name = "mixamorig_RightForeArm"
+bone_idx = 31
 
 [node name="ARCO_GOBLING_GIRL" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Bow" unique_id=1734146513 instance=ExtResource("3_bow")]
-transform = Transform3D(0.18427354, -0.9617563, -0.20265274, -0.93595606, -0.10876341, -0.3348982, 0.30004925, 0.25138694, -0.9202038, -1.1256943, 7.041935, -0.88827133)
+transform = Transform3D(22.045334, -24.996151, -43.75148, -48.262383, 3.2511635, -26.17574, 14.482479, 48.88373, -20.630938, 1.152092, 20.614738, -0.8900871)
 
 [node name="BoneAttachment3D_Arrow" type="BoneAttachment3D" parent="LONKO/Armature/Skeleton3D" index="2" unique_id=253504641]
-transform = Transform3D(0.21955073, 0.27604523, 0.9357327, -0.20106135, 0.951348, -0.23347661, -0.95465755, -0.13687967, 0.26437125, 5.515617, 37.362617, -66.69519)
-bone_name = "mixamorig_RightHand"
-bone_idx = 32
+transform = Transform3D(-0.41468194, 0.90983087, -0.015688509, -0.90995264, -0.41451943, 0.012643844, 0.0050005615, 0.01951909, 0.9997965, 0.2850154, -8.308365, -67.84484)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
 
 [node name="FlechaElectricaVFX_Manual" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=146018264 instance=ExtResource("5_vfx_manual")]
-transform = Transform3D(4.3453164, 24.609608, 0.696664, -0.75011873, 0.83945656, -24.974638, -24.608051, 4.3200197, 0.8843193, 10.316536, 32.12985, 14.773203)
-visible = false
+transform = Transform3D(-1.742631, -9.98868, 22.851458, 1.1533415, 22.850391, 10.076166, -24.912508, 1.7565873, -1.1319675, -73.773865, -9.551372, -2.4503098)
 
 [node name="FlechaMano" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=1101558565 instance=ExtResource("4_arrow")]
-transform = Transform3D(-19.712498, -87.73235, -3.800459, 86.95368, -20.045036, 11.715599, -12.266864, -1.1057949, 89.15327, 8.343651, -29.374395, 7.420725)
+transform = Transform3D(-84.1454, 31.843908, 2.3484716, -31.906015, -83.594666, -9.691942, -1.2478774, -9.894039, 89.44578, -10.780743, 4.4102144, 4.5638084)
 visible = false
 
 [node name="Particulas_Pisada" type="GPUParticles3D" parent="." unique_id=1565899052]
