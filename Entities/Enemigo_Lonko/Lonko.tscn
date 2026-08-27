@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://cqlywcwj0vwhw" path="res://Entities/Enemigo_Lonko/LONKO.glb" id="2_glb"]
 [ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="3_bow"]
 [ext_resource type="PackedScene" uid="uid://dcri1fif5ky1b" path="res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn" id="4_arrow"]
-[ext_resource type="PackedScene" uid="uid://cn070hn37ncul" path="res://Entities/Enemigo_Lonko/Flecha_Electrica.tscn" id="5_vfx_manual"]
+[ext_resource type="PackedScene" uid="uid://bbrua2kwcecpu" path="res://assets/BinbunVFX/magic_projectiles/effects/mprojectile_javelin/mprojectile_javelin_vfx_02.tscn" id="5_vfx_manual"]
 [ext_resource type="Texture2D" uid="uid://co802i012y46f" path="res://Entities/Enemigo_Lonko/humo pisada.png" id="6_polvo"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lonko"]
@@ -57,13 +57,13 @@ size = Vector2(0.65, 0.65)
 [node name="Lonko" type="CharacterBody3D" unique_id=2008123910]
 collision_layer = 4
 script = ExtResource("1_lonko")
-radio_marca_caida = 0.5
+radio_marca_caida = 0.55
 altura_pilar_offset = 3.0
 debug_pitch_deg = -90.0
 velocidad_caminar = 1.5
 distancia_minima_caminar = 4.5
 distancia_maxima_caminar = 9.0
-vida_maxima = 5
+vida_maxima = 6
 altura_spawn_flecha = 0.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1943347810]
@@ -154,7 +154,11 @@ bone_name = "mixamorig_LeftHand"
 bone_idx = 17
 
 [node name="FlechaElectricaVFX_Manual" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=146018264 instance=ExtResource("5_vfx_manual")]
-transform = Transform3D(-1.742631, -9.98868, 22.851458, 1.1533415, 22.850391, 10.076166, -24.912508, 1.7565873, -1.1319675, -73.773865, -9.551372, -2.4503098)
+transform = Transform3D(-42.0727, 15.921954, 1.1742358, -15.953007, -41.797333, -4.845971, -0.6239387, -4.9470195, 44.72289, -10.780743, 4.4102144, 4.5638084)
+primary_color = Color(0.85, 1, 0.85, 1)
+secondary_color = Color(0.2, 1, 0.3, 1)
+tertiary_color = Color(0.05, 0.6, 0.15, 1)
+light_color = Color(0.25, 1, 0.35, 1)
 
 [node name="FlechaMano" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=1101558565 instance=ExtResource("4_arrow")]
 transform = Transform3D(-84.1454, 31.843908, 2.3484716, -31.906015, -83.594666, -9.691942, -1.2478774, -9.894039, 89.44578, -10.780743, 4.4102144, 4.5638084)

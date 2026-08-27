@@ -553,6 +553,12 @@ func _physics_process(delta):
 	# Guardar velocidad vertical PREVIA al movimiento (para detectar impacto)
 	var prev_vel_y = velocity.y
 
+	# Rastrear inicio de caída libre desde altura para humo al tocar superficie
+	if not is_on_floor():
+		if not _was_in_air_from_height:
+			_was_in_air_from_height = true
+			_fall_start_y = global_position.y
+
 	# --- MÁQUINA DE ESTADOS DE MOVIMIENTO SIMPLE ---
 
 	# 1. GRAVEDAD (Solo si no escalamos)
@@ -599,6 +605,13 @@ func _physics_process(delta):
 
 		# Acabamos de tocar suelo viniendo del aire?
 		elif current_move_state == MoveState.AIR:
+			# Humo sincronizado exactamente al tocar la superficie tras caída
+			if _was_in_air_from_height:
+				var dist: float = _fall_start_y - global_position.y
+				if dist > 0.9:
+					_spawn_fall_smoke()
+				_was_in_air_from_height = false
+
 			# ATERRIZAJE CONDICIONAL
 			if prev_vel_y < umbral_aterrizaje:
 				start_landing()  # Caída fuerte -> Bloqueo
@@ -778,6 +791,65 @@ func _spawn_landing_vfx() -> void:
 		return
 	# Llamar a VFXFactory directamente (clase estática)
 	VFXFactory.spawn_landing(get_tree().root, global_position, 1.5)
+
+# Humo sutil al caer desde altura (plataforma/escalera) - SmokeFX 2A-2, dos penachos a los pies
+var _fall_start_y: float = 0.0
+var _was_in_air_from_height: bool = false
+
+func _spawn_fall_smoke() -> void:
+	var tex: Texture2D = load("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png") as Texture2D
+	if not tex:
+		return
+	for side in [-1, 1]:
+		var puf: GPUParticles3D = GPUParticles3D.new()
+		puf.amount = 3
+		puf.lifetime = 0.65
+		puf.one_shot = true
+		puf.explosiveness = 0.2
+		puf.randomness = 0.3
+		puf.visibility_aabb = AABB(Vector3(-1.5, -1.2, -1.5), Vector3(3, 3, 3))
+		var pmat: ParticleProcessMaterial = ParticleProcessMaterial.new()
+		pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
+		pmat.direction = Vector3(side * 0.7, 0.4, 0)
+		pmat.spread = 18.0
+		pmat.initial_velocity_min = 0.6
+		pmat.initial_velocity_max = 1.1
+		pmat.gravity = Vector3(0, -0.4, 0)
+		pmat.scale_min = 0.45
+		pmat.scale_max = 0.68
+		pmat.anim_speed_min = 0.9
+		pmat.anim_speed_max = 1.1
+		pmat.anim_offset_min = 0.0
+		pmat.anim_offset_max = 0.2
+		var grad: Gradient = Gradient.new()
+		grad.set_color(0, Color(0.96, 0.94, 0.88, 0.85))
+		grad.set_color(1, Color(0.96, 0.94, 0.88, 0.0))
+		var grad_tex: GradientTexture1D = GradientTexture1D.new()
+		grad_tex.gradient = grad
+		pmat.color_ramp = grad_tex
+		pmat.turbulence_enabled = true
+		pmat.turbulence_noise_strength = 0.008
+		puf.process_material = pmat
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.vertex_color_use_as_albedo = true
+		mat.albedo_texture = tex
+		mat.particles_anim_h_frames = 6
+		mat.particles_anim_v_frames = 1
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		mat.billboard_keep_scale = true
+		var quad: QuadMesh = QuadMesh.new()
+		quad.size = Vector2(0.72, 0.72)
+		quad.material = mat
+		puf.draw_pass_1 = quad
+		get_tree().root.add_child(puf)
+		puf.global_position = global_position + Vector3(side * 0.25, 0.04, 0)
+		puf.emitting = true
+		# Asegurar visibilidad en viewport del juego (capa Frente)
+		puf.layers = 1048575
+		get_tree().create_timer(1.2).timeout.connect(func(): if is_instance_valid(puf): puf.queue_free())
 
 
 func set_motion_anim(state_name):

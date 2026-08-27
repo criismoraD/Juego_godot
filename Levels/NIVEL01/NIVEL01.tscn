@@ -36,6 +36,13 @@
 [ext_resource type="PackedScene" uid="uid://b7v8x2y1w4n0k" path="res://UI/UI_Vida_Protagonista.tscn" id="35_uivida"]
 [ext_resource type="PackedScene" uid="uid://c5b8r2a3c4e5f" path="res://Entities/Enemigo_Bracero/Bracero.tscn" id="36_omov4"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Pajaros/PajarosPlane.tscn" id="37_pajaros"]
+[ext_resource type="Shader" uid="uid://bdmqy0jdcwtq0" path="res://System/Shaders/sombra_falsa.gdshader" id="38_sombrafalsa_shader"]
+[ext_resource type="Texture2D" uid="uid://b38sq0vgm6wdr" path="res://Levels/NIVEL01/sombra_falsa_nivel01.png" id="39_sombrafalsa_mask"]
+[ext_resource type="Shader" uid="uid://c4l5t5tlx7cbq" path="res://System/Shaders/tono_calido.gdshader" id="40_tonocalido"]
+[ext_resource type="Shader" uid="uid://bo028vclvrb74" path="res://System/Shaders/luz_haces_fija.gdshader" id="41_luz_haces_fija"]
+[ext_resource type="Texture2D" uid="uid://b7sqddmatavpl" path="res://VFX/Textures/T_basic1_vfx.PNG" id="42_dust_tex"]
+[ext_resource type="Script" uid="uid://dftm0y1dl2kf0" path="res://Entities/Ambiente_Torre/CaidaPiedrasTorre.gd" id="44_caidapiedras_script"]
+[ext_resource type="PackedScene" uid="uid://cb5n2k1m8qaq0" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="45_arboleda"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -60,6 +67,63 @@ viewport_path = NodePath("SubViewportMedio3D")
 [sub_resource type="ViewportTexture" id="ViewportTexture_frente_3d"]
 viewport_path = NodePath("SubViewportFrente3D")
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sombra_falsa"]
+shader = ExtResource("38_sombrafalsa_shader")
+shader_parameter/shadow_mask = ExtResource("39_sombrafalsa_mask")
+shader_parameter/shadow_color = Color(0.04, 0.05, 0.09, 1)
+shader_parameter/shadow_opacity = 0.52
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tono_calido"]
+shader = ExtResource("40_tonocalido")
+shader_parameter/warm_tint = Color(0.98, 0.74, 0.48, 1)
+shader_parameter/shadow_tint = Color(0.22, 0.14, 0.18, 1)
+shader_parameter/intensity = 0.28
+shader_parameter/saturation_boost = 1.06
+shader_parameter/contrast_boost = 1.04
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_luz_haces_fija"]
+shader = ExtResource("41_luz_haces_fija")
+shader_parameter/ray_color = Color(1, 0.9, 0.72, 0.22)
+shader_parameter/ray_density = 4.2
+shader_parameter/angle = -0.58
+
+[sub_resource type="Gradient" id="Gradient_dust"]
+offsets = PackedFloat32Array(0, 0.2, 0.75, 1)
+colors = PackedColorArray(1, 0.85, 0.5, 0, 1, 0.85, 0.5, 0.75, 1, 0.85, 0.5, 0.75, 1, 0.85, 0.5, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_dust"]
+gradient = SubResource("Gradient_dust")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_dust"]
+emission_shape = 3
+emission_box_extents = Vector3(16, 9, 3)
+direction = Vector3(0.5, -0.3, 0.1)
+spread = 30.0
+initial_velocity_min = 0.08
+initial_velocity_max = 0.25
+gravity = Vector3(0, -0.015, 0)
+scale_min = 0.015
+scale_max = 0.035
+color_ramp = SubResource("GradientTexture1D_dust")
+turbulence_enabled = true
+turbulence_noise_strength = 0.01
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dust"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("42_dust_tex")
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_dust"]
+material = SubResource("StandardMaterial3D_dust")
+size = Vector2(0.12, 0.12)
+
 [node name="Node3D" type="Node3D" unique_id=615207129]
 script = ExtResource("Script_Level01")
 velocidad_pacificos = 0.6
@@ -71,21 +135,54 @@ delay_dialogo_pacifico = 0.5
 [node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting" unique_id=1150657961]
-transform = Transform3D(0.9658404, -0.10534774, -0.23675792, 0.13902485, 0.981674, 0.13033843, 0.21868823, -0.15880133, 0.9627863, -5.7785883, 2.29496, 2.7377172)
+transform = Transform3D(0.8290376, 0.3294379, -0.4520935, 0, 0.809017, 0.5877852, 0.5591929, -0.4872958, 0.6707056, -5.7785883, 2.29496, 2.7377172)
 layers = 7
-light_energy = 0.3
-light_cull_mask = 7
-shadow_opacity = 0.5
-shadow_blur = 0.2
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=1266906329]
-transform = Transform3D(0.40658453, -0.30609614, 0.8608101, 0.19945472, 0.9492161, 0.24332443, -0.8915757, 0.072760716, 0.4469887, 11.101227, 3.2153306, -2.8423328)
-layers = 7
-light_energy = 0.8
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 0.85
 light_cull_mask = 7
 shadow_enabled = true
-shadow_opacity = 0.5
-shadow_blur = 0.2
+shadow_opacity = 0.8
+shadow_blur = 0.6
+directional_shadow_split_2 = 0.25
+directional_shadow_split_3 = 0.55
+directional_shadow_blend_splits = true
+directional_shadow_fade_start = 0.85
+directional_shadow_max_distance = 65.0
+
+[node name="DirectionalLight3D2" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=775095667]
+transform = Transform3D(0.37613553, -0.35728383, 0.9424466, 0.18451758, 1.107951, 0.26640055, -0.8248061, 0.084928155, 0.48937958, 11.101227, 3.21533, -2.8423324)
+layers = 7
+light_color = Color(0.76, 0.86, 0.98, 1)
+light_energy = 0.35
+light_cull_mask = 7
+shadow_opacity = 0.0
+shadow_blur = 0.0
+
+[node name="LuzCentroPiso" type="SpotLight3D" parent="Lighting" unique_id=1849203810]
+transform = Transform3D(0.9659258, 0.1294095, -0.2241439, 0, 0.8660254, 0.5, 0.258819, -0.4829629, 0.8365163, 1.5, 4.5, 1.2)
+layers = 7
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.2
+light_cull_mask = 7
+shadow_enabled = true
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzTorreDiagonal" type="SpotLight3D" parent="Lighting" unique_id=1928471029]
+transform = Transform3D(0.8660254, 0.25, -0.4330127, 0, 0.8660254, 0.5, 0.5, -0.4330127, 0.75, -4.5, 7.5, 3.5)
+layers = 7
+light_color = Color(1, 0.94, 0.82, 1)
+light_energy = 1.35
+light_cull_mask = 7
+shadow_enabled = true
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 16.0
+spot_angle = 46.0
+spot_angle_attenuation = 1.5
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Lighting" unique_id=1658111597]
 environment = ExtResource("2_qcvbp")
@@ -111,7 +208,7 @@ velocidad_escalar_bajar = 0.5
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 932135119) index="0" unique_id=166805227]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 224983412) index="0" unique_id=996700960]
 bones/0/position = Vector3(4.172325e-07, -0.35407498, -40.838314)
 bones/0/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
 bones/1/rotation = Quaternion(-0.05186307, 0, 0, 0.9986542)
@@ -258,6 +355,10 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -9.14372, 4.721031, -0.
 [node name="Ladder3" parent="PlataformaOneway3" unique_id=238257157 instance=ExtResource("7_ladder")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
 
+[node name="CaidaPiedrasTorre" type="Node3D" parent="." unique_id=1948201999]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 4.2, 0)
+script = ExtResource("44_caidapiedras_script")
+
 [node name="GameUI" parent="." unique_id=370663490 instance=ExtResource("15_gameui")]
 
 [node name="UIVidaProtagonista" parent="." unique_id=2104918274 instance=ExtResource("35_uivida")]
@@ -273,7 +374,7 @@ layers = 2
 skeleton = NodePath("../../..")
 
 [node name="FONDO ANIMADO" type="Sprite3D" parent="SubViewportFondo3D" unique_id=625058086]
-transform = Transform3D(1.9454114, 0, 0, 0, 1.55, 0, 0, 0, 1.55, -3, 3, -39.5)
+transform = Transform3D(1.9454114, 0, 0, 0, 1.55, 0, 0, 0, 1.55, -2.062877, 2.3371563, -39.5)
 layers = 2
 texture = SubResource("ViewportTexture_gfe6n")
 
@@ -342,6 +443,8 @@ transform = Transform3D(5.8257546, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -9.008
 
 [node name="SubViewportMedio3D" type="SubViewport" parent="." unique_id=164925320]
 transparent_bg = true
+msaa_3d = 2
+screen_space_aa = 1
 size = Vector2i(1152, 648)
 render_target_update_mode = 4
 
@@ -356,6 +459,8 @@ size = 0.01
 [node name="SubViewportFrente3D" type="SubViewport" parent="." unique_id=164925310]
 transparent_bg = true
 handle_input_locally = false
+msaa_3d = 2
+screen_space_aa = 1
 size = Vector2i(1920, 1080)
 render_target_update_mode = 4
 
@@ -371,7 +476,7 @@ size = 0.01
 layer = 20
 
 [node name="Fondo3DRect" type="TextureRect" parent="Compositor3D" unique_id=1287558300]
-texture_filter = 1
+texture_filter = 2
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -382,7 +487,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Medio3DRect" type="TextureRect" parent="Compositor3D" unique_id=1380745700]
-texture_filter = 1
+texture_filter = 2
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -393,7 +498,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Frente3DRect" type="TextureRect" parent="Compositor3D" unique_id=1380745600]
-texture_filter = 1
+texture_filter = 2
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -402,6 +507,33 @@ grow_vertical = 2
 texture = SubResource("ViewportTexture_frente_3d")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="SombraFalsaRect" type="ColorRect" parent="Compositor3D" unique_id=1587391024]
+material = SubResource("ShaderMaterial_sombra_falsa")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TonoCalidoRect" type="ColorRect" parent="Compositor3D" unique_id=1672391099]
+material = SubResource("ShaderMaterial_tono_calido")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LuzHacesFijaRect" type="ColorRect" parent="Compositor3D" unique_id=1938201948]
+material = SubResource("ShaderMaterial_luz_haces_fija")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8948145, -0.17290789, -12.293223)
@@ -477,10 +609,21 @@ torque_min = 0.0
 torque_max = 0.5
 tiempo_congelar = 4.0
 
+[node name="ParticulasPolvoLuminoso" type="GPUParticles3D" parent="." unique_id=1874920194]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3.5, 0)
+layers = 7
+amount = 120
+lifetime = 8.0
+preprocess = 4.0
+randomness = 0.5
+visibility_aabb = AABB(-18, -10, -5, 36, 20, 10)
+process_material = SubResource("ParticleProcessMaterial_dust")
+draw_pass_1 = SubResource("QuadMesh_dust")
+
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="TORRE" index="0" unique_id=150145970]
+[node name="TORRE" parent="TORRE" index="0" unique_id=1606044534]
 layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
@@ -494,7 +637,7 @@ tiempo_carga_max = 2.0
 idle_max = 2.0
 
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1883993, -0.20376292, 4.204008)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.362567, -0.20376292, 3.083572)
 
 [node name="PINCHO" parent="." unique_id=1272800596 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.5052033, 0.32352856, 0.009941371, -0.29118463, 0.46231574, -0.24794276, -0.14135437, 0.20394458, 0.54628336, -6.318142, 0.1362295, 0.826589)
@@ -526,6 +669,34 @@ light_cull_mask = 7
 
 [node name="OmniLight3D2" type="OmniLight3D" parent="." unique_id=1941825653]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.96842, 3.0480542, -0.8372054)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D3" type="OmniLight3D" parent="." unique_id=1955273177]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.1700253, 0.75263596, 4.4107823)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D4" type="OmniLight3D" parent="." unique_id=510579518]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -10.583302, 6.760356, -3.7805552)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D5" type="OmniLight3D" parent="." unique_id=1047598206]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.4027233, 4.386972, -4.0679297)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D6" type="OmniLight3D" parent="." unique_id=1739966465]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.4027233, 5.8055634, -0.6570871)
 layers = 3
 light_color = Color(1, 0.85490197, 0.8, 1)
 light_energy = 1.5
@@ -590,8 +761,12 @@ color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
 transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.974465, -6.77036)
 amount = 100
 
+[node name="HojasPlane2" parent="." unique_id=1613658433 instance=ExtResource("32_dapvp")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -19.122095, -3.4211488, 1.9674244)
+amount = 100
+
 [node name="PajarosPlane" parent="." unique_id=250802196 instance=ExtResource("37_pajaros")]
-transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -5.1262293, 4.0258794, -2.4745846)
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -4.95278, 4.0258794, -2.4745846)
 
 [node name="PajarosPlane2" parent="." unique_id=628851056 instance=ExtResource("37_pajaros")]
 transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -16.538982, 2.9, -17.962505)
@@ -604,6 +779,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.775, 4.765, 0)
 
 [node name="Bracero" parent="." unique_id=2051267930 instance=ExtResource("36_omov4")]
 transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -7.3911104, 0.20699996, -2.3187857)
+
+[node name="Arboleda" parent="." unique_id=1948201888 instance=ExtResource("45_arboleda")]
+transform = Transform3D(0.9358511, 0, -0.11479537, 0, 0.8239627, 0, 0.11054993, 0, 0.9717906, -8.931133, -0.6583084, 3.2473335)
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

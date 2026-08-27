@@ -38,13 +38,13 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 
 @export_category("Ataque Eléctrico - Lonko")
 @export var cada_cuantos_tiros_electrico: int = 3  ## Cada N disparos, dispara la flecha eléctrica vertical
-@export var altura_cielo_electrica: float = 45.0  ## Altura a la que la flecha sale de pantalla
-@export var velocidad_subida_electrica: float = 40.0  ## Velocidad de ascenso vertical (doble de rápida)
+@export var altura_cielo_electrica: float = 26.0  ## Altura a la que la flecha sale de pantalla
+@export var velocidad_subida_electrica: float = 45.0  ## Velocidad de ascenso vertical
 @export var zona_caida_x_min: float = -10.0  ## Límite izquierdo de la zona aliada de caída
 @export var zona_caida_x_max: float = -6.5  ## Límite derecho de la zona aliada de caída
 @export var zona_caida_z: float = 0.0  ## Plano Z fijo de la zona de caída
-@export var segundos_marca_caida: float = 1.5  ## Tiempo de aviso con aros rojos antes de caer
-@export var radio_marca_caida: float = 1.25  ## Radio de los aros de la marca
+@export var segundos_marca_caida: float = 1.4  ## Tiempo de aviso con el cráneo antes de caer
+@export var radio_marca_caida: float = 0.55  ## Radio de los aros de la marca
 @export var tiempo_recarga_electrica: float = 2.0  ## Duración de la recarga eléctrica (= duración de "Cargando SP.mp3", 2 s)
 
 @export_category("Pilar - Lonko")
@@ -73,6 +73,10 @@ var sfx_dano_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Daño.m
 var sfx_muerte_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Muerte.mp3")
 var sfx_pilar_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Sonido pilar emergiendo.mp3")
 var sfx_cargando_sp_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Cargando SP.mp3")
+var sfx_tensado_streams: Array[AudioStream] = [
+	preload("res://Entities/Jugador_Arquera/TENSADO_CUERDA1.mp3"),
+	preload("res://Entities/Jugador_Arquera/TENSADO_CUERDA2.mp3")
+]
 var flecha_visual_mano: Node3D = null
 var escala_original_flecha_mano: Vector3 = Vector3.ONE
 var _pose_base_flecha_mano: Transform3D = Transform3D.IDENTITY
@@ -120,6 +124,7 @@ var _girando_hacia_fondo: bool = false  ## True durante la invocación del pilar
 var _correccion_idle_activa: bool = false  ## True durante la pausa IDLE entre disparos (corrige el yaw del clip)
 var _tween_espejo: Tween = null  ## Volteo suave de escala X al entrar/salir del IDLE
 var _pitch_suavizado_rad: float = 0.0  ## Para suavizar deformación ult
+var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: suelta el arco volando al morir por explosión
 
 
 func _on_enemy_ready() -> void:
@@ -594,7 +599,7 @@ func _iniciar_secuencia_pilar() -> void:
 	# 5. Esperar a que se complete hasta el segundo 9.5 de la animación
 	await get_tree().create_timer(duracion_real).timeout
 
-	if not is_instance_valid(self):
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 		return
 
 	# Detener animación de subida y bamboleo inmediatamente para quedar 100% estático
@@ -863,14 +868,18 @@ func _iniciar_secuencia_disparo() -> void:
 		_play_animation("RECARGA", 0.35, duracion_clip_recarga / tiempo_recarga_actual * 0.88)
 		_mostrar_flecha_electrica_en_mano(tiempo_recarga_actual)
 		_iniciar_vfx_carga_ult(tiempo_recarga_actual)
+		_iniciar_temblor_pilar_ult(tiempo_recarga_actual)
+		_reproducir_sonido_tensado_arco()
 	else:
 		# Post-daño → RECARGA suave (evita snap de columna)
 		_play_animation("RECARGA", 0.35)
 		_mostrar_y_escalar_flecha_mano(tiempo_recarga_actual)
+		_reproducir_sonido_tensado_arco()
 
 	await get_tree().create_timer(tiempo_recarga_actual, false).timeout
 	_detener_vfx_carga_ult()
 	if current_state != State.SHOOTING or _is_taking_damage or not is_instance_valid(self):
+		_detener_temblor_pilar_ult(true)
 		if _apuntar_arriba:
 			_is_invulnerable = false
 		return
@@ -1002,7 +1011,7 @@ func _iniciar_vfx_carga_ult(duracion: float) -> void:
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	# Pulsos acelerados tipo latido cardíaco (cada vez más rápidos y violentos)
 	var pulsos: int = 10
-	var tiempo_pulsos: float = max(0.3, duracion - 0.45)
+	var tiempo_pulsos: float = max(0.3, duracion - 0.20)
 	var intervalo: float = tiempo_pulsos / float(pulsos)
 	for i: int in range(pulsos):
 		# Intervalo decreciente: los últimos pulsos son casi instantáneos
@@ -1012,24 +1021,160 @@ func _iniciar_vfx_carga_ult(duracion: float) -> void:
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", escala_base - Vector3(0.07, 0.0, 0.07), dur_pulso * 0.65) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	# Implosión violenta final al disparar
-	_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", Vector3(1.4, escala_base.y * 2.2, 1.4), 0.06) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_tween_vfx_carga.tween_property(_vfx_carga_ult, "scale", Vector3(0.003, 0.005, 0.003), 0.06) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	_tween_vfx_carga.tween_callback(_detener_vfx_carga_ult)
 
 
-func _detener_vfx_carga_ult() -> void:
+func _detener_vfx_carga_ult(inmediato: bool = false) -> void:
 	if _tween_vfx_carga and _tween_vfx_carga.is_valid():
 		_tween_vfx_carga.kill()
 	_tween_vfx_carga = null
 	if _tween_vfx_vib and _tween_vfx_vib.is_valid():
 		_tween_vfx_vib.kill()
 	_tween_vfx_vib = null
-	if _vfx_carga_ult and is_instance_valid(_vfx_carga_ult):
-		_vfx_carga_ult.queue_free()
+
+	if not _vfx_carga_ult or not is_instance_valid(_vfx_carga_ult):
+		_vfx_carga_ult = null
+		return
+
+	var vfx_to_fade := _vfx_carga_ult
 	_vfx_carga_ult = null
+
+	if inmediato:
+		vfx_to_fade.queue_free()
+		return
+
+	# Desvanecimiento suave y natural del Ki (disipación ascendente y fade de opacidad)
+	var duracion_fade: float = 0.42
+	var tween_fade := vfx_to_fade.create_tween()
+	tween_fade.set_parallel(true)
+
+	# 1. Disipación espacial de la columna de energía
+	var escala_actual := vfx_to_fade.scale
+	var escala_dispersion := Vector3(escala_actual.x * 1.3, escala_actual.y * 1.6, escala_actual.z * 1.3)
+	tween_fade.tween_property(vfx_to_fade, "scale", escala_dispersion, duracion_fade) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	# 2. Desvanecimiento de opacidad (alpha_multiplier) en los shaders de cada malla
+	var meshes := vfx_to_fade.find_children("*", "MeshInstance3D", true, false)
+	for m in meshes:
+		var mi := m as MeshInstance3D
+		if mi and mi.material_override is ShaderMaterial:
+			mi.material_override = mi.material_override.duplicate()
+			var sm := mi.material_override as ShaderMaterial
+			tween_fade.tween_method(
+				func(val: float): if is_instance_valid(sm): sm.set_shader_parameter("alpha_multiplier", val),
+				1.0, 0.0, duracion_fade
+			).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	# 3. Atenuación suave de la luz puntual
+	var light := vfx_to_fade.find_child("Light", true, false) as OmniLight3D
+	if light:
+		tween_fade.tween_property(light, "light_energy", 0.0, duracion_fade) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	# 4. Liberar al finalizar el desvanecimiento
+	tween_fade.chain().tween_callback(vfx_to_fade.queue_free)
+
+
+var _temblor_pilar_activo: bool = false
+
+func _iniciar_temblor_pilar_ult(duracion_total_recarga: float) -> void:
+	_detener_temblor_pilar_ult(true)
+
+	_temblor_pilar_activo = true
+	var pilar_ref := _instancia_pilar
+	var modelo_ref := _lonko_modelo
+	var orig_x: float = _base_pos_pilar.x if (pilar_ref and _base_pos_pilar != Vector3.ZERO) else (pilar_ref.global_position.x if pilar_ref else 0.0)
+
+	# Duración reducida: vibra solo en el clímax final de la carga (0.85s)
+	var duracion_vibracion_activa: float = min(0.85, duracion_total_recarga)
+	var delay_espera: float = max(0.0, duracion_total_recarga - duracion_vibracion_activa)
+
+	var tremble_task := func():
+		# Esperar al momento culminante de la carga
+		if delay_espera > 0.0:
+			await get_tree().create_timer(delay_espera, false).timeout
+			if not _temblor_pilar_activo or not is_instance_valid(self):
+				return
+
+		var elapsed: float = 0.0
+		# Fase 1: Carga activa concentrada
+		while elapsed < duracion_vibracion_activa and _temblor_pilar_activo:
+			if not is_instance_valid(self):
+				return
+			var progress: float = clamp(elapsed / duracion_vibracion_activa, 0.0, 1.0)
+			var current_intensity: float = lerp(0.22, 0.48, progress)
+
+			# 1. Vibración física del pilar
+			if pilar_ref and is_instance_valid(pilar_ref):
+				var angle_pilar: float = sin(elapsed * 45.0) * current_intensity
+				var offset_x_pilar: float = cos(elapsed * 55.0) * (current_intensity * 0.03)
+				pilar_ref.rotation_degrees.z = angle_pilar
+				pilar_ref.global_position.x = orig_x + offset_x_pilar
+
+			# 2. Mini temblor de Lonko acentuando el grito/esfuerzo de canalización
+			if modelo_ref and is_instance_valid(modelo_ref):
+				var angle_lonko: float = cos(elapsed * 48.0) * (current_intensity * 0.75)
+				var pos_x_lonko: float = sin(elapsed * 52.0) * (current_intensity * 0.022)
+				var pos_y_lonko: float = abs(sin(elapsed * 64.0)) * (current_intensity * 0.018)
+				modelo_ref.rotation_degrees.z = angle_lonko
+				modelo_ref.position = Vector3(pos_x_lonko, pos_y_lonko, 0.0)
+
+			await get_tree().create_timer(0.016).timeout
+			elapsed += 0.016
+
+		# Fase 2: Amortiguación final suave y rápida (0.20s)
+		if _temblor_pilar_activo:
+			var duracion_fade: float = 0.20
+			var elapsed_fade: float = 0.0
+			while elapsed_fade < duracion_fade and _temblor_pilar_activo:
+				if not is_instance_valid(self):
+					return
+				var fade_progress: float = 1.0 - (elapsed_fade / duracion_fade)
+				var damp: float = fade_progress * fade_progress  # Decaimiento cuadrático
+				var decay_intensity: float = 0.48 * damp
+				var total_time: float = elapsed + elapsed_fade
+
+				# Pilar decay
+				if pilar_ref and is_instance_valid(pilar_ref):
+					var angle_pilar: float = sin(total_time * 45.0) * decay_intensity
+					var offset_x_pilar: float = cos(total_time * 55.0) * (decay_intensity * 0.03)
+					pilar_ref.rotation_degrees.z = angle_pilar
+					pilar_ref.global_position.x = orig_x + offset_x_pilar
+
+				# Lonko decay
+				if modelo_ref and is_instance_valid(modelo_ref):
+					var angle_lonko: float = cos(total_time * 48.0) * (decay_intensity * 0.75)
+					var pos_x_lonko: float = sin(total_time * 52.0) * (decay_intensity * 0.022)
+					var pos_y_lonko: float = abs(sin(total_time * 64.0)) * (decay_intensity * 0.018)
+					modelo_ref.rotation_degrees.z = angle_lonko
+					modelo_ref.position = Vector3(pos_x_lonko, pos_y_lonko, 0.0)
+
+				await get_tree().create_timer(0.016).timeout
+				elapsed_fade += 0.016
+
+		# Reset final
+		if pilar_ref and is_instance_valid(pilar_ref):
+			pilar_ref.rotation_degrees.z = 0.0
+			pilar_ref.global_position.x = orig_x
+		if modelo_ref and is_instance_valid(modelo_ref):
+			modelo_ref.rotation_degrees.z = 0.0
+			modelo_ref.position = Vector3.ZERO
+
+		_temblor_pilar_activo = false
+
+	tremble_task.call()
+
+
+func _detener_temblor_pilar_ult(inmediato: bool = false) -> void:
+	if inmediato:
+		_temblor_pilar_activo = false
+		if _instancia_pilar and is_instance_valid(_instancia_pilar):
+			_instancia_pilar.rotation_degrees.z = 0.0
+			if _base_pos_pilar != Vector3.ZERO:
+				_instancia_pilar.global_position.x = _base_pos_pilar.x
+		if _lonko_modelo and is_instance_valid(_lonko_modelo):
+			_lonko_modelo.rotation_degrees.z = 0.0
+			_lonko_modelo.position = Vector3.ZERO
 
 
 var _escala_original_vfx_manual: Vector3 = Vector3.ZERO
@@ -1088,6 +1233,11 @@ func _mostrar_flecha_electrica_en_mano(duracion_total: float) -> void:
 	# Mostrar y escalar de 0 a 1 el nodo FlechaElectricaVFX_Manual en BoneAttachment3D_Arrow
 	var vfx_manual := find_child("FlechaElectricaVFX_Manual", true, false) as Node3D
 	if vfx_manual:
+		if "primary_color" in vfx_manual:
+			vfx_manual.set("primary_color", Color(0.85, 1.0, 0.85, 1.0))
+			vfx_manual.set("secondary_color", Color(0.2, 1.0, 0.3, 1.0))
+			vfx_manual.set("tertiary_color", Color(0.05, 0.6, 0.15, 1.0))
+			vfx_manual.set("light_color", Color(0.25, 1.0, 0.35, 1.0))
 		if _escala_original_vfx_manual.is_zero_approx():
 			_escala_original_vfx_manual = vfx_manual.scale
 		vfx_manual.visible = true
@@ -1259,9 +1409,8 @@ func _disparar_proyectil_electrico() -> void:
 		get_tree().root.add_child(arrow)
 
 	arrow.global_position = spawn_pos
-	arrow._activar_desde_pool()
 	arrow.initialize(Vector3.UP, 1.0)
-	arrow.scale = Vector3.ONE * 0.5
+	arrow.scale = Vector3.ONE * 0.9
 
 	_ocultar_flecha_mano()
 
@@ -1338,9 +1487,27 @@ func take_damage(amount: float) -> void:
 
 func _on_state_dying() -> void:
 	_is_taking_damage = true
+	_is_shooting = false
 	_apuntar_arriba = false
 	_correccion_idle_activa = false
 	_girando_hacia_fondo = false
+	_detener_temblor_pilar_ult(true)
+
+	if _tween_flecha and _tween_flecha.is_valid():
+		_tween_flecha.kill()
+		_tween_flecha = null
+	if _tween_subida and _tween_subida.is_valid():
+		_tween_subida.kill()
+		_tween_subida = null
+	if _tween_espejo and _tween_espejo.is_valid():
+		_tween_espejo.kill()
+		_tween_espejo = null
+
+	if _lonko_modelo and is_instance_valid(_lonko_modelo):
+		_lonko_modelo.position = Vector3.ZERO
+		_lonko_modelo.rotation.z = 0.0
+		_lonko_modelo.scale = _escala_original_modelo
+
 	_ocultar_flecha_mano()
 	_play_bow_animation("ARCO_IDLE")
 	_reset_spine_rotation()
@@ -1348,15 +1515,63 @@ func _on_state_dying() -> void:
 	_hundir_y_disolver_pilar()
 	_drop_power_up()
 
+	# Muerte por explosión: el arco se desprende de la mano y sale volando con física
+	if murio_por_explosion:
+		_lanzar_arco_explosivo()
+		murio_por_explosion = false
+
 	super._on_state_dying()
 
+	if anim_player:
+		anim_player.playback_default_blend_time = BLEND_ANIMACIONES
+
 	var rand_death: String = "MUERTE_01" if randf() < 0.5 else "MUERTE_02"
-	_play_animation(rand_death)
+	_play_animation(rand_death, 0.15, 1.0)
 
 	var anim_length: float = _get_animation_duration(rand_death)
-	get_tree().create_timer(anim_length + 0.3).timeout.connect(func():
+	var tiempo_muerte: float = max(anim_length + 0.3, 3.45 if _pilar_fue_destruido_primero else anim_length + 0.3)
+	get_tree().create_timer(tiempo_muerte).timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
 			_die()
+	)
+
+
+## Muerte por explosión: el arco se desprende de la mano y sale volando
+## en parábola girando sobre sí mismo (idéntico a la arquera Goblin).
+func _lanzar_arco_explosivo() -> void:
+	var arco := find_child("ARCO_GOBLING_GIRL", true, false) as Node3D
+	if not arco:
+		return
+
+	var root_scene := get_tree().current_scene
+	if not root_scene:
+		root_scene = get_tree().root
+
+	# Dirección de expulsión según el punto de impacto de la explosión
+	var push_dir: float = 1.0
+	if last_hit_position != Vector3.ZERO:
+		var dx: float = global_position.x - last_hit_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+
+	var tr_arco: Transform3D = arco.global_transform
+	arco.get_parent().remove_child(arco)
+
+	var contenedor := GoblinPiezaFisica.new()
+	root_scene.add_child(contenedor)
+	contenedor.global_transform = tr_arco
+
+	arco.transform = Transform3D.IDENTITY
+	arco.visible = true
+	# Limpiar overrides (disolución/daño) para que el arco conserve su material original
+	for m in arco.find_children("*", "MeshInstance3D", true, false):
+		m.visible = true
+		m.material_override = null
+	contenedor.add_child(arco)
+
+	contenedor.iniciar_vuelo(
+		Vector3(push_dir * randf_range(2.0, 3.6), randf_range(3.8, 5.6), 0.0),
+		randf_range(-14.0, 14.0)
 	)
 
 
@@ -1393,6 +1608,7 @@ func _on_pilar_destruido() -> void:
 
 	_pilar_fue_destruido_primero = true
 	_is_invulnerable = false
+	_detener_temblor_pilar_ult(true)
 
 	# Detener inmediatamente la subida si fue destruido en pleno ascenso
 	if _tween_subida and _tween_subida.is_valid():
@@ -1681,3 +1897,24 @@ func _reproducir_sonido_muerte() -> void:
 		player.finished.connect(player.queue_free)
 	else:
 		player.queue_free()
+
+
+func _reproducir_sonido_tensado_arco() -> void:
+	if sfx_tensado_streams.is_empty():
+		return
+	var stream: AudioStream = sfx_tensado_streams[randi() % sfx_tensado_streams.size()]
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.add_to_group("pausable_audio")
+	player.stream = stream
+	player.volume_db = -3.5  ## -3.5 dB ≈ 30% menos de volumen respecto al sonido original de la protagonista
+	player.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(player)
+		player.play()
+		player.finished.connect(player.queue_free)
+	else:
+		player.queue_free()
+

@@ -11,5 +11,4 @@ shader_parameter/outline_width = 20.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_ckydk")
-shading_mode = 0
 albedo_texture = ExtResource("1_y4jfp")

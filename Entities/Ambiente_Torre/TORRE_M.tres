@@ -6,3 +6,5 @@
 resource_name = "TORRE_M"
 albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
 albedo_texture = ExtResource("1_wrw76")
+roughness = 1.0
+specular = 0.0

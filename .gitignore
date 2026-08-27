@@ -40,3 +40,5 @@ build/
 # System files
 .DS_Store
 Thumbs.db
+contexto.json
+test_anim_gargola.gd*
