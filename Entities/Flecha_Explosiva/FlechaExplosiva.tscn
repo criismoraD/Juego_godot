@@ -54,8 +54,8 @@ draw_pass_1 = SubResource("trail_mesh")
 [node name="RedTipLight" type="OmniLight3D" parent="." unique_id=1481923058]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16423425, 0, 0)
 light_color = Color(1, 0.12, 0.08, 1)
-light_energy = 4.0
-omni_range = 2.0
+light_energy = 0.8
+omni_range = 0.9
 
 [node name="RedTipMesh" type="MeshInstance3D" parent="." unique_id=1938502847]
 transform = Transform3D(0.63, 0, 0, 0, 0.63, 0, 0, 0, 0.63, 0.17252487, 0.0037286058, 0.013221392)

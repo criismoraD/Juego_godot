@@ -24,8 +24,8 @@ signal destruido
 ## Min/Max definen el rango aleatorio: valores más altos = giros más rápidos.
 ## Ejemplo: min=-4, max=4 → cada pieza gira en dirección aleatoria.
 ## Usar 0 en ambos para que las piezas no roten al salir disparadas.
-@export var torque_min: float = -4.0
-@export var torque_max: float = 4.0
+@export var torque_min: float = -0.4
+@export var torque_max: float = 0.4
 @export_category("Destrucción - Tiempos")
 @export var tiempo_congelar: float = 2.0  # Segundos antes de congelar piezas
 @export var tiempo_antes_disolver: float = 1.5  # Segundos congeladas antes de disolverse
@@ -135,7 +135,7 @@ func _actualizar_visual_dano():
 		return
 
 	# Calcular progreso de daño (0.0 a 1.0)
-	var progreso = float(golpes_recibidos) / float(golpes_para_destruir)
+	var progreso: float = clampf(float(golpes_recibidos) / float(golpes_para_destruir), 0.0, 1.0)
 
 	# Mezclar color original con rojo según el daño
 	if material_original is StandardMaterial3D:
@@ -172,15 +172,18 @@ func _destruir():
 	destruido.emit()
 	AudioManager.play_shield_break()
 
+	# Humo de salto a ambos lados al romperse el escudo
+	VFXFactory.spawn_shield_break_smoke(self, global_position)
+
 	# Instanciar el escudo roto
 	if escena_escudo_roto:
 		var escudo_roto = escena_escudo_roto.instantiate()
 
-		# Pasar el estado de daño visual (nivel del PENÚLTIMO golpe)
-		var progreso_previo = float(golpes_recibidos - 1) / float(golpes_para_destruir)
+		# Pasar el estado de daño visual (nivel del PENÚLTIMO golpe, acotado entre 0.0 y 1.0)
+		var progreso_previo: float = clampf(float(golpes_recibidos - 1) / float(golpes_para_destruir), 0.0, 1.0)
 		escudo_roto.color_dano_heredado = color_dano
 		escudo_roto.progreso_dano = progreso_previo
-		escudo_roto.intensidad_tinte_heredado = intensidad_tinte_dano
+		escudo_roto.intensidad_tinte_heredado = minf(intensidad_tinte_dano, 0.35)
 
 		# Pasar parámetros de física
 		escudo_roto.fuerza_explosion = fuerza_explosion

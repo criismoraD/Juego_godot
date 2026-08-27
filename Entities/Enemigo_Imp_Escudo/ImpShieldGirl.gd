@@ -17,8 +17,8 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export var fuerza_explosion: float = 1.5
 @export var fuerza_horizontal: float = 1.2
 @export var fuerza_vertical: float = 1.0
-@export var torque_min: float = -4.0
-@export var torque_max: float = 4.0
+@export var torque_min: float = -0.4
+@export var torque_max: float = 0.4
 @export_category("Huida")
 @export var velocidad_huida: float = 1.4  ## Velocidad al huir (sin escudo)
 @export var distancia_fuera_pantalla: float = 15.0  ## Posición X para destruirse al huir
@@ -607,6 +607,9 @@ func take_damage(_amount: float):
 				if scene_root:
 					VFXFactory.spawn_impact(scene_root, escudo_node.global_position, Color(1.0, 0.9, 0.7), 25, 0.02)
 					VFXFactory.spawn_sparks(scene_root, escudo_node.global_position, Vector3.UP, Color(1.0, 0.8, 0.4))
+				
+				# Humo de salto a ambos lados al romperse el escudo enemigo
+				VFXFactory.spawn_shield_break_smoke(self, escudo_node.global_position)
 						
 			AudioManager.play_shield_break()
 			_cambiar_estado(State.FLEEING)

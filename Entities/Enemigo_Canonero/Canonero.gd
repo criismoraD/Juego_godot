@@ -4,10 +4,16 @@ extends EnemyBase
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 
+const SANGRE_CANONERO_TEX: Texture2D = preload("res://Entities/Enemigo_Canonero/Canonero_Muerte_Explosiva.png")
+const SANGRE_CANONERO_FRAMES: int = 12
+const SANGRE_CANONERO_SEGUNDOS_POR_FRAME: float = 0.055
+const SANGRE_CANONERO_PIXEL_SIZE: float = 0.016
+
 @export_category("Combate - Canonero")
 @export var intervalo_disparo: float = 4.0
 @export var velocidad_proyectil: float = 10.0
 var is_reloading: bool = false
+var murio_por_explosion: bool = false
 var canon_bola_scene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")  # Usando flecha de placeholder por si acaso, aunque deberia ser cañon
 
 
@@ -25,6 +31,10 @@ func _on_state_shooting():
 
 
 func _on_state_dying():
+	if murio_por_explosion:
+		_ejecutar_explosion_desmembramiento()
+		return
+
 	super._on_state_dying()
 	AudioManager.play_sfx("goblin_death")
 	var death_anims = ["CANON_DEAD_01", "CANON_DEAD_02", "CANON_ATERRRIZAJE_MUERTE"]
@@ -40,6 +50,68 @@ func _on_state_dying():
 			if is_instance_valid(self) and is_inside_tree():
 				_die()
 	)
+
+
+func _ejecutar_explosion_desmembramiento() -> void:
+	collision_layer = 0
+	collision_mask = 0
+	set_physics_process(false)
+
+	# 1. Ocultar modelo intacto del cañonero
+	var model := get_node_or_null("Model") as Node3D
+	if model:
+		model.visible = false
+
+	# 2. Audio de impacto, explosión y carne
+	AudioManager.play_sfx("explosion_muerte")
+	AudioManager.play_sfx("sangre_splash")
+
+	# 3. Mancha de sangre en el suelo (fade en 3.5s + 2.5s)
+	VFXFactory.spawn_ground_blood_splatter(self, global_position)
+
+	# 4. Secuencia animada de explosión cárnica (12 frames)
+	_spawn_secuencia_explosion_animada(global_position)
+
+	# 5. Liberación tras concluir la animación
+	var duracion_total: float = SANGRE_CANONERO_FRAMES * SANGRE_CANONERO_SEGUNDOS_POR_FRAME + 0.1
+	get_tree().create_timer(duracion_total).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_die()
+	)
+
+
+func _spawn_secuencia_explosion_animada(pos: Vector3) -> void:
+	if not SANGRE_CANONERO_TEX:
+		return
+
+	var sprite := Sprite3D.new()
+	sprite.texture = SANGRE_CANONERO_TEX
+	sprite.vframes = SANGRE_CANONERO_FRAMES
+	sprite.hframes = 1
+	sprite.frame = 0
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.shaded = false
+	sprite.render_priority = 3
+	sprite.no_depth_test = false
+	sprite.pixel_size = SANGRE_CANONERO_PIXEL_SIZE
+
+	var root := get_tree().current_scene
+	if not root:
+		root = get_tree().root
+	root.add_child(sprite)
+	sprite.global_position = pos + Vector3(0.0, 0.45, 0.0)
+
+	var anim_task := func():
+		for f in range(SANGRE_CANONERO_FRAMES):
+			if not is_instance_valid(sprite) or not sprite.is_inside_tree():
+				return
+			sprite.frame = f
+			await sprite.get_tree().create_timer(SANGRE_CANONERO_SEGUNDOS_POR_FRAME, false).timeout
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+
+	anim_task.call()
 
 
 func _process_shooting(delta):

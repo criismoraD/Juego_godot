@@ -82,3 +82,33 @@ func test_flash_y_dano_no_dejan_material_negro_permanente() -> void:
 				(actual as StandardMaterial3D).shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED,
 				"El material aplicado debe seguir siendo UNSHADED"
 			)
+
+
+func test_fisica_trozos_escudo_realista() -> void:
+	# Arrange
+	var escudo = ESCUDO_SCENE.instantiate()
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+
+	# Assert valores de rotación moderados
+	assert_gt(escudo.torque_min, -1.0, "El torque mínimo no debe ser excesivo (< -1.0)")
+	assert_lt(escudo.torque_max, 1.0, "El torque máximo no debe ser excesivo (> 1.0)")
+
+
+func test_destruccion_escudo_genera_humo_lados() -> void:
+	# Arrange
+	var escudo = ESCUDO_SCENE.instantiate()
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+
+	# Act
+	escudo._destruir()
+	await get_tree().process_frame
+
+	# Assert: se instancian los penachos de humo a ambos lados
+	var humos := get_tree().root.find_children("HumoEscudoRoto", "GPUParticles3D", true, false)
+	assert_gt(humos.size(), 0, "Debe generar las partículas de humo a los lados al destruirse el escudo")
+	for h in humos:
+		h.queue_free()
+
+

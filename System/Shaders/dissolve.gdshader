@@ -42,6 +42,9 @@ float fbm(vec2 p) {
 }
 
 void fragment() {
+    if (dissolve_amount >= 0.99) {
+        discard;
+    }
     // Textura base
     vec4 tex_color = texture(albedo_texture, UV);
     ALBEDO = tex_color.rgb * albedo_tint;

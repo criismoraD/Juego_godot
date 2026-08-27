@@ -88,6 +88,7 @@ func _ejecutar_explosion_desmembramiento() -> void:
 
 	# 3. Spawnear animación de sangre 2D (14 cuadros verticales de Sangre_explosion.png)
 	_spawn_sangre_animada(global_position)
+	VFXFactory.spawn_ground_blood_splatter(self, global_position)
 
 	# 4. Dropear power-up si aplica
 	_drop_power_up()

@@ -292,6 +292,7 @@ func _on_area_entered(area: Area3D):
 func _stick_to_surface():
 	is_stuck = true
 	velocity = Vector3.ZERO
+	AudioManager.play_sfx("arrow_impact")
 
 	# Desactivar colisiones para no seguir detectando (usar set_deferred para evitar errores)
 	set_deferred("monitoring", false)
@@ -673,13 +674,13 @@ func _crear_destello_punta() -> void:
 		return
 	_destello_punta_creado = true
 
-	# Luz roja brillante en la punta
+	# Luz roja en la punta
 	var red_light := OmniLight3D.new()
 	red_light.name = "RedTipLight"
 	red_light.position = Vector3(0.4, 0.0, 0.0)
 	red_light.light_color = Color(1.0, 0.12, 0.08)
-	red_light.light_energy = 4.0
-	red_light.omni_range = 2.0
+	red_light.light_energy = 1.0
+	red_light.omni_range = 1.0
 	add_child(red_light)
 
 	# Esfera incandescente roja en la punta

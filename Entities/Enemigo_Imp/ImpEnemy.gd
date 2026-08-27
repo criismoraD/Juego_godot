@@ -168,6 +168,8 @@ func _ejecutar_desmembramiento_explosivo() -> void:
 	AudioManager.play_sfx("explosion_muerte")
 	AudioManager.play_sfx("sangre_splash")
 	_spawn_sangre_animada(global_position)
+	var blood_modulate: Color = Color(0.85, 0.3, 1.0, 0.95) if sangre_morada else Color(1.0, 1.0, 1.0, 0.95)
+	VFXFactory.spawn_ground_blood_splatter(self, global_position, blood_modulate)
 
 	# 3. Dirección de expulsión según el punto de impacto de la explosión
 	var push_dir: float = 1.0

@@ -4,7 +4,7 @@ signal health_changed(new_health: int)
 signal flechas_explosivas_changed(cantidad: int)
 signal died
 enum AimState { NONE, DRAWING, AIMING, SHOOTING }
-enum MoveState { GROUND, AIR, LANDING, CLIMBING, DEAD }
+enum MoveState { GROUND, AIR, LANDING, CLIMBING, DEAD, CROUCHING }
 const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 # === CONFIGURACIÓN - MOVIMIENTO ===
 const COYOTE_TIME: float = 0.15
@@ -26,6 +26,8 @@ const DROP_CHANCE_MITIGADO: float = 0.05
 @export var velocidad_correr: float = 1.0  # Velocidad al correr
 @export var fuerza_salto: float = 2.0  # Fuerza del salto
 @export var umbral_aterrizaje: float = -3.0  # Umbral para aterrizaje fuerte
+@export var velocidad_giro_suave: float = 12.0  ## Velocidad de interpolación de giro al cambiar de dirección
+@export var aceleracion_movimiento: float = 12.0  ## Suavizado de aceleración y desaceleración horizontal
 # === CONFIGURACIÓN - DISPARO ===
 @export_category("Disparo")
 @export var multiplicador_velocidad_disparo: float = 1.0  # Velocidad de animaciones de disparo
@@ -92,6 +94,8 @@ var state_timer = 0.0
 var current_move_state = MoveState.GROUND
 var landing_timer = 0.0
 var landing_anim_duration = 0.5  # Se auto-calcula
+var crouch_timer: float = 0.0
+const TIEMPO_POSTURA_AGACHADO_APEX: float = 0.26  ## Punto más bajo y flexionado de la animación de agachado
 var is_dead: bool = false
 var ladder_cooldown: float = 0.0  # Tiempo de espera para volver a agarrar la escalera
 var is_inside_platform: bool = false  # Bloquea movimiento lateral
@@ -299,6 +303,11 @@ func setup_animation_tree_dynamic():
 	root.add_node("Climb", time_climb)
 	root.connect_node("Climb", 0, "ClimbAnim")
 
+	# TimeScale para agachado / aterrizaje (permite congelar y sostener la pose agachada)
+	var time_crouch = AnimationNodeTimeScale.new()
+	root.add_node("CrouchTimeScale", time_crouch)
+	root.connect_node("CrouchTimeScale", 0, "Land")
+
 	# C. MotionState (Estados de movimiento principales)
 	var trans_motion = AnimationNodeTransition.new()
 	trans_motion.input_count = 5
@@ -307,7 +316,7 @@ func setup_animation_tree_dynamic():
 	trans_motion.set_input_name(2, "land")
 	trans_motion.set_input_name(3, "climb")
 	trans_motion.set_input_name(4, "death")
-	trans_motion.xfade_time = 0.2
+	trans_motion.xfade_time = 0.25
 	root.add_node("MotionState", trans_motion)
 
 	# D. UpperBody (Acciones de torso superior)
@@ -379,7 +388,7 @@ func setup_animation_tree_dynamic():
 	# MotionState: ground, air, land, climb, death
 	root.connect_node("MotionState", 0, "Locomotion")
 	root.connect_node("MotionState", 1, "JumpFall")
-	root.connect_node("MotionState", 2, "Land")
+	root.connect_node("MotionState", 2, "CrouchTimeScale")
 	root.connect_node("MotionState", 3, "Climb")
 	root.connect_node("MotionState", 4, "Death")
 
@@ -422,6 +431,7 @@ var is_near_ladder = false
 # Referencia al Armature para rotarlo
 var armature_node: Node3D = null
 var armature_original_rotation: Vector3 = Vector3.ZERO
+var _mirando_derecha: bool = true  ## Dirección actual a la que mira el personaje (true=derecha, false=izquierda)
 
 
 func set_near_ladder(val, ladder_area):
@@ -435,35 +445,63 @@ func set_near_ladder(val, ladder_area):
 
 
 func stop_climbing():
-	current_move_state = MoveState.AIR
-	velocity.y = 0.5
-	set_motion_anim("air")
+	if is_on_floor():
+		current_move_state = MoveState.GROUND
+		set_motion_anim("ground")
+		velocity.y = 0.0
+	else:
+		current_move_state = MoveState.AIR
+		velocity.y = 0.5
+		set_motion_anim("air")
 
-	# Restaurar rotación original del armature
-	_reset_armature_rotation()
+	# Restaurar rotación suavemente
+	_reset_armature_rotation(false)
+
+
+## Salida suave por la parte superior de la escalera hacia la plataforma
+func dismount_ladder_top(direction_x: float = 0.0) -> void:
+	ladder_cooldown = 0.5
+	current_move_state = MoveState.GROUND
+	set_motion_anim("ground")
+	velocity.y = 0.0
+	_mirando_derecha = true
+	if not is_zero_approx(direction_x):
+		velocity.x = direction_x
+	else:
+		velocity.x = velocidad_caminar * 0.4
 
 
 func _apply_climbing_rotation(delta: float, snap: bool = false):
-	# Rotar el modelo para la animación de escalera
-	if armature_node:
-		var target_y: float
-		if current_aim_state != AimState.NONE:
-			# Si está apuntando o disparando, se orienta hacia la derecha (rotación original)
+	_apply_character_rotation(delta, snap)
+
+
+func _apply_character_rotation(delta: float, snap: bool = false) -> void:
+	if not armature_node:
+		return
+
+	var target_y: float = armature_original_rotation.y
+
+	if current_move_state == MoveState.CLIMBING and current_aim_state == AimState.NONE:
+		# Si solo está escalando sin apuntar, se orienta hacia la escalera
+		# Restamos 0.5 grados para que el camino más corto al apuntar sea en sentido horario (decreciente)
+		target_y = armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera - 0.5)
+	else:
+		# En el suelo, aire o apuntando (incluso en escalera): orienta hacia _mirando_derecha (izquierda o derecha)
+		if _mirando_derecha:
 			target_y = armature_original_rotation.y
 		else:
-			# Si solo está escalando, se orienta hacia la escalera
-			# Restamos 0.5 grados para que el camino más corto al apuntar sea en sentido horario (decreciente)
-			target_y = armature_original_rotation.y + deg_to_rad(rotacion_personaje_escalera - 0.5)
-		
-		if snap:
-			armature_node.rotation.y = target_y
-		else:
-			armature_node.rotation.y = lerp_angle(armature_node.rotation.y, target_y, 12.0 * delta)
+			target_y = armature_original_rotation.y + PI
+
+	if snap:
+		armature_node.rotation.y = target_y
+	else:
+		armature_node.rotation.y = lerp_angle(armature_node.rotation.y, target_y, velocidad_giro_suave * delta)
 
 
-func _reset_armature_rotation():
-	# Restaurar rotación original del modelo
-	if armature_node:
+func _reset_armature_rotation(snap: bool = false):
+	# Restaurar rotación original de forma suave (o forzada si snap=true)
+	_mirando_derecha = true
+	if snap and armature_node:
 		armature_node.rotation = armature_original_rotation
 
 
@@ -499,6 +537,20 @@ func _update_hitbox_debug_mesh():
 	mesh.height = capsule.height
 	hitbox_debug_mesh.mesh = mesh
 	hitbox_debug_mesh.visible = mostrar_hitbox
+
+
+## Reduce la hitbox a la mitad al agacharse para esquivar proyectiles altos
+func _ajustar_hitbox_agachado(agachado: bool) -> void:
+	if not collision_shape_node or not collision_shape_node.shape is CapsuleShape3D:
+		return
+	var capsule: CapsuleShape3D = collision_shape_node.shape
+	if agachado:
+		capsule.height = hitbox_altura_original * 0.55
+		collision_shape_node.position.y = hitbox_pos_y_original - (hitbox_altura_original * 0.225)
+	else:
+		capsule.height = hitbox_altura_original
+		collision_shape_node.position.y = hitbox_pos_y_original
+	_update_hitbox_debug_mesh()
 
 
 func create_charge_bar():
@@ -550,6 +602,27 @@ func _physics_process(delta):
 	# Priorizar W/S, fallback a flechas
 	var input_vert = input_vert_ws if input_vert_ws != 0 else input_vert_ui
 
+	# Actualizar orientación:
+	# - Si está apuntando / cargando arco: orienta hacia el lado de la pantalla donde está el cursor del mouse
+	# - Si se mueve normalmente sin apuntar: orienta según las teclas de movimiento (A/D)
+	if current_aim_state != AimState.NONE:
+		var camera = CameraUtilsRef.obtener_camara_juego(self)
+		if camera:
+			var player_screen_pos = camera.unproject_position(global_position + Vector3(0, 1.0, 0))
+			var mouse_pos = get_viewport().get_mouse_position()
+			if mouse_pos.x < player_screen_pos.x - 12.0:
+				_mirando_derecha = false
+			elif mouse_pos.x > player_screen_pos.x + 12.0:
+				_mirando_derecha = true
+	elif current_move_state != MoveState.CLIMBING:
+		if input_dir > 0.1:
+			_mirando_derecha = true
+		elif input_dir < -0.1:
+			_mirando_derecha = false
+
+	# Aplicar rotación suave del personaje
+	_apply_character_rotation(delta, false)
+
 	# Guardar velocidad vertical PREVIA al movimiento (para detectar impacto)
 	var prev_vel_y = velocity.y
 
@@ -565,6 +638,10 @@ func _physics_process(delta):
 	if current_move_state != MoveState.CLIMBING:
 		if not is_on_floor():
 			velocity.y -= gravity * delta
+			if current_move_state == MoveState.CROUCHING:
+				_ajustar_hitbox_agachado(false)
+				if anim_tree:
+					anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
 			if current_move_state != MoveState.LANDING:  # Si no estamos aterrizando, estamos en aire
 				current_move_state = MoveState.AIR
 
@@ -590,7 +667,7 @@ func _physics_process(delta):
 				)
 
 			_cancel_current_shot()
-			_apply_climbing_rotation(delta, true)  # Aplicar rotación de escalera (snap al montar)
+			_apply_climbing_rotation(delta, false)  # Rotación suave al montar la escalera
 
 	# 2. MOVIMIENTO FÍSICO
 	move_and_slide()
@@ -641,12 +718,44 @@ func _physics_process(delta):
 
 			if Input.is_action_just_pressed("ui_accept"):
 				_perform_jump()
+			elif input_vert > 0.5 and not is_near_ladder:
+				# Agacharse al presionar S / Abajo en el suelo
+				current_move_state = MoveState.CROUCHING
+				crouch_timer = 0.0
+				_ajustar_hitbox_agachado(true)
+				if anim_tree:
+					anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
+					set_motion_anim("land")
+			else:
+				apply_movement(input_dir, delta)
+				if anim_tree:
+					set_motion_anim("ground")
+					update_locomotion_anim(input_dir)
 
-			apply_movement(input_dir)
+		MoveState.CROUCHING:
+			if Input.is_action_just_pressed("ui_accept"):
+				_ajustar_hitbox_agachado(false)
+				if anim_tree:
+					anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
+				_perform_jump()
+			elif input_vert <= 0.3:
+				# Soltar la tecla abajo: levantarse
+				current_move_state = MoveState.GROUND
+				_ajustar_hitbox_agachado(false)
+				if anim_tree:
+					anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
+					set_motion_anim("ground")
+			else:
+				# Mantenerse agachada indefinidamente mientras se mantenga presionada la tecla
+				crouch_timer += delta
+				if anim_tree:
+					set_motion_anim("land")
+					if crouch_timer >= TIEMPO_POSTURA_AGACHADO_APEX:
+						anim_tree.set("parameters/CrouchTimeScale/scale", 0.0)
+					else:
+						anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
 
-			if anim_tree:
-				set_motion_anim("ground")
-				update_locomotion_anim(input_dir)
+				velocity.x = move_toward(velocity.x, 0, aceleracion_movimiento * delta)
 
 		MoveState.CLIMBING:
 			_apply_climbing_rotation(delta, false)
@@ -692,7 +801,7 @@ func _physics_process(delta):
 				velocity.y = fuerza_salto * 0.5
 
 		MoveState.AIR:
-			apply_movement(input_dir)
+			apply_movement(input_dir, delta)
 			if anim_tree:
 				set_motion_anim("air")
 
@@ -712,15 +821,13 @@ func _physics_process(delta):
 				set_motion_anim("land")
 
 
-func apply_movement(input_dir):
-	var current_speed = velocidad_correr
+func apply_movement(input_dir: float, delta: float = 0.016) -> void:
+	var current_speed: float = velocidad_correr
 	if current_aim_state == AimState.DRAWING or current_aim_state == AimState.AIMING:
 		current_speed = velocidad_caminar
 
-	if input_dir:
-		velocity.x = input_dir * current_speed
-	else:
-		velocity.x = move_toward(velocity.x, 0, current_speed)
+	var target_vel_x: float = input_dir * current_speed
+	velocity.x = move_toward(velocity.x, target_vel_x, aceleracion_movimiento * delta)
 
 
 func start_landing():
@@ -742,6 +849,7 @@ func start_landing():
 	charge_bar.visible = false
 	AudioManager.reset_bow_hold()
 	if anim_tree:
+		anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
 		anim_tree.set("parameters/UpperBody/transition_request", "none")
 		anim_tree.set("parameters/AimBlend/blend_amount", 0.0)
 
@@ -859,15 +967,30 @@ func set_motion_anim(state_name):
 
 func update_locomotion_anim(input_dir):
 	var loc_path = "parameters/Locomotion/transition_request"
-	if input_dir > 0.1:
-		if current_aim_state == AimState.AIMING or current_aim_state == AimState.DRAWING:
-			anim_tree.set(loc_path, "walk_fwd")
+	if current_aim_state == AimState.AIMING or current_aim_state == AimState.DRAWING:
+		# Al tensar el arco / apuntar con click:
+		if _mirando_derecha:
+			# Apuntando a la derecha:
+			if input_dir > 0.1:
+				anim_tree.set(loc_path, "walk_fwd")
+			elif input_dir < -0.1:
+				anim_tree.set(loc_path, "walk_back")
+			else:
+				anim_tree.set(loc_path, "idle")
 		else:
-			anim_tree.set(loc_path, "run_fwd")
-	elif input_dir < -0.1:
-		anim_tree.set(loc_path, "walk_back")
+			# Apuntando a la izquierda:
+			if input_dir < -0.1:
+				anim_tree.set(loc_path, "walk_fwd")
+			elif input_dir > 0.1:
+				anim_tree.set(loc_path, "walk_back")
+			else:
+				anim_tree.set(loc_path, "idle")
 	else:
-		anim_tree.set(loc_path, "idle")
+		# Movimiento normal sin click: el personaje se voltea hacia donde camina y avanza de frente
+		if abs(input_dir) > 0.1:
+			anim_tree.set(loc_path, "run_fwd")
+		else:
+			anim_tree.set(loc_path, "idle")
 
 
 func _process_gameplay(delta):
@@ -1390,15 +1513,11 @@ func calculate_shoot_data() -> Dictionary:
 	# - Z = 0 siempre (2.5D)
 	var shoot_direction = Vector3(screen_dir.x, -screen_dir.y, 0)
 
-	# Forzar dirección hacia la DERECHA siempre (evitar disparar hacia atrás)
-	if shoot_direction.x < 0:
-		shoot_direction.x = abs(shoot_direction.x)
-
 	if shoot_direction.length_squared() > 0.01:
 		shoot_direction = shoot_direction.normalized()
 	else:
-		# Dirección por defecto: DERECHA
-		shoot_direction = Vector3.RIGHT
+		# Dirección por defecto según hacia dónde mira
+		shoot_direction = Vector3.RIGHT if _mirando_derecha else Vector3.LEFT
 
 	# Velocidad (usa los valores exportados)
 	var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
@@ -1476,8 +1595,8 @@ func _setup_explosive_arrow_visual() -> void:
 			var tip_light := OmniLight3D.new()
 			tip_light.name = "RedTipLight"
 			tip_light.light_color = Color(1.0, 0.15, 0.08)
-			tip_light.light_energy = 3.5
-			tip_light.omni_range = 1.5
+			tip_light.light_energy = 0.8
+			tip_light.omni_range = 0.9
 			tip_light.position = Vector3(0.0, 0.0, 0.45)
 			explosive_arrow_node.add_child(tip_light)
 
@@ -1500,6 +1619,12 @@ func _mostrar_flecha_visual(factor_progreso: float = 1.0) -> void:
 			arrow_node.visible = false
 		explosive_arrow_node.visible = true
 		explosive_arrow_node.scale = _explosive_arrow_base_scale * factor_progreso
+
+		# Luz tenue y suave al cargarse
+		var red_light = explosive_arrow_node.find_child("RedTipLight", true, false) as OmniLight3D
+		if red_light and is_instance_valid(red_light):
+			red_light.light_energy = lerp(0.2, 0.75, clamp(factor_progreso, 0.0, 1.0))
+			red_light.omni_range = 0.9
 	else:
 		if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 			explosive_arrow_node.visible = false
@@ -1627,6 +1752,7 @@ func _die():
 
 	# Cancelar cualquier disparo
 	_cancel_current_shot()
+	_ajustar_hitbox_agachado(false)
 
 	# Restaurar rotación del armature si estamos en escalera
 	if current_move_state == MoveState.CLIMBING:

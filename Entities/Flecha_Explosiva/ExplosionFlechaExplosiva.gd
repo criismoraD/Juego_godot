@@ -252,15 +252,17 @@ func _crear_rastro_ceniza_suelo(pos: Vector3) -> void:
 	query.collision_mask = MASCARA_COLISION_SUELO
 	var hit := space_state.intersect_ray(query)
 	var floor_pos := pos
+	var floor_normal := Vector3.UP
 	if hit and hit.has("position"):
 		floor_pos = hit.position
+		if hit.has("normal") and hit.normal.length_squared() > 0.001:
+			floor_normal = hit.normal
 
 	var mesh_inst := MeshInstance3D.new()
 	mesh_inst.name = "RastroCenizaExplosion"
 	var quad := QuadMesh.new()
 	quad.size = tamano_ceniza
 	mesh_inst.mesh = quad
-	mesh_inst.rotation.x = -PI * 0.5
 
 	var mat := StandardMaterial3D.new()
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -285,7 +287,8 @@ func _crear_rastro_ceniza_suelo(pos: Vector3) -> void:
 	if not root:
 		root = get_tree().root
 	root.add_child(mesh_inst)
-	mesh_inst.global_position = floor_pos + Vector3(0.0, OFFSET_Y_CENIZA, 0.0)
+
+	VFXFactory.align_decal_to_surface(mesh_inst, floor_pos, floor_normal, OFFSET_Y_CENIZA)
 
 	var tween := mesh_inst.create_tween()
 	tween.tween_interval(tiempo_vida_ceniza)

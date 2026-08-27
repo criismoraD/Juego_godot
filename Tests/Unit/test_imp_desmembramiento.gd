@@ -134,3 +134,17 @@ func test_muerte_normal_NO_desmemra():
 	var piezas := get_tree().root.find_children("*", "ImpPiezaFisica", true, false)
 	assert_eq(piezas.size(), 0, "Muerte normal no debe generar piezas fisicas")
 	assert_false(imp.is_queued_for_deletion(), "Muerte normal no debe liberar al instante")
+
+
+func test_muerte_explosiva_genera_mancha_sangre_suelo():
+	imp.murio_por_explosion = true
+	imp.call("_on_state_dying")
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var mancha := get_tree().root.find_child("ManchaSangreSuelo", true, false) as MeshInstance3D
+	assert_not_null(mancha, "Debe instanciar la mancha de sangre en el suelo tras la explosión")
+	if mancha:
+		assert_not_null(mancha.material_override, "La mancha de sangre debe tener material")
+		mancha.queue_free()
+

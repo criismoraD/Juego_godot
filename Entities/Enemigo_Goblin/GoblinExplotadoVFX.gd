@@ -20,7 +20,10 @@ func _ready() -> void:
 	# 2. Reproducir animación 2D de sangre en espacio 3D (14 cuadros verticales)
 	_spawn_sangre_animada()
 
-	# 3. Spawnear partes físicas 3D dispersas
+	# 3. Mancha de sangre en el suelo (se desvanece de forma idéntica a las quemaduras)
+	VFXFactory.spawn_ground_blood_splatter(self, global_position)
+
+	# 4. Spawnear partes físicas 3D dispersas
 	_spawn_partes_cuerpo()
 
 	# 4. Auto-limpieza tras 4.5 segundos

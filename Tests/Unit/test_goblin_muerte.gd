@@ -66,3 +66,21 @@ func test_muerte_por_explosion_lanza_la_ballesta() -> void:
 			ballesta_lanzada = true
 			break
 	assert_true(ballesta_lanzada, "La ballesta debe salir volando en una pieza física")
+
+
+func test_goblin_muerte_por_explosion_genera_mancha_sangre() -> void:
+	# Arrange
+	goblin.murio_por_explosion = true
+
+	# Act
+	goblin._on_state_dying()
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	# Assert
+	var mancha := get_tree().root.find_child("ManchaSangreSuelo", true, false) as MeshInstance3D
+	assert_not_null(mancha, "El goblin ballestero debe generar la mancha de sangre en el suelo al explotar")
+	if mancha:
+		assert_not_null(mancha.material_override, "La mancha de sangre debe tener material")
+		mancha.queue_free()
+

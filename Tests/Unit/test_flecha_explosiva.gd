@@ -265,3 +265,25 @@ func test_ally_disparar_spawns_explosive_projectile():
 	assert_not_null(spawned_arrow.get_node_or_null("RedTipLight"), "El proyectil debe tener RedTipLight")
 	spawned_arrow.queue_free()
 
+
+func test_align_decal_to_surface_rampa_inclinada():
+	# Arrange: Malla de decal y rampa con ángulo de 30°
+	var mesh_inst := autofree(MeshInstance3D.new()) as MeshInstance3D
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.0, 1.0)
+	mesh_inst.mesh = quad
+	add_child_autofree(mesh_inst)
+
+	var normal_rampa := Vector3(-0.5, 0.866, 0.0).normalized()
+	var pos_rampa := Vector3(2.0, 1.0, 0.0)
+
+	# Act
+	VFXFactory.align_decal_to_surface(mesh_inst, pos_rampa, normal_rampa, 0.02)
+
+	# Assert: El vector Z de la base debe coincidir con la normal de la rampa
+	var normal_resultante := mesh_inst.global_transform.basis.z.normalized()
+	assert_almost_eq(normal_resultante.x, normal_rampa.x, 0.05, "El eje Z del decal debe alinearse con la normal X de la rampa")
+	assert_almost_eq(normal_resultante.y, normal_rampa.y, 0.05, "El eje Z del decal debe alinearse con la normal Y de la rampa")
+	assert_gt(mesh_inst.global_position.y, pos_rampa.y, "La posición del decal debe tener offset perpendicular a la superficie")
+
+

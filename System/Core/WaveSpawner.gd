@@ -138,12 +138,12 @@ func _generar_cola_spawn() -> void:
 			pool.append(escena_goblin)
 
 	elif wave_num == 3:
-		# Oleada 3: 3 imp escudo, 11 goblin arquera, 11 goblin ballesta. Total: 25.
-		for i in range(3):
+		# Oleada 3: 4 imp escudo, 13 goblin arquera, 13 goblin ballesta. Total: 30.
+		for i in range(4):
 			pool.append(escena_imp_escudo)
-		for i in range(11):
+		for i in range(13):
 			pool.append(escena_goblin_girl)
-		for i in range(11):
+		for i in range(13):
 			pool.append(escena_goblin)
 
 	elif wave_num == 4:
@@ -527,6 +527,10 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 
 	burst.append_array(cola_spawn)
 	cola_spawn = burst
+
+	# Asegurar que el total de enemigos de la oleada contabilice los refuerzos del cuerno
+	if enemigos_por_oleada < goblins_spawned_in_wave + cola_spawn.size():
+		enemigos_por_oleada = goblins_spawned_in_wave + cola_spawn.size()
 
 	# La oleada 4 incluye fijo 1 Imp de Escudo con el evento (desactivado, ya tiene 5 en cola)
 	if incluir_imp_escudo_fijo:

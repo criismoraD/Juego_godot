@@ -6,8 +6,8 @@ extends Node3D
 var fuerza_explosion: float = 1.5
 var fuerza_horizontal: float = 0.5
 var fuerza_vertical: float = 1.0
-var torque_min: float = -4.0
-var torque_max: float = 4.0
+var torque_min: float = -0.4
+var torque_max: float = 0.4
 # Tiempos
 var tiempo_congelar: float = 2.0
 var tiempo_antes_disolver: float = 1.5
@@ -57,18 +57,25 @@ func _iniciar_conversion():
 		if is_instance_valid(rb):
 			rb.visible = true
 
+	# Autolimpieza de seguridad individual en cada RigidBody
+	var tiempo_limpieza_total: float = tiempo_congelar + tiempo_antes_disolver + duracion_disolucion + 1.0
+	for rb in _rigid_bodies:
+		if is_instance_valid(rb):
+			var rb_ref: RigidBody3D = rb
+			get_tree().create_timer(tiempo_limpieza_total, false).timeout.connect(
+				func():
+					if is_instance_valid(rb_ref):
+						rb_ref.queue_free()
+			)
+
 	# Fase 1: Congelar piezas después de que caigan
-	await get_tree().create_timer(tiempo_congelar).timeout
-	if not is_instance_valid(self):
-		return
+	await get_tree().create_timer(tiempo_congelar, false).timeout
 	for rb in _rigid_bodies:
 		if is_instance_valid(rb):
 			rb.freeze = true
 
 	# Fase 2: Esperar antes de disolver
-	await get_tree().create_timer(tiempo_antes_disolver).timeout
-	if not is_instance_valid(self):
-		return
+	await get_tree().create_timer(tiempo_antes_disolver, false).timeout
 
 	# Fase 3: Efecto de disolución (igual que los enemigos)
 	_start_dissolve_effect()
@@ -97,9 +104,14 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 	# Prevenir tunneling
 	rb.continuous_cd = true
 
-	# Reducir gravedad y velocidad para que no atraviesen plataformas delgadas
-	rb.gravity_scale = 0.6
-	rb.linear_damp = 1.0
+	# Reducir velocidad y prevenir tunneling
+	rb.gravity_scale = 0.8
+	rb.linear_damp = 0.8
+	rb.angular_damp = 3.5  # Amortiguación angular para evitar giros descontrolados
+	var phys_mat := PhysicsMaterial.new()
+	phys_mat.friction = 0.85
+	phys_mat.bounce = 0.15
+	rb.physics_material_override = phys_mat
 
 	# Guardar la transform global del mesh ANTES de modificar la jerarquía
 	var mesh_global_pos = mesh_instance.global_position
@@ -155,8 +167,9 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 				mat.albedo_color = Color.WHITE
 
 			if progreso_dano > 0.0:
+				var factor_tinte: float = clampf(progreso_dano * intensidad_tinte_heredado, 0.0, 0.25)
 				mat.albedo_color = mat.albedo_color.lerp(
-					color_dano_heredado, progreso_dano * intensidad_tinte_heredado
+					color_dano_heredado, factor_tinte
 				)
 
 			mesh_instance.set_surface_override_material(surface_idx, mat)
@@ -172,13 +185,13 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 	var directional = Vector3(fuerza_horizontal, fuerza_vertical, 0)
 	rb.apply_impulse(directional + random_spread, Vector3.ZERO)
 
-	rb.apply_torque_impulse(
-		Vector3(
-			randf_range(torque_min, torque_max),
-			randf_range(torque_min, torque_max),
-			randf_range(torque_min, torque_max)
-		)
-	)
+	# Rotación realista 2.5D:
+	# El eje Z (perpendicular al plano de la cámara) es el giro principal visible.
+	# Los ejes X e Y tienen un leve balanceo tridimensional para profundidad natural.
+	var torque_z = randf_range(torque_min, torque_max)
+	var torque_x = randf_range(torque_min * 0.25, torque_max * 0.25)
+	var torque_y = randf_range(torque_min * 0.25, torque_max * 0.25)
+	rb.apply_torque_impulse(Vector3(torque_x, torque_y, torque_z))
 
 	_rigid_bodies.append(rb)
 	_meshes.append(mesh_instance)
@@ -230,8 +243,11 @@ func _start_dissolve_effect():
 
 	# Animar la disolución de 0 a 1
 	var tween = create_tween()
-	tween.tween_method(_update_dissolve, 0.0, 1.0, duracion_disolucion)
-	tween.tween_callback(_finish_dissolve)
+	if tween:
+		tween.tween_method(_update_dissolve, 0.0, 1.0, duracion_disolucion)
+		tween.tween_callback(_finish_dissolve)
+	else:
+		_finish_dissolve()
 
 
 func _update_dissolve(value: float):

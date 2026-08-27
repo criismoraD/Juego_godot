@@ -128,3 +128,21 @@ func test_evento_cuerno_oleada_4_rafaga_5_mas_5_mas_imp_escudo_fijo():
 		_spawner.shield_imps_activos.size(), escudos_previos + 1,
 		"El evento debe incluir fijo 1 Imp de Escudo"
 	)
+
+
+func test_evento_cuerno_actualiza_enemigos_por_oleada_para_barra_progreso():
+	# Arrange
+	_spawner.oleada_combate = 5
+	_spawner.enemigos_por_oleada = 40
+	_spawner._generar_cola_spawn()
+	_spawner.goblins_spawned_in_wave = 12
+
+	# Act: se dispara el evento de cuerno con 10 refuerzos
+	_spawner._iniciar_evento_cuerno(10, false)
+
+	# Assert: la barra de progreso / wave_spawner debe contabilizar los 50 enemigos totales (40 base + 10 refuerzos)
+	assert_eq(
+		_spawner.enemigos_por_oleada, 50,
+		"enemigos_por_oleada debe actualizarse a 50 al sumar los 10 refuerzos del evento cuerno"
+	)
+

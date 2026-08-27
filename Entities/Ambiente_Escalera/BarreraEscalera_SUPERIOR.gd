@@ -20,4 +20,7 @@ func _physics_process(_delta: float) -> void:
 
 	_aplicar_cooldown(player_ref)
 	if _esta_en_escalera(player_ref):
-		_soltar_solo_escalera(player_ref)
+		if player_ref.has_method("dismount_ladder_top"):
+			player_ref.dismount_ladder_top()
+		else:
+			_soltar_solo_escalera(player_ref)

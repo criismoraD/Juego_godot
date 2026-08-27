@@ -233,8 +233,8 @@ func _buscar_arrow_node():
 				var tip_light := OmniLight3D.new()
 				tip_light.name = "RedTipLight"
 				tip_light.light_color = Color(1.0, 0.15, 0.08)
-				tip_light.light_energy = 3.5
-				tip_light.omni_range = 1.5
+				tip_light.light_energy = 0.8
+				tip_light.omni_range = 0.9
 				tip_light.position = Vector3(0.0, 0.0, 0.45)
 				explosive_arrow_node.add_child(tip_light)
 		if explosive_arrow_node:

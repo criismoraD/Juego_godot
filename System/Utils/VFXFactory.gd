@@ -583,3 +583,198 @@ static func create_arrow_trail(
 	arrow.add_child(particles)
 
 	return particles
+
+
+const TEXTURA_MANCHA_SANGRE: String = "res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png"
+
+## Alinea la orientación y posición de un MeshInstance3D (QuadMesh) exactamente
+## a la normal de la superficie impactada (suelos planos, rampas inclinadas o plataformas).
+static func align_decal_to_surface(
+	mesh_inst: MeshInstance3D,
+	pos: Vector3,
+	normal: Vector3,
+	offset_dist: float = 0.015,
+	rotacion_plana: float = 0.0
+) -> void:
+	var n := normal.normalized()
+	if n.length_squared() < 0.001:
+		n = Vector3.UP
+
+	# Vector de referencia "arriba" en el plano 2.5D
+	var up_hint := Vector3.FORWARD
+	if absf(n.dot(up_hint)) > 0.95:
+		up_hint = Vector3.RIGHT
+
+	var x_axis := up_hint.cross(n).normalized()
+	var y_axis := n.cross(x_axis).normalized()
+	var b := Basis(x_axis, y_axis, n)
+
+	if rotacion_plana != 0.0:
+		b = b.rotated(n, rotacion_plana)
+
+	mesh_inst.global_transform = Transform3D(b, pos + n * offset_dist)
+
+
+## Crea una mancha de sangre en el suelo tras una explosión (Goblin/Imp/Cañonero).
+## Detecta el suelo/rampa mediante raycast, se alinea a su inclinación y se desvanece suavemente.
+static func spawn_ground_blood_splatter(
+	source_node: Node,
+	pos: Vector3,
+	color_modulate: Color = Color(1.0, 1.0, 1.0, 0.95),
+	tamano: Vector2 = Vector2(1.35, 1.35),
+	tiempo_vida: float = 3.5,
+	tiempo_desvanecimiento: float = 2.5
+) -> MeshInstance3D:
+	if not is_instance_valid(source_node) or not source_node.is_inside_tree():
+		return null
+
+	var tree := source_node.get_tree()
+	var root := tree.current_scene if tree else null
+	if not root:
+		root = tree.root if tree else null
+	if not root:
+		return null
+
+	var floor_pos := Vector3(pos.x, 0.0, pos.z)
+	var floor_normal := Vector3.UP
+	var world_3d: World3D = null
+	if source_node is Node3D:
+		world_3d = (source_node as Node3D).get_world_3d()
+
+	if world_3d and world_3d.direct_space_state:
+		var query := PhysicsRayQueryParameters3D.create(pos + Vector3(0.0, 0.5, 0.0), pos + Vector3(0.0, -6.0, 0.0))
+		query.collision_mask = 65  # Capa 1 (Mundo) y Capa 7 (Plataformas/Rampas)
+		var hit := world_3d.direct_space_state.intersect_ray(query)
+		if hit and hit.has("position"):
+			floor_pos = hit.position
+			if hit.has("normal") and hit.normal.length_squared() > 0.001:
+				floor_normal = hit.normal
+
+	var mesh_inst := MeshInstance3D.new()
+	mesh_inst.name = "ManchaSangreSuelo"
+	var quad := QuadMesh.new()
+	var escala_aleatoria := randf_range(0.9, 1.2)
+	quad.size = tamano * escala_aleatoria
+	mesh_inst.mesh = quad
+
+	var mat := StandardMaterial3D.new()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = color_modulate
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.render_priority = -2
+
+	if ResourceLoader.exists(TEXTURA_MANCHA_SANGRE):
+		mat.albedo_texture = load(TEXTURA_MANCHA_SANGRE)
+
+	mesh_inst.material_override = mat
+
+	root.add_child(mesh_inst)
+	align_decal_to_surface(mesh_inst, floor_pos, floor_normal, 0.015, randf_range(0.0, TAU))
+
+	var tween := mesh_inst.create_tween()
+	tween.tween_interval(tiempo_vida)
+	tween.tween_property(mat, "albedo_color:a", 0.0, tiempo_desvanecimiento) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(mesh_inst):
+			mesh_inst.queue_free()
+	)
+
+	return mesh_inst
+
+
+const TEXTURA_HUMO_SALTO_DEFENSORA: String = "res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png"
+
+## Crea la animación de humo de salto de la defensora expandiéndose a ambos lados
+## cuando se rompe un escudo enemigo.
+static func spawn_shield_break_smoke(source_node: Node, pos: Vector3) -> void:
+	if not is_instance_valid(source_node) or not source_node.is_inside_tree():
+		return
+
+	var tree := source_node.get_tree()
+	var root := tree.current_scene if tree else null
+	if not root:
+		root = tree.root if tree else null
+	if not root:
+		return
+
+	var floor_pos := Vector3(pos.x, 0.0, pos.z)
+	var world_3d: World3D = null
+	if source_node is Node3D:
+		world_3d = (source_node as Node3D).get_world_3d()
+
+	if world_3d and world_3d.direct_space_state:
+		var query := PhysicsRayQueryParameters3D.create(pos + Vector3(0.0, 0.5, 0.0), pos + Vector3(0.0, -6.0, 0.0))
+		query.collision_mask = 1  # Capa de suelo
+		var hit := world_3d.direct_space_state.intersect_ray(query)
+		if hit and hit.has("position"):
+			floor_pos = hit.position
+
+	var tex: Texture2D = null
+	if ResourceLoader.exists(TEXTURA_HUMO_SALTO_DEFENSORA):
+		tex = load(TEXTURA_HUMO_SALTO_DEFENSORA)
+	if not tex:
+		return
+
+	for side in [-1, 1]:
+		var puf := GPUParticles3D.new()
+		puf.name = "HumoEscudoRoto"
+		puf.amount = 4
+		puf.lifetime = 0.75
+		puf.one_shot = true
+		puf.explosiveness = 0.3
+		puf.randomness = 0.3
+		puf.visibility_aabb = AABB(Vector3(-1.5, -1.2, -1.5), Vector3(3, 3, 3))
+
+		var pmat := ParticleProcessMaterial.new()
+		pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
+		pmat.direction = Vector3(side * 0.85, 0.35, 0.0)
+		pmat.spread = 20.0
+		pmat.initial_velocity_min = 0.8
+		pmat.initial_velocity_max = 1.6
+		pmat.gravity = Vector3(0, -0.3, 0)
+		pmat.scale_min = 0.55
+		pmat.scale_max = 0.85
+		pmat.anim_speed_min = 1.0
+		pmat.anim_speed_max = 1.2
+		pmat.anim_offset_min = 0.0
+		pmat.anim_offset_max = 0.25
+
+		var grad := Gradient.new()
+		grad.set_color(0, Color(0.96, 0.94, 0.88, 0.85))
+		grad.set_color(1, Color(0.96, 0.94, 0.88, 0.0))
+		var grad_tex := GradientTexture1D.new()
+		grad_tex.gradient = grad
+		pmat.color_ramp = grad_tex
+		pmat.turbulence_enabled = true
+		pmat.turbulence_noise_strength = 0.008
+		puf.process_material = pmat
+
+		var mat := StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.vertex_color_use_as_albedo = true
+		mat.albedo_texture = tex
+		mat.particles_anim_h_frames = 6
+		mat.particles_anim_v_frames = 1
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		mat.billboard_keep_scale = true
+		mat.render_priority = 2
+
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.8, 0.8)
+		quad.material = mat
+		puf.draw_pass_1 = quad
+
+		root.add_child(puf)
+		puf.global_position = floor_pos + Vector3(side * 0.25, 0.04, 0.0)
+		puf.emitting = true
+
+		tree.create_timer(1.2, false).timeout.connect(func():
+			if is_instance_valid(puf):
+				puf.queue_free()
+		)
+
+

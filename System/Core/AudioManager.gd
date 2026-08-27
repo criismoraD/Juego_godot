@@ -201,6 +201,9 @@ func _load_all_sounds():
 	sfx_streams["shield_hit_arrow"] = [
 		load("res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_FLECHA.mp3")
 	]
+	sfx_streams["arrow_impact"] = sfx_streams["shield_hit_arrow"]
+	sfx_streams["impacto_flecha"] = sfx_streams["shield_hit_arrow"]
+	sfx_streams["flecha_impacto"] = sfx_streams["shield_hit_arrow"]
 
 	# Alias genérico para compatibilidad
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
@@ -307,7 +310,7 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		# Pitch dithering
 		if "shoot" in sound_name:
 			temp_player.pitch_scale = randf_range(shoot_pitch_min, shoot_pitch_max)
-		elif "hurt" in sound_name or "death" in sound_name:
+		elif "hurt" in sound_name or "death" in sound_name or "impact" in sound_name or "hit" in sound_name:
 			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
 
 		if not temp_player.is_inside_tree():
@@ -340,7 +343,7 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 		# Pitch dithering
 		if "shoot" in sound_name:
 			temp_player.pitch_scale = randf_range(shoot_pitch_min, shoot_pitch_max)
-		elif "hurt" in sound_name or "death" in sound_name:
+		elif "hurt" in sound_name or "death" in sound_name or "impact" in sound_name or "hit" in sound_name:
 			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
 
 		if not temp_player.is_inside_tree():

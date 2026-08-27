@@ -220,6 +220,7 @@ func _on_body_entered(body: Node) -> void:
 	if body.is_in_group("allies"):
 		_aplicar_dano_a_objetivo(body)
 		_on_impacto_con_dano(body)
+		AudioManager.play_sfx("arrow_impact")
 		_safe_destroy()
 		return
 
@@ -230,15 +231,18 @@ func _on_body_entered(body: Node) -> void:
 			
 			body.recibir_golpe()
 			_on_impacto_con_escudo(body)
+			AudioManager.play_sfx("shield_hit_arrow")
 			_stick_to_shield(body)
 			return
 
+		AudioManager.play_sfx("arrow_impact")
 		_stick_to_surface()
 		return
 
 	if body.is_in_group("player"):
 		_aplicar_dano_a_objetivo(body)
 		_on_impacto_con_dano(body)
+		AudioManager.play_sfx("arrow_impact")
 		_safe_destroy()
 
 

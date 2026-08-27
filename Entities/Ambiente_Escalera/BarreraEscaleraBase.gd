@@ -83,10 +83,24 @@ func _soltar_solo_escalera(player: Node, impulso_x: float = 0.0) -> void:
 		return
 
 	_aplicar_cooldown(player)
-	player.current_move_state = player.MoveState.AIR
+
+	if player.has_method("dismount_ladder_top"):
+		player.dismount_ladder_top(impulso_x)
+		return
+
+	if player.is_on_floor():
+		player.current_move_state = player.MoveState.GROUND
+		if player.has_method("set_motion_anim"):
+			player.set_motion_anim("ground")
+		if "velocity" in player:
+			player.velocity.y = 0.0
+	else:
+		player.current_move_state = player.MoveState.AIR
+		if player.has_method("set_motion_anim"):
+			player.set_motion_anim("air")
 
 	if player.has_method("_reset_armature_rotation"):
-		player._reset_armature_rotation()
+		player._reset_armature_rotation(false)
 
 	if not is_zero_approx(impulso_x) and "velocity" in player:
 		player.velocity.x = impulso_x

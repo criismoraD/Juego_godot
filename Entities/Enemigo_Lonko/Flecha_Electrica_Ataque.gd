@@ -485,20 +485,22 @@ func _crear_humo_impacto_lados(pos: Vector3) -> void:
 
 func _crear_rastro_quemadura_suelo(pos: Vector3) -> void:
 	var floor_pos := Vector3(pos.x, 0.0, pos.z)
+	var floor_normal := Vector3.UP
 	var space_state := get_world_3d().direct_space_state
 	if space_state:
 		var query := PhysicsRayQueryParameters3D.create(pos + Vector3(0.0, 0.5, 0.0), pos + Vector3(0.0, -6.0, 0.0))
-		query.collision_mask = 1  # Capa de suelo
+		query.collision_mask = 65  # Capa 1 (Mundo) y Capa 7 (Plataformas/Rampas)
 		var hit := space_state.intersect_ray(query)
 		if hit and hit.has("position"):
 			floor_pos = hit.position
+			if hit.has("normal") and hit.normal.length_squared() > 0.001:
+				floor_normal = hit.normal
 
 	var mesh_inst := MeshInstance3D.new()
 	mesh_inst.name = "RastroQuemaduraUltLonko"
 	var quad := QuadMesh.new()
 	quad.size = tamano_quemadura
 	mesh_inst.mesh = quad
-	mesh_inst.rotation.x = -PI * 0.5
 
 	var mat := StandardMaterial3D.new()
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -523,7 +525,8 @@ func _crear_rastro_quemadura_suelo(pos: Vector3) -> void:
 	if not root:
 		root = get_tree().root
 	root.add_child(mesh_inst)
-	mesh_inst.global_position = floor_pos + Vector3(0.0, 0.02, 0.0)
+
+	VFXFactory.align_decal_to_surface(mesh_inst, floor_pos, floor_normal, 0.015)
 
 	var tween := mesh_inst.create_tween()
 	tween.tween_interval(tiempo_vida_quemadura)
