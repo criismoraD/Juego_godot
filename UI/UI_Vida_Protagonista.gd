@@ -53,6 +53,10 @@ func _intentar_conectar_player() -> void:
 		_conectar_player(player)
 
 
+const TEXTURA_FLECHA_EXPLOSIVA = preload("res://TEST_/FLECHA EXPLOSIVA ICONO/icono power up flecha explosiva.png")
+const TEXTURA_FLECHA_MULTIPLE = preload("res://TEST_/icono flecha multiple.png")
+
+
 func _conectar_player(player: Node) -> void:
 	if player.has_signal("health_changed"):
 		if not player.health_changed.is_connected(_on_health_changed):
@@ -60,20 +64,32 @@ func _conectar_player(player: Node) -> void:
 	if player.has_signal("flechas_explosivas_changed"):
 		if not player.flechas_explosivas_changed.is_connected(actualizar_flechas_explosivas):
 			player.flechas_explosivas_changed.connect(actualizar_flechas_explosivas)
+	if player.has_signal("flechas_multiples_changed"):
+		if not player.flechas_multiples_changed.is_connected(actualizar_flechas_multiples):
+			player.flechas_multiples_changed.connect(actualizar_flechas_multiples)
 	if "health" in player:
 		actualizar_vida(int(player.health))
-	if "flechas_explosivas" in player:
+	if "flechas_explosivas" in player and int(player.flechas_explosivas) > 0:
 		actualizar_flechas_explosivas(int(player.flechas_explosivas))
+	elif "flechas_multiples" in player and int(player.flechas_multiples) > 0:
+		actualizar_flechas_multiples(int(player.flechas_multiples))
 
 
 func _on_health_changed(new_health: int) -> void:
 	actualizar_vida(new_health)
 
 
-## Actualiza el contador de flechas explosivas en la UI de vida.
-## Por defecto permanece oculto y solo aparece al tener munición (> 0). Al llegar a 0 desaparece.
-## El ícono de flecha explosiva acompaña siempre al número (misma visibilidad).
+## Actualiza el contador e icono de flechas múltiples
+func actualizar_flechas_multiples(cantidad: int) -> void:
+	_actualizar_powerup_display(cantidad, TEXTURA_FLECHA_MULTIPLE)
+
+
+## Actualiza el contador e icono de flechas explosivas
 func actualizar_flechas_explosivas(cantidad: int) -> void:
+	_actualizar_powerup_display(cantidad, TEXTURA_FLECHA_EXPLOSIVA)
+
+
+func _actualizar_powerup_display(cantidad: int, textura_icono: Texture2D) -> void:
 	if not is_instance_valid(contador_flechas_explosivas):
 		return
 
@@ -87,6 +103,7 @@ func actualizar_flechas_explosivas(cantidad: int) -> void:
 		contador_flechas_explosivas.pivot_offset = contador_flechas_explosivas.size * 0.5
 
 		if is_instance_valid(icono_flechas_explosivas):
+			icono_flechas_explosivas.texture = textura_icono
 			icono_flechas_explosivas.visible = true
 			icono_flechas_explosivas.pivot_offset = icono_flechas_explosivas.size * 0.5
 

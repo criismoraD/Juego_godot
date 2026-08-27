@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bgon2yvqciet4"
+path="res://.godot/imported/Sonido refuerzo mensajera.mp3-a98fff3fa85ac636c9502c0263164d3a.mp3str"
+
+[deps]
+
+source_file="res://TEST_/Sonido refuerzo mensajera.mp3"
+dest_files=["res://.godot/imported/Sonido refuerzo mensajera.mp3-a98fff3fa85ac636c9502c0263164d3a.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,33 @@
+﻿[gd_scene load_steps=6 format=3 uid="uid://cb57wrw5vlbsc"]
+
+[ext_resource type="Script" path="res://Entities/Enemigo_Zugenu/Zugenu.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cx0oxbqimbtc6" path="res://TEST_/Zugenu/Animaciones/correr.fbx" id="2_correr"]
+[ext_resource type="PackedScene" uid="uid://dh11quiyxc821" path="res://TEST_/Zugenu/Zugenu.glb" id="3_mesh"]
+[ext_resource type="Material" uid="uid://df7w8y1a9q2k5" path="res://Entities/Enemigo_Zugenu/MAT_ZUGENU.tres" id="4_mat"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_zugenu"]
+radius = 0.22
+height = 0.85
+
+[node name="Zugenu" type="CharacterBody3D" groups=["enemies"]]
+collision_layer = 4
+script = ExtResource("1_script")
+velocidad_caminar = 1.1
+distancia_minima_caminar = 2.5
+distancia_maxima_caminar = 6.5
+vida_maxima = 2
+altura_spawn_flecha = 0.45
+
+[node name="Model" parent="." instance=ExtResource("2_correr")]
+transform = Transform3D(-0.7, 0, -6.1195953e-08, 0, 0.7, 0, 6.1195953e-08, 0, -0.7, 0, 0, 0)
+
+[node name="ZugenuMesh" parent="Model" instance=ExtResource("3_mesh")]
+
+[node name="node_0 (5K)" parent="Model/ZugenuMesh" index="0"]
+material_override = ExtResource("4_mat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.425, 0)
+shape = SubResource("CapsuleShape_zugenu")
+
+[editable path="Model/ZugenuMesh"]

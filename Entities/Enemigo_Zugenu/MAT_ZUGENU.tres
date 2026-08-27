@@ -1,0 +1,20 @@
+﻿[gd_resource type="StandardMaterial3D" load_steps=3 format=3 uid="uid://df7w8y1a9q2k5"]
+
+[ext_resource type="Texture2D" uid="uid://dtper5o6pb8lo" path="res://TEST_/Zugenu/Zugenu_modddif_image_0.png" id="1_albedo"]
+[ext_resource type="Texture2D" uid="uid://br7nkfp15wjxv" path="res://TEST_/Zugenu/Zugenu_modddif_image_1.png" id="2_normal"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="3_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("3_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+resource_name = "MAT_ZUGENU"
+next_pass = SubResource("ShaderMaterial_outline")
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_albedo")
+normal_enabled = true
+normal_texture = ExtResource("2_normal")
+roughness = 1.0

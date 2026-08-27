@@ -6,6 +6,8 @@ extends Area3D
 
 signal activada
 
+const SFX_REFUERZO_MENSAJERA: AudioStream = preload("res://TEST_/Sonido refuerzo mensajera.mp3")
+
 @export_category("Flotación")
 @export var altura_flotacion: float = 0.75  ## Altura del icono sobre la base del VFX
 @export var amplitud_flotacion: float = 0.05  ## Sube/baja suave
@@ -62,8 +64,27 @@ func _on_body_entered(body: Node3D) -> void:
 		return
 	_activado = true
 	set_deferred("monitoring", false)
+	_reproducir_sonido_refuerzo()
 	activada.emit()
 	_desaparecer()
+
+
+func _reproducir_sonido_refuerzo() -> void:
+	if not SFX_REFUERZO_MENSAJERA:
+		return
+	var sfx_player := AudioStreamPlayer.new()
+	sfx_player.stream = SFX_REFUERZO_MENSAJERA
+	sfx_player.volume_db = 2.0
+	sfx_player.bus = "Master"
+	var root := get_tree().current_scene
+	if not root:
+		root = get_tree().root
+	if root:
+		root.add_child(sfx_player)
+		sfx_player.play()
+		sfx_player.finished.connect(sfx_player.queue_free)
+	else:
+		sfx_player.queue_free()
 
 
 ## Desaparición: encoge rápido y se libera

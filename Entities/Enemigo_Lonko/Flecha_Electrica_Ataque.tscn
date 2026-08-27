@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://clkgye56njryc"]
+[gd_scene load_steps=4 format=3 uid="uid://df7w8y1a9q2k4"]
 
 [ext_resource type="Script" uid="uid://clkgye56njryc" path="res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bbrua2kwcecpu" path="res://assets/BinbunVFX/magic_projectiles/effects/mprojectile_javelin/mprojectile_javelin_vfx_02.tscn" id="2_javelin"]

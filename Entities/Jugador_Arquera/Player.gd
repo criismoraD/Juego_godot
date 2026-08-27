@@ -2,6 +2,7 @@ class_name Player
 extends CharacterBody3D
 signal health_changed(new_health: int)
 signal flechas_explosivas_changed(cantidad: int)
+signal flechas_multiples_changed(cantidad: int)
 signal died
 enum AimState { NONE, DRAWING, AIMING, SHOOTING }
 enum MoveState { GROUND, AIR, LANDING, CLIMBING, DEAD, CROUCHING }
@@ -15,6 +16,7 @@ const JUMP_BUFFER_TIME: float = 0.12
 	set(v):
 		flechas_explosivas = v
 		_actualizar_throttle_explosivo()  ## Histéresis 30/25
+@export var flechas_multiples: int = 0
 ## Throttle de drops explosivos: 30 entra en mitigación, 25 libera (histéresis para evitar flapping)
 var _explosive_drop_throttled: bool = false
 const UMBRAL_EXPLOSIVO_MAX: int = 30
@@ -1303,7 +1305,18 @@ func start_shooting():
 	charge_time = 0.0
 
 
+func agregar_flechas_multiples(cantidad: int = 6) -> void:
+	if flechas_explosivas > 0:
+		flechas_explosivas = 0
+		flechas_explosivas_changed.emit(0)
+	flechas_multiples += cantidad
+	flechas_multiples_changed.emit(flechas_multiples)
+
+
 func agregar_flechas_explosivas(cantidad: int = 10) -> void:
+	if flechas_multiples > 0:
+		flechas_multiples = 0
+		flechas_multiples_changed.emit(0)
 	flechas_explosivas += cantidad  # setter actualiza throttle
 	flechas_explosivas_changed.emit(flechas_explosivas)
 
@@ -1335,7 +1348,28 @@ func spawn_arrow_projectile():
 	if not data["valid"]:
 		return
 
-	# Si quedan flechas explosivas, descontar y configurar la flecha
+	# Obtener dirección hacia el mouse
+	var shoot_dir = data["velocity"].normalized()
+
+	# Calcular velocidad basada en la carga (usando variables exportadas)
+	var arrow_speed = lerp(velocidad_flecha_minima, velocidad_flecha_maxima, last_charge_power)
+
+	# Reducir velocidad según el ángulo de inclinación vertical (solo al disparar hacia arriba)
+	var Factor_Angulo: float = 1.0
+	if shoot_dir.y > 0.0:
+		Factor_Angulo = 1.0 - (Reduccion_Velocidad_Por_Angulo * shoot_dir.y)
+	arrow_speed *= Factor_Angulo
+
+	var es_potencia_maxima: bool = (last_charge_power >= 0.98)
+
+	# CASO 1: Flechas Múltiples activas (5 flechas normales en rápida sucesión)
+	if flechas_multiples > 0:
+		flechas_multiples -= 1
+		flechas_multiples_changed.emit(flechas_multiples)
+		_disparar_rafaga_flechas_multiples(data, shoot_dir, arrow_speed, es_potencia_maxima)
+		return
+
+	# CASO 2: Flechas Explosivas activas
 	var es_flecha_explosiva: bool = false
 	if flechas_explosivas > 0:
 		flechas_explosivas -= 1
@@ -1352,23 +1386,9 @@ func spawn_arrow_projectile():
 	if "es_explosiva" in arrow_instance:
 		arrow_instance.es_explosiva = es_flecha_explosiva
 
-	# Obtener dirección hacia el mouse
-	var shoot_dir = data["velocity"].normalized()
-
-	# Calcular velocidad basada en la carga (usando variables exportadas)
-	var arrow_speed = lerp(velocidad_flecha_minima, velocidad_flecha_maxima, last_charge_power)
-
-	# Reducir velocidad según el ángulo de inclinación vertical (solo al disparar hacia arriba)
-	var Factor_Angulo: float = 1.0
-	if shoot_dir.y > 0.0:
-		Factor_Angulo = 1.0 - (Reduccion_Velocidad_Por_Angulo * shoot_dir.y)
-	arrow_speed *= Factor_Angulo
-
 	# Inicializar la flecha con dirección y velocidad calculada
 	arrow_instance.initialize(shoot_dir, arrow_speed)
 
-	# Si es disparo cargado al máximo (potencia al 98% o más)
-	var es_potencia_maxima = last_charge_power >= 0.98
 	if es_potencia_maxima:
 		arrow_instance.set_meta("is_max_power", true)
 
@@ -1383,6 +1403,40 @@ func spawn_arrow_projectile():
 		get_node("/root/GameFeel").on_player_shoot()
 		if es_potencia_maxima or es_flecha_explosiva:
 			# Sacudida doble para potencia máxima o flecha explosiva
+			get_node("/root/GameFeel").on_player_shoot()
+
+
+func _disparar_rafaga_flechas_multiples(data: Dictionary, shoot_dir: Vector3, arrow_speed: float, es_potencia_maxima: bool) -> void:
+	# Flecha 1: disparo inmediato
+	var arrow_1 := arrow_scene.instantiate()
+	arrow_1.initialize(shoot_dir, arrow_speed)
+	if es_potencia_maxima:
+		arrow_1.set_meta("is_max_power", true)
+	get_tree().root.add_child(arrow_1)
+	arrow_1.global_position = data["origin"]
+
+	if has_node("/root/GameFeel"):
+		get_node("/root/GameFeel").on_player_shoot()
+
+	# 4 flechas restantes en rápida sucesión (total 5 flechas)
+	for i in range(4):
+		await get_tree().create_timer(0.055, false).timeout
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+
+		var burst_data = calculate_shoot_data()
+		var dir: Vector3 = burst_data["velocity"].normalized() if (burst_data and burst_data.get("valid", false)) else shoot_dir
+		var origin: Vector3 = burst_data["origin"] if (burst_data and burst_data.get("valid", false)) else data["origin"]
+
+		var arr: Node = arrow_scene.instantiate()
+		arr.initialize(dir, arrow_speed)
+		if es_potencia_maxima:
+			arr.set_meta("is_max_power", true)
+		get_tree().root.add_child(arr)
+		arr.global_position = origin
+
+		AudioManager.play_sfx("player_shoot")
+		if has_node("/root/GameFeel"):
 			get_node("/root/GameFeel").on_player_shoot()
 
 	# GAME FEEL: Partículas de disparo (DESACTIVADO)

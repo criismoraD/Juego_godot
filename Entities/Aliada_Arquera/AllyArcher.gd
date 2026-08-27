@@ -50,6 +50,7 @@ var _blink_timer: float = 0.0
 var charge_duration: float = 0.0
 var health: int = 1
 var flechas_explosivas: int = 0  ## Contador interno de flechas explosivas
+var flechas_multiples: int = 0  ## Contador interno de flechas múltiples
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 static var _cached_wave_spawner: Node = null
@@ -522,7 +523,13 @@ func _obtener_gargola_objetivo() -> Node3D:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+func agregar_flechas_multiples(cantidad: int = 3) -> void:
+	flechas_explosivas = 0
+	flechas_multiples += cantidad
+
+
 func agregar_flechas_explosivas(cantidad: int = 5) -> void:
+	flechas_multiples = 0
 	flechas_explosivas += cantidad
 
 
@@ -530,9 +537,14 @@ func _disparar():
 	if not arrow_scene:
 		return
 
-	# 1. Determinar si se dispara flecha explosiva
+	# 1. Determinar si se dispara flecha múltiple o explosiva
+	var es_flecha_multiple: bool = false
 	var es_explosiva: bool = false
-	if flechas_explosivas > 0:
+
+	if flechas_multiples > 0:
+		flechas_multiples -= 1
+		es_flecha_multiple = true
+	elif flechas_explosivas > 0:
 		flechas_explosivas -= 1
 		es_explosiva = true
 
@@ -585,7 +597,12 @@ func _disparar():
 		var angulo = deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
 		direction = Vector3(cos(angulo), sin(angulo), 0).normalized()
 
-	# 4. Instanciar la flecha (escena explosiva dedicada o proyectil aliado)
+	# 4. CASO MÚLTIPLE: Ráfaga de 5 flechas normales
+	if es_flecha_multiple:
+		_disparar_rafaga_aliada(direction, speed, spawn_pos)
+		return
+
+	# 5. CASO ESTÁNDAR / EXPLOSIVA:
 	var arrow: Node = null
 	if es_explosiva and explosive_arrow_scene:
 		arrow = explosive_arrow_scene.instantiate()
@@ -598,6 +615,25 @@ func _disparar():
 	arrow.initialize(direction, speed)
 	get_tree().root.add_child(arrow)
 	arrow.global_position = spawn_pos
+
+
+func _disparar_rafaga_aliada(base_direction: Vector3, speed: float, spawn_pos: Vector3) -> void:
+	var arrow_1: Node = arrow_scene.instantiate()
+	arrow_1.initialize(base_direction, speed)
+	get_tree().root.add_child(arrow_1)
+	arrow_1.global_position = spawn_pos
+
+	for i in range(4):
+		await get_tree().create_timer(0.06, false).timeout
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+
+		var arr: Node = arrow_scene.instantiate()
+		var dir := base_direction + Vector3(randf_range(-0.02, 0.02), randf_range(-0.02, 0.02), 0.0)
+		arr.initialize(dir.normalized(), speed)
+		get_tree().root.add_child(arr)
+		arr.global_position = spawn_pos
+		AudioManager.play_sfx("player_shoot", -8.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
