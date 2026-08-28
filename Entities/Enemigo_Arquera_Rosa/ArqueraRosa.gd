@@ -3,8 +3,10 @@ extends "res://System/Core/EnemyBase.gd"
 
 ## Arquera Rosa: Variante élite de la goblin arquera con textura rosada y rango medio-largo.
 ## Habilidades:
-## 1. Aura Rosada (BasicAreaVFX_04) que repele hasta 4 proyectiles normales y pierde intensidad al recibir daño.
-##    Al romperse emite nubes de humo rosado a ambos lados. Las flechas explosivas ignoran la repulsión y detonan directamente.
+## 1. Aura Rosada (BasicAreaVFX_04) con sonido continuo de Aura mientras esté activo.
+##    Repele hasta 4 proyectiles normales con sonido Parry y pierde intensidad al recibir daño.
+##    Al romperse emite nubes de humo rosado a ambos lados y detiene el sonido de aura.
+##    Las flechas explosivas ignoran la repulsión y detonan directamente.
 ## 2. Tensado de arco completo sincronizado con la animación antes de soltar la ráfaga.
 ## 3. Flechas idénticas al modelo de la protagonista pero teñidas de color rosado brillante con estela mágica.
 ## 4. Ataque de Disparo Múltiple de 5 flechas consecutivas.
@@ -13,6 +15,7 @@ extends "res://System/Core/EnemyBase.gd"
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const PROJECTILE_SCALE: Vector3 = Vector3.ONE
+const AURA_SOUND: AudioStream = preload("res://TEST_/Aura.mp3")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS & CONFIGURACIÓN
@@ -50,6 +53,7 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 var aura_vida: int = 4
 var aura_vfx_node: Node3D = null
 var aura_anim_player: AnimationPlayer = null
+var aura_audio_player: AudioStreamPlayer3D = null
 
 var is_shooting_burst: bool = false
 var esta_reposicionando: bool = false
@@ -131,6 +135,22 @@ func _setup_aura_vfx() -> void:
 		if aura_anim_player and aura_anim_player.has_animation("main"):
 			aura_anim_player.play("main")
 
+	# Reproductor de audio continuo del aura protectora
+	if not aura_audio_player:
+		aura_audio_player = AudioStreamPlayer3D.new()
+		aura_audio_player.name = "AuraAudioPlayer"
+		aura_audio_player.stream = AURA_SOUND
+		aura_audio_player.unit_size = 25.0
+		aura_audio_player.max_db = 6.0
+		aura_audio_player.volume_db = 2.0
+		aura_audio_player.bus = "Master"
+		aura_audio_player.finished.connect(func() -> void:
+			if is_instance_valid(aura_audio_player) and aura_vida > 0 and is_inside_tree() and current_state != State.DYING and current_state != State.DEAD:
+				aura_audio_player.play()
+		)
+		add_child(aura_audio_player)
+		aura_audio_player.play()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTERACCIÓN CON EL AURA ROSADA (REPULSIÓN Y REDUCCIÓN DE INTENSIDAD)
@@ -171,6 +191,11 @@ func _actualizar_intensidad_aura() -> void:
 	if light_node:
 		tween.parallel().tween_property(light_node, "light_energy", 4.0 * ratio, 0.2)
 
+	if aura_audio_player and is_instance_valid(aura_audio_player):
+		var target_db: float = lerpf(-8.0, 2.0, ratio)
+		var tween_audio := create_tween()
+		tween_audio.tween_property(aura_audio_player, "volume_db", target_db, 0.2)
+
 	if aura_anim_player and aura_anim_player.has_animation("main"):
 		aura_anim_player.stop()
 		aura_anim_player.play("main")
@@ -181,6 +206,14 @@ func _romper_aura() -> void:
 	AudioManager.play_sfx("shield_break", 5.0)
 
 	_spawn_smoke_aura_break()
+
+	if aura_audio_player and is_instance_valid(aura_audio_player):
+		var tween_audio := create_tween()
+		tween_audio.tween_property(aura_audio_player, "volume_db", -40.0, 0.2)
+		tween_audio.tween_callback(func() -> void:
+			if is_instance_valid(aura_audio_player):
+				aura_audio_player.stop()
+		)
 
 	if aura_vfx_node and is_instance_valid(aura_vfx_node):
 		var tween := create_tween()
@@ -445,6 +478,9 @@ func take_damage(amount: float) -> void:
 
 
 func _on_state_dying() -> void:
+	if aura_audio_player and is_instance_valid(aura_audio_player):
+		aura_audio_player.stop()
+
 	if aura_vfx_node and is_instance_valid(aura_vfx_node):
 		aura_vfx_node.visible = false
 
@@ -465,6 +501,12 @@ func _on_state_dying() -> void:
 			if is_instance_valid(self) and is_inside_tree():
 				_die()
 	)
+
+
+func _exit_tree() -> void:
+	if aura_audio_player and is_instance_valid(aura_audio_player):
+		aura_audio_player.stop()
+	super._exit_tree()
 
 
 func _dropear_power_up_multiple() -> void:
