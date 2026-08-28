@@ -112,7 +112,153 @@ func _find_mesh_instance(node: Node):
 		_find_mesh_instance(child)
 
 
+# Estado Gris Metálico (Reflejante)
+const TEXTURA_ICONO_ESCUDO: Texture2D = preload("res://TEST_/Icono escudo gis.png")
+var es_metalico: bool = false
+var aguante_metalico: int = 0
+var material_metalico: StandardMaterial3D = null
+var _icono_potenciado: Sprite3D = null
+var _icono_tween: Tween = null
+
+
+func _process(_delta: float) -> void:
+	if es_metalico and _icono_potenciado and _icono_potenciado.visible:
+		var t := Time.get_ticks_msec() / 1000.0
+		_icono_potenciado.position.y = 1.45 + sin(t * 3.5) * 0.06
+
+
+## Activa el modo metálico gris: refleja flechas y absorbe hasta 2 golpes (no acumulable)
+func activar_modo_metalico(aguante: int = 2) -> void:
+	es_metalico = true
+	aguante_metalico = min(aguante, 2)  # No acumulable: máximo 2 de aguante
+	_crear_material_metalico()
+	_aplicar_visual_metalico()
+	_mostrar_icono_potenciado()
+
+
+## Desactiva el modo metálico y regresa al material original de madera
+func desactivar_modo_metalico() -> void:
+	es_metalico = false
+	aguante_metalico = 0
+	_actualizar_visual_dano()
+	_ocultar_icono_potenciado()
+
+
+func es_reflejante() -> bool:
+	return es_metalico and aguante_metalico > 0
+
+
+func _setup_icono_potenciado() -> void:
+	if _icono_potenciado:
+		return
+
+	_icono_potenciado = Sprite3D.new()
+	_icono_potenciado.name = "IconoEscudoPotenciado"
+	_icono_potenciado.texture = TEXTURA_ICONO_ESCUDO
+	_icono_potenciado.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_icono_potenciado.pixel_size = 0.0013  # Icono pequeño, nítido y estilizado
+	_icono_potenciado.shaded = false
+	_icono_potenciado.no_depth_test = false
+	_icono_potenciado.render_priority = 6
+	_icono_potenciado.position = Vector3(0.0, 1.25, 0.0)  # Flotando sobre la parte superior del escudo
+	_icono_potenciado.modulate = Color(1.2, 1.2, 1.3, 0.0)
+	_icono_potenciado.visible = false
+	add_child(_icono_potenciado)
+
+
+func _mostrar_icono_potenciado() -> void:
+	_setup_icono_potenciado()
+	if not _icono_potenciado:
+		return
+
+	_icono_potenciado.visible = true
+	if _icono_tween and _icono_tween.is_valid():
+		_icono_tween.kill()
+
+	_icono_potenciado.scale = Vector3.ZERO
+	_icono_potenciado.modulate.a = 0.0
+
+	_icono_tween = create_tween().set_parallel(true)
+	_icono_tween.tween_property(_icono_potenciado, "scale", Vector3.ONE * 0.8, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_icono_tween.tween_property(_icono_potenciado, "modulate:a", 1.0, 0.2)
+
+
+func _ocultar_icono_potenciado() -> void:
+	if not _icono_potenciado or not _icono_potenciado.visible:
+		return
+
+	if _icono_tween and _icono_tween.is_valid():
+		_icono_tween.kill()
+
+	_icono_tween = create_tween().set_parallel(true)
+	_icono_tween.tween_property(_icono_potenciado, "scale", Vector3.ZERO, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_icono_tween.tween_property(_icono_potenciado, "modulate:a", 0.0, 0.2)
+	_icono_tween.chain().tween_callback(func():
+		if is_instance_valid(_icono_potenciado):
+			_icono_potenciado.visible = false
+	)
+
+
+## Recibe un impacto reflejante de flecha enemiga
+func recibir_golpe_reflejo(flecha: Node = null) -> void:
+	if not es_reflejante():
+		recibir_golpe(1)
+		return
+
+	# Reducir aguante metálico
+	aguante_metalico -= 1
+	AudioManager.play_sfx("parry")
+
+	# Destello plateado de bloqueo
+	_flash_metalico()
+
+	if aguante_metalico <= 0:
+		desactivar_modo_metalico()
+
+
+func _crear_material_metalico() -> void:
+	if material_metalico:
+		return
+	material_metalico = StandardMaterial3D.new()
+	if material_original is StandardMaterial3D:
+		material_metalico.albedo_texture = material_original.albedo_texture
+		material_metalico.shading_mode = material_original.shading_mode
+		material_metalico.next_pass = material_original.next_pass
+	material_metalico.albedo_color = Color(0.68, 0.72, 0.82, 1.0)  # Tinte gris metálico acerado
+	material_metalico.metallic = 0.8
+	material_metalico.roughness = 0.25
+	material_metalico.emission_enabled = true
+	material_metalico.emission = Color(0.5, 0.7, 0.9)
+	material_metalico.emission_energy_multiplier = 0.4
+
+
+func _aplicar_visual_metalico() -> void:
+	if mesh_instance and material_metalico:
+		mesh_instance.set_surface_override_material(0, material_metalico)
+
+
+func _flash_metalico() -> void:
+	if not mesh_instance:
+		return
+	var flash_mat := StandardMaterial3D.new()
+	flash_mat.emission_enabled = true
+	flash_mat.emission = Color(0.8, 0.95, 1.0)
+	flash_mat.emission_energy_multiplier = 4.0
+	mesh_instance.set_surface_override_material(0, flash_mat)
+
+	await get_tree().create_timer(duracion_flash).timeout
+	if is_instance_valid(self) and mesh_instance:
+		if es_metalico and aguante_metalico > 0:
+			_aplicar_visual_metalico()
+		else:
+			_actualizar_visual_dano()
+
+
 func recibir_golpe(amount: int = 1):
+	if es_metalico and aguante_metalico > 0:
+		recibir_golpe_reflejo(null)
+		return
+
 	golpes_recibidos += amount
 
 	# Reproducir sonido de daño al escudo
@@ -131,6 +277,10 @@ func recibir_golpe(amount: int = 1):
 
 
 func _actualizar_visual_dano():
+	if es_metalico and aguante_metalico > 0:
+		_aplicar_visual_metalico()
+		return
+
 	if not mesh_instance or not material_dano:
 		return
 
@@ -163,12 +313,16 @@ func _flash_dano():
 
 	await get_tree().create_timer(duracion_flash).timeout
 
-	# Volver al material de daño
-	if mesh_instance and material_dano:
-		mesh_instance.set_surface_override_material(0, material_dano)
+	# Volver al material correspondiente
+	if mesh_instance:
+		if es_metalico and aguante_metalico > 0:
+			_aplicar_visual_metalico()
+		elif material_dano:
+			mesh_instance.set_surface_override_material(0, material_dano)
 
 
 func _destruir():
+	_ocultar_icono_potenciado()
 	destruido.emit()
 	AudioManager.play_shield_break()
 

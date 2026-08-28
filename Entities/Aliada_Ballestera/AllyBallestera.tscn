@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://b237jks81901a"]
+
+[ext_resource type="Script" uid="uid://csxba7289y1k2" path="res://Entities/Aliada_Ballestera/AllyBallestera.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://c21688k7g1tgd" path="res://TEST_/Ballestera_Aliada/BALLESTERA_ALIADA.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://bg41ujege14mr" path="res://Entities/Enemigo_Goblin/BALLES_GOBLING.glb" id="3_ballesta"]
+
+[node name="AllyBallestera" type="Node3D" unique_id=718293019]
+script = ExtResource("1_script")
+
+[node name="BallesteraModel" parent="." unique_id=928371028 instance=ExtResource("2_glb")]
+transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="BallesteraModel/Armature/Skeleton3D" index="1" unique_id=819203941]
+bone_name = "mixamorig_RightHandIndex1"
+bone_idx = 33
+
+[node name="BALLES_GOBLING" parent="BallesteraModel/Armature/Skeleton3D/BoneAttachment3D" unique_id=592817203 instance=ExtResource("3_ballesta")]
+transform = Transform3D(14.5, 76.2, -18.4, 76.2, -14.5, 12.0, 12.0, -18.4, -76.2, -1.5, 14.0, 2.5)
+
+[editable path="BallesteraModel"]

@@ -287,6 +287,11 @@ func _recolorear_flecha_mano() -> void:
 	if "color_proyectil" in flecha_visual_mano:
 		flecha_visual_mano.color_proyectil = color_proyectil_lonko
 
+	if flecha_visual_mano.has_method("_create_material"):
+		flecha_visual_mano._create_material()
+	if flecha_visual_mano.has_method("_aplicar_visuales_cacheados"):
+		flecha_visual_mano._aplicar_visuales_cacheados()
+
 	if "trail_particles" in flecha_visual_mano and flecha_visual_mano.trail_particles:
 		var tp: GPUParticles3D = flecha_visual_mano.trail_particles
 		if tp.process_material is ParticleProcessMaterial:
@@ -1398,8 +1403,14 @@ func _lanzar_flecha_mano() -> Node3D:
 		arrow.reparent(get_tree().root, true)
 
 	var proyectil := arrow as EnemyProjectileBase
-	if proyectil and proyectil.has_method("activar_como_proyectil"):
-		proyectil.activar_como_proyectil()
+	if proyectil:
+		proyectil.color_proyectil = color_proyectil_lonko
+		if proyectil.has_method("_create_material"):
+			proyectil._create_material()
+		if proyectil.has_method("_aplicar_visuales_cacheados"):
+			proyectil._aplicar_visuales_cacheados()
+		if proyectil.has_method("activar_como_proyectil"):
+			proyectil.activar_como_proyectil()
 
 	# La mano queda vacía: instanciar una nueva flecha oculta para el próximo ciclo
 	flecha_visual_mano = null

@@ -240,6 +240,12 @@ func _on_body_entered(body: Node) -> void:
 			if "es_escudo_enemigo" in body and body.es_escudo_enemigo:
 				return # Pasa a través del escudo enemigo
 			
+			if body.has_method("es_reflejante") and body.es_reflejante():
+				body.recibir_golpe_reflejo(self)
+				AudioManager.play_sfx("parry")
+				_safe_destroy()
+				return
+
 			body.recibir_golpe()
 			_on_impacto_con_escudo(body)
 			AudioManager.play_sfx("shield_hit_arrow")

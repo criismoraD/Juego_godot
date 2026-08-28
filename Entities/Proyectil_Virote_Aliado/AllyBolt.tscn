@@ -1,0 +1,67 @@
+[gd_scene format=3 uid="uid://c8371904y18ab"]
+
+[ext_resource type="Script" uid="uid://b82819273y189" path="res://Entities/Proyectil_Virote_Aliado/AllyBolt.gd" id="1_script"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_arrow"]
+radius = 0.02
+height = 0.22
+
+[sub_resource type="StandardMaterial3D" id="mat_preview_arrow"]
+shading_mode = 0
+albedo_color = Color(0.25, 0.8, 1, 1)
+
+[sub_resource type="CylinderMesh" id="mesh_body"]
+material = SubResource("mat_preview_arrow")
+top_radius = 0.015
+bottom_radius = 0.015
+height = 0.25
+radial_segments = 6
+rings = 1
+
+[sub_resource type="CylinderMesh" id="mesh_tip"]
+material = SubResource("mat_preview_arrow")
+top_radius = 0.0
+bottom_radius = 0.03
+height = 0.08
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ParticleProcessMaterial" id="trail_proc"]
+direction = Vector3(-1, 0, 0)
+spread = 6.0
+initial_velocity_min = 0.4
+initial_velocity_max = 0.8
+gravity = Vector3(0, -0.1, 0)
+scale_min = 0.3
+scale_max = 0.7
+color = Color(0.25, 0.8, 1, 1)
+
+[sub_resource type="SphereMesh" id="trail_sphere"]
+radius = 0.012
+height = 0.024
+
+[node name="AllyBolt" type="Area3D" unique_id=1918087389]
+collision_layer = 4
+collision_mask = 71
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1955332522]
+transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("CapsuleShape_arrow")
+
+[node name="ArrowModel" type="Node3D" parent="." unique_id=1131730384]
+
+[node name="Body" type="MeshInstance3D" parent="ArrowModel" unique_id=1105866138]
+transform = Transform3D(2.2948479e-08, 0.61, 0, -0.525, 2.6663947e-08, 0, 0, 0, 0.525, -0.005743481, 0, 0)
+mesh = SubResource("mesh_body")
+
+[node name="Tip" type="MeshInstance3D" parent="ArrowModel" unique_id=1522693991]
+transform = Transform3D(2.076291e-08, 0.475, 0, -0.475, 2.076291e-08, 0, 0, 0, 0.475, 0.0793409, 0, 0)
+mesh = SubResource("mesh_tip")
+
+[node name="TrailParticles" type="GPUParticles3D" parent="." unique_id=1162098694]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0, 0)
+material_override = SubResource("mat_preview_arrow")
+amount = 14
+process_material = SubResource("trail_proc")
+draw_pass_1 = SubResource("trail_sphere")

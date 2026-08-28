@@ -50,6 +50,17 @@ var _vignette_tween: Tween = null
 const TEXTURA_ICONO_PUERTA: Texture2D = preload("res://TEST_/Icono puerta.png")
 var _icono_puerta: TextureRect = null
 var _tween_icono_puerta: Tween = null
+var marco_texto_defensora: Control = null
+var texto_defensora: Label = null
+var _tween_marco_defensora: Tween = null
+var _tween_texto_defensora: Tween = null
+var min_ancho_marco_defensora: float = 240.0
+var max_ancho_marco_defensora: float = 750.0
+var min_alto_marco_defensora: float = 70.0
+var padding_defensora: Vector2 = Vector2(28.0, 18.0)
+var texto_defensora_personalizado: String = "¡Distingo varias siluetas en el horizonte!"
+var velocidad_escritura_defensora: float = 0.025
+var duracion_defensora_defecto: float = 4.5
 # === TOGGLE UI ===
 var bottom_panel: Control
 var toggle_ui_btn: Button
@@ -70,6 +81,10 @@ var btn_toggle_shields: Button
 var btn_toggle_allies: Button
 var btn_revive_allies: Button
 var btn_kill_allies: Button
+var btn_tipo_defensoras: Button
+const ESCENA_BALLESTERA_ALIADA: PackedScene = preload("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
+const ESCENA_ARQUERA_ALIADA: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+static var usar_ballesteras: bool = false
 var plantillas_aliadas: Array = []  # [{name, parent_path, global_transform, template}]
 # === NODOS DE EFECTOS ===
 var world_environment: WorldEnvironment = null
@@ -121,6 +136,7 @@ var resolution_labels: Array = [
 func _ready():
 	add_to_group("game_ui")
 	layer = 100
+	_asegurar_marco_texto_defensora()
 	_Aplicar_Calidad(1)
 	outlines_enabled = true
 	outline_proy_enabled = true
@@ -457,6 +473,40 @@ func _create_pause_panel():
 	)
 	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
 	hbox_nav_debug.add_child(debug_btn)
+
+	btn_tipo_defensoras = Button.new()
+	btn_tipo_defensoras.text = "🏹 DEFENSORAS: BALLESTERAS" if usar_ballesteras else "🏹 DEFENSORAS: ARQUERAS"
+	btn_tipo_defensoras.custom_minimum_size = Vector2(235, 40)
+	btn_tipo_defensoras.pressed.connect(_alternar_tipo_defensoras)
+	_style_button(btn_tipo_defensoras, Color(0.2, 0.55, 0.75) if usar_ballesteras else Color(0.7, 0.35, 0.15))
+	hbox_nav_debug.add_child(btn_tipo_defensoras)
+
+	# Fila de Diálogo Defensora (Prueba en vivo)
+	var hbox_dialogo_def = HBoxContainer.new()
+	hbox_dialogo_def.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox_dialogo_def.add_theme_constant_override("separation", 10)
+	hbox_dialogo_def.visible = debug_ui_enabled
+	vbox.add_child(hbox_dialogo_def)
+
+	var line_edit_dialogo = LineEdit.new()
+	line_edit_dialogo.placeholder_text = "Escribe el texto de la defensora..."
+	line_edit_dialogo.text = texto_defensora_personalizado
+	line_edit_dialogo.custom_minimum_size = Vector2(300, 38)
+	hbox_dialogo_def.add_child(line_edit_dialogo)
+
+	var btn_probar_dialogo = Button.new()
+	btn_probar_dialogo.text = "💬 Mostrar Diálogo"
+	btn_probar_dialogo.custom_minimum_size = Vector2(170, 38)
+	btn_probar_dialogo.pressed.connect(
+		func():
+			var txt: String = line_edit_dialogo.text.strip_edges()
+			if txt.is_empty():
+				txt = texto_defensora_personalizado
+			_toggle_pause()
+			mostrar_texto_defensora(txt, duracion_defensora_defecto, true)
+	)
+	_style_button(btn_probar_dialogo, Color(0.7, 0.25, 0.55))
+	hbox_dialogo_def.add_child(btn_probar_dialogo)
 
 	# ═══════════════ CALIDAD GRÁFICA ═══════════════
 	var sep_calidad = HSeparator.new()
@@ -1484,10 +1534,10 @@ func _toggle_imp_blood_color():
 
 
 func _toggle_aliadas():
-	"""Toggle ON/OFF de todas las arqueras aliadas"""
+	"""Toggle ON/OFF de todas las defensoras aliadas"""
 	allies_enabled = not allies_enabled
 	for ally in AllyArcher.active_allies_cache:
-		if ally is AllyArcher:
+		if is_instance_valid(ally):
 			_aplicar_estado_aliada(ally)
 
 	if is_instance_valid(btn_toggle_allies):
@@ -1499,11 +1549,66 @@ func _toggle_aliadas():
 			_style_button(btn_toggle_allies, Color(0.4, 0.4, 0.4))
 
 
+## Alterna en tiempo real entre Arqueras y Ballesteras para las defensoras de la muralla
+func _alternar_tipo_defensoras() -> void:
+	usar_ballesteras = not usar_ballesteras
+	var nueva_escena: PackedScene = ESCENA_BALLESTERA_ALIADA if usar_ballesteras else ESCENA_ARQUERA_ALIADA
+
+	var aliadas_a_reemplazar: Array[Node] = []
+	for ally in AllyArcher.active_allies_cache.duplicate():
+		if is_instance_valid(ally):
+			aliadas_a_reemplazar.append(ally)
+
+	if aliadas_a_reemplazar.is_empty():
+		for a in get_tree().get_nodes_in_group("allies"):
+			if a is Node3D and is_instance_valid(a) and not (a is StaticBody3D) and not (a is CollisionShape3D):
+				aliadas_a_reemplazar.append(a)
+
+	for vieja_aliada in aliadas_a_reemplazar:
+		if not is_instance_valid(vieja_aliada):
+			continue
+		var parent = vieja_aliada.get_parent()
+		if not parent:
+			continue
+
+		var t_global = vieja_aliada.global_transform
+		var vida_act = vieja_aliada.health if "health" in vieja_aliada else 2
+		var f_exp = vieja_aliada.flechas_explosivas if "flechas_explosivas" in vieja_aliada else 0
+		var f_mult = vieja_aliada.flechas_multiples if "flechas_multiples" in vieja_aliada else 0
+		var nombre_orig = vieja_aliada.name
+
+		vieja_aliada.queue_free()
+		AllyArcher.active_allies_cache.erase(vieja_aliada)
+
+		var nueva_aliada: Node3D = nueva_escena.instantiate() as Node3D
+		nueva_aliada.name = nombre_orig
+		parent.add_child(nueva_aliada)
+		nueva_aliada.global_transform = t_global
+		if "health" in nueva_aliada:
+			nueva_aliada.health = vida_act
+		if "flechas_explosivas" in nueva_aliada:
+			nueva_aliada.flechas_explosivas = f_exp
+		if "flechas_multiples" in nueva_aliada:
+			nueva_aliada.flechas_multiples = f_mult
+
+	_actualizar_boton_tipo_defensoras()
+
+
+func _actualizar_boton_tipo_defensoras() -> void:
+	if is_instance_valid(btn_tipo_defensoras):
+		if usar_ballesteras:
+			btn_tipo_defensoras.text = "🏹 DEFENSORAS: BALLESTERAS"
+			_style_button(btn_tipo_defensoras, Color(0.2, 0.55, 0.75))
+		else:
+			btn_tipo_defensoras.text = "🏹 DEFENSORAS: ARQUERAS"
+			_style_button(btn_tipo_defensoras, Color(0.7, 0.35, 0.15))
+
+
 func _guardar_plantillas_aliadas():
 	"""Guarda una plantilla de cada aliada inicial para poder revivirla por debug."""
 	plantillas_aliadas.clear()
 	for ally in AllyArcher.active_allies_cache:
-		if not (ally is AllyArcher):
+		if not is_instance_valid(ally):
 			continue
 		var plantilla: Node = ally.duplicate()
 		if not plantilla:
@@ -1521,19 +1626,22 @@ func _guardar_plantillas_aliadas():
 		)
 
 
-func _buscar_aliada_por_nombre(nombre_aliada: String) -> AllyArcher:
+func _buscar_aliada_por_nombre(nombre_aliada: String) -> Node:
 	for ally in AllyArcher.active_allies_cache:
-		if ally is AllyArcher and ally.name == nombre_aliada:
+		if is_instance_valid(ally) and ally.name == nombre_aliada:
 			return ally
 	return null
 
 
-func _aplicar_estado_aliada(ally: AllyArcher):
+func _aplicar_estado_aliada(ally: Node):
 	if not ally or not is_instance_valid(ally):
 		return
-	ally.visible = allies_enabled
-	ally.set_process(allies_enabled)
-	ally.set_physics_process(allies_enabled)
+	if "visible" in ally:
+		ally.visible = allies_enabled
+	if ally.has_method("set_process"):
+		ally.set_process(allies_enabled)
+	if ally.has_method("set_physics_process"):
+		ally.set_physics_process(allies_enabled)
 	var hitbox = ally.get("hitbox_body")
 	if hitbox and is_instance_valid(hitbox):
 		hitbox.collision_layer = 2 if allies_enabled else 0
@@ -1910,3 +2018,219 @@ func activar_efecto_viñeta_cuerno(duracion: float = 3.8) -> void:
 	# Transición de salida suave (fade-out gradual en 1.3 segundos)
 	_vignette_tween.tween_property(vignette_rect, "modulate:a", 0.0, 1.3) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## Obtiene la posición en pantalla del punto de nacimiento del diálogo
+func _obtener_posicion_nacimiento_dialogo() -> Vector2:
+	var punto := get_node_or_null("%PuntoNacimientoDialogo")
+	if punto and is_instance_valid(punto):
+		if "global_position" in punto:
+			return punto.global_position
+		elif "position" in punto:
+			return punto.position
+	return Vector2(960.0, 220.0)
+
+
+## Crea o asegura la existencia de los nodos del marco y texto de la defensora por código
+func _asegurar_marco_texto_defensora() -> void:
+	if marco_texto_defensora and is_instance_valid(marco_texto_defensora) and texto_defensora and is_instance_valid(texto_defensora):
+		return
+
+	# Globo de diálogo generado 100% por código vectorial (sin imagen externa)
+	var panel := PanelContainer.new()
+	panel.name = "MarcoTextoDefensora"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.visible = false
+
+	# Estilo premium del globo de diálogo (StyleBoxFlat)
+	var estilo_globo := StyleBoxFlat.new()
+	estilo_globo.bg_color = Color(0.11, 0.08, 0.16, 0.95)  # Fondo oscuro fantástico con transparencia
+	estilo_globo.border_color = Color(0.95, 0.76, 0.35, 1.0)  # Borde dorado elegante
+	estilo_globo.set_border_width_all(3)
+	estilo_globo.set_corner_radius_all(18)
+	estilo_globo.corner_detail = 8
+	estilo_globo.shadow_color = Color(0.0, 0.0, 0.0, 0.65)
+	estilo_globo.shadow_size = 10
+	estilo_globo.shadow_offset = Vector2(0, 4)
+	estilo_globo.content_margin_left = padding_defensora.x
+	estilo_globo.content_margin_right = padding_defensora.x
+	estilo_globo.content_margin_top = padding_defensora.y
+	estilo_globo.content_margin_bottom = padding_defensora.y
+	panel.add_theme_stylebox_override("panel", estilo_globo)
+
+	var lbl := Label.new()
+	lbl.name = "TextoDefensora"
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.96, 0.88, 1.0))
+	lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
+	lbl.add_theme_constant_override("shadow_offset_x", 1)
+	lbl.add_theme_constant_override("shadow_offset_y", 1)
+	lbl.add_theme_font_size_override("font_size", 22)
+	panel.add_child(lbl)
+
+	add_child(panel)
+	marco_texto_defensora = panel
+	texto_defensora = lbl
+
+
+## Muestra un diálogo a partir de un nodo PuntoNacimientoDialogo específico
+func mostrar_dialogo_desde_punto(punto: PuntoNacimientoDialogo) -> Vector2:
+	if not punto or not is_instance_valid(punto):
+		return Vector2.ZERO
+
+	_asegurar_marco_texto_defensora()
+	if not marco_texto_defensora or not texto_defensora:
+		return Vector2.ZERO
+
+	# Aplicar colores y estilos configurados en este nodo específico
+	var panel := marco_texto_defensora as PanelContainer
+	if panel:
+		var sb := panel.get_theme_stylebox("panel") as StyleBoxFlat
+		if sb:
+			sb.border_color = punto.color_borde
+			sb.bg_color = punto.color_fondo
+
+	if punto.tamano_fuente > 0:
+		texto_defensora.add_theme_font_size_override("font_size", punto.tamano_fuente)
+
+	min_ancho_marco_defensora = punto.ancho_minimo
+	max_ancho_marco_defensora = punto.ancho_maximo
+	velocidad_escritura_defensora = punto.velocidad_escritura
+
+	return mostrar_texto_defensora(punto.texto, punto.duracion, true, punto.global_position)
+
+
+## Muestra el texto de la defensora redimensionando automáticamente el marco a su contenido
+func mostrar_texto_defensora(texto: String, duracion: float = 0.0, animar: bool = true, pos_override: Vector2 = Vector2.ZERO) -> Vector2:
+	_asegurar_marco_texto_defensora()
+	if not marco_texto_defensora or not texto_defensora:
+		return Vector2.ZERO
+
+	if _tween_marco_defensora and _tween_marco_defensora.is_valid():
+		_tween_marco_defensora.kill()
+	if _tween_texto_defensora and _tween_texto_defensora.is_valid():
+		_tween_texto_defensora.kill()
+
+	var estaba_oculto: bool = not marco_texto_defensora.visible or marco_texto_defensora.modulate.a <= 0.05
+	var tamano_final: Vector2 = escalar_marco_a_texto(texto, pos_override)
+	marco_texto_defensora.visible = true
+
+	if animar:
+		_tween_marco_defensora = marco_texto_defensora.create_tween().set_parallel(true)
+		if estaba_oculto:
+			# Animación de apertura y expansión orgánica del marco desde el punto de nacimiento
+			marco_texto_defensora.modulate.a = 0.0
+			marco_texto_defensora.scale = Vector2(0.2, 0.2)
+			_tween_marco_defensora.tween_property(marco_texto_defensora, "modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			_tween_marco_defensora.tween_property(marco_texto_defensora, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		else:
+			# Rebote suave de actualización si ya estaba en pantalla
+			_tween_marco_defensora.tween_property(marco_texto_defensora, "scale", Vector2(1.05, 1.05), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			_tween_marco_defensora.chain().tween_property(marco_texto_defensora, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+		# Animación de máquina de escribir (Typewriter)
+		texto_defensora.visible_ratio = 0.0
+		var tiempo_revelado: float = clampf(float(texto.length()) * velocidad_escritura_defensora, 0.25, 1.8)
+		_tween_texto_defensora = texto_defensora.create_tween()
+		_tween_texto_defensora.tween_property(texto_defensora, "visible_ratio", 1.0, tiempo_revelado).set_trans(Tween.TRANS_LINEAR)
+	else:
+		marco_texto_defensora.modulate.a = 1.0
+		marco_texto_defensora.scale = Vector2.ONE
+		texto_defensora.visible_ratio = 1.0
+
+	if duracion > 0.0:
+		get_tree().create_timer(duracion, false).timeout.connect(func() -> void:
+			if is_instance_valid(self) and is_inside_tree():
+				ocultar_texto_defensora(true)
+		)
+
+	return tamano_final
+
+
+## Oculta el marco de texto de la defensora
+func ocultar_texto_defensora(animar: bool = true) -> void:
+	if not marco_texto_defensora or not marco_texto_defensora.visible:
+		return
+
+	if _tween_marco_defensora and _tween_marco_defensora.is_valid():
+		_tween_marco_defensora.kill()
+	if _tween_texto_defensora and _tween_texto_defensora.is_valid():
+		_tween_texto_defensora.kill()
+
+	if animar:
+		_tween_marco_defensora = marco_texto_defensora.create_tween().set_parallel(true)
+		_tween_marco_defensora.tween_property(marco_texto_defensora, "modulate:a", 0.0, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		_tween_marco_defensora.tween_property(marco_texto_defensora, "scale", Vector2(0.8, 0.8), 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		_tween_marco_defensora.chain().tween_callback(func() -> void:
+			if is_instance_valid(marco_texto_defensora):
+				marco_texto_defensora.visible = false
+				marco_texto_defensora.scale = Vector2.ONE
+		)
+	else:
+		marco_texto_defensora.visible = false
+		marco_texto_defensora.modulate.a = 1.0
+		marco_texto_defensora.scale = Vector2.ONE
+
+
+## Calcula y ajusta el tamaño del marco proporcionalmente a cualquier texto
+func escalar_marco_a_texto(texto: String, pos_override: Vector2 = Vector2.ZERO) -> Vector2:
+	_asegurar_marco_texto_defensora()
+	if not marco_texto_defensora or not texto_defensora:
+		return Vector2.ZERO
+
+	texto_defensora.text = texto
+
+	var font: Font = texto_defensora.get_theme_default_font()
+	var font_size: int = texto_defensora.get_theme_font_size("font_size")
+	if font_size <= 0:
+		font_size = 22
+
+	# 1. Medir ancho de la línea más ancha
+	var lineas: PackedStringArray = texto.split("\n")
+	var max_ancho_linea: float = 0.0
+	for linea in lineas:
+		if font:
+			var linea_size := font.get_string_size(linea, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+			max_ancho_linea = maxf(max_ancho_linea, linea_size.x)
+		else:
+			max_ancho_linea = maxf(max_ancho_linea, float(linea.length()) * 13.0)
+
+	# 2. Determinar ancho total deseado con márgenes
+	var target_w: float = clampf(max_ancho_linea + padding_defensora.x * 2.0, min_ancho_marco_defensora, max_ancho_marco_defensora)
+	var content_w: float = target_w - padding_defensora.x * 2.0
+
+	# 3. Estimar altura con autowrap
+	var total_lines_est: float = 0.0
+	for linea in lineas:
+		if font and content_w > 0.0:
+			var w_single := font.get_string_size(linea, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+			total_lines_est += maxf(1.0, ceilf(w_single / content_w))
+		else:
+			total_lines_est += 1.0
+
+	var line_height: float = float(font_size) + 8.0
+	var text_h: float = total_lines_est * line_height
+	var target_h: float = maxf(min_alto_marco_defensora, text_h + padding_defensora.y * 2.0)
+
+	var nuevo_tamano := Vector2(target_w, target_h)
+
+	# 4. Asignar tamaño al marco y centrarlo en la posición de nacimiento
+	var pos_nacimiento: Vector2 = pos_override if pos_override != Vector2.ZERO else _obtener_posicion_nacimiento_dialogo()
+	marco_texto_defensora.size = nuevo_tamano
+	marco_texto_defensora.custom_minimum_size = nuevo_tamano
+	marco_texto_defensora.pivot_offset = nuevo_tamano * 0.5
+	marco_texto_defensora.global_position = pos_nacimiento - nuevo_tamano * 0.5
+
+	return nuevo_tamano
+
+
+## Permite posicionar el marco en coordenadas específicas de pantalla
+func posicionar_marco_defensora(pos_pantalla: Vector2) -> void:
+	_asegurar_marco_texto_defensora()
+	if not marco_texto_defensora:
+		return
+	marco_texto_defensora.global_position = pos_pantalla - marco_texto_defensora.size * 0.5

@@ -1,7 +1,10 @@
 class_name GoblinGirlArrowProjectile
 extends "res://System/Core/EnemyProjectileBase.gd"
 
-const GOBLIN_GIRL_ARROW_MAGENTA: Color = Color(1.0, 0.0, 0.85)
+## Flecha de Arquera Goblin: Color rosado brillante con línea de contorno toon negra.
+
+const GOBLIN_GIRL_ARROW_MAGENTA: Color = Color(1.0, 0.38, 0.72, 1.0)  ## Rosado brillante
+const GOBLIN_GIRL_ARROW_PINK: Color = GOBLIN_GIRL_ARROW_MAGENTA
 
 @export_category("Movimiento")
 @export var velocidad: float = 10.0
@@ -12,8 +15,8 @@ var _velocidad_base_capturada: bool = false
 
 
 func _init() -> void:
-	color_proyectil = GOBLIN_GIRL_ARROW_MAGENTA
-	outline_width = 20.0
+	color_proyectil = GOBLIN_GIRL_ARROW_PINK
+	outline_width = 25.0
 
 
 func _ready() -> void:
@@ -36,11 +39,16 @@ func _preparar_visuales() -> void:
 	_create_trail_particles()
 
 
-func _restaurar_visuales_desde_pool() -> void:
+func _aplicar_visuales_cacheados() -> void:
 	for mesh in _cached_mesh_instances:
-		if not is_instance_valid(mesh):
-			continue
-		if mesh is MeshInstance3D:
+		if is_instance_valid(mesh) and mesh is MeshInstance3D:
+			mesh.material_override = projectile_material
+
+
+func _restaurar_visuales_desde_pool() -> void:
+	_aplicar_visuales_cacheados()
+	for mesh in _cached_mesh_instances:
+		if is_instance_valid(mesh) and mesh is MeshInstance3D:
 			mesh.visible = true
 	if trail_particles:
 		trail_particles.process_material = _get_shared_trail_process_material(color_proyectil)

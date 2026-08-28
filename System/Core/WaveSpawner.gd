@@ -439,7 +439,12 @@ func get_active_enemies() -> Array:
 	for i in range(active_goblins.size() - 1, -1, -1):
 		if not is_instance_valid(active_goblins[i]):
 			active_goblins.remove_at(i)
-	return active_goblins
+	var all_enemies: Array = []
+	all_enemies.append_array(active_goblins)
+	for s_imp in get_active_shield_imps():
+		if is_instance_valid(s_imp) and not all_enemies.has(s_imp):
+			all_enemies.append(s_imp)
+	return all_enemies
 
 
 func get_active_shield_imps() -> Array:

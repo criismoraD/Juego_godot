@@ -114,16 +114,34 @@ func _physics_process(delta):
 
 			if ray.is_colliding():
 				var collider = ray.get_collider()
-				# Si detectamos colisión, nos movemos al punto de impacto
-				global_position = ray.get_collision_point()
+				var ignorar_colision: bool = false
+				if collider:
+					if collider.is_in_group("allies") or (tipo_dueño == TipoFlecha.JUGADOR and collider.is_in_group("player")):
+						ignorar_colision = true
+					elif tipo_dueño == TipoFlecha.JUGADOR and (collider.is_in_group("escudos") or collider.has_method("recibir_golpe")):
+						var es_enemigo: bool = false
+						if "es_escudo_enemigo" in collider:
+							es_enemigo = collider.es_escudo_enemigo
+						elif "es_pilar_enemigo" in collider:
+							es_enemigo = collider.es_pilar_enemigo
+						elif collider.is_in_group("enemies"):
+							es_enemigo = true
+						if not es_enemigo:
+							ignorar_colision = true
 
-				if collider is Area3D:
-					_on_area_entered(collider)
+				if ignorar_colision:
+					ray.add_exception(collider)
 				else:
-					_on_body_entered(collider)
+					# Si detectamos colisión válida, nos movemos al punto de impacto
+					global_position = ray.get_collision_point()
 
-				if is_stuck:
-					return
+					if collider is Area3D:
+						_on_area_entered(collider)
+					else:
+						_on_body_entered(collider)
+
+					if is_stuck:
+						return
 	# -------------------------------
 
 	# 3. Mover
@@ -217,6 +235,10 @@ func _on_body_entered(body):
 				if _ray_ccd: _ray_ccd.add_exception(body)
 				return # Ignora el escudo enemigo y pasa de largo
 			else:
+				if body.has_method("es_reflejante") and body.es_reflejante():
+					body.recibir_golpe_reflejo(self)
+					_rebotar_de_aura(body)
+					return
 				body.recibir_golpe()
 				_safe_destroy()
 				return

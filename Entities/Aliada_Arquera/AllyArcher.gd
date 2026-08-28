@@ -463,6 +463,16 @@ func _get_cached_wave_spawner() -> Node:
 	return _cached_wave_spawner
 
 
+func _es_imp_escudo(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	if enemy is ImpShieldGirl or enemy.is_in_group("shield_imps"):
+		return true
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	return ("imp" in n and "escudo" in n) or ("impshield" in n) or ("impshield" in s) or ("imp_escudo" in s)
+
+
 func _contar_enemigos_vivos() -> int:
 	var count = 0
 	var enemies = []
@@ -471,17 +481,22 @@ func _contar_enemigos_vivos() -> int:
 	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
 		enemies = wave_spawner.get_active_enemies()
 	else:
-		# Fallback: Usar arrays estáticos O(1) si no existe WaveSpawner
-		enemies = EnemyBase.active_enemies_cache
+		enemies = get_tree().get_nodes_in_group("enemies")
 
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
+		if _es_imp_escudo(enemy):
+			continue  # No reconocer a la Imp de escudo como objetivo directo (se daña por casualidad)
+		if enemy.get("is_dead") == true or enemy.get("is_dying") == true or enemy.get("muerto") == true:
+			continue
 		if enemy.get("current_state") != null:
-			if (
-				enemy.current_state == EnemyBase.State.DYING
-				or enemy.current_state == EnemyBase.State.DEAD
-			):
+			var st = enemy.current_state
+			if str(st) in ["DYING", "DEAD", "MUERTO"]:
+				continue
+			if enemy is EnemyBase and (st == EnemyBase.State.DYING or st == EnemyBase.State.DEAD):
+				continue
+			if enemy is ImpShieldGirl and (st == ImpShieldGirl.State.DYING or st == ImpShieldGirl.State.DEAD):
 				continue
 		count += 1
 	return count
