@@ -1,9 +1,10 @@
 class_name AllyBallestera
 extends Node3D
 
-## Ballestera Aliada: Defensora con ballesta (modelo BALLES_GOBLING horizontal en mano derecha) y 4 de vida.
+## Ballestera Aliada: Defensora con ballesta medieval realista y 4 de vida.
 ## Mantiene postura de combate fija de pie, cadencia de ataque lenta y pesada, ciclo de 5 disparos
 ## de pie y luego 5 disparos agachada reforzando el escudo de piso.
+## Apuntado orgánico y suave multi-hueso con suavizado exponencial y micro-respiración.
 ## No reconoce a la Imp de escudo como objetivo directo (solo la daña por casualidad de trayectoria).
 ## No hace fijación precisa a enemigos voladores ni arqueras Lonko (dispara al azar hacia el frente),
 ## y celebra con animación VICTORIA al finalizar una oleada.
@@ -71,6 +72,8 @@ var _tiene_escudo_frente: bool = false
 
 static var _cached_wave_spawner: Node = null
 var _spine_bone_idx: int = -1
+var _spine1_bone_idx: int = -1
+var _spine2_bone_idx: int = -1
 var _current_pitch: float = 0.0
 
 
@@ -89,7 +92,9 @@ func _ready():
 
 	skeleton = find_child("Skeleton3D", true, false)
 	if skeleton:
-		_spine_bone_idx = _find_bone_fuzzy(skeleton, ["Spine1", "Spine", "mixamorig_Spine1", "mixamorig:Spine1", "mixamorig_Spine", "mixamorig:Spine"])
+		_spine_bone_idx = _find_bone_fuzzy(skeleton, ["Spine", "mixamorig_Spine", "mixamorig:Spine"])
+		_spine1_bone_idx = _find_bone_fuzzy(skeleton, ["Spine1", "mixamorig_Spine1", "mixamorig:Spine1"])
+		_spine2_bone_idx = _find_bone_fuzzy(skeleton, ["Spine2", "mixamorig_Spine2", "mixamorig:Spine2"])
 
 	_setup_animation_player()
 	_configurar_arma_ballesta()
@@ -162,6 +167,11 @@ func _find_bone_fuzzy(skel: Skeleton3D, names: Array) -> int:
 	for i in range(skel.get_bone_count()):
 		var bname = skel.get_bone_name(i)
 		for n in names:
+			if str(n).to_lower() == bname.to_lower():
+				return i
+	for i in range(skel.get_bone_count()):
+		var bname = skel.get_bone_name(i)
+		for n in names:
 			if str(n).to_lower() in bname.to_lower():
 				return i
 	return -1
@@ -205,12 +215,12 @@ func _configurar_arma_ballesta() -> void:
 		for m in ballesta.find_children("*", "MeshInstance3D", true, false):
 			m.visible = true
 
-		# Postura de frente natural como rifle: cañón al frente (+X), cuerpo erguido (+Y) y culata al hombro
+		# Postura realista de ballesta medieval: arco frontal horizontal, rail superior, culata al hombro y gatillo en mano derecha
 		ballesta.transform = Transform3D(
-			Vector3(14.5, 76.2, 12.0),
-			Vector3(76.2, -14.5, -18.4),
-			Vector3(-18.4, 12.0, -76.2),
-			Vector3(-1.5, 14.0, 2.5)
+			Vector3(78.5, -14.2, 16.8),
+			Vector3(12.4, 76.8, -17.2),
+			Vector3(-18.2, 16.5, 77.4),
+			Vector3(-8.5, 11.0, 1.5)
 		)
 
 
@@ -254,7 +264,7 @@ func _crear_hitbox():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PROCESO Y APUNTADO
+# PROCESO Y APUNTADO ORGÁNICO
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float):
@@ -280,7 +290,7 @@ func _process(delta: float):
 
 
 func _actualizar_apuntado_torso(delta: float) -> void:
-	if not skeleton or _spine_bone_idx == -1:
+	if not skeleton:
 		return
 
 	var en_estados_disparo := (
@@ -291,29 +301,64 @@ func _actualizar_apuntado_torso(delta: float) -> void:
 
 	var target_pitch: float = 0.0
 	if is_instance_valid(objetivo_actual) and not _es_objetivo_azar(objetivo_actual) and en_estados_disparo:
-		var my_pos: Vector3 = global_position + Vector3(0, 0.5, 0)
-		var target_pos: Vector3 = objetivo_actual.global_position + Vector3(0, 0.4, 0)
+		var my_pos: Vector3 = global_position + Vector3(0, 0.75, 0)
+		var target_pos: Vector3 = objetivo_actual.global_position + Vector3(0, 0.45, 0)
 		var dy: float = target_pos.y - my_pos.y
 		var dx: float = absf(target_pos.x - my_pos.x)
-		target_pitch = clampf(-atan2(dy, maxf(dx, 0.1)), deg_to_rad(-25.0), deg_to_rad(20.0))
+		target_pitch = clampf(-atan2(dy, maxf(dx, 0.2)), deg_to_rad(-20.0), deg_to_rad(18.0))
 
-	_current_pitch = lerpf(_current_pitch, target_pitch, 8.0 * delta)
+		# Micro-oscilación suave de respiración y estabilidad al apuntar
+		var breath := sin(Time.get_ticks_msec() * 0.0025) * deg_to_rad(0.5)
+		target_pitch += breath
 
-	if absf(_current_pitch) > 0.002:
-		skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
-		var pose_actual: Transform3D = skeleton.get_bone_global_pose(_spine_bone_idx)
-		var pitch_rotation := Quaternion(Vector3.FORWARD, _current_pitch)
-		var nueva_basis: Basis = pose_actual.basis * Basis(pitch_rotation)
-		skeleton.set_bone_global_pose_override(
-			_spine_bone_idx, Transform3D(nueva_basis, pose_actual.origin), 1.0, false
-		)
+	# Suavizado exponencial orgánico e independiente del framerate
+	var smooth_factor: float = 1.0 - exp(-5.0 * delta)
+	_current_pitch = lerpf(_current_pitch, target_pitch, smooth_factor)
+
+	if absf(_current_pitch) > 0.001:
+		# Distribuir la curvatura del torso naturalmente entre las vértebras
+		var half_pitch: float = _current_pitch * 0.5
+		var pitch_basis := Basis(Quaternion(Vector3.FORWARD, half_pitch))
+
+		if _spine1_bone_idx != -1 and _spine2_bone_idx != -1:
+			skeleton.set_bone_global_pose_override(_spine1_bone_idx, Transform3D.IDENTITY, 0.0, false)
+			var pose1 := skeleton.get_bone_global_pose(_spine1_bone_idx)
+			skeleton.set_bone_global_pose_override(
+				_spine1_bone_idx, Transform3D(pose1.basis * pitch_basis, pose1.origin), 1.0, false
+			)
+
+			skeleton.set_bone_global_pose_override(_spine2_bone_idx, Transform3D.IDENTITY, 0.0, false)
+			var pose2 := skeleton.get_bone_global_pose(_spine2_bone_idx)
+			skeleton.set_bone_global_pose_override(
+				_spine2_bone_idx, Transform3D(pose2.basis * pitch_basis, pose2.origin), 1.0, false
+			)
+		elif _spine1_bone_idx != -1:
+			var full_basis := Basis(Quaternion(Vector3.FORWARD, _current_pitch))
+			skeleton.set_bone_global_pose_override(_spine1_bone_idx, Transform3D.IDENTITY, 0.0, false)
+			var pose1 := skeleton.get_bone_global_pose(_spine1_bone_idx)
+			skeleton.set_bone_global_pose_override(
+				_spine1_bone_idx, Transform3D(pose1.basis * full_basis, pose1.origin), 1.0, false
+			)
+		elif _spine_bone_idx != -1:
+			var full_basis := Basis(Quaternion(Vector3.FORWARD, _current_pitch))
+			skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
+			var pose0 := skeleton.get_bone_global_pose(_spine_bone_idx)
+			skeleton.set_bone_global_pose_override(
+				_spine_bone_idx, Transform3D(pose0.basis * full_basis, pose0.origin), 1.0, false
+			)
 	else:
 		_restaurar_torso()
 
 
 func _restaurar_torso() -> void:
-	if skeleton and _spine_bone_idx != -1:
+	if not skeleton:
+		return
+	if _spine_bone_idx != -1:
 		skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
+	if _spine1_bone_idx != -1:
+		skeleton.set_bone_global_pose_override(_spine1_bone_idx, Transform3D.IDENTITY, 0.0, false)
+	if _spine2_bone_idx != -1:
+		skeleton.set_bone_global_pose_override(_spine2_bone_idx, Transform3D.IDENTITY, 0.0, false)
 
 
 func _process_idle(delta: float):
@@ -371,12 +416,14 @@ func _cambiar_estado(nuevo: State):
 	current_state = nuevo
 	match nuevo:
 		State.IDLE:
+			objetivo_actual = null
 			if fase_agachada:
 				_play_anim("DISPARO_AGACHADO", 0.15, 0.001)
 			else:
 				_fijar_pose_combate()
 			state_timer = randf_range(idle_min, idle_max)
 		State.RELOADING:
+			objetivo_actual = _obtener_objetivo_prioritario()
 			AudioManager.play_sfx("bow_tension", -6.0)
 			if fase_agachada:
 				_play_anim("DISPARO_AGACHADO", 0.15, 0.001)
@@ -384,7 +431,8 @@ func _cambiar_estado(nuevo: State):
 				_fijar_pose_combate()
 			state_timer = tiempo_recarga
 		State.AIMING:
-			objetivo_actual = _obtener_objetivo_prioritario()
+			if not is_instance_valid(objetivo_actual):
+				objetivo_actual = _obtener_objetivo_prioritario()
 			if fase_agachada:
 				_play_anim("DISPARO_AGACHADO", 0.15, 1.0)
 			else:

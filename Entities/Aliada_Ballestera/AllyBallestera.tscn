@@ -15,6 +15,6 @@ bone_name = "mixamorig_RightHandIndex1"
 bone_idx = 33
 
 [node name="BALLES_GOBLING" parent="BallesteraModel/Armature/Skeleton3D/BoneAttachment3D" unique_id=592817203 instance=ExtResource("3_ballesta")]
-transform = Transform3D(14.5, 76.2, -18.4, 76.2, -14.5, 12.0, 12.0, -18.4, -76.2, -1.5, 14.0, 2.5)
+transform = Transform3D(78.5, 12.4, -18.2, -14.2, 76.8, 16.5, 16.8, -17.2, 77.4, -8.5, 11.0, 1.5)
 
 [editable path="BallesteraModel"]
