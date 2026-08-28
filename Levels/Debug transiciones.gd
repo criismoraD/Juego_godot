@@ -1660,12 +1660,6 @@ func _crear_panel_controles_spawn() -> void:
 	btn_flecha_mult.add_theme_font_size_override("font_size", 11)
 	btn_flecha_mult.pressed.connect(func(): if game_ui: game_ui._spawn_flecha_multiple_debug())
 	grid_items.add_child(btn_flecha_mult)
-	var btn_zugenu := Button.new()
-	btn_zugenu.text = "🧟 Zugenu"
-	btn_zugenu.custom_minimum_size = Vector2(84, 26)
-	btn_zugenu.add_theme_font_size_override("font_size", 11)
-	btn_zugenu.pressed.connect(func(): if game_ui: game_ui._spawn_zugenu_debug())
-	grid_items.add_child(btn_zugenu)
 	var btn_debug_exp := Button.new()
 	var update_exp_btn := func():
 		if ExplosionFlechaExplosiva.debug_collider_global:
