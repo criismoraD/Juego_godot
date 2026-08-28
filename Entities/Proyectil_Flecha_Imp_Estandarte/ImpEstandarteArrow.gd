@@ -4,10 +4,10 @@ extends "res://System/Core/EnemyProjectileBase.gd"
 const IMP_ESTANDARTE_ARROW_RED: Color = Color(1.0, 0.06, 0.03)
 
 @export_category("Movimiento")
-@export var velocidad: float = 10.0
-@export var gravedad: float = 1.0
+@export var velocidad: float = 18.0
+@export var gravedad: float = 0.8
 
-var _velocidad_base: float = 10.0
+var _velocidad_base: float = 18.0
 var _velocidad_base_capturada: bool = false
 
 

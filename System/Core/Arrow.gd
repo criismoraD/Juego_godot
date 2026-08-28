@@ -244,6 +244,11 @@ func _on_body_entered(body):
 	if tipo_dueño == TipoFlecha.JUGADOR:
 		# Las flechas del jugador dañan enemigos - daño fijo de 1
 		if body.has_method("take_damage") and body.is_in_group("enemies"):
+			# Verificar interacción con aura repelente (ej: Arquera Rosa)
+			if body.has_method("manejar_impacto_aura") and body.manejar_impacto_aura(self):
+				_rebotar_de_aura(body)
+				return
+
 			if ("_is_invulnerable" in body and body._is_invulnerable) or ("is_invulnerable" in body and body.is_invulnerable):
 				if _ray_ccd: _ray_ccd.add_exception(body)
 				return  # Pasa de largo a través del enemigo invulnerable
@@ -728,3 +733,19 @@ func _explotar(hit_target: Node = null) -> void:
 			expl.global_position = global_position
 
 	_safe_destroy()
+
+
+func _rebotar_de_aura(body: Node) -> void:
+	if _ray_ccd and is_instance_valid(body):
+		_ray_ccd.add_exception(body)
+
+	AudioManager.play_sfx("shield_hit")
+
+	# Impulso de rebote deflectado
+	velocity.x = abs(velocity.x) * randf_range(0.4, 0.7) + 1.2
+	velocity.y = randf_range(2.0, 4.5)
+	velocity.z = randf_range(-0.3, 0.3)
+	collision_mask = 1
+
+	var t := get_tree().create_timer(1.2)
+	t.timeout.connect(_safe_destroy)

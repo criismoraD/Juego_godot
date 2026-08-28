@@ -1,5 +1,5 @@
 class_name Lonko
-extends EnemyBase
+extends "res://System/Core/EnemyBase.gd"
 
 ## Lonko: Enemigo arquero avanzado con 6 puntos de vida.
 ## Nace, camina hasta su posición de tiro, invoca un pilar vinculado emergiendo del suelo con invulnerabilidad,
@@ -23,7 +23,11 @@ const BLEND_ANIMACIONES: float = 0.2  ## Transición suave entre clips (evita el
 const DURACION_ESPEJO_SG: float = 0.15  ## Duración del volteo suave de escala al entrar/salir del IDLE
 
 ## Humo de pisadas: spritesheet SmokeFX Lite 1A-1 (tira horizontal 9x1 de 64px)
-const TEXTURA_HUMO_PISADAS: String = "res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png"
+const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png")
+const TEXTURA_ROCAS_DEFAULT: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS.png")
+const TEXTURA_HUMO_PILAR_RES: Texture2D = preload("res://TEST_/SmokeFX Lite SpriteSheet 1A-8.png")
+const TEXTURA_PIEDRAS_NEGRAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/PIEDRAS_NEGRAS_ DESTRUCION.png")
+const DISSOLVE_SHADER_RES: Shader = preload("res://System/Shaders/dissolve.gdshader")
 const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
 
@@ -154,9 +158,8 @@ func _configurar_particulas_pisada() -> void:
 		return
 
 	var mat := StandardMaterial3D.new()
-	var tex := load(TEXTURA_HUMO_PISADAS) as Texture2D
-	if tex:
-		mat.albedo_texture = tex
+	if TEXTURA_HUMO_PISADAS:
+		mat.albedo_texture = TEXTURA_HUMO_PISADAS
 		# Spritesheet animado: tira horizontal 9x1 (SmokeFX Lite 1A-1)
 		mat.particles_anim_h_frames = HUMO_PISADAS_FRAMES_H
 		mat.particles_anim_v_frames = HUMO_PISADAS_FRAMES_V
@@ -464,6 +467,8 @@ func _process_walking(delta: float) -> void:
 	walked_distance += velocidad_caminar * delta
 
 	if modo_pacifico:
+		velocity.x = -velocidad_caminar
+		walked_distance += velocidad_caminar * delta
 		if global_position.x <= limite_pacifico_x:
 			velocity.x = 0
 			if not pacifico_detenido:
@@ -471,13 +476,30 @@ func _process_walking(delta: float) -> void:
 				_on_pacifico_detenido()
 		return
 
+	var limite_izq: float = _obtener_limite_izquierdo_x()
+	if global_position.x <= limite_izq:
+		velocity.x = 0
+		global_position.x = max(global_position.x, limite_izq)
+		_reached_position = true
+		_base_pos_pilar = global_position
+		_change_state(State.SHOOTING)
+		return
+
+	velocity.x = -velocidad_caminar
+	walked_distance += velocidad_caminar * delta
+
 	if walked_distance >= target_walk_distance:
 		if _check_spacing():
 			_reached_position = true
 			_base_pos_pilar = global_position
 			_change_state(State.SHOOTING)
 		else:
-			target_walk_distance += 0.3
+			if global_position.x - 0.3 > limite_izq:
+				target_walk_distance += 0.3
+			else:
+				_reached_position = true
+				_base_pos_pilar = global_position
+				_change_state(State.SHOOTING)
 
 
 func _on_state_shooting() -> void:
@@ -641,7 +663,7 @@ func _crear_particulas_rocas_pilar(bx: float, by: float, bz: float) -> void:
 
 	var rocas_tex: Texture2D = textura_rocas_pilar
 	if not rocas_tex:
-		rocas_tex = load("res://Entities/Enemigo_Lonko/ROCAS.png") as Texture2D
+		rocas_tex = TEXTURA_ROCAS_DEFAULT
 
 	var pmat := ParticleProcessMaterial.new()
 	pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
@@ -697,9 +719,7 @@ func _crear_particulas_rocas_pilar(bx: float, by: float, bz: float) -> void:
 
 func _crear_humo_pilar(bx: float, by: float, bz: float, duracion: float, es_destruccion: bool = false) -> void:
 	# Humo SmokeFX 1A-8 en la base - para elevación pequeño/transparente, para destrucción grande/opaco
-	var tex_humo := load("res://TEST_/SmokeFX Lite SpriteSheet 1A-8.png") as Texture2D
-	if not tex_humo:
-		tex_humo = load("res://Entities/Enemigo_Lonko/humo pisada.png") as Texture2D
+	var tex_humo: Texture2D = TEXTURA_HUMO_PILAR_RES
 	# FIX humo huérfano: liberar el humo anterior ANTES de crear otro
 	# (si no, la referencia se sobreescribe y el humo viejo emite para siempre)
 	_detener_humo_pilar()
@@ -1642,7 +1662,7 @@ func _crear_particulas_rocas_destruccion(spawn_pos: Vector3) -> void:
 	parts.one_shot = true
 	parts.explosiveness = 0.85
 
-	var tex := load("res://Entities/Enemigo_Lonko/PIEDRAS_NEGRAS_ DESTRUCION.png") as Texture2D
+	var tex: Texture2D = TEXTURA_PIEDRAS_NEGRAS_RES
 
 	var pmat := ParticleProcessMaterial.new()
 	pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
@@ -1776,7 +1796,7 @@ func _hundir_y_disolver_pilar() -> void:
 	# 1. Aplicar shader de disolución SOLO cuando Lonko muere primero (el pilar destruido NO se disuelve)
 	var materials: Array[ShaderMaterial] = []
 	if not _pilar_fue_destruido_primero:
-		var dissolve_shader := load("res://System/Shaders/dissolve.gdshader") as Shader
+		var dissolve_shader: Shader = DISSOLVE_SHADER_RES
 		if dissolve_shader:
 			var meshes := pilar_to_destroy.find_children("*", "MeshInstance3D", true, false)
 			for mesh_node in meshes:

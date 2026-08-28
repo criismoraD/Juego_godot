@@ -163,7 +163,12 @@ func _bucle_flotacion() -> void:
 	if not model_root:
 		return
 	var tiempo: float = Time.get_ticks_msec() * 0.001
-	model_root.position.y = _initial_model_y + sin(tiempo * float_speed) * float_amplitude
+	var float_offset: float = sin(tiempo * float_speed) * float_amplitude
+	model_root.position.y = _initial_model_y + float_offset
+	if fire_light:
+		fire_light.position.y = _initial_model_y + float_offset
+	if fire_particles:
+		fire_particles.position.y = _initial_model_y + float_offset
 
 
 func _on_body_entered(body: Node3D) -> void:

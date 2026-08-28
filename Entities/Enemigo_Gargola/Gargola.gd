@@ -1,5 +1,5 @@
 class_name Gargola
-extends EnemyBase
+extends "res://System/Core/EnemyBase.gd"
 
 ## Gárgola voladora: aparece del spawn a altura fija (solo una de dos opciones),
 ## oscila arriba/abajo, usa FLY_IDLE para idle y desplazamiento. Ciclo de ataque:
@@ -527,10 +527,9 @@ func _iniciar_disolucion_final() -> void:
 
 
 func _procesar_vuelo(delta):
-	velocity.x = -velocidad_caminar
-	walked_distance += velocidad_caminar * delta
-
 	if modo_pacifico:
+		velocity.x = -velocidad_caminar
+		walked_distance += velocidad_caminar * delta
 		if global_position.x <= limite_pacifico_x:
 			velocity.x = 0
 			if not pacifico_detenido:
@@ -538,11 +537,24 @@ func _procesar_vuelo(delta):
 				_on_pacifico_detenido()
 		return
 
+	var limite_izq: float = _obtener_limite_izquierdo_x()
+	if global_position.x <= limite_izq:
+		velocity.x = 0
+		global_position.x = max(global_position.x, limite_izq)
+		_change_state(State.SHOOTING)
+		return
+
+	velocity.x = -velocidad_caminar
+	walked_distance += velocidad_caminar * delta
+
 	if walked_distance >= target_walk_distance:
 		if _check_spacing():
 			_change_state(State.SHOOTING)
 		else:
-			target_walk_distance += 0.3
+			if global_position.x - 0.3 > limite_izq:
+				target_walk_distance += 0.3
+			else:
+				_change_state(State.SHOOTING)
 
 
 func _procesar_combate(delta):

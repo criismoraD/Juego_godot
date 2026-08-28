@@ -1,5 +1,5 @@
 class_name ImpEstandarte
-extends EnemyBase
+extends "res://System/Core/EnemyBase.gd"
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 
@@ -10,13 +10,13 @@ const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 @export var intervalo_disparo_arco: float = 0.0
 @export var tiempo_disparo_en_animacion_arco: float = 3.1
 @export var tiempo_tensa_arco: float = 1.9
-@export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_min: float = 15.0
-@export_range(15.0, 40.0, 0.1) var velocidad_flecha_arco_max: float = 20.0
-@export var distancia_escala_velocidad_min: float = 5.0
-@export var distancia_escala_velocidad_max: float = 15.0
-@export_range(0.0, 0.5, 0.05) var variacion_velocidad_arco: float = 0.20
+@export_range(10.0, 30.0, 0.1) var velocidad_flecha_arco_min: float = 15.0
+@export_range(10.0, 30.0, 0.1) var velocidad_flecha_arco_max: float = 22.0
+@export var distancia_escala_velocidad_min: float = 4.0
+@export var distancia_escala_velocidad_max: float = 16.0
+@export_range(0.0, 0.2, 0.01) var variacion_velocidad_arco: float = 0.05
 @export_range(0.25, 5.0, 0.05) var multiplicador_cadencia_arco: float = 1.0
-@export var elevacion_disparo_arco: float = 0.18
+@export var gravedad_flecha_estandarte: float = 0.8
 @export var espera_idle_arco_min: float = 0.08
 @export var espera_idle_arco_max: float = 0.18
 @export_category("Proyectil - Imp Estandarte")
@@ -211,15 +211,10 @@ func _throw_projectile():
 		spawn_pos = flecha_visual_mano.global_position
 	else:
 		spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
-	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
-	var direction = (target_pos - spawn_pos).normalized()
-	direction.y += elevacion_disparo_arco
-	direction = direction.normalized()
+	var target_pos: Vector3 = player_ref.global_position + Vector3(0.0, 0.45, 0.0)
+	var delta_pos: Vector3 = target_pos - spawn_pos
+	var dist_x: float = abs(delta_pos.x)
 
-	flecha.color_proyectil = color_proyectil_estandarte
-
-	flecha.scale = escala_original_global_flecha_mano
-	var dist_x: float = abs(player_ref.global_position.x - global_position.x)
 	var t: float = 0.0
 	var rango_dist: float = distancia_escala_velocidad_max - distancia_escala_velocidad_min
 	if rango_dist > 0.0:
@@ -229,6 +224,21 @@ func _throw_projectile():
 	var velocidad_maxima: float = max(velocidad_flecha_arco_min, velocidad_flecha_arco_max)
 	var velocidad_base: float = lerp(velocidad_minima, velocidad_maxima, t)
 	var velocidad_final: float = velocidad_base * randf_range(1.0 - variacion_velocidad_arco, 1.0 + variacion_velocidad_arco)
+
+	# Solución balística exacta: compensa la caída por gravedad según el tiempo de vuelo real
+	var tiempo_vuelo: float = dist_x / maxf(velocidad_final, 1.0)
+	var caida_estimada: float = 0.5 * gravedad_flecha_estandarte * velocidad_final * (tiempo_vuelo * tiempo_vuelo)
+
+	var punto_apuntado: Vector3 = target_pos + Vector3(0.0, caida_estimada, 0.0)
+	var direction: Vector3 = (punto_apuntado - spawn_pos).normalized()
+
+	# Dispersión sutil natural
+	direction.y += randf_range(-0.012, 0.012)
+	direction = direction.normalized()
+
+	flecha.color_proyectil = color_proyectil_estandarte
+	flecha.scale = escala_original_global_flecha_mano
+	flecha.gravedad = gravedad_flecha_estandarte
 
 	flecha.initialize(direction, 1.0)
 	flecha.velocidad = velocidad_final

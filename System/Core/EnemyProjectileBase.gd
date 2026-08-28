@@ -522,7 +522,7 @@ static func _get_shared_body_mesh() -> CylinderMesh:
 	_body_mesh.top_radius = 0.025
 	_body_mesh.bottom_radius = 0.025
 	_body_mesh.height = 0.25
-	_body_mesh.radial_segments = 6
+	_body_mesh.radial_segments = 16
 	_body_mesh.rings = 1
 	return _body_mesh
 
@@ -535,7 +535,7 @@ static func _get_shared_tip_mesh() -> CylinderMesh:
 	_tip_mesh.top_radius = 0.0
 	_tip_mesh.bottom_radius = 0.03
 	_tip_mesh.height = 0.08
-	_tip_mesh.radial_segments = 6
+	_tip_mesh.radial_segments = 16
 	_tip_mesh.rings = 1
 	return _tip_mesh
 

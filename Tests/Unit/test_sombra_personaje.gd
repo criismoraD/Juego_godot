@@ -162,3 +162,29 @@ func test_tamano_cero():
 
 	parent.queue_free()
 	await get_tree().process_frame
+
+
+func test_excluye_padre_collision_object():
+	# Arrange: Crear un CharacterBody3D con colisión como padre
+	var body := CharacterBody3D.new()
+	var col := CollisionShape3D.new()
+	var capsule := CapsuleShape3D.new()
+	capsule.height = 1.8
+	capsule.radius = 0.4
+	col.shape = capsule
+	body.add_child(col)
+	add_child(body)
+
+	body.add_child(sombra)
+	await get_tree().process_frame
+
+	# Act: Forzar actualización de excepciones
+	sombra._actualizar_excepciones_raycasts(body)
+
+	# Assert: El raycast principal debe existir y las excepciones configuradas
+	var ray: RayCast3D = sombra.get_node_or_null("RaycastSuelo")
+	assert_not_null(ray, "RaycastSuelo debe existir")
+	assert_true(sombra._excepciones_configuradas, "Las excepciones del padre deben haberse configurado")
+
+	body.queue_free()
+	await get_tree().process_frame

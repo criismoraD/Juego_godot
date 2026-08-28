@@ -22,6 +22,7 @@
 [ext_resource type="PackedScene" uid="uid://c20j7pudi7arc" path="res://Entities/Ambiente_Base_Arquera/BASE_ARQUERA.tscn" id="19_mbwsw"]
 [ext_resource type="PackedScene" uid="uid://dusffdtovx70" path="res://Entities/Aliada_Arquera/AllyArcher.tscn" id="20_cayny"]
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Entities/Ambiente_Tronco/Tronco.tscn" id="25_cx8r4"]
+[ext_resource type="PackedScene" uid="uid://cb5c03pez88q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="25_pez01"]
 [ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Entities/Ambiente_Pilar/Pilar.glb" id="25_koe3n"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Entities/Ambiente_Pinchos/PINCHO.glb" id="25_qcvbp"]
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="26_cx8r4"]
@@ -105,8 +106,8 @@ rotacion_torso_escalera = 180.0
 color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
 escala_min_salto = 0.01
 escala_max_salto = 0.05
-velocidad_escalar_subir = 0.5
-velocidad_escalar_bajar = 0.5
+velocidad_escalar_subir = 0.65
+velocidad_escalar_bajar = 0.65
 
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
@@ -496,6 +497,9 @@ idle_max = 2.0
 
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1883993, -0.20376292, 4.204008)
+
+[node name="Pez" parent="." unique_id=741029831 instance=ExtResource("25_pez01")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, -0.42, 3.8)
 
 [node name="PINCHO" parent="." unique_id=1272800596 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.5052033, 0.32352856, 0.009941371, -0.29118463, 0.46231574, -0.24794276, -0.14135437, 0.20394458, 0.54628336, -6.318142, 0.1362295, 0.826589)

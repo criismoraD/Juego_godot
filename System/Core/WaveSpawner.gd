@@ -12,6 +12,7 @@ signal evento_cuerno_iniciado
 @export var escena_canonero: PackedScene  # Nueva escena del cañonero
 @export var escena_gargola: PackedScene  # Escena de la gárgola voladora
 @export var escena_lonko: PackedScene  # Escena del nuevo enemigo Lonko
+@export var escena_arquera_rosa: PackedScene  # Escena de la nueva Arquera Rosa
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns (más lento)
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
@@ -29,7 +30,7 @@ signal evento_cuerno_iniciado
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola
+var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
@@ -66,12 +67,49 @@ func _ready():
 		escena_gargola = preload("res://Entities/Enemigo_Gargola/Gargola.tscn")
 	if not escena_lonko:
 		escena_lonko = preload("res://Entities/Enemigo_Lonko/Lonko.tscn")
+	if not escena_arquera_rosa:
+		escena_arquera_rosa = preload("res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.tscn")
 
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.tscn")
 
+	# Precalentar pipelines gráficos de enemigos de forma asíncrona al inicio
+	call_deferred("_precalentar_enemigos")
+
 	# Iniciar primera oleada después de un delay
 	wave_cooldown = 2.0
+
+
+func _precalentar_enemigos() -> void:
+	var escenas_prewarm: Array[PackedScene] = [
+		escena_goblin,
+		escena_goblin_girl,
+		escena_imp,
+		escena_canonero,
+		escena_gargola,
+		escena_lonko,
+		escena_arquera_rosa,
+		escena_imp_escudo
+	]
+
+	var holder := Node3D.new()
+	holder.name = "EnemyPrewarmHolder"
+	holder.position = Vector3(0.0, -300.0, 0.0)
+	add_child(holder)
+
+	for sc in escenas_prewarm:
+		if not sc:
+			continue
+		var enemy = sc.instantiate()
+		if enemy:
+			enemy.process_mode = Node.PROCESS_MODE_DISABLED
+			holder.add_child(enemy)
+
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	if is_instance_valid(holder):
+		holder.queue_free()
 
 
 func _process(delta):
@@ -235,6 +273,8 @@ func _elegir_escena_probabilidades() -> PackedScene:
 			return escena_gargola
 		elif forzar_tipo_enemigo == 6:
 			return escena_lonko
+		elif forzar_tipo_enemigo == 7:
+			return escena_arquera_rosa
 		elif probabilidad_igual:
 			# Probabilidad igual: 20% cada tipo (5 tipos)
 			var roll = randf()

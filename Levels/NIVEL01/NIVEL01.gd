@@ -1534,7 +1534,8 @@ func _crear_panel_controles_spawn() -> void:
 		{"nombre": "💣 Cañonero", "id": 3},
 		{"nombre": "🛡️ Imp Escudo", "id": 4},
 		{"nombre": "🦅 Gárgola", "id": 5},
-		{"nombre": "🏹 Lonko", "id": 6}
+		{"nombre": "🏹 Lonko", "id": 6},
+		{"nombre": "🌸 Arquera Rosa", "id": 7}
 	]
 	for opt in opciones:
 		var btn := Button.new()
@@ -2006,7 +2007,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 	var power_up: Node3D = power_up_scene.instantiate() as Node3D
 	if power_up:
 		if "municion_a_otorgar_jugador" in power_up:
-			power_up.municion_a_otorgar_jugador = 5
+			power_up.municion_a_otorgar_jugador = 10
 		if "municion_a_otorgar_aliadas" in power_up:
 			power_up.municion_a_otorgar_aliadas = 5
 		add_child(power_up)

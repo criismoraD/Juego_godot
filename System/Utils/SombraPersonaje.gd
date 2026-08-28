@@ -94,6 +94,26 @@ func _crear_raycasts() -> void:
 	add_child(_ray_der)
 
 
+var _excepciones_configuradas: bool = false
+
+
+func _actualizar_excepciones_raycasts(padre: Node3D) -> void:
+	if _excepciones_configuradas:
+		return
+	_excepciones_configuradas = true
+
+	var nodo: Node = padre
+	while nodo:
+		if nodo is CollisionObject3D:
+			if _ray:
+				_ray.add_exception(nodo)
+			if _ray_izq:
+				_ray_izq.add_exception(nodo)
+			if _ray_der:
+				_ray_der.add_exception(nodo)
+		nodo = nodo.get_parent()
+
+
 func _process(_delta: float) -> void:
 	if not _mesh or not _ray or not _ray_izq or not _ray_der:
 		return
@@ -108,6 +128,8 @@ func _process(_delta: float) -> void:
 	if not padre or not is_instance_valid(padre) or not padre.is_inside_tree():
 		return
 
+	_actualizar_excepciones_raycasts(padre)
+
 	var padre_pos: Vector3 = padre.global_position
 
 	# Actualizar raycast central
@@ -118,6 +140,14 @@ func _process(_delta: float) -> void:
 	if not _ray.is_colliding():
 		_mesh.visible = false
 		return
+
+	var collider = _ray.get_collider()
+	if collider == padre or (collider and collider.get_parent() == padre):
+		_ray.add_exception(collider)
+		_ray.force_raycast_update()
+		if not _ray.is_colliding():
+			_mesh.visible = false
+			return
 
 	var punto_suelo: Vector3 = _ray.get_collision_point()
 	var y_centro: float = punto_suelo.y
@@ -146,9 +176,19 @@ func _process(_delta: float) -> void:
 	_ray_izq.global_rotation = Vector3.ZERO
 	_ray_izq.force_raycast_update()
 
+	var col_izq = _ray_izq.get_collider()
+	if col_izq == padre or (col_izq and col_izq.get_parent() == padre):
+		_ray_izq.add_exception(col_izq)
+		_ray_izq.force_raycast_update()
+
 	_ray_der.global_position = padre_pos + Vector3(radio, 0.5, 0)
 	_ray_der.global_rotation = Vector3.ZERO
 	_ray_der.force_raycast_update()
+
+	var col_der = _ray_der.get_collider()
+	if col_der == padre or (col_der and col_der.get_parent() == padre):
+		_ray_der.add_exception(col_der)
+		_ray_der.force_raycast_update()
 
 	# Lógica de desvanecimiento en bordes
 	var corte_izq: float = 0.0

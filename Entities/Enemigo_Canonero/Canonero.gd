@@ -1,5 +1,5 @@
 class_name Canonero
-extends EnemyBase
+extends "res://System/Core/EnemyBase.gd"
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const PROJECTILE_SCALE: Vector3 = Vector3.ONE

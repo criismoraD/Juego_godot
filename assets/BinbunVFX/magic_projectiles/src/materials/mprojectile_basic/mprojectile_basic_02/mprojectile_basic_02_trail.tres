@@ -1,4 +1,4 @@
-[gd_resource type="ShaderMaterial" load_steps=6 format=3 uid="uid://drkta6ov6x77p"]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://drkta6ov6x77p"]
 
 [ext_resource type="Shader" uid="uid://ctc5s68igpvj6" path="res://assets/BinbunVFX/shared/shader/transparent.gdshader" id="1_ggwbo"]
 [ext_resource type="Texture2D" uid="uid://caa3q1x4sy2r" path="res://assets/BinbunVFX/shared/texture/noise/warp/warp_blotch_01.tres" id="2_ggwbo"]
@@ -37,14 +37,14 @@ shader_parameter/mask3_strength = 1.0
 shader_parameter/mask3_blend_mode = 2
 shader_parameter/mask3_radial = false
 shader_parameter/mask3_rotation = 0.0
+shader_parameter/billboard = false
+shader_parameter/displacement_scale = 0.1
+shader_parameter/displacement_offset = 0.5
 shader_parameter/primary_color = Color(0.8, 0.878431, 1, 1)
 shader_parameter/secondary_color = Color(0.411765, 0.752941, 1, 1)
 shader_parameter/tertiary_color = Color(0.176471, 0.431373, 1, 1)
 shader_parameter/use_tertiary = true
 shader_parameter/color_smoothness = 0.5
-shader_parameter/billboard = false
-shader_parameter/displacement_scale = 0.1
-shader_parameter/displacement_offset = 0.5
 shader_parameter/time_scale = 1.0
 shader_parameter/texture_scale = Vector2(1, 1)
 shader_parameter/uv_alignment = 0

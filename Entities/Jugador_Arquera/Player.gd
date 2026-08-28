@@ -26,16 +26,16 @@ const DROP_CHANCE_MITIGADO: float = 0.05
 @export_category("Movimiento")
 @export var velocidad_caminar: float = 0.5  # Velocidad al caminar
 @export var velocidad_correr: float = 1.0  # Velocidad al correr
-@export var fuerza_salto: float = 2.0  # Fuerza del salto
+@export var fuerza_salto: float = 2.35  # Fuerza del salto
 @export var umbral_aterrizaje: float = -3.0  # Umbral para aterrizaje fuerte
 @export var velocidad_giro_suave: float = 12.0  ## Velocidad de interpolación de giro al cambiar de dirección
 @export var aceleracion_movimiento: float = 12.0  ## Suavizado de aceleración y desaceleración horizontal
 # === CONFIGURACIÓN - DISPARO ===
 @export_category("Disparo")
 @export var multiplicador_velocidad_disparo: float = 1.0  # Velocidad de animaciones de disparo
-@export var cadencia_disparo: float = 0.01  # Tiempo mínimo entre disparos (cooldown)
-@export var tiempo_tensar: float = 0.1  # Tiempo para tensar el arco
-@export var duracion_carga: float = 0.5  # Tiempo para cargar al máximo
+@export var cadencia_disparo: float = 0.2  # Tiempo mínimo de cooldown entre disparos (0.2s)
+@export var tiempo_tensar: float = 0.2  # Tiempo para tensar el arco (0.2s)
+@export var duracion_carga: float = 0.7  # Tiempo para cargar al 100% de potencia y largo alcance (0.7s)
 @export var velocidad_recarga: float = 2.0  # Multiplicador de velocidad de recarga (draw→aim→shoot)
 @export var velocidad_flecha_minima: float = 2.5  # Velocidad mínima de la flecha (clic rápido)
 @export var velocidad_flecha_maxima: float = 15.0  # Velocidad máxima de la flecha (carga completa)
@@ -103,8 +103,14 @@ var ladder_cooldown: float = 0.0  # Tiempo de espera para volver a agarrar la es
 var is_inside_platform: bool = false  # Bloquea movimiento lateral
 var charge_time = 0.0
 var last_charge_power = 0.0  # Potencia al momento de disparar (0.0 a 1.0)
+var _cooldown_disparo_timer: float = 0.0  # Temporizador de cooldown entre disparos
 var charge_bar: ProgressBar
 var _bow_hold_timer: float = 0.0  # Timer para delay de sonido mantener arco
+# === TRAYECTORIA VISUAL (FLECHA EXPLOSIVA) ===
+var _trajectory_mesh_instance: MeshInstance3D = null
+var _trajectory_immediate_mesh: ImmediateMesh = null
+var _trajectory_material: StandardMaterial3D = null
+var _trajectory_impact_marker: Node3D = null
 # === HITBOX ===
 var collision_shape_node: CollisionShape3D
 var hitbox_altura_original: float = 1.8
@@ -201,6 +207,7 @@ func _ready():
 		_arrow_base_scale = arrow_node.scale
 		arrow_node.visible = false
 	_setup_explosive_arrow_visual()
+	_setup_trayectoria_visual()
 
 	# Buscar Armature para rotación de escalera
 	armature_node = find_child("Armature", true, false)
@@ -426,8 +433,8 @@ func setup_animation_tree_dynamic():
 # === Variables Escalera ===
 var current_ladder = null
 var is_near_ladder = false
-@export var velocidad_escalar_subir: float = 2.0
-@export var velocidad_escalar_bajar: float = 2.0
+@export var velocidad_escalar_subir: float = 0.65  ## Velocidad al subir escaleras (+30% sobre 0.5)
+@export var velocidad_escalar_bajar: float = 0.65  ## Velocidad al bajar escaleras
 @export_range(-360, 360, 1.0) var rotacion_personaje_escalera: float = 180.0  # Giro del modelo al escalar
 
 # Referencia al Armature para rotarlo
@@ -782,13 +789,14 @@ func _physics_process(delta):
 				else:
 					velocity.x = input_dir * velocidad_caminar  # Permitir movimiento lateral (A/D)
 
-				# Ajustar velocidad de animación (invertir si bajamos)
+				# Ajustar velocidad de animación (invertir si bajamos y escalar según velocidad)
 				if anim_tree:
-					var scale_val = 1.0
+					var anim_mult: float = max(0.5, climb_speed / 0.6)
+					var scale_val: float = 1.0
 					if input_vert > 0.1:  # Bajando
-						scale_val = -1.0
+						scale_val = -anim_mult
 					elif input_vert < -0.1:  # Subiendo
-						scale_val = 1.0
+						scale_val = anim_mult
 					else:
 						scale_val = 0.0  # Quieto
 
@@ -1067,6 +1075,8 @@ func _set_cursor_sistema(activo: bool) -> void:
 
 ## Al salir de la partida se restaura el cursor por defecto del sistema.
 func _exit_tree():
+	if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Input.set_custom_mouse_cursor(null)
 
 
@@ -1119,7 +1129,15 @@ func control_visual_state(delta):
 			if shot_cancelled and not Input.is_action_pressed("click_izquierdo"):
 				shot_cancelled = false
 
+			# Cooldown entre disparos consecutivos
+			if _cooldown_disparo_timer > 0.0:
+				_cooldown_disparo_timer -= delta
+
 			if Input.is_action_just_pressed("click_izquierdo"):
+				# Bloquear si aún estamos en cooldown de cadencia
+				if _cooldown_disparo_timer > 0.0:
+					return
+
 				# Mapa de debug: ignorar el clic si cae sobre un control de UI
 				# (panel de spawn/debug), para que seleccionar opciones no dispare.
 				if disparo_bloqueado_por_ui and _mouse_sobre_control_ui():
@@ -1137,10 +1155,6 @@ func control_visual_state(delta):
 				if is_inside_platform:
 					return
 
-				# EXPERIMENTAL: Permitir disparo mientras escalamos
-				# (Comentar las siguientes 2 líneas para bloquear)
-				# if current_move_state == MoveState.CLIMBING:
-				# 	return
 				# Cancelar animación de HIT si está activa
 				if anim_tree:
 					anim_tree.set(
@@ -1192,6 +1206,8 @@ func control_visual_state(delta):
 			# Mostrar trayectoria y actualizar escala de flecha
 			var progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0)
 			_mostrar_flecha_visual(progress)
+			if flechas_explosivas > 0:
+				_actualizar_trayectoria_explosiva()
 
 		AimState.AIMING:
 			if float(anim_tree.get(blend_path)) != 1.0:
@@ -1199,8 +1215,6 @@ func control_visual_state(delta):
 
 			var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
 			charge_time += delta
-
-			# Sistema de fatiga eliminado por solicitud
 
 			charge_time = min(charge_time, adjusted_charge_dur)
 			var charge_percent = (charge_time / adjusted_charge_dur) * 100
@@ -1223,6 +1237,8 @@ func control_visual_state(delta):
 				charge_bar.tint_progress = Color.WHITE
 
 			actualizar_rotacion_torso_pitch()
+			if flechas_explosivas > 0:
+				_actualizar_trayectoria_explosiva()
 
 			if Input.is_action_just_released("click_izquierdo"):
 				# Si el disparo fue cancelado por daño, solo resetear el flag
@@ -1261,11 +1277,13 @@ var shoot_anim_duration = 1.0  # Valor por defecto
 
 func start_shooting():
 	_update_charge_vfx(false)
+	_ocultar_trayectoria_explosiva()
 	# Detener el sonido de tensar cuerda
 	AudioManager.stop_bow_tension()
 
 	current_aim_state = AimState.SHOOTING
 	state_timer = 0.0  # Reset timer para contar duración del disparo
+	_cooldown_disparo_timer = cadencia_disparo  # Cooldown antes de poder iniciar otro tensado
 
 	anim_tree.set("parameters/UpperBody/transition_request", "shoot")
 	charge_bar.visible = false
@@ -1280,21 +1298,20 @@ func start_shooting():
 	if anim_player and anim_player.has_animation("Armature|Armature|DISPARAR"):
 		shoot_anim_duration = anim_player.get_animation("Armature|Armature|DISPARAR").length
 
-	# Calcular potencia del disparo (0.0 a 1.0)
-	var adjusted_charge_dur = duracion_carga / (multiplicador_velocidad_disparo * velocidad_recarga)
+	# Calcular potencia del disparo de forma consistente (0.0 a 1.0)
+	var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
 	var adjusted_draw_time = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
 
-	# Si charge_time > 0, estamos en AIMING y usamos ese valor
-	# Si charge_time = 0 (soltamos durante DRAWING), usamos state_timer como potencia proporcional al tiempo de tensado
-	if charge_time > 0:
+	# Si charge_time > 0, estamos en AIMING y usamos ese valor proporcional al tiempo cargado
+	# Si charge_time = 0 (soltamos rápido durante DRAWING), potencia baja proporcional al tensado
+	if charge_time > 0.0:
 		last_charge_power = clamp(charge_time / adjusted_charge_dur, 0.0, 1.0)
 	else:
-		# Potencia mínima basada en cuánto tiempo tensamos (0% a ~20% máximo durante DRAWING)
 		var draw_progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0)
-		last_charge_power = draw_progress * 0.2  # Máximo 20% de potencia si sueltas durante DRAWING
+		last_charge_power = draw_progress * 0.15  # Máximo 15% de potencia si sueltas rápido durante DRAWING
 
-	# Asegurar un mínimo de potencia para que la flecha siempre sea visible
-	last_charge_power = max(last_charge_power, 0.1)
+	# Asegurar límites de potencia
+	last_charge_power = clamp(last_charge_power, 0.05, 1.0)
 
 	# Disparar la flecha física
 	spawn_arrow_projectile()
@@ -1692,6 +1709,249 @@ func _ocultar_flecha_visual() -> void:
 		arrow_node.visible = false
 	if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 		explosive_arrow_node.visible = false
+	_ocultar_trayectoria_explosiva()
+
+
+func _es_objeto_ignorable_por_flecha(obj: Object) -> bool:
+	if not obj:
+		return true
+	if obj == self or (obj is Node and obj.is_in_group("player")):
+		return true
+	if obj is Node and obj.is_in_group("allies"):
+		return true
+	# Proyectiles en vuelo (las flechas no colisionan con proyectiles en el aire)
+	if obj is ArrowProjectile or obj is EnemyProjectileBase or (obj is Node and (obj.is_in_group("projectiles") or obj.is_in_group("enemy_projectiles") or obj.is_in_group("flechas"))):
+		return true
+	# Si es un escudo o estructura aliada
+	if obj.has_method("recibir_golpe") or (obj is Node and obj.is_in_group("escudos")):
+		var es_enemigo: bool = false
+		if "es_escudo_enemigo" in obj:
+			es_enemigo = obj.es_escudo_enemigo
+		elif "es_pilar_enemigo" in obj:
+			es_enemigo = obj.es_pilar_enemigo
+		elif obj is Node and obj.is_in_group("enemies"):
+			es_enemigo = true
+		if not es_enemigo:
+			return true  # Escudo o estructura aliada -> la flecha la atraviesa
+
+	# Ignorar cualquier Area3D que no sea enemigo o destructible (escaleras, triggers, agua, etc.)
+	if obj is Area3D:
+		if not (obj.is_in_group("enemies") or obj.is_in_group("destructibles") or obj.has_method("recibir_dano")):
+			return true
+
+	return false
+
+
+func _setup_trayectoria_visual() -> void:
+	if _trajectory_mesh_instance:
+		return
+
+	_trajectory_immediate_mesh = ImmediateMesh.new()
+
+	_trajectory_material = StandardMaterial3D.new()
+	_trajectory_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_trajectory_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_trajectory_material.vertex_color_use_as_albedo = true
+	_trajectory_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_trajectory_material.no_depth_test = true
+	_trajectory_material.render_priority = 100
+
+	_trajectory_mesh_instance = MeshInstance3D.new()
+	_trajectory_mesh_instance.name = "TrajectoryLineExplosive"
+	_trajectory_mesh_instance.mesh = _trajectory_immediate_mesh
+	_trajectory_mesh_instance.material_override = _trajectory_material
+	_trajectory_mesh_instance.top_level = true
+	_trajectory_mesh_instance.visible = false
+	add_child(_trajectory_mesh_instance)
+
+	# Nodo contenedor del marcador y mira en el punto de impacto
+	_trajectory_impact_marker = Node3D.new()
+	_trajectory_impact_marker.name = "TrajectoryImpactMarker"
+	_trajectory_impact_marker.top_level = true
+	_trajectory_impact_marker.visible = false
+
+	# 1. Círculo / punto rojo central
+	var dot_mesh_inst := MeshInstance3D.new()
+	dot_mesh_inst.name = "CenterDot"
+	var dot_mesh := SphereMesh.new()
+	dot_mesh.radius = 0.05
+	dot_mesh.height = 0.10
+	dot_mesh_inst.mesh = dot_mesh
+	var dot_mat := StandardMaterial3D.new()
+	dot_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dot_mat.albedo_color = Color(1.0, 0.1, 0.05, 0.95)
+	dot_mat.no_depth_test = true
+	dot_mat.render_priority = 101
+	dot_mesh_inst.material_override = dot_mat
+	_trajectory_impact_marker.add_child(dot_mesh_inst)
+
+	# 2. Puntero / Mira de la flecha regular (Sprite3D con Mira mouse.png)
+	var reticle_sprite := Sprite3D.new()
+	reticle_sprite.name = "ReticleSprite"
+	var tex := load(TEXTURA_CURSOR_MIRA) as Texture2D
+	if tex:
+		reticle_sprite.texture = tex
+	reticle_sprite.pixel_size = 0.00075  # Tamaño proporcionado a la escala del mundo (~0.38m)
+	reticle_sprite.modulate = Color(1.0, 0.25, 0.08, 0.95)
+	reticle_sprite.render_priority = 102
+	reticle_sprite.no_depth_test = true
+	reticle_sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	_trajectory_impact_marker.add_child(reticle_sprite)
+
+	add_child(_trajectory_impact_marker)
+
+
+func _actualizar_trayectoria_explosiva() -> void:
+	if flechas_explosivas <= 0 or current_aim_state == AimState.NONE or current_aim_state == AimState.SHOOTING:
+		_ocultar_trayectoria_explosiva()
+		return
+
+	# Ocultar el cursor del ratón mientras se apunta con flecha explosiva
+	if Input.mouse_mode != Input.MOUSE_MODE_HIDDEN:
+		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+
+	if not _trajectory_mesh_instance:
+		_setup_trayectoria_visual()
+
+	var data := calculate_shoot_data()
+	if not data or not data.get("valid", false):
+		_ocultar_trayectoria_explosiva()
+		return
+
+	var spawn_pos: Vector3 = data["origin"]
+	var vel: Vector3 = data["velocity"]
+	if vel.length_squared() < 0.01:
+		_ocultar_trayectoria_explosiva()
+		return
+
+	var plano_z: float = global_position.z
+	var pos: Vector3 = spawn_pos
+	pos.z = plano_z
+
+	var world_grav: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	var dt: float = 0.025  # ~40 muestras / seg
+	var max_pasos: int = 80  # hasta ~2.0s de trayectoria parabólica completa
+
+	var space_state := get_world_3d().direct_space_state
+	var puntos: Array[Vector3] = [pos]
+	var punto_impacto: Vector3 = Vector3.ZERO
+	var hubo_impacto: bool = false
+
+	# Raycast para detectar dónde colisionará la flecha (máscara 71 = 1 | 2 | 4 | 64)
+	var excluded_rids: Array[RID] = [get_rid()]
+	var query_params := PhysicsRayQueryParameters3D.new()
+	query_params.collision_mask = 71
+	query_params.collide_with_areas = true
+	query_params.collide_with_bodies = true
+	query_params.exclude = excluded_rids
+
+	for _i in range(max_pasos):
+		var sig_vel := vel
+		sig_vel.y -= world_grav * dt
+		var sig_pos := pos + (vel + sig_vel) * 0.5 * dt
+		sig_pos.z = plano_z
+
+		# Comprobar colisión ignorando escudos aliados, proyectiles y triggers
+		var ray_origen := pos
+		var colision_valida := false
+		var iteraciones_paso := 0
+
+		while iteraciones_paso < 5:
+			iteraciones_paso += 1
+			query_params.from = ray_origen
+			query_params.to = sig_pos
+			query_params.exclude = excluded_rids
+			var col := space_state.intersect_ray(query_params)
+			if col.is_empty():
+				break
+
+			var col_obj: Object = col.get("collider", null)
+			var col_pos: Vector3 = col.get("position", sig_pos)
+			var col_rid = col.get("rid", null)
+
+			# Ignorar si está a menos de 30cm del origen de disparo o si es objeto ignorable
+			if col_pos.distance_squared_to(spawn_pos) < 0.09 or _es_objeto_ignorable_por_flecha(col_obj):
+				if col_rid and not excluded_rids.has(col_rid):
+					excluded_rids.append(col_rid)
+					query_params.exclude = excluded_rids
+				var dir_paso: Vector3 = sig_pos - col_pos
+				if dir_paso.length_squared() < 0.0001:
+					break
+				ray_origen = col_pos + dir_paso.normalized() * 0.05
+			else:
+				punto_impacto = col_pos
+				punto_impacto.z = plano_z
+				puntos.append(punto_impacto)
+				hubo_impacto = true
+				colision_valida = true
+				break
+
+		if colision_valida:
+			break
+
+		pos = sig_pos
+		vel = sig_vel
+		puntos.append(pos)
+
+	if puntos.size() < 2:
+		_ocultar_trayectoria_explosiva()
+		return
+
+	# Dibujar Ribbon 2.5D rojo brillante con ImmediateMesh
+	_trajectory_immediate_mesh.clear_surfaces()
+	_trajectory_immediate_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP, _trajectory_material)
+
+	var ancho_cinta: float = 0.035  # Ancho de la línea en metros (3.5 cm)
+	var num_puntos: int = puntos.size()
+
+	for i in range(num_puntos):
+		var p: Vector3 = puntos[i]
+		var t: float = float(i) / float(num_puntos - 1)
+
+		# Tangente
+		var tangente: Vector3 = Vector3.RIGHT
+		if i < num_puntos - 1:
+			tangente = (puntos[i + 1] - p).normalized()
+		elif i > 0:
+			tangente = (p - puntos[i - 1]).normalized()
+
+		# Normal perpendicular en plano XY
+		var normal_cinta := Vector3(-tangente.y, tangente.x, 0.0).normalized()
+
+		# Degradado rojo: punta inicial luminosa a cola suave
+		var alfa: float = lerp(0.9, 0.25, t)
+		var col := Color(1.0, 0.08, 0.04, alfa)
+
+		_trajectory_immediate_mesh.surface_set_color(col)
+		_trajectory_immediate_mesh.surface_add_vertex(p + normal_cinta * (ancho_cinta * 0.5))
+
+		_trajectory_immediate_mesh.surface_set_color(col)
+		_trajectory_immediate_mesh.surface_add_vertex(p - normal_cinta * (ancho_cinta * 0.5))
+
+	_trajectory_immediate_mesh.surface_end()
+	_trajectory_mesh_instance.visible = true
+
+	# Ubicar el puntero / reticle y el círculo rojo en el punto de impacto
+	if not hubo_impacto:
+		punto_impacto = puntos[puntos.size() - 1]
+
+	if _trajectory_impact_marker:
+		_trajectory_impact_marker.global_position = punto_impacto
+		_trajectory_impact_marker.visible = true
+
+
+func _ocultar_trayectoria_explosiva() -> void:
+	if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if not _cursor_sistema_activo:
+			_aplicar_cursor_mira()
+
+	if _trajectory_mesh_instance and is_instance_valid(_trajectory_mesh_instance):
+		_trajectory_mesh_instance.visible = false
+		if _trajectory_immediate_mesh:
+			_trajectory_immediate_mesh.clear_surfaces()
+	if _trajectory_impact_marker and is_instance_valid(_trajectory_impact_marker):
+		_trajectory_impact_marker.visible = false
 
 
 func _play_hit_animation():
@@ -1966,4 +2226,3 @@ func _update_charge_vfx(active: bool):
 		if is_instance_valid(_charge_vfx):
 			_charge_vfx.queue_free()
 			_charge_vfx = null
-

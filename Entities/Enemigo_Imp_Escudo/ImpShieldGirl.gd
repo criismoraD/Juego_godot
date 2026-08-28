@@ -50,7 +50,7 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export var debug_logs_enabled: bool = false
 
 # === HUMO DE RETIRADA (mismo efecto que la arquera Lonko al correr) ===
-const TEXTURA_HUMO_RETIRADA: String = "res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png"
+const TEXTURA_HUMO_RETIRADA: Texture2D = preload("res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png")
 const HUMO_FRAMES_H: int = 9
 const HUMO_FRAMES_V: int = 1
 const HUMO_TAMANO_QUAD: float = 0.6552
@@ -164,9 +164,8 @@ func _configurar_humo_retirada() -> void:
 	humo_retirada.position = Vector3(0.0, 0.08, 0.0)
 
 	var mat := StandardMaterial3D.new()
-	var tex := load(TEXTURA_HUMO_RETIRADA) as Texture2D
-	if tex:
-		mat.albedo_texture = tex
+	if TEXTURA_HUMO_RETIRADA:
+		mat.albedo_texture = TEXTURA_HUMO_RETIRADA
 		mat.particles_anim_h_frames = HUMO_FRAMES_H
 		mat.particles_anim_v_frames = HUMO_FRAMES_V
 		mat.particles_anim_loop = false
@@ -381,6 +380,18 @@ func _physics_process(delta):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+func _obtener_limite_izquierdo_x() -> float:
+	var barreras := get_tree().get_nodes_in_group("barrera_limite")
+	for barrera: Node3D in barreras:
+		if is_instance_valid(barrera) and barrera.is_inside_tree():
+			if barrera.global_position.x < global_position.x and barrera.global_position.x > -12.0:
+				var tam_x: float = 1.0
+				if "tamano" in barrera:
+					tam_x = barrera.tamano.x
+				return barrera.global_position.x + (tam_x * 0.5) + 0.35
+	return -4.8
+
+
 func _process_walking(_delta):
 	# Si no hay enemigo a proteger, buscar uno
 	if not enemigo_protegido or not is_instance_valid(enemigo_protegido):
@@ -394,11 +405,15 @@ func _process_walking(_delta):
 					"%.1f" % posicion_libre_destino,
 				])
 
+			var limite_izq_libre: float = _obtener_limite_izquierdo_x()
+			posicion_libre_destino = max(posicion_libre_destino, limite_izq_libre)
+
 			var dist_to_free = global_position.x - posicion_libre_destino
-			if dist_to_free > 0.1:
+			if dist_to_free > 0.1 and global_position.x > limite_izq_libre:
 				velocity.x = -velocidad_caminar
 			else:
 				velocity.x = 0
+				global_position.x = max(global_position.x, limite_izq_libre)
 				_cambiar_estado(State.DEFENDING)
 			return
 		posicion_libre_destino = -1.0  # Encontramos enemigo, reset
@@ -458,6 +473,17 @@ func _process_walking(_delta):
 		iteraciones += 1
 		
 	target_x -= offset_acumulado
+
+	# Límite infranqueable de la isla enemiga
+	var limite_izq: float = _obtener_limite_izquierdo_x()
+	target_x = max(target_x, limite_izq)
+
+	if global_position.x <= limite_izq:
+		velocity.x = 0
+		global_position.x = max(global_position.x, limite_izq)
+		_cambiar_estado(State.DEFENDING)
+		return
+
 	var dist_to_target = global_position.x - target_x
 
 	if dist_to_target > 0.1:

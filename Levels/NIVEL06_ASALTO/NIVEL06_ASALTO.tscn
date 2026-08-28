@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://yx5kcwysxdn6" path="res://Entities/Ambiente_Trono_Nivel06/TRONO_NIVEL06.glb" id="21_vwinx"]
 [ext_resource type="PackedScene" uid="uid://bu66x144x50gy" path="res://Entities/Ambiente_Carne_Nivel06/CARNE_NIVEL_06.glb" id="22_vo0hm"]
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Entities/Ambiente_Tronco/Tronco.tscn" id="24_efwy6"]
+[ext_resource type="PackedScene" uid="uid://cb5c03pez88q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="25_pez01"]
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="27_50kgx"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Luciernagas/LuciernagasPlane.tscn" id="28_luciernagas"]
 
@@ -85,8 +86,8 @@ transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 3)
 color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
 escala_min_salto = 0.01
 escala_max_salto = 0.05
-velocidad_escalar_subir = 0.5
-velocidad_escalar_bajar = 0.5
+velocidad_escalar_subir = 0.65
+velocidad_escalar_bajar = 0.65
 
 [node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 203741057) index="0" unique_id=1418335897]
 bones/0/position = Vector3(0.0014502043, 0.19518875, 0.0025529545)
@@ -293,6 +294,9 @@ bevel_radius = 0.15
 
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("24_efwy6")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1883993, -0.20376292, 4.204008)
+
+[node name="Pez" parent="." unique_id=741029831 instance=ExtResource("25_pez01")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, -0.42, 3.8)
 
 [node name="CAPA001" type="Sprite3D" parent="." unique_id=712228843]
 transform = Transform3D(0.33966187, 0, 0, 0, 0.44676116, 0, 0, 0, 0.267, -2.9680815, 2.7402468, 24.064978)

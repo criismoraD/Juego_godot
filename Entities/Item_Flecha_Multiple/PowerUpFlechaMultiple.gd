@@ -50,6 +50,7 @@ var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 var _initial_model_y: float = 0.0
 var _nodes_checked: bool = false
 var _is_falling: bool = false
+var _model_centered: bool = false
 
 var model_root: Node3D = null
 var magic_light: OmniLight3D = null
@@ -61,6 +62,7 @@ var magic_particles: GPUParticles3D = null
 
 func _ready() -> void:
 	_obtener_nodos_directos()
+	_centrar_modelo()
 
 	add_to_group("pickups")
 	add_to_group("power_ups_flecha_multiple")
@@ -98,6 +100,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not _nodes_checked:
 		_obtener_nodos_directos()
+		_centrar_modelo()
 		_nodes_checked = true
 
 	_bucle_parpadeo_luz()
@@ -128,6 +131,44 @@ func _obtener_nodos_directos() -> void:
 		magic_light = get_node_or_null("MagicLight") as OmniLight3D
 	if not magic_particles:
 		magic_particles = get_node_or_null("MagicParticles") as GPUParticles3D
+
+
+## Centra el modelo de la malla en el origen (0,0,0) de ModelRoot para que gire sobre su propio eje
+func _centrar_modelo() -> void:
+	if _model_centered or not model_root:
+		return
+
+	var child_model: Node3D = null
+	for child in model_root.get_children():
+		if child is Node3D:
+			child_model = child
+			break
+
+	if not child_model:
+		return
+
+	var meshes: Array[Node] = child_model.find_children("*", "MeshInstance3D", true, false)
+	if meshes.is_empty():
+		return
+
+	var combined_aabb: AABB
+	var first: bool = true
+	for mesh_node in meshes:
+		var mi := mesh_node as MeshInstance3D
+		if not mi or not mi.mesh:
+			continue
+		var xform: Transform3D = model_root.global_transform.affine_inverse() * mi.global_transform
+		var local_aabb: AABB = xform * mi.mesh.get_aabb()
+		if first:
+			combined_aabb = local_aabb
+			first = false
+		else:
+			combined_aabb = combined_aabb.merge(local_aabb)
+
+	if not first:
+		var center_offset: Vector3 = combined_aabb.get_center()
+		child_model.position -= center_offset
+		_model_centered = true
 
 
 func _comprobar_caida_al_suelo() -> void:
@@ -175,7 +216,12 @@ func _bucle_flotacion() -> void:
 	if not model_root:
 		return
 	var tiempo: float = Time.get_ticks_msec() * 0.001
-	model_root.position.y = _initial_model_y + sin(tiempo * float_speed) * float_amplitude
+	var float_offset: float = sin(tiempo * float_speed) * float_amplitude
+	model_root.position.y = _initial_model_y + float_offset
+	if magic_light:
+		magic_light.position.y = _initial_model_y + float_offset
+	if magic_particles:
+		magic_particles.position.y = _initial_model_y + float_offset
 
 
 func _on_body_entered(body: Node3D) -> void:

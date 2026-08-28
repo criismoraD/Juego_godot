@@ -287,3 +287,29 @@ func test_align_decal_to_surface_rampa_inclinada():
 	assert_gt(mesh_inst.global_position.y, pos_rampa.y, "La posición del decal debe tener offset perpendicular a la superficie")
 
 
+func test_linea_trayectoria_explosiva_apuntado():
+	# Arrange
+	var scene = load("res://Entities/Jugador_Arquera/Player.tscn") as PackedScene
+	var player = scene.instantiate()
+	add_child_autofree(player)
+	player.global_position = Vector3(0.0, 0.0, 0.0)
+
+	# Assert inicial: trayectoria oculta
+	assert_not_null(player._trajectory_mesh_instance, "Debe inicializar _trajectory_mesh_instance")
+	assert_false(player._trajectory_mesh_instance.visible, "La línea de trayectoria debe iniciar oculta")
+
+	# Act 1: Con flechas explosivas y apuntando
+	player.flechas_explosivas = 3
+	player.current_aim_state = player.AimState.AIMING
+	player._actualizar_trayectoria_explosiva()
+
+	# Assert 1: Línea de trayectoria visible
+	assert_true(player._trajectory_mesh_instance.visible, "La línea de trayectoria debe ser visible al apuntar con flechas explosivas")
+
+	# Act 2: Ocultar o finalizar apuntado
+	player._ocultar_trayectoria_explosiva()
+
+	# Assert 2: Línea de trayectoria oculta
+	assert_false(player._trajectory_mesh_instance.visible, "La línea de trayectoria debe ocultarse al soltar el disparo")
+
+

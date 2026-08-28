@@ -1,5 +1,5 @@
-﻿class_name Zugenu
-extends EnemyBase
+class_name Zugenu
+extends "res://System/Core/EnemyBase.gd"
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const PROJECTILE_SCALE: Vector3 = Vector3.ONE
@@ -111,23 +111,24 @@ func _ejecutar_muerte_explosiva() -> void:
 # CARGA Y REPRODUCCIÓN DE ANIMACIONES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+static var _shared_animation_library: AnimationLibrary = null
+
+
 func _cargar_biblioteca_animaciones() -> void:
 	if not anim_player:
 		_buscar_animation_player()
 	if not anim_player:
 		return
 
-	var lib: AnimationLibrary
-	if not anim_player.has_animation_library(""):
-		lib = AnimationLibrary.new()
-		anim_player.add_animation_library("", lib)
-	else:
-		lib = anim_player.get_animation_library("")
+	if _shared_animation_library != null:
+		if not anim_player.has_animation_library(""):
+			anim_player.add_animation_library("", _shared_animation_library)
+		return
+
+	_shared_animation_library = AnimationLibrary.new()
 
 	for key_name in ANIM_FBX_MAP.keys():
 		var anim_key := str(key_name)
-		if lib.has_animation(anim_key):
-			continue
 		var fbx_path := str(ANIM_FBX_MAP[key_name])
 		if not ResourceLoader.exists(fbx_path):
 			continue
@@ -145,9 +146,12 @@ func _cargar_biblioteca_animaciones() -> void:
 					var anim_dup := anim_res.duplicate() as Animation
 					if anim_key in ["CORRER", "CAMINAR"]:
 						anim_dup.loop_mode = Animation.LOOP_LINEAR
-					lib.add_animation(anim_key, anim_dup)
+					_shared_animation_library.add_animation(anim_key, anim_dup)
 					break
 		fbx_inst.free()
+
+	if not anim_player.has_animation_library(""):
+		anim_player.add_animation_library("", _shared_animation_library)
 
 
 func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float = 1.0) -> void:

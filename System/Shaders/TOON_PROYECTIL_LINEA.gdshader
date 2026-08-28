@@ -12,7 +12,7 @@ void vertex() {
 		POSITION = vec4(2.0, 2.0, 2.0, 1.0);
 	} else {
 		vec4 clip_position = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
-		vec3 clip_normal = mat3(PROJECTION_MATRIX) * (mat3(MODELVIEW_MATRIX) * NORMAL);
+		vec3 clip_normal = mat3(PROJECTION_MATRIX) * (MODELVIEW_NORMAL_MATRIX * NORMAL);
 
 		// Clamp depth to keep outline size consistent
 		float depth_scale = clamp(clip_position.w, 0.5, 5.0);

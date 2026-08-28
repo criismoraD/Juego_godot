@@ -39,6 +39,7 @@ var btn_solo_imp: Button
 var btn_solo_goblin: Button
 var btn_solo_ggirl: Button
 var btn_solo_lonko: Button
+var btn_solo_arquera_rosa: Button
 var btn_spawn_escudo: Button
 var btn_spawn_posion: Button
 var btn_spawn_flecha_explosiva: Button
@@ -90,7 +91,7 @@ var capa001_sprite: Sprite3D = null
 var materials_with_outline: Array = []
 # === CALIDAD ===
 var Opcion_Calidad: OptionButton
-var Indice_Calidad_Actual: int = 0
+var Indice_Calidad_Actual: int = 1
 var Etiquetas_Calidad: Array = [
 	"Bajo (Mínimo - 30 FPS)",
 	"Medio (60 FPS)",
@@ -121,7 +122,7 @@ var resolution_labels: Array = [
 func _ready():
 	add_to_group("game_ui")
 	layer = 100
-	_Aplicar_Calidad(0)
+	_Aplicar_Calidad(1)
 	outlines_enabled = true
 	outline_proy_enabled = true
 	ShaderGlobals.asegurar_outline_global(outlines_enabled)
@@ -967,6 +968,15 @@ func _update_spawn_buttons():
 		else:
 			btn_solo_lonko.text = "🏹 LONKO"
 			_style_button(btn_solo_lonko, Color(0.4, 0.4, 0.5))
+
+	# Botón ARQUERA ROSA
+	if is_instance_valid(btn_solo_arquera_rosa):
+		if tipo == 7:
+			btn_solo_arquera_rosa.text = "🌸 A. ROSA ✓"
+			_style_button(btn_solo_arquera_rosa, Color(0.9, 0.3, 0.7))
+		else:
+			btn_solo_arquera_rosa.text = "🌸 A. ROSA"
+			_style_button(btn_solo_arquera_rosa, Color(0.4, 0.4, 0.5))
 
 
 func _toggle_outlines():

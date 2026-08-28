@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bmqro7yxa8v4u"]
+
+[ext_resource type="Texture2D" uid="uid://bdkvg0q8412js" path="res://TEST_/Arquera rosa/arquera rosa_modddif_image_0.png" id="1_tex"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+resource_name = "Material_ArqueraRosa"
+next_pass = SubResource("ShaderMaterial_outline")
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_tex")

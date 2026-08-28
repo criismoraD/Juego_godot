@@ -78,7 +78,10 @@ var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 var dissolve_particles: GPUParticles3D = null
-# === CACHÉ DE NODOS ===
+# === CACHÉ ESTÁTICA Y DE NODOS ===
+static var _cached_wave_spawner: Node = null
+static var active_enemies_cache: Array[Node] = []
+static var active_shield_imps_cache: Array[Node] = []
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
 var _red_flash_material: StandardMaterial3D = null
@@ -281,12 +284,23 @@ func _physics_process(delta):
 	move_and_slide()
 
 
-func _process_walking(delta):
-	velocity.x = -velocidad_caminar
-	walked_distance += velocidad_caminar * delta
+func _obtener_limite_izquierdo_x() -> float:
+	var barreras := get_tree().get_nodes_in_group("barrera_limite")
+	for barrera: Node3D in barreras:
+		if is_instance_valid(barrera) and barrera.is_inside_tree():
+			if barrera.global_position.x < global_position.x and barrera.global_position.x > -12.0:
+				var tam_x: float = 1.0
+				if "tamano" in barrera:
+					tam_x = barrera.tamano.x
+				return barrera.global_position.x + (tam_x * 0.5) + 0.35
+	return -4.8
 
+
+func _process_walking(delta):
 	# En modo pacífico, solo camina y se detiene al llegar al borde
 	if modo_pacifico:
+		velocity.x = -velocidad_caminar
+		walked_distance += velocidad_caminar * delta
 		if global_position.x <= limite_pacifico_x:
 			velocity.x = 0
 			if not pacifico_detenido:
@@ -294,11 +308,27 @@ func _process_walking(delta):
 				_on_pacifico_detenido()
 		return
 
+	# Límite infranqueable de la isla enemiga
+	var limite_izq: float = _obtener_limite_izquierdo_x()
+	if global_position.x <= limite_izq:
+		velocity.x = 0
+		global_position.x = max(global_position.x, limite_izq)
+		_change_state(State.SHOOTING)
+		return
+
+	velocity.x = -velocidad_caminar
+	walked_distance += velocidad_caminar * delta
+
 	if walked_distance >= target_walk_distance:
 		if _check_spacing():
 			_change_state(State.SHOOTING)
 		else:
-			target_walk_distance += 0.3
+			# Si aún hay espacio antes del borde de la isla, seguir buscando posición
+			if global_position.x - 0.3 > limite_izq:
+				target_walk_distance += 0.3
+			else:
+				# Si ya llegamos al límite de la isla, detenerse y disparar desde ahí
+				_change_state(State.SHOOTING)
 
 
 func _process_dying(_delta):
@@ -308,11 +338,6 @@ func _process_dying(_delta):
 ## Override en subclases para lógica de disparo específica
 func _process_shooting(_delta):
 	velocity.x = 0
-
-
-static var _cached_wave_spawner: Node = null
-static var active_enemies_cache: Array[Node] = []
-static var active_shield_imps_cache: Array[Node] = []
 
 
 func _get_cached_wave_spawner() -> Node:

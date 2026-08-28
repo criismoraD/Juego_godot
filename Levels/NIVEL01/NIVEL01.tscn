@@ -23,6 +23,7 @@
 [ext_resource type="PackedScene" uid="uid://dusffdtovx70" path="res://Entities/Aliada_Arquera/AllyArcher.tscn" id="20_cayny"]
 [ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Entities/Ambiente_Tronco/Tronco.tscn" id="25_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Entities/Ambiente_Pilar/Pilar.glb" id="25_koe3n"]
+[ext_resource type="PackedScene" uid="uid://cb5c03pe088q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="25_pez01"]
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Entities/Ambiente_Pinchos/PINCHO.glb" id="25_qcvbp"]
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="26_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Entities/Ambiente_Piso/PISO.glb" id="26_koe3n"]
@@ -42,7 +43,7 @@
 [ext_resource type="Shader" uid="uid://bo028vclvrb74" path="res://System/Shaders/luz_haces_fija.gdshader" id="41_luz_haces_fija"]
 [ext_resource type="Texture2D" uid="uid://b7sqddmatavpl" path="res://VFX/Textures/T_basic1_vfx.PNG" id="42_dust_tex"]
 [ext_resource type="Script" uid="uid://dftm0y1dl2kf0" path="res://Entities/Ambiente_Torre/CaidaPiedrasTorre.gd" id="44_caidapiedras_script"]
-[ext_resource type="PackedScene" uid="uid://cb5n2k1m8qaq0" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="45_arboleda"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="45_arboleda"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -198,12 +199,46 @@ size = 0.01
 
 [node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_1cr8j")]
 transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 0)
+flechas_explosivas = null
+flechas_multiples = null
+velocidad_caminar = null
+velocidad_correr = null
+fuerza_salto = null
+umbral_aterrizaje = null
+velocidad_giro_suave = null
+aceleracion_movimiento = null
+multiplicador_velocidad_disparo = null
+cadencia_disparo = null
+tiempo_tensar = null
+duracion_carga = null
+velocidad_recarga = null
+velocidad_flecha_minima = null
+velocidad_flecha_maxima = null
+Reduccion_Velocidad_Por_Angulo = null
+angulo_minimo = null
+angulo_maximo = null
+invertir_angulo = null
+altura_barra = null
 rotacion_torso_escalera = 180.0
+invertir_pitch_escalera = null
+multiplicador_inversion_pitch = null
+eje_rotacion = null
+mostrar_hitbox = null
+modo_dios = null
+caer_escalera_al_recibir_dano = null
+invulnerability_duration = null
+shot_lock_duration = null
+mostrar_particulas_aterrizaje = null
 color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
 escala_min_salto = 0.01
 escala_max_salto = 0.05
-velocidad_escalar_subir = 0.5
-velocidad_escalar_bajar = 0.5
+sombra_opacidad = null
+sombra_tamano = null
+sombra_suavizado = null
+sombra_altura_max = null
+velocidad_escalar_subir = null
+velocidad_escalar_bajar = null
+rotacion_personaje_escalera = null
 
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
@@ -536,7 +571,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8948145, -0.17290789, -12.293223)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9324427, -0.17290789, -12.304441)
 layers = 2
 
 [node name="TestCube-BASE_ALIADa" parent="." unique_id=1864087643 instance=ExtResource("19_mbwsw")]
@@ -637,7 +672,13 @@ tiempo_carga_max = 2.0
 idle_max = 2.0
 
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.362567, -0.20376292, 3.083572)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.092516, -0.20376292, 3.083572)
+
+[node name="Pez" parent="." unique_id=741029831 instance=ExtResource("25_pez01")]
+transform = Transform3D(1, 0, 0, 0, 0.59464955, 0, 0, 0, 1, 7.5869226, -0.46706888, 2.211814)
+
+[node name="Pez2" parent="." unique_id=1187899457 instance=ExtResource("25_pez01")]
+transform = Transform3D(0.8312861, 0, 0, 0, 0.6332924, 0, 0, 0, 1.450843, 8.714372, -0.38978657, 2.7503676)
 
 [node name="PINCHO" parent="." unique_id=1272800596 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.5052033, 0.32352856, 0.009941371, -0.29118463, 0.46231574, -0.24794276, -0.14135437, 0.20394458, 0.54628336, -6.318142, 0.1362295, 0.826589)

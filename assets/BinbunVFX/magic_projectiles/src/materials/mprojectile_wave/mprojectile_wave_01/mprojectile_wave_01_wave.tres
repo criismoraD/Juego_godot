@@ -1,4 +1,4 @@
-[gd_resource type="ShaderMaterial" load_steps=7 format=3 uid="uid://cp7tg30vqk2vn"]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cp7tg30vqk2vn"]
 
 [ext_resource type="Shader" uid="uid://ctc5s68igpvj6" path="res://assets/BinbunVFX/shared/shader/transparent.gdshader" id="1_chq8n"]
 [ext_resource type="Texture2D" uid="uid://brh44ewuar3o" path="res://assets/BinbunVFX/shared/texture/noise/cell/cell_manhattan_01.tres" id="2_chq8n"]
@@ -44,14 +44,14 @@ shader_parameter/mask3_strength = 1.0
 shader_parameter/mask3_blend_mode = 2
 shader_parameter/mask3_radial = false
 shader_parameter/mask3_rotation = 0.0
+shader_parameter/billboard = false
+shader_parameter/displacement_scale = 0.05
+shader_parameter/displacement_offset = 0.5
 shader_parameter/primary_color = Color(1, 0.917647, 0.8, 1)
 shader_parameter/secondary_color = Color(1, 0.905882, 0, 1)
 shader_parameter/tertiary_color = Color(0.996078, 0.756863, 0.27451, 1)
 shader_parameter/use_tertiary = true
 shader_parameter/color_smoothness = 0.5
-shader_parameter/billboard = false
-shader_parameter/displacement_scale = 0.05
-shader_parameter/displacement_offset = 0.5
 shader_parameter/time_scale = 1.0
 shader_parameter/texture_scale = Vector2(1, 1)
 shader_parameter/uv_alignment = 0

@@ -15,6 +15,7 @@ var mesh_instance: MeshInstance3D
 
 
 func _ready():
+	add_to_group("barrera_limite")
 	if solo_jugador:
 		# Layer 10: layer exclusivo para barreras (evita colisión con proyectiles)
 		collision_layer = 1 << 9

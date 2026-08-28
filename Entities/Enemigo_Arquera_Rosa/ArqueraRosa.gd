@@ -1,0 +1,434 @@
+class_name ArqueraRosa
+extends "res://System/Core/EnemyBase.gd"
+
+## Arquera Rosa: Variante élite de la goblin arquera con textura rosada.
+## Habilidades:
+## 1. Aura Rosada (BasicAreaVFX_04) que repele hasta 4 proyectiles normales y pierde intensidad al recibir daño.
+##    Las flechas explosivas ignoran la repulsión y detonan directamente.
+## 2. Ataque de Disparo Múltiple de 5 flechas consecutivas con tensado de arco normal.
+## 3. Reposicionamiento táctico: avanza hacia adelante tras disparar y vuelve a disparar.
+## 4. Drop del 100% del power-up de disparo múltiple al morir con efecto de disolución rosado.
+
+const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
+const PROJECTILE_SCALE: Vector3 = Vector3.ONE
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXPORTS & CONFIGURACIÓN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@export_category("Aura Rosada")
+@export var aura_max_vida: int = 4  ## Cantidad de proyectiles que resiste el aura antes de romperse
+@export var color_aura_primario: Color = Color(1.0, 0.45, 0.8, 1.0)
+@export var color_aura_secundario: Color = Color(0.9, 0.15, 0.65, 1.0)
+@export var color_aura_luz: Color = Color(1.0, 0.3, 0.75, 1.0)
+
+@export_category("Combate - Arquera Rosa")
+@export var tiempo_tensa_arco: float = 1.5  ## Tiempo que dura tensando el arco antes de soltar la ráfaga
+@export var intervalo_disparo: float = 2.5  ## Tiempo de recarga entre ráfagas
+@export var velocidad_flecha: float = 9.0  ## Velocidad de los proyectiles
+@export var cantidad_flechas_rafaga: int = 5  ## Cantidad de flechas por ráfaga (exactamente 5)
+@export var intervalo_flechas_rafaga: float = 0.07  ## Intervalo rápido en segundos entre flechas
+@export var poder_disparo_spread: float = 0.04  ## Dispersión angular de la ráfaga
+@export var potencia_disparo_min: float = 1.0
+@export var potencia_disparo_max: float = 2.0
+
+@export_category("Reposicionamiento")
+@export var distancia_reposicion_min: float = 0.8  ## Distancia mínima que avanza para reposicionarse
+@export var distancia_reposicion_max: float = 1.5  ## Distancia máxima que avanza para reposicionarse
+@export var pausa_post_disparo: float = 0.4  ## Pausa antes de iniciar reposicionamiento
+
+@export_category("Drops")
+@export var power_up_multiple_scene: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
+@export var drop_chance_flecha_multiple: float = 1.0  ## 100% de drop garantizado
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ESTADO Y REFERENCIAS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+var aura_vida: int = 4
+var aura_vfx_node: Node3D = null
+var aura_anim_player: AnimationPlayer = null
+
+var is_shooting_burst: bool = false
+var esta_reposicionando: bool = false
+var distancia_reposicion_objetivo: float = 0.0
+var distancia_reposicion_caminada: float = 0.0
+var drop_realizado: bool = false
+
+var goblin_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
+var bow_anim_player: AnimationPlayer = null
+var flecha_visual_mano: Node3D = null
+var _pose_base_flecha_mano: Transform3D = Transform3D.IDENTITY
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INICIALIZACIÓN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _on_enemy_ready() -> void:
+	color_borde_disolucion = Color(1.0, 0.25, 0.75)  # Efecto de disolución y partículas rosado
+	health = vida_maxima
+	aura_vida = aura_max_vida
+
+	# Aplicar textura rosada a la malla del personaje
+	var mat_rosa: Material = load("res://Entities/Enemigo_Arquera_Rosa/MAT_ARQUERA_ROSA.tres")
+	if mat_rosa:
+		for child: Node in find_children("*", "MeshInstance3D", true, false):
+			var mesh_inst := child as MeshInstance3D
+			if not mesh_inst:
+				continue
+			if mesh_inst.find_parent("ARCO_GOBLING_GIRL") != null or mesh_inst.find_parent("FlechaMano") != null or mesh_inst.find_parent("BasicAreaVFX_04") != null:
+				continue
+			mesh_inst.material_override = mat_rosa
+
+	_setup_aura_vfx()
+	_configurar_flecha_visual_mano()
+	_actualizar_visibilidad_flecha_mano(false)
+
+	# Buscar AnimationPlayer del arco
+	var bow_node := find_child("ARCO_GOBLING_GIRL", true, false)
+	if bow_node:
+		var bow_players := bow_node.find_children("*", "AnimationPlayer", true, false)
+		if not bow_players.is_empty():
+			bow_anim_player = bow_players[0] as AnimationPlayer
+
+	# Verificar que anim_player es el principal del personaje
+	if anim_player and not _has_main_animation(anim_player):
+		var all_players := find_children("*", "AnimationPlayer", true, false)
+		for player: Node in all_players:
+			var ap := player as AnimationPlayer
+			if ap and ap != bow_anim_player and _has_main_animation(ap):
+				anim_player = ap
+				break
+
+	if anim_player:
+		for anim_name_full: StringName in anim_player.get_animation_list():
+			if "CAMINA" in String(anim_name_full) or "CAMINAR" in String(anim_name_full):
+				var anim := anim_player.get_animation(anim_name_full)
+				if anim:
+					anim.loop_mode = Animation.LOOP_LINEAR
+
+	_play_animation("GIRL_GOB_CAMINA")
+	_play_bow_animation("ARCO_IDLE")
+
+
+func _setup_aura_vfx() -> void:
+	aura_vfx_node = find_child("BasicAreaVFX_04", true, false) as Node3D
+	if not aura_vfx_node:
+		var aura_scene := preload("res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn")
+		if aura_scene:
+			aura_vfx_node = aura_scene.instantiate() as Node3D
+			add_child(aura_vfx_node)
+			aura_vfx_node.position = Vector3(0.0, 0.01, 0.0)
+
+	if aura_vfx_node:
+		aura_vfx_node.scale = Vector3(0.65, 0.65, 0.65)
+		aura_vfx_node.set("primary_color", color_aura_primario)
+		aura_vfx_node.set("secondary_color", color_aura_secundario)
+		aura_vfx_node.set("light_color", color_aura_luz)
+		aura_anim_player = aura_vfx_node.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if aura_anim_player and aura_anim_player.has_animation("main"):
+			aura_anim_player.play("main")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTERACCIÓN CON EL AURA ROSADA (REPULSIÓN Y REDUCCIÓN DE INTENSIDAD)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Devuelve true si el proyectil fue repelido/desviado por el aura
+func manejar_impacto_aura(flecha: Node) -> bool:
+	if aura_vida <= 0:
+		return false  # Aura rota, pasa daño normal
+
+	# Si es flecha explosiva, penetra / detona inmediatamente y rompe el aura
+	if flecha and ("es_explosiva" in flecha and flecha.es_explosiva):
+		_romper_aura()
+		return false
+
+	# Flecha normal: se absorbe un impacto y se repele
+	aura_vida -= 1
+	_actualizar_intensidad_aura()
+
+	if aura_vida <= 0:
+		_romper_aura()
+
+	return true
+
+
+func _actualizar_intensidad_aura() -> void:
+	if not aura_vfx_node or not is_instance_valid(aura_vfx_node):
+		return
+
+	var ratio: float = clampf(float(aura_vida) / float(aura_max_vida), 0.0, 1.0)
+	var target_scale := Vector3(0.65, 0.65, 0.65) * (0.35 + 0.65 * ratio)
+
+	var tween := create_tween()
+	tween.tween_property(aura_vfx_node, "scale", target_scale, 0.2).set_ease(Tween.EASE_OUT)
+
+	var light_node := aura_vfx_node.find_child("Light", true, false) as OmniLight3D
+	if light_node:
+		tween.parallel().tween_property(light_node, "light_energy", 4.0 * ratio, 0.2)
+
+	if aura_anim_player and aura_anim_player.has_animation("main"):
+		aura_anim_player.stop()
+		aura_anim_player.play("main")
+
+
+func _romper_aura() -> void:
+	aura_vida = 0
+	AudioManager.play_sfx("shield_break", 5.0)
+
+	if aura_vfx_node and is_instance_valid(aura_vfx_node):
+		var tween := create_tween()
+		tween.tween_property(aura_vfx_node, "scale", Vector3(1.2, 0.05, 1.2), 0.2).set_ease(Tween.EASE_OUT)
+		tween.tween_callback(func() -> void:
+			if is_instance_valid(aura_vfx_node):
+				aura_vfx_node.visible = false
+		)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FÍSICA Y MOVIMIENTO (CAMINATA Y REPOSICIONAMIENTO)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _process_walking(delta: float) -> void:
+	if modo_pacifico:
+		velocity.x = -velocidad_caminar
+		walked_distance += velocidad_caminar * delta
+		if global_position.x <= limite_pacifico_x:
+			velocity.x = 0
+			if not pacifico_detenido:
+				pacifico_detenido = true
+				_on_pacifico_detenido()
+		return
+
+	# Límite infranqueable de la isla enemiga
+	var limite_izq: float = _obtener_limite_izquierdo_x()
+	if global_position.x <= limite_izq:
+		velocity.x = 0
+		global_position.x = max(global_position.x, limite_izq)
+		esta_reposicionando = false
+		_change_state(State.SHOOTING)
+		return
+
+	velocity.x = -velocidad_caminar
+
+	if esta_reposicionando:
+		distancia_reposicion_caminada += velocidad_caminar * delta
+		if distancia_reposicion_caminada >= distancia_reposicion_objetivo or global_position.x - 0.2 <= limite_izq:
+			esta_reposicionando = false
+			velocity.x = 0
+			_change_state(State.SHOOTING)
+	else:
+		walked_distance += velocidad_caminar * delta
+		if walked_distance >= target_walk_distance:
+			if _check_spacing():
+				_change_state(State.SHOOTING)
+			else:
+				if global_position.x - 0.3 > limite_izq:
+					target_walk_distance += 0.3
+				else:
+					_change_state(State.SHOOTING)
+
+
+func _on_state_walking() -> void:
+	is_shooting_burst = false
+	_actualizar_visibilidad_flecha_mano(false)
+	_play_animation("GIRL_GOB_CAMINA")
+	_play_bow_animation("ARCO_IDLE")
+
+
+func _on_state_shooting() -> void:
+	velocity.x = 0
+	_iniciar_ciclo_disparo()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CICLO DE DISPARO (TENSADO + 5 FLECHAS + REPOSICIONAMIENTO)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _process_shooting(_delta: float) -> void:
+	velocity.x = 0.0
+	if rastrear_jugador:
+		_track_player()
+
+
+func _iniciar_ciclo_disparo() -> void:
+	if is_shooting_burst or current_state != State.SHOOTING:
+		return
+
+	if not player_ref or not is_instance_valid(player_ref):
+		player_ref = get_tree().get_first_node_in_group("player")
+		if not player_ref:
+			return
+
+	if player_ref.get("is_dead"):
+		return
+
+	is_shooting_burst = true
+
+	# 1. Fase de Tensado del Arco Normal
+	_play_animation("GIRL_GOB_DISPARO")
+	_play_bow_animation("ARCO_TENSAR")
+	_actualizar_visibilidad_flecha_mano(true)
+
+	await get_tree().create_timer(tiempo_tensa_arco, false).timeout
+	if not is_instance_valid(self) or not is_inside_tree() or current_state != State.SHOOTING:
+		is_shooting_burst = false
+		return
+
+	# 2. Fase de Disparo de exactamente 5 flechas en sucesión
+	_play_bow_animation("ARCO_DISPARO")
+
+	for i in range(cantidad_flechas_rafaga):
+		if not is_instance_valid(self) or not is_inside_tree() or current_state != State.SHOOTING:
+			break
+		if player_ref and player_ref.get("is_dead"):
+			break
+
+		_disparar_flecha_individual()
+
+		if i < cantidad_flechas_rafaga - 1:
+			await get_tree().create_timer(intervalo_flechas_rafaga, false).timeout
+
+	_actualizar_visibilidad_flecha_mano(false)
+	_play_bow_animation("ARCO_IDLE")
+	is_shooting_burst = false
+
+	# 3. Pausa post-disparo antes de avanzar
+	if is_instance_valid(self) and is_inside_tree() and current_state == State.SHOOTING:
+		await get_tree().create_timer(pausa_post_disparo, false).timeout
+		if is_instance_valid(self) and is_inside_tree() and current_state == State.SHOOTING:
+			_iniciar_reposicionamiento()
+
+
+func _disparar_flecha_individual() -> void:
+	if not goblin_arrow_scene:
+		return
+	if not is_instance_valid(player_ref):
+		player_ref = get_tree().get_first_node_in_group("player")
+		if not player_ref:
+			return
+
+	var arrow := PROJECTILE_POOL_REF.acquire(goblin_arrow_scene) as GoblinGirlArrowProjectile
+	if not arrow:
+		return
+
+	arrow.scale = PROJECTILE_SCALE
+	AudioManager.play_sfx("goblin_girl_shoot")
+
+	var spawn_pos: Vector3 = global_position + Vector3(-0.3, altura_spawn_flecha, 0.0)
+	var target_pos: Vector3 = player_ref.global_position + Vector3(0.0, 0.5, 0.0)
+
+	var spread := Vector3(
+		randf_range(-poder_disparo_spread, poder_disparo_spread),
+		randf_range(-poder_disparo_spread, poder_disparo_spread),
+		0.0
+	)
+	var dir: Vector3 = ((target_pos - spawn_pos) + spread).normalized()
+	var potencia: float = randf_range(potencia_disparo_min, potencia_disparo_max)
+
+	arrow.initialize(dir, potencia)
+	PROJECTILE_POOL_REF.activate(arrow, get_tree().root, spawn_pos)
+
+
+func _iniciar_reposicionamiento() -> void:
+	var limite_izq: float = _obtener_limite_izquierdo_x()
+	# Si ya estamos en el límite de la isla, no podemos avanzar más: recargar y volver a disparar
+	if global_position.x <= limite_izq + 0.35:
+		await get_tree().create_timer(intervalo_disparo, false).timeout
+		if is_instance_valid(self) and is_inside_tree() and current_state == State.SHOOTING:
+			_iniciar_ciclo_disparo()
+		return
+
+	distancia_reposicion_objetivo = randf_range(distancia_reposicion_min, distancia_reposicion_max)
+	distancia_reposicion_caminada = 0.0
+	esta_reposicionando = true
+	_change_state(State.WALKING)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DAÑO, MUERTE & DROP DEL 100%
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func take_damage(amount: float) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	_actualizar_visibilidad_flecha_mano(false)
+	super.take_damage(amount)
+
+
+func _on_state_dying() -> void:
+	if aura_vfx_node and is_instance_valid(aura_vfx_node):
+		aura_vfx_node.visible = false
+
+	_dropear_power_up_multiple()
+	_actualizar_visibilidad_flecha_mano(false)
+	super._on_state_dying()
+	AudioManager.play_sfx("goblin_girl_death")
+
+	# Animaciones reales de muerte
+	var death_anims: Array[String] = ["MUERTE1", "MUERTE2", "MUERTE3"]
+	var chosen_death: String = death_anims[randi() % death_anims.size()]
+	var anim_length: float = _get_animation_duration(chosen_death)
+	_play_animation(chosen_death)
+	_play_bow_animation("ARCO_IDLE")
+
+	get_tree().create_timer(anim_length + 0.5).timeout.connect(
+		func() -> void:
+			if is_instance_valid(self) and is_inside_tree():
+				_die()
+	)
+
+
+func _dropear_power_up_multiple() -> void:
+	if drop_realizado:
+		return
+	drop_realizado = true
+
+	if not power_up_multiple_scene:
+		return
+
+	var power_up = power_up_multiple_scene.instantiate()
+	if not power_up:
+		return
+
+	var scene_root := get_tree().current_scene
+	if not scene_root:
+		scene_root = get_tree().root
+	scene_root.add_child(power_up)
+	power_up.global_position = global_position + Vector3(0.0, 0.4, 0.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HELPERS DE ANIMACIÓN Y ARCO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _has_main_animation(player: AnimationPlayer) -> bool:
+	if not player:
+		return false
+	for a: StringName in player.get_animation_list():
+		if "GIRL_GOB" in String(a) or "CAMINA" in String(a):
+			return true
+	return false
+
+
+func _play_bow_animation(anim_name: String) -> void:
+	if not bow_anim_player:
+		return
+	for a: StringName in bow_anim_player.get_animation_list():
+		if anim_name.to_lower() in String(a).to_lower():
+			bow_anim_player.play(a)
+			return
+
+
+func _configurar_flecha_visual_mano() -> void:
+	flecha_visual_mano = find_child("FlechaMano", true, false) as Node3D
+	if flecha_visual_mano:
+		_pose_base_flecha_mano = flecha_visual_mano.transform
+
+
+func _actualizar_visibilidad_flecha_mano(visible_flag: bool) -> void:
+	if flecha_visual_mano and is_instance_valid(flecha_visual_mano):
+		flecha_visual_mano.visible = visible_flag
+		if visible_flag:
+			flecha_visual_mano.transform = _pose_base_flecha_mano
