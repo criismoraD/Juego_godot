@@ -54,6 +54,11 @@ func _agregar_animacion_minima(ballestera: AllyBallestera) -> void:
 	anim_player.add_animation_library("", lib)
 	ballestera.add_child(anim_player)
 
+	var skeleton := Skeleton3D.new()
+	skeleton.name = "Skeleton3D"
+	ballestera.add_child(skeleton)
+	ballestera.skeleton = skeleton
+
 
 func test_inicializacion_vida_4():
 	# Arrange & Assert
@@ -137,14 +142,14 @@ func test_prioridad_enemigos():
 	var enemigo_comun = Node3D.new()
 	enemigo_comun.name = "EnemigoGeneral"
 	enemigo_comun.add_to_group("enemies")
-	enemigo_comun.global_position = Vector3(5, 0, 0)
 	get_tree().root.add_child(enemigo_comun)
+	enemigo_comun.global_position = Vector3(5, 0, 0)
 
 	var imp_prioritario = Node3D.new()
 	imp_prioritario.name = "ImpEnemigo"
 	imp_prioritario.add_to_group("enemies")
-	imp_prioritario.global_position = Vector3(8, 0, 0)
 	get_tree().root.add_child(imp_prioritario)
+	imp_prioritario.global_position = Vector3(8, 0, 0)
 
 	# Act
 	var objetivo = _ballestera._obtener_objetivo_prioritario()
@@ -162,8 +167,8 @@ func test_apuntado_torso_rotacion_hueso():
 	var enemigo = Node3D.new()
 	enemigo.name = "ImpTest"
 	enemigo.add_to_group("enemies")
-	enemigo.global_position = Vector3(6.0, 0.0, 0.0)
 	get_tree().root.add_child(enemigo)
+	enemigo.global_position = Vector3(6.0, 0.0, 0.0)
 	_ballestera.global_position = Vector3(0.0, 0.0, 0.0)
 
 	# Act: ejecutar apuntado
