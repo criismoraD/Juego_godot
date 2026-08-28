@@ -130,3 +130,67 @@ func test_registro_grupo_allies():
 	# Assert
 	assert_true(_ballestera.is_in_group("allies"), "La ballestera debe estar en el grupo 'allies'")
 	assert_true(AllyArcher.active_allies_cache.has(_ballestera), "La ballestera debe estar en active_allies_cache")
+
+
+func test_prioridad_enemigos():
+	# Arrange
+	var enemigo_comun = Node3D.new()
+	enemigo_comun.name = "EnemigoGeneral"
+	enemigo_comun.add_to_group("enemies")
+	enemigo_comun.global_position = Vector3(5, 0, 0)
+	get_tree().root.add_child(enemigo_comun)
+
+	var imp_prioritario = Node3D.new()
+	imp_prioritario.name = "ImpEnemigo"
+	imp_prioritario.add_to_group("enemies")
+	imp_prioritario.global_position = Vector3(8, 0, 0)
+	get_tree().root.add_child(imp_prioritario)
+
+	# Act
+	var objetivo = _ballestera._obtener_objetivo_prioritario()
+
+	# Assert
+	assert_not_null(objetivo, "Debe encontrar un objetivo")
+	assert_eq(objetivo, imp_prioritario, "Debe priorizar al Imp sobre el enemigo general aunque esté más lejos")
+
+	enemigo_comun.queue_free()
+	imp_prioritario.queue_free()
+
+
+func test_apuntado_torso_rotacion_hueso():
+	# Arrange: enemigo a la derecha en el suelo
+	var enemigo = Node3D.new()
+	enemigo.name = "ImpTest"
+	enemigo.add_to_group("enemies")
+	enemigo.global_position = Vector3(6.0, 0.0, 0.0)
+	get_tree().root.add_child(enemigo)
+	_ballestera.global_position = Vector3(0.0, 0.0, 0.0)
+
+	# Act: ejecutar apuntado
+	_ballestera.objetivo_actual = enemigo
+	_ballestera._actualizar_apuntado_torso(0.5)
+
+	# Assert: con invertir_pitch = true, _current_pitch debe ser negativo para compensar hacia abajo la pose base
+	assert_lt(_ballestera._current_pitch, 0.0, "El pitch debe inclinarse negativamente (invertido) para apuntar hacia abajo al objetivo")
+
+	enemigo.queue_free()
+
+
+func test_celebracion_victoria_loops_y_rotacion():
+	# Act: activar victoria
+	_ballestera.celebrar_victoria()
+
+	# Assert: estado y conteo de loops
+	assert_eq(_ballestera.current_state, _ballestera.State.CELEBRATING, "Debe entrar en estado CELEBRATING")
+	assert_gte(_ballestera._loops_victoria_restantes, 3, "Debe inicializar con al menos 3 repeticiones")
+
+	# Simular iteraciones de loops de celebración
+	while _ballestera._loops_victoria_restantes > 1:
+		_ballestera.state_timer = 0.0
+		_ballestera._process_celebrating(0.01)
+		assert_eq(_ballestera.current_state, _ballestera.State.CELEBRATING, "Debe mantenerse celebrando mientras queden loops")
+
+	# Último loop: debe regresar directamente a AIMING (sin pasar por IDLE)
+	_ballestera.state_timer = 0.0
+	_ballestera._process_celebrating(0.01)
+	assert_eq(_ballestera.current_state, _ballestera.State.AIMING, "Tras completar los loops debe pasar directamente a AIMING")

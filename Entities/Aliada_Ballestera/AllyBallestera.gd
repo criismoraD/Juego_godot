@@ -32,6 +32,27 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP, CELEBRA
 @export var idle_min: float = 2.0  ## Pausa prolongada entre disparos
 @export var idle_max: float = 3.2
 
+@export_category("Apuntado y Seguimiento")
+@export var invertir_pitch: bool = true  ## Invertir el sentido de giro del hueso para apuntar hacia abajo/arriba
+@export var offset_pitch_animacion: float = 35.0  ## Compensación en grados del ángulo hacia arriba de la animación base
+@export var velocidad_seguimiento: float = 8.0  ## Velocidad de suavizado para apuntar al objetivo
+@export var angulo_pitch_min: float = -15.0  ## Límite de ángulo hacia arriba (grados)
+@export var angulo_pitch_max: float = 60.0  ## Límite de ángulo hacia abajo (grados)
+@export var balanceo_apuntado_grados: float = 1.5  ## Variación/balanceo natural de 1 a 2 grados al apuntar
+@export var velocidad_balanceo: float = 2.2  ## Velocidad de la oscilación de balanceo
+
+@export_category("Celebración de Victoria")
+@export var repeticiones_victoria_min: int = 3  ## Mínimo de loops de la animación de victoria tras oleada
+@export var repeticiones_victoria_max: int = 4  ## Máximo de loops de la animación de victoria tras oleada
+@export var duracion_animacion_victoria: float = 1.0  ## Tiempo en segundos de cada loop de victoria (1.0s sutil y suavizado)
+@export var rotacion_victoria_grados: float = 15.0  ## Grados de giro del personaje durante la celebración de victoria
+@export var velocidad_giro_victoria: float = 4.5  ## Velocidad de rotación suave para la celebración
+@export var probar_victoria: bool = false:  ## Botón para reproducir la animación de victoria desde el Inspector
+	set(val):
+		if val:
+			probar_victoria = false
+			celebrar_victoria()
+
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 
@@ -75,6 +96,7 @@ var _spine_bone_idx: int = -1
 var _spine1_bone_idx: int = -1
 var _spine2_bone_idx: int = -1
 var _current_pitch: float = 0.0
+var _loops_victoria_restantes: int = 0
 
 
 func _ready():
@@ -132,7 +154,12 @@ func _on_oleada_completada(_numero_oleada: int) -> void:
 
 func celebrar_victoria() -> void:
 	if current_state != State.DYING and current_state != State.DEAD:
+		_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
 		_cambiar_estado(State.CELEBRATING)
+
+
+func probar_animacion_victoria() -> void:
+	celebrar_victoria()
 
 
 func _vincular_escudo_piso() -> void:
@@ -215,14 +242,6 @@ func _configurar_arma_ballesta() -> void:
 		for m in ballesta.find_children("*", "MeshInstance3D", true, false):
 			m.visible = true
 
-		# Postura realista de ballesta medieval: arco frontal horizontal, rail superior, culata al hombro y gatillo en mano derecha
-		ballesta.transform = Transform3D(
-			Vector3(78.5, -14.2, 16.8),
-			Vector3(12.4, 76.8, -17.2),
-			Vector3(-18.2, 16.5, 77.4),
-			Vector3(-8.5, 11.0, 1.5)
-		)
-
 
 func _setup_animation_player():
 	var trees = find_children("*", "AnimationTree", true, false)
@@ -286,33 +305,63 @@ func _process(delta: float):
 		State.CELEBRATING:
 			_process_celebrating(delta)
 
+	_actualizar_rotacion_modelo(delta)
 	_actualizar_apuntado_torso(delta)
+
+
+func _actualizar_rotacion_modelo(delta: float) -> void:
+	if not model_root:
+		return
+
+	var target_y_rot: float = _original_model_y_rot
+	if current_state == State.CELEBRATING:
+		target_y_rot = _original_model_y_rot + deg_to_rad(rotacion_victoria_grados)
+
+	model_root.rotation.y = lerp_angle(model_root.rotation.y, target_y_rot, 1.0 - exp(-velocidad_giro_victoria * delta))
 
 
 func _actualizar_apuntado_torso(delta: float) -> void:
 	if not skeleton:
 		return
 
-	var en_estados_disparo := (
-		current_state == State.RELOADING
-		or current_state == State.AIMING
-		or current_state == State.SHOOTING
-	)
+	if current_state == State.DYING or current_state == State.DEAD or current_state == State.CELEBRATING:
+		_restaurar_torso()
+		return
+
+	# Actualizar o refrescar objetivo prioritario
+	if not is_instance_valid(objetivo_actual) or _es_enemigo_muerto(objetivo_actual):
+		objetivo_actual = _obtener_objetivo_prioritario()
 
 	var target_pitch: float = 0.0
-	if is_instance_valid(objetivo_actual) and not _es_objetivo_azar(objetivo_actual) and en_estados_disparo:
+	if is_instance_valid(objetivo_actual) and not _es_objetivo_azar(objetivo_actual):
 		var my_pos: Vector3 = global_position + Vector3(0, 0.75, 0)
+		if fase_agachada:
+			my_pos.y -= 0.35
 		var target_pos: Vector3 = objetivo_actual.global_position + Vector3(0, 0.45, 0)
 		var dy: float = target_pos.y - my_pos.y
 		var dx: float = absf(target_pos.x - my_pos.x)
-		target_pitch = clampf(-atan2(dy, maxf(dx, 0.2)), deg_to_rad(-20.0), deg_to_rad(18.0))
+		var angle_to_target: float = atan2(dy, maxf(dx, 0.2))
 
-		# Micro-oscilación suave de respiración y estabilidad al apuntar
-		var breath := sin(Time.get_ticks_msec() * 0.0025) * deg_to_rad(0.5)
-		target_pitch += breath
+		# Girar el hueso hacia el objetivo compensando la inclinación hacia arriba de la animación
+		var base_offset: float = deg_to_rad(offset_pitch_animacion)
+		target_pitch = base_offset - angle_to_target
+		target_pitch = clampf(target_pitch, deg_to_rad(angulo_pitch_min), deg_to_rad(angulo_pitch_max))
+
+		if invertir_pitch:
+			target_pitch = -target_pitch
+
+		# Balanceo y variación natural de 1 a 2 grados al apuntar
+		var sway := sin(Time.get_ticks_msec() * 0.001 * velocidad_balanceo) * deg_to_rad(balanceo_apuntado_grados)
+		target_pitch += sway
+	elif _puede_atacar():
+		# Si hay combate activo pero el objetivo es lejano o temporal, mantener ángulo frontal con leve balanceo
+		var base_pitch = deg_to_rad(offset_pitch_animacion)
+		target_pitch = -base_pitch if invertir_pitch else base_pitch
+		var sway := sin(Time.get_ticks_msec() * 0.001 * velocidad_balanceo) * deg_to_rad(balanceo_apuntado_grados * 0.5)
+		target_pitch += sway
 
 	# Suavizado exponencial orgánico e independiente del framerate
-	var smooth_factor: float = 1.0 - exp(-5.0 * delta)
+	var smooth_factor: float = 1.0 - exp(-velocidad_seguimiento * delta)
 	_current_pitch = lerpf(_current_pitch, target_pitch, smooth_factor)
 
 	if absf(_current_pitch) > 0.001:
@@ -379,6 +428,10 @@ func _process_reloading(delta: float):
 func _process_aiming(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
+		if not _puede_atacar() or not is_instance_valid(_obtener_objetivo_prioritario()):
+			# Si no hay enemigos activos, mantenerse apuntando y en guardia sin disparar
+			state_timer = 0.25
+			return
 		_disparar()
 		_cambiar_estado(State.SHOOTING)
 
@@ -406,7 +459,16 @@ func _process_getting_up(delta: float):
 func _process_celebrating(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
-		_cambiar_estado(State.IDLE)
+		if _loops_victoria_restantes > 1:
+			_loops_victoria_restantes -= 1
+			if anim_player:
+				anim_player.seek(0.0, true)
+			_play_anim("VICTORIA", 0.35, 1.0)
+			state_timer = duracion_animacion_victoria
+		else:
+			_loops_victoria_restantes = 0
+			# Transición directa y suave a la postura de apuntado (sin pasar por IDLE)
+			_cambiar_estado(State.AIMING)
 
 
 func _cambiar_estado(nuevo: State):
@@ -416,11 +478,11 @@ func _cambiar_estado(nuevo: State):
 	current_state = nuevo
 	match nuevo:
 		State.IDLE:
-			objetivo_actual = null
+			objetivo_actual = _obtener_objetivo_prioritario() if _puede_atacar() else null
 			if fase_agachada:
-				_play_anim("DISPARO_AGACHADO", 0.15, 0.001)
+				_play_anim("DISPARO_AGACHADO", 0.35, 0.001)
 			else:
-				_fijar_pose_combate()
+				_fijar_pose_combate(0.35)
 			state_timer = randf_range(idle_min, idle_max)
 		State.RELOADING:
 			objetivo_actual = _obtener_objetivo_prioritario()
@@ -428,15 +490,15 @@ func _cambiar_estado(nuevo: State):
 			if fase_agachada:
 				_play_anim("DISPARO_AGACHADO", 0.15, 0.001)
 			else:
-				_fijar_pose_combate()
+				_fijar_pose_combate(0.2)
 			state_timer = tiempo_recarga
 		State.AIMING:
 			if not is_instance_valid(objetivo_actual):
 				objetivo_actual = _obtener_objetivo_prioritario()
 			if fase_agachada:
-				_play_anim("DISPARO_AGACHADO", 0.15, 1.0)
+				_play_anim("DISPARO_AGACHADO", 0.35, 1.0)
 			else:
-				_fijar_pose_combate()
+				_fijar_pose_combate(0.35)
 			charge_duration = randf_range(tiempo_carga_min, tiempo_carga_max)
 			state_timer = charge_duration
 		State.SHOOTING:
@@ -450,19 +512,19 @@ func _cambiar_estado(nuevo: State):
 		State.DEAD:
 			pass
 		State.GETTING_UP:
-			_fijar_pose_combate()
+			_fijar_pose_combate(0.3)
 			state_timer = 1.0
 			_blink_timer = 0.0
 		State.CELEBRATING:
 			_restaurar_torso()
-			_play_anim("VICTORIA", 0.2, 1.0)
-			state_timer = 3.5
+			_play_anim("VICTORIA", 0.25, 1.0)
+			state_timer = duracion_animacion_victoria
 
 
-func _fijar_pose_combate():
+func _fijar_pose_combate(blend_time: float = 0.35):
 	if not anim_player:
 		return
-	_play_anim("DISPARO_01", 0.15, 0.001)
+	_play_anim("DISPARO_01", blend_time, 0.001)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
