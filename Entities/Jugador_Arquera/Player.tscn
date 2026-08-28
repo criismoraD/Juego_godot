@@ -25,11 +25,11 @@ script = ExtResource("1_script")
 vida_maxima = 4
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=656013072]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.125, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0)
 shape = SubResource("CapsuleShape3D_player")
 
 [node name="ArqueraModel" parent="." unique_id=1511312856 instance=ExtResource("2_fbx")]
-transform = Transform3D(-1.47306e-07, 0, 3.37, 0, 3.37, 0, -3.37, 0, -1.47306e-07, 0, -0.065, 0)
+transform = Transform3D(-1.355e-07, 0, 3.10, 0, 3.10, 0, -3.10, 0, -1.355e-07, 0, -0.065, 0)
 
 [node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 2102294179) index="0" unique_id=817961625]
 bones/0/position = Vector3(1.7202649, -1.0863959, -37.875916)
