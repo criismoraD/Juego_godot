@@ -45,7 +45,6 @@ var btn_spawn_posion: Button
 var btn_spawn_flecha_explosiva: Button
 var flecha_explosiva_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 var flecha_multiple_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
-var zugenu_scene_debug: PackedScene = preload("res://Entities/Enemigo_Zugenu/Zugenu.tscn")
 var vignette_rect: ColorRect = null
 var _vignette_tween: Tween = null
 const TEXTURA_ICONO_PUERTA: Texture2D = preload("res://TEST_/Icono puerta.png")
@@ -1891,39 +1890,6 @@ func _spawn_flecha_multiple_debug() -> void:
 	item.position = Vector3(target_x, target_y + 4.0, target_z)
 	scene_root.add_child(item)
 	item.global_position = Vector3(target_x, target_y + 4.0, target_z)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# DEBUG: SPAWN ZUGENU
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
-func _spawn_zugenu_debug() -> void:
-	if not zugenu_scene_debug:
-		push_warning("[GameUI] zugenu_scene_debug no está asignado.")
-		return
-
-	var scene_root := get_tree().current_scene
-	if not scene_root:
-		push_warning("[GameUI] No hay escena activa para instanciar a Zugenu.")
-		return
-
-	var enemy := zugenu_scene_debug.instantiate() as Node3D
-	if not enemy:
-		push_warning("[GameUI] No se pudo instanciar Zugenu.tscn.")
-		return
-
-	# Spawner por el lado derecho de la pantalla exactamente como el resto de enemigos del nivel
-	var spawn_pos := Vector3(5.5, 0.2, 0.0)
-	var spawner := get_tree().get_first_node_in_group("wave_spawners")
-	if spawner and is_instance_valid(spawner) and "global_position" in spawner:
-		spawn_pos = spawner.global_position
-		spawn_pos.y = 0.2
-	elif player and is_instance_valid(player) and "global_position" in player:
-		spawn_pos = Vector3(player.global_position.x + 8.5, 0.2, 0.0)
-
-	scene_root.add_child(enemy)
-	enemy.global_position = spawn_pos
 
 
 ## Activa el oscurecimiento con viñeteado morado oscuro durante el evento del cuerno con transición gradual
