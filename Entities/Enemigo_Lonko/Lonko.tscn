@@ -57,7 +57,6 @@ size = Vector2(0.65, 0.65)
 [node name="Lonko" type="CharacterBody3D" unique_id=2008123910]
 collision_layer = 4
 script = ExtResource("1_lonko")
-radio_marca_caida = 0.55
 altura_pilar_offset = 3.0
 debug_pitch_deg = -90.0
 velocidad_caminar = 1.5
@@ -154,7 +153,8 @@ bone_name = "mixamorig_LeftHand"
 bone_idx = 17
 
 [node name="FlechaElectricaVFX_Manual" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=146018264 instance=ExtResource("5_vfx_manual")]
-transform = Transform3D(-42.0727, 15.921954, 1.1742358, -15.953007, -41.797333, -4.845971, -0.6239387, -4.9470195, 44.72289, -10.780743, 4.4102144, 4.5638084)
+transform = Transform3D(-42.0727, 15.921954, 1.1742359, -15.953007, -41.797333, -4.8459706, -0.62393856, -4.9470196, 44.72289, -40.46634, -9.112748, 4.9762917)
+visible = false
 primary_color = Color(0.85, 1, 0.85, 1)
 secondary_color = Color(0.2, 1, 0.3, 1)
 tertiary_color = Color(0.05, 0.6, 0.15, 1)
@@ -162,7 +162,6 @@ light_color = Color(0.25, 1, 0.35, 1)
 
 [node name="FlechaMano" parent="LONKO/Armature/Skeleton3D/BoneAttachment3D_Arrow" unique_id=1101558565 instance=ExtResource("4_arrow")]
 transform = Transform3D(-84.1454, 31.843908, 2.3484716, -31.906015, -83.594666, -9.691942, -1.2478774, -9.894039, 89.44578, -10.780743, 4.4102144, 4.5638084)
-visible = false
 
 [node name="Particulas_Pisada" type="GPUParticles3D" parent="." unique_id=1565899052]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)

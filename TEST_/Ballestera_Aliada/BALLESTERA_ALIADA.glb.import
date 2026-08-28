@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bjry343ybp8gq"
-path="res://.godot/imported/saltar.fbx-279ebbe159611f2cd989e89a3cfeb806.scn"
+uid="uid://c21688k7g1tgd"
+path="res://.godot/imported/BALLESTERA_ALIADA.glb-00b161ab8795fea08b9c9aea92ca813d.scn"
 
 [deps]
 
-source_file="res://TEST_/Zugenu/Animaciones/saltar.fbx"
-dest_files=["res://.godot/imported/saltar.fbx-279ebbe159611f2cd989e89a3cfeb806.scn"]
+source_file="res://TEST_/Ballestera_Aliada/BALLESTERA_ALIADA.glb"
+dest_files=["res://.godot/imported/BALLESTERA_ALIADA.glb-00b161ab8795fea08b9c9aea92ca813d.scn"]
 
 [params]
 
@@ -32,7 +32,7 @@ meshes/force_disable_compression=false
 skins/use_named_skins=true
 animation/import=true
 animation/fps=30
-animation/trimming=true
+animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
 import_script/path=""
@@ -40,7 +40,6 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={}
-fbx/importer=0
-fbx/allow_geometry_helper_nodes=false
-fbx/embedded_image_handling=1
-fbx/naming_version=2
+gltf/naming_version=2
+gltf/embedded_image_handling=1
+gltf/texture_map_mode=1

@@ -183,6 +183,17 @@ func _activar_desde_pool() -> void:
 	_configurar_ciclo_de_vida(_lifecycle_id)
 
 
+## Convierte una flecha que fue instanciada en modo "en mano" (nodo FlechaMano
+## bajo un BoneAttachment3D) en un proyectil activo en vuelo. Pensada para ser
+## llamada tras reparentar el nodo fuera del esqueleto (Node3D.reparent):
+## habilita física, colisiones, visuales y ciclo de vida igual que un proyectil
+## recién instanciado desde escena.
+func activar_como_proyectil() -> void:
+	en_mano = false
+	add_to_group("enemy_projectiles")
+	_activar_desde_pool()
+
+
 func _desactivar_para_pool() -> void:
 	_lifecycle_id += 1
 	_destroying = false

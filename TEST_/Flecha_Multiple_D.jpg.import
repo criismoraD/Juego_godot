@@ -2,21 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dtper5o6pb8lo"
-path.s3tc="res://.godot/imported/Zugenu_modddif_image_0.png-d09a9f3a8665027447f347a992678e1d.s3tc.ctex"
-path.etc2="res://.godot/imported/Zugenu_modddif_image_0.png-d09a9f3a8665027447f347a992678e1d.etc2.ctex"
+uid="uid://d2fx76bwdwrid"
+path.s3tc="res://.godot/imported/Flecha_Multiple_D.jpg-ed05380c33df7d7f605365887b0d88a7.s3tc.ctex"
+path.etc2="res://.godot/imported/Flecha_Multiple_D.jpg-ed05380c33df7d7f605365887b0d88a7.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
-generator_parameters={
-"md5": "9340c44c998585c05d385cdfe7a31ee5"
-}
 
 [deps]
 
-source_file="res://TEST_/Zugenu/Zugenu_modddif_image_0.png"
-dest_files=["res://.godot/imported/Zugenu_modddif_image_0.png-d09a9f3a8665027447f347a992678e1d.s3tc.ctex", "res://.godot/imported/Zugenu_modddif_image_0.png-d09a9f3a8665027447f347a992678e1d.etc2.ctex"]
+source_file="res://TEST_/Flecha_Multiple_D.jpg"
+dest_files=["res://.godot/imported/Flecha_Multiple_D.jpg-ed05380c33df7d7f605365887b0d88a7.s3tc.ctex", "res://.godot/imported/Flecha_Multiple_D.jpg-ed05380c33df7d7f605365887b0d88a7.etc2.ctex"]
 
 [params]
 

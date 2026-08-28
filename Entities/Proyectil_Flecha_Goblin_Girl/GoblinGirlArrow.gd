@@ -32,10 +32,20 @@ func _actualizar_movimiento(delta: float) -> void:
 
 
 func _preparar_visuales() -> void:
-	_remove_glb_model()
 	_create_material()
-	_create_procedural_arrow()
 	_create_trail_particles()
+
+
+func _restaurar_visuales_desde_pool() -> void:
+	for mesh in _cached_mesh_instances:
+		if not is_instance_valid(mesh):
+			continue
+		if mesh is MeshInstance3D:
+			mesh.visible = true
+	if trail_particles:
+		trail_particles.process_material = _get_shared_trail_process_material(color_proyectil)
+		trail_particles.draw_pass_1 = _get_shared_trail_mesh(color_proyectil)
+		trail_particles.emitting = true
 
 
 func _capturar_velocidad_base_si_necesario() -> void:

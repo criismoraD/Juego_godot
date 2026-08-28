@@ -1,7 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://d9k3m8w7v2opl"]
+[gd_scene format=3 uid="uid://e57160ycusxt"]
 
 [ext_resource type="Script" path="res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.gd" id="1_powerup"]
-[ext_resource type="PackedScene" uid="uid://b6ca5e8wgdnqq" path="res://TEST_/Modelo flecha multiple.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://c6vv883x573xa" path="res://TEST_/Flecha_Multiple.glb" id="2_glb"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_powerup"]
 radius = 0.4
@@ -39,7 +39,7 @@ shape = SubResource("SphereShape3D_powerup")
 [node name="ModelRoot" type="Node3D" parent="."]
 transform = Transform3D(0.45, 0, 0, 0, 0.45, 0, 0, 0, 0.45, 0, 0.2, 0)
 
-[node name="MODELO_FLECHA_MULTIPLE" parent="ModelRoot" instance=ExtResource("2_glb")]
+[node name="Flecha_Multiple" parent="ModelRoot" instance=ExtResource("2_glb")]
 transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="MagicLight" type="OmniLight3D" parent="."]

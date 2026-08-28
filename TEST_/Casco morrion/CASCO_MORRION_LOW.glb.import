@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://yhda6m4yn5nm"
-path="res://.godot/imported/arquera rosa.glb-c1e90cc17c62150af3fe9feb51c9264e.scn"
+uid="uid://crd1yfeki7i64"
+path="res://.godot/imported/CASCO_MORRION_LOW.glb-ee356b8bb6dc33290fa003e5348c7752.scn"
 
 [deps]
 
-source_file="res://TEST_/Arquera rosa/arquera rosa.glb"
-dest_files=["res://.godot/imported/arquera rosa.glb-c1e90cc17c62150af3fe9feb51c9264e.scn"]
+source_file="res://TEST_/Casco morrion/CASCO_MORRION_LOW.glb"
+dest_files=["res://.godot/imported/CASCO_MORRION_LOW.glb-ee356b8bb6dc33290fa003e5348c7752.scn"]
 
 [params]
 

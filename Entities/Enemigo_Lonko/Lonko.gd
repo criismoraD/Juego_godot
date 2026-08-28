@@ -287,19 +287,6 @@ func _recolorear_flecha_mano() -> void:
 	if "color_proyectil" in flecha_visual_mano:
 		flecha_visual_mano.color_proyectil = color_proyectil_lonko
 
-	var meshes: Array[Node] = flecha_visual_mano.find_children("*", "MeshInstance3D", true, false)
-	for mesh_node in meshes:
-		var mi := mesh_node as MeshInstance3D
-		if not mi:
-			continue
-		var mat: Material = mi.material_override
-		if mat is StandardMaterial3D:
-			var new_mat := mat.duplicate() as StandardMaterial3D
-			new_mat.albedo_color = color_proyectil_lonko
-			if new_mat.emission_enabled:
-				new_mat.emission = color_proyectil_lonko
-			mi.material_override = new_mat
-
 	if "trail_particles" in flecha_visual_mano and flecha_visual_mano.trail_particles:
 		var tp: GPUParticles3D = flecha_visual_mano.trail_particles
 		if tp.process_material is ParticleProcessMaterial:
@@ -1358,42 +1345,89 @@ func _disparar_proyectil() -> void:
 		_disparar_proyectil_electrico()
 		return
 
-	_ocultar_flecha_mano()
-
-	if not lonko_arrow_scene:
-		return
-
-	var arrow := lonko_arrow_scene.instantiate() as Node3D
+	# Lanzar la flecha real que está en la mano (FlechaMano) en vez de
+	# instanciar un proyectil nuevo aparte.
+	var arrow := _lanzar_flecha_mano()
 	if not arrow:
 		return
-
-	var spawn_pos: Vector3 = _cached_spawn_pos
-	if spawn_pos.is_zero_approx():
-		spawn_pos = global_position + Vector3(0, altura_spawn_flecha, 0)
 
 	var target_pos: Vector3 = global_position + Vector3(-5, 0, 0)
 	if player_ref and is_instance_valid(player_ref):
 		target_pos = player_ref.global_position + Vector3(0, 1.0, 0)
 
-	if "color_proyectil" in arrow:
-		arrow.color_proyectil = color_proyectil_lonko
+	var dir := (target_pos - arrow.global_position).normalized()
+	var potencia_actual: float = randf_range(potencia_disparo_min, potencia_disparo_max)
+
+	if arrow.has_method("initialize"):
+		arrow.initialize(dir, potencia_actual)
+	elif arrow.has_method("lanzar"):
+		arrow.lanzar(dir * (velocidad_proyectil * potencia_actual))
+	elif "velocity" in arrow:
+		arrow.velocity = dir * (velocidad_proyectil * potencia_actual)
+
+	AudioManager.play_sfx("disparo_flecha")
+
+
+## Lanza la flecha real que está en la mano (FlechaMano): la reparenta a la
+## escena actual conservando su transform global (sale exactamente desde la
+## mano, con su pose y recolor), la convierte en proyectil activo y genera una
+## nueva flecha oculta en la mano para el próximo ciclo de RECARGA.
+func _lanzar_flecha_mano() -> Node3D:
+	if not flecha_visual_mano or not is_instance_valid(flecha_visual_mano):
+		return null
+	if not flecha_visual_mano.is_inside_tree():
+		return null
+
+	# Cortar la actualización de tensado: la flecha deja de seguir la mano
+	_lonko_flecha_activa = false
+	if _tween_flecha and _tween_flecha.is_valid():
+		_tween_flecha.kill()
+	_tween_flecha = null
+
+	var arrow := flecha_visual_mano
+	var hueso_mano := arrow.get_parent()
+
+	# A escala y visibilidad de vuelo antes de reparentar (conserva pose global)
+	arrow.scale = escala_original_flecha_mano
+	arrow.visible = true
 
 	var root_scene := get_tree().current_scene
 	if root_scene:
-		root_scene.add_child(arrow)
-		arrow.global_position = spawn_pos
+		arrow.reparent(root_scene, true)
+	else:
+		arrow.reparent(get_tree().root, true)
 
-		var dir := (target_pos - spawn_pos).normalized()
-		var potencia_actual: float = randf_range(potencia_disparo_min, potencia_disparo_max)
+	var proyectil := arrow as EnemyProjectileBase
+	if proyectil and proyectil.has_method("activar_como_proyectil"):
+		proyectil.activar_como_proyectil()
 
-		if arrow.has_method("initialize"):
-			arrow.initialize(dir, potencia_actual)
-		elif arrow.has_method("lanzar"):
-			arrow.lanzar(dir * (velocidad_proyectil * potencia_actual))
-		elif "velocity" in arrow:
-			arrow.velocity = dir * (velocidad_proyectil * potencia_actual)
+	# La mano queda vacía: instanciar una nueva flecha oculta para el próximo ciclo
+	flecha_visual_mano = null
+	_generar_flecha_mano_reemplazo(hueso_mano)
 
-	AudioManager.play_sfx("disparo_flecha")
+	return arrow
+
+
+## Crea una nueva flecha oculta en el hueso de la mano tras lanzar la anterior,
+## restaurando la pose base capturada del editor y el recolor de Lonko.
+func _generar_flecha_mano_reemplazo(hueso_mano: Node) -> void:
+	if not lonko_arrow_scene:
+		return
+	if not hueso_mano or not is_instance_valid(hueso_mano) or not hueso_mano.is_inside_tree():
+		return
+	var nueva := lonko_arrow_scene.instantiate() as Node3D
+	if not nueva:
+		return
+	# El nombre FlechaMano es la convención que EnemyProjectileBase usa para
+	# tratarla como flecha en mano (sin física ni colisiones).
+	nueva.name = "FlechaMano"
+	hueso_mano.add_child(nueva)
+	if _pose_base_flecha_mano != Transform3D.IDENTITY:
+		nueva.transform = _pose_base_flecha_mano
+	nueva.scale = escala_original_flecha_mano * 0.01
+	nueva.visible = false
+	flecha_visual_mano = nueva
+	_recolorear_flecha_mano()
 
 
 ## True si el tiro `numero_tiro` (1-based) debe ser el eléctrico vertical.
