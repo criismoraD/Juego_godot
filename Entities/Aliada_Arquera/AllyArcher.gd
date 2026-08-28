@@ -51,6 +51,8 @@ var charge_duration: float = 0.0
 var health: int = 1
 var flechas_explosivas: int = 0  ## Contador interno de flechas explosivas
 var flechas_multiples: int = 0  ## Contador interno de flechas múltiples
+var paralisis_timer: float = 0.0  ## Tiempo restante de parálisis (4 segundos sin atacar)
+var _paralisis_vfx_timer: float = 0.0
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 static var _cached_wave_spawner: Node = null
@@ -270,6 +272,14 @@ func _process(delta):
 		_restaurar_torso()
 		return
 
+	if paralisis_timer > 0.0:
+		paralisis_timer -= delta
+		_restaurar_torso()
+		if paralisis_timer <= 0.0:
+			paralisis_timer = 0.0
+		else:
+			_paralisis_vfx_timer += delta
+
 	match current_state:
 		State.IDLE:
 			_process_idle(delta)
@@ -282,18 +292,39 @@ func _process(delta):
 		State.GETTING_UP:
 			_process_getting_up(delta)
 
-	# Apuntado visual del torso hacia la gárgola (como la protagonista)
-	_actualizar_apuntado_torso()
+	# Apuntado visual del torso hacia el objetivo activo (gárgola, Lonko o pilar)
+	if paralisis_timer <= 0.0:
+		_actualizar_apuntado_torso()
 
 
-## Inclina el torso hacia la gárgola objetivo mientras apunta/dispara, con la
+## Aplica el estado de parálisis por la duración indicada (4s por defecto):
+## No puede atacar, cancela recargas/apuntados y restaura el torso.
+func aplicar_paralisis(duracion: float = 4.0) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	paralisis_timer = maxf(paralisis_timer, duracion)
+	_ocultar_flecha()
+	_restaurar_torso()
+	if current_state != State.IDLE and current_state != State.GETTING_UP:
+		_cambiar_estado(State.IDLE)
+
+
+func esta_paralizada() -> bool:
+	return paralisis_timer > 0.0
+
+
+## Inclina el torso hacia el objetivo mientras apunta/dispara, con la
 ## misma convención que la protagonista (pitch negativo sobre FORWARD, hueso
 ## mixamorig_Spine1, multiplicación local). Sin objetivo, restaura la pose.
 func _actualizar_apuntado_torso() -> void:
 	if not skeleton or _spine_bone_idx == -1:
 		return
 
-	var objetivo := _obtener_gargola_objetivo()
+	if paralisis_timer > 0.0:
+		_restaurar_torso()
+		return
+
+	var objetivo := _obtener_objetivo_actual()
 	var en_estados_disparo := (
 		current_state == State.RELOADING
 		or current_state == State.AIMING
@@ -305,7 +336,13 @@ func _actualizar_apuntado_torso() -> void:
 		return
 
 	var my_pos: Vector3 = global_position + Vector3(0, 0.5, 0)
-	var target_pos: Vector3 = objetivo.global_position + Vector3(0, 0.3, 0)
+	var target_offset: Vector3 = Vector3(0, 0.3, 0)
+	if objetivo is PilarLonkoBody or ("es_pilar_enemigo" in objetivo and objetivo.es_pilar_enemigo):
+		target_offset = Vector3(0, 1.2, 0)
+	elif objetivo is Lonko or ("lonko" in objetivo.name.to_lower()):
+		target_offset = Vector3(0, 0.6, 0)
+
+	var target_pos: Vector3 = objetivo.global_position + target_offset
 	var dy: float = target_pos.y - my_pos.y
 	var dx: float = absf(target_pos.x - my_pos.x)
 	# Pitch negativo = arco hacia arriba (misma convención que Player)
@@ -327,6 +364,10 @@ func _restaurar_torso() -> void:
 
 ## IDLE: esperar 1-2s, luego ir a RELOADING (tomar flecha)
 func _process_idle(delta):
+	if paralisis_timer > 0.0:
+		state_timer = 0.4
+		return
+
 	state_timer -= delta
 	if state_timer <= 0:
 		if _contar_enemigos_vivos() >= enemigos_minimos:
@@ -473,6 +514,34 @@ func _es_imp_escudo(enemy: Node) -> bool:
 	return ("imp" in n and "escudo" in n) or ("impshield" in n) or ("impshield" in s) or ("imp_escudo" in s)
 
 
+func _es_lonko(enemy: Node) -> bool:
+	if not is_instance_valid(enemy) or not (enemy is Node3D):
+		return false
+	if enemy is Lonko:
+		return true
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	return "lonko" in n or "lonko" in s
+
+
+## Lonko solo es enemiga válida si está parada encima de un pilar con la animación de emerger ya completa
+func _es_lonko_en_pilar_completo(enemy: Node) -> bool:
+	if not _es_lonko(enemy):
+		return false
+	if enemy.has_method("esta_en_pilar_emergido_completo"):
+		return enemy.esta_en_pilar_emergido_completo()
+	var desplegado: Variant = enemy.get("_pilar_desplegado")
+	if desplegado != null and bool(desplegado):
+		var girando: Variant = enemy.get("_girando_hacia_fondo")
+		var invuln: Variant = enemy.get("_is_invulnerable")
+		if girando != null and bool(girando):
+			return false
+		if invuln != null and bool(invuln):
+			return false
+		return true
+	return false
+
+
 func _contar_enemigos_vivos() -> int:
 	var count = 0
 	var enemies = []
@@ -488,6 +557,8 @@ func _contar_enemigos_vivos() -> int:
 			continue
 		if _es_imp_escudo(enemy):
 			continue  # No reconocer a la Imp de escudo como objetivo directo (se daña por casualidad)
+		if _es_lonko(enemy) and not _es_lonko_en_pilar_completo(enemy):
+			continue  # Lonko solo se reconoce como enemiga cuando está sobre su pilar con la animación de emerger completa
 		if enemy.get("is_dead") == true or enemy.get("is_dying") == true or enemy.get("muerto") == true:
 			continue
 		if enemy.get("current_state") != null:
@@ -533,6 +604,101 @@ func _obtener_gargola_objetivo() -> Node3D:
 	return mejor
 
 
+## Busca la arquera Lonko viva más cercana frente a la defensora,
+## SOLO si está parada encima de su pilar con la animación de emerger completa.
+func _obtener_lonko_objetivo() -> Node3D:
+	var enemies = []
+
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
+	else:
+		enemies = get_tree().get_nodes_in_group("enemies")
+
+	var mejor: Node3D = null
+	var menor_dist: float = INF
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not (enemy is Node3D) or not enemy.is_inside_tree():
+			continue
+		if not _es_lonko_en_pilar_completo(enemy):
+			continue
+		if enemy.get("current_state") != null:
+			var st = enemy.current_state
+			if str(st) in ["DYING", "DEAD", "MUERTO"]:
+				continue
+			if enemy is EnemyBase and (st == EnemyBase.State.DYING or st == EnemyBase.State.DEAD):
+				continue
+		if enemy.get("is_dead") == true or enemy.get("is_dying") == true:
+			continue
+		# Solo enemigos delante (a la derecha de la arquera)
+		if enemy.global_position.x <= global_position.x:
+			continue
+		var dist: float = absf(enemy.global_position.x - global_position.x)
+		if dist < menor_dist:
+			menor_dist = dist
+			mejor = enemy
+	return mejor
+
+
+## Busca el pilar activo de Lonko más cercano frente a la defensora.
+func _obtener_pilar_lonko_objetivo() -> Node3D:
+	var pilares = get_tree().get_nodes_in_group("escudos")
+	var mejor: Node3D = null
+	var menor_dist: float = INF
+	for pilar in pilares:
+		if not is_instance_valid(pilar) or not (pilar is Node3D) or not pilar.is_inside_tree():
+			continue
+		var es_pilar: bool = (pilar is PilarLonkoBody)
+		if not es_pilar:
+			if "es_pilar_enemigo" in pilar and pilar.es_pilar_enemigo:
+				es_pilar = true
+			elif "pilar" in pilar.name.to_lower():
+				es_pilar = true
+		if not es_pilar:
+			continue
+		if "vida_pilar" in pilar and pilar.vida_pilar <= 0:
+			continue
+		if pilar.global_position.x <= global_position.x:
+			continue
+		var dist: float = absf(pilar.global_position.x - global_position.x)
+		if dist < menor_dist:
+			menor_dist = dist
+			mejor = pilar
+	return mejor
+
+
+## Determina el objetivo principal actual según el estado de power-ups:
+## - Con disparo múltiple activo: SOLO reconoce el pilar de Lonko como objetivo.
+## - Sin disparo múltiple: reconoce a las arqueras Lonko como enemigas directas y a las gárgolas.
+func _obtener_objetivo_actual() -> Node3D:
+	var tiene_disparo_multiple: bool = (flechas_multiples > 0)
+
+	if tiene_disparo_multiple:
+		# Con power up de disparo múltiple, SOLO reconoce el pilar de Lonko
+		var pilar := _obtener_pilar_lonko_objetivo()
+		if pilar:
+			return pilar
+		var gargola := _obtener_gargola_objetivo()
+		if gargola:
+			return gargola
+		return null
+	else:
+		# Sin disparo múltiple: reconoce a las arqueras Lonko y a las gárgolas
+		var lonko := _obtener_lonko_objetivo()
+		var gargola := _obtener_gargola_objetivo()
+
+		if lonko and gargola:
+			var dist_lonko: float = absf(lonko.global_position.x - global_position.x)
+			var dist_gargola: float = absf(gargola.global_position.x - global_position.x)
+			return lonko if dist_lonko <= dist_gargola else gargola
+		elif lonko:
+			return lonko
+		elif gargola:
+			return gargola
+
+		return null
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISPARO (siempre hacia la derecha)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -551,6 +717,9 @@ func agregar_flechas_explosivas(cantidad: int = 5) -> void:
 func _disparar():
 	if not arrow_scene:
 		return
+
+	# Capturar objetivo antes de descontar para respetar la regla de disparo múltiple
+	var objetivo := _obtener_objetivo_actual()
 
 	# 1. Determinar si se dispara flecha múltiple o explosiva
 	var es_flecha_multiple: bool = false
@@ -577,18 +746,27 @@ func _disparar():
 	var speed = lerp(potencia_minima, potencia_maxima, power_ratio)
 
 	var direction: Vector3
-	var objetivo_volador := _obtener_gargola_objetivo()
-	if objetivo_volador:
-		# Más fuerza contra enemigos voladores: trayectoria más plana y directa
-		speed *= multiplicador_potencia_volador
-		# Gárgola detectada: solución balística iterativa con predicción de
-		# movimiento para que las flechas la alcancen con facilidad.
-		var objetivo_pos: Vector3 = objetivo_volador.global_position + Vector3(0, 0.3, 0)
+	if objetivo:
+		if objetivo is Gargola:
+			# Más fuerza contra enemigos voladores: trayectoria más plana y directa
+			speed *= multiplicador_potencia_volador
+		elif objetivo is Lonko or ("lonko" in objetivo.name.to_lower()):
+			speed = maxf(speed * 1.35, potencia_maxima * 1.2)
+		elif objetivo is PilarLonkoBody or ("es_pilar_enemigo" in objetivo and objetivo.es_pilar_enemigo):
+			speed = maxf(speed, potencia_maxima)
+
+		var target_offset: Vector3 = Vector3(0, 0.3, 0)
+		if objetivo is PilarLonkoBody or ("es_pilar_enemigo" in objetivo and objetivo.es_pilar_enemigo):
+			target_offset = Vector3(0, 1.2, 0)
+		elif objetivo is Lonko or ("lonko" in objetivo.name.to_lower()):
+			target_offset = Vector3(0, 0.6, 0)
+
+		var objetivo_pos: Vector3 = objetivo.global_position + target_offset
 		var gravedad: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 		var vel_objetivo: Vector3 = Vector3.ZERO
-		var v_obj = objetivo_volador.get("velocity")
+		var v_obj = objetivo.get("velocity")
 		if v_obj is Vector3:
-			vel_objetivo = Vector3(v_obj.x, 0.0, 0.0)  # La oscilación vertical es posicional
+			vel_objetivo = Vector3(v_obj.x, 0.0, 0.0)
 
 		# 3 pasadas: estimar tiempo de vuelo → predecir posición futura → recomputar
 		var punto_apuntado: Vector3 = objetivo_pos
@@ -608,7 +786,7 @@ func _disparar():
 		direction.x += randf_range(-0.01, 0.01)
 		direction = direction.normalized()
 	else:
-		# Sin gárgolas: arco a ciego hacia la derecha (comportamiento original)
+		# Sin objetivo específico: arco a ciego hacia la derecha
 		var angulo = deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
 		direction = Vector3(cos(angulo), sin(angulo), 0).normalized()
 

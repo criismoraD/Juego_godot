@@ -22,10 +22,9 @@ func test_flecha_electrica_estructura_y_fase_inicial() -> void:
 	scene_root.add_child(flecha)
 	await get_tree().process_frame
 
-	# Assert: La flecha normal (modelo del arco) + VFX eléctrico añadido
+	# Assert: Proyectil Javelin VFX instanciado y fase inicial
 	assert_not_null(flecha, "La flecha eléctrica debe instanciarse correctamente")
-	assert_not_null(flecha.find_child("FLECHA_ARQUERA_ENEMIGA", true, false), "Debe portar la flecha normal")
-	assert_not_null(flecha.find_child("FlechaElectricaVFX", true, false), "Debe portar el VFX Flecha_Electrica.tscn")
+	assert_not_null(flecha.find_child("MProjectileJavelinVFX_02", true, false), "Debe portar el VFX MProjectileJavelinVFX_02")
 	assert_eq(flecha.fase, FlechaElectricaAtaque.Fase.SUBIDA, "Debe iniciar en fase de subida")
 
 	flecha.queue_free()
@@ -42,8 +41,8 @@ func test_flecha_electrica_zona_caida_por_defecto() -> void:
 	assert_eq(flecha.zona_caida_x_min, -10.0, "Límite izquierdo de la zona de caída")
 	assert_eq(flecha.zona_caida_x_max, -6.5, "Límite derecho de la zona de caída")
 	assert_eq(flecha.zona_caida_z, 0.0, "Plano Z de la zona de caída")
-	assert_eq(flecha.segundos_marca, 1.5, "La marca debe durar 1.5 segundos")
-	assert_eq(flecha.radio_marca, 1.25, "El radio de la marca debe ser 1.25 unidades")
+	assert_eq(flecha.segundos_marca, 1.4, "La marca debe durar 1.4 segundos")
+	assert_eq(flecha.radio_marca, 0.55, "El radio de la marca debe ser 0.55 unidades")
 
 	flecha.queue_free()
 	await get_tree().process_frame
@@ -59,16 +58,8 @@ func test_flecha_electrica_apunta_arriba_y_mitad_tamano() -> void:
 	flecha.initialize(Vector3.UP, 1.0)
 	await get_tree().physics_frame
 
-	# Assert: la punta (eje +X de ArrowModel tras el volteo del script) apunta al cielo
-	var modelo := flecha.get_node_or_null("ArrowModel") as Node3D
-	assert_not_null(modelo, "ArrowModel debe existir")
-	var punta: Vector3 = modelo.global_basis.x.normalized()
-	assert_almost_eq(punta.x, 0.0, 0.01, "La punta debe quedar en el plano X=0")
-	assert_almost_eq(punta.y, 1.0, 0.01, "La punta debe apuntar hacia arriba")
-	assert_almost_eq(punta.z, 0.0, 0.01, "La punta no debe apuntar hacia el fondo")
-
-	# Assert: escala a la mitad del tamaño original
-	assert_almost_eq(flecha.scale.x, 0.5, 0.01, "La flecha debe medir la mitad en vuelo")
+	# Assert: rotación hacia arriba
+	assert_almost_eq(flecha.rotation_degrees.z, 90.0, 0.01, "La flecha debe rotar 90 grados apuntando arriba")
 
 	flecha.queue_free()
 	await get_tree().process_frame

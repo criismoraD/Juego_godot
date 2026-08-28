@@ -645,6 +645,11 @@ func _iniciar_secuencia_pilar() -> void:
 		_iniciar_secuencia_disparo()
 
 
+## Retorna true si Lonko está posicionada encima de su pilar con la animación de emerger ya terminada.
+func esta_en_pilar_emergido_completo() -> bool:
+	return _pilar_desplegado and not _girando_hacia_fondo and not _is_invulnerable
+
+
 func _crear_particulas_rocas_pilar(bx: float, by: float, bz: float) -> void:
 	_particulas_pilar = GPUParticles3D.new()
 	_particulas_pilar.name = "ParticulasRocasPilar"

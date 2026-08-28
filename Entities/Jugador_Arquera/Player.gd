@@ -126,6 +126,9 @@ var is_invulnerable: bool = false
 var invulnerability_timer: float = 0.0
 var shot_cancelled: bool = false  # Flag para cancelar disparo cuando nos dañan
 var is_shot_locked: bool = false  # Flag de bloqueo de disparo temporal
+var paralisis_timer: float = 0.0  ## Temporizador de estado parálisis (4 segundos sin atacar)
+var esta_paralizada: bool = false
+var _paralisis_vfx_timer: float = 0.0
 ## Cuando true (mapa de debug), no se inicia el disparo si el cursor está sobre
 ## un Control interactivo (panel/botones), para que clicar opciones no dispare.
 var disparo_bloqueado_por_ui: bool = false
@@ -1004,6 +1007,16 @@ func update_locomotion_anim(input_dir):
 
 
 func _process_gameplay(delta):
+	if paralisis_timer > 0.0:
+		paralisis_timer -= delta
+		is_shot_locked = true
+		if paralisis_timer <= 0.0:
+			paralisis_timer = 0.0
+			esta_paralizada = false
+			is_shot_locked = false
+		else:
+			_paralisis_vfx_timer += delta
+
 	control_visual_state(delta)
 	update_charge_bar_position()
 
@@ -1145,6 +1158,10 @@ func control_visual_state(delta):
 
 				# Bloquear disparo si el disparo fue cancelado (debe soltar y volver a presionar)
 				if shot_cancelled:
+					return
+
+				# Bloquear disparo si está en estado de parálisis (4s)
+				if esta_paralizada or paralisis_timer > 0.0:
 					return
 
 				# Bloquear disparo si estamos bloqueados temporalment por daño (0.2s)
@@ -2029,9 +2046,24 @@ func recibir_dano(cantidad: int = 1):
 		)
 		get_tree().create_timer(shot_lock_duration).timeout.connect(
 			func():
-				if is_instance_valid(self) and is_inside_tree():
+				if is_instance_valid(self) and is_inside_tree() and paralisis_timer <= 0.0:
 					is_shot_locked = false
 		)
+
+
+## Aplica el estado de parálisis por la duración indicada (4s por defecto):
+## Cancela disparos en curso y bloquea el ataque durante 4 segundos.
+func aplicar_paralisis(duracion: float = 4.0) -> void:
+	if is_dead:
+		return
+	paralisis_timer = maxf(paralisis_timer, duracion)
+	esta_paralizada = true
+	is_shot_locked = true
+	_cancel_current_shot()
+
+
+func esta_paralizada_status() -> bool:
+	return paralisis_timer > 0.0
 
 
 func _caer_de_escalera():

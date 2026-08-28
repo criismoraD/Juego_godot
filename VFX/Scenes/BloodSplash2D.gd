@@ -37,7 +37,8 @@ func _ready() -> void:
 
 func _build_sprite_frames_from_strip() -> void:
 	var sf := SpriteFrames.new()
-	sf.add_animation(autoplay_animation)
+	if not sf.has_animation(autoplay_animation):
+		sf.add_animation(autoplay_animation)
 	sf.set_animation_loop(autoplay_animation, false)
 	sf.set_animation_speed(autoplay_animation, custom_fps)
 

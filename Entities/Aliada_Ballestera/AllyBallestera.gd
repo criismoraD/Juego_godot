@@ -57,6 +57,8 @@ var state_timer: float = 0.0
 var _blink_timer: float = 0.0
 var charge_duration: float = 0.0
 var health: int = 4
+var paralisis_timer: float = 0.0  ## Tiempo restante de parálisis (4 segundos sin atacar)
+var _paralisis_vfx_timer: float = 0.0
 var is_dissolving: bool = false
 
 # Ciclo: 5 disparos de pie -> 5 disparos agachada -> repite
@@ -272,6 +274,14 @@ func _process(delta: float):
 		_restaurar_torso()
 		return
 
+	if paralisis_timer > 0.0:
+		paralisis_timer -= delta
+		_restaurar_torso()
+		if paralisis_timer <= 0.0:
+			paralisis_timer = 0.0
+		else:
+			_paralisis_vfx_timer += delta
+
 	match current_state:
 		State.IDLE:
 			_process_idle(delta)
@@ -286,11 +296,28 @@ func _process(delta: float):
 		State.CELEBRATING:
 			_process_celebrating(delta)
 
-	_actualizar_apuntado_torso(delta)
+	if paralisis_timer <= 0.0:
+		_actualizar_apuntado_torso(delta)
+
+
+## Aplica el estado de parálisis por la duración indicada (4s por defecto):
+## No puede atacar, cancela recargas/apuntados y restaura el torso.
+func aplicar_paralisis(duracion: float = 4.0) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	paralisis_timer = maxf(paralisis_timer, duracion)
+	_restaurar_torso()
+	if current_state != State.IDLE and current_state != State.GETTING_UP and current_state != State.CELEBRATING:
+		_cambiar_estado(State.IDLE)
+
+
+func esta_paralizada() -> bool:
+	return paralisis_timer > 0.0
 
 
 func _actualizar_apuntado_torso(delta: float) -> void:
-	if not skeleton:
+	if not skeleton or paralisis_timer > 0.0:
+		_restaurar_torso()
 		return
 
 	var en_estados_disparo := (
@@ -362,6 +389,10 @@ func _restaurar_torso() -> void:
 
 
 func _process_idle(delta: float):
+	if paralisis_timer > 0.0:
+		state_timer = 0.4
+		return
+
 	state_timer -= delta
 	if state_timer <= 0:
 		if _puede_atacar():
@@ -709,9 +740,6 @@ func recibir_dano(cantidad: int = 1):
 		_cambiar_estado(State.DYING)
 	else:
 		_blink_timer = 0.0
-		var tw = create_tween()
-		tw.tween_property(self, "modulate", Color(1.8, 0.4, 0.4), 0.08)
-		tw.tween_property(self, "modulate", Color.WHITE, 0.12)
 
 
 func take_damage(amount: int = 1):
