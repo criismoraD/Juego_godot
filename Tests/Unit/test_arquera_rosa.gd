@@ -2,6 +2,7 @@ extends "res://addons/gut/test.gd"
 
 var ArqueraRosaScript = load("res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.gd")
 var ArrowScript = load("res://System/Core/Arrow.gd")
+var RosaArrowScript = load("res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.gd")
 
 class MockFlechaNormal extends "res://System/Core/Arrow.gd":
 	func _init():
@@ -22,6 +23,7 @@ func test_arquera_rosa_initialization():
 	assert_eq(arquera.aura_vida, 4, "El aura rosada debe iniciar con 4 de vida")
 	assert_eq(arquera.cantidad_flechas_rafaga, 5, "Debe disparar ráfagas de 5 flechas múltiples")
 	assert_eq(arquera.drop_chance_flecha_multiple, 1.0, "El drop de flecha múltiple debe ser del 100%")
+	assert_gte(arquera.tiempo_tensa_arco, 3.0, "Debe completar la animación de tensado antes de soltar la ráfaga")
 
 
 func test_aura_repels_normal_arrows_up_to_4_hits():
@@ -97,3 +99,13 @@ func test_iniciar_reposicionamiento_activa_caminata():
 	assert_true(arquera.esta_reposicionando, "Debe activar la bandera de reposicionamiento")
 	assert_eq(arquera.current_state, arquera.State.WALKING, "Debe pasar al estado WALKING para avanzar")
 	assert_gt(arquera.distancia_reposicion_objetivo, 0.0, "La distancia objetivo debe ser mayor a 0")
+
+
+func test_rosa_arrow_matches_player_model_and_pink_color():
+	# Arrange & Act
+	var rosa_arrow = RosaArrowScript.new()
+	add_child_autofree(rosa_arrow)
+
+	# Assert
+	assert_not_null(rosa_arrow, "RosaArrow debe instanciarse")
+	assert_eq(rosa_arrow.color_proyectil, Color(1.0, 0.25, 0.75), "El color del proyectil debe ser rosado")

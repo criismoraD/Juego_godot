@@ -1,13 +1,15 @@
 class_name ArqueraRosa
 extends "res://System/Core/EnemyBase.gd"
 
-## Arquera Rosa: Variante élite de la goblin arquera con textura rosada.
+## Arquera Rosa: Variante élite de la goblin arquera con textura rosada y rango medio-largo.
 ## Habilidades:
 ## 1. Aura Rosada (BasicAreaVFX_04) que repele hasta 4 proyectiles normales y pierde intensidad al recibir daño.
-##    Las flechas explosivas ignoran la repulsión y detonan directamente.
-## 2. Ataque de Disparo Múltiple de 5 flechas consecutivas con tensado de arco normal.
-## 3. Reposicionamiento táctico: avanza hacia adelante tras disparar y vuelve a disparar.
-## 4. Drop del 100% del power-up de disparo múltiple al morir con efecto de disolución rosado.
+##    Al romperse emite nubes de humo rosado a ambos lados. Las flechas explosivas ignoran la repulsión y detonan directamente.
+## 2. Tensado de arco completo sincronizado con la animación antes de soltar la ráfaga.
+## 3. Flechas idénticas al modelo de la protagonista pero teñidas de color rosado brillante con estela mágica.
+## 4. Ataque de Disparo Múltiple de 5 flechas consecutivas.
+## 5. Reposicionamiento táctico: avanza hacia adelante tras disparar y vuelve a disparar.
+## 6. Drop del 100% del power-up de disparo múltiple al morir con efecto de disolución rosado.
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const PROJECTILE_SCALE: Vector3 = Vector3.ONE
@@ -23,18 +25,18 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 @export var color_aura_luz: Color = Color(1.0, 0.3, 0.75, 1.0)
 
 @export_category("Combate - Arquera Rosa")
-@export var tiempo_tensa_arco: float = 1.5  ## Tiempo que dura tensando el arco antes de soltar la ráfaga
+@export var tiempo_tensa_arco: float = 3.1  ## Tiempo que dura tensando el arco para completar la animación antes de soltar la ráfaga
 @export var intervalo_disparo: float = 2.5  ## Tiempo de recarga entre ráfagas
 @export var velocidad_flecha: float = 9.0  ## Velocidad de los proyectiles
 @export var cantidad_flechas_rafaga: int = 5  ## Cantidad de flechas por ráfaga (exactamente 5)
 @export var intervalo_flechas_rafaga: float = 0.07  ## Intervalo rápido en segundos entre flechas
-@export var poder_disparo_spread: float = 0.04  ## Dispersión angular de la ráfaga
+@export var poder_disparo_spread: float = 0.03  ## Dispersión angular de la ráfaga
 @export var potencia_disparo_min: float = 1.0
-@export var potencia_disparo_max: float = 2.0
+@export var potencia_disparo_max: float = 1.8
 
 @export_category("Reposicionamiento")
-@export var distancia_reposicion_min: float = 0.8  ## Distancia mínima que avanza para reposicionarse
-@export var distancia_reposicion_max: float = 1.5  ## Distancia máxima que avanza para reposicionarse
+@export var distancia_reposicion_min: float = 0.6  ## Distancia mínima que avanza para reposicionarse
+@export var distancia_reposicion_max: float = 1.2  ## Distancia máxima que avanza para reposicionarse
 @export var pausa_post_disparo: float = 0.4  ## Pausa antes de iniciar reposicionamiento
 
 @export_category("Drops")
@@ -55,7 +57,7 @@ var distancia_reposicion_objetivo: float = 0.0
 var distancia_reposicion_caminada: float = 0.0
 var drop_realizado: bool = false
 
-var goblin_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
+var goblin_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.tscn")
 var bow_anim_player: AnimationPlayer = null
 var flecha_visual_mano: Node3D = null
 var _pose_base_flecha_mano: Transform3D = Transform3D.IDENTITY
@@ -146,6 +148,7 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 
 	# Flecha normal: se absorbe un impacto y se repele
 	aura_vida -= 1
+	AudioManager.play_sfx("parry")
 	_actualizar_intensidad_aura()
 
 	if aura_vida <= 0:
@@ -177,12 +180,84 @@ func _romper_aura() -> void:
 	aura_vida = 0
 	AudioManager.play_sfx("shield_break", 5.0)
 
+	_spawn_smoke_aura_break()
+
 	if aura_vfx_node and is_instance_valid(aura_vfx_node):
 		var tween := create_tween()
 		tween.tween_property(aura_vfx_node, "scale", Vector3(1.2, 0.05, 1.2), 0.2).set_ease(Tween.EASE_OUT)
 		tween.tween_callback(func() -> void:
 			if is_instance_valid(aura_vfx_node):
 				aura_vfx_node.visible = false
+		)
+
+
+func _spawn_smoke_aura_break() -> void:
+	var tex: Texture2D = load("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png") as Texture2D
+	if not tex:
+		return
+
+	var root_scene := get_tree().current_scene
+	if not root_scene:
+		root_scene = get_tree().root
+
+	for side in [-1, 1]:
+		var puf: GPUParticles3D = GPUParticles3D.new()
+		puf.amount = 4
+		puf.lifetime = 0.75
+		puf.one_shot = true
+		puf.explosiveness = 0.3
+		puf.randomness = 0.3
+		puf.visibility_aabb = AABB(Vector3(-1.5, -1.2, -1.5), Vector3(3, 3, 3))
+
+		var pmat: ParticleProcessMaterial = ParticleProcessMaterial.new()
+		pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
+		pmat.direction = Vector3(side * 0.8, 0.35, 0.0)
+		pmat.spread = 22.0
+		pmat.initial_velocity_min = 0.8
+		pmat.initial_velocity_max = 1.4
+		pmat.gravity = Vector3(0.0, -0.3, 0.0)
+		pmat.scale_min = 0.55
+		pmat.scale_max = 0.85
+		pmat.anim_speed_min = 0.9
+		pmat.anim_speed_max = 1.1
+
+		var grad: Gradient = Gradient.new()
+		grad.set_color(0, Color(1.0, 0.35, 0.8, 0.9))
+		grad.set_color(1, Color(1.0, 0.15, 0.65, 0.0))
+
+		var grad_tex: GradientTexture1D = GradientTexture1D.new()
+		grad_tex.gradient = grad
+		pmat.color_ramp = grad_tex
+		pmat.turbulence_enabled = true
+		pmat.turbulence_noise_strength = 0.01
+
+		puf.process_material = pmat
+
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.vertex_color_use_as_albedo = true
+		mat.albedo_color = Color(1.0, 0.5, 0.85)
+		mat.albedo_texture = tex
+		mat.particles_anim_h_frames = 6
+		mat.particles_anim_v_frames = 1
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		mat.billboard_keep_scale = true
+
+		var quad: QuadMesh = QuadMesh.new()
+		quad.size = Vector2(0.85, 0.85)
+		quad.material = mat
+		puf.draw_pass_1 = quad
+
+		root_scene.add_child(puf)
+		puf.global_position = global_position + Vector3(side * 0.3, 0.05, 0.0)
+		puf.emitting = true
+		puf.layers = 1048575
+
+		get_tree().create_timer(1.3, false).timeout.connect(func() -> void:
+			if is_instance_valid(puf):
+				puf.queue_free()
 		)
 
 
@@ -266,7 +341,7 @@ func _iniciar_ciclo_disparo() -> void:
 
 	is_shooting_burst = true
 
-	# 1. Fase de Tensado del Arco Normal
+	# 1. Fase de Tensado del Arco Normal (completa la animación antes de soltar la ráfaga)
 	_play_animation("GIRL_GOB_DISPARO")
 	_play_bow_animation("ARCO_TENSAR")
 	_actualizar_visibilidad_flecha_mano(true)
@@ -276,7 +351,7 @@ func _iniciar_ciclo_disparo() -> void:
 		is_shooting_burst = false
 		return
 
-	# 2. Fase de Disparo de exactamente 5 flechas en sucesión
+	# 2. Fase de Disparo de exactamente 5 flechas rosadas en sucesión
 	_play_bow_animation("ARCO_DISPARO")
 
 	for i in range(cantidad_flechas_rafaga):
@@ -309,22 +384,34 @@ func _disparar_flecha_individual() -> void:
 		if not player_ref:
 			return
 
-	var arrow := PROJECTILE_POOL_REF.acquire(goblin_arrow_scene) as GoblinGirlArrowProjectile
+	var arrow := PROJECTILE_POOL_REF.acquire(goblin_arrow_scene) as RosaArrowProjectile
 	if not arrow:
 		return
 
 	arrow.scale = PROJECTILE_SCALE
 	AudioManager.play_sfx("goblin_girl_shoot")
 
-	var spawn_pos: Vector3 = global_position + Vector3(-0.3, altura_spawn_flecha, 0.0)
-	var target_pos: Vector3 = player_ref.global_position + Vector3(0.0, 0.5, 0.0)
+	var spawn_pos: Vector3
+	if flecha_visual_mano and is_instance_valid(flecha_visual_mano) and flecha_visual_mano.visible:
+		spawn_pos = flecha_visual_mano.global_position
+	else:
+		spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0.0)
+
+	var target_pos: Vector3 = player_ref.global_position + Vector3(0.0, 0.35, 0.0)
+	var diff: Vector3 = target_pos - spawn_pos
+	var horizontal_dist: float = absf(diff.x)
+
+	# Arco parabólico equilibrado: compensación suave de altura para impacto directo
+	var arc_compensation: float = clampf(horizontal_dist * 0.10, 0.08, 0.32)
+	var base_direction: Vector3 = diff.normalized()
+	var launch_direction: Vector3 = Vector3(base_direction.x, base_direction.y + arc_compensation, 0.0).normalized()
 
 	var spread := Vector3(
 		randf_range(-poder_disparo_spread, poder_disparo_spread),
 		randf_range(-poder_disparo_spread, poder_disparo_spread),
 		0.0
 	)
-	var dir: Vector3 = ((target_pos - spawn_pos) + spread).normalized()
+	var dir: Vector3 = (launch_direction + spread).normalized()
 	var potencia: float = randf_range(potencia_disparo_min, potencia_disparo_max)
 
 	arrow.initialize(dir, potencia)

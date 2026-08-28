@@ -176,10 +176,10 @@ func _generar_cola_spawn() -> void:
 			pool.append(escena_goblin)
 
 	elif wave_num == 3:
-		# Oleada 3: 4 imp escudo, 13 goblin arquera, 13 goblin ballesta. Total: 30.
+		# Oleada 3: 4 imp escudo, 12 goblin arquera, 1 arquera rosa (a la mitad), 13 goblin ballesta. Total: 30.
 		for i in range(4):
 			pool.append(escena_imp_escudo)
-		for i in range(13):
+		for i in range(12):
 			pool.append(escena_goblin_girl)
 		for i in range(13):
 			pool.append(escena_goblin)
@@ -222,6 +222,11 @@ func _generar_cola_spawn() -> void:
 	while not _es_valida_cola(pool) and intentos < 150:
 		pool.shuffle()
 		intentos += 1
+
+	# En Oleada 3: insertar la Arquera Rosa exactamente en la mitad de la oleada
+	if wave_num == 3 and escena_arquera_rosa:
+		var mitad: int = pool.size() / 2
+		pool.insert(mitad, escena_arquera_rosa)
 
 	cola_spawn = pool
 

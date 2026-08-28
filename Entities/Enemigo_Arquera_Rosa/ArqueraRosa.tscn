@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://clrqk1p4076da" path="res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://d3fyi28xp1rlq" path="res://Entities/Enemigo_Goblin_Girl/GEO_GOBLIN_GIRL.fbx" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="3_bow"]
-[ext_resource type="PackedScene" uid="uid://dcri1fif5ky1b" path="res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn" id="4_arrow"]
+[ext_resource type="PackedScene" uid="uid://b1vrosaarrow7q" path="res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.tscn" id="4_arrow"]
 [ext_resource type="PackedScene" uid="uid://cocrrn7wicpsd" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn" id="5_aura"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_arquera_rosa"]
@@ -13,10 +13,11 @@ height = 0.65
 [node name="ArqueraRosa" type="CharacterBody3D" unique_id=1271437514]
 collision_layer = 4
 script = ExtResource("1_script")
-potencia_disparo_min = 0.8
+potencia_disparo_min = 1.0
 potencia_disparo_max = 1.8
 velocidad_caminar = 0.7
-distancia_minima_caminar = 0.8
+distancia_minima_caminar = 1.2
+distancia_maxima_caminar = 4.5
 
 [node name="BasicAreaVFX_04" parent="." unique_id=1982736451 instance=ExtResource("5_aura")]
 transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, 0.01, 0)

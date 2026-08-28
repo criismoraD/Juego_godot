@@ -209,6 +209,8 @@ func _load_all_sounds():
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
 
 	sfx_streams["shield_break"] = [load("res://Entities/Ambiente_Escudo/ESCUDO_ROTO.mp3")]
+	sfx_streams["parry"] = [load("res://TEST_/Parry.mp3")]
+	sfx_streams["aura_parry"] = sfx_streams["parry"]
 	sfx_streams["sangre_splash"] = [load("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_splash.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════

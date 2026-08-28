@@ -739,7 +739,7 @@ func _rebotar_de_aura(body: Node) -> void:
 	if _ray_ccd and is_instance_valid(body):
 		_ray_ccd.add_exception(body)
 
-	AudioManager.play_sfx("shield_hit")
+	AudioManager.play_sfx("parry")
 
 	# Impulso de rebote deflectado
 	velocity.x = abs(velocity.x) * randf_range(0.4, 0.7) + 1.2

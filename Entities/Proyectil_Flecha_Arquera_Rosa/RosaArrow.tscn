@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://b1vrosaarrow7q"]
+
+[ext_resource type="Script" uid="uid://cbrosaarrow1script" path="res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="2_model"]
+
+[sub_resource type="CapsuleShape3D" id="collision_shape"]
+radius = 0.03
+height = 0.37906495
+
+[node name="RosaArrow" type="Area3D"]
+collision_layer = 4
+collision_mask = 71
+script = ExtResource("1_script")
+
+[node name="FLECHA" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-0.4, 0, -6.039832e-08, 0, 0.4, 0, 6.039832e-08, 0, -0.4, -0.20053375, -2.9802322e-08, -0.0053989887)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(-4.371139e-08, 1, -4.371139e-08, 0, -4.371139e-08, -1, -1, -4.371139e-08, 1.9106855e-15, -0.04058227, 1.7739075e-09, 1.7739075e-09)
+shape = SubResource("collision_shape")
