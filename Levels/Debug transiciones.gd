@@ -1733,6 +1733,24 @@ func _crear_panel_controles_spawn() -> void:
 			game_ui.mostrar_cortinilla_debug(3.0)
 	)
 	grid_items.add_child(btn_cortinilla)
+	var btn_victoria := Button.new()
+	btn_victoria.text = "🎉 Victoria"
+	btn_victoria.custom_minimum_size = Vector2(84, 26)
+	btn_victoria.add_theme_font_size_override("font_size", 11)
+	btn_victoria.pressed.connect(func():
+		if game_ui and game_ui.has_method("_probar_victoria_aliadas_debug"):
+			game_ui._probar_victoria_aliadas_debug()
+	)
+	grid_items.add_child(btn_victoria)
+	var btn_saltar_oleada := Button.new()
+	btn_saltar_oleada.text = "⏩ +Oleada"
+	btn_saltar_oleada.custom_minimum_size = Vector2(84, 26)
+	btn_saltar_oleada.add_theme_font_size_override("font_size", 11)
+	btn_saltar_oleada.pressed.connect(func():
+		if game_ui and game_ui.has_method("_completar_oleada_actual_debug"):
+			game_ui._completar_oleada_actual_debug()
+	)
+	grid_items.add_child(btn_saltar_oleada)
 	vbox_main.add_child(HSeparator.new())
 	var hbox_sistema := HBoxContainer.new()
 	hbox_sistema.add_theme_constant_override("separation", 6)

@@ -50,7 +50,9 @@ const DROP_CHANCE_MITIGADO: float = 0.05
 @export var invertir_pitch_escalera: bool = true  # Invertir dirección de apuntado en escalera
 @export_range(-10.0, 10.0, 0.1) var multiplicador_inversion_pitch: float = -2.0  # Multiplicador de inversión en escalera
 @export_enum("X (Izq/Der)", "Y (Arriba/Abajo)", "Z (Adelante/Atras)") var eje_rotacion: int = 2
-# Eje de disparo interno (no expuesto)
+@export_category("Puntos de Spawn")
+@export var spawn_flecha_explosiva: Marker3D = null  ## Nodo Marker3D para definir el punto exacto de nacimiento de la flecha explosiva y su trayectoria
+
 @export_category("Hitbox")
 @export var mostrar_hitbox: bool = false  ## Muestra la hitbox del jugador en tiempo real
 # === SISTEMA DE VIDA ===
@@ -109,8 +111,9 @@ var _bow_hold_timer: float = 0.0  # Timer para delay de sonido mantener arco
 # === TRAYECTORIA VISUAL (FLECHA EXPLOSIVA) ===
 var _trajectory_mesh_instance: MeshInstance3D = null
 var _trajectory_immediate_mesh: ImmediateMesh = null
-var _trajectory_material: StandardMaterial3D = null
+var _trajectory_material: Material = null
 var _trajectory_impact_marker: Node3D = null
+var _trajectory_fade_timer: float = 0.0
 # === HITBOX ===
 var collision_shape_node: CollisionShape3D
 var hitbox_altura_original: float = 1.8
@@ -209,6 +212,8 @@ func _ready():
 	if arrow_node:
 		_arrow_base_scale = arrow_node.scale
 		arrow_node.visible = false
+	if not spawn_flecha_explosiva:
+		spawn_flecha_explosiva = find_child("SpawnPosition_FlechaExplosiva", true, false) as Marker3D
 	_setup_explosive_arrow_visual()
 	_setup_trayectoria_visual()
 
@@ -1181,6 +1186,7 @@ func control_visual_state(delta):
 
 				current_aim_state = AimState.DRAWING
 				state_timer = 0.0
+				_trajectory_fade_timer = 0.0
 				anim_tree.set(upper_path, "draw")
 				# Iniciar animación de tensar el arco
 				play_bow_animation("ARCO_TENSAR")
@@ -1198,6 +1204,7 @@ func control_visual_state(delta):
 				)
 
 			state_timer += delta
+			_trajectory_fade_timer += delta
 			actualizar_rotacion_torso_pitch()
 
 			if Input.is_action_just_released("click_izquierdo"):
@@ -1232,6 +1239,7 @@ func control_visual_state(delta):
 
 			var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
 			charge_time += delta
+			_trajectory_fade_timer += delta
 
 			charge_time = min(charge_time, adjusted_charge_dur)
 			var charge_percent = (charge_time / adjusted_charge_dur) * 100
@@ -1581,10 +1589,27 @@ func calculate_shoot_data() -> Dictionary:
 	if not camera:
 		return result
 
-	# Origen
-	var spawn_pos = global_position + Vector3(0, 1.2, 0)
-	if arrow_node:
+	# Origen exacto de nacimiento de la flecha y trayectoria
+	var marker: Marker3D = spawn_flecha_explosiva
+	if not marker:
+		marker = find_child("SpawnPosition_FlechaExplosiva", true, false) as Marker3D
+
+	var spawn_pos: Vector3
+	if marker and is_instance_valid(marker) and marker.is_inside_tree():
+		if marker.get_parent() == self:
+			# Si es hijo directo de Player, respetar su posición y voltear en X al mirar a la izquierda
+			var x_dir: float = 1.0 if _mirando_derecha else -1.0
+			spawn_pos = global_position + Vector3(marker.position.x * x_dir, marker.position.y, marker.position.z)
+		else:
+			# Si está emparentado a un hueso o modelo, usar su global_position exacta
+			spawn_pos = marker.global_position
+	elif explosive_arrow_node and is_instance_valid(explosive_arrow_node) and explosive_arrow_node.is_inside_tree():
+		spawn_pos = explosive_arrow_node.global_position
+	elif arrow_node and is_instance_valid(arrow_node) and arrow_node.is_inside_tree():
 		spawn_pos = arrow_node.global_position
+	else:
+		spawn_pos = global_position + Vector3(0.45 if _mirando_derecha else -0.45, 1.25, 0.0)
+
 	result["origin"] = spawn_pos
 
 	# === MÉTODO SIMPLE: Usar posición en pantalla ===
@@ -1765,13 +1790,20 @@ func _setup_trayectoria_visual() -> void:
 
 	_trajectory_immediate_mesh = ImmediateMesh.new()
 
-	_trajectory_material = StandardMaterial3D.new()
-	_trajectory_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_trajectory_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_trajectory_material.vertex_color_use_as_albedo = true
-	_trajectory_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_trajectory_material.no_depth_test = true
-	_trajectory_material.render_priority = 100
+	var shader := load("res://System/Shaders/TRAYECTORIA_FLECHA_PUNTEADA.gdshader") as Shader
+	if shader:
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		mat.render_priority = 100
+		_trajectory_material = mat
+	else:
+		_trajectory_material = StandardMaterial3D.new()
+		_trajectory_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_trajectory_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_trajectory_material.vertex_color_use_as_albedo = true
+		_trajectory_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_trajectory_material.no_depth_test = true
+		_trajectory_material.render_priority = 100
 
 	_trajectory_mesh_instance = MeshInstance3D.new()
 	_trajectory_mesh_instance.name = "TrajectoryLineExplosive"
@@ -1847,17 +1879,17 @@ func _actualizar_trayectoria_explosiva() -> void:
 
 	var world_grav: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 	var dt: float = 0.025  # ~40 muestras / seg
-	var max_pasos: int = 80  # hasta ~2.0s de trayectoria parabólica completa
+	var max_pasos: int = 220  # hasta ~5.5s de trayectoria completa para garantizar impacto en suelo o enemigo
 
 	var space_state := get_world_3d().direct_space_state
 	var puntos: Array[Vector3] = [pos]
 	var punto_impacto: Vector3 = Vector3.ZERO
 	var hubo_impacto: bool = false
 
-	# Raycast para detectar dónde colisionará la flecha (máscara 71 = 1 | 2 | 4 | 64)
+	# Raycast para detectar dónde colisionará la flecha (máscara 255 = todas las capas relevantes)
 	var excluded_rids: Array[RID] = [get_rid()]
 	var query_params := PhysicsRayQueryParameters3D.new()
-	query_params.collision_mask = 71
+	query_params.collision_mask = 255
 	query_params.collide_with_areas = true
 	query_params.collide_with_bodies = true
 	query_params.exclude = excluded_rids
@@ -1910,19 +1942,44 @@ func _actualizar_trayectoria_explosiva() -> void:
 		vel = sig_vel
 		puntos.append(pos)
 
+	# Si no hubo impacto en el rango, proyectar hacia el plano del suelo para no cortarse en el aire
+	if not hubo_impacto and puntos.size() > 1:
+		var last_p := puntos[puntos.size() - 1]
+		query_params.from = last_p
+		query_params.to = last_p + Vector3(0.0, -15.0, 0.0)
+		var ground_col := space_state.intersect_ray(query_params)
+		if not ground_col.is_empty():
+			punto_impacto = ground_col.get("position", last_p)
+			punto_impacto.z = plano_z
+			puntos.append(punto_impacto)
+			hubo_impacto = true
+		else:
+			punto_impacto = last_p
+			punto_impacto.y = 0.0
+			punto_impacto.z = plano_z
+			puntos.append(punto_impacto)
+			hubo_impacto = true
+
 	if puntos.size() < 2:
 		_ocultar_trayectoria_explosiva()
 		return
 
-	# Dibujar Ribbon 2.5D rojo brillante con ImmediateMesh
+	# Dibujar Ribbon 2.5D punteado y estático con ImmediateMesh
 	_trajectory_immediate_mesh.clear_surfaces()
 	_trajectory_immediate_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP, _trajectory_material)
 
-	var ancho_cinta: float = 0.035  # Ancho de la línea en metros (3.5 cm)
 	var num_puntos: int = puntos.size()
+	var dist_acumulada: float = 0.0
+
+	# Transición de aparición suave durante 1.0 segundo al apuntar
+	var fade_in_alpha: float = clampf(_trajectory_fade_timer / 1.0, 0.0, 1.0)
+	fade_in_alpha = smoothstep(0.0, 1.0, fade_in_alpha)
 
 	for i in range(num_puntos):
 		var p: Vector3 = puntos[i]
+		if i > 0:
+			dist_acumulada += p.distance_to(puntos[i - 1])
+
 		var t: float = float(i) / float(num_puntos - 1)
 
 		# Tangente
@@ -1935,14 +1992,20 @@ func _actualizar_trayectoria_explosiva() -> void:
 		# Normal perpendicular en plano XY
 		var normal_cinta := Vector3(-tangente.y, tangente.x, 0.0).normalized()
 
-		# Degradado rojo: punta inicial luminosa a cola suave
-		var alfa: float = lerp(0.9, 0.25, t)
-		var col := Color(1.0, 0.08, 0.04, alfa)
+		# Ancho cónico: base más gruesa (~6.5 cm) y punta fina (~1.5 cm)
+		var ancho_cinta: float = lerp(0.065, 0.015, t)
+
+		# Fading de transparencia al final combinado con el fade-in de 1 segundo
+		var alfa: float = lerp(1.0, 0.18, t) * fade_in_alpha
+		# COLOR.r = t (progreso a lo largo del arco), COLOR.a = alfa
+		var col := Color(t, 1.0, 1.0, alfa)
 
 		_trajectory_immediate_mesh.surface_set_color(col)
+		_trajectory_immediate_mesh.surface_set_uv(Vector2(dist_acumulada, 0.0))
 		_trajectory_immediate_mesh.surface_add_vertex(p + normal_cinta * (ancho_cinta * 0.5))
 
 		_trajectory_immediate_mesh.surface_set_color(col)
+		_trajectory_immediate_mesh.surface_set_uv(Vector2(dist_acumulada, 1.0))
 		_trajectory_immediate_mesh.surface_add_vertex(p - normal_cinta * (ancho_cinta * 0.5))
 
 	_trajectory_immediate_mesh.surface_end()
@@ -1955,9 +2018,16 @@ func _actualizar_trayectoria_explosiva() -> void:
 	if _trajectory_impact_marker:
 		_trajectory_impact_marker.global_position = punto_impacto
 		_trajectory_impact_marker.visible = true
+		var reticle := _trajectory_impact_marker.find_child("ReticleSprite", true, false) as Sprite3D
+		if reticle:
+			reticle.modulate.a = 0.95 * fade_in_alpha
+		var center_dot := _trajectory_impact_marker.find_child("CenterDot", true, false) as MeshInstance3D
+		if center_dot and center_dot.material_override is StandardMaterial3D:
+			center_dot.material_override.albedo_color.a = 0.95 * fade_in_alpha
 
 
 func _ocultar_trayectoria_explosiva() -> void:
+	_trajectory_fade_timer = 0.0
 	if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		if not _cursor_sistema_activo:

@@ -481,6 +481,27 @@ func _create_pause_panel():
 	_style_button(btn_tipo_defensoras, Color(0.2, 0.55, 0.75) if usar_ballesteras else Color(0.7, 0.35, 0.15))
 	hbox_nav_debug.add_child(btn_tipo_defensoras)
 
+	# Fila de Acciones de Oleada y Victoria (Debug)
+	var hbox_acciones_oleada = HBoxContainer.new()
+	hbox_acciones_oleada.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox_acciones_oleada.add_theme_constant_override("separation", 10)
+	hbox_acciones_oleada.visible = debug_ui_enabled
+	vbox.add_child(hbox_acciones_oleada)
+
+	var btn_completar_oleada = Button.new()
+	btn_completar_oleada.text = "⏩ Completar Oleada y Siguiente"
+	btn_completar_oleada.custom_minimum_size = Vector2(250, 40)
+	btn_completar_oleada.pressed.connect(_completar_oleada_actual_debug)
+	_style_button(btn_completar_oleada, Color(0.2, 0.65, 0.4))
+	hbox_acciones_oleada.add_child(btn_completar_oleada)
+
+	var btn_probar_victoria = Button.new()
+	btn_probar_victoria.text = "🎉 Animación Victoria Aliadas"
+	btn_probar_victoria.custom_minimum_size = Vector2(240, 40)
+	btn_probar_victoria.pressed.connect(_probar_victoria_aliadas_debug)
+	_style_button(btn_probar_victoria, Color(0.85, 0.55, 0.15))
+	hbox_acciones_oleada.add_child(btn_probar_victoria)
+
 	# Fila de Diálogo Defensora (Prueba en vivo)
 	var hbox_dialogo_def = HBoxContainer.new()
 	hbox_dialogo_def.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -685,6 +706,57 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 	else:
 		if root_node.has_method("debug_ir_a_oleada_1"):
 			root_node.call("debug_ir_a_oleada_1")
+
+
+func _probar_victoria_aliadas_debug() -> void:
+	if is_paused:
+		_toggle_pause()
+	for ally in get_tree().get_nodes_in_group("allies"):
+		if is_instance_valid(ally) and ally.has_method("celebrar_victoria"):
+			ally.celebrar_victoria()
+
+
+func _completar_oleada_actual_debug() -> void:
+	if is_paused:
+		_toggle_pause()
+
+	var root_node = _get_scene_root()
+	var spawner: WaveSpawner = null
+	for node in get_tree().get_nodes_in_group("wave_spawners"):
+		if is_instance_valid(node) and node is WaveSpawner:
+			spawner = node
+			break
+
+	# Eliminar enemigos hostiles activos en pantalla
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(enemy):
+			if enemy.has_method("take_damage"):
+				enemy.take_damage(9999)
+			elif enemy.has_method("recibir_dano"):
+				enemy.recibir_dano(9999)
+			else:
+				enemy.queue_free()
+
+	if is_instance_valid(spawner):
+		spawner.active_goblins.clear()
+		spawner.shield_imps_activos.clear()
+		spawner.cola_spawn.clear()
+		spawner.goblins_spawned_in_wave = spawner.enemigos_por_oleada
+
+	# Si estamos en NIVEL01, ejecutar la secuencia normal de finalización que abre la cortinilla
+	if is_instance_valid(root_node):
+		var oleada_actual: int = 1
+		if "oleada_combate_actual" in root_node:
+			oleada_actual = root_node.oleada_combate_actual
+		elif is_instance_valid(spawner) and spawner.oleada_combate > 0:
+			oleada_actual = spawner.oleada_combate
+
+		if root_node.has_method("_on_nivel1_completado"):
+			root_node.call("_on_nivel1_completado", oleada_actual)
+		elif is_instance_valid(spawner):
+			spawner.oleada_completada.emit(oleada_actual)
+	elif is_instance_valid(spawner):
+		spawner.oleada_completada.emit(spawner.current_wave)
 
 
 func _ejecutar_carteles_debug() -> void:
