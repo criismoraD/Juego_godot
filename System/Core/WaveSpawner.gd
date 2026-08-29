@@ -231,11 +231,31 @@ func _generar_cola_spawn() -> void:
 			pool.remove_at(idx_gargola)
 			pool.push_front(escena_gargola)
 
-	# En Oleada 5: asegurar que al menos 1 Lonko aparezca entre los primeros 4 spawns (evita que quede al final y parezca que no spawnea)
+	# En Oleada 5: distribuir los 11 Lonko uniformemente para garantizar que aparezcan 11 visibles (cada ~4 spawns)
 	if wave_num == 5 and escena_lonko:
-		var idx_lonko: int = pool.find(escena_lonko)
-		if idx_lonko > 3:
-			pool.remove_at(idx_lonko)
+		var lonkos: Array[PackedScene] = []
+		var otros: Array[PackedScene] = []
+		for p in pool:
+			if p == escena_lonko:
+				lonkos.append(p)
+			else:
+				otros.append(p)
+		# Intercalar: cada 3 otros, 1 lonko
+		pool.clear()
+		var idx_o: int = 0
+		var idx_l: int = 0
+		while idx_o < otros.size() or idx_l < lonkos.size():
+			for k in range(3):
+				if idx_o < otros.size():
+					pool.append(otros[idx_o])
+					idx_o += 1
+			if idx_l < lonkos.size():
+				pool.append(lonkos[idx_l])
+				idx_l += 1
+		# Asegurar que el primer Lonko esté entre los 3 primeros spawns
+		var idx_first_lonko: int = pool.find(escena_lonko)
+		if idx_first_lonko > 2:
+			pool.remove_at(idx_first_lonko)
 			pool.insert(2, escena_lonko)
 
 	# En Oleada 3: insertar la Arquera Rosa exactamente en la mitad de la oleada
