@@ -203,17 +203,15 @@ func _generar_cola_spawn() -> void:
 
 	elif wave_num == 5:
 		# Oleada 5: 40 enemigos totales
-		# 11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 Arqueras Goblin + 1 Rosa (reemplaza 1 normal), 9 Goblins Ballesta. Total = 40.
+		# 11 Lonko, 4 Imp Escudo, 7 Gárgolas, 9 Arqueras Goblin, 9 Goblins Ballesta. Total = 40.
 		for i in range(11):
 			pool.append(escena_lonko)
 		for i in range(4):
 			pool.append(escena_imp_escudo)
 		for i in range(7):
 			pool.append(escena_gargola)
-		for i in range(8):
+		for i in range(9):
 			pool.append(escena_goblin_girl)
-		if escena_arquera_rosa:
-			pool.append(escena_arquera_rosa)
 		for i in range(9):
 			pool.append(escena_goblin)
 
@@ -255,18 +253,11 @@ func _generar_cola_spawn() -> void:
 			if idx_l < lonkos.size():
 				pool.append(lonkos[idx_l])
 				idx_l += 1
-		# Asegurar que el primer Lonko esté entre los 3 primeros spawns (después de la Rosa)
+		# Asegurar que el primer Lonko esté entre los 3 primeros spawns
 		var idx_first_lonko: int = pool.find(escena_lonko)
-		if idx_first_lonko > 3:
+		if idx_first_lonko > 2:
 			pool.remove_at(idx_first_lonko)
-			pool.insert(3, escena_lonko)
-
-	# En Oleada 5: la Goblin Rosada debe ser el primer enemigo de la oleada (reemplaza 1 arquera normal)
-	if wave_num == 5 and escena_arquera_rosa:
-		var idx_rosa: int = pool.find(escena_arquera_rosa)
-		if idx_rosa > 0:
-			pool.remove_at(idx_rosa)
-			pool.push_front(escena_arquera_rosa)
+			pool.insert(2, escena_lonko)
 
 	# En Oleada 3: insertar la Arquera Rosa exactamente en la mitad de la oleada
 	if wave_num == 3 and escena_arquera_rosa:
@@ -282,18 +273,8 @@ func _generar_cola_spawn() -> void:
 				count_lonko += 1
 		var faltan: int = lonko_excepcion_pendiente - count_lonko
 		for i in range(faltan):
-			# Insertar después de la Rosa para no desplazarla del primer lugar
-			if escena_arquera_rosa and cola_spawn.size() > 0 and cola_spawn[0] == escena_arquera_rosa:
-				cola_spawn.insert(1, escena_lonko)
-			else:
-				cola_spawn.push_front(escena_lonko)
+			cola_spawn.push_front(escena_lonko)
 		lonko_excepcion_pendiente = 0
-	# Re-afirmar que la Rosa sigue primera en oleada 5 tras cualquier inyección de excepción
-	if wave_num == 5 and escena_arquera_rosa:
-		var idx_rosa_fix: int = cola_spawn.find(escena_arquera_rosa)
-		if idx_rosa_fix > 0:
-			cola_spawn.remove_at(idx_rosa_fix)
-			cola_spawn.push_front(escena_arquera_rosa)
 	# Sincronizar el total de enemigos de la oleada con el tamaño exacto según el diseño
 	if wave_num == 1:
 		enemigos_por_oleada = 15  # 12 en cola + 3 pacíficos convertidos
