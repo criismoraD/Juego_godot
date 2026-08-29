@@ -73,6 +73,7 @@ var original_materials: Array = []
 var _test_floor_normal_override = null
 var last_hit_position: Vector3 = Vector3.ZERO
 var last_hit_direction: Vector3 = Vector3.ZERO
+var _died_signal_emitted: bool = false
 # === EFECTO DE DISOLUCIÓN ===
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 var is_dissolving: bool = false
@@ -416,6 +417,9 @@ func _change_state(new_state: State):
 					var angle = atan2(-normal.x, normal.y)
 					rotation.z = angle
 			_on_state_dying()
+			if not _died_signal_emitted:
+				_died_signal_emitted = true
+				died.emit()
 		State.DEAD:
 			_cleanup_all_materials()
 			queue_free()

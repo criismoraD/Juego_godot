@@ -177,7 +177,8 @@ func _on_continue_pressed() -> void:
 	if ultima_oleada_jugada >= 1 and ultima_oleada_jugada <= 5:
 		GameUI.continuar_desde_oleada = ultima_oleada_jugada
 	# Reiniciar el ÚLTIMO NIVEL JUGADO (guardado al mostrarse Game Over)
-	if ultima_escena_jugada != "":
-		get_tree().change_scene_to_file(ultima_escena_jugada)
+	var target_scene := ultima_escena_jugada if ultima_escena_jugada != "" else "res://Levels/NIVEL01/NIVEL01.tscn"
+	if has_node("/root/SceneManager"):
+		get_node("/root/SceneManager").change_scene(target_scene)
 	else:
-		get_tree().reload_current_scene()
+		get_tree().change_scene_to_file(target_scene)

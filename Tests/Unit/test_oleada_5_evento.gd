@@ -93,14 +93,14 @@ func test_evento_cuerno_disparo_y_rafaga_refuerzos():
 	assert_eq(burst_girls, 5, "La ráfaga del cuerno debe tener 5 Arqueras Goblin al frente")
 
 
-func test_evento_cuerno_oleada_4_rafaga_5_mas_5_mas_imp_escudo_fijo():
+func test_evento_cuerno_oleada_4_rafaga_8_ballestas_mas_2_imps():
 	# Arrange
 	_spawner.oleada_combate = 4
 	_spawner._generar_cola_spawn()
 	var cola_previa: int = _spawner.cola_spawn.size()
 	var escudos_previos: int = _spawner.shield_imps_activos.size()
 
-	# Act: evento de cuerno de la oleada 4 (ráfaga 5+5 + 1 imp de escudo fijo)
+	# Act: evento de cuerno de la oleada 4 (ráfaga 8 Ballestas + 2 Imps)
 	_spawner._iniciar_evento_cuerno(10, true)
 
 	# Assert: banderas activas
@@ -108,19 +108,19 @@ func test_evento_cuerno_oleada_4_rafaga_5_mas_5_mas_imp_escudo_fijo():
 	assert_true(_spawner.evento_cuerno_en_progreso, "El evento debe estar en progreso")
 	assert_eq(_spawner.refuerzos_cuerno_total, 10, "La ráfaga debe ser de 10 refuerzos")
 
-	# Ráfaga 5+5 al frente de la cola
+	# Ráfaga 8 ballestas + 2 imps al frente de la cola
 	var burst_goblins := 0
-	var burst_girls := 0
+	var burst_imps := 0
 	for i in range(10):
 		var scene = _spawner.cola_spawn[i]
 		if scene == _spawner.escena_goblin:
 			burst_goblins += 1
-		elif scene == _spawner.escena_goblin_girl:
-			burst_girls += 1
-	assert_eq(burst_goblins, 5, "La ráfaga debe tener 5 Goblins Ballesta al frente")
-	assert_eq(burst_girls, 5, "La ráfaga debe tener 5 Arqueras Goblin al frente")
+		elif scene == _spawner.escena_imp:
+			burst_imps += 1
+	assert_eq(burst_goblins, 8, "La ráfaga debe tener 8 Goblins Ballesta al frente")
+	assert_eq(burst_imps, 2, "La ráfaga debe tener 2 Imps al frente")
 
-	# La cola crece exactamente 10 (el imp de escudo va FUERA de la cola)
+	# La cola crece exactamente 10
 	assert_eq(_spawner.cola_spawn.size(), cola_previa + 10, "La cola debe crecer exactamente 10")
 
 	# Imp de escudo fijo spawneado directamente
@@ -145,4 +145,22 @@ func test_evento_cuerno_actualiza_enemigos_por_oleada_para_barra_progreso():
 		_spawner.enemigos_por_oleada, 50,
 		"enemigos_por_oleada debe actualizarse a 50 al sumar los 10 refuerzos del evento cuerno"
 	)
+
+
+func test_oleada_completa_al_terminar_conteo_enemigos():
+	# Arrange
+	_spawner.is_wave_active = true
+	_spawner.enemigos_por_oleada = 10
+	_spawner.enemigos_muertos_en_oleada = 10
+	_spawner.goblins_spawned_in_wave = 10
+
+	watch_signals(_spawner)
+
+	# Act
+	_spawner._check_wave_complete()
+
+	# Assert
+	assert_false(_spawner.is_wave_active, "La oleada debe dejar de estar activa al matar todos los enemigos")
+	assert_signal_emitted(_spawner, "oleada_completada", "Debe emitirse la señal oleada_completada")
+
 

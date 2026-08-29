@@ -6,7 +6,8 @@ static var active_allies_cache: Array[Node] = []
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
-enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP }
+enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP, CELEBRATING }
+enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos vivos para empezar a disparar
 @export_category("Disparo")
@@ -22,8 +23,21 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP }
 @export_category("Tiempos")
 @export var idle_min: float = 0.4  ## Segundos mínimos en idle entre ciclos
 @export var idle_max: float = 0.9  ## Segundos máximos en idle entre ciclos
+@export_category("Celebración de Victoria")
+@export var repeticiones_victoria_min: int = 3  ## Mínimo de loops de la animación de victoria tras oleada
+@export_category("Celebración_max")
+@export var repeticiones_victoria_max: int = 4  ## Máximo de loops de la animación de victoria tras oleada
+@export var duracion_animacion_victoria: float = 1.0  ## Tiempo en segundos de cada loop de victoria
+@export var rotacion_victoria_grados: float = 15.0  ## Grados de giro del personaje durante la celebración de victoria
+@export var velocidad_giro_victoria: float = 4.5  ## Velocidad de rotación suave para la celebración
+@export var probar_victoria: bool = false:  ## Botón para reproducir la animación de victoria desde el Inspector
+	set(val):
+		if val:
+			probar_victoria = false
+			celebrar_victoria()
 @export_category("Vida")
 @export var vida_maxima: int = 2
+@export var plano_profundidad_z: float = -0.02  ## Plano Z retrasado (detrás de ballesteras y protagonista)
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -51,12 +65,15 @@ var charge_duration: float = 0.0
 var health: int = 1
 var flechas_explosivas: int = 0  ## Contador interno de flechas explosivas
 var flechas_multiples: int = 0  ## Contador interno de flechas múltiples
+var _icono_aturdimiento: Sprite3D = null
+var _icono_aturdimiento_tween: Tween = null
 var paralisis_timer: float = 0.0  ## Tiempo restante de parálisis (4 segundos sin atacar)
 var _paralisis_vfx_timer: float = 0.0
 var is_dissolving: bool = false
 var dissolve_materials: Array = []
 static var _cached_wave_spawner: Node = null
 var _spine_bone_idx: int = -1  ## Hueso del torso para el apuntado visual hacia arriba
+var _loops_victoria_restantes: int = 0
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -91,7 +108,17 @@ func _ready():
 	var _sombra := SombraPersonaje.new()
 	add_child(_sombra)
 
+	global_position.z = plano_profundidad_z
+	_aplicar_prioridad_renderizado(-2.0)
+
 	call_deferred("_iniciar")
+	call_deferred("_conectar_eventos_oleada")
+
+
+func _aplicar_prioridad_renderizado(offset: float) -> void:
+	for node in find_children("*", "VisualInstance3D", true, false):
+		if node is VisualInstance3D:
+			node.sorting_offset = offset
 
 
 func _iniciar():
@@ -210,9 +237,8 @@ func _aplicar_animaciones_protagonista() -> void:
 			else:
 				var existing_lib: AnimationLibrary = anim_player.get_animation_library(lib_name)
 				for anim_name in lib.get_animation_list():
-					if "CORRER" in anim_name or "RUN" in anim_name or "CAMINA" in anim_name:
-						if not existing_lib.has_animation(anim_name):
-							existing_lib.add_animation(anim_name, lib.get_animation(anim_name))
+					if not existing_lib.has_animation(anim_name):
+						existing_lib.add_animation(anim_name, lib.get_animation(anim_name))
 
 
 func _buscar_arrow_node():
@@ -268,15 +294,23 @@ func _crear_hitbox():
 
 
 func _process(delta):
+	_actualizar_rotacion_modelo(delta)
+
 	if current_state == State.DYING or current_state == State.DEAD:
 		_restaurar_torso()
+		_ocultar_icono_aturdimiento()
 		return
 
 	if paralisis_timer > 0.0:
 		paralisis_timer -= delta
 		_restaurar_torso()
+		if _icono_aturdimiento and _icono_aturdimiento.visible:
+			var t := Time.get_ticks_msec() / 1000.0
+			_icono_aturdimiento.position.y = 3.6 + sin(t * 3.8) * 0.12
 		if paralisis_timer <= 0.0:
 			paralisis_timer = 0.0
+			_ocultar_icono_aturdimiento()
+			_play_anim(["IDLE", "IDLE_001"], 0.25)
 		else:
 			_paralisis_vfx_timer += delta
 
@@ -291,22 +325,87 @@ func _process(delta):
 			_process_shooting(delta)
 		State.GETTING_UP:
 			_process_getting_up(delta)
+		State.CELEBRATING:
+			_process_celebrating(delta)
 
 	# Apuntado visual del torso hacia el objetivo activo (gárgola, Lonko o pilar)
-	if paralisis_timer <= 0.0:
+	if paralisis_timer <= 0.0 and current_state != State.CELEBRATING:
 		_actualizar_apuntado_torso()
 
 
 ## Aplica el estado de parálisis por la duración indicada (4s por defecto):
-## No puede atacar, cancela recargas/apuntados y restaura el torso.
+## No es acumulable (debe pasar el efecto para volver a aplicarse).
+## No puede atacar, reproduce animación ELECTROCUTADA, muestra el icono flotante de aturdimiento y restaura el torso.
 func aplicar_paralisis(duracion: float = 4.0) -> void:
-	if current_state == State.DYING or current_state == State.DEAD:
+	if current_state == State.DYING or current_state == State.DEAD or esta_paralizada() or paralisis_timer > 0.0:
 		return
-	paralisis_timer = maxf(paralisis_timer, duracion)
+	paralisis_timer = duracion
 	_ocultar_flecha()
 	_restaurar_torso()
+	_play_anim("ELECTROCUTADA", 0.15, 1.0)
+	_mostrar_icono_aturdimiento()
 	if current_state != State.IDLE and current_state != State.GETTING_UP:
 		_cambiar_estado(State.IDLE)
+
+
+func _setup_icono_aturdimiento() -> void:
+	if _icono_aturdimiento:
+		return
+
+	_icono_aturdimiento = Sprite3D.new()
+	_icono_aturdimiento.name = "IconoAturdimiento"
+	var tex: Texture2D = null
+	if not FileAccess.file_exists("res://TEST_/Icono aturdimiento.png.import"):
+		var img := Image.new()
+		if img.load("res://TEST_/Icono aturdimiento.png") == OK:
+			tex = ImageTexture.create_from_image(img)
+	if not tex:
+		tex = load("res://TEST_/Icono aturdimiento.png") as Texture2D
+	_icono_aturdimiento.texture = tex
+	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_icono_aturdimiento.pixel_size = 0.0016
+	_icono_aturdimiento.shaded = false
+	_icono_aturdimiento.no_depth_test = true
+	_icono_aturdimiento.render_priority = 12
+	_icono_aturdimiento.position = Vector3(0.0, 3.6, 0.1)  # Flota claramente por encima de la cabeza
+	_icono_aturdimiento.modulate = Color(0.25, 1.2, 0.35, 0.0)  # Color verde brillante
+	_icono_aturdimiento.visible = false
+	add_child(_icono_aturdimiento)
+
+
+func _mostrar_icono_aturdimiento() -> void:
+	_setup_icono_aturdimiento()
+	if not _icono_aturdimiento:
+		return
+
+	_icono_aturdimiento.visible = true
+	if _icono_aturdimiento_tween and _icono_aturdimiento_tween.is_valid():
+		_icono_aturdimiento_tween.kill()
+
+	_icono_aturdimiento.scale = Vector3.ZERO
+	_icono_aturdimiento.modulate = Color(0.25, 1.2, 0.35, 0.0)
+
+	_icono_aturdimiento_tween = create_tween()
+	_icono_aturdimiento_tween.set_parallel(true)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "scale", Vector3.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "modulate:a", 1.0, 0.18)
+
+
+func _ocultar_icono_aturdimiento() -> void:
+	if not _icono_aturdimiento or not _icono_aturdimiento.visible:
+		return
+
+	if _icono_aturdimiento_tween and _icono_aturdimiento_tween.is_valid():
+		_icono_aturdimiento_tween.kill()
+
+	_icono_aturdimiento_tween = create_tween()
+	_icono_aturdimiento_tween.set_parallel(true)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "scale", Vector3.ZERO, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "modulate:a", 0.0, 0.18)
+	_icono_aturdimiento_tween.chain().tween_callback(func():
+		if is_instance_valid(_icono_aturdimiento):
+			_icono_aturdimiento.visible = false
+	)
 
 
 func esta_paralizada() -> bool:
@@ -415,13 +514,28 @@ func _process_getting_up(delta):
 		_cambiar_estado(State.IDLE)
 
 
+## CELEBRATING: animación VICTORIA en loop (3-4 veces)
+func _process_celebrating(delta: float) -> void:
+	state_timer -= delta
+	if state_timer <= 0:
+		if _loops_victoria_restantes > 1:
+			_loops_victoria_restantes -= 1
+			if anim_player:
+				anim_player.seek(0.0, true)
+			_play_anim("VICTORIA", 0.35, 1.0)
+			state_timer = duracion_animacion_victoria
+		else:
+			_loops_victoria_restantes = 0
+			_cambiar_estado(State.IDLE)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CAMBIO DE ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
 func _cambiar_estado(nuevo: State):
-	if nuevo != State.GETTING_UP and model_root:
+	if nuevo != State.GETTING_UP and nuevo != State.CELEBRATING and model_root:
 		model_root.visible = true
 		if model_root.rotation.y != _original_model_y_rot:
 			if is_inside_tree():
@@ -476,6 +590,47 @@ func _cambiar_estado(nuevo: State):
 			_ocultar_flecha()
 			if ultima_muerte_anim == "MUERTE_01" and model_root:
 				model_root.rotation.y = _original_model_y_rot + deg_to_rad(90)
+		State.CELEBRATING:
+			_restaurar_torso()
+			_ocultar_flecha()
+			_play_anim("VICTORIA", 0.25, 1.0)
+			_play_bow_anim("ARCO_IDLE", 0.25, 1.0)
+			state_timer = duracion_animacion_victoria
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CELEBRACIÓN DE VICTORIA Y EVENTOS DE OLEADA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+func _conectar_eventos_oleada() -> void:
+	var spawner = _get_cached_wave_spawner()
+	if spawner and spawner.has_signal("oleada_completada"):
+		if not spawner.oleada_completada.is_connected(_on_oleada_completada):
+			spawner.oleada_completada.connect(_on_oleada_completada)
+
+
+func _on_oleada_completada(_numero_oleada: int) -> void:
+	celebrar_victoria()
+
+
+func celebrar_victoria() -> void:
+	if current_state != State.DYING and current_state != State.DEAD:
+		_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
+		_cambiar_estado(State.CELEBRATING)
+
+
+func probar_animacion_victoria() -> void:
+	celebrar_victoria()
+
+
+func _actualizar_rotacion_modelo(delta: float) -> void:
+	if not model_root:
+		return
+	var target_y_rot: float = _original_model_y_rot
+	if current_state == State.CELEBRATING:
+		target_y_rot = _original_model_y_rot + deg_to_rad(rotacion_victoria_grados)
+	model_root.rotation.y = lerp_angle(model_root.rotation.y, target_y_rot, 1.0 - exp(-velocidad_giro_victoria * delta))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -667,36 +822,85 @@ func _obtener_pilar_lonko_objetivo() -> Node3D:
 	return mejor
 
 
-## Determina el objetivo principal actual según el estado de power-ups:
-## - Con disparo múltiple activo: SOLO reconoce el pilar de Lonko como objetivo.
-## - Sin disparo múltiple: reconoce a las arqueras Lonko como enemigas directas y a las gárgolas.
-func _obtener_objetivo_actual() -> Node3D:
-	var tiene_disparo_multiple: bool = (flechas_multiples > 0)
-
-	if tiene_disparo_multiple:
-		# Con power up de disparo múltiple, SOLO reconoce el pilar de Lonko
-		var pilar := _obtener_pilar_lonko_objetivo()
-		if pilar:
-			return pilar
-		var gargola := _obtener_gargola_objetivo()
-		if gargola:
-			return gargola
-		return null
+## Obtiene los enemigos vivos activos situados frente a la aliada
+func _obtener_enemigos_disponibles() -> Array:
+	var enemies = []
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
 	else:
-		# Sin disparo múltiple: reconoce a las arqueras Lonko y a las gárgolas
-		var lonko := _obtener_lonko_objetivo()
-		var gargola := _obtener_gargola_objetivo()
+		enemies = get_tree().get_nodes_in_group("enemies")
 
-		if lonko and gargola:
-			var dist_lonko: float = absf(lonko.global_position.x - global_position.x)
-			var dist_gargola: float = absf(gargola.global_position.x - global_position.x)
-			return lonko if dist_lonko <= dist_gargola else gargola
-		elif lonko:
-			return lonko
-		elif gargola:
-			return gargola
+	var validos: Array = []
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not (enemy is Node3D) or not enemy.is_inside_tree():
+			continue
+		if enemy is Lonko or ("lonko" in enemy.name.to_lower()):
+			if not _es_lonko_en_pilar_completo(enemy):
+				continue
+		if enemy.get("current_state") != null:
+			var st = enemy.current_state
+			if str(st) in ["DYING", "DEAD", "MUERTO"]:
+				continue
+			if enemy is EnemyBase and (st == EnemyBase.State.DYING or st == EnemyBase.State.DEAD):
+				continue
+		if enemy.get("is_dead") == true or enemy.get("is_dying") == true:
+			continue
+		# Solo enemigos delante (a la derecha de la arquera)
+		if enemy.global_position.x <= global_position.x:
+			continue
+		validos.append(enemy)
+	return validos
 
+
+## Selecciona un enemigo al azar de los disponibles al frente
+func _obtener_enemigo_al_azar() -> Node3D:
+	var validos = _obtener_enemigos_disponibles()
+	if validos.is_empty():
 		return null
+	return validos[randi() % validos.size()] as Node3D
+
+
+## Evalúa el campo de batalla y decide el objetivo y tipo de munición según las prioridades:
+## 1. Si hay Arquera Lonko / Pilar activo y tiene flechas explosivas -> Objetivo: Lonko/Pilar, Munición: EXPLOSIVO
+## 2. Si hay Gárgola activa -> Objetivo: Gárgola, Munición: NORMAL (prioriza disparo normal contra gárgolas)
+## 3. Si tiene flechas múltiples -> Objetivo: Enemigo al azar, Munición: MULTIPLE
+## 4. Si tiene flechas explosivas (sin Lonko en pantalla) -> Objetivo: Enemigo al azar, Munición: EXPLOSIVO
+## 5. Sin munición especial -> Objetivo: Lonko/Enemigo/Arco, Munición: NORMAL
+func _decidir_disparo_y_objetivo() -> Dictionary:
+	var lonko := _obtener_lonko_objetivo()
+	var pilar := _obtener_pilar_lonko_objetivo()
+	var gargola := _obtener_gargola_objetivo()
+	var objetivo_lonko = lonko if lonko else pilar
+
+	# Regla 1: Flechas explosivas priorizan a las arqueras Lonko / Pilar
+	if objetivo_lonko and flechas_explosivas > 0:
+		return { "target": objetivo_lonko, "type": TipoDisparoAliada.EXPLOSIVO }
+
+	# Regla 2: Contra el enemigo Gárgola prioriza utilizar su disparo normal
+	if gargola:
+		return { "target": gargola, "type": TipoDisparoAliada.NORMAL }
+
+	# Regla 3: Disparo múltiple lo dispara al azar
+	if flechas_multiples > 0:
+		var target_rand = _obtener_enemigo_al_azar()
+		var target = target_rand if target_rand else objetivo_lonko
+		return { "target": target, "type": TipoDisparoAliada.MULTIPLE }
+
+	# Regla 4: Si no hay arquera Lonko en pantalla, dispara tiros explosivos al azar
+	if flechas_explosivas > 0:
+		var target_rand = _obtener_enemigo_al_azar()
+		var target = target_rand if target_rand else objetivo_lonko
+		return { "target": target, "type": TipoDisparoAliada.EXPLOSIVO }
+
+	# Regla 5: Disparo normal por defecto
+	var target_default = objetivo_lonko if objetivo_lonko else _obtener_enemigo_al_azar()
+	return { "target": target_default, "type": TipoDisparoAliada.NORMAL }
+
+
+func _obtener_objetivo_actual() -> Node3D:
+	var decision := _decidir_disparo_y_objetivo()
+	return decision.get("target", null)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -704,13 +908,13 @@ func _obtener_objetivo_actual() -> Node3D:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+## Almacena flechas múltiples sin resetear las explosivas en reserva
 func agregar_flechas_multiples(cantidad: int = 3) -> void:
-	flechas_explosivas = 0
 	flechas_multiples += cantidad
 
 
+## Almacena flechas explosivas sin resetear las múltiples en reserva
 func agregar_flechas_explosivas(cantidad: int = 5) -> void:
-	flechas_multiples = 0
 	flechas_explosivas += cantidad
 
 
@@ -718,19 +922,17 @@ func _disparar():
 	if not arrow_scene:
 		return
 
-	# Capturar objetivo antes de descontar para respetar la regla de disparo múltiple
-	var objetivo := _obtener_objetivo_actual()
+	var decision := _decidir_disparo_y_objetivo()
+	var objetivo: Node3D = decision.get("target", null)
+	var tipo: TipoDisparoAliada = decision.get("type", TipoDisparoAliada.NORMAL)
 
-	# 1. Determinar si se dispara flecha múltiple o explosiva
-	var es_flecha_multiple: bool = false
-	var es_explosiva: bool = false
+	var es_flecha_multiple: bool = (tipo == TipoDisparoAliada.MULTIPLE)
+	var es_explosiva: bool = (tipo == TipoDisparoAliada.EXPLOSIVO)
 
-	if flechas_multiples > 0:
-		flechas_multiples -= 1
-		es_flecha_multiple = true
-	elif flechas_explosivas > 0:
-		flechas_explosivas -= 1
-		es_explosiva = true
+	if es_flecha_multiple:
+		flechas_multiples = max(0, flechas_multiples - 1)
+	elif es_explosiva:
+		flechas_explosivas = max(0, flechas_explosivas - 1)
 
 	AudioManager.play_sfx("player_shoot", -6.0)
 
@@ -835,7 +1037,10 @@ func _disparar_rafaga_aliada(base_direction: Vector3, speed: float, spawn_pos: V
 
 
 func _mostrar_flecha():
-	var es_explosiva: bool = (flechas_explosivas > 0)
+	var decision := _decidir_disparo_y_objetivo()
+	var tipo: TipoDisparoAliada = decision.get("type", TipoDisparoAliada.NORMAL)
+	var es_explosiva: bool = (tipo == TipoDisparoAliada.EXPLOSIVO)
+
 	if es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 		if arrow_node and is_instance_valid(arrow_node):
 			arrow_node.visible = false
@@ -890,6 +1095,12 @@ func take_damage(amount: float):
 
 func recibir_dano(amount: int):
 	take_damage(float(amount))
+
+
+func curar(cantidad: int = 1) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	health = min(health + cantidad, vida_maxima)
 
 
 func revivir() -> void:
@@ -1006,41 +1217,26 @@ func _finish_dissolve():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _play_anim(anim_name: String, blend: float = -1.0, speed: float = 1.0):
+func _play_anim(anim_target, blend: float = -1.0, speed: float = 1.0):
 	if not anim_player:
-		_log_debug(["[AllyArcher] _play_anim('", anim_name, "') - anim_player es NULL"])
 		return
 	anim_player.active = true
 
-	var full_name = "Armature|Armature|" + anim_name
-	if anim_player.has_animation(full_name):
-		_log_debug(["[AllyArcher] Reproduciendo: ", full_name])
-		anim_player.play(full_name, blend, speed)
-		return
-
-	var alt_name = "Armature|" + anim_name
-	if anim_player.has_animation(alt_name):
-		_log_debug(["[AllyArcher] Reproduciendo: ", alt_name])
-		anim_player.play(alt_name, blend, speed)
-		return
-
-	if anim_player.has_animation(anim_name):
-		_log_debug(["[AllyArcher] Reproduciendo: ", anim_name])
-		anim_player.play(anim_name, blend, speed)
+	var candidates: Array = []
+	if anim_target is Array:
+		candidates = anim_target
 	else:
-		_log_debug(
-			[
-				"[AllyArcher] Animación NO encontrada: ",
-				anim_name,
-				" (intentado: ",
-				full_name,
-				", ",
-				alt_name,
-				", ",
-				anim_name,
-				")"
-			]
-		)
+		candidates = [str(anim_target)]
+
+	var all_anims = anim_player.get_animation_list()
+	for cand in candidates:
+		var cand_str := str(cand).to_lower()
+		for a in all_anims:
+			var a_str := a.to_lower()
+			if a_str == cand_str or a_str.ends_with("/" + cand_str) or cand_str in a_str:
+				anim_player.play(a, blend, speed)
+				anim_player.speed_scale = speed
+				return
 
 
 func _play_bow_anim(anim_name: String, blend: float = -1.0, speed: float = 1.0):

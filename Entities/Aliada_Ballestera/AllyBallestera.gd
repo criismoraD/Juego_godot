@@ -16,6 +16,11 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP, CELEBRA
 
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos hostiles para empezar a disparar
+@export var es_movil: bool = false  ## Defensora móvil asignada a plataformas (no refuerza escudos, suelta ballesta al morir)
+@export var es_mensajera: bool = false  ## Mensajera temporal que entrega items y se retira
+@export var plano_profundidad_z: float = 0.02  ## Plano Z prioritario frente a arqueras aliadas
+var en_despliegue: bool = false  ## Bloquea la FSM de combate y apuntado mientras camina o escala hacia su puesto
+var plataforma_asignada: int = 1  ## Plataforma a la que fue asignada la defensora móvil
 
 @export_category("Vida")
 @export var vida_maxima: int = 4  ## 4 de vida para la ballestera defensora
@@ -62,6 +67,7 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP, CELEBRA
 var arrow_scene = preload("res://Entities/Proyectil_Virote_Aliado/AllyBolt.tscn")
 var escudo_scene: PackedScene = preload("res://Entities/Ambiente_Escudo/Escudo.tscn")
 var ballesta_scene: PackedScene = preload("res://Entities/Enemigo_Goblin/BALLES_GOBLING.glb")
+var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
 var anim_player: AnimationPlayer
 var skeleton: Skeleton3D
@@ -73,6 +79,9 @@ var ultima_muerte_anim: String = ""
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO Y CICLO DE DISPARO
 # ═══════════════════════════════════════════════════════════════════════════════
+var _icono_aturdimiento: Sprite3D = null
+var _icono_aturdimiento_tween: Tween = null
+
 var current_state: State = State.IDLE
 var state_timer: float = 0.0
 var _blink_timer: float = 0.0
@@ -127,9 +136,18 @@ func _ready():
 	var _sombra := SombraPersonaje.new()
 	add_child(_sombra)
 
+	global_position.z = plano_profundidad_z
+	_aplicar_prioridad_renderizado(2.0)
+
 	call_deferred("_vincular_escudo_piso")
 	call_deferred("_conectar_eventos_oleada")
 	call_deferred("_iniciar")
+
+
+func _aplicar_prioridad_renderizado(offset: float) -> void:
+	for node in find_children("*", "VisualInstance3D", true, false):
+		if node is VisualInstance3D:
+			node.sorting_offset = offset
 
 
 func _exit_tree():
@@ -137,9 +155,11 @@ func _exit_tree():
 
 
 func _iniciar():
+	_importar_animaciones_jugador()
 	if anim_player:
 		anim_player.active = true
-	_cambiar_estado(State.IDLE)
+	if not en_despliegue:
+		_cambiar_estado(State.IDLE)
 	set_process(true)
 
 
@@ -151,7 +171,10 @@ func _conectar_eventos_oleada() -> void:
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
-	celebrar_victoria()
+	if es_movil:
+		retirarse_y_bajar_escaleras()
+	else:
+		celebrar_victoria()
 
 
 func celebrar_victoria() -> void:
@@ -165,6 +188,11 @@ func probar_animacion_victoria() -> void:
 
 
 func _vincular_escudo_piso() -> void:
+	if es_movil or es_mensajera:
+		_escudo_piso_ref = null
+		_tiene_escudo_frente = false
+		return
+
 	var mejor_escudo: Node = null
 	var menor_dist: float = 3.5
 	for esc in get_tree().get_nodes_in_group("escudos"):
@@ -291,13 +319,23 @@ func _crear_hitbox():
 func _process(delta: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		_restaurar_torso()
+		_ocultar_icono_aturdimiento()
+		return
+
+	if en_despliegue:
+		_restaurar_torso()
 		return
 
 	if paralisis_timer > 0.0:
 		paralisis_timer -= delta
 		_restaurar_torso()
+		if _icono_aturdimiento and _icono_aturdimiento.visible:
+			var t := Time.get_ticks_msec() / 1000.0
+			_icono_aturdimiento.position.y = 3.6 + sin(t * 3.8) * 0.12
 		if paralisis_timer <= 0.0:
 			paralisis_timer = 0.0
+			_ocultar_icono_aturdimiento()
+			_play_anim(["IDLE", "IDLE_001"], 0.25)
 		else:
 			_paralisis_vfx_timer += delta
 
@@ -320,15 +358,78 @@ func _process(delta: float):
 		_actualizar_apuntado_torso(delta)
 
 
-## Aplica el estado de parálisis por la duración indicada (4s por defecto):
-## No puede atacar, cancela recargas/apuntados y restaura el torso.
+## Aplica el estado de parálisis/aturdimiento por la duración indicada (4s por defecto):
+## No es acumulable (debe pasar el efecto para volver a aplicarse).
+## No puede atacar, reproduce animación ELECTROCUTADA, muestra el icono flotante de aturdimiento y restaura el torso.
 func aplicar_paralisis(duracion: float = 4.0) -> void:
-	if current_state == State.DYING or current_state == State.DEAD:
+	if current_state == State.DYING or current_state == State.DEAD or esta_paralizada() or paralisis_timer > 0.0:
 		return
-	paralisis_timer = maxf(paralisis_timer, duracion)
+	paralisis_timer = duracion
 	_restaurar_torso()
+	_play_anim("ELECTROCUTADA", 0.15, 1.0)
+	_mostrar_icono_aturdimiento()
 	if current_state != State.IDLE and current_state != State.GETTING_UP and current_state != State.CELEBRATING:
 		_cambiar_estado(State.IDLE)
+
+
+func _setup_icono_aturdimiento() -> void:
+	if _icono_aturdimiento:
+		return
+
+	_icono_aturdimiento = Sprite3D.new()
+	_icono_aturdimiento.name = "IconoAturdimiento"
+	var tex: Texture2D = null
+	if not FileAccess.file_exists("res://TEST_/Icono aturdimiento.png.import"):
+		var img := Image.new()
+		if img.load("res://TEST_/Icono aturdimiento.png") == OK:
+			tex = ImageTexture.create_from_image(img)
+	if not tex:
+		tex = load("res://TEST_/Icono aturdimiento.png") as Texture2D
+	_icono_aturdimiento.texture = tex
+	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_icono_aturdimiento.pixel_size = 0.0016
+	_icono_aturdimiento.shaded = false
+	_icono_aturdimiento.no_depth_test = true
+	_icono_aturdimiento.render_priority = 12
+	_icono_aturdimiento.position = Vector3(0.0, 3.6, 0.1)  # Flota claramente por encima de la cabeza
+	_icono_aturdimiento.modulate = Color(0.25, 1.2, 0.35, 0.0)  # Color verde brillante
+	_icono_aturdimiento.visible = false
+	add_child(_icono_aturdimiento)
+
+
+func _mostrar_icono_aturdimiento() -> void:
+	_setup_icono_aturdimiento()
+	if not _icono_aturdimiento:
+		return
+
+	_icono_aturdimiento.visible = true
+	if _icono_aturdimiento_tween and _icono_aturdimiento_tween.is_valid():
+		_icono_aturdimiento_tween.kill()
+
+	_icono_aturdimiento.scale = Vector3.ZERO
+	_icono_aturdimiento.modulate = Color(0.25, 1.2, 0.35, 0.0)
+
+	_icono_aturdimiento_tween = create_tween()
+	_icono_aturdimiento_tween.set_parallel(true)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "scale", Vector3.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "modulate:a", 1.0, 0.18)
+
+
+func _ocultar_icono_aturdimiento() -> void:
+	if not _icono_aturdimiento or not _icono_aturdimiento.visible:
+		return
+
+	if _icono_aturdimiento_tween and _icono_aturdimiento_tween.is_valid():
+		_icono_aturdimiento_tween.kill()
+
+	_icono_aturdimiento_tween = create_tween()
+	_icono_aturdimiento_tween.set_parallel(true)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "scale", Vector3.ZERO, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "modulate:a", 0.0, 0.18)
+	_icono_aturdimiento_tween.chain().tween_callback(func():
+		if is_instance_valid(_icono_aturdimiento):
+			_icono_aturdimiento.visible = false
+	)
 
 
 func esta_paralizada() -> bool:
@@ -507,6 +608,9 @@ func _cambiar_estado(nuevo: State):
 		model_root.visible = true
 
 	current_state = nuevo
+	if en_despliegue and (nuevo == State.IDLE or nuevo == State.AIMING or nuevo == State.RELOADING or nuevo == State.SHOOTING):
+		return
+
 	match nuevo:
 		State.IDLE:
 			objetivo_actual = _obtener_objetivo_prioritario() if _puede_atacar() else null
@@ -549,6 +653,7 @@ func _cambiar_estado(nuevo: State):
 		State.CELEBRATING:
 			_restaurar_torso()
 			_play_anim("VICTORIA", 0.25, 1.0)
+			AudioManager.play_sfx("risa_victoria_ballestera")
 			state_timer = duracion_animacion_victoria
 
 
@@ -619,6 +724,9 @@ func _spawnear_virote(spawn_pos: Vector3, dir: Vector3, speed: float):
 
 
 func _aplicar_efecto_escudo_piso():
+	if es_movil or es_mensajera:
+		return
+	AudioManager.play_sfx("refuerzo_escudo")
 	if _escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and _escudo_piso_ref.is_inside_tree():
 		if _escudo_piso_ref.has_method("activar_modo_metalico"):
 			_escudo_piso_ref.activar_modo_metalico(2)
@@ -813,12 +921,555 @@ func _on_dying():
 	ultima_muerte_anim = muertes[randi() % muertes.size()]
 	_play_anim(ultima_muerte_anim, 0.1)
 
-	AudioManager.play_sfx("player_death")
+	AudioManager.play_sfx("muerte_ballestera")
+
+	if es_movil:
+		_desprender_ballesta_fisica()
+		_iniciar_desintegracion_celeste()
+		return
+
 	var dur = _get_anim_length(ultima_muerte_anim)
 	get_tree().create_timer(dur + 0.1).timeout.connect(func():
 		if is_instance_valid(self) and current_state == State.DYING:
 			current_state = State.DEAD
 	)
+
+
+## Desprende la ballesta del modelo y la hace volar y rebotar físicamente en 2.5D
+func _desprender_ballesta_fisica() -> void:
+	var attachment = find_child("BoneAttachment3D", true, false)
+	var ballesta: Node3D = null
+	if attachment:
+		ballesta = attachment.find_child("BALLES_GOBLING", true, false) as Node3D
+		if not ballesta:
+			ballesta = attachment.find_child("*ballest*", true, false) as Node3D
+	if not ballesta:
+		ballesta = find_child("BALLES_GOBLING", true, false) as Node3D
+
+	if ballesta:
+		var tr_ballesta: Transform3D = ballesta.global_transform
+		if ballesta.get_parent():
+			ballesta.get_parent().remove_child(ballesta)
+
+		var cont_ballesta := GoblinPiezaFisica.new()
+		var scene_root: Node = get_tree().current_scene if get_tree() else get_parent()
+		if scene_root:
+			scene_root.add_child(cont_ballesta)
+			cont_ballesta.global_transform = tr_ballesta
+
+			ballesta.transform = Transform3D.IDENTITY
+			ballesta.visible = true
+			for m in ballesta.find_children("*", "MeshInstance3D", true, false):
+				m.visible = true
+				m.material_override = null
+			cont_ballesta.add_child(ballesta)
+
+			cont_ballesta.iniciar_vuelo(
+				Vector3(randf_range(-1.5, 1.5), randf_range(3.5, 5.5), 0.0),
+				randf_range(-14.0, 14.0)
+			)
+
+
+## Inicia el efecto de desintegración con shader y partículas celestes idéntico al de los enemigos (GoblinGirl)
+func _iniciar_desintegracion_celeste() -> void:
+	var color_celeste := Color(0.25, 0.85, 1.0, 1.0)
+	var duracion: float = 1.0
+
+	# 1. Aplicar Shader de disolución a todos los MeshInstance3D del cuerpo
+	var meshes: Array[Node] = []
+	if model_root:
+		meshes = model_root.find_children("*", "MeshInstance3D", true, false)
+	else:
+		meshes = find_children("*", "MeshInstance3D", true, false)
+
+	var dissolve_mats: Array = []
+	for node in meshes:
+		if not is_instance_valid(node):
+			continue
+		if node.find_parent("BALLES_GOBLING") != null:
+			continue
+		var mi := node as MeshInstance3D
+		var mat := ShaderMaterial.new()
+		mat.shader = dissolve_shader
+		mat.set_shader_parameter("dissolve_amount", 0.0)
+		mat.set_shader_parameter("glow_color", color_celeste)
+		mat.set_shader_parameter("glow_intensity", 4.0)
+		mat.set_shader_parameter("edge_thickness", 0.05)
+		mat.set_shader_parameter("noise_scale", 20.0)
+
+		var orig: Material = mi.material_override
+		if orig == null and mi.mesh and mi.mesh.get_surface_count() > 0:
+			orig = mi.mesh.surface_get_material(0)
+		if orig and orig is StandardMaterial3D:
+			var std := orig as StandardMaterial3D
+			if std.albedo_texture:
+				mat.set_shader_parameter("albedo_texture", std.albedo_texture)
+			var col := std.albedo_color
+			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+
+		mi.material_override = mat
+		dissolve_mats.append(mat)
+
+	# 2. Generar partículas de disolución idénticas a EnemyBase (GoblinGirl) en color celeste
+	var p := GPUParticles3D.new()
+	p.name = "ParticulasMuerteCeleste"
+	p.amount = 180
+	p.lifetime = 2.0
+	p.one_shot = false
+	p.explosiveness = 0.0
+	p.randomness = 0.3
+
+	var p_mat := ParticleProcessMaterial.new()
+	p_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	p_mat.emission_box_extents = Vector3(0.2, 0.5, 0.1)
+	p_mat.direction = Vector3(0, 1, 0)
+	p_mat.spread = 20.0
+	p_mat.initial_velocity_min = 0.1
+	p_mat.initial_velocity_max = 1.0
+	p_mat.gravity = Vector3(0, 0.1, 0)
+	p_mat.scale_min = 0.5
+	p_mat.scale_max = 1.5
+
+	var gradient := Gradient.new()
+	gradient.set_color(0, color_celeste)
+	gradient.set_color(1, Color(color_celeste.r, color_celeste.g, color_celeste.b, 0.0))
+	var gradient_tex := GradientTexture1D.new()
+	gradient_tex.gradient = gradient
+	p_mat.color_ramp = gradient_tex
+
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0, 0.2))
+	scale_curve.add_point(Vector2(0.3, 1.0))
+	scale_curve.add_point(Vector2(1.0, 0.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	p_mat.scale_curve = scale_tex
+
+	p.process_material = p_mat
+
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.0125
+	sphere.height = 0.025
+
+	var part_mat := StandardMaterial3D.new()
+	part_mat.albedo_color = color_celeste
+	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	part_mat.emission_enabled = true
+	part_mat.emission = color_celeste
+	part_mat.emission_energy_multiplier = 4.0
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material = part_mat
+
+	p.draw_pass_1 = sphere
+
+	var scene_root: Node = get_tree().current_scene if get_tree() else get_parent()
+	if scene_root:
+		scene_root.add_child(p)
+		p.global_position = global_position + Vector3(0, 0.4, 0)
+		p.emitting = true
+	else:
+		add_child(p)
+		p.position = Vector3(0, 0.4, 0)
+		p.emitting = true
+
+	# 3. Tween de disolución y finalización
+	var tw := create_tween()
+	tw.tween_method(
+		func(val: float) -> void:
+			for m in dissolve_mats:
+				if is_instance_valid(m):
+					m.set_shader_parameter("dissolve_amount", val),
+		0.0, 1.0, duracion)
+
+	# Detener emisión al 70% del tiempo
+	if get_tree():
+		get_tree().create_timer(duracion * 0.7).timeout.connect(func():
+			if is_instance_valid(p):
+				p.emitting = false
+		)
+		get_tree().create_timer(duracion + 2.0).timeout.connect(func():
+			if is_instance_valid(p):
+				p.queue_free()
+		)
+
+	tw.finished.connect(queue_free)
+
+
+## Genera un estallido de partículas celestes al morir la defensora móvil (legacy / fallback)
+func _spawn_particulas_muerte_celeste() -> void:
+	_iniciar_desintegracion_celeste()
+
+
+## Importa animaciones de la protagonista (subir escaleras, correr, etc.) para utilizarlas en los desplazamientos
+func _importar_animaciones_jugador() -> void:
+	if not anim_player or not get_tree():
+		return
+	var prota = get_tree().get_first_node_in_group("player")
+	if prota:
+		var prota_ap = prota.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if prota_ap:
+			for lib_name in prota_ap.get_animation_library_list():
+				var lib = prota_ap.get_animation_library(lib_name)
+				if lib and not anim_player.has_animation_library(lib_name):
+					anim_player.add_animation_library(lib_name, lib)
+
+	# Asegurar looping en todas las animaciones de movimiento y escaleras
+	for a in anim_player.get_animation_list():
+		var a_low := a.to_lower()
+		if "caminar" in a_low or "escalera" in a_low or "escalar" in a_low or "run" in a_low or "walk" in a_low or "subir" in a_low:
+			var anim = anim_player.get_animation(a)
+			if anim:
+				anim.loop_mode = Animation.LOOP_LINEAR
+
+
+## Despliega a la ballestera móvil caminando y subiendo escaleras con la velocidad
+## y forma natural de la protagonista (CAMINAR_01 para andar, SUBIR_ESCALERA para trepar).
+func desplegar_a_plataforma(indice_plataforma: int) -> void:
+	es_movil = true
+	en_despliegue = true
+	plataforma_asignada = indice_plataforma
+	vida_maxima = 2
+	health = 2
+	scale = Vector3(0.3, 0.3, 0.3)
+	_setup_animation_player()
+	_importar_animaciones_jugador()
+	_restaurar_torso()
+
+	var walk_speed: float = 1.0
+	var climb_speed: float = 0.70
+
+	# Alturas reales de piso y plataformas en el mundo (en el mismo plano Z = 0.0 que la protagonista)
+	var floor_y: float = 0.185
+	var p1_top_y: float = 1.585
+	var p2_top_y: float = 3.143
+	var p3_top_y: float = 4.60
+
+	var p1_ladder_x: float = -7.58
+	var p1_shoot_x: float = -7.25
+
+	var p2_ladder_x: float = -8.33
+	var p2_shoot_x: float = -8.05
+
+	var p3_ladder_x: float = -9.11
+	var p3_shoot_x: float = -8.85
+
+	global_position.y = floor_y
+	global_position.z = plano_profundidad_z
+
+	# 1. Caminar por el suelo hacia la Escalera 1
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot
+	_play_anim("CAMINAR_01", 0.15, 1.0)
+
+	var dist1: float = absf(p1_ladder_x - global_position.x)
+	var tw1 := create_tween()
+	tw1.tween_property(self, "global_position:x", p1_ladder_x, dist1 / walk_speed)
+	await tw1.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 2. Subir Escalera 1 (espalda visible a la cámara con rotation.y = 0.0)
+	if model_root:
+		model_root.rotation.y = 0.0
+	_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+
+	var climb_dist1: float = absf(p1_top_y - global_position.y)
+	var tw_climb1 := create_tween()
+	tw_climb1.tween_property(self, "global_position:y", p1_top_y, climb_dist1 / climb_speed)
+	await tw_climb1.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# Desmontar escalera / paso suave en plataforma
+	_play_anim(["EN_EL_AIRE", "CAMINAR_01"], 0.2, 1.0)
+	await get_tree().create_timer(0.18).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	if indice_plataforma <= 1:
+		# Posicionarse en Plataforma 1
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_pos := create_tween()
+		tw_pos.tween_property(self, "global_position:x", p1_shoot_x, absf(p1_shoot_x - global_position.x) / walk_speed)
+		await tw_pos.finished
+		if is_instance_valid(self):
+			_finalizar_despliegue_plataforma()
+		return
+
+	# 3. Caminar por Plataforma 1 hacia Escalera 2 (hacia la izquierda)
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot + PI
+	_play_anim("CAMINAR_01", 0.15, 1.0)
+	var dist2: float = absf(p2_ladder_x - global_position.x)
+	var tw2 := create_tween()
+	tw2.tween_property(self, "global_position:x", p2_ladder_x, dist2 / walk_speed)
+	await tw2.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 4. Subir Escalera 2 hasta Plataforma 2 (espalda visible a la cámara)
+	if model_root:
+		model_root.rotation.y = 0.0
+	_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+	var climb_dist2: float = absf(p2_top_y - global_position.y)
+	var tw_climb2 := create_tween()
+	tw_climb2.tween_property(self, "global_position:y", p2_top_y, climb_dist2 / climb_speed)
+	await tw_climb2.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# Desmontar escalera / paso suave en plataforma
+	_play_anim(["EN_EL_AIRE", "CAMINAR_01"], 0.2, 1.0)
+	await get_tree().create_timer(0.18).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	if indice_plataforma == 2:
+		# Posicionarse en Plataforma 2
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_pos := create_tween()
+		tw_pos.tween_property(self, "global_position:x", p2_shoot_x, absf(p2_shoot_x - global_position.x) / walk_speed)
+		await tw_pos.finished
+		if is_instance_valid(self):
+			_finalizar_despliegue_plataforma()
+		return
+
+	# 5. Caminar por Plataforma 2 hacia Escalera 3 (hacia la izquierda)
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot + PI
+	_play_anim("CAMINAR_01", 0.15, 1.0)
+	var dist3: float = absf(p3_ladder_x - global_position.x)
+	var tw3 := create_tween()
+	tw3.tween_property(self, "global_position:x", p3_ladder_x, dist3 / walk_speed)
+	await tw3.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 6. Subir Escalera 3 hasta Plataforma 3 (la más alta, espalda visible a la cámara)
+	if model_root:
+		model_root.rotation.y = 0.0
+	_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+	var climb_dist3: float = absf(p3_top_y - global_position.y)
+	var tw_climb3 := create_tween()
+	tw_climb3.tween_property(self, "global_position:y", p3_top_y, climb_dist3 / climb_speed)
+	await tw_climb3.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# Desmontar escalera / paso suave en plataforma 3
+	_play_anim(["EN_EL_AIRE", "CAMINAR_01"], 0.2, 1.0)
+	await get_tree().create_timer(0.18).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 7. Posicionarse en Plataforma 3 (la más alta)
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot
+	_play_anim("CAMINAR_01", 0.15, 1.0)
+	var tw_pos3 := create_tween()
+	tw_pos3.tween_property(self, "global_position:x", p3_shoot_x, absf(p3_shoot_x - global_position.x) / walk_speed)
+	await tw_pos3.finished
+	if is_instance_valid(self):
+		_finalizar_despliegue_plataforma()
+
+
+func _finalizar_despliegue_plataforma() -> void:
+	en_despliegue = false
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot
+	_restaurar_torso()
+	_play_anim(["IDLE", "Armature|Armature|IDLE"], 0.25)
+	_cambiar_estado(State.IDLE)
+
+
+## Al terminar la oleada, la defensora móvil baja las escaleras y se retira por donde vino
+func retirarse_y_bajar_escaleras() -> void:
+	if not es_movil or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	en_despliegue = true
+	_restaurar_torso()
+	_importar_animaciones_jugador()
+
+	var walk_speed: float = 1.0
+	var climb_speed: float = 0.70
+
+	var floor_y: float = 0.185
+	var p1_top_y: float = 1.585
+	var p2_top_y: float = 3.143
+	var p3_top_y: float = 4.60
+
+	var p1_ladder_x: float = -7.58
+	var p2_ladder_x: float = -8.33
+	var p3_ladder_x: float = -9.11
+	var exit_x: float = -14.0
+
+	if plataforma_asignada >= 3:
+		# 1. En Plataforma 3: caminar hacia la Escalera 3 (hacia la izquierda)
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot + PI
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_to_l3 := create_tween()
+		tw_to_l3.tween_property(self, "global_position:x", p3_ladder_x, absf(p3_ladder_x - global_position.x) / walk_speed)
+		await tw_to_l3.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# 2. Bajar Escalera 3 de espaldas (rotation.y = 0.0)
+		if model_root:
+			model_root.rotation.y = 0.0
+		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+		var tw_down3 := create_tween()
+		tw_down3.tween_property(self, "global_position:y", p2_top_y, absf(p3_top_y - p2_top_y) / climb_speed)
+		await tw_down3.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# Paso de transición en Plataforma 2
+		_play_anim(["EN_EL_AIRE", "CAMINAR_01"], 0.2, 1.0)
+		await get_tree().create_timer(0.18).timeout
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# 3. En Plataforma 2: caminar hacia la Escalera 2 (hacia la derecha)
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_to_l2 := create_tween()
+		tw_to_l2.tween_property(self, "global_position:x", p2_ladder_x, absf(p2_ladder_x - global_position.x) / walk_speed)
+		await tw_to_l2.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# 4. Bajar Escalera 2 de espaldas (rotation.y = 0.0)
+		if model_root:
+			model_root.rotation.y = 0.0
+		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+		var tw_down2 := create_tween()
+		tw_down2.tween_property(self, "global_position:y", p1_top_y, absf(p2_top_y - p1_top_y) / climb_speed)
+		await tw_down2.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# Paso de transición en Plataforma 1
+		_play_anim(["EN_EL_AIRE", "CAMINAR_01"], 0.2, 1.0)
+		await get_tree().create_timer(0.18).timeout
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# 5. En Plataforma 1: caminar hacia la Escalera 1 (hacia la derecha)
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_to_l1 := create_tween()
+		tw_to_l1.tween_property(self, "global_position:x", p1_ladder_x, absf(p1_ladder_x - global_position.x) / walk_speed)
+		await tw_to_l1.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# 6. Bajar Escalera 1 de espaldas (rotation.y = 0.0)
+		if model_root:
+			model_root.rotation.y = 0.0
+		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+		var tw_down1 := create_tween()
+		tw_down1.tween_property(self, "global_position:y", floor_y, absf(p1_top_y - floor_y) / climb_speed)
+		await tw_down1.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+	elif plataforma_asignada == 2:
+		# En Plataforma 2: caminar a Escalera 2
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_to_l2 := create_tween()
+		tw_to_l2.tween_property(self, "global_position:x", p2_ladder_x, absf(p2_ladder_x - global_position.x) / walk_speed)
+		await tw_to_l2.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# Bajar Escalera 2 de espaldas
+		if model_root:
+			model_root.rotation.y = 0.0
+		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+		var tw_down2 := create_tween()
+		tw_down2.tween_property(self, "global_position:y", p1_top_y, absf(p2_top_y - p1_top_y) / climb_speed)
+		await tw_down2.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		_play_anim(["EN_EL_AIRE", "CAMINAR_01"], 0.2, 1.0)
+		await get_tree().create_timer(0.18).timeout
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# En Plataforma 1: caminar a Escalera 1
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_to_l1 := create_tween()
+		tw_to_l1.tween_property(self, "global_position:x", p1_ladder_x, absf(p1_ladder_x - global_position.x) / walk_speed)
+		await tw_to_l1.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# Bajar Escalera 1 de espaldas
+		if model_root:
+			model_root.rotation.y = 0.0
+		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+		var tw_down1 := create_tween()
+		tw_down1.tween_property(self, "global_position:y", floor_y, absf(p1_top_y - floor_y) / climb_speed)
+		await tw_down1.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+	else:
+		# En Plataforma 1: caminar hacia Escalera 1 (hacia la izquierda)
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot + PI
+		_play_anim("CAMINAR_01", 0.15, 1.0)
+		var tw_to_l1 := create_tween()
+		tw_to_l1.tween_property(self, "global_position:x", p1_ladder_x, absf(p1_ladder_x - global_position.x) / walk_speed)
+		await tw_to_l1.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+		# Bajar Escalera 1 de espaldas
+		if model_root:
+			model_root.rotation.y = 0.0
+		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+		var tw_down1 := create_tween()
+		tw_down1.tween_property(self, "global_position:y", floor_y, absf(p1_top_y - floor_y) / climb_speed)
+		await tw_down1.finished
+		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+			return
+
+	# Paso de transición al llegar al suelo
+	_play_anim(["EN_EL_AIRE", "CAMINAR_01"], 0.2, 1.0)
+	await get_tree().create_timer(0.18).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# Caminar hacia la izquierda por donde vino y retirarse
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot + PI
+	_play_anim("CAMINAR_01", 0.15, 1.0)
+	var tw_exit := create_tween()
+	tw_exit.tween_property(self, "global_position:x", exit_x, absf(exit_x - global_position.x) / walk_speed)
+	await tw_exit.finished
+	if is_instance_valid(self):
+		queue_free()
+
+
+func curar(cantidad: int = 1) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	health = min(health + cantidad, vida_maxima)
 
 
 func revivir(nueva_vida: int = -1):
@@ -863,8 +1514,10 @@ func _play_anim(anim_target, blend: float = 0.2, speed: float = 1.0):
 
 	var all_anims = anim_player.get_animation_list()
 	for cand in candidates:
+		var cand_str := str(cand).to_lower()
 		for a in all_anims:
-			if a == cand or a.ends_with("/" + cand) or cand in a:
+			var a_str := a.to_lower()
+			if a_str == cand_str or a_str.ends_with("/" + cand_str) or cand_str in a_str:
 				anim_player.play(a, blend, speed)
 				anim_player.speed_scale = speed
 				return

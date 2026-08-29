@@ -42,6 +42,10 @@ const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 @export var tiempo_antes_disolver: float = 1.8
 @export var escala_sangre_min: float = 0.015  ## Escala mínima de las partículas de sangre al morir
 @export var escala_sangre_max: float = 0.03   ## Escala máxima de las partículas de sangre al morir
+@export_category("Drop - Items")
+@export var power_up_multiple_scene: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
+@export var probabilidad_drop_multiple: float = 1.0  ## 100% de drop de disparo múltiple al morir
+var _drop_realizado: bool = false
 var escena_flecha_estandarte = preload("res://Entities/Proyectil_Flecha_Imp_Estandarte/ImpEstandarteArrow.tscn")
 var escena_flecha_visual_mano = preload("res://Entities/Proyectil_Flecha_Imp_Estandarte/ImpEstandarteArrow.tscn")
 var escena_estandarte_caido = preload("res://Entities/Ambiente_Estandarte/Estandarte.tscn")
@@ -252,6 +256,7 @@ func _throw_projectile():
 func _on_state_dying():
 	super._on_state_dying()
 
+	_drop_power_up()
 	_reproducir_sonido_muerte_estandarte()
 	AudioManager.play_sfx("explosion_muerte")
 	_actualizar_visual_arma(true)
@@ -262,6 +267,28 @@ func _on_state_dying():
 
 	var tiempo_total = max(anim_length, tiempo_antes_disolver)
 	get_tree().create_timer(tiempo_total).timeout.connect(_on_death_timer_timeout)
+
+
+func _drop_power_up() -> void:
+	if _drop_realizado:
+		return
+	_drop_realizado = true
+
+	if randf() > probabilidad_drop_multiple:
+		return
+
+	if not power_up_multiple_scene:
+		return
+
+	var power_up = power_up_multiple_scene.instantiate()
+	if not power_up:
+		return
+
+	var root_scene := get_tree().current_scene
+	if not root_scene:
+		root_scene = get_tree().root
+	root_scene.add_child(power_up)
+	power_up.global_position = global_position + Vector3(0.0, 0.4, 0.0)
 
 
 func _on_death_timer_timeout() -> void:

@@ -108,6 +108,8 @@ func _load_all_sounds():
 
 	sfx_streams["player_laugh"] = [load("res://Entities/Jugador_Arquera/RISA_PERSONAJE.mp3")]
 
+	sfx_streams["obtencion_arma"] = [load("res://TEST_/Obtencion arma.mp3")]
+
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
 	# ═══════════════════════════════════════════════════════════════════════════════
@@ -209,11 +211,21 @@ func _load_all_sounds():
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
 
 	sfx_streams["shield_break"] = [load("res://Entities/Ambiente_Escudo/ESCUDO_ROTO.mp3")]
+	sfx_streams["refuerzo_escudo"] = [load("res://TEST_/refuerzo escudo.mp3")]
 	sfx_streams["parry"] = [load("res://TEST_/Parry.mp3")]
 	sfx_streams["aura_parry"] = sfx_streams["parry"]
 	sfx_streams["aura"] = [load("res://TEST_/Aura.mp3")]
 	sfx_streams["aura_loop"] = sfx_streams["aura"]
 	sfx_streams["sangre_splash"] = [load("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_splash.mp3")]
+
+	# ═══════════════════════════════════════════════════════════════════════════════
+	# SONIDOS DE DEFENSORA BALLESTERA
+	# ═══════════════════════════════════════════════════════════════════════════════
+	sfx_streams["muerte_ballestera"] = [load("res://TEST_/Muerte ballestera.mp3")]
+	sfx_streams["ballestera_death"] = sfx_streams["muerte_ballestera"]
+	sfx_streams["risa_victoria_ballestera"] = [load("res://TEST_/Risa victoria ballestera.mp3")]
+	sfx_streams["ballestera_victoria"] = sfx_streams["risa_victoria_ballestera"]
+	sfx_streams["ballestera_laugh"] = sfx_streams["risa_victoria_ballestera"]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# MÚSICA
@@ -223,6 +235,7 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://System/Audio/Music/BGM_battle.mp3"))  # Índice 2
 	bgm_streams.append(load("res://System/Audio/Music/SONIDO BOSQUE.mp3"))  # Índice 3 - Nivel 0 pacifista
 	bgm_streams.append(load("res://System/Audio/Music/VICTORY.mp3"))  # Índice 4 - Victoria
+	bgm_streams.append(load("res://System/Audio/Music/Noche Aplastante.mp3"))  # Índice 5 - Noche Aplastante (Oleada 5)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -356,6 +369,16 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 		temp_player.play()
 
 
+# Offsets de volumen específicos por pista para balancear la mezcla
+var bgm_volume_offsets: Dictionary = {
+	1: -5.0,  ## BGM_main_theme (-20.0 dB base, reducido -5.0 dB)
+	2: 0.0,   ## BGM_battle (-15.0 dB base)
+	3: 12.0,  ## SONIDO BOSQUE (-3.0 dB base)
+	4: 0.0,   ## VICTORY (-15.0 dB base)
+	5: 2.0,   ## Noche Aplastante (Oleada 5: -13.0 dB base, aumentado +4.0 dB)
+}
+
+
 ## Reproduce música de fondo
 func play_music(index: int, loop: bool = true, volume_boost_db: float = 0.0):
 	if index == 0:
@@ -374,7 +397,8 @@ func play_music(index: int, loop: bool = true, volume_boost_db: float = 0.0):
 			stream.loop = loop
 		elif stream is AudioStreamWAV:
 			stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if loop else AudioStreamWAV.LOOP_DISABLED
-		music_player.volume_db = music_volume_db + volume_boost_db
+		var track_offset: float = bgm_volume_offsets.get(index, 0.0)
+		music_player.volume_db = music_volume_db + track_offset + volume_boost_db
 		if music_player.stream != stream:
 			music_player.stream = stream
 			music_player.play()

@@ -62,21 +62,58 @@ func _conectar_player(player: Node) -> void:
 		if not player.health_changed.is_connected(_on_health_changed):
 			player.health_changed.connect(_on_health_changed)
 	if player.has_signal("flechas_explosivas_changed"):
-		if not player.flechas_explosivas_changed.is_connected(actualizar_flechas_explosivas):
-			player.flechas_explosivas_changed.connect(actualizar_flechas_explosivas)
+		if not player.flechas_explosivas_changed.is_connected(_on_flechas_explosivas_changed):
+			player.flechas_explosivas_changed.connect(_on_flechas_explosivas_changed)
 	if player.has_signal("flechas_multiples_changed"):
-		if not player.flechas_multiples_changed.is_connected(actualizar_flechas_multiples):
-			player.flechas_multiples_changed.connect(actualizar_flechas_multiples)
+		if not player.flechas_multiples_changed.is_connected(_on_flechas_multiples_changed):
+			player.flechas_multiples_changed.connect(_on_flechas_multiples_changed)
+	if player.has_signal("tipo_municion_changed"):
+		if not player.tipo_municion_changed.is_connected(_on_tipo_municion_changed):
+			player.tipo_municion_changed.connect(_on_tipo_municion_changed)
 	if "health" in player:
 		actualizar_vida(int(player.health))
-	if "flechas_explosivas" in player and int(player.flechas_explosivas) > 0:
-		actualizar_flechas_explosivas(int(player.flechas_explosivas))
-	elif "flechas_multiples" in player and int(player.flechas_multiples) > 0:
-		actualizar_flechas_multiples(int(player.flechas_multiples))
+	_refrescar_display_municion(player)
 
 
 func _on_health_changed(new_health: int) -> void:
 	actualizar_vida(new_health)
+
+
+func _on_tipo_municion_changed(_tipo: int) -> void:
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		_refrescar_display_municion(player)
+
+
+func _on_flechas_explosivas_changed(cantidad: int) -> void:
+	var player = get_tree().get_first_node_in_group("player")
+	if player and int(player.get("municion_activa")) == 1:
+		actualizar_flechas_explosivas(cantidad)
+	elif player and int(player.get("municion_activa")) == 0 and cantidad > 0:
+		_refrescar_display_municion(player)
+
+
+func _on_flechas_multiples_changed(cantidad: int) -> void:
+	var player = get_tree().get_first_node_in_group("player")
+	if player and int(player.get("municion_activa")) == 2:
+		actualizar_flechas_multiples(cantidad)
+	elif player and int(player.get("municion_activa")) == 0 and cantidad > 0:
+		_refrescar_display_municion(player)
+
+
+func _refrescar_display_municion(player: Node) -> void:
+	if not player:
+		return
+	var tipo: int = int(player.get("municion_activa")) if "municion_activa" in player else 0
+	match tipo:
+		1:  # EXPLOSIVA
+			var cnt: int = int(player.get("flechas_explosivas")) if "flechas_explosivas" in player else 0
+			actualizar_flechas_explosivas(cnt)
+		2:  # MULTIPLE
+			var cnt: int = int(player.get("flechas_multiples")) if "flechas_multiples" in player else 0
+			actualizar_flechas_multiples(cnt)
+		_:  # NORMAL
+			_actualizar_powerup_display(0, TEXTURA_FLECHA_EXPLOSIVA)
 
 
 ## Actualiza el contador e icono de flechas múltiples

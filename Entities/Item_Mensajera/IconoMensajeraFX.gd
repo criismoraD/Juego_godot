@@ -64,9 +64,85 @@ func _on_body_entered(body: Node3D) -> void:
 		return
 	_activado = true
 	set_deferred("monitoring", false)
+
+	# El item refuerzo llena al completo todos los corazones de la jugadora
+	if body.has_method("curar") and "vida_maxima" in body:
+		body.curar(int(body.vida_maxima))
+	elif "health" in body and "vida_maxima" in body:
+		body.health = body.vida_maxima
+		if body.has_signal("health_changed"):
+			body.health_changed.emit(body.health)
+
+	_crear_particulas_disolucion_moradas()
 	_reproducir_sonido_refuerzo()
 	activada.emit()
 	_desaparecer()
+
+
+func _crear_particulas_disolucion_moradas() -> void:
+	var particles := GPUParticles3D.new()
+	particles.name = "ParticulasDisolucionMoradas"
+	particles.amount = 60
+	particles.lifetime = 1.2
+	particles.one_shot = true
+	particles.explosiveness = 0.6
+	particles.randomness = 0.4
+
+	var color_morado := Color(0.75, 0.2, 1.0, 1.0)
+
+	var process_mat := ParticleProcessMaterial.new()
+	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process_mat.emission_box_extents = Vector3(0.25, 0.35, 0.15)
+	process_mat.direction = Vector3(0, 1, 0)
+	process_mat.spread = 25.0
+	process_mat.initial_velocity_min = 0.3
+	process_mat.initial_velocity_max = 1.4
+	process_mat.gravity = Vector3(0, 0.35, 0)
+	process_mat.scale_min = 0.6
+	process_mat.scale_max = 1.4
+
+	var gradient := Gradient.new()
+	gradient.set_color(0, color_morado)
+	gradient.set_color(1, Color(color_morado.r, color_morado.g, color_morado.b, 0.0))
+	var gradient_tex := GradientTexture1D.new()
+	gradient_tex.gradient = gradient
+	process_mat.color_ramp = gradient_tex
+
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0, 0.2))
+	scale_curve.add_point(Vector2(0.25, 1.0))
+	scale_curve.add_point(Vector2(1.0, 0.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	process_mat.scale_curve = scale_tex
+
+	particles.process_material = process_mat
+
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.025
+	sphere.height = 0.05
+
+	var part_mat := StandardMaterial3D.new()
+	part_mat.albedo_color = color_morado
+	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	part_mat.emission_enabled = true
+	part_mat.emission = color_morado
+	part_mat.emission_energy_multiplier = 3.5
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material = part_mat
+
+	particles.draw_pass_1 = sphere
+
+	var root := get_tree().current_scene if get_tree().current_scene else get_tree().root
+	if root:
+		root.add_child(particles)
+		particles.global_position = global_position + Vector3(0.0, altura_flotacion, 0.0)
+		particles.emitting = true
+		get_tree().create_timer(1.3).timeout.connect(func():
+			if is_instance_valid(particles):
+				particles.queue_free()
+		)
 
 
 func _reproducir_sonido_refuerzo() -> void:

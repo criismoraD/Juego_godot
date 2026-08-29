@@ -3,15 +3,18 @@ extends CharacterBody3D
 signal health_changed(new_health: int)
 signal flechas_explosivas_changed(cantidad: int)
 signal flechas_multiples_changed(cantidad: int)
+signal tipo_municion_changed(tipo: int)
 signal died
 enum AimState { NONE, DRAWING, AIMING, SHOOTING }
 enum MoveState { GROUND, AIR, LANDING, CLIMBING, DEAD, CROUCHING }
+enum TipoMunicion { NORMAL, EXPLOSIVA, MULTIPLE }
 const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 # === CONFIGURACIÓN - MOVIMIENTO ===
 const COYOTE_TIME: float = 0.15
 const JUMP_BUFFER_TIME: float = 0.12
-# === SEÑALES ===
+# === SEÑALES Y MUNICIÓN ===
 @export_category("Munición Especial")
+@export var municion_activa: TipoMunicion = TipoMunicion.NORMAL
 @export var flechas_explosivas: int = 0:
 	set(v):
 		flechas_explosivas = v
@@ -55,6 +58,7 @@ const DROP_CHANCE_MITIGADO: float = 0.05
 
 @export_category("Hitbox")
 @export var mostrar_hitbox: bool = false  ## Muestra la hitbox del jugador en tiempo real
+@export var plano_profundidad_z: float = 0.05  ## Plano Z prioritario (frente a todas las defensoras)
 # === SISTEMA DE VIDA ===
 @export_category("Vida")
 @export var vida_maxima: int = 5
@@ -132,6 +136,8 @@ var is_shot_locked: bool = false  # Flag de bloqueo de disparo temporal
 var paralisis_timer: float = 0.0  ## Temporizador de estado parálisis (4 segundos sin atacar)
 var esta_paralizada: bool = false
 var _paralisis_vfx_timer: float = 0.0
+var _icono_aturdimiento: Sprite3D = null
+var _icono_aturdimiento_tween: Tween = null
 ## Cuando true (mapa de debug), no se inicia el disparo si el cursor está sobre
 ## un Control interactivo (panel/botones), para que clicar opciones no dispare.
 var disparo_bloqueado_por_ui: bool = false
@@ -240,6 +246,27 @@ func _ready():
 	_sombra.suavizado = sombra_suavizado
 	_sombra.altura_max_desvanecimiento = sombra_altura_max
 	add_child(_sombra)
+
+	global_position.z = plano_profundidad_z
+	_aplicar_prioridad_renderizado(5.0)
+
+	if not InputMap.has_action("cambiar_municion"):
+		InputMap.add_action("cambiar_municion")
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_R
+		InputMap.action_add_event("cambiar_municion", ev)
+
+
+func _aplicar_prioridad_renderizado(offset: float) -> void:
+	for node in find_children("*", "VisualInstance3D", true, false):
+		if node is VisualInstance3D:
+			node.sorting_offset = offset
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_R or event.physical_keycode == KEY_R:
+			cambiar_tipo_municion()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -688,6 +715,7 @@ func _physics_process(delta):
 
 	# 2. MOVIMIENTO FÍSICO
 	move_and_slide()
+	global_position.z = plano_profundidad_z
 
 	# 3. DETECCIÓN DE ATERRIZAJE (Post-movimiento)
 	if is_on_floor():
@@ -1015,10 +1043,14 @@ func _process_gameplay(delta):
 	if paralisis_timer > 0.0:
 		paralisis_timer -= delta
 		is_shot_locked = true
+		if _icono_aturdimiento and _icono_aturdimiento.visible:
+			var t := Time.get_ticks_msec() / 1000.0
+			_icono_aturdimiento.position.y = 3.6 + sin(t * 3.8) * 0.12
 		if paralisis_timer <= 0.0:
 			paralisis_timer = 0.0
 			esta_paralizada = false
 			is_shot_locked = false
+			_ocultar_icono_aturdimiento()
 		else:
 			_paralisis_vfx_timer += delta
 
@@ -1151,13 +1183,12 @@ func control_visual_state(delta):
 			if _cooldown_disparo_timer > 0.0:
 				_cooldown_disparo_timer -= delta
 
-			if Input.is_action_just_pressed("click_izquierdo"):
+			if Input.is_action_just_pressed("click_izquierdo") or (Input.is_action_pressed("click_izquierdo") and _cooldown_disparo_timer <= 0.0 and not shot_cancelled):
 				# Bloquear si aún estamos en cooldown de cadencia
 				if _cooldown_disparo_timer > 0.0:
 					return
 
 				# Mapa de debug: ignorar el clic si cae sobre un control de UI
-				# (panel de spawn/debug), para que seleccionar opciones no dispare.
 				if disparo_bloqueado_por_ui and _mouse_sobre_control_ui():
 					return
 
@@ -1230,8 +1261,10 @@ func control_visual_state(delta):
 			# Mostrar trayectoria y actualizar escala de flecha
 			var progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0)
 			_mostrar_flecha_visual(progress)
-			if flechas_explosivas > 0:
+			if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
 				_actualizar_trayectoria_explosiva()
+			else:
+				_ocultar_trayectoria_explosiva()
 
 		AimState.AIMING:
 			if float(anim_tree.get(blend_path)) != 1.0:
@@ -1262,8 +1295,10 @@ func control_visual_state(delta):
 				charge_bar.tint_progress = Color.WHITE
 
 			actualizar_rotacion_torso_pitch()
-			if flechas_explosivas > 0:
+			if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
 				_actualizar_trayectoria_explosiva()
+			else:
+				_ocultar_trayectoria_explosiva()
 
 			if Input.is_action_just_released("click_izquierdo"):
 				# Si el disparo fue cancelado por daño, solo resetear el flag
@@ -1282,11 +1317,7 @@ func control_visual_state(delta):
 
 			state_timer += delta
 
-			# Usar la duración que guardamos al iniciar el disparo
-			# Ajustada por la velocidad de disparo y velocidad de recarga
-			var current_shoot_dur = (
-				shoot_anim_duration / (multiplicador_velocidad_disparo * velocidad_recarga)
-			)
+			var current_shoot_dur = min(0.20, shoot_anim_duration / (multiplicador_velocidad_disparo * velocidad_recarga))
 
 			if state_timer >= current_shoot_dur:
 				current_aim_state = AimState.NONE
@@ -1295,6 +1326,16 @@ func control_visual_state(delta):
 				stop_bow_animation()
 				# Ocultar la flecha y trayectoria
 				_ocultar_flecha_visual()
+				# Si el jugador sigue manteniendo presionado el botón, encadenar directamente el siguiente disparo
+				if Input.is_action_pressed("click_izquierdo") and not shot_cancelled and not is_shot_locked and not esta_paralizada and paralisis_timer <= 0.0 and not is_inside_platform:
+					if not (disparo_bloqueado_por_ui and _mouse_sobre_control_ui()):
+						current_aim_state = AimState.DRAWING
+						state_timer = 0.0
+						_trajectory_fade_timer = 0.0
+						anim_tree.set(upper_path, "draw")
+						play_bow_animation("ARCO_TENSAR")
+						AudioManager.play_bow_tension()
+						_mostrar_flecha_visual(0.0)
 
 
 var shoot_anim_duration = 1.0  # Valor por defecto
@@ -1347,20 +1388,54 @@ func start_shooting():
 	charge_time = 0.0
 
 
-func agregar_flechas_multiples(cantidad: int = 6) -> void:
+func cambiar_tipo_municion() -> void:
+	# Obtener lista de tipos de munición actualmente disponibles
+	var disponibles: Array[TipoMunicion] = [TipoMunicion.NORMAL]
 	if flechas_explosivas > 0:
-		flechas_explosivas = 0
-		flechas_explosivas_changed.emit(0)
+		disponibles.append(TipoMunicion.EXPLOSIVA)
+	if flechas_multiples > 0:
+		disponibles.append(TipoMunicion.MULTIPLE)
+
+	if disponibles.size() <= 1:
+		municion_activa = TipoMunicion.NORMAL
+		tipo_municion_changed.emit(municion_activa)
+		return
+
+	var idx: int = disponibles.find(municion_activa)
+	if idx == -1:
+		municion_activa = disponibles[0]
+	else:
+		municion_activa = disponibles[(idx + 1) % disponibles.size()]
+
+	tipo_municion_changed.emit(municion_activa)
+
+	# Actualizar visualización de la flecha en la mano y trayectoria si se está apuntando
+	if current_aim_state != AimState.NONE and current_aim_state != AimState.SHOOTING:
+		var adjusted_draw_time = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
+		var progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0) if current_aim_state == AimState.DRAWING else 1.0
+		_mostrar_flecha_visual(progress)
+		if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
+			_actualizar_trayectoria_explosiva()
+		else:
+			_ocultar_trayectoria_explosiva()
+
+
+func agregar_flechas_multiples(cantidad: int = 6) -> void:
+	# El tipo anterior se almacena/conserva intacto en stock
 	flechas_multiples += cantidad
+	municion_activa = TipoMunicion.MULTIPLE
 	flechas_multiples_changed.emit(flechas_multiples)
+	tipo_municion_changed.emit(municion_activa)
+	AudioManager.play_sfx("obtencion_arma")
 
 
 func agregar_flechas_explosivas(cantidad: int = 10) -> void:
-	if flechas_multiples > 0:
-		flechas_multiples = 0
-		flechas_multiples_changed.emit(0)
+	# El tipo anterior se almacena/conserva intacto en stock
 	flechas_explosivas += cantidad  # setter actualiza throttle
+	municion_activa = TipoMunicion.EXPLOSIVA
 	flechas_explosivas_changed.emit(flechas_explosivas)
+	tipo_municion_changed.emit(municion_activa)
+	AudioManager.play_sfx("obtencion_arma")
 
 
 ## Actualiza el flag de histéresis para mitigar drops explosivos
@@ -1404,19 +1479,31 @@ func spawn_arrow_projectile():
 
 	var es_potencia_maxima: bool = (last_charge_power >= 0.98)
 
-	# CASO 1: Flechas Múltiples activas (5 flechas normales en rápida sucesión)
-	if flechas_multiples > 0:
+	# CASO 1: Flechas Múltiples activas
+	if municion_activa == TipoMunicion.MULTIPLE and flechas_multiples > 0:
 		flechas_multiples -= 1
 		flechas_multiples_changed.emit(flechas_multiples)
+		if flechas_multiples <= 0:
+			if flechas_explosivas > 0:
+				municion_activa = TipoMunicion.EXPLOSIVA
+			else:
+				municion_activa = TipoMunicion.NORMAL
+			tipo_municion_changed.emit(municion_activa)
 		_disparar_rafaga_flechas_multiples(data, shoot_dir, arrow_speed, es_potencia_maxima)
 		return
 
 	# CASO 2: Flechas Explosivas activas
 	var es_flecha_explosiva: bool = false
-	if flechas_explosivas > 0:
+	if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
 		flechas_explosivas -= 1
 		flechas_explosivas_changed.emit(flechas_explosivas)
 		es_flecha_explosiva = true
+		if flechas_explosivas <= 0:
+			if flechas_multiples > 0:
+				municion_activa = TipoMunicion.MULTIPLE
+			else:
+				municion_activa = TipoMunicion.NORMAL
+			tipo_municion_changed.emit(municion_activa)
 
 	# Instanciar la flecha (explosiva o estándar)
 	var arrow_instance: Node = null
@@ -1726,7 +1813,7 @@ func _setup_explosive_arrow_visual() -> void:
 func _mostrar_flecha_visual(factor_progreso: float = 1.0) -> void:
 	if not explosive_arrow_node:
 		_setup_explosive_arrow_visual()
-	var es_explosiva: bool = (flechas_explosivas > 0)
+	var es_explosiva: bool = (municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0)
 	if es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 		if arrow_node and is_instance_valid(arrow_node):
 			arrow_node.visible = false
@@ -1851,7 +1938,7 @@ func _setup_trayectoria_visual() -> void:
 
 
 func _actualizar_trayectoria_explosiva() -> void:
-	if flechas_explosivas <= 0 or current_aim_state == AimState.NONE or current_aim_state == AimState.SHOOTING:
+	if municion_activa != TipoMunicion.EXPLOSIVA or flechas_explosivas <= 0 or current_aim_state == AimState.NONE or current_aim_state == AimState.SHOOTING:
 		_ocultar_trayectoria_explosiva()
 		return
 
@@ -2122,14 +2209,76 @@ func recibir_dano(cantidad: int = 1):
 
 
 ## Aplica el estado de parálisis por la duración indicada (4s por defecto):
-## Cancela disparos en curso y bloquea el ataque durante 4 segundos.
+## No es acumulable (debe pasar el efecto para volver a aplicarse).
+## Cancela disparos en curso, reproduce animación de aturdimiento y muestra icono flotante verde.
 func aplicar_paralisis(duracion: float = 4.0) -> void:
-	if is_dead:
+	if is_dead or esta_paralizada_status() or paralisis_timer > 0.0:
 		return
-	paralisis_timer = maxf(paralisis_timer, duracion)
+	paralisis_timer = duracion
 	esta_paralizada = true
 	is_shot_locked = true
 	_cancel_current_shot()
+	_mostrar_icono_aturdimiento()
+
+
+func _setup_icono_aturdimiento() -> void:
+	if _icono_aturdimiento:
+		return
+
+	_icono_aturdimiento = Sprite3D.new()
+	_icono_aturdimiento.name = "IconoAturdimiento"
+	var tex: Texture2D = null
+	if not FileAccess.file_exists("res://TEST_/Icono aturdimiento.png.import"):
+		var img := Image.new()
+		if img.load("res://TEST_/Icono aturdimiento.png") == OK:
+			tex = ImageTexture.create_from_image(img)
+	if not tex:
+		tex = load("res://TEST_/Icono aturdimiento.png") as Texture2D
+	_icono_aturdimiento.texture = tex
+	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_icono_aturdimiento.pixel_size = 0.0016
+	_icono_aturdimiento.shaded = false
+	_icono_aturdimiento.no_depth_test = true
+	_icono_aturdimiento.render_priority = 12
+	_icono_aturdimiento.position = Vector3(0.0, 3.6, 0.1)  # Flota claramente por encima de la cabeza
+	_icono_aturdimiento.modulate = Color(0.25, 1.2, 0.35, 0.0)  # Color verde brillante
+	_icono_aturdimiento.visible = false
+	add_child(_icono_aturdimiento)
+
+
+func _mostrar_icono_aturdimiento() -> void:
+	_setup_icono_aturdimiento()
+	if not _icono_aturdimiento:
+		return
+
+	_icono_aturdimiento.visible = true
+	if _icono_aturdimiento_tween and _icono_aturdimiento_tween.is_valid():
+		_icono_aturdimiento_tween.kill()
+
+	_icono_aturdimiento.scale = Vector3.ZERO
+	_icono_aturdimiento.modulate = Color(0.25, 1.2, 0.35, 0.0)
+
+	_icono_aturdimiento_tween = create_tween()
+	_icono_aturdimiento_tween.set_parallel(true)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "scale", Vector3.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "modulate:a", 1.0, 0.18)
+
+
+func _ocultar_icono_aturdimiento() -> void:
+	if not _icono_aturdimiento or not _icono_aturdimiento.visible:
+		return
+
+	if _icono_aturdimiento_tween and _icono_aturdimiento_tween.is_valid():
+		_icono_aturdimiento_tween.kill()
+
+	_icono_aturdimiento_tween = create_tween()
+	_icono_aturdimiento_tween.set_parallel(true)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "scale", Vector3.ZERO, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_icono_aturdimiento_tween.tween_property(_icono_aturdimiento, "modulate:a", 0.0, 0.18)
+	_icono_aturdimiento_tween.chain().tween_callback(func():
+		if is_instance_valid(_icono_aturdimiento):
+			_icono_aturdimiento.visible = false
+	)
 
 
 func esta_paralizada_status() -> bool:
@@ -2159,6 +2308,7 @@ func _die():
 	if is_dead:
 		return
 
+	_ocultar_icono_aturdimiento()
 	is_dead = true
 	died.emit()
 
@@ -2235,6 +2385,13 @@ func curar(cantidad: int = 1) -> void:
 	if is_dead:
 		return
 	health = min(health + cantidad, vida_maxima)
+	health_changed.emit(health)
+
+
+func curar_completo() -> void:
+	if is_dead:
+		return
+	health = vida_maxima
 	health_changed.emit(health)
 
 

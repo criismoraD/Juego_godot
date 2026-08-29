@@ -6,6 +6,7 @@ var PlayerScript = load("res://Entities/Jugador_Arquera/Player.gd")
 var LonkoScript = load("res://Entities/Enemigo_Lonko/Lonko.gd")
 var PilarBodyScript = load("res://Entities/Enemigo_Lonko/PilarLonkoBody.gd")
 var FlechaElectricaScript = load("res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.gd")
+var GargolaScript = load("res://Entities/Enemigo_Gargola/Gargola.gd")
 
 class MockAudioManager extends Node:
 	func play_sfx(_name, _boost = 0.0): pass
@@ -18,6 +19,7 @@ var _mock_audio_created: bool = false
 var _ally: AllyArcher = null
 var _lonko: Lonko = null
 var _pilar: PilarLonkoBody = null
+var _gargola: Node3D = null
 
 func before_each():
 	if not get_tree().root.has_node("AudioManager"):
@@ -50,6 +52,12 @@ func after_each():
 		_pilar.free()
 		_pilar = null
 
+	if is_instance_valid(_gargola):
+		if _gargola.get_parent():
+			_gargola.get_parent().remove_child(_gargola)
+		_gargola.free()
+		_gargola = null
+
 	if _mock_audio_created and get_tree().root.has_node("AudioManager"):
 		var mock_audio = get_tree().root.get_node("AudioManager")
 		get_tree().root.remove_child(mock_audio)
@@ -79,6 +87,19 @@ func _agregar_animaciones_player(player: Player) -> void:
 	anim_tree.name = "AnimationTree"
 	anim_tree.anim_player = NodePath("../AnimationPlayer")
 	player.add_child(anim_tree)
+
+func _agregar_animaciones_lonko(lonko: Lonko) -> void:
+	var anim_player := AnimationPlayer.new()
+	anim_player.name = "AnimationPlayer"
+	var lib = AnimationLibrary.new()
+	lib.add_animation("IDLE", Animation.new())
+	lib.add_animation("IMPACTO_01", Animation.new())
+	lib.add_animation("IMPACTO_02", Animation.new())
+	lib.add_animation("MUERTE_01", Animation.new())
+	lib.add_animation("MUERTE_02", Animation.new())
+	anim_player.add_animation_library("", lib)
+	lonko.add_child(anim_player)
+	lonko.anim_player = anim_player
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TESTS DE TARGETING: LONKO VS PILAR
@@ -127,7 +148,7 @@ func test_reconocer_lonko_solo_con_pilar_emergido_completo():
 	assert_eq(_ally._contar_enemigos_vivos(), 1, "Debe contar a Lonko como enemiga viva")
 
 
-func test_reconocer_solo_pilar_con_disparo_multiple():
+func test_priorizar_disparo_explosivo_contra_lonko():
 	# Arrange: Lonko y su pilar presentes
 	_lonko = LonkoScript.new()
 	_lonko.name = "LonkoEnemy"
@@ -146,43 +167,91 @@ func test_reconocer_solo_pilar_con_disparo_multiple():
 	get_tree().root.add_child(_pilar)
 	_pilar.global_position = Vector3(8.0, 0.0, 0.0)
 
-	# Activar power up de disparo múltiple
+	# Aliada tiene flechas explosivas y múltiples
+	_ally.flechas_explosivas = 5
 	_ally.flechas_multiples = 3
 
-	# Act: Buscar objetivo actual
-	var objetivo = _ally._obtener_objetivo_actual()
+	# Act: Decidir disparo
+	var decision = _ally._decidir_disparo_y_objetivo()
 
-	# Assert: Con disparo múltiple, solo debe reconocer el pilar
-	assert_not_null(objetivo, "Debería encontrar un objetivo válido")
-	assert_eq(objetivo, _pilar, "Con power-up múltiple SOLO debe reconocer el pilar de Lonko")
+	# Assert: Contra Lonko/Pilar debe priorizar disparo explosivo
+	assert_eq(decision.get("type"), AllyArcher.TipoDisparoAliada.EXPLOSIVO, "Debe priorizar disparo explosivo contra Lonko")
+	assert_true(decision.get("target") == _lonko or decision.get("target") == _pilar, "El objetivo debe ser Lonko o su pilar")
 
 
-func test_cambio_de_objetivo_al_agotar_disparo_multiple():
-	# Arrange: Lonko y su pilar
-	_lonko = LonkoScript.new()
-	_lonko.name = "LonkoEnemy"
-	get_tree().root.add_child(_lonko)
-	_lonko.global_position = Vector3(8.0, 3.2, 0.0)
-	_lonko.current_state = EnemyBase.State.SHOOTING
-	_lonko.health = 6
-	_lonko._pilar_desplegado = true
-	_lonko._is_invulnerable = false
-	_lonko._girando_hacia_fondo = false
+func test_priorizar_disparo_normal_contra_gargola():
+	# Arrange: Gárgola presente en pantalla
+	_gargola = GargolaScript.new()
+	_gargola.name = "GargolaEnemy"
+	get_tree().root.add_child(_gargola)
+	_gargola.global_position = Vector3(6.0, 2.5, 0.0)
+	_gargola.current_state = EnemyBase.State.WALKING
+	_gargola.health = 2
 
-	_pilar = PilarLonkoBody.new()
-	_pilar.name = "PilarBody"
-	_pilar.es_pilar_enemigo = true
-	_pilar.vida_pilar = 15.0
-	get_tree().root.add_child(_pilar)
-	_pilar.global_position = Vector3(8.0, 0.0, 0.0)
+	# Aliada tiene flechas explosivas y múltiples almacenadas
+	_ally.flechas_explosivas = 5
+	_ally.flechas_multiples = 3
 
-	# Iniciar con 1 flecha múltiple
-	_ally.flechas_multiples = 1
-	assert_eq(_ally._obtener_objetivo_actual(), _pilar, "Con 1 flecha múltiple apunta al pilar")
+	# Act: Decidir disparo
+	var decision = _ally._decidir_disparo_y_objetivo()
 
-	# Consumir el disparo múltiple
+	# Assert: Contra Gárgola prioriza disparo normal y no gasta munición especial
+	assert_eq(decision.get("type"), AllyArcher.TipoDisparoAliada.NORMAL, "Contra Gárgola debe usar disparo NORMAL")
+	assert_eq(decision.get("target"), _gargola, "El objetivo debe ser la Gárgola")
+
+	# Act: Disparar
+	_ally._disparar()
+
+	# Assert: La munición especial debe mantenerse intacta en reserva
+	assert_eq(_ally.flechas_explosivas, 5, "Las flechas explosivas deben permanecer intactas")
+	assert_eq(_ally.flechas_multiples, 3, "Las flechas múltiples deben permanecer intactas")
+
+
+func test_disparo_explosivo_al_azar_si_no_hay_lonko():
+	# Arrange: Enemigo normal presente (sin Lonko)
+	_lonko = null
+	var enemy = Node3D.new()
+	enemy.name = "GoblinEnemy"
+	enemy.add_to_group("enemies")
+	get_tree().root.add_child(enemy)
+	enemy.global_position = Vector3(5.0, 0.0, 0.0)
+
+	_ally.flechas_explosivas = 4
 	_ally.flechas_multiples = 0
-	assert_eq(_ally._obtener_objetivo_actual(), _lonko, "Sin flechas múltiples vuelve a apuntar a Lonko")
+
+	# Act: Decidir disparo
+	var decision = _ally._decidir_disparo_y_objetivo()
+
+	# Assert: Al no haber Lonko, usa flechas explosivas al azar
+	assert_eq(decision.get("type"), AllyArcher.TipoDisparoAliada.EXPLOSIVO, "Sin Lonko, usa flechas explosivas al azar")
+	assert_eq(decision.get("target"), enemy, "Debe apuntar al enemigo disponible")
+
+	# Cleanup
+	get_tree().root.remove_child(enemy)
+	enemy.free()
+
+
+func test_disparo_multiple_al_azar():
+	# Arrange: Enemigo normal presente
+	var enemy = Node3D.new()
+	enemy.name = "GoblinEnemy2"
+	enemy.add_to_group("enemies")
+	get_tree().root.add_child(enemy)
+	enemy.global_position = Vector3(5.0, 0.0, 0.0)
+
+	_ally.flechas_explosivas = 0
+	_ally.flechas_multiples = 3
+
+	# Act: Decidir disparo
+	var decision = _ally._decidir_disparo_y_objetivo()
+
+	# Assert: Disparo múltiple se efectúa al azar
+	assert_eq(decision.get("type"), AllyArcher.TipoDisparoAliada.MULTIPLE, "Disparo múltiple se efectúa al azar")
+	assert_eq(decision.get("target"), enemy, "Debe apuntar al enemigo disponible")
+
+	# Cleanup
+	get_tree().root.remove_child(enemy)
+	enemy.free()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TESTS DE ESTADO PARÁLISIS
@@ -196,10 +265,12 @@ func test_paralisis_en_arquera_aliada():
 	# Act: Aplicar parálisis
 	_ally.aplicar_paralisis(4.0)
 
-	# Assert: Se resetea a IDLE y se activa el temporizador
+	# Assert: Se resetea a IDLE y se activa el temporizador e icono de aturdimiento
 	assert_eq(_ally.paralisis_timer, 4.0, "El temporizador de parálisis debe ser 4 segundos")
 	assert_true(_ally.esta_paralizada(), "Debe reportar estar paralizada")
 	assert_eq(_ally.current_state, _ally.State.IDLE, "Debe interrumpir apuntado y pasar a IDLE")
+	assert_not_null(_ally._icono_aturdimiento, "Debe crearse el icono de aturdimiento")
+	assert_true(_ally._icono_aturdimiento.visible, "El icono de aturdimiento debe estar visible")
 
 	# Simular avance de tiempo (2 segundos)
 	_ally._process(2.0)
@@ -224,6 +295,8 @@ func test_paralisis_en_ballestera_aliada():
 	assert_eq(ballestera.paralisis_timer, 4.0, "Ballestera debe tener 4s de parálisis")
 	assert_true(ballestera.esta_paralizada(), "Ballestera debe estar paralizada")
 	assert_eq(ballestera.current_state, ballestera.State.IDLE, "Debe pasar a IDLE")
+	assert_not_null(ballestera._icono_aturdimiento, "Debe crearse el icono de aturdimiento flotante")
+	assert_true(ballestera._icono_aturdimiento.visible, "El icono de aturdimiento debe estar visible")
 
 	ballestera._process(4.1)
 	assert_false(ballestera.esta_paralizada(), "Debe terminar la parálisis tras 4 segundos")
@@ -241,11 +314,14 @@ func test_paralisis_en_jugador():
 	# Act: Aplicar parálisis
 	player.aplicar_paralisis(4.0)
 
-	# Assert: Cancela el disparo y activa bloqueo
+	# Assert: Cancela el disparo y activa bloqueo e icono verde
 	assert_eq(player.paralisis_timer, 4.0, "El jugador debe tener 4s de parálisis")
 	assert_true(player.esta_paralizada, "El flag esta_paralizada debe ser true")
 	assert_true(player.is_shot_locked, "El disparo debe estar bloqueado")
 	assert_eq(player.current_aim_state, player.AimState.NONE, "El disparo en curso debe cancelarse")
+	assert_not_null(player._icono_aturdimiento, "Debe crearse el icono de aturdimiento en el jugador")
+	assert_true(player._icono_aturdimiento.visible, "El icono de aturdimiento debe estar visible")
+	assert_gt(player._icono_aturdimiento.modulate.g, player._icono_aturdimiento.modulate.r, "El icono debe ser de color verde")
 
 	# Simular 4.1 segundos en gameplay
 	player._process_gameplay(4.1)
@@ -271,3 +347,72 @@ func test_flecha_electrica_aplica_paralisis_en_impacto():
 
 	flecha.get_parent().remove_child(flecha)
 	flecha.free()
+
+
+func test_paralisis_no_es_acumulable():
+	# Arrange
+	var player: Player = PlayerScript.new()
+	_agregar_animaciones_player(player)
+	get_tree().root.add_child(player)
+
+	# Act: Aplicar parálisis inicial
+	player.aplicar_paralisis(4.0)
+	assert_eq(player.paralisis_timer, 4.0)
+
+	# Avanzar 2 segundos (restan 2s)
+	player._process_gameplay(2.0)
+	assert_almost_eq(player.paralisis_timer, 2.0, 0.05, "Deben restar ~2s de parálisis")
+
+	# Act: Intentar re-aplicar parálisis mientras el efecto sigue activo
+	player.aplicar_paralisis(4.0)
+
+	# Assert: El efecto NO se acumula ni reinicia (debe seguir en los ~2s restantes)
+	assert_almost_eq(player.paralisis_timer, 2.0, 0.05, "La parálisis no debe ser acumulable mientras esté activa")
+
+	# Avanzar 2.1s para que expire completamente
+	player._process_gameplay(2.1)
+	assert_false(player.esta_paralizada, "La parálisis debe expirar")
+
+	# Ahora que expiró, se puede volver a aplicar
+	player.aplicar_paralisis(4.0)
+	assert_eq(player.paralisis_timer, 4.0, "Una vez expirado el efecto, se puede volver a aplicar")
+
+	player.get_parent().remove_child(player)
+	player.free()
+
+
+func test_lonko_caida_dinamica_al_destruir_pilar():
+	# Arrange
+	_lonko = LonkoScript.new()
+	_agregar_animaciones_lonko(_lonko)
+	var modelo := Node3D.new()
+	modelo.name = "LONKO"
+	_lonko.add_child(modelo)
+	_lonko._lonko_modelo = modelo
+	get_tree().root.add_child(_lonko)
+	_lonko.global_position = Vector3(8.0, 3.2, 0.0)
+	_lonko._base_pos_pilar = Vector3(8.0, 0.185, 0.0)
+	_lonko._reached_position = true
+
+	# Act: Destruir el pilar
+	_lonko._on_pilar_destruido()
+
+	# Assert inicial: Estado DYING, activa física de caída con impulso
+	assert_eq(_lonko.current_state, EnemyBase.State.DYING, "Debe pasar a estado DYING")
+	assert_true(_lonko._cayendo_por_destruccion_pilar, "Debe activar bandera _cayendo_por_destruccion_pilar")
+	assert_gt(_lonko.velocity.y, 0.0, "Debe tener un impulso vertical inicial positivo")
+	assert_gt(_lonko.velocity.x, 0.0, "Debe tener un impulso horizontal hacia atrás")
+
+	# Simular caída en el aire (10 frames)
+	for i in range(10):
+		_lonko._process_dying(0.016)
+
+	assert_lt(_lonko.velocity.y, 2.0, "La gravedad debe reducir la velocidad vertical rápidamente")
+
+	# Simular impacto en el suelo
+	_lonko.global_position.y = 0.185
+	_lonko._process_dying(0.016)
+
+	assert_true(_lonko._ha_tocado_suelo_muerte, "Debe marcar _ha_tocado_suelo_muerte al alcanzar el piso")
+	assert_almost_eq(_lonko.velocity.x, 0.0, 0.01, "La velocidad debe detenerse al tocar el piso")
+

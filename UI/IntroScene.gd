@@ -71,10 +71,13 @@ func _go_to_game() -> void:
 	transitioning = true
 	set_process(false)
 
-	var tween = create_tween()
-	tween.tween_property(fade_overlay, "color:a", 1.0, 0.6).set_ease(Tween.EASE_IN).set_trans(
-		Tween.TRANS_SINE
-	)
-	tween.finished.connect(
-		func(): get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
-	)
+	if has_node("/root/SceneManager"):
+		get_node("/root/SceneManager").change_scene("res://Levels/NIVEL01/NIVEL01.tscn")
+	else:
+		var tween = create_tween()
+		tween.tween_property(fade_overlay, "color:a", 1.0, 0.6).set_ease(Tween.EASE_IN).set_trans(
+			Tween.TRANS_SINE
+		)
+		tween.finished.connect(
+			func(): get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
+		)

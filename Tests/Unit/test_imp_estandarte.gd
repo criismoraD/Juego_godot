@@ -9,7 +9,7 @@ func test_flash_rojo_no_deja_material_override_permanente():
 	add_child_autofree(imp)
 	await get_tree().process_frame
 
-	var mallas := imp._cached_mesh_instances
+	var mallas: Array = imp._cached_mesh_instances
 	assert_gt(mallas.size(), 0, "El imp debe tener mallas cacheadas")
 
 	# Act: flash de daño + restauración (0.08 s)
@@ -37,6 +37,32 @@ func test_imp_embajador_sobrevive_un_disparo():
 	await wait_seconds(0.15)
 
 	# Assert
-	assert_eq(imp.health, 5, "Un disparo debe dejar al imp en 5 HP (no desaparecer)")
+	assert_eq(imp.health, 7, "Un disparo debe dejar al imp en 7 HP (no desaparecer)")
 	assert_false(imp.is_queued_for_deletion(), "El imp no debe liberarse")
 	assert_true(imp.visible, "El imp debe seguir visible tras el impacto")
+
+
+func test_imp_embajador_drop_100_porciento_disparo_multiple():
+	# Arrange
+	var imp = IMP_ESTANDARTE_SCENE.instantiate()
+	add_child_autofree(imp)
+	await get_tree().process_frame
+
+	assert_eq(imp.probabilidad_drop_multiple, 1.0, "La probabilidad de drop debe ser 100% (1.0)")
+	assert_not_null(imp.power_up_multiple_scene, "Debe tener asignada la escena de PowerUpFlechaMultiple")
+
+	# Act: Ejecutar muerte
+	imp._on_state_dying()
+	await get_tree().process_frame
+
+	# Assert: Buscar el item de disparo múltiple instanciado en la escena
+	var power_up: Node = null
+	var root = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	for child in root.get_children():
+		if child is PowerUpFlechaMultiple or child.is_in_group("power_ups_flecha_multiple") or child.name.contains("PowerUp"):
+			power_up = child
+			break
+
+	assert_not_null(power_up, "Debe instanciar el item de disparo múltiple al morir")
+	if is_instance_valid(power_up):
+		power_up.queue_free()

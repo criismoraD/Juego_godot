@@ -269,27 +269,6 @@ func _on_body_entered(body: Node) -> void:
 func _explotar_en_impacto() -> void:
 	_reproducir_sonido_rayo()
 
-	# Dañar y paralizar a las defensoras alcanzadas en el área de impacto en el suelo
-	if get_tree():
-		var targets: Array[Node] = []
-		targets.append_array(get_tree().get_nodes_in_group("player"))
-		targets.append_array(get_tree().get_nodes_in_group("allies"))
-		for t in targets:
-			if not is_instance_valid(t) or not (t is Node3D) or not t.is_inside_tree():
-				continue
-			var dist_x: float = absf(global_position.x - t.global_position.x)
-			if dist_x <= 1.8:
-				if not _cuerpos_danados_caida.has(t):
-					_cuerpos_danados_caida[t] = true
-					if t.has_method("take_damage"):
-						t.take_damage(dano)
-					elif t.has_method("recibir_dano"):
-						t.recibir_dano(dano)
-					if t.has_method("aplicar_paralisis"):
-						t.aplicar_paralisis(4.0)
-					elif t.has_method("aplicar_estado_paralisis"):
-						t.aplicar_estado_paralisis(4.0)
-
 	if _estela_verde and is_instance_valid(_estela_verde):
 		_estela_verde.emitting = false
 

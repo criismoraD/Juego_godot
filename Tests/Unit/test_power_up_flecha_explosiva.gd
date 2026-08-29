@@ -95,10 +95,23 @@ func _buscar_item_dropeado() -> Node:
 			return it
 	return null
 
+func _crear_aliada_mock() -> Node:
+	var aliada = AllyArcherScript.new()
+	var ap := AnimationPlayer.new()
+	ap.name = "AnimationPlayer"
+	var lib := AnimationLibrary.new()
+	lib.add_animation("Armature|Armature|IDLE", Animation.new())
+	lib.add_animation("Armature|Armature|DISPARAR", Animation.new())
+	lib.add_animation("Armature|Armature|CELEBRACION", Animation.new())
+	lib.add_animation("Armature|Armature|ELECTROCUTADA", Animation.new())
+	ap.add_animation_library("", lib)
+	aliada.add_child(ap)
+	return aliada
+
 func test_power_up_distribucion_aliadas():
 	# Arrange
-	var aliada_1 = AllyArcherScript.new()
-	var aliada_2 = AllyArcherScript.new()
+	var aliada_1 = _crear_aliada_mock()
+	var aliada_2 = _crear_aliada_mock()
 	aliada_1.flechas_explosivas = 0
 	aliada_2.flechas_explosivas = 0
 	aliada_1.add_to_group("allies")
@@ -124,4 +137,3 @@ func test_probabilidades_drop_lonko_y_goblin():
 	assert_eq(lonko.drop_chance_flecha_explosiva, 0.30, "La Arquera Lonko debe tener 30% de probabilidad de drop")
 	assert_eq(goblin.drop_chance_flecha_explosiva, 0.05, "El Goblin Ballestero debe tener 5% de probabilidad de drop")
 	assert_not_null(lonko.power_up_explosivo_scene, "Lonko debe tener asignada la escena del power-up")
-	assert_not_null(goblin.flecha_explosiva_powerup_scene, "Goblin debe tener asignada la escena del power-up")

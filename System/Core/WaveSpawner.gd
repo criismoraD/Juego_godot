@@ -124,8 +124,8 @@ func _process(delta):
 			var intervalo_actual: float = (intervalo_aparicion / 2.0) if evento_cuerno_en_progreso else intervalo_aparicion
 			spawn_timer = intervalo_actual
 
-		# Verificar si la oleada terminó (OPT: solo si ya spawneamos todos y no es infinito)
-		if not spawn_infinito and goblins_spawned_in_wave >= enemigos_por_oleada:
+		# Verificar si la oleada terminó
+		if not spawn_infinito and (goblins_spawned_in_wave >= enemigos_por_oleada or (enemigos_por_oleada > 0 and enemigos_muertos_en_oleada >= enemigos_por_oleada)):
 			_check_wave_complete()
 
 	# Check de spawn de ImpShieldGirl (independiente de oleadas)
@@ -194,10 +194,7 @@ func _generar_cola_spawn() -> void:
 		for i in range(10):
 			pool.append(escena_imp)
 		for i in range(10):
-			pool.append(escena_goblin)  # ballesta reemplaza a goblin_girl
-		# Poner una gárgola al frente de la cola (sale primero)
-		pool.push_front(escena_gargola)
-		pool.pop_back()
+			pool.append(escena_goblin)
 
 	elif wave_num == 5:
 		# Oleada 5: 40 enemigos totales
@@ -223,12 +220,32 @@ func _generar_cola_spawn() -> void:
 		pool.shuffle()
 		intentos += 1
 
+	# En Oleada 4: asegurar que la primera en salir sea una Gárgola
+	if wave_num == 4 and escena_gargola:
+		var idx_gargola: int = pool.find(escena_gargola)
+		if idx_gargola > 0:
+			pool.remove_at(idx_gargola)
+			pool.push_front(escena_gargola)
+
 	# En Oleada 3: insertar la Arquera Rosa exactamente en la mitad de la oleada
 	if wave_num == 3 and escena_arquera_rosa:
 		var mitad: int = pool.size() / 2
 		pool.insert(mitad, escena_arquera_rosa)
 
 	cola_spawn = pool
+	# Sincronizar el total de enemigos de la oleada con el tamaño exacto según el diseño
+	if wave_num == 1:
+		enemigos_por_oleada = 15  # 12 en cola + 3 pacíficos convertidos
+	elif wave_num == 2:
+		enemigos_por_oleada = 25
+	elif wave_num == 3:
+		enemigos_por_oleada = 30
+	elif wave_num == 4:
+		enemigos_por_oleada = 45  # 35 base + 10 refuerzos cuerno
+	elif wave_num == 5:
+		enemigos_por_oleada = 50  # 40 base + 10 refuerzos cuerno
+	elif enemigos_por_oleada <= 0:
+		enemigos_por_oleada = cola_spawn.size()
 
 
 func _es_valida_cola(pool: Array[PackedScene]) -> bool:
@@ -336,8 +353,8 @@ func _spawn_goblin():
 		scene_to_spawn = _elegir_escena_probabilidades()
 	elif not cola_spawn.is_empty():
 		scene_to_spawn = cola_spawn.pop_front()
-	elif oleada_combate == 4 or oleada_combate == 5:
-		# Oleadas 4 y 5 usan SOLO cola prediseñada
+	elif not spawn_infinito:
+		_check_wave_complete()
 		return
 	else:
 		scene_to_spawn = _elegir_escena_probabilidades()
@@ -367,6 +384,16 @@ func _spawn_goblin():
 		else:
 			goblin.died.connect(_on_goblin_died.bind(goblin))
 
+	# Red de seguridad: si el nodo sale del árbol por cualquier razón, limpiar de activos
+	goblin.tree_exited.connect(func():
+		if is_instance_valid(self):
+			if active_goblins.has(goblin) or shield_imps_activos.has(goblin):
+				active_goblins.erase(goblin)
+				shield_imps_activos.erase(goblin)
+				enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+			_check_wave_complete()
+	)
+
 	active_goblins.append(goblin)
 	goblins_spawned_in_wave += 1
 
@@ -381,24 +408,43 @@ func _obtener_nodo_padre_spawn() -> Node:
 
 
 func _on_goblin_died(goblin):
-	active_goblins.erase(goblin)
-	enemigos_muertos_en_oleada += 1
+	if active_goblins.has(goblin) or shield_imps_activos.has(goblin):
+		active_goblins.erase(goblin)
+		shield_imps_activos.erase(goblin)
+		enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
 	AudioManager.on_enemy_killed()
+	_check_wave_complete()
 
 
 func _check_wave_complete():
-	# La oleada termina cuando todos los goblins normales spawnearon Y todos murieron
-	if goblins_spawned_in_wave >= enemigos_por_oleada:
-		# Limpiar referencias inválidas
-		# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar allocations de memoria/GC en comprobaciones frecuentes
-		for i in range(active_goblins.size() - 1, -1, -1):
-			if not is_instance_valid(active_goblins[i]):
-				active_goblins.remove_at(i)
+	# Limpiar referencias inválidas o enemigos muertos/muriendo en ambas listas
+	for i in range(active_goblins.size() - 1, -1, -1):
+		var g = active_goblins[i]
+		if not is_instance_valid(g) or not g.is_inside_tree():
+			active_goblins.remove_at(i)
+			continue
+		if g is EnemyBase and (g.current_state == EnemyBase.State.DYING or g.current_state == EnemyBase.State.DEAD):
+			active_goblins.remove_at(i)
+		elif g is ImpShieldGirl and (g.current_state == ImpShieldGirl.State.DYING or g.current_state == ImpShieldGirl.State.DEAD):
+			active_goblins.remove_at(i)
 
-		if active_goblins.is_empty():
-			is_wave_active = false
-			wave_cooldown = tiempo_entre_oleadas
-			oleada_completada.emit(current_wave)
+	for i in range(shield_imps_activos.size() - 1, -1, -1):
+		var s = shield_imps_activos[i]
+		if not is_instance_valid(s) or not s.is_inside_tree():
+			shield_imps_activos.remove_at(i)
+			continue
+		if s is ImpShieldGirl and (s.current_state == ImpShieldGirl.State.DYING or s.current_state == ImpShieldGirl.State.DEAD):
+			shield_imps_activos.remove_at(i)
+
+	var cola_agotada: bool = cola_spawn.is_empty()
+	var sin_enemigos: bool = active_goblins.is_empty()
+	var todos_spawneados: bool = (goblins_spawned_in_wave >= enemigos_por_oleada)
+	var muertes_completadas: bool = (enemigos_por_oleada > 0 and enemigos_muertos_en_oleada >= enemigos_por_oleada)
+
+	if is_wave_active and cola_agotada and sin_enemigos and (todos_spawneados or muertes_completadas):
+		is_wave_active = false
+		wave_cooldown = tiempo_entre_oleadas
+		oleada_completada.emit(current_wave)
 
 
 # === API PÚBLICA ===
@@ -527,7 +573,7 @@ func reproducir_sonido_cuerno() -> void:
 	if cuerno_stream:
 		var player := AudioStreamPlayer.new()
 		player.stream = cuerno_stream
-		player.volume_db = 0.0  # -2 dB: 20% menos que el volumen anterior
+		player.volume_db = -7.0  # Disminuido para equilibrar con el combate y la música
 		player.bus = "Master"
 		var root := get_tree().current_scene
 		if root:
@@ -560,34 +606,37 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 	evento_cuerno_iniciado.emit()
 	reproducir_sonido_cuerno()
 
-	# Reorganizar la cola para que los próximos spawns sean ráfaga intercalada
-	# de Goblin Girl y Goblin Ballesta (mitad de cada uno) — excepto Oleada 4 que usa solo ballesta
+	# Reorganizar la cola según el nivel:
+	# Oleada 4: +10 (8 Ballestas + 2 Imps)
+	# Oleada 5: +10 (5 Arqueras + 5 Ballestas)
 	var burst: Array[PackedScene] = []
 	if oleada_combate == 4:
-		# Oleada 4: ráfaga 8x Goblin Ballesta + 2x Imp (10 total pedido)
 		for i in range(8):
 			burst.append(escena_goblin)
 		for i in range(2):
 			burst.append(escena_imp)
-		burst.shuffle()
-	else:
-		for i in range(int(ceil(refuerzos_cuerno_total / 2.0))):
+	elif oleada_combate == 5:
+		for i in range(5):
 			burst.append(escena_goblin_girl)
 			burst.append(escena_goblin)
+	else:
+		for i in range(int(refuerzos_cuerno_total / 2)):
+			burst.append(escena_goblin)
+			burst.append(escena_goblin_girl)
 
 	burst.append_array(cola_spawn)
 	cola_spawn = burst
 
-	# Asegurar que el total de enemigos de la oleada contabilice los refuerzos del cuerno
-	if enemigos_por_oleada < goblins_spawned_in_wave + cola_spawn.size():
-		enemigos_por_oleada = goblins_spawned_in_wave + cola_spawn.size()
+	# Asegurar que el total de enemigos de la oleada contabilice los refuerzos del cuerno sin duplicar
+	var meta_oleada: int = 45 if oleada_combate == 4 else (50 if oleada_combate == 5 else cola_spawn.size())
+	enemigos_por_oleada = max(enemigos_por_oleada, meta_oleada)
 
 	# La oleada 4 incluye fijo 1 Imp de Escudo con el evento (desactivado, ya tiene 5 en cola)
 	if incluir_imp_escudo_fijo:
 		_spawnear_imp_escudo_fijo()
 
-	# Oleada 4: los 10 refuerzos salen DE GOLPE cuando suena el cuerno
-	if oleada_combate == 4:
+	# Oleada 4: los 10 refuerzos salen DE GOLPE cuando suena el cuerno (si la oleada está activa en combate)
+	if oleada_combate == 4 and is_wave_active:
 		var routine_golpe := func():
 			for i in range(refuerzos_cuerno_total):
 				if not is_instance_valid(self) or not is_inside_tree():
@@ -602,6 +651,14 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 					enemy.global_position = spawn_pos
 					if enemy.has_signal("died"):
 						enemy.died.connect(_on_goblin_died.bind(enemy))
+					enemy.tree_exited.connect(func():
+						if is_instance_valid(self):
+							if active_goblins.has(enemy) or shield_imps_activos.has(enemy):
+								active_goblins.erase(enemy)
+								shield_imps_activos.erase(enemy)
+								enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+							_check_wave_complete()
+					)
 					active_goblins.append(enemy)
 					goblins_spawned_in_wave += 1
 					refuerzos_cuerno_spawneados += 1
@@ -610,28 +667,6 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 			evento_cuerno_en_progreso = false
 			# Acelerador de spawn durante el evento ya no es necesario, ya salió la ráfaga
 		routine_golpe.call()
-	# Si el spawner está en pausa o inactivo (otras oleadas), spawnear la ráfaga progresivamente
-	elif not is_wave_active:
-		var routine := func():
-			for i in range(refuerzos_cuerno_total):
-				if not is_instance_valid(self) or not is_inside_tree():
-					return
-				var escena_a_spawnear: PackedScene = (
-					cola_spawn.pop_front() if not cola_spawn.is_empty()
-					else (escena_goblin_girl if (i % 2 == 0) else escena_goblin)
-				)
-				if escena_a_spawnear:
-					var enemy = escena_a_spawnear.instantiate()
-					var spawn_pos = global_position
-					spawn_pos.y += altura_spawn
-					_obtener_nodo_padre_spawn().add_child(enemy)
-					enemy.global_position = spawn_pos
-					if enemy.has_signal("died"):
-						enemy.died.connect(_on_goblin_died.bind(enemy))
-					active_goblins.append(enemy)
-				await get_tree().create_timer(0.35, false).timeout
-			evento_cuerno_en_progreso = false
-		routine.call()
 
 	# Limpiar referencias inválidas
 	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar GC
@@ -680,6 +715,15 @@ func _spawn_shield_imp():
 	if shield_imp.has_signal("died"):
 		shield_imp.died.connect(_on_shield_imp_died.bind(shield_imp))
 
+	shield_imp.tree_exited.connect(func():
+		if is_instance_valid(self):
+			if active_goblins.has(shield_imp) or shield_imps_activos.has(shield_imp):
+				shield_imps_activos.erase(shield_imp)
+				active_goblins.erase(shield_imp)
+				enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+			_check_wave_complete()
+	)
+
 	shield_imps_activos.append(shield_imp)
 	active_goblins.append(shield_imp)
 
@@ -701,14 +745,27 @@ func _spawnear_imp_escudo_fijo() -> void:
 
 	if shield_imp.has_signal("died"):
 		shield_imp.died.connect(_on_shield_imp_died.bind(shield_imp))
+
+	shield_imp.tree_exited.connect(func():
+		if is_instance_valid(self):
+			if active_goblins.has(shield_imp) or shield_imps_activos.has(shield_imp):
+				shield_imps_activos.erase(shield_imp)
+				active_goblins.erase(shield_imp)
+				enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+			_check_wave_complete()
+	)
+
 	shield_imps_activos.append(shield_imp)
 	active_goblins.append(shield_imp)
 
 
 func _on_shield_imp_died(shield_imp):
-	shield_imps_activos.erase(shield_imp)
-	active_goblins.erase(shield_imp)
-	enemigos_muertos_en_oleada += 1
+	if active_goblins.has(shield_imp) or shield_imps_activos.has(shield_imp):
+		shield_imps_activos.erase(shield_imp)
+		active_goblins.erase(shield_imp)
+		enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+	AudioManager.on_enemy_killed()
+	_check_wave_complete()
 
 
 func forzar_spawn_escudo():
@@ -747,6 +804,16 @@ func spawn_pacificos(
 
 		if enemigo.has_signal("died"):
 			enemigo.died.connect(_on_goblin_died.bind(enemigo))
+
+		enemigo.tree_exited.connect(func():
+			if is_instance_valid(self):
+				if active_goblins.has(enemigo):
+					active_goblins.erase(enemigo)
+					shield_imps_activos.erase(enemigo)
+					enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+				_check_wave_complete()
+		)
+
 		active_goblins.append(enemigo)
 		enemigos.append(enemigo)
 	return enemigos

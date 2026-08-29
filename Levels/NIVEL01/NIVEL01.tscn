@@ -198,7 +198,7 @@ fov = 5.0
 size = 0.01
 
 [node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_1cr8j")]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 0)
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 0.05)
 flechas_explosivas = null
 flechas_multiples = null
 velocidad_caminar = null
@@ -662,12 +662,12 @@ transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3
 layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.8802323, 3.1431754, 0)
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.8802323, 3.1431754, -0.02)
 tiempo_carga_max = 2.0
 idle_max = 2.0
 
 [node name="AllyArcher2" parent="." unique_id=1802001803 instance=ExtResource("20_cayny")]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.1104116, 1.585446, 0)
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.1104116, 1.585446, -0.02)
 tiempo_carga_max = 2.0
 idle_max = 2.0
 

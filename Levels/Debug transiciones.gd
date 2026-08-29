@@ -15,11 +15,11 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 ]
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
-@export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1
+@export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1 (12 en cola + 3 pacíficos convertidos)
 @export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 30  ## Enemigos totales en la Oleada 3
-@export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos evento cuerno)
-@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (40 base + 10 refuerzos evento cuerno)
+@export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos cuerno)
+@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (40 base + 10 refuerzos cuerno)
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
@@ -716,13 +716,9 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		get_tree().call_group("ui_instrucciones", "queue_free")
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
 
+	oleada_combate_actual = numero_oleada
 	wave_spawner.oleada_combate = numero_oleada
-	# Oleadas 4 y 5: números fijos. No sumar pacíficos de otras oleadas.
-	if numero_oleada == 4 or numero_oleada == 5:
-		wave_spawner.enemigos_por_oleada = total_enemigos
-	else:
-		# El total incluye los enemigos pacíficos supervivientes ya presentes
-		wave_spawner.enemigos_por_oleada = total_enemigos + wave_spawner.active_goblins.size()
+	wave_spawner.enemigos_por_oleada = total_enemigos
 	wave_spawner.probabilidad_canonero = 0.0
 	wave_spawner.probabilidad_igual = false
 	wave_spawner.forzar_tipo_enemigo = -1  # Normal
@@ -802,6 +798,8 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		_set_elemento_nivel3_activo(muro_plataforma2, true)
 		if is_instance_valid(escudo_enemigo):
 			_set_elemento_nivel3_activo(escudo_enemigo, true)
+		# Spawnear Medikit en la puerta de la torre al inicio de la oleada 4
+		_spawn_medikit_puerta_torre()
 	elif numero_oleada == 5:
 		# Oleada 5: 40 enemigos (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 9 GoblinGirl, 9 Goblin)
 		wave_spawner.probabilidad_imp = 0.0
@@ -825,6 +823,12 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# Spawnear Power-Up inicial en el medio de la base enemiga
 		_spawn_power_up_inicial_oleada_5()
 
+	# Música según la oleada: Oleada 5 usa "Noche Aplastante" (índice 5), anteriores usan música de batalla (índice 2)
+	if numero_oleada == 5:
+		AudioManager.play_music(5)
+	else:
+		AudioManager.play_music(2)
+
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
 		wave_spawner.oleada_completada.connect(_on_nivel1_completado)
@@ -842,17 +846,30 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 
 
 func _monitorear_nivel_1():
-	# Verificar si todos los enemigos murieron (incluyendo supervivientes pacíficos)
-	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar allocations de memoria/GC en _process
-	for i in range(wave_spawner.active_goblins.size() - 1, -1, -1):
-		if not is_instance_valid(wave_spawner.active_goblins[i]):
-			wave_spawner.active_goblins.remove_at(i)
+	if not is_instance_valid(wave_spawner):
+		return
 
-	if (
-		wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada
-		and wave_spawner.active_goblins.is_empty()
-	):
-		_on_nivel1_completado(1)
+	# Limpiar referencias inválidas o enemigos muertos/muriendo
+	for i in range(wave_spawner.active_goblins.size() - 1, -1, -1):
+		var g = wave_spawner.active_goblins[i]
+		if not is_instance_valid(g) or not g.is_inside_tree():
+			wave_spawner.active_goblins.remove_at(i)
+			continue
+		if "current_state" in g:
+			if g is EnemyBase and (g.current_state == EnemyBase.State.DYING or g.current_state == EnemyBase.State.DEAD):
+				wave_spawner.active_goblins.remove_at(i)
+			elif g is ImpShieldGirl and (g.current_state == ImpShieldGirl.State.DYING or g.current_state == ImpShieldGirl.State.DEAD):
+				wave_spawner.active_goblins.remove_at(i)
+
+	var cola_agotada: bool = wave_spawner.cola_spawn.is_empty()
+	var sin_enemigos: bool = wave_spawner.active_goblins.is_empty()
+	var todos_spawneados: bool = (wave_spawner.goblins_spawned_in_wave >= wave_spawner.enemigos_por_oleada)
+	var muertes_completadas: bool = (wave_spawner.enemigos_por_oleada > 0 and wave_spawner.enemigos_muertos_en_oleada >= wave_spawner.enemigos_por_oleada)
+
+	if wave_spawner.is_wave_active and cola_agotada and sin_enemigos and (todos_spawneados or muertes_completadas):
+		wave_spawner.is_wave_active = false
+		wave_spawner.detener_spawning()
+		_on_nivel1_completado(wave_spawner.oleada_combate)
 
 
 ## Excepción forzosa: en la oleada 5 (y posteriores) NO existen defensas en
@@ -871,9 +888,12 @@ func _on_nivel1_completado(_numero_oleada: int):
 	if estado_actual != NivelEstado.NIVEL_1:
 		return
 
-	wave_spawner.detener_spawning()
+	if is_instance_valid(wave_spawner):
+		wave_spawner.detener_spawning()
 
-	if oleada_combate_actual in [1, 2, 3, 4]:
+	var oleada_actual: int = wave_spawner.oleada_combate if is_instance_valid(wave_spawner) and wave_spawner.oleada_combate > 0 else oleada_combate_actual
+
+	if oleada_actual in [1, 2, 3, 4]:
 		if transicion_carteles_en_progreso:
 			return
 		transicion_carteles_en_progreso = true
@@ -1246,7 +1266,10 @@ func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) 
 		game_ui.set_modo_minimo(false)
 
 	_set_aliadas_activas(true)
-	AudioManager.play_music(2)
+	if numero_oleada == 5:
+		AudioManager.play_music(5)
+	else:
+		AudioManager.play_music(2)
 
 	if numero_oleada == 5:
 		oleada_combate_actual = 5
@@ -1347,12 +1370,12 @@ func _mostrar_victoria_con_continuar(mensaje: String):
 
 func _iniciar_oleadas_libres():
 	estado_actual = NivelEstado.OLEADAS_LIBRES
-	_log_debug("[NIVEL01] Oleadas libres iniciadas — Gárgola por defecto para Debug")
+	_log_debug("[NIVEL01] Oleadas libres iniciadas — 10 Gárgolas en bucle")
 
-	# Forzar tipo de enemigo 5 (Gárgola) para pruebas de Ragdoll
+	# Forzar tipo de enemigo 5 (Gárgola) en bucle de 10 gárgolas
 	wave_spawner.forzar_tipo_enemigo = 5
 	wave_spawner.probabilidad_igual = false
-	wave_spawner.enemigos_por_oleada = 8
+	wave_spawner.enemigos_por_oleada = 10
 	wave_spawner.intervalo_aparicion = 4.0
 	wave_spawner.spawn_infinito = true
 
@@ -1360,6 +1383,7 @@ func _iniciar_oleadas_libres():
 	wave_spawner.oleada_combate = 0
 	wave_spawner.current_wave = 0
 	wave_spawner.goblins_spawned_in_wave = 0
+	wave_spawner.enemigos_muertos_en_oleada = 0
 	wave_spawner.is_wave_active = false
 	wave_spawner.wave_cooldown = 1.0
 
@@ -1918,6 +1942,27 @@ func _set_collision_recursivo(nodo: Node, activo: bool) -> void:
 		nodo.process_mode = Node.PROCESS_MODE_INHERIT if activo else Node.PROCESS_MODE_DISABLED
 	for child in nodo.get_children():
 		_set_collision_recursivo(child, activo)
+
+
+func _spawn_medikit_puerta_torre() -> void:
+	# Limpiar medikits previos si existieran
+	for m in get_tree().get_nodes_in_group("medikits"):
+		if is_instance_valid(m):
+			m.queue_free()
+	for child in find_children("*", "Medikit", true, false):
+		if is_instance_valid(child):
+			child.queue_free()
+
+	var medikit_scene: PackedScene = preload("res://Entities/Item_Medikit/Medikit.tscn")
+	if not medikit_scene:
+		return
+	var medikit: Node3D = medikit_scene.instantiate() as Node3D
+	if not medikit:
+		return
+	medikit.add_to_group("medikits")
+	add_child(medikit)
+	# Ubicado en el suelo directamente frente a la puerta de la torre (-9.7)
+	medikit.global_position = Vector3(-9.7, 0.25, 0.0)
 
 
 func _spawn_power_up_inicial_oleada_5() -> void:

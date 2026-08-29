@@ -31,6 +31,7 @@ buses/default_bus_layout="uid://dcled5jpi5lun"
 [autoload]
 
 AudioManager="*res://System/Core/AudioManager.gd"
+SceneManager="*res://System/Core/SceneManager.gd"
 
 [display]
 

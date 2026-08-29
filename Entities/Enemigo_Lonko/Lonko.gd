@@ -129,6 +129,8 @@ var _correccion_idle_activa: bool = false  ## True durante la pausa IDLE entre d
 var _tween_espejo: Tween = null  ## Volteo suave de escala X al entrar/salir del IDLE
 var _pitch_suavizado_rad: float = 0.0  ## Para suavizar deformación ult
 var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: suelta el arco volando al morir por explosión
+var _cayendo_por_destruccion_pilar: bool = false  ## Caída física dinámica al romperse el pilar
+var _ha_tocado_suelo_muerte: bool = false
 
 
 func _on_enemy_ready() -> void:
@@ -305,13 +307,16 @@ func _recolorear_flecha_mano() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
 	super._process(delta)
 	_aplicar_yaw_suave(delta)
 	_actualizar_flecha_mano_lonko(delta)
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
 	if _reached_position and _base_pos_pilar != Vector3.ZERO:
-		global_position.x = _base_pos_pilar.x
+		if not _cayendo_por_destruccion_pilar:
+			global_position.x = _base_pos_pilar.x
 		global_position.z = _base_pos_pilar.z
 
 	if _debe_rastrear_jugador():
@@ -325,6 +330,8 @@ func _process(delta: float) -> void:
 ## invulnerabilidad (antes la rama del cielo era código muerto porque la
 ## carga eléctrica activa `_is_invulnerable` y el gate viejo la bloqueaba).
 func _debe_rastrear_jugador() -> bool:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return false
 	if debug_tracking_override:
 		return true
 	if _is_taking_damage:
@@ -1592,18 +1599,97 @@ func _on_state_dying() -> void:
 
 	super._on_state_dying()
 
+	# Desactivar colisiones hostiles
+	collision_layer = 0
+	collision_mask = 1
+
 	if anim_player:
 		anim_player.playback_default_blend_time = BLEND_ANIMACIONES
 
+	# Reproducir SIEMPRE animación de muerte de inmediato
 	var rand_death: String = "MUERTE_01" if randf() < 0.5 else "MUERTE_02"
 	_play_animation(rand_death, 0.15, 1.0)
 
-	var anim_length: float = _get_animation_duration(rand_death)
-	var tiempo_muerte: float = max(anim_length + 0.3, 3.45 if _pilar_fue_destruido_primero else anim_length + 0.3)
+	if _pilar_fue_destruido_primero:
+		# Expulsión inicial y caída con gravedad realista
+		_cayendo_por_destruccion_pilar = true
+		_ha_tocado_suelo_muerte = false
+		velocity = Vector3(randf_range(0.8, 1.4), 1.8, 0.0)
+	else:
+		_cayendo_por_destruccion_pilar = false
+		_ha_tocado_suelo_muerte = true
+
+	var tiempo_muerte: float = 3.45 if _pilar_fue_destruido_primero else (_get_animation_duration("MUERTE_01") + 0.3)
 	get_tree().create_timer(tiempo_muerte).timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
 			_die()
 	)
+
+
+func _process_dying(delta: float) -> void:
+	if _cayendo_por_destruccion_pilar and not _ha_tocado_suelo_muerte:
+		# Gravedad rápida y natural hacia el suelo
+		velocity.y -= 12.0 * delta
+		velocity.x = move_toward(velocity.x, 0.0, 1.2 * delta)
+
+		var floor_limit_y: float = _base_pos_pilar.y if _base_pos_pilar != Vector3.ZERO else 0.185
+		if is_on_floor() or global_position.y <= floor_limit_y + 0.05:
+			_ha_tocado_suelo_muerte = true
+			velocity = Vector3.ZERO
+			global_position.y = floor_limit_y
+			_spawn_impacto_suelo_muerte()
+	else:
+		velocity.x = 0.0
+
+
+func _spawn_impacto_suelo_muerte() -> void:
+	_reproducir_sonido_dano()
+
+	if TEXTURA_HUMO_PISADAS:
+		var parts := GPUParticles3D.new()
+		parts.name = "PolvoImpactoSuelo"
+		parts.amount = 8
+		parts.lifetime = 0.6
+		parts.one_shot = true
+		parts.explosiveness = 0.9
+
+		var pmat := ParticleProcessMaterial.new()
+		pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		pmat.emission_sphere_radius = 0.2
+		pmat.direction = Vector3(0, 1, 0)
+		pmat.spread = 70.0
+		pmat.initial_velocity_min = 0.8
+		pmat.initial_velocity_max = 1.8
+		pmat.gravity = Vector3(0, -2.0, 0)
+		pmat.scale_min = 0.4
+		pmat.scale_max = 0.8
+
+		parts.process_material = pmat
+
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_texture = TEXTURA_HUMO_PISADAS
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		mat.particles_anim_h_frames = 9
+		mat.particles_anim_v_frames = 1
+		mat.particles_anim_loop = false
+
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.4, 0.4)
+		quad.material = mat
+		parts.draw_pass_1 = quad
+
+		var root := get_tree().current_scene
+		if root:
+			root.add_child(parts)
+			parts.global_position = global_position
+			parts.emitting = true
+
+		get_tree().create_timer(1.0).timeout.connect(func():
+			if is_instance_valid(parts):
+				parts.queue_free()
+		)
 
 
 ## Muerte por explosión: el arco se desprende de la mano y sale volando
@@ -1784,6 +1870,12 @@ func _reproducir_sonido_explosion(spawn_pos: Vector3) -> void:
 		player.queue_free()
 
 
+func _exit_tree() -> void:
+	if _instancia_pilar and is_instance_valid(_instancia_pilar):
+		_instancia_pilar.queue_free()
+		_instancia_pilar = null
+
+
 func _hundir_y_disolver_pilar() -> void:
 	if not _instancia_pilar or not is_instance_valid(_instancia_pilar):
 		return
@@ -1791,8 +1883,15 @@ func _hundir_y_disolver_pilar() -> void:
 	var pilar_to_destroy := _instancia_pilar
 	_instancia_pilar = null
 
-	var target_sink_y: float = pilar_to_destroy.global_position.y - altura_pilar_offset
-	# Si el pilar fue destruido por la jugadora, baja el doble de lento (3.42s en lugar de 1.71s)
+	# Desactivar colisiones del pilar inmediatamente para que no bloquee ni sea objetivo
+	var pilar_body := pilar_to_destroy.find_child("PilarBody", true, false) as CollisionObject3D
+	if pilar_body:
+		pilar_body.collision_layer = 0
+		pilar_body.collision_mask = 0
+
+	# Hundimiento profundo (6m extra) para que desaparezca totalmente bajo el piso y el agua
+	var target_sink_y: float = pilar_to_destroy.global_position.y - (altura_pilar_offset + 6.0)
+	# Si el pilar fue destruido por la jugadora, baja con temblor; si no, se hunde rápidamente
 	var duracion_hundir: float = 3.42 if _pilar_fue_destruido_primero else 1.2
 	var ground_y: float = _base_pos_pilar.y if _base_pos_pilar != Vector3.ZERO else (global_position.y - altura_pilar_offset)
 
@@ -1813,7 +1912,7 @@ func _hundir_y_disolver_pilar() -> void:
 		# Humo base al enterrarse por flecha explosiva - más grande y opaco para apreciarse
 		_crear_humo_pilar(_base_pos_pilar.x, ground_y, _base_pos_pilar.z, duracion_hundir, true)
 
-		# Instanciar 4 explosiones (25% más pequeñas) + rocas negras (PIEDRAS_NEGRAS_ DESTRUCION.png) + SFX a lo largo del cuerpo
+		# Instanciar 4 explosiones + rocas negras + SFX a lo largo del cuerpo
 		var exp_task := func():
 			var root_scene := get_tree().current_scene
 			if not root_scene or not explocion_pilar_scene:
@@ -1826,7 +1925,7 @@ func _hundir_y_disolver_pilar() -> void:
 				var exp_node := explocion_pilar_scene.instantiate() as Node3D
 				if exp_node:
 					root_scene.add_child(exp_node)
-					exp_node.scale = Vector3(0.75, 0.75, 0.75)  ## Explosiones 25% más pequeñas
+					exp_node.scale = Vector3(0.75, 0.75, 0.75)
 					var exp_y: float = pilar_to_destroy.global_position.y + (altura_pilar_offset * alturas_relativas[i])
 					var rand_offset := Vector3(randf_range(-0.25, 0.25), 0, randf_range(-0.25, 0.25))
 					var spawn_p: Vector3 = Vector3(pilar_to_destroy.global_position.x, exp_y, pilar_to_destroy.global_position.z) + rand_offset
@@ -1843,40 +1942,36 @@ func _hundir_y_disolver_pilar() -> void:
 				await get_tree().create_timer(0.70).timeout
 		exp_task.call()
 
-	# 1. Aplicar shader de disolución SOLO cuando Lonko muere primero (el pilar destruido NO se disuelve)
+	# 1. Aplicar shader de disolución tanto al pilar normal como al pilar destruido
 	var materials: Array[ShaderMaterial] = []
-	if not _pilar_fue_destruido_primero:
-		var dissolve_shader: Shader = DISSOLVE_SHADER_RES
-		if dissolve_shader:
-			var meshes := pilar_to_destroy.find_children("*", "MeshInstance3D", true, false)
-			for mesh_node in meshes:
-				var mi := mesh_node as MeshInstance3D
-				if not mi:
-					continue
+	var dissolve_shader: Shader = DISSOLVE_SHADER_RES
+	if dissolve_shader:
+		var meshes := pilar_to_destroy.find_children("*", "MeshInstance3D", true, false)
+		for mesh_node in meshes:
+			var mi := mesh_node as MeshInstance3D
+			if not mi:
+				continue
 
-				var tex: Texture2D = null
-				if mi.material_override is StandardMaterial3D and mi.material_override.albedo_texture:
-					tex = mi.material_override.albedo_texture
-				elif mi.mesh and mi.mesh.surface_get_material(0) is StandardMaterial3D:
-					tex = mi.mesh.surface_get_material(0).albedo_texture
-				if not tex:
-					tex = tex_pilar_normal
+			var tex: Texture2D = null
+			if mi.material_override is StandardMaterial3D and mi.material_override.albedo_texture:
+				tex = mi.material_override.albedo_texture
+			elif mi.mesh and mi.mesh.surface_get_material(0) is StandardMaterial3D:
+				tex = mi.mesh.surface_get_material(0).albedo_texture
+			if not tex:
+				tex = tex_pilar_destruido if _pilar_fue_destruido_primero else tex_pilar_normal
 
-				var mat := ShaderMaterial.new()
-				mat.shader = dissolve_shader
-				if tex:
-					mat.set_shader_parameter("albedo_texture", tex)
-				mat.set_shader_parameter("glow_color", color_borde_disolucion)  # Verde lima
-				mat.set_shader_parameter("glow_intensity", 6.0)
-				mat.set_shader_parameter("edge_thickness", 0.05)
-				mat.set_shader_parameter("dissolve_amount", 0.0)
-				mi.material_override = mat
-				materials.append(mat)
+			var mat := ShaderMaterial.new()
+			mat.shader = dissolve_shader
+			if tex:
+				mat.set_shader_parameter("albedo_texture", tex)
+			mat.set_shader_parameter("glow_color", color_borde_disolucion)  # Verde lima
+			mat.set_shader_parameter("glow_intensity", 6.0)
+			mat.set_shader_parameter("edge_thickness", 0.05)
+			mat.set_shader_parameter("dissolve_amount", 0.0)
+			mi.material_override = mat
+			materials.append(mat)
 
-	# 2. Hundir el pilar: tween ligado AL PROPIO PILAR (sobrevive a la Lonko).
-	# Si estuviera ligado a la Lonko y ella se liberara antes (su animación de
-	# muerte + disolución pueden terminar antes del hundimiento), el tween
-	# moriría y el pilar quedaría flotando e indestructible.
+	# 2. Hundir y disolver el pilar ligado al propio pilar
 	var tween_pilar := pilar_to_destroy.create_tween()
 	tween_pilar.set_parallel(true)
 	tween_pilar.tween_property(pilar_to_destroy, "global_position:y", target_sink_y, duracion_hundir) \
@@ -1889,9 +1984,18 @@ func _hundir_y_disolver_pilar() -> void:
 					mat.set_shader_parameter("dissolve_amount", val)
 		tween_pilar.tween_method(update_dissolve, 0.0, 1.0, duracion_hundir)
 
-	tween_pilar.chain().tween_callback(pilar_to_destroy.queue_free)
+	tween_pilar.chain().tween_callback(func():
+		if is_instance_valid(pilar_to_destroy):
+			pilar_to_destroy.queue_free()
+	)
 
-	# Caída de la Lonko al suelo: tween cosmético ligado a ella (muere con ella)
+	# Timer de respaldo para garantizar eliminación absoluta
+	get_tree().create_timer(duracion_hundir + 0.15).timeout.connect(func():
+		if is_instance_valid(pilar_to_destroy):
+			pilar_to_destroy.queue_free()
+	)
+
+	# Caída de la Lonko al suelo
 	var tween_lonko := create_tween()
 	tween_lonko.tween_property(self, "global_position:y", ground_y, duracion_hundir) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -1987,4 +2091,3 @@ func _reproducir_sonido_tensado_arco() -> void:
 		player.finished.connect(player.queue_free)
 	else:
 		player.queue_free()
-

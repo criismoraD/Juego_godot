@@ -454,7 +454,10 @@ func _create_pause_panel():
 				is_paused = false
 				get_tree().paused = false
 			AudioManager.stop_all()
-			get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
+			if has_node("/root/SceneManager"):
+				get_node("/root/SceneManager").change_scene("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
+			else:
+				get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
 	)
 	_style_button(lvl6_btn, Color(0.6, 0.4, 0.1))
 	hbox_nav_debug.add_child(lvl6_btn)
@@ -469,7 +472,10 @@ func _create_pause_panel():
 				get_tree().paused = false
 			AudioManager.stop_all()
 			GameUI.modo_debug_solicitado = true
-			get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
+			if has_node("/root/SceneManager"):
+				get_node("/root/SceneManager").change_scene("res://Levels/NIVEL01/NIVEL01.tscn")
+			else:
+				get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
 	)
 	_style_button(debug_btn, Color(0.4, 0.4, 0.4))
 	hbox_nav_debug.add_child(debug_btn)
@@ -673,7 +679,10 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 			is_paused = false
 			get_tree().paused = false
 		AudioManager.stop_all()
-		get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
+		if has_node("/root/SceneManager"):
+			get_node("/root/SceneManager").change_scene("res://Levels/NIVEL01/NIVEL01.tscn")
+		else:
+			get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
 		return
 
 	var root_node = _get_scene_root()

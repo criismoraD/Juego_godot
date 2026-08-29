@@ -45,6 +45,7 @@ func _agregar_animacion_minima(ally: AllyArcher) -> void:
 	lib.add_animation("MUERTE_01", Animation.new())
 	lib.add_animation("MUERTE_02", Animation.new())
 	lib.add_animation("LEVANTARSE", Animation.new())
+	lib.add_animation("VICTORIA", Animation.new())
 	
 	anim_player.add_animation_library("", lib)
 	ally.add_child(anim_player)
@@ -114,4 +115,47 @@ func test_invulnerable_durante_getting_up():
 
 func test_enemigos_minimos_es_uno():
 	assert_eq(_ally.enemigos_minimos, 1, "Las arqueras aliadas deben empezar a disparar con al menos 1 enemigo")
+
+
+func test_celebracion_victoria_activacion_y_rotacion():
+	var dummy_model = Node3D.new()
+	dummy_model.name = "ArqueraModel"
+	_ally.add_child(dummy_model)
+	_ally.model_root = dummy_model
+	_ally._original_model_y_rot = 0.0
+	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+
+	_ally.celebrar_victoria()
+
+	assert_eq(_ally.current_state, _ally.State.CELEBRATING, "El estado debe cambiar a CELEBRATING")
+	assert_gt(_ally._loops_victoria_restantes, 0, "Debe tener loops de victoria asignados")
+
+	# Simular un frame de proceso para verificar rotación de victoria
+	_ally._process(0.1)
+	assert_gt(dummy_model.rotation.y, 0.0, "El modelo debe rotar suavemente hacia la derecha durante la celebración")
+
+
+func test_celebracion_victoria_loops_y_retorno_idle():
+	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+	_ally.celebrar_victoria()
+	_ally._loops_victoria_restantes = 2
+
+	# Simular fin de primer loop
+	_ally.state_timer = 0.0
+	_ally._process_celebrating(0.01)
+	assert_eq(_ally._loops_victoria_restantes, 1, "Debe decrementar a 1 loop restante")
+	assert_eq(_ally.current_state, _ally.State.CELEBRATING, "Debe permanecer en CELEBRATING")
+
+	# Simular fin del último loop
+	_ally.state_timer = 0.0
+	_ally._process_celebrating(0.01)
+	assert_eq(_ally._loops_victoria_restantes, 0, "Los loops restantes deben ser 0")
+	assert_eq(_ally.current_state, _ally.State.IDLE, "Debe volver a IDLE tras completar la celebración")
+
+
+func test_on_oleada_completada_activa_celebracion():
+	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+	_ally._on_oleada_completada(1)
+
+	assert_eq(_ally.current_state, _ally.State.CELEBRATING, "El evento de oleada completada debe activar la celebración de victoria")
 

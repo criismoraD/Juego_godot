@@ -199,3 +199,36 @@ func test_celebracion_victoria_loops_y_rotacion():
 	_ballestera.state_timer = 0.0
 	_ballestera._process_celebrating(0.01)
 	assert_eq(_ballestera.current_state, _ballestera.State.AIMING, "Tras completar los loops debe pasar directamente a AIMING")
+
+
+func test_prioridad_profundidad_personajes():
+	# Arrange
+	var PlayerScript = load("res://Entities/Jugador_Arquera/Player.gd")
+	var AllyArcherScript = load("res://Entities/Aliada_Arquera/AllyArcher.gd")
+	var player = PlayerScript.new()
+	var at := AnimationTree.new()
+	at.name = "AnimationTree"
+	var ap_p := AnimationPlayer.new()
+	ap_p.name = "AnimationPlayer"
+	player.add_child(ap_p)
+	player.add_child(at)
+	at.anim_player = NodePath("../AnimationPlayer")
+
+	var archer = AllyArcherScript.new()
+	var ap_a := AnimationPlayer.new()
+	ap_a.name = "AnimationPlayer"
+	var lib_a = AnimationLibrary.new()
+	lib_a.add_animation("IDLE", Animation.new())
+	lib_a.add_animation("DISPARO", Animation.new())
+	ap_a.add_animation_library("", lib_a)
+	archer.add_child(ap_a)
+
+	add_child_autofree(player)
+	add_child_autofree(archer)
+
+	# Assert: Cadena de prioridad de planos (Player > Ballestera > Archer)
+	assert_gt(player.plano_profundidad_z, _ballestera.plano_profundidad_z, "La protagonista debe tener prioridad de profundidad sobre la ballestera")
+	assert_gt(_ballestera.plano_profundidad_z, archer.plano_profundidad_z, "La ballestera debe tener prioridad de profundidad sobre la arquera")
+	assert_almost_eq(player.global_position.z, 0.05, 0.01, "Player Z debe estar en 0.05")
+	assert_almost_eq(_ballestera.global_position.z, 0.02, 0.01, "Ballestera Z debe estar en 0.02")
+	assert_almost_eq(archer.global_position.z, -0.02, 0.01, "Archer Z debe estar en -0.02")

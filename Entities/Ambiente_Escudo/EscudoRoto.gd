@@ -137,8 +137,11 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 	rb.add_child(col_shape)
 
 	# Añadir el RB al ROOT de la escena (NO a un nodo padre escalado).
-	var scene_root = get_tree().current_scene
-	scene_root.add_child(rb)
+	var scene_root = get_tree().current_scene if is_inside_tree() and get_tree() else null
+	if is_instance_valid(scene_root):
+		scene_root.add_child(rb)
+	else:
+		add_child(rb)
 	rb.visible = false  # Ocultar hasta que todas las piezas estén configuradas
 	rb.global_position = mesh_global_pos + Vector3.UP * 0.15
 	rb.global_rotation = mesh_global_rot
