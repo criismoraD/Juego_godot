@@ -883,11 +883,11 @@ func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
 			if is_instance_valid(nodo):
 				nodo.queue_free()
 		for esc in get_tree().get_nodes_in_group("escudos"):
-			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true:
+			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true and esc.get("es_pilar_enemigo") != true:
 				esc.queue_free()
 		return
 	for esc in get_tree().get_nodes_in_group("escudos"):
-		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true:
+		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true or esc.get("es_pilar_enemigo") == true:
 			continue
 		var permitido := false
 		if esc.name == "Escudo_enemigo":

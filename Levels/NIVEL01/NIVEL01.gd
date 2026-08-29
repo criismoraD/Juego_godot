@@ -910,15 +910,16 @@ func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
 		for nodo in [escudo_enemigo, escudo_enemigo2, escudo_enemigo3]:
 			if is_instance_valid(nodo):
 				nodo.queue_free()
-		# También limpiar cualquier escudo enemigo huérfano que GameUI haya podido dejar
+		# También limpiar cualquier escudo enemigo huérfano que GameUI haya podido dejar (excluir pilares)
 		for esc in get_tree().get_nodes_in_group("escudos"):
-			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true:
+			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true and esc.get("es_pilar_enemigo") != true:
 				esc.queue_free()
 		return
 	# Oleadas 1-4: ocultar/actuar solo sobre los no pertenecientes (GameUI ya filtró la reconstrucción,
 	# pero este es el respaldo por si queda alguno visible tras debug o regeneración manual)
+	# Excluir pilares de Lonko
 	for esc in get_tree().get_nodes_in_group("escudos"):
-		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true:
+		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true or esc.get("es_pilar_enemigo") == true:
 			continue
 		var permitido := false
 		if esc.name == "Escudo_enemigo":

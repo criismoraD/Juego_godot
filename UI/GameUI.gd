@@ -970,8 +970,9 @@ func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
 
 func _sincronizar_visibilidad_escudos_por_oleada(numero_oleada: int) -> void:
 	# Re-aplica visibilidad tras reconstruir: los escudos permitidos deben quedar visibles/activos.
+	# Excluir pilares de Lonko (comparten grupo escudos pero no son escudos estáticos)
 	for esc in get_tree().get_nodes_in_group("escudos"):
-		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true:
+		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true or esc.get("es_pilar_enemigo") == true:
 			continue
 		var permitido: bool = _es_escudo_enemigo_permitido_en_oleada(esc.name, numero_oleada)
 		esc.visible = permitido
@@ -1429,9 +1430,10 @@ func _reconstruir_todos_escudos(omitir_enemigos: bool = false, numero_oleada: in
 			roto.queue_free()
 
 	# 1b. Si estamos en una oleada definida, eliminar escudos enemigos que no pertenecen a esta oleada y que hayan quedado visibles por reconstrucciones previas
+	# Excluir pilares de Lonko (es_pilar_enemigo) que comparten grupo escudos pero son parte del enemigo
 	if numero_oleada > 0:
 		for esc in get_tree().get_nodes_in_group("escudos"):
-			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true:
+			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true and esc.get("es_pilar_enemigo") != true:
 				if not _es_escudo_enemigo_permitido_en_oleada(esc.name, numero_oleada):
 					esc.queue_free()
 
@@ -1474,11 +1476,12 @@ func _reconstruir_todos_escudos(omitir_enemigos: bool = false, numero_oleada: in
 			nuevo_escudo = escudo_scene.instantiate()
 
 		# Oleada 5+: los escudos enemigos permanecen eliminados (doble chequeo por si el flag no estaba en data)
-		if omitir_enemigos and nuevo_escudo.get("es_escudo_enemigo") == true:
+		# Excluir pilares (no son escudos estáticos)
+		if omitir_enemigos and nuevo_escudo.get("es_escudo_enemigo") == true and nuevo_escudo.get("es_pilar_enemigo") != true:
 			nuevo_escudo.free()
 			continue
 		# Filtro por oleada también sobre el nodo instanciado (por si data antigua no tenía es_enemigo)
-		if numero_oleada > 0 and nuevo_escudo.get("es_escudo_enemigo") == true:
+		if numero_oleada > 0 and nuevo_escudo.get("es_escudo_enemigo") == true and nuevo_escudo.get("es_pilar_enemigo") != true:
 			if not _es_escudo_enemigo_permitido_en_oleada(nombre_escudo, numero_oleada):
 				nuevo_escudo.free()
 				continue

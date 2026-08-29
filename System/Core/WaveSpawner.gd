@@ -231,6 +231,13 @@ func _generar_cola_spawn() -> void:
 			pool.remove_at(idx_gargola)
 			pool.push_front(escena_gargola)
 
+	# En Oleada 5: asegurar que al menos 1 Lonko aparezca entre los primeros 4 spawns (evita que quede al final y parezca que no spawnea)
+	if wave_num == 5 and escena_lonko:
+		var idx_lonko: int = pool.find(escena_lonko)
+		if idx_lonko > 3:
+			pool.remove_at(idx_lonko)
+			pool.insert(2, escena_lonko)
+
 	# En Oleada 3: insertar la Arquera Rosa exactamente en la mitad de la oleada
 	if wave_num == 3 and escena_arquera_rosa:
 		var mitad: int = pool.size() / 2
