@@ -843,15 +843,33 @@ func _es_pacifico_intacto(enemy: Node) -> bool:
 	return false
 
 
-## Determina si un enemigo debe ser tratado como objetivo al azar (voladores o Lonko)
+## Determina si un enemigo debe ser tratado como objetivo al azar (voladores, Lonko o no reconocidos)
+func _es_enemigo_reconocido(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	# Patrones de enemigos conocidos del proyecto
+	var patrones_reconocidos: Array[String] = ["imp", "goblin", "gargola", "gargoyle", "lonko", "rosa", "canonero", "canon", "bracero"]
+	for p in patrones_reconocidos:
+		if p in n or p in s:
+			return true
+	# Grupos conocidos también cuentan como reconocidos
+	if enemy.is_in_group("flying_enemies") or enemy.is_in_group("shield_imps"):
+		return true
+	return false
+
+
 func _es_objetivo_azar(enemy: Node) -> bool:
 	if not is_instance_valid(enemy):
 		return true
 	var n: String = enemy.name.to_lower()
 	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
-	var es_volador = enemy.is_in_group("flying_enemies") or ("gargola" in n) or ("gargola" in s)
+	var es_volador = enemy.is_in_group("flying_enemies") or ("gargola" in n) or ("gargola" in s) or ("gargoyle" in n)
 	var es_lonko = "lonko" in n or "lonko" in s
-	return es_volador or es_lonko
+	var es_no_reconocido: bool = not _es_enemigo_reconocido(enemy)
+	# Si no se reconoce como enemigo conocido, ataca igual pero al azar (no ignora)
+	return es_volador or es_lonko or es_no_reconocido
 
 
 func _obtener_enemigos_terrestres_candidatos() -> Array[Node3D]:
