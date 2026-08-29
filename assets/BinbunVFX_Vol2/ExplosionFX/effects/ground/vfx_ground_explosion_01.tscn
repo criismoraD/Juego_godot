@@ -1,14 +1,14 @@
 [gd_scene format=3 uid="uid://chqijevfxuhpd"]
 
-[ext_resource type="Script" uid="uid://c77smnf0gkrr7" path="res://assets/BinbunVFX_Vol2/ExplosionFX/script/VFXExplosionBB.gd" id="1_4cny8"]
-[ext_resource type="Shader" uid="uid://ga0sb2irkf01" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_core.gdshader" id="2_1ad23"]
-[ext_resource type="Shader" uid="uid://ue066a8eb1gm" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_smoke.gdshader" id="3_0u4ak"]
-[ext_resource type="Shader" uid="uid://pa240c7wl353" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_rings.gdshader" id="4_bpqph"]
-[ext_resource type="Shader" uid="uid://cf3urvjyxlki4" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_impact.gdshader" id="5_tqo15"]
-[ext_resource type="Shader" uid="uid://boodrd2ceyryu" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_trails.gdshader" id="6_wqpyr"]
-[ext_resource type="Shader" uid="uid://hnpyn5xi0f4i" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_bits.gdshader" id="7_ughyj"]
-[ext_resource type="Shader" uid="uid://crgkd4l1mvljd" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/smoke_trail.gdshader" id="8_rdrri"]
-[ext_resource type="Script" uid="uid://bwmucxp58uvvt" path="res://assets/BinbunVFX_Vol2/shared/script/VFXOmniLightBB.gd" id="9_n1577"]
+[ext_resource type="Script" uid="uid://2pa1fxdw5h5" path="res://assets/BinbunVFX_Vol2/ExplosionFX/script/VFXExplosionBB.gd" id="1_4cny8"]
+[ext_resource type="Shader" uid="uid://i880a8h244aa" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_core.gdshader" id="2_1ad23"]
+[ext_resource type="Shader" uid="uid://dc2mwpm3m0itp" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_smoke.gdshader" id="3_0u4ak"]
+[ext_resource type="Shader" uid="uid://bkg4hfp6pnpsc" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_rings.gdshader" id="4_bpqph"]
+[ext_resource type="Shader" uid="uid://df3b8nrkndsow" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_impact.gdshader" id="5_tqo15"]
+[ext_resource type="Shader" uid="uid://c7f7oy8xtw4vk" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_trails.gdshader" id="6_wqpyr"]
+[ext_resource type="Shader" uid="uid://b670i1u4yfcm2" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/explosion_bits.gdshader" id="7_ughyj"]
+[ext_resource type="Shader" uid="uid://bbquwpi5cbrx4" path="res://assets/BinbunVFX_Vol2/ExplosionFX/shader/smoke_trail.gdshader" id="8_rdrri"]
+[ext_resource type="Script" uid="uid://bqk71idhalc17" path="res://assets/BinbunVFX_Vol2/shared/script/VFXOmniLightBB.gd" id="9_n1577"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_4cny8"]
 noise_type = 2
@@ -741,7 +741,7 @@ omni_range = 10.0
 script = ExtResource("9_n1577")
 light_mult = 0.0
 vfx_light_energy = 10.0
-metadata/_custom_type_script = "uid://bwmucxp58uvvt"
+metadata/_custom_type_script = "uid://bqk71idhalc17"
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1003910935]
 callback_mode_process = 0

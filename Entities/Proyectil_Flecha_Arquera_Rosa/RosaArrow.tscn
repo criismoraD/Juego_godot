@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b1vrosaarrow7q"]
 
-[ext_resource type="Script" uid="uid://cbrosaarrow1script" path="res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bfhnmd3hmvrm6" path="res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="collision_shape"]

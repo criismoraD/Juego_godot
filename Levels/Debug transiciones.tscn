@@ -37,7 +37,7 @@
 [ext_resource type="PackedScene" uid="uid://t0whis8d7cuv" path="res://Entities/Enemigo_Gargola/Gargola.tscn" id="34_gargola"]
 [ext_resource type="PackedScene" uid="uid://b7v8x2y1w4n0k" path="res://UI/UI_Vida_Protagonista.tscn" id="35_uivida"]
 [ext_resource type="PackedScene" uid="uid://c5b8r2a3c4e5f" path="res://Entities/Enemigo_Bracero/Bracero.tscn" id="36_omov4"]
-[ext_resource type="Script" uid="uid://bw0ocm1hcogdk" path="res://Levels/Debug transiciones.gd" id="Script_Level01"]
+[ext_resource type="Script" uid="uid://7t9m13ehubgfo" path="res://Levels/Debug transiciones.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
 dof_blur_far_distance = 45.0

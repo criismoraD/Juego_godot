@@ -44,7 +44,7 @@ _subresources={
 "Canoa aliada_M": {
 "use_external/enabled": true,
 "use_external/fallback_path": "res://TEST_/Canoa aliada/Canoa aliada_MAT.tres",
-"use_external/path": "res://TEST_/Canoa aliada/Canoa aliada_MAT.tres"
+"use_external/path": "uid://cxcanoamat8aa"
 }
 }
 }

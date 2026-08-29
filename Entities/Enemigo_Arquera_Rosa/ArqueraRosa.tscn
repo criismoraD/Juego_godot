@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c6wq05kpxr7sm"]
 
-[ext_resource type="Script" uid="uid://clrqk1p4076da" path="res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cajyovci7qunw" path="res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://d3fyi28xp1rlq" path="res://Entities/Enemigo_Goblin_Girl/GEO_GOBLIN_GIRL.fbx" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="3_bow"]
 [ext_resource type="PackedScene" uid="uid://b1vrosaarrow7q" path="res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.tscn" id="4_arrow"]
