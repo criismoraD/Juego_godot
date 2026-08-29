@@ -102,5 +102,5 @@ func _go_to_intro() -> void:
 		Tween.TRANS_SINE
 	)
 	tween.finished.connect(
-		func(): get_tree().change_scene_to_file("res://UI/IntroScene.tscn")
+		func(): get_tree().change_scene_to_file("res://UI/MainMenu.tscn")
 	)
