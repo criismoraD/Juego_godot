@@ -52,6 +52,9 @@ var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
 var _aliadas_activas: bool = true  ## Estado de aliadas para modo debug
 # === REFERENCIAS ===
+# Preloads para forzar inclusión en export (PCK) aunque el filtro falle - garantiza Lonko en exe
+const PRELOAD_LONKO_EXPORT: PackedScene = preload("res://Entities/Enemigo_Lonko/Lonko.tscn")
+const PRELOAD_PILAR_LONKO_EXPORT: PackedScene = preload("res://Entities/Enemigo_Lonko/PilarLonko.tscn")
 const ESCENA_TRIDENTE_IMP: PackedScene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
 const ESCENA_FLECHA_GOBLIN: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
 const ESCENA_PROYECTIL_GARGOLA: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
@@ -812,6 +815,21 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# EXCEPCIÓN: Lonko siempre aparecen cuando se indica oleada 5
 		if wave_spawner.has_method("solicitar_excepcion_lonko"):
 			wave_spawner.solicitar_excepcion_lonko(11)
+		# Fallback para export: si en 2.5s no hay Lonko en escena ni en cola, forzar spawn directo (garantiza aparición en exe)
+		get_tree().create_timer(2.5).timeout.connect(func():
+			if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 5:
+				return
+			var vivos_lonko: int = 0
+			for e in wave_spawner.get_active_enemies():
+				if is_instance_valid(e) and ("lonko" in e.name.to_lower() or (e.get_script() and "lonko" in e.get_script().resource_path.to_lower())):
+					vivos_lonko += 1
+			var pendientes_lonko: int = 0
+			for p in wave_spawner.cola_spawn:
+				if p == wave_spawner.escena_lonko:
+					pendientes_lonko += 1
+			if vivos_lonko == 0 and pendientes_lonko == 0 and wave_spawner.has_method("forzar_spawn_lonko_excepcion"):
+				wave_spawner.forzar_spawn_lonko_excepcion(11)
+		)
 		# En la Oleada 5 las defensas enemigas permanecen OCULTAS
 		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
 		_set_elemento_nivel3_activo(muro_plataforma, false)
