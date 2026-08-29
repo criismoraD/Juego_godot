@@ -49,6 +49,7 @@ var evento_cuerno_en_progreso: bool = false
 var refuerzos_cuerno_total: int = 10  ## Cantidad de refuerzos que trae el evento de cuerno activo
 var refuerzos_cuerno_spawneados: int = 0
 var lonko_excepcion_pendiente: int = 0  ## Excepción: Lonko siempre aparecen cuando se indique (oleada 5 debe tener 11)
+var lonko_forzado_restantes: int = 0  ## Contador para forzar spawns de Lonko bypassando cola/probabilidades
 
 # === SEÑALES ===
 
@@ -373,6 +374,28 @@ func _spawn_goblin():
 		"[WaveSpawner] Spawning enemy. Total spawned so far in wave: %d / %d"
 		% [goblins_spawned_in_wave, enemigos_por_oleada]
 	)
+	# EXCEPCIÓN Lonko: si se indicó, forzar spawn de Lonko bypassando cola y probabilidades (garantiza 11)
+	if lonko_forzado_restantes > 0 and oleada_combate == 5 and escena_lonko:
+		lonko_forzado_restantes -= 1
+		var lonko = escena_lonko.instantiate()
+		var spawn_pos_lonko = global_position
+		spawn_pos_lonko.y += altura_spawn
+		spawn_pos_lonko.y += randf_range(-0.2, 0.2)
+		_obtener_nodo_padre_spawn().add_child(lonko)
+		lonko.global_position = spawn_pos_lonko
+		if lonko.has_signal("died"):
+			lonko.died.connect(_on_goblin_died.bind(lonko))
+		lonko.tree_exited.connect(func():
+			if is_instance_valid(self):
+				if active_goblins.has(lonko):
+					active_goblins.erase(lonko)
+					enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+				_check_wave_complete()
+		)
+		active_goblins.append(lonko)
+		goblins_spawned_in_wave += 1
+		goblin_spawneado.emit(lonko)
+		return
 	# Trigger del Evento de Cuerno: Oleada 5 al haber 12 spawns, Oleada 4 al haber 10
 	if (
 		not evento_cuerno_activado
@@ -889,7 +912,6 @@ func solicitar_excepcion_lonko(cantidad: int = 11) -> void:
 		for i in range(faltan):
 			cola_spawn.push_front(escena_lonko)
 		enemigos_por_oleada = max(enemigos_por_oleada, goblins_spawned_in_wave + cola_spawn.size())
-		lonko_excepcion_pendiente = 0
 
 ## Fuerza spawn inmediato de Lonko (excepción directa, no espera a la cola)
 func forzar_spawn_lonko_excepcion(cantidad: int = 1) -> void:
