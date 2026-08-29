@@ -172,7 +172,15 @@ func _conectar_eventos_oleada() -> void:
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
 	if es_movil:
-		retirarse_y_bajar_escaleras()
+		# Las defensoras moviles festejan y luego se retiran
+		if current_state != State.DYING and current_state != State.DEAD:
+			_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
+			_cambiar_estado(State.CELEBRATING)
+			# Esperar que termine la celebracion completa antes de retirarse
+			var duracion_festejo: float = duracion_animacion_victoria * float(_loops_victoria_restantes + 1) + 0.5
+			await get_tree().create_timer(duracion_festejo).timeout
+		if is_instance_valid(self) and current_state != State.DYING and current_state != State.DEAD:
+			retirarse_y_bajar_escaleras()
 	else:
 		celebrar_victoria()
 
@@ -599,8 +607,12 @@ func _process_celebrating(delta: float):
 			state_timer = duracion_animacion_victoria
 		else:
 			_loops_victoria_restantes = 0
-			# Transición directa y suave a la postura de apuntado (sin pasar por IDLE)
-			_cambiar_estado(State.AIMING)
+			# Defensoras moviles quedan en IDLE: el timer del await maneja la retirada
+			# Defensoras fijas vuelven a apuntar directamente
+			if es_movil or es_mensajera:
+				_cambiar_estado(State.IDLE)
+			else:
+				_cambiar_estado(State.AIMING)
 
 
 func _cambiar_estado(nuevo: State):
@@ -734,11 +746,19 @@ func _aplicar_efecto_escudo_piso():
 		_regenerar_escudo_piso()
 
 
-func _regenerar_escudo_piso():
+func _regenerar_escudo_piso(forzar_enemigo: bool = false):
+	## Solo regenera escudos aliados de piso; los escudos enemigos NUNCA se regeneran aquí
+	## a menos que forzar_enemigo==true se indique explícitamente (ej. evento de oleada).
 	if not escudo_scene:
 		return
 
 	var nuevo_escudo = escudo_scene.instantiate()
+	# Seguridad: los escudos regenerados por la ballestera son siempre aliados salvo indicación explícita
+	if "es_escudo_enemigo" in nuevo_escudo:
+		if not forzar_enemigo and nuevo_escudo.es_escudo_enemigo:
+			nuevo_escudo.es_escudo_enemigo = false
+		elif forzar_enemigo:
+			nuevo_escudo.es_escudo_enemigo = true
 	if "golpes_para_destruir" in nuevo_escudo:
 		nuevo_escudo.golpes_para_destruir = 1
 
@@ -750,6 +770,11 @@ func _regenerar_escudo_piso():
 
 		if nuevo_escudo.has_method("_flash_dano"):
 			nuevo_escudo._flash_dano()
+
+
+## API explícita para regenerar un escudo enemigo en su nivel correspondiente (usar solo cuando el diseño lo indique)
+func regenerar_escudo_enemigo_explicito() -> void:
+	_regenerar_escudo_piso(true)
 
 
 func _reproducir_sonido_disparo():

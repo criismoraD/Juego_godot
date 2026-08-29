@@ -936,12 +936,64 @@ func _find_wave_spawner() -> Node:
 	return wave_spawner
 
 
+func _es_escudo_enemigo_permitido_en_oleada(nombre_escudo: String, numero_oleada: int) -> bool:
+	"""Retorna true solo si el escudo enemigo pertenece a la oleada indicada.
+	Escudo_enemigo -> oleadas 3 y 4 | NIVEL_2_Escudo_enemigo2/3 -> oleada 2 | 5+ nunca."""
+	if numero_oleada >= 5:
+		return false
+	if nombre_escudo == "Escudo_enemigo":
+		return numero_oleada == 3 or numero_oleada == 4
+	if nombre_escudo == "NIVEL_2_Escudo_enemigo2" or nombre_escudo == "NIVEL_2_Escudo_enemigo3":
+		return numero_oleada == 2
+	# Fallback genérico: cualquier otro escudo marcado como enemigo no se permite salvo indicación explícita
+	if "enemigo" in nombre_escudo.to_lower():
+		return false
+	return false
+
+
 func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
-	# Desde la oleada 5 los elementos del nivel 3 (incluido el escudo enemigo)
-	# permanecen ocultos por diseño: NO reconstruir escudos enemigos ahí.
-	_reconstruir_todos_escudos(num_oleada >= 5)
+	# Los escudos enemigos solo aparecen en sus respectivos niveles/oleadas.
+	# Oleada 2: NIVEL_2_Escudo_enemigo2/3 | Oleadas 3-4: Escudo_enemigo | Oleada 5+: ninguno.
+	# El signal emite current_wave (1,2...) pero la lógica de escudos depende de oleada_combate (1-5).
+	var oleada_real: int = num_oleada
+	if wave_spawner and is_instance_valid(wave_spawner) and "oleada_combate" in wave_spawner:
+		var oc: int = wave_spawner.oleada_combate
+		if oc > 0:
+			oleada_real = oc
+	var omitir_enemigos := oleada_real >= 5
+	_reconstruir_todos_escudos(omitir_enemigos, oleada_real)
+	# Asegurar visibilidad correcta tras la reconstrucción (por si el nodo existía pero estaba oculto)
+	_sincronizar_visibilidad_escudos_por_oleada(oleada_real)
 	# El icono puerta desaparece al empezar cualquier oleada
 	_ocultar_icono_puerta()
+
+
+func _sincronizar_visibilidad_escudos_por_oleada(numero_oleada: int) -> void:
+	# Re-aplica visibilidad tras reconstruir: los escudos permitidos deben quedar visibles/activos.
+	for esc in get_tree().get_nodes_in_group("escudos"):
+		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true:
+			continue
+		var permitido: bool = _es_escudo_enemigo_permitido_en_oleada(esc.name, numero_oleada)
+		esc.visible = permitido
+		esc.process_mode = Node.PROCESS_MODE_INHERIT if permitido else Node.PROCESS_MODE_DISABLED
+		for child in esc.get_children():
+			if child is CollisionShape3D:
+				child.disabled = not permitido
+			elif child is CollisionObject3D:
+				child.process_mode = Node.PROCESS_MODE_INHERIT if permitido else Node.PROCESS_MODE_DISABLED
+		# Propagar a hijos recursivos
+		for child in esc.get_children():
+			if child is Node:
+				_sincronizar_visibilidad_recursiva(child, permitido)
+
+
+func _sincronizar_visibilidad_recursiva(nodo: Node, permitido: bool) -> void:
+	for child in nodo.get_children():
+		if child is CollisionShape3D:
+			(child as CollisionShape3D).disabled = not permitido
+		elif child is CollisionObject3D:
+			(child as CollisionObject3D).process_mode = Node.PROCESS_MODE_INHERIT if permitido else Node.PROCESS_MODE_DISABLED
+		_sincronizar_visibilidad_recursiva(child, permitido)
 
 
 ## Icono puerta pulsante (latido lento) sobre la puerta de la torre, visible
@@ -1337,13 +1389,15 @@ func _guardar_posiciones_escudos():
 		if is_instance_valid(escudo):
 			# Guardar TODOS los escudos, incluidos los enemigos: deben
 			# reconstruirse también al reiniciar/reiniciar oleada.
+			# Se almacena es_escudo_enemigo para filtrar por nivel/oleada.
 			_escudos_cache.append(escudo)
 			escudos_originales.append(
 				{
 					"scene_path": escudo.scene_file_path,
 					"name": escudo.name,
 					"transform": escudo.global_transform,
-					"parent_path": escudo.get_parent().get_path()
+					"parent_path": escudo.get_parent().get_path(),
+					"es_enemigo": escudo.get("es_escudo_enemigo") == true
 				}
 			)
 
@@ -1358,9 +1412,14 @@ func _destruir_todos_escudos():
 			escudo.recibir_golpe()
 
 
-func _reconstruir_todos_escudos(omitir_enemigos: bool = false):
+func _reconstruir_todos_escudos(omitir_enemigos: bool = false, numero_oleada: int = -1):
 	"""Re-instancia ÚNICAMENTE los escudos que han sido destruidos/rotos.
-	omitir_enemigos=true (oleada 5+): los escudos enemigos permanecen eliminados."""
+	omitir_enemigos=true (oleada 5+): los escudos enemigos permanecen eliminados.
+	numero_oleada: si >=0, los escudos enemigos solo se reconstruyen si pertenecen a esa oleada."""
+	# Resolver oleada actual si no se pasó explícitamente
+	if numero_oleada < 0 and wave_spawner and is_instance_valid(wave_spawner) and "oleada_combate" in wave_spawner:
+		numero_oleada = wave_spawner.oleada_combate
+
 	# 1. Eliminar restos de escudos rotos que queden en escena
 	var escudos_rotos = get_tree().get_nodes_in_group("escudos_rotos")
 	for roto in escudos_rotos:
@@ -1368,6 +1427,13 @@ func _reconstruir_todos_escudos(omitir_enemigos: bool = false):
 			if roto.scene_file_path.contains("Imp"):
 				continue
 			roto.queue_free()
+
+	# 1b. Si estamos en una oleada definida, eliminar escudos enemigos que no pertenecen a esta oleada y que hayan quedado visibles por reconstrucciones previas
+	if numero_oleada > 0:
+		for esc in get_tree().get_nodes_in_group("escudos"):
+			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true:
+				if not _es_escudo_enemigo_permitido_en_oleada(esc.name, numero_oleada):
+					esc.queue_free()
 
 	# 2. Mapear TODOS los escudos activos actualmente en el mapa
 	# (incluidos los enemigos: si siguen intactos NO deben duplicarse)
@@ -1384,6 +1450,18 @@ func _reconstruir_todos_escudos(omitir_enemigos: bool = false):
 		if nombres_activos.has(nombre_escudo) and is_instance_valid(nombres_activos[nombre_escudo]):
 			continue
 
+		var es_enemigo_data: bool = data.get("es_enemigo", false)
+		# Si no se guardó el flag, inferir del nombre por compatibilidad con partidas antiguas
+		if not es_enemigo_data and "enemigo" in nombre_escudo.to_lower():
+			es_enemigo_data = true
+
+		# Escudos enemigos: solo reconstruir si pertenecen a la oleada actual (a menos que se indique explícitamente)
+		if es_enemigo_data:
+			if omitir_enemigos:
+				continue
+			if numero_oleada > 0 and not _es_escudo_enemigo_permitido_en_oleada(nombre_escudo, numero_oleada):
+				continue
+
 		# Si el escudo falta (fue destruido), recrear SOLO este escudo roto
 		var nuevo_escudo: Node = null
 		var scene_path: String = data.get("scene_path", "")
@@ -1395,10 +1473,15 @@ func _reconstruir_todos_escudos(omitir_enemigos: bool = false):
 		if nuevo_escudo == null:
 			nuevo_escudo = escudo_scene.instantiate()
 
-		# Oleada 5+: los escudos enemigos permanecen eliminados
+		# Oleada 5+: los escudos enemigos permanecen eliminados (doble chequeo por si el flag no estaba en data)
 		if omitir_enemigos and nuevo_escudo.get("es_escudo_enemigo") == true:
 			nuevo_escudo.free()
 			continue
+		# Filtro por oleada también sobre el nodo instanciado (por si data antigua no tenía es_enemigo)
+		if numero_oleada > 0 and nuevo_escudo.get("es_escudo_enemigo") == true:
+			if not _es_escudo_enemigo_permitido_en_oleada(nombre_escudo, numero_oleada):
+				nuevo_escudo.free()
+				continue
 
 		var parent = get_node_or_null(data["parent_path"])
 		if parent and is_instance_valid(parent):
@@ -1419,6 +1502,32 @@ func _reconstruir_todos_escudos(omitir_enemigos: bool = false):
 	if btn_toggle_shields:
 		btn_toggle_shields.text = "🛡️ ESCUDOS: ON"
 		_style_button(btn_toggle_shields, Color(0.3, 0.5, 0.6))
+
+
+## Reconstruye un escudo enemigo puntual aunque no pertenezca a la oleada actual.
+## Usar solo cuando el diseño lo indique explícitamente (ej. evento especial).
+func reconstruir_escudo_enemigo_explicito(nombre_escudo: String) -> void:
+	for data in escudos_originales:
+		if data["name"] != nombre_escudo:
+			continue
+		var nombres_activos: Dictionary = {}
+		for esc in get_tree().get_nodes_in_group("escudos"):
+			if is_instance_valid(esc):
+				nombres_activos[esc.name] = true
+		if nombres_activos.has(nombre_escudo):
+			return
+		var res = load(data.get("scene_path", "")) if data.get("scene_path", "") != "" else null
+		var nuevo: Node = (res as PackedScene).instantiate() if res is PackedScene else escudo_scene.instantiate()
+		var parent = get_node_or_null(data["parent_path"])
+		if parent and is_instance_valid(parent):
+			parent.add_child(nuevo)
+		else:
+			get_tree().current_scene.add_child(nuevo)
+		nuevo.name = nombre_escudo
+		nuevo.global_transform = data["transform"]
+		_animar_aparicion_escudo_disolucion(nuevo)
+		break
+	_escudos_cache = _get_valid_escudos()
 
 
 func _animar_aparicion_escudo_disolucion(escudo: Node) -> void:

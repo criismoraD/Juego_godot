@@ -713,7 +713,7 @@ func _on_pacifico_danado():
 func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 	# Salto de oleada por debug: se aplica recién aquí, tras el diálogo inicial
 	# y el evento del goblin embajador. Los pacíficos (imp embajador + 2
-	# arqueras) quedan EXCLUYIDOS de la limpieza para que no desaparezcan al
+	# arqueras) quedan EXCLUIDOS de la limpieza para que no desaparezcan al
 	# convertirse en hostiles.
 	if oleada_debug_pendiente > 0:
 		var oleada_destino: int = oleada_debug_pendiente
@@ -723,10 +723,10 @@ func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
 
 	oleada_combate_actual = 1
 	_aplicar_perfil_render_combate()
-	# Los supervivientes ya están en active_goblins del spawner.
-	# Solo se descuenta en la oleada 1.
-	var enemigos_a_spawnear: int = int(max(0, total_enemigos_nivel1 - supervivientes_pacificos))
-	_configurar_oleada_combate(enemigos_a_spawnear, 1)
+	# Los 3 pacíficos convertidos ya están en active_goblins y cuentan dentro de total_enemigos_nivel1 (15 = 12 en cola + 3).
+	# No se descuentan del total; WaveSpawner los cuenta como ya spawneados (goblins_spawned = 3) y genera 12 más.
+	# Así el contador de la UI (total - muertos) incluye correctamente a los pacíficos.
+	_configurar_oleada_combate(total_enemigos_nivel1, 1)
 
 
 func _aplicar_perfil_render_combate() -> void:
@@ -898,16 +898,36 @@ func _monitorear_nivel_1():
 		_on_nivel1_completado(wave_spawner.oleada_combate)
 
 
-## Excepción forzosa: en la oleada 5 (y posteriores) NO existen defensas en
-## terreno enemigo. Se ejecuta tras la reconstrucción de GameUI, así que
-## elimina cualquier escudo enemigo presente sin excepciones.
+## Garantiza que los escudos enemigos solo estén visibles en sus oleadas respectivas
+## y no se regeneren en otras a menos que se indique explícitamente.
+## Se ejecuta tras la reconstrucción de GameUI, así que corrige cualquier regeneración indebida.
 func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
 	if wave_spawner == null or not is_instance_valid(wave_spawner):
 		return
-	if wave_spawner.oleada_combate >= 5:
+	var num: int = wave_spawner.oleada_combate
+	# Oleada 5+: eliminar definitivamente todos los escudos enemigos (no hay defensas en terreno enemigo)
+	if num >= 5:
 		for nodo in [escudo_enemigo, escudo_enemigo2, escudo_enemigo3]:
 			if is_instance_valid(nodo):
 				nodo.queue_free()
+		# También limpiar cualquier escudo enemigo huérfano que GameUI haya podido dejar
+		for esc in get_tree().get_nodes_in_group("escudos"):
+			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true:
+				esc.queue_free()
+		return
+	# Oleadas 1-4: ocultar/actuar solo sobre los no pertenecientes (GameUI ya filtró la reconstrucción,
+	# pero este es el respaldo por si queda alguno visible tras debug o regeneración manual)
+	for esc in get_tree().get_nodes_in_group("escudos"):
+		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true:
+			continue
+		var permitido := false
+		if esc.name == "Escudo_enemigo":
+			permitido = (num == 3 or num == 4)
+		elif esc.name == "NIVEL_2_Escudo_enemigo2" or esc.name == "NIVEL_2_Escudo_enemigo3":
+			permitido = (num == 2)
+		if not permitido:
+			# En oleadas 1-4 no se elimina, solo se oculta para poder volver a mostrarse al regresar a su oleada
+			_set_elemento_nivel3_activo(esc, false)
 
 
 func _on_nivel1_completado(_numero_oleada: int):
@@ -1312,6 +1332,23 @@ func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) 
 	else:
 		oleada_combate_actual = 1
 		_configurar_oleada_combate(total_enemigos_nivel1, 1)
+
+	# Reconstrucción inmediata de escudos para el selector de pausa: garantiza que
+	# los escudos del nivel seleccionado aparezcan al instante aunque hubieran sido destruidos/queue_free.
+	if game_ui and game_ui.has_method("_reconstruir_todos_escudos"):
+		game_ui._reconstruir_todos_escudos(numero_oleada >= 5, numero_oleada)
+		if game_ui.has_method("_sincronizar_visibilidad_escudos_por_oleada"):
+			game_ui._sincronizar_visibilidad_escudos_por_oleada(numero_oleada)
+	# Re-aplicar visibilidad local (el getter puede ahora resolver nodos recién reconstruidos)
+	var _activa_oleada2 := (numero_oleada == 2)
+	var _activa_nivel3 := (numero_oleada == 3 or numero_oleada == 4)
+	_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo2"), _activa_oleada2)
+	_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo3"), _activa_oleada2)
+	_set_elemento_nivel3_activo(get_node_or_null("Escudo_enemigo"), _activa_nivel3)
+	if numero_oleada >= 5:
+		_set_elemento_nivel3_activo(get_node_or_null("Escudo_enemigo"), false)
+		_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo2"), false)
+		_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo3"), false)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

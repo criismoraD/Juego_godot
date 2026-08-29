@@ -284,6 +284,12 @@ func _drop_power_up() -> void:
 	if not power_up:
 		return
 
+	# El Imp Embajador otorga 15 de munición múltiple (aumentado por diseño)
+	if "municion_a_otorgar_jugador" in power_up:
+		power_up.municion_a_otorgar_jugador = 15
+	if "municion_a_otorgar_aliadas" in power_up:
+		power_up.municion_a_otorgar_aliadas = 15
+
 	var root_scene := get_tree().current_scene
 	if not root_scene:
 		root_scene = get_tree().root

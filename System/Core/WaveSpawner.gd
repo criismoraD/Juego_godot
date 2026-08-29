@@ -136,7 +136,11 @@ func _start_wave():
 	current_wave += 1
 	# Los enemigos ya presentes (pacíficos convertidos) cuentan como spawneados
 	goblins_spawned_in_wave = active_goblins.size()
-	enemigos_muertos_en_oleada = 0
+	# En oleada 1 los 3 pacíficos convertidos ya están en active_goblins y sus muertes previas
+	# no deben perderse al resetear el contador; para otras oleadas sí se resetea.
+	if oleada_combate != 1:
+		enemigos_muertos_en_oleada = 0
+	# Para oleada 1 se preserva el valor actual (muertes de pacíficos ocurridas antes del inicio)
 	is_wave_active = true
 	spawn_timer = 0.0  # Spawn inmediato al iniciar oleada
 	

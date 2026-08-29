@@ -872,16 +872,30 @@ func _monitorear_nivel_1():
 		_on_nivel1_completado(wave_spawner.oleada_combate)
 
 
-## Excepción forzosa: en la oleada 5 (y posteriores) NO existen defensas en
-## terreno enemigo. Se ejecuta tras la reconstrucción de GameUI, así que
-## elimina cualquier escudo enemigo presente sin excepciones.
+## Garantiza que los escudos enemigos solo estén visibles en sus oleadas respectivas
+## y no se regeneren en otras a menos que se indique explícitamente.
 func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
 	if wave_spawner == null or not is_instance_valid(wave_spawner):
 		return
-	if wave_spawner.oleada_combate >= 5:
+	var num: int = wave_spawner.oleada_combate
+	if num >= 5:
 		for nodo in [escudo_enemigo, escudo_enemigo2, escudo_enemigo3]:
 			if is_instance_valid(nodo):
 				nodo.queue_free()
+		for esc in get_tree().get_nodes_in_group("escudos"):
+			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true:
+				esc.queue_free()
+		return
+	for esc in get_tree().get_nodes_in_group("escudos"):
+		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true:
+			continue
+		var permitido := false
+		if esc.name == "Escudo_enemigo":
+			permitido = (num == 3 or num == 4)
+		elif esc.name == "NIVEL_2_Escudo_enemigo2" or esc.name == "NIVEL_2_Escudo_enemigo3":
+			permitido = (num == 2)
+		if not permitido:
+			_set_elemento_nivel3_activo(esc, false)
 
 
 func _on_nivel1_completado(_numero_oleada: int):
