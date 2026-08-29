@@ -48,6 +48,7 @@ var evento_cuerno_activado: bool = false
 var evento_cuerno_en_progreso: bool = false
 var refuerzos_cuerno_total: int = 10  ## Cantidad de refuerzos que trae el evento de cuerno activo
 var refuerzos_cuerno_spawneados: int = 0
+var lonko_excepcion_pendiente: int = 0  ## Excepción: Lonko siempre aparecen cuando se indique (oleada 5 debe tener 11)
 
 # === SEÑALES ===
 
@@ -264,6 +265,17 @@ func _generar_cola_spawn() -> void:
 		pool.insert(mitad, escena_arquera_rosa)
 
 	cola_spawn = pool
+	# EXCEPCIÓN Lonko: si se indicó explícitamente que deben aparecer 11, garantizarlos aunque la cola haya sido manipulada
+	if wave_num == 5 and lonko_excepcion_pendiente > 0 and escena_lonko:
+		var count_lonko: int = 0
+		for p in cola_spawn:
+			if p == escena_lonko:
+				count_lonko += 1
+		var faltan: int = lonko_excepcion_pendiente - count_lonko
+		for i in range(faltan):
+			# Insertar al frente para aparición inmediata
+			cola_spawn.push_front(escena_lonko)
+		lonko_excepcion_pendiente = 0
 	# Sincronizar el total de enemigos de la oleada con el tamaño exacto según el diseño
 	if wave_num == 1:
 		enemigos_por_oleada = 15  # 12 en cola + 3 pacíficos convertidos
@@ -274,7 +286,7 @@ func _generar_cola_spawn() -> void:
 	elif wave_num == 4:
 		enemigos_por_oleada = 45  # 35 base + 10 refuerzos cuerno
 	elif wave_num == 5:
-		enemigos_por_oleada = 50  # 40 base + 10 refuerzos cuerno
+		enemigos_por_oleada = max(50, goblins_spawned_in_wave + cola_spawn.size())  # 40 base + 10 cuerno, ajustado si excepción añadió más
 	elif enemigos_por_oleada <= 0:
 		enemigos_por_oleada = cola_spawn.size()
 
@@ -862,6 +874,47 @@ func iniciar_oleada_custom(
 	current_wave = 0
 	wave_cooldown = 1.0
 	is_wave_active = false
+
+
+## EXCEPCIÓN: fuerza que aparezcan 11 Lonkos en oleada 5 aunque la lógica normal falle.
+## Llamar cuando el nivel indique explícitamente que deben aparecer (bypass de filtros).
+func solicitar_excepcion_lonko(cantidad: int = 11) -> void:
+	lonko_excepcion_pendiente = cantidad
+	# Si la oleada 5 ya está generada, inyectar inmediatamente al frente de la cola
+	if oleada_combate == 5 and is_inside_tree() and escena_lonko:
+		var count_lonko: int = 0
+		for p in cola_spawn:
+			if p == escena_lonko:
+				count_lonko += 1
+		var faltan: int = cantidad - count_lonko
+		for i in range(faltan):
+			cola_spawn.push_front(escena_lonko)
+		enemigos_por_oleada = max(enemigos_por_oleada, goblins_spawned_in_wave + cola_spawn.size())
+		lonko_excepcion_pendiente = 0
+
+## Fuerza spawn inmediato de Lonko (excepción directa, no espera a la cola)
+func forzar_spawn_lonko_excepcion(cantidad: int = 1) -> void:
+	if not escena_lonko:
+		return
+	for i in range(cantidad):
+		var lonko = escena_lonko.instantiate()
+		var spawn_pos = global_position
+		spawn_pos.y += altura_spawn
+		spawn_pos.y += randf_range(-0.2, 0.2)
+		_obtener_nodo_padre_spawn().add_child(lonko)
+		lonko.global_position = spawn_pos
+		if lonko.has_signal("died"):
+			lonko.died.connect(_on_goblin_died.bind(lonko))
+		lonko.tree_exited.connect(func():
+			if is_instance_valid(self):
+				if active_goblins.has(lonko):
+					active_goblins.erase(lonko)
+					enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+				_check_wave_complete()
+		)
+		active_goblins.append(lonko)
+		goblins_spawned_in_wave += 1
+		enemigos_por_oleada = max(enemigos_por_oleada, goblins_spawned_in_wave)
 
 
 func _log_debug(message: String) -> void:

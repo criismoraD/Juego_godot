@@ -809,6 +809,9 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.max_imp_escudo_activos = 2
 		wave_spawner.intervalo_check_escudo = 999.0
+		# EXCEPCIÓN: Lonko siempre aparecen cuando se indica oleada 5
+		if wave_spawner.has_method("solicitar_excepcion_lonko"):
+			wave_spawner.solicitar_excepcion_lonko(11)
 		# En la Oleada 5 las defensas enemigas permanecen OCULTAS
 		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
 		_set_elemento_nivel3_activo(muro_plataforma, false)
