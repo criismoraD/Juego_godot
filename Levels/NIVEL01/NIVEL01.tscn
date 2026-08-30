@@ -44,6 +44,7 @@
 [ext_resource type="Texture2D" uid="uid://b7sqddmatavpl" path="res://VFX/Textures/T_basic1_vfx.PNG" id="42_dust_tex"]
 [ext_resource type="Script" uid="uid://dftm0y1dl2kf0" path="res://Entities/Ambiente_Torre/CaidaPiedrasTorre.gd" id="44_caidapiedras_script"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="45_arboleda"]
+[ext_resource type="PackedScene" uid="uid://sdvsbc3tkfaa" path="res://Entities/Ambiente_Enrredadera/Enrredadera.tscn" id="46_enrredadera"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -243,7 +244,7 @@ rotacion_personaje_escalera = null
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 295190646) index="0" unique_id=880638117]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1565300800) index="0" unique_id=1768123886]
 bones/0/position = Vector3(4.172325e-07, -0.35407498, -40.838314)
 bones/0/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
 bones/1/rotation = Quaternion(-0.05186307, 0, 0, 0.9986542)
@@ -658,7 +659,8 @@ draw_pass_1 = SubResource("QuadMesh_dust")
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="TORRE" parent="TORRE" index="0" unique_id=114528807]
+[node name="TORRE" parent="TORRE" index="0" unique_id=824977505]
+transform = Transform3D(1.0111401, 0, 0, 0, 1.0001929, 0, 0, 0, 1.0001929, -0.002997756, 0, 0)
 layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
@@ -823,6 +825,10 @@ transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -7.3911104, 0.206999
 
 [node name="Arboleda" parent="." unique_id=1948201888 instance=ExtResource("45_arboleda")]
 transform = Transform3D(0.9358511, 0, -0.11479537, 0, 0.8239627, 0, 0.11054993, 0, 0.9717906, -8.931133, -0.6583084, 3.2473335)
+
+[node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
+transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
+layers = 2
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

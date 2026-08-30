@@ -1,0 +1,85 @@
+[gd_scene format=3 uid="uid://ckav1w63yds0v"]
+
+[ext_resource type="Script" uid="uid://drrwx2pijhll4" path="res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://83bv0c7r7vwf" path="res://TEST_/Goblo aerostatico/Globo aerostatico.glb" id="2_model_globo"]
+[ext_resource type="Material" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_MAT.tres" id="3_mat_globo"]
+[ext_resource type="PackedScene" uid="uid://b8lvuys7l34k8" path="res://TEST_/Globo destruido/Globo destruido.glb" id="6_model_destruido"]
+[ext_resource type="Material" uid="uid://c3p58tt52hu6c" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_DESTRUIDO_MAT.tres" id="7_mat_destruido"]
+[ext_resource type="PackedScene" uid="uid://ccanastaglb01" path="res://TEST_/Canasta/Canasta.glb" id="8_model_canasta"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
+radius = 0.35
+height = 1.4
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_canasta_rango"]
+size = Vector3(1.3191407, 0.7326927, 1.3879883)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_canasta_rango"]
+transparency = 1
+cull_mode = 2
+shading_mode = 2
+albedo_color = Color(0.15, 0.6, 1, 0.18)
+
+[sub_resource type="BoxMesh" id="BoxMesh_canasta_rango"]
+size = Vector3(1.3012406, 0.6113281, 1.4)
+
+[node name="GloboAerostatico" type="CharacterBody3D" unique_id=245115629]
+collision_layer = 4
+script = ExtResource("1_script")
+distancia_minima_caminar = 2.0
+vida_maxima = 3
+sombra_opacidad = 0.9
+sombra_tamano = Vector2(1.8, 1.7)
+sombra_altura_max = 30.0
+
+[node name="ColisionGlobo" type="CollisionShape3D" parent="." unique_id=350177709]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("CapsuleShape3D_col")
+
+[node name="PivotBamboleo" type="Node3D" parent="." unique_id=1478761593]
+
+[node name="ModeloGlobo" parent="PivotBamboleo" unique_id=1832631609 instance=ExtResource("2_model_globo")]
+
+[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=1401884174]
+transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
+surface_material_override/0 = ExtResource("3_mat_globo")
+
+[node name="ModeloGloboDestruido" parent="PivotBamboleo" unique_id=1017842360 instance=ExtResource("6_model_destruido")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
+visible = false
+
+[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0" unique_id=498977091]
+transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
+surface_material_override/0 = ExtResource("7_mat_destruido")
+
+[node name="ModeloCanasta" parent="PivotBamboleo" unique_id=283746192 instance=ExtResource("8_model_canasta")]
+transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, -0.18, 0)
+
+[node name="modelo 3d (1K)" parent="PivotBamboleo/ModeloCanasta" index="0" unique_id=1703858200]
+transform = Transform3D(-0.4296071, 0, -0.9030159, 0, 1, 0, 0.9030159, 0, -0.4296071, 0.09473237, 0.41738158, 0)
+
+[node name="RangoDanoCanasta" type="Area3D" parent="PivotBamboleo/ModeloCanasta" unique_id=88990011]
+collision_layer = 0
+collision_mask = 4
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PivotBamboleo/ModeloCanasta/RangoDanoCanasta" unique_id=88990012]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04042965, 0.6277561, 0.0060058236)
+visible = false
+shape = SubResource("BoxShape3D_canasta_rango")
+debug_color = Color(0.15, 0.6, 1, 0.35)
+
+[node name="VisualRango" type="MeshInstance3D" parent="PivotBamboleo/ModeloCanasta/RangoDanoCanasta/CollisionShape3D" unique_id=88990013]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.032775164, -0.07421875, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_canasta_rango")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_canasta_rango")
+
+[node name="PuntoDisparo" type="Marker3D" parent="." unique_id=446918959]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.35, 0)
+
+[editable path="PivotBamboleo/ModeloGlobo"]
+[editable path="PivotBamboleo/ModeloGloboDestruido"]
+[editable path="PivotBamboleo/ModeloCanasta"]

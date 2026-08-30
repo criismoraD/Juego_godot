@@ -14,6 +14,7 @@ signal evento_cuerno_iniciado
 @export var escena_gargola: PackedScene  # Escena de la gárgola voladora
 @export var escena_lonko: PackedScene  # Escena del nuevo enemigo Lonko
 @export var escena_arquera_rosa: PackedScene  # Escena de la nueva Arquera Rosa
+@export var escena_globo_aerostatico: PackedScene  # Escena del globo aerostatico goblin
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns (más lento)
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
@@ -31,7 +32,7 @@ signal evento_cuerno_iniciado
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa
+var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa, 8=globo_aerostatico
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
@@ -73,6 +74,9 @@ func _ready():
 	if not escena_arquera_rosa:
 		escena_arquera_rosa = preload("res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.tscn")
 
+	if not escena_globo_aerostatico:
+		escena_globo_aerostatico = load("res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.tscn")
+
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.tscn")
 
@@ -92,7 +96,8 @@ func _precalentar_enemigos() -> void:
 		escena_gargola,
 		escena_lonko,
 		escena_arquera_rosa,
-		escena_imp_escudo
+		escena_imp_escudo,
+		escena_globo_aerostatico
 	]
 
 	var holder := Node3D.new()
@@ -341,6 +346,8 @@ func _elegir_escena_probabilidades() -> PackedScene:
 			return escena_lonko
 		elif forzar_tipo_enemigo == 7:
 			return escena_arquera_rosa
+		elif forzar_tipo_enemigo == 8:
+			return escena_globo_aerostatico
 		elif probabilidad_igual:
 			# Probabilidad igual: 20% cada tipo (5 tipos)
 			var roll = randf()
