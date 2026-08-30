@@ -178,8 +178,9 @@ func _aplicar(enemy: Node) -> void:
 
 
 func _spawn_humo_y_piedras_impacto() -> void:
-	# Humo de destrucción de escudo a ambos lados
+	# Humo de destrucción de escudo a ambos lados — mismo efecto pero un poco más grande (x1.25)
 	VFXFactory.spawn_shield_break_smoke(self, global_position)
+	_crear_humo_escalado(1.28)
 	# Pequeñas piedras que rebotan - mismas que al emerger el pilar de Lonko (ROCAS.png)
 	_crear_particulas_piedras_rebote()
 	# Sonido Impacto pesado al golpear suelo
@@ -236,6 +237,66 @@ func _crear_particulas_piedras_rebote() -> void:
 			parts.queue_free()
 	)
 
+
+func _crear_humo_escalado(factor: float = 1.28) -> void:
+	# Replica exacta del humo VFXFactory pero escalado factor ~1.28 para "un poco más grande"
+	var tex: Texture2D = load("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png")
+	if not ResourceLoader.exists("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png"):
+		return
+	var floor_pos := global_position
+	var world_3d := get_world_3d()
+	if world_3d and world_3d.direct_space_state:
+		var q := PhysicsRayQueryParameters3D.create(global_position + Vector3(0, 0.5, 0), global_position + Vector3(0, -6, 0))
+		q.collision_mask = 1
+		var hit := world_3d.direct_space_state.intersect_ray(q)
+		if hit and hit.has("position"):
+			floor_pos = hit["position"]
+	for side in [-1, 1]:
+		var puf := GPUParticles3D.new()
+		puf.amount = 4
+		puf.lifetime = 0.75
+		puf.one_shot = true
+		puf.explosiveness = 0.3
+		puf.randomness = 0.3
+		var pmat := ParticleProcessMaterial.new()
+		pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
+		pmat.direction = Vector3(side * 0.85, 0.35, 0)
+		pmat.spread = 20.0
+		pmat.initial_velocity_min = 0.8
+		pmat.initial_velocity_max = 1.6
+		pmat.gravity = Vector3(0, -0.3, 0)
+		pmat.scale_min = 0.55 * factor
+		pmat.scale_max = 0.85 * factor
+		var grad := Gradient.new()
+		grad.set_color(0, Color(0.96, 0.94, 0.88, 0.85))
+		grad.set_color(1, Color(0.96, 0.94, 0.88, 0.0))
+		var gtex := GradientTexture1D.new()
+		gtex.gradient = grad
+		pmat.color_ramp = gtex
+		pmat.turbulence_enabled = true
+		pmat.turbulence_noise_strength = 0.008
+		puf.process_material = pmat
+		var mat := StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.vertex_color_use_as_albedo = true
+		mat.albedo_texture = tex
+		mat.particles_anim_h_frames = 6
+		mat.particles_anim_v_frames = 1
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		mat.billboard_keep_scale = true
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.8 * factor, 0.8 * factor)
+		quad.material = mat
+		puf.draw_pass_1 = quad
+		var root := get_tree().current_scene
+		if not root:
+			root = get_tree().root
+		root.add_child(puf)
+		puf.global_position = floor_pos + Vector3(side * 0.25, 0.04, 0)
+		puf.emitting = true
+		get_tree().create_timer(1.2).timeout.connect(func(): if is_instance_valid(puf): puf.queue_free())
 
 func _reproducir_sonido_impacto_pesado() -> void:
 	if not SFX_IMPACTO_PESADO:
