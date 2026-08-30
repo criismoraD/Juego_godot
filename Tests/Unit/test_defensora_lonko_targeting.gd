@@ -331,19 +331,19 @@ func test_paralisis_en_jugador():
 	player.get_parent().remove_child(player)
 	player.free()
 
-func test_flecha_electrica_aplica_paralisis_en_impacto():
+func test_flecha_electrica_no_paraliza_a_defensora():
 	# Arrange
 	var flecha: FlechaElectricaAtaque = FlechaElectricaScript.new()
 	get_tree().root.add_child(flecha)
 	flecha.fase = FlechaElectricaAtaque.Fase.CAIDA
 	_ally.global_position = Vector3(5.0, 0.0, 0.0)
 
-	# Act: Simular impacto en cuerpo
+	# Act: Simular impacto en la defensora aliada
 	flecha._on_body_entered(_ally)
 
-	# Assert
-	assert_true(_ally.esta_paralizada(), "Flecha eléctrica debe paralizar a la defensora al impactar")
-	assert_eq(_ally.paralisis_timer, 4.0, "La duración de la parálisis debe ser de 4 segundos")
+	# Assert: La defensora recibe daño pero NO queda aturdida (el aturdimiento solo afecta a la protagonista)
+	assert_false(_ally.esta_paralizada(), "La flecha eléctrica no debe aturdir a la defensora aliada")
+	assert_eq(_ally.paralisis_timer, 0.0, "La defensora no debe tener parálisis")
 
 	flecha.get_parent().remove_child(flecha)
 	flecha.free()

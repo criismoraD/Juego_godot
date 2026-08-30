@@ -473,7 +473,9 @@ func _process_idle(delta):
 
 	state_timer -= delta
 	if state_timer <= 0:
-		if _contar_enemigos_vivos() >= enemigos_minimos:
+		# Ataca mientras haya enemigos en pantalla. Si no reconoce ninguno como objetivo,
+		# igual dispara al azar (_disparar usa arco a ciegas cuando no hay target).
+		if _contar_enemigos_vivos() >= enemigos_minimos or _hay_enemigos_en_pantalla():
 			_cambiar_estado(State.RELOADING)
 		else:
 			state_timer = 1.0
@@ -697,6 +699,33 @@ func _es_lonko_en_pilar_completo(enemy: Node) -> bool:
 			return false
 		if invuln != null and bool(invuln):
 			return false
+		return true
+	return false
+
+
+## Devuelve true si hay ALGÚN enemigo vivo en pantalla, aunque no sea reconocido como objetivo
+## (incluye Imp de escudo y Lonko aún no emergida). Si no se reconoce ninguno, se dispara al azar.
+func _hay_enemigos_en_pantalla() -> bool:
+	var enemies: Array = []
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
+	else:
+		enemies = get_tree().get_nodes_in_group("enemies")
+
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
+			continue
+		if enemy.get("is_dead") == true or enemy.get("is_dying") == true or enemy.get("muerto") == true:
+			continue
+		if enemy.get("current_state") != null:
+			var st = enemy.current_state
+			if str(st) in ["DYING", "DEAD", "MUERTO"]:
+				continue
+			if enemy is EnemyBase and (st == EnemyBase.State.DYING or st == EnemyBase.State.DEAD):
+				continue
+			if enemy is ImpShieldGirl and (st == ImpShieldGirl.State.DYING or st == ImpShieldGirl.State.DEAD):
+				continue
 		return true
 	return false
 

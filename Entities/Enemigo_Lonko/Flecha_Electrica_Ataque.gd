@@ -259,9 +259,10 @@ func _on_body_entered(body: Node) -> void:
 				body.take_damage(dano)
 			elif body.has_method("recibir_dano"):
 				body.recibir_dano(dano)
-			if body.has_method("aplicar_paralisis"):
+			# El aturdimiento solo afecta a la protagonista, no a las defensoras aliadas
+			if body.is_in_group("player") and body.has_method("aplicar_paralisis"):
 				body.aplicar_paralisis(4.0)
-			elif body.has_method("aplicar_estado_paralisis"):
+			elif body.is_in_group("player") and body.has_method("aplicar_estado_paralisis"):
 				body.aplicar_estado_paralisis(4.0)
 			_reproducir_sonido_rayo()
 

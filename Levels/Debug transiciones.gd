@@ -1755,7 +1755,7 @@ func _crear_panel_controles_spawn() -> void:
 	btn_cuerno.text = "📯 Cuerno"
 	btn_cuerno.custom_minimum_size = Vector2(84, 26)
 	btn_cuerno.add_theme_font_size_override("font_size", 11)
-	btn_cuerno.pressed.connect(func(): if wave_spawner and wave_spawner.has_method("_iniciar_evento_cuerno"): wave_spawner._iniciar_evento_cuerno())
+	btn_cuerno.pressed.connect(func(): if wave_spawner and wave_spawner.has_method("spawn_burst_cuerno_debug"): wave_spawner.spawn_burst_cuerno_debug())
 	grid_items.add_child(btn_cuerno)
 	var btn_destr_escudos := Button.new()
 	btn_destr_escudos.text = "💥 -Escudos"

@@ -197,15 +197,15 @@ func _generar_cola_spawn() -> void:
 			pool.append(escena_goblin)
 
 	elif wave_num == 4:
-		# Oleada 4: 10 imp, 10 goblin ballesta (reemplaza arquera), 10 gárgola + 5 imp escudo garantizados (100%). Total: 35.
-		# La primera en salir siempre es una gárgola.
+		# Oleada 4: 10 imp, 9 goblin ballesta + 1 globo (reemplaza 1 ballestero), 10 gárgola + 5 imp escudo garantizados (100%). Total: 35.
+		# La primera en salir siempre es una gárgola. El Globo se spawnea aparte, 3s antes del cuerno.
 		for i in range(5):
 			pool.append(escena_imp_escudo)
 		for i in range(10):
 			pool.append(escena_gargola)
 		for i in range(10):
 			pool.append(escena_imp)
-		for i in range(10):
+		for i in range(9):
 			pool.append(escena_goblin)
 
 	elif wave_num == 5:
@@ -405,14 +405,12 @@ func _spawn_goblin():
 		goblin_spawneado.emit(lonko)
 		return
 	# Trigger del Evento de Cuerno: Oleada 5 al haber 12 spawns, Oleada 4 al haber 10
-	if (
-		not evento_cuerno_activado
-		and (
-			(oleada_combate == 5 and goblins_spawned_in_wave >= 12)
-			or (oleada_combate == 4 and goblins_spawned_in_wave >= 10)
-		)
-	):
-		_iniciar_evento_cuerno(10, false)  # Oleada 4 ya trae 5 escudo fijos en cola, no spawnear extra
+	if not evento_cuerno_activado:
+		if oleada_combate == 5 and goblins_spawned_in_wave >= 12:
+			_iniciar_evento_cuerno(10, false)
+		elif oleada_combate == 4 and goblins_spawned_in_wave >= 10:
+			# Oleada 4: el Globo aparece 3s ANTES del cuerno (reemplaza 1 ballestero)
+			_secuencia_globo_y_cuerno_oleada_4()
 
 	if evento_cuerno_en_progreso:
 		refuerzos_cuerno_spawneados += 1
@@ -741,6 +739,86 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 			evento_cuerno_en_progreso = false
 			# Acelerador de spawn durante el evento ya no es necesario, ya salió la ráfaga
 		routine_golpe.call()
+
+
+## Oleada 4: spawnea un Globo Aerostático (reemplaza 1 Goblin Ballesta) y, 3 segundos
+## después, dispara el evento del cuerno. Así el globo aparece justo antes de la ráfaga.
+func _secuencia_globo_y_cuerno_oleada_4() -> void:
+	evento_cuerno_activado = true  # Evita re-disparar el cuerno durante la espera
+	_spawnear_globo_oleada_4()
+	await get_tree().create_timer(3.0, false).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+	# Oleada 4 ya trae 5 escudo fijos en cola, no spawnear extra
+	_iniciar_evento_cuerno(10, false)
+
+
+## Spawnea el Globo Aerostático de la oleada 4 (cuenta como 1 enemigo de la oleada)
+func _spawnear_globo_oleada_4() -> void:
+	if not escena_globo_aerostatico:
+		return
+	var globo: Node3D = escena_globo_aerostatico.instantiate()
+	var spawn_pos := global_position
+	spawn_pos.y += altura_spawn
+	spawn_pos.y += randf_range(-0.2, 0.2)
+	_obtener_nodo_padre_spawn().add_child(globo)
+	globo.global_position = spawn_pos
+	if globo.has_signal("died"):
+		globo.died.connect(_on_goblin_died.bind(globo))
+	globo.tree_exited.connect(func():
+		if is_instance_valid(self):
+			if active_goblins.has(globo):
+				active_goblins.erase(globo)
+				enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+			_check_wave_complete()
+	)
+	active_goblins.append(globo)
+	goblins_spawned_in_wave += 1
+	goblin_spawneado.emit(globo)
+
+
+func spawn_burst_cuerno_debug() -> void:
+	# Ráfaga de prueba para el panel debug: 5 Goblins Ballesta + 5 Arqueras Goblin al instante.
+	# Spawnea de forma directa, independiente del estado de la oleada (cola, oleada activa o tipo forzado).
+	evento_cuerno_activado = true
+	evento_cuerno_en_progreso = true
+	refuerzos_cuerno_spawneados = 0
+	refuerzos_cuerno_total = 10
+	evento_cuerno_iniciado.emit()
+	reproducir_sonido_cuerno()
+
+	var burst: Array[PackedScene] = []
+	for i in range(5):
+		burst.append(escena_goblin)
+	for i in range(5):
+		burst.append(escena_goblin_girl)
+	burst.shuffle()
+
+	for escena_a_spawnear in burst:
+		if not escena_a_spawnear or not is_instance_valid(self) or not is_inside_tree():
+			continue
+		var enemy: Node3D = escena_a_spawnear.instantiate()
+		var spawn_pos := global_position
+		spawn_pos.y += altura_spawn
+		spawn_pos.y += randf_range(-0.2, 0.2)
+		_obtener_nodo_padre_spawn().add_child(enemy)
+		enemy.global_position = spawn_pos
+		if enemy.has_signal("died"):
+			enemy.died.connect(_on_goblin_died.bind(enemy))
+		enemy.tree_exited.connect(func():
+			if is_instance_valid(self):
+				if active_goblins.has(enemy) or shield_imps_activos.has(enemy):
+					active_goblins.erase(enemy)
+					shield_imps_activos.erase(enemy)
+					enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+				_check_wave_complete()
+		)
+		active_goblins.append(enemy)
+		goblins_spawned_in_wave += 1
+		refuerzos_cuerno_spawneados += 1
+		goblin_spawneado.emit(enemy)
+
+	evento_cuerno_en_progreso = false
 
 	# Limpiar referencias inválidas
 	# Opt: Iteración inversa in-place en lugar de Array.filter() para evitar GC

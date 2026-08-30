@@ -1,8 +1,8 @@
 class_name IconoMensajeraFX
 extends Area3D
 
-## Icono de invocación de la mensajera (nivel 5): flota sobre una columna de
-## luz (PillarAreaVFX_03), palpita y desaparece al ser activado por la jugadora.
+## Icono de invocación de la mensajera (nivel 5): flota sobre RimAreaVFX_03,
+## palpita y desaparece al ser activado por la jugadora.
 
 signal activada
 
@@ -80,26 +80,27 @@ func _on_body_entered(body: Node3D) -> void:
 
 
 func _crear_particulas_disolucion_moradas() -> void:
+	# Mismo efecto que enemigos al disolverse (GoblinPiezaFisica/CanastaCaida) pero en morado
 	var particles := GPUParticles3D.new()
 	particles.name = "ParticulasDisolucionMoradas"
-	particles.amount = 60
-	particles.lifetime = 1.2
+	particles.amount = 32
+	particles.lifetime = 0.6
 	particles.one_shot = true
-	particles.explosiveness = 0.6
-	particles.randomness = 0.4
+	particles.explosiveness = 0.0
+	particles.randomness = 0.5
 
-	var color_morado := Color(0.75, 0.2, 1.0, 1.0)
+	var color_morado := Color(0.8, 0.2, 0.8, 1.0)
 
 	var process_mat := ParticleProcessMaterial.new()
 	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	process_mat.emission_box_extents = Vector3(0.25, 0.35, 0.15)
+	process_mat.emission_box_extents = Vector3(0.08, 0.08, 0.08)
 	process_mat.direction = Vector3(0, 1, 0)
-	process_mat.spread = 25.0
+	process_mat.spread = 30.0
 	process_mat.initial_velocity_min = 0.3
-	process_mat.initial_velocity_max = 1.4
-	process_mat.gravity = Vector3(0, 0.35, 0)
-	process_mat.scale_min = 0.6
-	process_mat.scale_max = 1.4
+	process_mat.initial_velocity_max = 0.8
+	process_mat.gravity = Vector3(0, 0.5, 0)
+	process_mat.scale_min = 0.15
+	process_mat.scale_max = 0.65
 
 	var gradient := Gradient.new()
 	gradient.set_color(0, color_morado)
@@ -119,15 +120,15 @@ func _crear_particulas_disolucion_moradas() -> void:
 	particles.process_material = process_mat
 
 	var sphere := SphereMesh.new()
-	sphere.radius = 0.025
-	sphere.height = 0.05
+	sphere.radius = 0.012
+	sphere.height = 0.024
 
 	var part_mat := StandardMaterial3D.new()
 	part_mat.albedo_color = color_morado
 	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	part_mat.emission_enabled = true
 	part_mat.emission = color_morado
-	part_mat.emission_energy_multiplier = 3.5
+	part_mat.emission_energy_multiplier = 2.0
 	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sphere.material = part_mat
@@ -141,7 +142,11 @@ func _crear_particulas_disolucion_moradas() -> void:
 		particles.emitting = true
 		get_tree().create_timer(1.3).timeout.connect(func():
 			if is_instance_valid(particles):
-				particles.queue_free()
+				particles.emitting = false
+				get_tree().create_timer(0.7).timeout.connect(func():
+					if is_instance_valid(particles):
+						particles.queue_free()
+				)
 		)
 
 

@@ -54,7 +54,10 @@ func test_oleada_4_total_45_enemigos_barra_progreso_con_cuerno():
 
 	# Assert: Total en barra es 45 inmediatamente desde el inicio
 	assert_eq(_spawner.enemigos_por_oleada, 45, "Oleada 4 debe mostrar 45 enemigos en la barra de progreso")
-	assert_eq(_spawner.cola_spawn.size(), 35, "La cola inicial base de Oleada 4 es 35")
+	assert_eq(_spawner.cola_spawn.size(), 34, "La cola base de Oleada 4 es 34 (el Globo spawnea aparte, 3s antes del cuerno)")
+
+	# Act: El Globo reemplaza a 1 ballestero (spawnea 3s antes del cuerno)
+	_spawner._spawnear_globo_oleada_4()
 
 	# Act: Disparo de evento cuerno (refuerzos +10: 8 ballestas + 2 imps)
 	_spawner._iniciar_evento_cuerno(10, false)
