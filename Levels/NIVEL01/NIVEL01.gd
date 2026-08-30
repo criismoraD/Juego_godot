@@ -1619,7 +1619,8 @@ func _crear_panel_controles_spawn() -> void:
 		{"nombre": "🛡️ Imp Escudo", "id": 4},
 		{"nombre": "🦅 Gárgola", "id": 5},
 		{"nombre": "🏹 Lonko", "id": 6},
-		{"nombre": "🌸 Arquera Rosa", "id": 7}
+		{"nombre": "🌸 Arquera Rosa", "id": 7},
+		{"nombre": "🎈 Globo Goblin", "id": 8}
 	]
 	for opt in opciones:
 		var btn := Button.new()
@@ -1705,6 +1706,8 @@ func _crear_panel_controles_spawn() -> void:
 			for ally in AllyArcher.active_allies_cache:
 				if is_instance_valid(ally) and ally is AllyArcher:
 					ally.flechas_explosivas = p.flechas_explosivas
+			if is_instance_valid(label_ammo):
+				label_ammo.text = "💥 Flechas: " + str(p.flechas_explosivas)
 	)
 	hbox_ammo.add_child(btn_ammo_minus)
 	var btn_ammo_plus := Button.new()
@@ -1719,6 +1722,8 @@ func _crear_panel_controles_spawn() -> void:
 			for ally in AllyArcher.active_allies_cache:
 				if is_instance_valid(ally) and ally is AllyArcher:
 					ally.flechas_explosivas = p.flechas_explosivas
+			if is_instance_valid(label_ammo):
+				label_ammo.text = "💥 Flechas: " + str(p.flechas_explosivas)
 	)
 	hbox_ammo.add_child(btn_ammo_plus)
 	var btn_ammo_plus5 := Button.new()
@@ -1733,12 +1738,24 @@ func _crear_panel_controles_spawn() -> void:
 			for ally in AllyArcher.active_allies_cache:
 				if is_instance_valid(ally) and ally is AllyArcher:
 					ally.flechas_explosivas = p.flechas_explosivas
+			if is_instance_valid(label_ammo):
+				label_ammo.text = "💥 Flechas: " + str(p.flechas_explosivas)
 	)
 	hbox_ammo.add_child(btn_ammo_plus5)
+	var _ammo_label_callable := func(cnt: int):
+		if is_instance_valid(label_ammo):
+			label_ammo.text = "💥 Flechas: " + str(cnt)
 	if p_cur and p_cur.has_signal("flechas_explosivas_changed"):
-		p_cur.flechas_explosivas_changed.connect(func(cnt: int):
-			if is_instance_valid(label_ammo):
-				label_ammo.text = "💥 Flechas: " + str(cnt)
+		if not p_cur.flechas_explosivas_changed.is_connected(_ammo_label_callable):
+			p_cur.flechas_explosivas_changed.connect(_ammo_label_callable)
+	else:
+		# Conexión diferida: el jugador puede spawnear después del panel debug
+		get_tree().create_timer(0.5).timeout.connect(func():
+			var p2 = get_tree().get_first_node_in_group("player")
+			if p2 and p2.has_signal("flechas_explosivas_changed") and is_instance_valid(label_ammo):
+				if not p2.flechas_explosivas_changed.is_connected(_ammo_label_callable):
+					p2.flechas_explosivas_changed.connect(_ammo_label_callable)
+				label_ammo.text = "💥 Flechas: " + str(p2.flechas_explosivas)
 		)
 	vbox_main.add_child(HSeparator.new())
 	var label_acciones := Label.new()

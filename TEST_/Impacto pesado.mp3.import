@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b8sawbxldwri3"
+path="res://.godot/imported/Impacto pesado.mp3-a7483f2126a0cd4423d60d5348d59b26.mp3str"
+
+[deps]
+
+source_file="res://TEST_/Impacto pesado.mp3"
+dest_files=["res://.godot/imported/Impacto pesado.mp3-a7483f2126a0cd4423d60d5348d59b26.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

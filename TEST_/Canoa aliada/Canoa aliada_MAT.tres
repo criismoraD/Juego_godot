@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://cxcanoamat789"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cxcanoamat8aa"]
 
 [ext_resource type="Texture2D" uid="uid://ce0bwx6htp8c3" path="res://TEST_/Canoa aliada/Canoa aliada_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]

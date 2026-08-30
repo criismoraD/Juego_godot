@@ -26,6 +26,7 @@ func before_each():
 	_spawner.escena_imp = _create_dummy_scene("ImpNode")
 	_spawner.escena_canonero = _create_dummy_scene("CanoneroNode")
 	_spawner.escena_imp_escudo = _create_dummy_scene("ImpShieldNode")
+	_spawner.escena_globo_aerostatico = _create_dummy_scene("GloboAerostaticoNode")
 
 	get_tree().root.add_child(_spawner)
 
@@ -181,6 +182,12 @@ func test_forzar_tipo_enemigo_canonero():
 	_spawner.forzar_spawn()
 	var spawned = _spawner.active_goblins.back()
 	assert_eq(spawned.name, "CanoneroNode", "Should spawn a canonero")
+
+func test_forzar_tipo_enemigo_globo_aerostatico():
+	_spawner.forzar_tipo_enemigo = 8
+	_spawner.forzar_spawn()
+	var spawned = _spawner.active_goblins.back()
+	assert_eq(spawned.name, "GloboAerostaticoNode", "Should spawn a globo aerostatico")
 
 func test_forzar_spawn_escudo():
 	var initial_spawned_in_wave = _spawner.goblins_spawned_in_wave

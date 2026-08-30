@@ -1,0 +1,67 @@
+[gd_scene format=3 uid="uid://slp7tspqljgn"]
+
+[ext_resource type="Script" uid="uid://drrwx2pijhll4" path="res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://83bv0c7r7vwf" path="res://TEST_/Goblo aerostatico/Globo aerostatico.glb" id="2_model_globo"]
+[ext_resource type="Material" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_MAT.tres" id="3_mat_globo"]
+[ext_resource type="PackedScene" uid="uid://d3fyi28xp1rlq" path="res://Entities/Enemigo_Goblin_Girl/GEO_GOBLIN_GIRL.fbx" id="4_goblin_girl"]
+[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="5_arco"]
+[ext_resource type="PackedScene" uid="uid://b8lvuys7l34k8" path="res://TEST_/Globo destruido/Globo destruido.glb" id="6_model_destruido"]
+[ext_resource type="Material" uid="uid://cglobodestrmat01" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_DESTRUIDO_MAT.tres" id="7_mat_destruido"]
+[ext_resource type="PackedScene" uid="uid://ccanastaglb01" path="res://TEST_/Canasta/Canasta.glb" id="8_model_canasta"]
+[ext_resource type="Material" uid="uid://ccanastamat01" path="res://Entities/Enemigo_GloboAerostatico/CANASTA_MAT.tres" id="9_mat_canasta"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
+radius = 0.35
+height = 1.4
+
+[node name="GloboAerostatico" type="CharacterBody3D" unique_id=245115629]
+collision_layer = 4
+script = ExtResource("1_script")
+distancia_minima_caminar = 2.0
+vida_maxima = 3
+sombra_opacidad = 0.9
+sombra_tamano = Vector2(1.8, 1.7)
+sombra_altura_max = 30.0
+
+[node name="ColisionGlobo" type="CollisionShape3D" parent="." unique_id=350177709]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("CapsuleShape3D_col")
+
+[node name="PivotBamboleo" type="Node3D" parent="." unique_id=1478761593]
+
+[node name="ModeloGlobo" parent="PivotBamboleo" unique_id=1832631609 instance=ExtResource("2_model_globo")]
+
+[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=1401884174]
+transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
+surface_material_override/0 = ExtResource("3_mat_globo")
+
+[node name="ModeloGloboDestruido" parent="PivotBamboleo" instance=ExtResource("6_model_destruido")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
+visible = false
+
+[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0"]
+transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
+surface_material_override/0 = ExtResource("7_mat_destruido")
+
+[node name="ModeloCanasta" parent="PivotBamboleo" unique_id=283746192 instance=ExtResource("8_model_canasta")]
+transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, -0.18, 0)
+visible = false
+
+[node name="ArqueraGoblin" parent="PivotBamboleo" unique_id=17954165 instance=ExtResource("4_goblin_girl")]
+transform = Transform3D(-2.8412401e-08, 0, -0.65, 0, 0.65, 0, 0.65, 0, -2.8412401e-08, 0, 0.08, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="PivotBamboleo/ArqueraGoblin/Armature/Skeleton3D" parent_id_path=PackedInt32Array(17954165, 1302328399) index="1" unique_id=1138030817]
+transform = Transform3D(-0.79664755, 0.3937829, -0.4585697, 0.5891702, 0.33641893, -0.7346422, -0.13501793, -0.85542685, -0.5000133, -0.040586986, 0.54826945, -0.17640612)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 14
+
+[node name="ARCO_GOBLING_GIRL" parent="PivotBamboleo/ArqueraGoblin/Armature/Skeleton3D/BoneAttachment3D" unique_id=927152872 instance=ExtResource("5_arco")]
+transform = Transform3D(-0.06903357, 0.43095386, -0.30941585, -0.53010255, -0.043545067, 0.057621278, 0.021231018, 0.3140185, 0.43262768, -0.011926025, 0.08673817, 0.028724045)
+
+[node name="PuntoDisparo" type="Marker3D" parent="." unique_id=446918959]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.35, 0)
+
+[editable path="PivotBamboleo/ModeloGlobo"]
+[editable path="PivotBamboleo/ModeloGloboDestruido"]
+[editable path="PivotBamboleo/ModeloCanasta"]
+[editable path="PivotBamboleo/ArqueraGoblin"]

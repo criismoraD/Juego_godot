@@ -1,4 +1,4 @@
-class_name AllyArcher
+﻿class_name AllyArcher
 extends Node3D
 static var active_allies_cache: Array[Node] = []
 ## NO rastrea enemigos — dispara en arco hacia la derecha.
@@ -440,6 +440,9 @@ func _actualizar_apuntado_torso() -> void:
 		target_offset = Vector3(0, 1.2, 0)
 	elif objetivo is Lonko or ("lonko" in objetivo.name.to_lower()):
 		target_offset = Vector3(0, 0.6, 0)
+	elif objetivo is GloboAerostatico:
+		# Canasto/arquera del globo: centro de su cápsula de colisión
+		target_offset = Vector3(0, 0.6, 0)
 
 	var target_pos: Vector3 = objetivo.global_position + target_offset
 	var dy: float = target_pos.y - my_pos.y
@@ -759,6 +762,36 @@ func _obtener_gargola_objetivo() -> Node3D:
 	return mejor
 
 
+## Busca el globo aerostático (vehículo volador) vivo más cercano frente a la arquera.
+## Vuela alto (3.3-5.2 m): igual que la gárgola, el arco a ciego no lo alcanza.
+func _obtener_globo_objetivo() -> Node3D:
+	var enemies = []
+
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		enemies = wave_spawner.get_active_enemies()
+	else:
+		enemies = EnemyBase.active_enemies_cache
+
+	var mejor: Node3D = null
+	var menor_dist: float = INF
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
+			continue
+		if not (enemy is GloboAerostatico):
+			continue
+		if enemy.current_state == EnemyBase.State.DYING or enemy.current_state == EnemyBase.State.DEAD:
+			continue
+		# Solo enemigos delante (a la derecha de la arquera)
+		if enemy.global_position.x <= global_position.x:
+			continue
+		var dist: float = absf(enemy.global_position.x - global_position.x)
+		if dist < menor_dist:
+			menor_dist = dist
+			mejor = enemy
+	return mejor
+
+
 ## Busca la arquera Lonko viva más cercana frente a la defensora,
 ## SOLO si está parada encima de su pilar con la animación de emerger completa.
 func _obtener_lonko_objetivo() -> Node3D:
@@ -864,6 +897,7 @@ func _obtener_enemigo_al_azar() -> Node3D:
 ## Evalúa el campo de batalla y decide el objetivo y tipo de munición según las prioridades:
 ## 1. Si hay Arquera Lonko / Pilar activo y tiene flechas explosivas -> Objetivo: Lonko/Pilar, Munición: EXPLOSIVO
 ## 2. Si hay Gárgola activa -> Objetivo: Gárgola, Munición: NORMAL (prioriza disparo normal contra gárgolas)
+## 2b. Si hay Globo aerostático activo -> Objetivo: Globo, Munición: NORMAL (vehículo volador: apuntado directo)
 ## 3. Si tiene flechas múltiples -> Objetivo: Enemigo al azar, Munición: MULTIPLE
 ## 4. Si tiene flechas explosivas (sin Lonko en pantalla) -> Objetivo: Enemigo al azar, Munición: EXPLOSIVO
 ## 5. Sin munición especial -> Objetivo: Lonko/Enemigo/Arco, Munición: NORMAL
@@ -871,6 +905,7 @@ func _decidir_disparo_y_objetivo() -> Dictionary:
 	var lonko := _obtener_lonko_objetivo()
 	var pilar := _obtener_pilar_lonko_objetivo()
 	var gargola := _obtener_gargola_objetivo()
+	var globo := _obtener_globo_objetivo()
 	var objetivo_lonko = lonko if lonko else pilar
 
 	# Regla 1: Flechas explosivas priorizan a las arqueras Lonko / Pilar
@@ -880,6 +915,10 @@ func _decidir_disparo_y_objetivo() -> Dictionary:
 	# Regla 2: Contra el enemigo Gárgola prioriza utilizar su disparo normal
 	if gargola:
 		return { "target": gargola, "type": TipoDisparoAliada.NORMAL }
+
+	# Regla 2b: Contra el globo aerostático (vehículo volador) prioriza su disparo normal
+	if globo:
+		return { "target": globo, "type": TipoDisparoAliada.NORMAL }
 
 	# Regla 3: Disparo múltiple lo dispara al azar
 	if flechas_multiples > 0:
@@ -949,7 +988,7 @@ func _disparar():
 
 	var direction: Vector3
 	if objetivo:
-		if objetivo is Gargola:
+		if objetivo is Gargola or objetivo is GloboAerostatico:
 			# Más fuerza contra enemigos voladores: trayectoria más plana y directa
 			speed *= multiplicador_potencia_volador
 		elif objetivo is Lonko or ("lonko" in objetivo.name.to_lower()):
@@ -961,6 +1000,9 @@ func _disparar():
 		if objetivo is PilarLonkoBody or ("es_pilar_enemigo" in objetivo and objetivo.es_pilar_enemigo):
 			target_offset = Vector3(0, 1.2, 0)
 		elif objetivo is Lonko or ("lonko" in objetivo.name.to_lower()):
+			target_offset = Vector3(0, 0.6, 0)
+		elif objetivo is GloboAerostatico:
+			# Canasto/arquera del globo: centro de su cápsula de colisión
 			target_offset = Vector3(0, 0.6, 0)
 
 		var objetivo_pos: Vector3 = objetivo.global_position + target_offset
