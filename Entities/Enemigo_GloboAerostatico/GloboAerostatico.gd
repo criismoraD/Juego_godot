@@ -377,6 +377,9 @@ func _on_state_dying() -> void:
 	# Intercambiar modelo intacto por el modelo destruido
 	_intercambiar_modelo_destruido()
 
+	# Muerte con desmembramiento explosivo del tripulante goblin
+	_matar_tripulante()
+
 	# Canasta.glb cae en ese lugar con física y colisión, mata con 5 de daño explosivo
 	_eyectar_canasta()
 	_reproducir_sonido_globo_callendo()
@@ -548,6 +551,12 @@ func _eyectar_canasta() -> void:
 	# Caída vertical en el lugar donde se destruyó el globo
 	contenedor.iniciar_vuelo(Vector3(randf_range(-0.3, 0.3), -0.8, 0.0), randf_range(-5.0, 5.0))
 	_modelo_canasta_node = null
+
+
+func _matar_tripulante() -> void:
+	var tripulante := find_children("*", "GoblinTripulante", true, false).front() as GoblinTripulante
+	if tripulante and is_instance_valid(tripulante):
+		tripulante.morir()
 
 
 # ==============================================================================

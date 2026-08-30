@@ -6,22 +6,14 @@
 [ext_resource type="PackedScene" uid="uid://b8lvuys7l34k8" path="res://TEST_/Globo destruido/Globo destruido.glb" id="6_model_destruido"]
 [ext_resource type="Material" uid="uid://c3p58tt52hu6c" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_DESTRUIDO_MAT.tres" id="7_mat_destruido"]
 [ext_resource type="PackedScene" uid="uid://ccanastaglb01" path="res://TEST_/Canasta/Canasta.glb" id="8_model_canasta"]
+[ext_resource type="PackedScene" path="res://Entities/Enemigo_GloboAerostatico/GoblinTripulante.tscn" id="9_tripulante"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
 radius = 0.35
 height = 1.4
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_canasta_rango"]
-size = Vector3(1.3191407, 0.7326927, 1.3879883)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_canasta_rango"]
-transparency = 1
-cull_mode = 2
-shading_mode = 2
-albedo_color = Color(0.15, 0.6, 1, 0.18)
-
-[sub_resource type="BoxMesh" id="BoxMesh_canasta_rango"]
-size = Vector3(1.3012406, 0.6113281, 1.4)
+size = Vector3(0.9689453, 0.5121527, 0.8712891)
 
 [node name="GloboAerostatico" type="CharacterBody3D" unique_id=245115629]
 collision_layer = 4
@@ -40,22 +32,26 @@ shape = SubResource("CapsuleShape3D_col")
 
 [node name="ModeloGlobo" parent="PivotBamboleo" unique_id=1832631609 instance=ExtResource("2_model_globo")]
 
-[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=1401884174]
+[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=758088354]
 transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
 surface_material_override/0 = ExtResource("3_mat_globo")
+
+[node name="GoblinTripulante" parent="PivotBamboleo/ModeloGlobo" unique_id=1797058963 instance=ExtResource("9_tripulante")]
+transform = Transform3D(0.8, 0, -3.6679783e-08, 0, 0.8, 0, 3.6679783e-08, 0, 0.8, 0.0325, 0.11249998, -9.313226e-10)
 
 [node name="ModeloGloboDestruido" parent="PivotBamboleo" unique_id=1017842360 instance=ExtResource("6_model_destruido")]
 transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 visible = false
 
-[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0" unique_id=498977091]
+[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0" unique_id=1620448280]
 transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
 surface_material_override/0 = ExtResource("7_mat_destruido")
 
 [node name="ModeloCanasta" parent="PivotBamboleo" unique_id=283746192 instance=ExtResource("8_model_canasta")]
 transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, -0.18, 0)
+visible = false
 
-[node name="modelo 3d (1K)" parent="PivotBamboleo/ModeloCanasta" index="0" unique_id=1703858200]
+[node name="modelo 3d (1K)" parent="PivotBamboleo/ModeloCanasta" index="0" unique_id=1015720493]
 transform = Transform3D(-0.4296071, 0, -0.9030159, 0, 1, 0, 0.9030159, 0, -0.4296071, 0.09473237, 0.41738158, 0)
 
 [node name="RangoDanoCanasta" type="Area3D" parent="PivotBamboleo/ModeloCanasta" unique_id=88990011]
@@ -65,17 +61,9 @@ monitoring = false
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PivotBamboleo/ModeloCanasta/RangoDanoCanasta" unique_id=88990012]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04042965, 0.6277561, 0.0060058236)
-visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013964807, 0.54057074, -0.0544434)
 shape = SubResource("BoxShape3D_canasta_rango")
 debug_color = Color(0.15, 0.6, 1, 0.35)
-
-[node name="VisualRango" type="MeshInstance3D" parent="PivotBamboleo/ModeloCanasta/RangoDanoCanasta/CollisionShape3D" unique_id=88990013]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.032775164, -0.07421875, 0)
-visible = false
-material_override = SubResource("StandardMaterial3D_canasta_rango")
-cast_shadow = 0
-mesh = SubResource("BoxMesh_canasta_rango")
 
 [node name="PuntoDisparo" type="Marker3D" parent="." unique_id=446918959]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.35, 0)

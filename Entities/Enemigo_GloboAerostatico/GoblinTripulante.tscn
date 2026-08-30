@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://bqdm44vqatl0p"]
+
+[ext_resource type="Script" uid="uid://m7uva4ts2j6x" path="res://Entities/Enemigo_GloboAerostatico/GoblinTripulante.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://k3nj0crucrl" path="res://Entities/Enemigo_Goblin/GOBLING_REMASTER_ANIMACIONES.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://bg41ujege14mr" path="res://Entities/Enemigo_Goblin/BALLES_GOBLING.glb" id="3_ballesta"]
+[ext_resource type="PackedScene" uid="uid://ba3am7tn32s5x" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Piernas_GOBLING_MUERTE.glb" id="4_piernas"]
+[ext_resource type="PackedScene" uid="uid://dftvddswjhkcr" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Cabeza_GOBLING_MUERTE.glb" id="5_cabeza"]
+[ext_resource type="PackedScene" uid="uid://bidywox2rsf5c" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_01_GOBLING_MUERTE.glb" id="6_brazo1"]
+[ext_resource type="PackedScene" uid="uid://bfayt5mqq4wcs" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_02_GOBLING_MUERTE.glb" id="7_brazo2"]
+
+[node name="GoblinTripulante" type="Node3D" unique_id=365845426]
+script = ExtResource("1_script")
+
+[node name="GOBLING_REMASTER_ANIMACIONES" parent="." unique_id=1779100497 instance=ExtResource("2_model")]
+transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
+
+[node name="Armature" parent="GOBLING_REMASTER_ANIMACIONES" index="0" unique_id=833007645]
+transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D" parent_id_path=PackedInt32Array(1779100497, 70225279) index="1" unique_id=1081078578]
+transform = Transform3D(0.06175593, -0.42028344, 0.90528923, 0.9977057, 0.051199622, -0.04429067, -0.027735954, 0.90594673, 0.42248124, -38.003235, -9.125982, -61.419968)
+bone_name = "mixamorig_RightHandIndex1"
+bone_idx = 19
+
+[node name="BALLES_GOBLING" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D/BoneAttachment3D" unique_id=945271610 instance=ExtResource("3_ballesta")]
+transform = Transform3D(16.282375, 92.0973, -35.397396, 77.93626, 9.994986, 61.854893, 60.504646, -37.6589, -70.149734, 3.5067368, 31.789375, 29.316803)
+
+[node name="PartesExplotadas" type="Node3D" parent="." unique_id=79371898]
+transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
+visible = false
+
+[node name="Piernas" parent="PartesExplotadas" unique_id=1530017459 instance=ExtResource("4_piernas")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0647761, 0)
+
+[node name="Cabeza" parent="PartesExplotadas" unique_id=455162790 instance=ExtResource("5_cabeza")]
+transform = Transform3D(0.78, 0, 0, 0, 0.78, 0, 0, 0, 0.78, -0.0077333, 0.998252, 0.112498)
+
+[node name="Brazo_01" parent="PartesExplotadas" unique_id=2042802009 instance=ExtResource("6_brazo1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.309233, 0.394197, 0)
+
+[node name="Brazo_02" parent="PartesExplotadas" unique_id=818057554 instance=ExtResource("7_brazo2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.256593, 0.458019, 0)
+
+[editable path="GOBLING_REMASTER_ANIMACIONES"]
