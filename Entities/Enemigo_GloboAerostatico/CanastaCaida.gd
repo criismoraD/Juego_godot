@@ -64,20 +64,28 @@ func _physics_process(delta: float) -> void:
 	var target_pos := global_position + move_step
 	var space_state := get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(global_position + Vector3(0, 0.25, 0), target_pos)
-	query.collision_mask = 1 | 512
+	query.collision_mask = 1 # Solo suelo (capa 1), ignora barreras 512 para caer en cualquier parte del mapa
 	if _static_body and is_instance_valid(_static_body):
 		query.exclude = [_static_body.get_rid()]
 	var hit := space_state.intersect_ray(query)
 	var impacto_este_frame: bool = false
 	var es_plataforma := false
+	var es_suelo_valido := false
 	if hit and hit.has("collider"):
 		var col = hit["collider"]
 		if col is AnimatableBody3D:
 			es_plataforma = true
 		elif is_instance_valid(col) and col.name.contains("Plataforma"):
 			es_plataforma = true
+		elif hit.has("normal") and hit["normal"] is Vector3:
+			# Solo considerar impacto si la normal es de suelo (y > 0.5), no pared vertical de barrera
+			es_suelo_valido = (hit["normal"] as Vector3).y > 0.5
+		else:
+			es_suelo_valido = true
+	else:
+		es_suelo_valido = true
 	# Si es plataforma one-way, ignorar y caer libre en cualquier parte del escenario (no flotar)
-	if hit and hit.has("position") and not es_plataforma:
+	if hit and hit.has("position") and not es_plataforma and es_suelo_valido:
 		# Apoyar sin rebote (pedido: no debe rebotar) +0.32 para no hundirse
 		global_position.y = hit.position.y + 0.32
 		global_position.x = hit.position.x
@@ -175,7 +183,38 @@ func _aplicar(enemy: Node) -> void:
 		enemy.call("take_damage", DANO)
 	elif enemy.has_method("recibir_golpe"):
 		enemy.call("recibir_golpe", DANO)
+	# Mancha de sangre sobre la textura de la propia canasta (toma forma del mimbre) — no en el suelo
+	_manchar_canasta_con_sangre()
 
+
+func _manchar_canasta_con_sangre() -> void:
+	# Decal proyectado sobre la propia canasta — la textura toma la forma del mimbre/trenzado
+	var tex: Texture2D = null
+	if ResourceLoader.exists("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png"):
+		tex = load("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png")
+	if not tex:
+		return
+	var meshes := find_children("*", "MeshInstance3D", true, false)
+	for m in meshes:
+		var mi := m as MeshInstance3D
+		if not mi or not is_instance_valid(mi):
+			continue
+		for i in range(2):
+			var decal := Decal.new()
+			decal.name = "ManchaSangreCanasta_%d" % i
+			decal.texture_albedo = tex
+			decal.size = Vector3(0.55, 0.55, 0.22)
+			decal.albedo_mix = 1.0
+			decal.cull_mask = 1
+			decal.distance_fade_begin = 8.0
+			decal.distance_fade_length = 2.0
+			mi.add_child(decal)
+			# Distribuir manchas aleatorias sobre la superficie lateral/inferior de la canasta
+			var offset := Vector3(randf_range(-0.18, 0.18), randf_range(0.05, 0.22), randf_range(-0.18, 0.18))
+			decal.position = offset
+			decal.rotation_degrees = Vector3(90 + randf_range(-18, 18), randf_range(0, 360), randf_range(-12, 12))
+			# Desvanecer con la canasta (ella se disuelve a los 4s)
+			get_tree().create_timer(3.2).timeout.connect(func(): if is_instance_valid(decal): decal.queue_free())
 
 func _spawn_humo_y_piedras_impacto() -> void:
 	# Humo de destrucción de escudo a ambos lados — mismo efecto pero un poco más grande (x1.25)
