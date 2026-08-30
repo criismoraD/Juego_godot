@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://c6j2y9x51k7pm"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c6j20ax51k7pm"]
 
 [ext_resource type="Texture2D" uid="uid://df6nctw4v8fbe" path="res://TEST_/Medikit/MEDIKIT_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]

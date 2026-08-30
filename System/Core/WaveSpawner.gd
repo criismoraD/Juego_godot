@@ -4,6 +4,7 @@ extends Node3D
 signal oleada_iniciada(numero_oleada: int)
 signal oleada_completada(numero_oleada: int)
 signal goblin_spawneado(goblin: Node)
+signal enemigo_eliminado(enemigo: Node, total_muertos: int)
 signal evento_cuerno_iniciado
 @export_category("Spawner")
 @export var escena_goblin: PackedScene  # Escena del goblin a instanciar
@@ -477,6 +478,7 @@ func _on_goblin_died(goblin):
 		active_goblins.erase(goblin)
 		shield_imps_activos.erase(goblin)
 		enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+		emit_signal("enemigo_eliminado", goblin, enemigos_muertos_en_oleada)
 	AudioManager.on_enemy_killed()
 	_check_wave_complete()
 

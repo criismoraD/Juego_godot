@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dh1cvcs524hoe"
-path="res://.godot/imported/Marco texto defensora.png-0cfbdee11c4d8a66bc661996e9c6aa48.ctex"
+uid="uid://6tgxbhyfpbe3"
+path="res://.godot/imported/test_seamless_short.png-6712f1e3ff1c6dc7fdadae0e52d91011.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://TEST_/Marco texto defensora.png"
-dest_files=["res://.godot/imported/Marco texto defensora.png-0cfbdee11c4d8a66bc661996e9c6aa48.ctex"]
+source_file="res://TEST_/test_seamless_short.png"
+dest_files=["res://.godot/imported/test_seamless_short.png-6712f1e3ff1c6dc7fdadae0e52d91011.ctex"]
 
 [params]
 

@@ -55,6 +55,7 @@ var hitbox_body: StaticBody3D
 var model_root: Node3D
 var _original_model_y_rot: float = 0.0
 var ultima_muerte_anim: String = ""
+@onready var speech_bubble: SpeechBubbleComponent = get_node_or_null("SpeechBubbleComponent")
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1113,6 +1114,21 @@ func revivir() -> void:
 		hitbox_body.collision_layer = 2
 
 	_cambiar_estado(State.GETTING_UP)
+
+
+## Muestra un diálogo en el globo de este personaje
+func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
+	if not speech_bubble or not is_instance_valid(speech_bubble):
+		speech_bubble = get_node_or_null("SpeechBubbleComponent")
+	if speech_bubble and is_instance_valid(speech_bubble):
+		speech_bubble.decir(clave_o_texto, duracion)
+
+
+## Retorna true si la arquera está mostrando un diálogo
+func esta_hablando() -> bool:
+	if not speech_bubble or not is_instance_valid(speech_bubble):
+		return false
+	return speech_bubble.esta_hablando()
 
 
 func _crear_splash_sangre() -> void:

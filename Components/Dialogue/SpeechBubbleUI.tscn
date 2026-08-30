@@ -1,0 +1,68 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Components/Dialogue/SpeechBubbleUI.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://TEST_/pergamino_izq.png" id="2_izq"]
+[ext_resource type="Texture2D" path="res://TEST_/pergamino_centro.png" id="3_centro"]
+[ext_resource type="Texture2D" path="res://TEST_/pergamino_der.png" id="4_der"]
+[ext_resource type="Texture2D" path="res://TEST_/pergamino_cola.png" id="5_cola"]
+
+[node name="SpeechBubbleUI" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="BannerContainer" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="CuerpoCentro" type="TextureRect" parent="BannerContainer"]
+layout_mode = 0
+offset_right = 140.0
+offset_bottom = 40.0
+mouse_filter = 2
+texture = ExtResource("3_centro")
+expand_mode = 1
+stretch_mode = 1
+
+[node name="PuntaIzq" type="TextureRect" parent="BannerContainer"]
+z_index = 1
+layout_mode = 0
+offset_right = 44.0
+offset_bottom = 40.0
+mouse_filter = 2
+texture = ExtResource("2_izq")
+expand_mode = 1
+
+[node name="PuntaDer" type="TextureRect" parent="BannerContainer"]
+z_index = 1
+layout_mode = 0
+offset_left = 96.0
+offset_right = 140.0
+offset_bottom = 40.0
+mouse_filter = 2
+texture = ExtResource("4_der")
+expand_mode = 1
+
+[node name="TextureCola" type="TextureRect" parent="BannerContainer"]
+z_index = 2
+layout_mode = 0
+offset_right = 21.0
+offset_bottom = 16.0
+mouse_filter = 2
+texture = ExtResource("5_cola")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RichTextLabel" type="RichTextLabel" parent="BannerContainer"]
+z_index = 3
+layout_mode = 0
+offset_left = 36.0
+offset_top = 8.0
+offset_right = 104.0
+offset_bottom = 36.0
+mouse_filter = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 0

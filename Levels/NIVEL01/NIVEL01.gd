@@ -51,6 +51,8 @@ var oleada_debug_pendiente: int = 0  ## Oleada solicitada por debug: se aplica t
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
 var _aliadas_activas: bool = true  ## Estado de aliadas para modo debug
+var _dialogo_abajo_mostrado: bool = false
+var _muertes_combate_contador: int = 0
 # === REFERENCIAS ===
 # Preloads para forzar inclusión en export (PCK) aunque el filtro falle - garantiza Lonko en exe
 const PRELOAD_LONKO_EXPORT: PackedScene = preload("res://Entities/Enemigo_Lonko/Lonko.tscn")
@@ -172,6 +174,9 @@ func _ready():
 
 	# Esperar un frame para que todos los nodos estén listos
 	_precalentar_vfx_shaders()
+
+	if wave_spawner and not wave_spawner.enemigo_eliminado.is_connected(_on_enemigo_eliminado_nivel):
+		wave_spawner.enemigo_eliminado.connect(_on_enemigo_eliminado_nivel)
 
 	await get_tree().process_frame
 
@@ -636,8 +641,11 @@ func _iniciar_nivel_0():
 		if is_instance_valid(enemigo) and enemigo.has_signal("pacifico_danado"):
 			enemigo.pacifico_danado.connect(_on_pacifico_danado, CONNECT_ONE_SHOT)
 
-	# Guardar referencia al imp del estandarte
+	# Guardar referencia al imp del estandarte y conectar su muerte
 	imp_estandarte = enemigos_pacificos[0]
+	if is_instance_valid(imp_estandarte) and imp_estandarte.has_signal("died"):
+		if not imp_estandarte.died.is_connected(_on_imp_estandarte_muerto):
+			imp_estandarte.died.connect(_on_imp_estandarte_muerto, CONNECT_ONE_SHOT)
 
 
 func _monitorear_nivel_0():
@@ -706,6 +714,26 @@ func _on_pacifico_danado():
 
 	# Iniciar Nivel 1: oleada de 13 enemigos (los supervivientes cuentan)
 	_iniciar_nivel_1(supervivientes)
+
+
+func _on_imp_estandarte_muerto() -> void:
+	# La arquera de arriba (torre) muestra el diálogo "Hola"
+	var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
+	if arquera_arriba and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
+		arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_HOLA", 3.5)
+
+
+func _on_enemigo_eliminado_nivel(_enemigo: Node, _total_muertos: int) -> void:
+	# Solo contar muertes durante el combate activo
+	if estado_actual != NivelEstado.NIVEL_1 and estado_actual != NivelEstado.OLEADAS_LIBRES:
+		return
+
+	_muertes_combate_contador += 1
+	if _muertes_combate_contador >= 3 and not _dialogo_abajo_mostrado:
+		_dialogo_abajo_mostrado = true
+		var arquera_abajo := get_node_or_null("AllyArcher2") as AllyArcher
+		if arquera_abajo and is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
+			arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_TEST", 3.5)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

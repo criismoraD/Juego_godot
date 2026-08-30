@@ -508,32 +508,12 @@ func _create_pause_panel():
 	_style_button(btn_probar_victoria, Color(0.85, 0.55, 0.15))
 	hbox_acciones_oleada.add_child(btn_probar_victoria)
 
-	# Fila de Diálogo Defensora (Prueba en vivo)
-	var hbox_dialogo_def = HBoxContainer.new()
-	hbox_dialogo_def.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox_dialogo_def.add_theme_constant_override("separation", 10)
-	hbox_dialogo_def.visible = debug_ui_enabled
-	vbox.add_child(hbox_dialogo_def)
-
-	var line_edit_dialogo = LineEdit.new()
-	line_edit_dialogo.placeholder_text = "Escribe el texto de la defensora..."
-	line_edit_dialogo.text = texto_defensora_personalizado
-	line_edit_dialogo.custom_minimum_size = Vector2(300, 38)
-	hbox_dialogo_def.add_child(line_edit_dialogo)
-
-	var btn_probar_dialogo = Button.new()
-	btn_probar_dialogo.text = "💬 Mostrar Diálogo"
-	btn_probar_dialogo.custom_minimum_size = Vector2(170, 38)
-	btn_probar_dialogo.pressed.connect(
-		func():
-			var txt: String = line_edit_dialogo.text.strip_edges()
-			if txt.is_empty():
-				txt = texto_defensora_personalizado
-			_toggle_pause()
-			mostrar_texto_defensora(txt, duracion_defensora_defecto, true)
-	)
-	_style_button(btn_probar_dialogo, Color(0.7, 0.25, 0.55))
-	hbox_dialogo_def.add_child(btn_probar_dialogo)
+	var btn_test_dialogos = Button.new()
+	btn_test_dialogos.text = "💬 Test Boton"
+	btn_test_dialogos.custom_minimum_size = Vector2(240, 40)
+	btn_test_dialogos.pressed.connect(_probar_dialogos_ambas_arqueras)
+	_style_button(btn_test_dialogos, Color(0.7, 0.25, 0.55))
+	hbox_acciones_oleada.add_child(btn_test_dialogos)
 
 	# ═══════════════ CALIDAD GRÁFICA ═══════════════
 	var sep_calidad = HSeparator.new()
@@ -723,6 +703,20 @@ func _probar_victoria_aliadas_debug() -> void:
 	for ally in get_tree().get_nodes_in_group("allies"):
 		if is_instance_valid(ally) and ally.has_method("celebrar_victoria"):
 			ally.celebrar_victoria()
+
+
+func _probar_dialogos_ambas_arqueras() -> void:
+	if is_paused:
+		_toggle_pause()
+	for ally in get_tree().get_nodes_in_group("allies"):
+		if not is_instance_valid(ally):
+			continue
+		if ally.name == "AllyArcher" and ally.has_method("decir"):
+			ally.decir("texto corto", 3.5)
+		elif ally.name == "AllyArcher2" and ally.has_method("decir"):
+			ally.decir("este es un text con texto largo", 3.5)
+		elif ally.has_method("decir"):
+			ally.decir("este es un text con texto largo", 3.5)
 
 
 func _completar_oleada_actual_debug() -> void:
