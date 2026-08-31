@@ -2,21 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://53uso155no13"
-path.s3tc="res://.godot/imported/ARQUERA_ALIADA_modddif_image_0.png-447565204e51f1c9557dd417676daa5e.s3tc.ctex"
-path.etc2="res://.godot/imported/ARQUERA_ALIADA_modddif_image_0.png-447565204e51f1c9557dd417676daa5e.etc2.ctex"
+uid="uid://bhohfa3yfi1d5"
+path.s3tc="res://.godot/imported/ALLY_ARCHER_D.jpg-2f1b96b1e89fd5877b799e573a9b51d0.s3tc.ctex"
+path.etc2="res://.godot/imported/ALLY_ARCHER_D.jpg-2f1b96b1e89fd5877b799e573a9b51d0.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
-generator_parameters={
-"md5": "0ab26ed16fd0b10a4c5acf2297862dac"
-}
 
 [deps]
 
-source_file="res://Entities/Aliada_Arquera/ARQUERA_ALIADA_modddif_image_0.png"
-dest_files=["res://.godot/imported/ARQUERA_ALIADA_modddif_image_0.png-447565204e51f1c9557dd417676daa5e.s3tc.ctex", "res://.godot/imported/ARQUERA_ALIADA_modddif_image_0.png-447565204e51f1c9557dd417676daa5e.etc2.ctex"]
+source_file="res://Entities/Aliada_Arquera/ALLY_ARCHER_D.jpg"
+dest_files=["res://.godot/imported/ALLY_ARCHER_D.jpg-2f1b96b1e89fd5877b799e573a9b51d0.s3tc.ctex", "res://.godot/imported/ALLY_ARCHER_D.jpg-2f1b96b1e89fd5877b799e573a9b51d0.etc2.ctex"]
 
 [params]
 

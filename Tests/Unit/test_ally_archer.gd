@@ -41,11 +41,18 @@ func _agregar_animacion_minima(ally: AllyArcher) -> void:
 	
 	var lib = AnimationLibrary.new()
 	lib.add_animation("IDLE", Animation.new())
+	lib.add_animation("IDLE_DESARMADO", Animation.new())
+	lib.add_animation("IDLE_APUNTANDO", Animation.new())
+	lib.add_animation("TOMAFLEHCA_Y_DISPARA", Animation.new())
 	lib.add_animation("DISPARO", Animation.new())
 	lib.add_animation("MUERTE_01", Animation.new())
 	lib.add_animation("MUERTE_02", Animation.new())
+	lib.add_animation("AGACHARSE", Animation.new())
 	lib.add_animation("LEVANTARSE", Animation.new())
 	lib.add_animation("VICTORIA", Animation.new())
+	lib.add_animation("ELECTROCUTAR", Animation.new())
+	lib.add_animation("DAÑO_01", Animation.new())
+	lib.add_animation("DAÑO_02", Animation.new())
 	
 	anim_player.add_animation_library("", lib)
 	ally.add_child(anim_player)
@@ -158,4 +165,27 @@ func test_on_oleada_completada_activa_celebracion():
 	_ally._on_oleada_completada(1)
 
 	assert_eq(_ally.current_state, _ally.State.CELEBRATING, "El evento de oleada completada debe activar la celebración de victoria")
+
+
+func test_ataque_suelta_flecha_al_segundo_3():
+	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+	_ally._cambiar_estado(_ally.State.SHOOTING)
+	assert_eq(_ally.current_state, _ally.State.SHOOTING, "Debe entrar en estado SHOOTING")
+	assert_false(_ally._flecha_soltada, "La flecha no debe haberse soltado al inicio del ataque")
+
+	# Simular 2 segundos de animación (aún no llega al segundo 3)
+	_ally._process_shooting(2.0)
+	assert_false(_ally._flecha_soltada, "La flecha todavía no debe haberse soltado en t=2.0s")
+
+	# Simular 1 segundo más (t=3.0s, momento exacto de suelta)
+	_ally._process_shooting(1.0)
+	assert_true(_ally._flecha_soltada, "La flecha debe haberse soltado al alcanzar el segundo 3.0")
+
+
+func test_on_oleada_iniciada_activa_idle_desarmado():
+	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+	_ally._on_oleada_iniciada(1)
+
+	assert_eq(_ally.current_state, _ally.State.IDLE, "El estado debe ser IDLE al iniciar la oleada")
+	assert_eq(_ally.anim_player.current_animation, "IDLE_DESARMADO", "Debe reproducir la animación IDLE_DESARMADO al inicio de la oleada")
 

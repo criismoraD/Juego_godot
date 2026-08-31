@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://6o783pm488cs"
-path="res://.godot/imported/ARQUERA_ALIADA.glb-fb8d6b6359a8c1d7c5baf43d00ac1fbe.scn"
+uid="uid://bbgr8gr1xlnid"
+path="res://.godot/imported/ALLY_ARCHER.glb-3516ed893f95b93cfacd07d4ab18449d.scn"
 
 [deps]
 
-source_file="res://Entities/Aliada_Arquera/ARQUERA_ALIADA.glb"
-dest_files=["res://.godot/imported/ARQUERA_ALIADA.glb-fb8d6b6359a8c1d7c5baf43d00ac1fbe.scn"]
+source_file="res://Entities/Aliada_Arquera/ALLY_ARCHER.glb"
+dest_files=["res://.godot/imported/ALLY_ARCHER.glb-3516ed893f95b93cfacd07d4ab18449d.scn"]
 
 [params]
 
@@ -41,13 +41,13 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "materials": {
-"modddif_material_0": {
+"ALLY_ARCHER_M": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://Entities/Aliada_Arquera/ARQUERA_ALIADA_MATERIAL.tres",
-"use_external/path": "uid://c6vhgautduyud"
+"use_external/fallback_path": "res://Entities/Aliada_Arquera/ALLY_ARCHER_MAT.tres",
+"use_external/path": "uid://d2kbgpvgerkd7"
 }
 }
 }
 gltf/naming_version=2
 gltf/embedded_image_handling=1
-gltf/texture_map_mode=0
+gltf/texture_map_mode=1

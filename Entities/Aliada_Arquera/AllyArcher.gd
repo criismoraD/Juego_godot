@@ -1,4 +1,4 @@
-﻿class_name AllyArcher
+class_name AllyArcher
 extends Node3D
 static var active_allies_cache: Array[Node] = []
 ## NO rastrea enemigos — dispara en arco hacia la derecha.
@@ -17,6 +17,7 @@ enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 @export var potencia_minima: float = 5.0
 @export var potencia_maxima: float = 12.0
 @export var altura_spawn_flecha: float = 1.2
+@export var tiempo_suelta_flecha: float = 3.0  ## Segundo en el que la animación TOMAFLEHCA_Y_DISPARA suelta la flecha y sale el proyectil
 @export_range(0.0, 30.0, 1.0) var angulo_disparo_min: float = 5.0  ## Ángulo mínimo de elevación (grados)
 @export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 35.0  ## Ángulo máximo de elevación (grados)
 @export_range(1.0, 3.0, 0.05) var multiplicador_potencia_volador: float = 1.6  ## Fuerza extra al disparar a enemigos voladores (trayectoria más plana)
@@ -55,6 +56,8 @@ var hitbox_body: StaticBody3D
 var model_root: Node3D
 var _original_model_y_rot: float = 0.0
 var ultima_muerte_anim: String = ""
+var _flecha_soltada: bool = false
+var _tiempo_ataque_actual: float = 0.0
 @onready var speech_bubble: SpeechBubbleComponent = get_node_or_null("SpeechBubbleComponent")
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO
@@ -174,7 +177,7 @@ func _setup_animation_player():
 			if is_bow_anim:
 				continue
 			var has_idle = "IDLE" in a
-			var has_shoot = "DISPARO" in a or "DISPARAR" in a
+			var has_shoot = "DISPARO" in a or "DISPARAR" in a or "TOMA" in a or "FLEHCA" in a or "FLECHA" in a or "CORRER" in a
 			if has_idle or has_shoot:
 				is_character = true
 				break
@@ -197,9 +200,9 @@ func _setup_animation_player():
 
 	_log_debug(["[AllyArcher] AnimationPlayer seleccionado: ", anim_player.name])
 
-	# 3. Configurar loops en IDLE y APUNTAR
+	# 3. Configurar loops en IDLE y CORRER
 	for anim_name in anim_player.get_animation_list():
-		if "IDLE" in anim_name or "APUNTAR" in anim_name:
+		if "IDLE" in anim_name or "CORRER" in anim_name:
 			var anim = anim_player.get_animation(anim_name)
 			if anim:
 				anim.loop_mode = Animation.LOOP_LINEAR
@@ -372,7 +375,7 @@ func aplicar_paralisis(duracion: float = 4.0) -> void:
 	paralisis_timer = duracion
 	_ocultar_flecha()
 	_restaurar_torso()
-	_play_anim("ELECTROCUTADA", 0.15, 1.0)
+	_play_anim(["ELECTROCUTAR", "ELECTROCUTADA"], 0.15, 1.0)
 	_mostrar_icono_aturdimiento()
 	if current_state != State.IDLE and current_state != State.GETTING_UP:
 		_cambiar_estado(State.IDLE)
@@ -494,41 +497,50 @@ func _restaurar_torso() -> void:
 		skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
 
 
-## IDLE: esperar 1-2s, luego ir a RELOADING (tomar flecha)
+## IDLE: en espera desarmada al inicio/entre oleadas, o alerta cuando hay enemigos
 func _process_idle(delta):
 	if paralisis_timer > 0.0:
 		state_timer = 0.4
 		return
 
+	var hay_enemigos: bool = (_contar_enemigos_vivos() >= enemigos_minimos or _hay_enemigos_en_pantalla())
+	if not hay_enemigos:
+		# Al inicio de cada oleada o sin enemigos en pantalla, mantiene la animación IDLE_DESARMADO
+		_play_anim(["IDLE_DESARMADO", "IDLE_EXAMINAR", "IDLE"], 0.3)
+		state_timer = 0.5
+		return
+
 	state_timer -= delta
 	if state_timer <= 0:
-		# Ataca mientras haya enemigos en pantalla. Si no reconoce ninguno como objetivo,
-		# igual dispara al azar (_disparar usa arco a ciegas cuando no hay target).
-		if _contar_enemigos_vivos() >= enemigos_minimos or _hay_enemigos_en_pantalla():
-			_cambiar_estado(State.RELOADING)
-		else:
-			state_timer = 1.0
-
-
-## RELOADING: animación TOMAR_FLECHA, luego ir a AIMING
-func _process_reloading(delta):
-	state_timer -= delta
-	if state_timer <= 0:
-		_cambiar_estado(State.AIMING)
-
-
-## AIMING: animación APUNTAR_IDLE (carga), luego DISPARAR
-func _process_aiming(delta):
-	state_timer -= delta
-	if state_timer <= 0:
-		_disparar()
 		_cambiar_estado(State.SHOOTING)
 
 
-## SHOOTING: animación DISPARAR, luego volver a IDLE
+## RELOADING / AIMING: compatibles con cualquier llamada externa redirigiendo a SHOOTING
+func _process_reloading(delta):
+	_process_shooting(delta)
+
+
+func _process_aiming(delta):
+	_process_shooting(delta)
+
+
+## SHOOTING: animación TOMAFLEHCA_Y_DISPARA; en el segundo 3.0 suelta la flecha y sale el proyectil
 func _process_shooting(delta):
+	_tiempo_ataque_actual += delta
 	state_timer -= delta
+
+	# Al llegar al segundo 3.0 (tiempo_suelta_flecha), soltar y disparar proyectil
+	if not _flecha_soltada and _tiempo_ataque_actual >= tiempo_suelta_flecha:
+		_flecha_soltada = true
+		_disparar()
+		_ocultar_flecha()
+		_play_bow_anim("ARCO_DISPARO", 0.1, 1.0)
+
 	if state_timer <= 0:
+		if not _flecha_soltada:
+			_flecha_soltada = true
+			_disparar()
+			_ocultar_flecha()
 		_cambiar_estado(State.IDLE)
 
 
@@ -584,43 +596,36 @@ func _cambiar_estado(nuevo: State):
 	current_state = nuevo
 	match nuevo:
 		State.IDLE:
-			_play_anim("IDLE", 0.3)
+			var hay_enemigos: bool = (_contar_enemigos_vivos() >= enemigos_minimos or _hay_enemigos_en_pantalla())
+			if not hay_enemigos:
+				_play_anim(["IDLE_DESARMADO", "IDLE_EXAMINAR", "IDLE"], 0.3)
+			else:
+				_play_anim(["IDLE_APUNTANDO", "IDLE_EXAMINAR", "IDLE"], 0.3)
 			_play_bow_anim("ARCO_IDLE", 0.3)
 			state_timer = randf_range(idle_min, idle_max)
 			_ocultar_flecha()
-		State.RELOADING:
-			# Tomar flecha más rápido (1.6x)
-			_play_anim("TOMAR_FLECHA", 0.2, 1.6)
-			_play_bow_anim("ARCO_IDLE", 0.2, 1.6)
-			var tomar_dur = _get_anim_length("TOMAR_FLECHA") / 1.6
-			state_timer = tomar_dur + 0.05
+			_flecha_soltada = false
+
+		State.SHOOTING, State.RELOADING, State.AIMING:
+			current_state = State.SHOOTING
+			_flecha_soltada = false
+			_tiempo_ataque_actual = 0.0
+			charge_duration = tiempo_carga_max
 			_mostrar_flecha()
-			# Desfase: iniciar ARCO_TENSAR a mitad de TOMAR_FLECHA
-			get_tree().create_timer(tomar_dur * 0.4).timeout.connect(
-				func():
-					if is_instance_valid(self) and current_state == State.RELOADING:
-						_play_bow_anim("ARCO_TENSAR", 0.2, 1.6)
-			)
-		State.AIMING:
-			# Apuntar — arco ya tenso, carga rápida
-			_play_anim("APUNTAR_IDLE", 0.2, 1.4)
-			charge_duration = randf_range(tiempo_carga_min, tiempo_carga_max)
-			state_timer = charge_duration
+			_play_anim(["TOMAFLEHCA_Y_DISPARA", "TOMAFLECHA_Y_DISPARA", "TOMA_FLECHA_Y_DISPARA", "TOMAFLECHA", "DISPARO"], 0.15, 1.0)
+			_play_bow_anim("ARCO_TENSAR", 0.2, 1.0)
 			AudioManager.play_sfx("bow_tension", -6.0)
-		State.SHOOTING:
-			# Disparar con salida rápida (1.6x)
-			_play_anim("DISPARO", 0.1, 1.6)
-			_play_bow_anim("ARCO_DISPARO", 0.1, 1.6)
-			state_timer = (_get_anim_length("DISPARO") / 1.6) + 0.1
-			_ocultar_flecha()
+			var dur: float = _get_anim_length("TOMAFLEHCA_Y_DISPARA")
+			state_timer = maxf(dur, tiempo_suelta_flecha + 0.3)
+
 		State.DYING:
 			_on_dying()
 		State.DEAD:
 			pass
 		State.GETTING_UP:
-			_play_anim("LEVANTARSE", 0.0)
+			_play_anim(["AGACHARSE", "ATERRIZAJE_POST_SALTO_O_CAIDA", "ATERRIZAJE_POST_SALTO_O", "LEVANTARSE"], 0.0)
 			_play_bow_anim("ARCO_IDLE", 0.0)
-			state_timer = _get_anim_length("LEVANTARSE")
+			state_timer = _get_anim_length("AGACHARSE")
 			_blink_timer = 0.0
 			_ocultar_flecha()
 			if ultima_muerte_anim == "MUERTE_01" and model_root:
@@ -640,9 +645,19 @@ func _cambiar_estado(nuevo: State):
 
 func _conectar_eventos_oleada() -> void:
 	var spawner = _get_cached_wave_spawner()
-	if spawner and spawner.has_signal("oleada_completada"):
-		if not spawner.oleada_completada.is_connected(_on_oleada_completada):
-			spawner.oleada_completada.connect(_on_oleada_completada)
+	if spawner:
+		if spawner.has_signal("oleada_iniciada"):
+			if not spawner.oleada_iniciada.is_connected(_on_oleada_iniciada):
+				spawner.oleada_iniciada.connect(_on_oleada_iniciada)
+		if spawner.has_signal("oleada_completada"):
+			if not spawner.oleada_completada.is_connected(_on_oleada_completada):
+				spawner.oleada_completada.connect(_on_oleada_completada)
+
+
+func _on_oleada_iniciada(_numero_oleada: int) -> void:
+	if current_state != State.DYING and current_state != State.DEAD:
+		_cambiar_estado(State.IDLE)
+		_play_anim(["IDLE_DESARMADO", "IDLE_EXAMINAR", "IDLE"], 0.3)
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
@@ -1041,8 +1056,10 @@ func _disparar():
 	elif arrow_node and is_instance_valid(arrow_node):
 		spawn_pos = arrow_node.global_position
 
-	# 3. Potencia proporcional al tiempo de carga
-	var power_ratio = clamp(charge_duration / tiempo_carga_max, 0.0, 1.0)
+	# 3. Potencia proporcional al tiempo de carga (100% de potencia con disparo cargado)
+	var power_ratio: float = 1.0
+	if tiempo_carga_max > 0.0 and charge_duration > 0.0:
+		power_ratio = clamp(charge_duration / tiempo_carga_max, 0.0, 1.0)
 	var speed = lerp(potencia_minima, potencia_maxima, power_ratio)
 
 	var direction: Vector3
@@ -1176,10 +1193,11 @@ func take_damage(amount: float):
 
 	# Reproducir animación de daño si sigue vivo (la sangre solo sale al morir)
 	if health > 0:
-		_play_anim("DAÑO_HIT", 0.05)
+		var dano_anim = ["DAÑO_01", "DAÑO_02"][randi() % 2]
+		_play_anim([dano_anim, "DAÑO_01", "DAÑO_02", "DAÑO_HIT", "DAÑO"], 0.05)
 		AudioManager.play_sfx("player_hurt")
 		# Volver al estado anterior tras la animación de daño
-		var dur = _get_anim_length("DAÑO_HIT")
+		var dur = _get_anim_length(dano_anim)
 		get_tree().create_timer(dur).timeout.connect(
 			func():
 				if (
@@ -1379,12 +1397,15 @@ func _get_bow_anim_length(anim_name: String) -> float:
 
 func _get_anim_length(anim_name: String) -> float:
 	if not anim_player:
-		return 2.0
-	for prefix in ["Armature|Armature|", "Armature|", ""]:
-		var full = prefix + anim_name
-		if anim_player.has_animation(full):
-			return anim_player.get_animation(full).length
-	return 2.0
+		return 3.5
+	var cand_lower := anim_name.to_lower()
+	for a in anim_player.get_animation_list():
+		var a_lower := a.to_lower()
+		if a_lower == cand_lower or a_lower.ends_with("/" + cand_lower) or cand_lower in a_lower:
+			var anim := anim_player.get_animation(a)
+			if anim:
+				return anim.length
+	return 3.5
 
 
 func _log_debug(parts: Array) -> void:

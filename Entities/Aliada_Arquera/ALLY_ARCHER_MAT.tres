@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d2kbgpvgerkd7"]
+
+[ext_resource type="Texture2D" uid="uid://bhohfa3yfi1d5" path="res://Entities/Aliada_Arquera/ALLY_ARCHER_D.jpg" id="1_wg3aa"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_5kwgv"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_khqci"]
+render_priority = 0
+shader = ExtResource("2_5kwgv")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_khqci")
+albedo_texture = ExtResource("1_wg3aa")
