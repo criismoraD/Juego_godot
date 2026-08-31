@@ -185,7 +185,7 @@ func _reset_particles():
 	for p in _get_particles():
 		p.restart()
 
-func _set_shader_params(name : String, value) -> void:
+func _set_shader_params(p_name : String, value) -> void:
 	for p in _get_particles():
 		if is_instance_valid(p):
 			if p.material_override is ShaderMaterial:

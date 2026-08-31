@@ -143,7 +143,7 @@ var _icono_aturdimiento_tween: Tween = null
 var disparo_bloqueado_por_ui: bool = false
 
 ## Cursor de mira personalizado durante la partida
-const TEXTURA_CURSOR_MIRA: String = "res://TEST_/Mira mouse.png"
+const TEXTURA_CURSOR_MIRA: String = "res://UI/Icons/Mira_mouse.png"
 ## Los cursores de hardware no soportan imágenes grandes (512px): se reduce
 const TAMANO_CURSOR_PX: int = 75
 
@@ -951,7 +951,7 @@ var _fall_start_y: float = 0.0
 var _was_in_air_from_height: bool = false
 
 func _spawn_fall_smoke() -> void:
-	var tex: Texture2D = load("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png") as Texture2D
+	var tex: Texture2D = load("res://VFX/Textures/Smoke/Smoke_2A-2.png") as Texture2D
 	if not tex:
 		return
 	for side in [-1, 1]:
@@ -1782,7 +1782,7 @@ func _setup_explosive_arrow_visual() -> void:
 	# 2. Si no existía en la escena, instanciarla dinámicamente como respaldo
 	if not explosive_arrow_node and arrow_node and arrow_node.get_parent():
 		var parent_attach = arrow_node.get_parent()
-		var glb_scene = load("res://TEST_/Flecha_Explosiva.glb") as PackedScene
+		var glb_scene = load("res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb") as PackedScene
 		if glb_scene:
 			explosive_arrow_node = glb_scene.instantiate() as Node3D
 			explosive_arrow_node.name = "Flecha_Explosiva2"
@@ -2228,12 +2228,12 @@ func _setup_icono_aturdimiento() -> void:
 	_icono_aturdimiento = Sprite3D.new()
 	_icono_aturdimiento.name = "IconoAturdimiento"
 	var tex: Texture2D = null
-	if not FileAccess.file_exists("res://TEST_/Icono aturdimiento.png.import"):
+	if not FileAccess.file_exists("res://UI/Icons/Icono_aturdimiento.png.import"):
 		var img := Image.new()
-		if img.load("res://TEST_/Icono aturdimiento.png") == OK:
+		if img.load("res://UI/Icons/Icono_aturdimiento.png") == OK:
 			tex = ImageTexture.create_from_image(img)
 	if not tex:
-		tex = load("res://TEST_/Icono aturdimiento.png") as Texture2D
+		tex = load("res://UI/Icons/Icono_aturdimiento.png") as Texture2D
 	_icono_aturdimiento.texture = tex
 	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_icono_aturdimiento.pixel_size = 0.0016

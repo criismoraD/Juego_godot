@@ -4,7 +4,7 @@ extends "res://addons/gut/test.gd"
 ## Se eliminara tras usarlo.
 
 const GLOBO_SCENE := preload("res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.tscn")
-const WRECK_SCENE = preload("res://TEST_/Globo destruido/Globo destruido.glb")
+const WRECK_SCENE = preload("res://Entities/Enemigo_GloboAerostatico/Globo_destruido.glb")
 
 
 func test_medir_aabb_wreck_vs_intacto():

@@ -8,7 +8,7 @@ const COLOR_MORADO: Color = Color(0.8, 0.2, 0.8)
 const RADIO_DANO: float = 1.5
 const DANO: float = 5.0
 const TEXTURA_ROCAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS.png")
-const SFX_IMPACTO_PESADO: AudioStream = preload("res://TEST_/Impacto pesado.mp3")
+const SFX_IMPACTO_PESADO: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Impacto_pesado.mp3")
 
 var _area_dano: Area3D = null
 var _golpeados: Dictionary = {}
@@ -279,8 +279,8 @@ func _crear_particulas_piedras_rebote() -> void:
 
 func _crear_humo_escalado(factor: float = 1.28) -> void:
 	# Replica exacta del humo VFXFactory pero escalado factor ~1.28 para "un poco más grande"
-	var tex: Texture2D = load("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png")
-	if not ResourceLoader.exists("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png"):
+	var tex: Texture2D = load("res://VFX/Textures/Smoke/Smoke_2A-2.png")
+	if not ResourceLoader.exists("res://VFX/Textures/Smoke/Smoke_2A-2.png"):
 		return
 	var floor_pos := global_position
 	var world_3d := get_world_3d()

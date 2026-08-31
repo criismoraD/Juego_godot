@@ -634,7 +634,7 @@ func _crear_punto_spawn() -> void:
 	spawn_marker = Node3D.new()
 	spawn_marker.name = "SpawnProyectil"
 
-	var skeleton := find_child("Skeleton3D", true, false) as Skeleton3D
+	skeleton = find_child("Skeleton3D", true, false) as Skeleton3D
 	if skeleton:
 		var bone_idx := _buscar_hueso_mano(skeleton)
 		if bone_idx != -1:
@@ -696,15 +696,15 @@ func _apagar_omni_light() -> void:
 		luz.visible = false
 
 
-func _buscar_hueso_mano(skeleton: Skeleton3D) -> int:
+func _buscar_hueso_mano(p_skeleton: Skeleton3D) -> int:
 	# Rig de la Gárgola usa nombres Blender (hand.r/hand.l)
 	for nombre in ["hand.r", "hand.l", "Hand_R", "Hand_L", "mixamorig_RightHand", "mixamorig_LeftHand"]:
-		var idx := skeleton.find_bone(nombre)
+		var idx := p_skeleton.find_bone(nombre)
 		if idx != -1:
 			return idx
 	# Fallback: hueso upper spine (entre las manos)
 	for nombre in ["spine_02.x", "spine_01.x", "neck.x", "Spine2", "mixamorig_Spine2"]:
-		var idx := skeleton.find_bone(nombre)
+		var idx := p_skeleton.find_bone(nombre)
 		if idx != -1:
 			return idx
 	return -1

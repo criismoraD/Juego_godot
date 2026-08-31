@@ -439,7 +439,7 @@ func _ajustar_subviewport_video_fondo(tamano_base: Vector2i) -> void:
 		if hijo is Control:
 			var control := hijo as Control
 			control.custom_minimum_size = Vector2(tamano_video)
-			control.size = Vector2(tamano_video)
+			control.set_deferred("size", Vector2(tamano_video))
 
 
 func _configurar_capas_dof_fondo() -> void:

@@ -1,10 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Components/Dialogue/SpeechBubbleUI.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://TEST_/pergamino_izq.png" id="2_izq"]
-[ext_resource type="Texture2D" path="res://TEST_/pergamino_centro.png" id="3_centro"]
-[ext_resource type="Texture2D" path="res://TEST_/pergamino_der.png" id="4_der"]
-[ext_resource type="Texture2D" path="res://TEST_/pergamino_cola.png" id="5_cola"]
+[ext_resource type="Texture2D" path="res://Components/Dialogue/Textures/Pergamino_izq.png" id="2_izq"]
+[ext_resource type="Texture2D" path="res://Components/Dialogue/Textures/Pergamino_centro.png" id="3_centro"]
+[ext_resource type="Texture2D" path="res://Components/Dialogue/Textures/Pergamino_der.png" id="4_der"]
+[ext_resource type="Texture2D" path="res://Components/Dialogue/Textures/Pergamino_cola.png" id="5_cola"]
 
 [node name="SpeechBubbleUI" type="Control"]
 layout_mode = 3

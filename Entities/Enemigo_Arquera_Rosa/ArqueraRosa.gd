@@ -15,7 +15,7 @@ extends "res://System/Core/EnemyBase.gd"
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const PROJECTILE_SCALE: Vector3 = Vector3.ONE
-const AURA_SOUND: AudioStream = preload("res://TEST_/Aura.mp3")
+const AURA_SOUND: AudioStream = preload("res://System/Audio/SFX/Aura.mp3")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS & CONFIGURACIÓN
@@ -225,7 +225,7 @@ func _romper_aura() -> void:
 
 
 func _spawn_smoke_aura_break() -> void:
-	var tex: Texture2D = load("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png") as Texture2D
+	var tex: Texture2D = load("res://VFX/Textures/Smoke/Smoke_2A-2.png") as Texture2D
 	if not tex:
 		return
 
@@ -556,8 +556,8 @@ func _configurar_flecha_visual_mano() -> void:
 		_pose_base_flecha_mano = flecha_visual_mano.transform
 
 
-func _actualizar_visibilidad_flecha_mano(visible_flag: bool) -> void:
+func _actualizar_visibilidad_flecha_mano(p_visible: bool) -> void:
 	if flecha_visual_mano and is_instance_valid(flecha_visual_mano):
-		flecha_visual_mano.visible = visible_flag
-		if visible_flag:
+		flecha_visual_mano.visible = p_visible
+		if p_visible:
 			flecha_visual_mano.transform = _pose_base_flecha_mano

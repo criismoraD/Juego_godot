@@ -471,7 +471,7 @@ func _ajustar_subviewport_video_fondo(tamano_base: Vector2i) -> void:
 		if hijo is Control:
 			var control := hijo as Control
 			control.custom_minimum_size = Vector2(tamano_video)
-			control.size = Vector2(tamano_video)
+			control.set_deferred("size", Vector2(tamano_video))
 
 
 func _configurar_capas_dof_fondo() -> void:
@@ -741,7 +741,7 @@ func _on_enemigo_eliminado_nivel(_enemigo: Node, _total_muertos: int) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _iniciar_nivel_1(supervivientes_pacificos: int = 0):
+func _iniciar_nivel_1(_supervivientes_pacificos: int = 0):
 	# Salto de oleada por debug: se aplica recién aquí, tras el diálogo inicial
 	# y el evento del goblin embajador. Los pacíficos (imp embajador + 2
 	# arqueras) quedan EXCLUIDOS de la limpieza para que no desaparezcan al

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b237jks82a01a"]
 
 [ext_resource type="Script" uid="uid://blejvb6c8cb4" path="res://Entities/Aliada_Ballestera/AllyBallestera.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://c21688k7g1tgd" path="res://TEST_/Ballestera_Aliada/BALLESTERA_ALIADA.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://c21688k7g1tgd" path="res://Entities/Aliada_Ballestera/BALLESTERA_ALIADA.glb" id="2_glb"]
 [ext_resource type="PackedScene" uid="uid://bg41ujege14mr" path="res://Entities/Enemigo_Goblin/BALLES_GOBLING.glb" id="3_ballesta"]
 
 [node name="AllyBallestera" type="Node3D" unique_id=718293019]

@@ -9,7 +9,7 @@ const MARCA_ZONA_CAIDA_REF = preload("res://Entities/Enemigo_Lonko/Marca_Zona_Ca
 const VFX_IMPACTO_AREA_REF = preload("res://assets/BinbunVFX/magic_areas/effects/pulse_area/pulse_area_vfx_02.tscn")
 const SFX_RAYO_ULT_STREAM = preload("res://Entities/Enemigo_Lonko/Sonido rayo ult.mp3")
 const TEXTURA_ROCAS_IMPACTO = preload("res://Entities/Enemigo_Lonko/ROCAS.png")
-const TEXTURA_HUMO_SALTO = preload("res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png")
+const TEXTURA_HUMO_SALTO = preload("res://VFX/Textures/Smoke/Smoke_2A-2.png")
 const SHADER_HUMO_ONDULANTE = preload("res://Entities/Enemigo_Lonko/humo_ondulante_impacto.gdshader")
 const ALTURA_IMPACTO_SUELO: float = 0.15  ## Impacta contra la superficie del suelo
 

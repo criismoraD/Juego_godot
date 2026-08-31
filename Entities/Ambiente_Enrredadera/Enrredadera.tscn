@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://enrredadera01"]
 
-[ext_resource type="Texture2D" path="res://TEST_/enrredadera.png" id="1_enrredadera"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_Enrredadera/enrredadera.png" id="1_enrredadera"]
 [ext_resource type="Shader" path="res://System/Shaders/arbustos_difuminados.gdshader" id="2_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_enrredadera"]

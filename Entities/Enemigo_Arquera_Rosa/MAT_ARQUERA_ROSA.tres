@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://bmqro7yxa8v4u"]
 
-[ext_resource type="Texture2D" path="res://TEST_/Arquera rosa/Textura_Arquera_Rosa_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" path="res://Entities/Enemigo_Arquera_Rosa/Textura_Arquera_Rosa_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

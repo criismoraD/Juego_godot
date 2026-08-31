@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://Entities/Item_Mensajera/IconoMensajeraFX.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://TEST_/Icono mensajeraFX.png" id="2_icono"]
+[ext_resource type="Texture2D" path="res://Entities/Item_Mensajera/Icono_mensajeraFX.png" id="2_icono"]
 [ext_resource type="PackedScene" uid="uid://b3u7kcd374bnv" path="res://assets/BinbunVFX/magic_areas/effects/rim_area/rim_area_vfx_03.tscn" id="3_vfx"]
 
 [sub_resource type="SphereShape3D" id="SphereShape_pickup"]

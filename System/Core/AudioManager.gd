@@ -108,7 +108,7 @@ func _load_all_sounds():
 
 	sfx_streams["player_laugh"] = [load("res://Entities/Jugador_Arquera/RISA_PERSONAJE.mp3")]
 
-	sfx_streams["obtencion_arma"] = [load("res://TEST_/Obtencion arma.mp3")]
+	sfx_streams["obtencion_arma"] = [load("res://System/Audio/SFX/Obtencion_arma.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
@@ -211,19 +211,19 @@ func _load_all_sounds():
 	sfx_streams["shield_hit"] = sfx_streams["shield_hit_crossbow"]
 
 	sfx_streams["shield_break"] = [load("res://Entities/Ambiente_Escudo/ESCUDO_ROTO.mp3")]
-	sfx_streams["refuerzo_escudo"] = [load("res://TEST_/refuerzo escudo.mp3")]
-	sfx_streams["parry"] = [load("res://TEST_/Parry.mp3")]
+	sfx_streams["refuerzo_escudo"] = [load("res://System/Audio/SFX/Refuerzo_escudo.mp3")]
+	sfx_streams["parry"] = [load("res://System/Audio/SFX/Parry.mp3")]
 	sfx_streams["aura_parry"] = sfx_streams["parry"]
-	sfx_streams["aura"] = [load("res://TEST_/Aura.mp3")]
+	sfx_streams["aura"] = [load("res://System/Audio/SFX/Aura.mp3")]
 	sfx_streams["aura_loop"] = sfx_streams["aura"]
 	sfx_streams["sangre_splash"] = [load("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_splash.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE DEFENSORA BALLESTERA
 	# ═══════════════════════════════════════════════════════════════════════════════
-	sfx_streams["muerte_ballestera"] = [load("res://TEST_/Muerte ballestera.mp3")]
+	sfx_streams["muerte_ballestera"] = [load("res://Entities/Aliada_Ballestera/Audio/Muerte_ballestera.mp3")]
 	sfx_streams["ballestera_death"] = sfx_streams["muerte_ballestera"]
-	sfx_streams["risa_victoria_ballestera"] = [load("res://TEST_/Risa victoria ballestera.mp3")]
+	sfx_streams["risa_victoria_ballestera"] = [load("res://Entities/Aliada_Ballestera/Audio/Risa_victoria_ballestera.mp3")]
 	sfx_streams["ballestera_victoria"] = sfx_streams["risa_victoria_ballestera"]
 	sfx_streams["ballestera_laugh"] = sfx_streams["risa_victoria_ballestera"]
 

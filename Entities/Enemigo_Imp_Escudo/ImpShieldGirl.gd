@@ -50,7 +50,7 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export var debug_logs_enabled: bool = false
 
 # === HUMO DE RETIRADA (mismo efecto que la arquera Lonko al correr) ===
-const TEXTURA_HUMO_RETIRADA: Texture2D = preload("res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png")
+const TEXTURA_HUMO_RETIRADA: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
 const HUMO_FRAMES_H: int = 9
 const HUMO_FRAMES_V: int = 1
 const HUMO_TAMANO_QUAD: float = 0.6552

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b7vyk4r3e2f5x"]
 
 [ext_resource type="Script" uid="uid://c86uwyp7215jm" path="res://System/Core/Arrow.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://c463x5x6uwew4" path="res://TEST_/Flecha_Explosiva.glb" id="2_37ece"]
+[ext_resource type="PackedScene" uid="uid://c463x5x6uwew4" path="res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb" id="2_37ece"]
 
 [sub_resource type="CapsuleShape3D" id="collision_shape"]
 radius = 0.03

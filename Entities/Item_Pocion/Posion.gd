@@ -8,6 +8,7 @@ extends Area3D
 # ═══════════════════════════════════════════════════════════════════════════════
 # SEÑALES Y ENUMS
 # ═══════════════════════════════════════════════════════════════════════════════
+@warning_ignore("unused_signal")
 signal picked_up(player: Node)
 
 enum State { IDLE, DISSOLVING }

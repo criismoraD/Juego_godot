@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://c0gtu2yrqpnxw"]
 
 [ext_resource type="Script" uid="uid://dyaiphccg5yjp" path="res://UI/GameUI.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://dhi0okfca6rce" path="res://TEST_/Icono puerta.png" id="2_puerta"]
+[ext_resource type="Texture2D" uid="uid://dhi0okfca6rce" path="res://UI/Icons/Icono_puerta.png" id="2_puerta"]
 [ext_resource type="Script" uid="uid://5kxgslas0ksh" path="res://UI/preview_fondo.gd" id="3_preview"]
-[ext_resource type="Texture2D" uid="uid://bfv5gfrqj73t8" path="res://TEST_/fondo_preview.png" id="4_fondo"]
+[ext_resource type="Texture2D" uid="uid://bfv5gfrqj73t8" path="res://UI/Assets/fondo_preview.png" id="4_fondo"]
 [ext_resource type="Script" uid="uid://by6g5fj5c6mhv" path="res://UI/icono_puerta_uniforme.gd" id="5_icono"]
 
 [node name="GameUI" type="CanvasLayer" unique_id=1424956817]

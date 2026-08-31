@@ -268,7 +268,7 @@ func _generar_cola_spawn() -> void:
 
 	# En Oleada 3: insertar la Arquera Rosa exactamente en la mitad de la oleada
 	if wave_num == 3 and escena_arquera_rosa:
-		var mitad: int = pool.size() / 2
+		var mitad: int = int(pool.size() / 2.0)
 		pool.insert(mitad, escena_arquera_rosa)
 
 	cola_spawn = pool
@@ -692,7 +692,7 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 			burst.append(escena_goblin_girl)
 			burst.append(escena_goblin)
 	else:
-		for i in range(int(refuerzos_cuerno_total / 2)):
+		for i in range(int(refuerzos_cuerno_total / 2.0)):
 			burst.append(escena_goblin)
 			burst.append(escena_goblin_girl)
 

@@ -53,8 +53,8 @@ func _intentar_conectar_player() -> void:
 		_conectar_player(player)
 
 
-const TEXTURA_FLECHA_EXPLOSIVA = preload("res://TEST_/FLECHA EXPLOSIVA ICONO/icono power up flecha explosiva.png")
-const TEXTURA_FLECHA_MULTIPLE = preload("res://TEST_/icono flecha multiple.png")
+const TEXTURA_FLECHA_EXPLOSIVA = preload("res://UI/Icons/Icono_Flecha_Explosiva.png")
+const TEXTURA_FLECHA_MULTIPLE = preload("res://UI/Icons/Icono_Flecha_Multiple.png")
 
 
 func _conectar_player(player: Node) -> void:

@@ -684,7 +684,7 @@ static func spawn_ground_blood_splatter(
 	return mesh_inst
 
 
-const TEXTURA_HUMO_SALTO_DEFENSORA: String = "res://TEST_/SmokeFX Lite SpriteSheet 2A-2.png"
+const TEXTURA_HUMO_SALTO_DEFENSORA: String = "res://VFX/Textures/Smoke/Smoke_2A-2.png"
 
 ## Crea la animación de humo de salto de la defensora expandiéndose a ambos lados
 ## cuando se rompe un escudo enemigo.

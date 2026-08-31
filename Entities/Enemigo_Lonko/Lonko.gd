@@ -23,9 +23,9 @@ const BLEND_ANIMACIONES: float = 0.2  ## Transición suave entre clips (evita el
 const DURACION_ESPEJO_SG: float = 0.15  ## Duración del volteo suave de escala al entrar/salir del IDLE
 
 ## Humo de pisadas: spritesheet SmokeFX Lite 1A-1 (tira horizontal 9x1 de 64px)
-const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://TEST_/HUMO_PISADAS/SmokeFX Lite SpriteSheet 1A-1.png")
+const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
 const TEXTURA_ROCAS_DEFAULT: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS.png")
-const TEXTURA_HUMO_PILAR_RES: Texture2D = preload("res://TEST_/SmokeFX Lite SpriteSheet 1A-8.png")
+const TEXTURA_HUMO_PILAR_RES: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_1A-8.png")
 const TEXTURA_PIEDRAS_NEGRAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/PIEDRAS_NEGRAS_ DESTRUCION.png")
 const DISSOLVE_SHADER_RES: Shader = preload("res://System/Shaders/dissolve.gdshader")
 const HUMO_PISADAS_FRAMES_H: int = 9
@@ -239,10 +239,10 @@ func _configurar_flecha_mano() -> void:
 
 	_recolorear_flecha_mano.call_deferred()
 
-func _set_arco_visible(visible: bool) -> void:
+func _set_arco_visible(p_visible: bool) -> void:
 	var arco := find_child("ARCO_GOBLING_GIRL", true, false) as Node3D
 	if arco:
-		arco.visible = visible
+		arco.visible = p_visible
 
 func _configurar_bow_lonko() -> void:
 	var bow_node := find_child("ARCO_GOBLING_GIRL", true, false)
@@ -271,12 +271,12 @@ func _play_idle_invertido() -> void:
 		return
 	# Invertir IDLE: buscar nombre real y reproducir hacia atrás desde el final
 	var idle_name: String = "IDLE"
-	var real_name: StringName = idle_name
+	var _real_name: StringName = idle_name
 	for n in anim_player.get_animation_list():
 		if idle_name in n:
-			real_name = n
+			_real_name = n
 			break
-	var dur: float = _get_animation_duration(idle_name)
+	var dur: float = _get_animation_duration(_real_name)
 	# Colocar al final y reproducir en reversa (from_end = true vía seek)
 	anim_player.seek(dur, true)
 	_play_animation(idle_name, 0.2, -1.0)
@@ -1278,14 +1278,14 @@ func _mostrar_flecha_electrica_en_mano(duracion_total: float) -> void:
 
 ## Muestra u oculta solo la flecha normal dentro del nodo FlechaMano
 ## (sin tocar el nodo padre, que ocultaría también al proyectil eléctrico).
-func _set_flecha_mano_meshes_visible(visible: bool) -> void:
+func _set_flecha_mano_meshes_visible(p_visible: bool) -> void:
 	if not flecha_visual_mano:
 		return
 	for mesh_node in flecha_visual_mano.find_children("*", "MeshInstance3D", true, false):
 		if mesh_node is MeshInstance3D:
-			mesh_node.visible = visible
+			mesh_node.visible = p_visible
 	if "trail_particles" in flecha_visual_mano and flecha_visual_mano.trail_particles:
-		flecha_visual_mano.trail_particles.emitting = visible
+		flecha_visual_mano.trail_particles.emitting = p_visible
 
 
 ## Libera (destruye) la flecha eléctrica si quedó en la mano sin lanzarse
@@ -1944,8 +1944,8 @@ func _hundir_y_disolver_pilar() -> void:
 
 	# 1. Aplicar shader de disolución tanto al pilar normal como al pilar destruido
 	var materials: Array[ShaderMaterial] = []
-	var dissolve_shader: Shader = DISSOLVE_SHADER_RES
-	if dissolve_shader:
+	var local_dissolve_shader: Shader = DISSOLVE_SHADER_RES
+	if local_dissolve_shader:
 		var meshes := pilar_to_destroy.find_children("*", "MeshInstance3D", true, false)
 		for mesh_node in meshes:
 			var mi := mesh_node as MeshInstance3D
@@ -1961,7 +1961,7 @@ func _hundir_y_disolver_pilar() -> void:
 				tex = tex_pilar_destruido if _pilar_fue_destruido_primero else tex_pilar_normal
 
 			var mat := ShaderMaterial.new()
-			mat.shader = dissolve_shader
+			mat.shader = local_dissolve_shader
 			if tex:
 				mat.set_shader_parameter("albedo_texture", tex)
 			mat.set_shader_parameter("glow_color", color_borde_disolucion)  # Verde lima

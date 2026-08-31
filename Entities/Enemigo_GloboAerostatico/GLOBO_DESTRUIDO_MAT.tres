@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://c3p58tt52hu6c"]
 
-[ext_resource type="Texture2D" uid="uid://d83ae6ti8oek" path="res://TEST_/Globo destruido/Globo destruido_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://d83ae6ti8oek" path="res://Entities/Enemigo_GloboAerostatico/Globo_destruido_D.jpg" id="1_tex"]
 
 [resource]
 albedo_texture = ExtResource("1_tex")

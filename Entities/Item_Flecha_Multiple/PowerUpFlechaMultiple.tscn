@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://e57160ycusxt"]
 
 [ext_resource type="Script" path="res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.gd" id="1_powerup"]
-[ext_resource type="PackedScene" uid="uid://c6vv883x573xa" path="res://TEST_/Flecha_Multiple.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://c6vv883x573xa" path="res://Entities/Item_Flecha_Multiple/Flecha_Multiple.glb" id="2_glb"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_powerup"]
 radius = 0.4

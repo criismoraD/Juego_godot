@@ -113,7 +113,7 @@ func _find_mesh_instance(node: Node):
 
 
 # Estado Gris Metálico (Reflejante)
-const TEXTURA_ICONO_ESCUDO: Texture2D = preload("res://TEST_/Icono escudo gis.png")
+const TEXTURA_ICONO_ESCUDO: Texture2D = preload("res://Entities/Ambiente_Escudo/Icono_escudo_gis.png")
 var es_metalico: bool = false
 var aguante_metalico: int = 0
 var material_metalico: StandardMaterial3D = null
@@ -200,7 +200,7 @@ func _ocultar_icono_potenciado() -> void:
 
 
 ## Recibe un impacto reflejante de flecha enemiga
-func recibir_golpe_reflejo(flecha: Node = null) -> void:
+func recibir_golpe_reflejo(_flecha: Node = null) -> void:
 	if not es_reflejante():
 		recibir_golpe(1)
 		return

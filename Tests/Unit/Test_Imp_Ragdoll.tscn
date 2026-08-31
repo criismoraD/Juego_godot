@@ -1,0 +1,171 @@
+[gd_scene format=3 uid="uid://b7v2y3x8k4nop"]
+
+[ext_resource type="Script" uid="uid://cbmst7c06o46e" path="res://Tests/Unit/Test_Imp_Ragdoll_TEST.gd" id="1_test_script"]
+[ext_resource type="PackedScene" uid="uid://ci5k1o8j2m0pq" path="res://Entities/Enemigo_Imp/ImpCuerpoRagdoll.tscn" id="2_ragdoll_scene"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_test"]
+sky_top_color = Color(0.25, 0.45, 0.75, 1)
+sky_horizon_color = Color(0.65, 0.75, 0.85, 1)
+ground_bottom_color = Color(0.12, 0.14, 0.16, 1)
+ground_horizon_color = Color(0.35, 0.4, 0.45, 1)
+
+[sub_resource type="Sky" id="Sky_test"]
+sky_material = SubResource("ProceduralSkyMaterial_test")
+
+[sub_resource type="Environment" id="Environment_test"]
+background_mode = 2
+sky = SubResource("Sky_test")
+ambient_light_source = 3
+ambient_light_color = Color(0.7, 0.75, 0.85, 1)
+tonemap_mode = 2
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(8, 0.4, 8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.22, 0.25, 0.3, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+material = SubResource("StandardMaterial3D_floor")
+size = Vector3(8, 0.4, 8)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.1, 0.12, 0.15, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.6, 0.9, 0.8)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(0.18, 0.45, 0.25, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.8, 0.4, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_impulse"]
+bg_color = Color(0.65, 0.35, 0.15, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.9, 0.55, 0.2, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_reset"]
+bg_color = Color(0.25, 0.28, 0.35, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.5, 0.6, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="Test_Imp_Ragdoll" type="Node3D" unique_id=1367969188]
+script = ExtResource("1_test_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=602446463]
+environment = SubResource("Environment_test")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1403874799]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 6, 0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1296947899]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1.1, 2.2)
+current = true
+fov = 50.0
+
+[node name="Piso" type="StaticBody3D" parent="." unique_id=1788372180]
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Piso" unique_id=1766312612]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Piso" unique_id=1920510824]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("BoxMesh_floor")
+
+[node name="ImpCuerpoRagdoll" parent="." unique_id=987654321 instance=ExtResource("2_ragdoll_scene")]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55201, 0)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1164251881]
+
+[node name="Panel" type="PanelContainer" parent="UI" unique_id=1077377151]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 260.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="UI/Panel" unique_id=1723770567]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Titulo" type="Label" parent="UI/Panel/VBox" unique_id=489903468]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "😈 TEST RAGDOLL - IMP CUERPO"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="UI/Panel/VBox" unique_id=507443368]
+layout_mode = 2
+
+[node name="BtnActivarRagdoll" type="Button" parent="UI/Panel/VBox" unique_id=916566693]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+text = "▶️ Activar Ragdoll"
+
+[node name="BtnActivarImpulso" type="Button" parent="UI/Panel/VBox" unique_id=1746096357]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_impulse")
+text = "💥 Activar con Impulso"
+
+[node name="BtnReiniciar" type="Button" parent="UI/Panel/VBox" unique_id=240574333]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_reset")
+text = "🔄 Reiniciar Posición"
+
+[node name="LblEstado" type="Label" parent="UI/Panel/VBox" unique_id=214764457]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 11
+text = "Estado: Listo"
+autowrap_mode = 2

@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/Ambiente_Canoa_Aliada/CanoaAliada.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://bduw0imvq6xeh" path="res://TEST_/Canoa aliada/Canoa aliada.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://bduw0imvq6xeh" path="res://Entities/Ambiente_Canoa_Aliada/Canoa_aliada.glb" id="2_model"]
 
 [node name="CanoaAliada" type="Node3D"]
 script = ExtResource("1_script")

@@ -1,8 +1,8 @@
 extends "res://addons/gut/test.gd"
 
-var ImpCuerpoRagdollScript = load("res://TEST_/IMP_EXPLOTADO/ImpCuerpoRagdoll.gd")
-var TestImpRagdollScene = load("res://TEST_/IMP_EXPLOTADO/Test_Imp_Ragdoll.tscn")
-var ImpCuerpoRagdollScene = load("res://TEST_/IMP_EXPLOTADO/ImpCuerpoRagdoll.tscn")
+var ImpCuerpoRagdollScript = load("res://Entities/Enemigo_Imp/ImpCuerpoRagdoll.gd")
+var TestImpRagdollScene = load("res://Tests/Unit/Test_Imp_Ragdoll.tscn")
+var ImpCuerpoRagdollScene = load("res://Entities/Enemigo_Imp/ImpCuerpoRagdoll.tscn")
 
 
 func test_escenas_existen_y_cargan():

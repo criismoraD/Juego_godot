@@ -1,6 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-const RAGDOLL_SCENE: PackedScene = preload("res://TEST_/IMP_EXPLOTADO/ImpCuerpoRagdoll.tscn")
+const RAGDOLL_SCENE: PackedScene = preload("res://Entities/Enemigo_Imp/ImpCuerpoRagdoll.tscn")
 const CANTIDAD_HUESOS_ESPERADA: int = 20
 const RADIO_MAX_METROS: float = 0.1
 const ALTURA_MAX_METROS: float = 0.5

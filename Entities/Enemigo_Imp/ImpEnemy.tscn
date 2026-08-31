@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bxf7er7bffp6c" path="res://Entities/Enemigo_Imp/ImpEnemy.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://cmdq85od8x1yy" path="res://Entities/Enemigo_Imp/IMP_ENEMIGO.glb" id="2_model"]
-[ext_resource type="PackedScene" uid="uid://ci5k1o8j2m0pq" path="res://TEST_/IMP_EXPLOTADO/ImpCuerpoRagdoll.tscn" id="3_ragdoll"]
-[ext_resource type="PackedScene" uid="uid://ctm3pu16fmkue" path="res://TEST_/IMP_EXPLOTADO/IMP_CABEZA.glb" id="4_cabeza"]
+[ext_resource type="PackedScene" uid="uid://ci5k1o8j2m0pq" path="res://Entities/Enemigo_Imp/ImpCuerpoRagdoll.tscn" id="3_ragdoll"]
+[ext_resource type="PackedScene" uid="uid://ctm3pu16fmkue" path="res://Entities/Enemigo_Imp/IMP_CABEZA.glb" id="4_cabeza"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_imp"]
 radius = 0.1328125

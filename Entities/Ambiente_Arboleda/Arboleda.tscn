@@ -1,6 +1,6 @@
 ﻿[gd_scene load_steps=4 format=3 uid="uid://cb5n2k1m8p9q0"]
 
-[ext_resource type="Texture2D" uid="uid://c1uqnixde72ak" path="res://TEST_/arboleda.png" id="1_arboleda"]
+[ext_resource type="Texture2D" uid="uid://c1uqnixde72ak" path="res://Entities/Ambiente_Arboleda/arboleda.png" id="1_arboleda"]
 [ext_resource type="Shader" path="res://System/Shaders/arbustos_difuminados.gdshader" id="2_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_arboleda"]

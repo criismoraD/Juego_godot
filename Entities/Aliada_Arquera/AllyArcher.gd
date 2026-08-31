@@ -227,19 +227,48 @@ func _aplicar_animaciones_protagonista() -> void:
 	var prota: Node = get_tree().get_first_node_in_group("player")
 	if not prota:
 		return
-	var prota_ap: AnimationPlayer = prota.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var prota_ap: AnimationPlayer = null
+	var all_prota_players = prota.find_children("*", "AnimationPlayer", true, false)
+	for p in all_prota_players:
+		var anims = p.get_animation_list()
+		var is_character := false
+		for a in anims:
+			if a.begins_with("Recurve Bow") or "ARCO" in a:
+				continue
+			if "IDLE" in a or "DISPARO" in a or "TOMAR_FLECHA" in a:
+				is_character = true
+				break
+		if is_character:
+			prota_ap = p
+			break
+	if not prota_ap:
+		prota_ap = prota.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if not prota_ap or prota_ap == anim_player:
 		return
 	for lib_name in prota_ap.get_animation_library_list():
+		if "Recurve Bow" in lib_name or "ARCO" in lib_name:
+			continue
 		var lib: AnimationLibrary = prota_ap.get_animation_library(lib_name)
 		if lib:
+			var has_bow_anim := false
+			for an in lib.get_animation_list():
+				if an.begins_with("Recurve Bow") or "ARCO" in an:
+					has_bow_anim = true
+					break
+			if has_bow_anim:
+				continue
 			if not anim_player.has_animation_library(lib_name):
 				anim_player.add_animation_library(lib_name, lib)
 			else:
 				var existing_lib: AnimationLibrary = anim_player.get_animation_library(lib_name)
 				for anim_name in lib.get_animation_list():
+					if anim_name.begins_with("Recurve Bow") or "ARCO" in anim_name:
+						continue
 					if not existing_lib.has_animation(anim_name):
 						existing_lib.add_animation(anim_name, lib.get_animation(anim_name))
+	for lib_name in anim_player.get_animation_library_list():
+		if "Recurve Bow" in lib_name or "ARCO" in lib_name:
+			anim_player.remove_animation_library(lib_name)
 
 
 func _buscar_arrow_node():
@@ -250,7 +279,7 @@ func _buscar_arrow_node():
 		var parent_attach = arrow_node.get_parent()
 		explosive_arrow_node = parent_attach.get_node_or_null("FLECHA_EXPLOSIVA_VISUAL") as Node3D
 		if not explosive_arrow_node:
-			var glb_scene = load("res://TEST_/Flecha_Explosiva.glb") as PackedScene
+			var glb_scene = load("res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb") as PackedScene
 			if glb_scene:
 				explosive_arrow_node = glb_scene.instantiate() as Node3D
 				explosive_arrow_node.name = "FLECHA_EXPLOSIVA_VISUAL"
@@ -356,12 +385,12 @@ func _setup_icono_aturdimiento() -> void:
 	_icono_aturdimiento = Sprite3D.new()
 	_icono_aturdimiento.name = "IconoAturdimiento"
 	var tex: Texture2D = null
-	if not FileAccess.file_exists("res://TEST_/Icono aturdimiento.png.import"):
+	if not FileAccess.file_exists("res://UI/Icons/Icono_aturdimiento.png.import"):
 		var img := Image.new()
-		if img.load("res://TEST_/Icono aturdimiento.png") == OK:
+		if img.load("res://UI/Icons/Icono_aturdimiento.png") == OK:
 			tex = ImageTexture.create_from_image(img)
 	if not tex:
-		tex = load("res://TEST_/Icono aturdimiento.png") as Texture2D
+		tex = load("res://UI/Icons/Icono_aturdimiento.png") as Texture2D
 	_icono_aturdimiento.texture = tex
 	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_icono_aturdimiento.pixel_size = 0.0016

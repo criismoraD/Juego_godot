@@ -143,7 +143,7 @@ func _on_state_dying():
 	)
 
 
-func _spawn_blood_splash(custom_modulate: Color = Color.WHITE) -> void:
+func _spawn_blood_splash(_custom_modulate: Color = Color.WHITE) -> void:
 	var color_final: Color = Color(0.8, 0.3, 1.0) if sangre_morada else Color.WHITE
 	super._spawn_blood_splash(color_final)
 

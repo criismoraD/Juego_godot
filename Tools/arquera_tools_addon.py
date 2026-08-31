@@ -32,6 +32,7 @@ bl_info = {
 
 import bpy
 import os
+import re
 from pathlib import Path
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bpy.props import CollectionProperty, StringProperty, EnumProperty, BoolProperty
@@ -81,53 +82,52 @@ class ARQUERA_OT_import_fbx_actions(Operator, ImportHelper):
             self.report({'ERROR'}, "No se seleccionaron archivos")
             return {'CANCELLED'}
 
+        # Comprobar si ya existe un Armature en la escena
         armature_principal = None
         for obj in bpy.data.objects:
             if obj.type == 'ARMATURE':
                 armature_principal = obj
                 break
 
-        if not armature_principal:
-            self.report({'ERROR'}, "No se encontro un Armature en la escena. Abre tu modelo primero.")
-            return {'CANCELLED'}
+        escena_vacia = (armature_principal is None)
 
         print("\n" + "=" * 60)
         print("IMPORTANDO ANIMACIONES FBX")
-        print(f"Armature principal: {armature_principal.name}")
+        if armature_principal:
+            print(f"Armature existente en escena: {armature_principal.name}")
+        else:
+            print("Escena sin esqueleto: El primer FBX se importara como modelo base (geometria + esqueleto)")
         print(f"Archivos seleccionados: {len(self.files)}")
         print("=" * 60)
 
         objetos_originales = set(bpy.data.objects)
         actions_importadas = []
 
-        for file_elem in self.files:
+        for idx, file_elem in enumerate(self.files):
             fbx_path = os.path.join(self.directory, file_elem.name)
             nombre_action = Path(file_elem.name).stem
 
-            print(f"\n-- Procesando: {file_elem.name} --")
+            print(f"\n-- [{idx + 1}/{len(self.files)}] Procesando: {file_elem.name} --")
 
             actions_antes = set(bpy.data.actions)
+            objetos_antes = set(bpy.data.objects)
 
             bpy.ops.import_scene.fbx(
                 filepath=fbx_path,
                 use_anim=True,
-                ignore_leaf_bones=True,
-                automatic_bone_orientation=True,
             )
             print("   Importado OK")
 
             actions_despues = set(bpy.data.actions)
             nuevas_actions = actions_despues - actions_antes
+            objetos_despues = set(bpy.data.objects)
+            objetos_nuevos = objetos_despues - objetos_antes
 
             action_nueva = None
-
             if nuevas_actions:
                 action_nueva = list(nuevas_actions)[0]
                 print(f"   Action encontrada (nueva): {action_nueva.name}")
             else:
-                objetos_actuales = set(bpy.data.objects)
-                objetos_nuevos = objetos_actuales - objetos_originales
-
                 for obj in objetos_nuevos:
                     if obj.type == 'ARMATURE' and obj.animation_data:
                         if obj.animation_data.action:
@@ -146,35 +146,53 @@ class ARQUERA_OT_import_fbx_actions(Operator, ImportHelper):
                     if action_nueva:
                         break
 
-            if action_nueva:
+            # Si la escena estaba vacia y es el PRIMER FBX, conservamos su modelo y esqueleto nativo
+            if escena_vacia and idx == 0:
+                for obj in objetos_nuevos:
+                    if obj.type == 'ARMATURE':
+                        armature_principal = obj
+                
+                # Actualizar conjunto original para no eliminar el modelo base en los siguientes FBX
+                objetos_originales = set(bpy.data.objects)
+
+                # Visualizacion limpia sin tocar matrices ni edit_bones
+                if armature_principal:
+                    if hasattr(armature_principal.data, "display_type"):
+                        armature_principal.data.display_type = 'STICK'
+                    armature_principal.show_in_front = True
+                print(f"   Modelo base conservado: Armature='{armature_principal.name if armature_principal else 'Desconocido'}'")
+            else:
+                # Si ya existía un modelo o es un archivo posterior, borramos los objetos duplicados importados
+                for obj in objetos_nuevos:
+                    if obj.name in bpy.data.objects:
+                        bpy.data.objects.remove(obj, do_unlink=True)
+                print(f"   Objetos duplicados eliminados ({len(objetos_nuevos)})")
+
+            if action_nueva and armature_principal:
                 old_name = action_nueva.name
                 action_nueva.name = nombre_action
                 action_nueva.use_fake_user = True
                 actions_importadas.append(action_nueva)
-                print(f"   Action renombrada: '{old_name}' -> '{nombre_action}'")
+                print(f"   Action registrada: '{old_name}' -> '{nombre_action}'")
 
                 if hasattr(action_nueva, 'slots'):
                     for slot in action_nueva.slots:
                         slot.name_display = armature_principal.name
-                        print(f"   Slot '{slot.identifier}' -> '{armature_principal.name}'")
-            else:
-                print("   [AVISO] No se encontro animacion")
 
-            objetos_actuales = set(bpy.data.objects)
-            objetos_a_borrar = objetos_actuales - objetos_originales
-
-            if objetos_a_borrar:
-                for obj in objetos_a_borrar:
-                    if obj.name in bpy.data.objects:
-                        bpy.data.objects.remove(obj, do_unlink=True)
-                print(f"   Objetos temporales eliminados ({len(objetos_a_borrar)})")
-
+        # Limpiar bloques huérfanos
         for arm_data in list(bpy.data.armatures):
             if arm_data.users == 0:
                 bpy.data.armatures.remove(arm_data)
         for mesh_data in list(bpy.data.meshes):
             if mesh_data.users == 0:
                 bpy.data.meshes.remove(mesh_data)
+
+        # Asignar la primera animación al esqueleto y actualizar el visualizador
+        if armature_principal and actions_importadas:
+            if not armature_principal.animation_data:
+                armature_principal.animation_data_create()
+            armature_principal.animation_data.action = actions_importadas[0]
+            context.scene.arquera_active_action = actions_importadas[0].name
 
         print("\n" + "=" * 60)
         print("RESULTADO:")
@@ -185,6 +203,243 @@ class ARQUERA_OT_import_fbx_actions(Operator, ImportHelper):
         print("=" * 60)
 
         self.report({'INFO'}, f"Importadas {len(actions_importadas)} animaciones")
+        return {'FINISHED'}
+
+
+def obtener_todas_las_fcurves(action):
+    """
+    Recopila todas las FCurves de un Action de forma 100% compatible
+    tanto con Blender 4.x/clasico como con el nuevo sistema de animaciones de Blender 5.x
+    (Layers -> Strips -> ChannelBags -> FCurves y Slotted Actions).
+    """
+    curvas_encontradas = []
+    vistos = set()
+
+    def registrar(fc_iterable):
+        if not fc_iterable:
+            return
+        try:
+            for fc in fc_iterable:
+                if fc and fc not in vistos:
+                    vistos.add(fc)
+                    curvas_encontradas.append(fc)
+        except Exception as e:
+            print(f"  [DEBUG] Error leyendo contenedor de fcurves: {e}")
+
+    # 1. API tradicional (Blender 4.x y legacy)
+    if hasattr(action, "fcurves"):
+        try:
+            registrar(action.fcurves)
+        except Exception:
+            pass
+
+    # 2. Blender 5.x: Animation 2025 (Layers -> Strips -> ChannelBags -> FCurves)
+    if hasattr(action, "layers"):
+        try:
+            for layer in action.layers:
+                if hasattr(layer, "strips"):
+                    for strip in layer.strips:
+                        if hasattr(strip, "channelbags"):
+                            for cb in strip.channelbags:
+                                if hasattr(cb, "fcurves"):
+                                    registrar(cb.fcurves)
+                        if hasattr(strip, "fcurves"):
+                            registrar(strip.fcurves)
+        except Exception as e:
+            print(f"  [DEBUG] Error en action.layers: {e}")
+
+    # 3. Blender 5.x: Action Slots
+    if hasattr(action, "slots"):
+        try:
+            for slot in action.slots:
+                if hasattr(slot, "fcurves"):
+                    registrar(slot.fcurves)
+                if hasattr(slot, "channelbags"):
+                    for cb in slot.channelbags:
+                        if hasattr(cb, "fcurves"):
+                            registrar(cb.fcurves)
+        except Exception as e:
+            print(f"  [DEBUG] Error en action.slots: {e}")
+
+    # 4. Blender 5.x: all_channel_bags o curves directas
+    if hasattr(action, "all_channel_bags"):
+        try:
+            for cb in action.all_channel_bags:
+                if hasattr(cb, "fcurves"):
+                    registrar(cb.fcurves)
+        except Exception:
+            pass
+
+    if hasattr(action, "curves"):
+        try:
+            registrar(action.curves)
+        except Exception:
+            pass
+
+    return curvas_encontradas
+
+
+def centrar_fcurves_de_action(action, frame_inicio=1, alinear_altura_reposo=True) -> int:
+    """
+    Procesa todas las curvas de posición en un Action:
+    - Ejes X (0) y Z (2): elimina todos los keyframes excepto 1 y lo fija en 0.0.
+    - Eje Y (1): resta el offset inicial de altura respecto a la postura en reposo.
+    """
+    if not action:
+        return 0
+
+    todas_fcurves = obtener_todas_las_fcurves(action)
+    print(f"\n[CENTRAR ANIMACION] Action: '{action.name}' | Blender: v{bpy.app.version_string} | FCurves totales encontradas: {len(todas_fcurves)}")
+
+    modificadas = 0
+
+    for fc in todas_fcurves:
+        dp = fc.data_path.lower()
+        if "location" not in dp:
+            continue
+
+        print(f"  -> Curva de posicion: '{fc.data_path}' [array_index: {fc.array_index}] con {len(fc.keyframe_points)} keyframes")
+
+        # Ejes X (0) y Z (2) en espacio Mixamo/FBX: anclar al origen horizontal 0.0
+        if fc.array_index in (0, 2):
+            # 1. Poner en 0.0 todos los keyframes existentes
+            for kp in fc.keyframe_points:
+                kp.co[1] = 0.0
+                kp.handle_left[1] = 0.0
+                kp.handle_right[1] = 0.0
+
+            # 2. Eliminar todos los keyframes excepto el primero
+            while len(fc.keyframe_points) > 1:
+                fc.keyframe_points.remove(fc.keyframe_points[-1])
+
+            # 3. Fijar el único keyframe restante en (frame_inicio, 0.0)
+            if len(fc.keyframe_points) == 1:
+                fc.keyframe_points[0].co = (frame_inicio, 0.0)
+                fc.keyframe_points[0].handle_left = (frame_inicio, 0.0)
+                fc.keyframe_points[0].handle_right = (frame_inicio, 0.0)
+            else:
+                fc.keyframe_points.insert(frame=frame_inicio, value=0.0)
+
+            fc.update()
+            modificadas += 1
+
+        # Eje Y (1) en espacio Mixamo/FBX: altura vertical calibrada al reposo (0.0 delta)
+        elif fc.array_index == 1 and alinear_altura_reposo:
+            if len(fc.keyframe_points) > 0:
+                y_inicial = fc.keyframe_points[0].co[1]
+                print(f"     Desfase de altura inicial Y restado: {y_inicial:.4f}")
+                if abs(y_inicial) > 0.00001:
+                    for kp in fc.keyframe_points:
+                        kp.co[1] -= y_inicial
+                        kp.handle_left[1] -= y_inicial
+                        kp.handle_right[1] -= y_inicial
+                    fc.update()
+                modificadas += 1
+
+    return modificadas
+
+
+def centrar_animacion_in_place(context, action, armature=None, alinear_altura_reposo=True) -> int:
+    if not action:
+        return 0
+
+    frame_inicio = int(action.frame_range[0]) if action.frame_range else 1
+    curvas_modificadas = centrar_fcurves_de_action(action, frame_inicio, alinear_altura_reposo)
+
+    # Restablecer la posición de objeto en Armature y Mesh
+    if armature:
+        armature.location = (0.0, 0.0, 0.0)
+
+        if armature.pose:
+            for pb in armature.pose.bones:
+                bn_lower = pb.name.lower()
+                if any(k in bn_lower for k in ("hip", "pelvis", "root", "cintura", "cadera", "bip01")) or pb.parent is None:
+                    pb.location = (0.0, 0.0, 0.0)
+
+        if not armature.animation_data:
+            armature.animation_data_create()
+        armature.animation_data.action = action
+        armature.update_tag()
+
+    mesh_obj = resolver_mesh_objetivo(context)
+    if mesh_obj:
+        mesh_obj.location = (0.0, 0.0, 0.0)
+
+    context.view_layer.update()
+    current_frame = context.scene.frame_current
+    context.scene.frame_set(current_frame)
+
+    print(f"  Resultado final: {curvas_modificadas} curvas modificadas.")
+    return curvas_modificadas
+
+
+class ARQUERA_OT_center_active_action(Operator):
+    """Centra la animacion seleccionada fijando la posicion X e Y de la cadera en 0 y alineando la altura Z a reposo"""
+
+    bl_idname = "arquera.center_active_action"
+    bl_label = "CENTRAR ANIMACION"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        # 1. Encontrar Armature
+        arm = None
+        if context.active_object and context.active_object.type == 'ARMATURE':
+            arm = context.active_object
+        elif context.active_object and context.active_object.type == 'MESH':
+            arm = buscar_armature_vinculado(context.active_object)
+
+        if not arm:
+            for obj in context.scene.objects:
+                if obj.type == 'ARMATURE':
+                    arm = obj
+                    break
+
+        # 2. Recopilar todas las acciones relevantes
+        acciones_a_procesar = set()
+
+        act_name = context.scene.arquera_active_action
+        if act_name and act_name != 'NONE':
+            a = bpy.data.actions.get(act_name)
+            if a:
+                acciones_a_procesar.add(a)
+
+        if arm and arm.animation_data and arm.animation_data.action:
+            acciones_a_procesar.add(arm.animation_data.action)
+
+        if not acciones_a_procesar:
+            for a in bpy.data.actions:
+                acciones_a_procesar.add(a)
+
+        if not acciones_a_procesar:
+            self.report({'ERROR'}, "No se encontro ninguna animacion activa")
+            return {'CANCELLED'}
+
+        # 3. Centrar curvas de todas las acciones identificadas
+        total_curvas = 0
+        ultima_act = None
+        for act in acciones_a_procesar:
+            curvas = centrar_animacion_in_place(context, act, arm)
+            total_curvas += curvas
+            ultima_act = act
+
+        # 4. Asegurar asignación en la armature y sincronizar UI
+        if arm and ultima_act:
+            if not arm.animation_data:
+                arm.animation_data_create()
+            arm.animation_data.action = ultima_act
+            arm.update_tag()
+
+        if ultima_act:
+            context.scene.arquera_active_action = ultima_act.name
+
+        context.view_layer.update()
+        context.scene.frame_set(context.scene.frame_current)
+
+        nombre_rep = ultima_act.name if ultima_act else "Activa"
+        if total_curvas > 0:
+            self.report({'INFO'}, f"Animacion '{nombre_rep}' centrada exitosamente ({total_curvas} curvas ajustadas)")
+        else:
+            self.report({'WARNING'}, f"Action '{nombre_rep}': no se encontraron curvas de traslacion")
         return {'FINISHED'}
 
 
@@ -238,20 +493,42 @@ def buscar_armature_vinculado(obj_mesh):
 
 def resolver_mesh_objetivo(context):
     obj_activo = context.active_object
+    if not obj_activo and context.selected_objects:
+        obj_activo = context.selected_objects[0]
+
     if not obj_activo:
+        meshes = [o for o in context.scene.objects if o.type == 'MESH']
+        if len(meshes) == 1:
+            return meshes[0]
         return None
 
     if obj_activo.type == 'MESH':
         return obj_activo
 
     if obj_activo.type == 'ARMATURE':
+        # 1. Buscar en hijos directos o recursivos
+        for child in obj_activo.children_recursive:
+            if child.type == 'MESH':
+                return child
+
+        # 2. Buscar en objetos seleccionados
         for obj in context.selected_objects:
-            if obj.type == 'MESH' and obj.find_armature() == obj_activo:
+            if obj.type == 'MESH' and (obj.parent == obj_activo or buscar_armature_vinculado(obj) == obj_activo):
                 return obj
 
+        # 3. Buscar en la escena objetos vinculados
         for obj in context.scene.objects:
-            if obj.type == 'MESH' and obj.find_armature() == obj_activo:
+            if obj.type == 'MESH' and (obj.parent == obj_activo or buscar_armature_vinculado(obj) == obj_activo):
                 return obj
+
+        # 4. Cualquier malla en la escena si solo hay una o principal
+        meshes = [o for o in context.scene.objects if o.type == 'MESH']
+        if meshes:
+            return meshes[0]
+
+    for obj in context.selected_objects:
+        if obj.type == 'MESH':
+            return obj
 
     return None
 
@@ -396,9 +673,28 @@ def preparar_modelo(context, obj):
 
     print(f"  OK Pivote ajustado a base: ({pivot_x:.3f}, {pivot_y:.3f}, {pivot_z:.3f})")
 
-    print("\n[4/4] Centrando modelo en el mundo...")
+    print("\n[4/4] Centrando modelo en el mundo y aplicando transformaciones...")
     obj.location = (0, 0, 0)
-    print("  OK Modelo centrado en (0, 0, 0)")
+
+    # Asegurar modo objeto y aplicar todas las transformaciones para dejar Loc=0, Rot=0, Scale=1
+    if context.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    context.view_layer.objects.active = obj
+    obj.select_set(True)
+    ejecutar_op_viewport(context, bpy.ops.object.transform_apply, location=True, rotation=True, scale=True)
+
+    arm = buscar_armature_vinculado(obj)
+    if arm:
+        arm.location = (0, 0, 0)
+        context.view_layer.objects.active = arm
+        arm.select_set(True)
+        ejecutar_op_viewport(context, bpy.ops.object.transform_apply, location=True, rotation=True, scale=True)
+        context.view_layer.objects.active = obj
+        # Limpiar formas gigantes y calibrar huesos al preparar
+        ajustar_huesos_de_armature(context, arm, obj)
+
+    print("  OK Modelo centrado y transformaciones aplicadas (Loc=0, Rot=0, Scale=1)")
 
     print(f"\n{'=' * 70}")
     print("PREPARACION COMPLETADA")
@@ -406,9 +702,14 @@ def preparar_modelo(context, obj):
 
 
 def exportar_solo_textura(context, obj, output_dir):
-    nombre_base = obj.name
-    if context.active_object:
-        nombre_base = context.active_object.name
+    # Siempre usar el nombre de la malla principal, incluso si está seleccionada la Armature
+    mesh_principal = resolver_mesh_objetivo(context)
+    if mesh_principal:
+        nombre_base = mesh_principal.name
+    elif obj.type == 'MESH':
+        nombre_base = obj.name
+    else:
+        nombre_base = obj.name
 
     print(f"\n{'=' * 70}")
     print(f"EXPORTANDO SOLO TEXTURA: {nombre_base}")
@@ -431,25 +732,39 @@ def exportar_solo_textura(context, obj, output_dir):
             if child.type == 'MESH':
                 meshes_a_exportar.add(child)
 
+    res_mode = getattr(context.scene, "arquera_texture_res", '1K')
+    target_dim = 1024 if res_mode == '1K' else 2048
+
     texturas_exportadas = 0
     for o in meshes_a_exportar:
         textura_difusa_imagen = buscar_textura_difusa(o)
         if textura_difusa_imagen:
             texture_out_path = output_dir / f"{o.name}_D.jpg"
-            formato_original = textura_difusa_imagen.file_format
-            ruta_original = textura_difusa_imagen.filepath_raw
 
+            # Crear copia temporal para escalar sin alterar la imagen original del proyecto
+            img_temp = textura_difusa_imagen.copy()
             try:
-                textura_difusa_imagen.filepath_raw = str(texture_out_path)
-                textura_difusa_imagen.file_format = 'JPEG'
-                textura_difusa_imagen.save()
+                orig_w, orig_h = img_temp.size
+                if orig_w > 0 and orig_h > 0:
+                    if orig_w >= orig_h:
+                        new_w = target_dim
+                        new_h = max(1, int(orig_h * (target_dim / orig_w)))
+                    else:
+                        new_h = target_dim
+                        new_w = max(1, int(orig_w * (target_dim / orig_h)))
+                    img_temp.scale(new_w, new_h)
+                    print(f"  Escalando textura de {orig_w}x{orig_h} a {new_w}x{new_h} ({res_mode})")
+
+                img_temp.filepath_raw = str(texture_out_path)
+                img_temp.file_format = 'JPEG'
+                img_temp.save()
                 print(f"  OK Textura exportada para {o.name}: {texture_out_path.name}")
                 texturas_exportadas += 1
             except Exception as e:
                 print(f"  ADVERTENCIA No se pudo exportar la textura de {o.name}: {e}")
             finally:
-                textura_difusa_imagen.filepath_raw = ruta_original
-                textura_difusa_imagen.file_format = formato_original
+                if img_temp and img_temp.name in bpy.data.images:
+                    bpy.data.images.remove(img_temp)
 
     if texturas_exportadas == 0:
         print("  AVISO No se encontraron texturas difusas para exportar")
@@ -461,10 +776,14 @@ def exportar_solo_textura(context, obj, output_dir):
 
 
 def exportar_modelo(context, obj, output_dir):
-    # Usar el objeto activo para determinar el nombre del archivo final
-    nombre_base = obj.name
-    if context.active_object:
-        nombre_base = context.active_object.name
+    # Siempre usar el nombre de la malla principal para el archivo GLB
+    mesh_principal = resolver_mesh_objetivo(context)
+    if mesh_principal:
+        nombre_base = mesh_principal.name
+    elif obj.type == 'MESH':
+        nombre_base = obj.name
+    else:
+        nombre_base = obj.name
 
     print(f"\n{'=' * 70}")
     print(f"EXPORTANDO MODELO: {nombre_base}")
@@ -554,18 +873,139 @@ def exportar_modelo(context, obj, output_dir):
     print(f"{'=' * 70}\n")
 
 
+def exportar_fbx_sin_animaciones(context, obj, output_dir):
+    mesh_principal = resolver_mesh_objetivo(context)
+    if mesh_principal:
+        nombre_base = mesh_principal.name
+    elif obj.type == 'MESH':
+        nombre_base = obj.name
+    else:
+        nombre_base = obj.name
+
+    print(f"\n{'=' * 70}")
+    print(f"EXPORTANDO FBX (SIN ANIMACIONES): {nombre_base}")
+    print(f"{'=' * 70}")
+
+    objetos_seleccionados = list(context.selected_objects)
+    if not objetos_seleccionados:
+        objetos_seleccionados = [obj]
+
+    armatures_a_exportar = set()
+    meshes_a_exportar = set()
+
+    for o in objetos_seleccionados:
+        if o.type == 'ARMATURE':
+            armatures_a_exportar.add(o)
+        elif o.type == 'MESH':
+            meshes_a_exportar.add(o)
+            arm = buscar_armature_vinculado(o)
+            if arm:
+                armatures_a_exportar.add(arm)
+
+        for child in o.children_recursive:
+            if child.type == 'MESH':
+                meshes_a_exportar.add(child)
+                arm = buscar_armature_vinculado(child)
+                if arm:
+                    armatures_a_exportar.add(arm)
+            elif child.type == 'ARMATURE':
+                armatures_a_exportar.add(child)
+
+    for arm in list(armatures_a_exportar):
+        for scene_obj in context.scene.objects:
+            if scene_obj.type == 'MESH':
+                if scene_obj.parent == arm or buscar_armature_vinculado(scene_obj) == arm:
+                    meshes_a_exportar.add(scene_obj)
+
+    todos_los_objetos = list(armatures_a_exportar) + list(meshes_a_exportar)
+
+    # Desvincular temporalmente la action de las armatures para garantizar 0 animaciones en el FBX
+    action_originales = {}
+    for arm in armatures_a_exportar:
+        if arm.animation_data and arm.animation_data.action:
+            action_originales[arm] = arm.animation_data.action
+            arm.animation_data.action = None
+
+    fbx_path = output_dir / f"{nombre_base}.fbx"
+
+    for o_scene in context.scene.objects:
+        o_scene.select_set(False)
+    for o in todos_los_objetos:
+        o.select_set(True)
+
+    if context.active_object in todos_los_objetos:
+        context.view_layer.objects.active = context.active_object
+    elif todos_los_objetos:
+        context.view_layer.objects.active = todos_los_objetos[0]
+
+    try:
+        bpy.ops.export_scene.fbx(
+            filepath=str(fbx_path),
+            use_selection=True,
+            bake_anim=False,
+            object_types={'ARMATURE', 'MESH'},
+            mesh_smooth_type='FACE',
+            add_leaf_bones=False,
+            primary_bone_axis='Y',
+            secondary_bone_axis='X',
+            armature_nodetype='NULL',
+            apply_unit_scale=True,
+            apply_scale_options='FBX_SCALE_ALL'
+        )
+        print(f"  OK FBX exportado sin animaciones: {fbx_path.name}")
+    except Exception as e:
+        print(f"  ERROR al exportar FBX: {e}")
+    finally:
+        # Restaurar animaciones en las armatures de la escena
+        for arm, act in action_originales.items():
+            if arm.animation_data:
+                arm.animation_data.action = act
+
+    print(f"\n{'=' * 70}")
+    print("EXPORTACION FBX COMPLETADA")
+    print(f"Archivo generado: {fbx_path}")
+    print(f"{'=' * 70}\n")
+
+
 class ARQUERA_OT_prepare_model(Operator):
-    """Ejecuta pasos 1-6 de preparacion"""
+    """Ejecuta Paso 1: Preparar Modelo (limpieza, merge, pivote y centrado)"""
 
     bl_idname = "arquera.prepare_model"
-    bl_label = "Preparar Modelo (pasos 1-6)"
+    bl_label = "Preparar Modelo - Paso 1"
     bl_options = {'REGISTER', 'UNDO'}
+
+    nombre_modelo: StringProperty(
+        name="Nombre del Modelo",
+        description="Nombre que se asignara al objeto/modelo y sus recursos",
+        default=""
+    )
+
+    def invoke(self, context, event):
+        obj = resolver_mesh_objetivo(context)
+        if not obj:
+            self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado")
+            return {'CANCELLED'}
+
+        # Prellenar con el nombre actual
+        self.nombre_modelo = obj.name
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Ingresa el nombre del modelo:", icon='OBJECT_DATAMODE')
+        layout.prop(self, "nombre_modelo", text="")
 
     def execute(self, context):
         obj = resolver_mesh_objetivo(context)
         if not obj:
             self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado")
             return {'CANCELLED'}
+
+        nuevo_nombre = self.nombre_modelo.strip()
+        if nuevo_nombre:
+            obj.name = nuevo_nombre
+            if context.active_object and context.active_object != obj:
+                context.active_object.name = nuevo_nombre
 
         preparar_modelo(context, obj)
         self.report({'INFO'}, f"Preparacion completada: {obj.name}")
@@ -599,6 +1039,44 @@ class ARQUERA_OT_export_model(Operator, ExportHelper):
 
         exportar_modelo(context, obj, output_dir)
         self.report({'INFO'}, f"Exportacion completada: {obj.name}.glb")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        if not resolver_mesh_objetivo(context):
+            self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado antes de ejecutar")
+            return {'CANCELLED'}
+
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ARQUERA_OT_export_fbx_no_anim(Operator, ExportHelper):
+    """Exporta el modelo y esqueleto en formato FBX sin ninguna animacion"""
+
+    bl_idname = "arquera.export_fbx_no_anim"
+    bl_label = "Exportar FBX (Sin Animaciones)"
+    bl_options = {'PRESET', 'UNDO'}
+
+    filename_ext = ""
+    filter_folder = True
+
+    directory: StringProperty(
+        name="Directorio",
+        description="Carpeta donde se exportara el archivo FBX",
+        subtype='DIR_PATH'
+    )
+
+    def execute(self, context):
+        obj = resolver_mesh_objetivo(context)
+        if not obj:
+            self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado")
+            return {'CANCELLED'}
+
+        output_dir = Path(self.directory)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        exportar_fbx_sin_animaciones(context, obj, output_dir)
+        self.report({'INFO'}, f"FBX exportado sin animaciones: {obj.name}.fbx")
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -651,44 +1129,220 @@ class ARQUERA_OT_export_texture_only(Operator, ExportHelper):
         return {'RUNNING_MODAL'}
 
 
-class ARQUERA_OT_prepare_and_export_model(Operator, ExportHelper):
-    """Ejecuta pasos 1-8 de preparacion y exportacion"""
+def obtener_nombres_huesos_con_peso(mesh_obj) -> set:
+    huesos_con_peso = set()
+    if not mesh_obj or mesh_obj.type != 'MESH' or not mesh_obj.data:
+        return huesos_con_peso
 
-    bl_idname = "arquera.prepare_and_export_model"
-    bl_label = "Preparar + Exportar (pasos 1-8)"
-    bl_options = {'PRESET', 'UNDO'}
+    vg_map = {vg.index: vg.name for vg in mesh_obj.vertex_groups}
+    for v in mesh_obj.data.vertices:
+        for g in v.groups:
+            if g.weight > 0.0001 and g.group in vg_map:
+                huesos_con_peso.add(vg_map[g.group])
+    return huesos_con_peso
 
-    filename_ext = ""
-    filter_folder = True
 
-    directory: StringProperty(
-        name="Directorio",
-        description="Carpeta donde se exportaran los archivos",
-        subtype='DIR_PATH'
+def ajustar_huesos_de_armature(context, armature_obj=None, mesh_obj=None) -> bool:
+    """
+    Mide el modelo 3D y ajusta la escala visual de los huesos en la Armature:
+    - Elimina todos los huesos terminales/nub bones sin influencia (HeadTop_End, Toe_End, Thumb4_end, etc.)
+    - Elimina icósferas, aros y formas personalizadas
+    - Ajusta la longitud de los huesos restantes a la proporción del cuerpo
+    - Mantiene intactos el skinning, pesos y matrices de animación.
+    """
+    if not armature_obj:
+        if context.active_object and context.active_object.type == 'ARMATURE':
+            armature_obj = context.active_object
+        else:
+            m = resolver_mesh_objetivo(context)
+            if m:
+                mesh_obj = m
+                armature_obj = buscar_armature_vinculado(m)
+
+    if not armature_obj or armature_obj.type != 'ARMATURE':
+        for o in context.scene.objects:
+            if o.type == 'ARMATURE':
+                armature_obj = o
+                break
+
+    if not armature_obj or armature_obj.type != 'ARMATURE':
+        print("  AVISO No se encontro un Armature valido para ajustar huesos")
+        return False
+
+    if not mesh_obj:
+        for o in context.scene.objects:
+            if o.type == 'MESH' and (o.parent == armature_obj or buscar_armature_vinculado(o) == armature_obj):
+                mesh_obj = o
+                break
+
+    # 1. Medir la altura real del modelo 3D
+    altura_modelo = 1.0
+    if mesh_obj and mesh_obj.data and len(mesh_obj.data.vertices) > 0:
+        z_coords = [(mesh_obj.matrix_world @ v.co).z for v in mesh_obj.data.vertices]
+        if z_coords:
+            altura_modelo = max(0.1, max(z_coords) - min(z_coords))
+    elif armature_obj.dimensions.z > 0:
+        altura_modelo = max(0.1, armature_obj.dimensions.z)
+
+    longitud_ideal_punta = max(0.02, altura_modelo * 0.04)
+
+    # 2. Desactivar y LIMPIAR Custom Shapes (círculos e icósferas) de todos los Pose Bones
+    if hasattr(armature_obj.data, "show_bone_custom_shapes"):
+        armature_obj.data.show_bone_custom_shapes = False
+
+    if armature_obj.pose:
+        for pb in armature_obj.pose.bones:
+            pb.custom_shape = None
+            if hasattr(pb, "custom_shape_scale_xyz"):
+                pb.custom_shape_scale_xyz = (1.0, 1.0, 1.0)
+
+    # 3. Eliminar colecciones y objetos huérfanos de formas creadas por el importador glTF
+    objetos_forma_a_borrar = []
+    for o in list(bpy.data.objects):
+        nombre_lower = o.name.lower()
+        if "gltf_not_exported" in nombre_lower or "bone_shape" in nombre_lower or "icosphere" in nombre_lower or "circle" in nombre_lower:
+            if o.type in {'MESH', 'CURVE', 'EMPTY'} and o != mesh_obj:
+                objetos_forma_a_borrar.append(o)
+
+    for o in objetos_forma_a_borrar:
+        bpy.data.objects.remove(o, do_unlink=True)
+
+    for col in list(bpy.data.collections):
+        if "gltf_not_exported" in col.name.lower():
+            bpy.data.collections.remove(col)
+
+    # 4. Modo EDIT: Normalizar la longitud visual de las puntas y cabeza (sin borrar huesos para preservar animaciones)
+    modo_original = context.mode
+    if modo_original != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    context.view_layer.objects.active = armature_obj
+    armature_obj.select_set(True)
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    huesos_ajustados = 0
+    for eb in armature_obj.data.edit_bones:
+        dir_vec = eb.tail - eb.head
+        if dir_vec.length == 0:
+            continue
+
+        # Si es hueso de punta/terminal (leaf bone) o hueso de cabeza
+        if len(eb.children) == 0:
+            eb.tail = eb.head + dir_vec.normalized() * longitud_ideal_punta
+            huesos_ajustados += 1
+        elif "head" in eb.name.lower() and len(eb.children) <= 1:
+            max_head_len = max(0.04, altura_modelo * 0.08)
+            if dir_vec.length > max_head_len:
+                eb.tail = eb.head + dir_vec.normalized() * max_head_len
+                huesos_ajustados += 1
+        elif dir_vec.length > altura_modelo * 0.35:
+            eb.tail = eb.head + dir_vec.normalized() * (altura_modelo * 0.15)
+            huesos_ajustados += 1
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    # 5. Configurar visualización limpia como STICK (varillas finas)
+    if hasattr(armature_obj.data, "display_type"):
+        armature_obj.data.display_type = 'STICK'
+    armature_obj.show_in_front = True
+
+    print(f"  OK Huesos visualmente normalizados ({huesos_ajustados} huesos)")
+    return True
+
+
+class ARQUERA_OT_import_glb_clean(Operator, ImportHelper):
+    """Importa un archivo GLB/glTF configurando automaticamente los huesos limpios y proporcionales"""
+
+    bl_idname = "arquera.import_glb_clean"
+    bl_label = "Importar GLB (Auto-Ajustar Huesos)"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    filename_ext = ".glb"
+    filter_glob: StringProperty(
+        default="*.glb;*.gltf",
+        options={'HIDDEN'}
     )
 
     def execute(self, context):
-        obj = resolver_mesh_objetivo(context)
-        if not obj:
-            self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado")
+        try:
+            bpy.ops.import_scene.gltf(
+                filepath=self.filepath,
+                bone_heuristic='TEMPERANCE',
+                disable_bone_shape=True,
+            )
+        except Exception as e:
+            self.report({'ERROR'}, f"Error al importar GLB: {e}")
             return {'CANCELLED'}
 
-        output_dir = Path(self.directory)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        preparar_modelo(context, obj)
-        exportar_modelo(context, obj, output_dir)
-
-        self.report({'INFO'}, f"Pipeline completado: {obj.name}.glb")
+        # Auto-ajustar visualización de huesos recién importados
+        ajustar_huesos_de_armature(context)
+        self.report({'INFO'}, "GLB importado con huesos limpios y proporcionados")
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        if not resolver_mesh_objetivo(context):
-            self.report({'ERROR'}, "Debes seleccionar un MESH o ARMATURE con MESH vinculado antes de ejecutar")
-            return {'CANCELLED'}
 
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
+class ARQUERA_OT_clean_scene(Operator):
+    """Elimina el cubo, camaras y luces por defecto de la escena"""
+
+    bl_idname = "arquera.clean_scene"
+    bl_label = "Limpiar Escena"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        objetos_a_borrar = []
+        for obj in context.scene.objects:
+            if obj.name.lower().startswith("cube") or obj.name.lower().startswith("cubo") or obj.type in {'CAMERA', 'LIGHT'}:
+                objetos_a_borrar.append(obj)
+
+        if objetos_a_borrar:
+            for obj in objetos_a_borrar:
+                bpy.data.objects.remove(obj, do_unlink=True)
+            for mesh in list(bpy.data.meshes):
+                if mesh.users == 0:
+                    bpy.data.meshes.remove(mesh)
+            self.report({'INFO'}, f"Escena limpia: {len(objetos_a_borrar)} objeto/s eliminados")
+        else:
+            self.report({'INFO'}, "La escena ya esta limpia")
+        return {'FINISHED'}
+
+
+def obtener_lista_actions(self, context):
+    items = [('NONE', "-- Sin Animacion --", "No reproduce ninguna animacion")]
+    for act in bpy.data.actions:
+        items.append((act.name, act.name, f"Reproducir animacion: {act.name}"))
+    return items
+
+
+def al_cambiar_action(self, context):
+    selected_act_name = context.scene.arquera_active_action
+    
+    arm = None
+    if context.active_object and context.active_object.type == 'ARMATURE':
+        arm = context.active_object
+    else:
+        m = resolver_mesh_objetivo(context)
+        if m:
+            arm = buscar_armature_vinculado(m)
+
+    if not arm:
+        for o in context.scene.objects:
+            if o.type == 'ARMATURE':
+                arm = o
+                break
+
+    if arm:
+        if not arm.animation_data:
+            arm.animation_data_create()
+
+        if selected_act_name == 'NONE':
+            arm.animation_data.action = None
+        else:
+            act = bpy.data.actions.get(selected_act_name)
+            if act:
+                arm.animation_data.action = act
+                if act.frame_range:
+                    context.scene.frame_start = int(act.frame_range[0])
+                    context.scene.frame_end = int(act.frame_range[1])
+                    context.scene.frame_current = int(act.frame_range[0])
 
 
 class ARQUERA_PT_tools_panel(Panel):
@@ -698,65 +1352,143 @@ class ARQUERA_PT_tools_panel(Panel):
     bl_idname = "ARQUERA_PT_tools"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'ARQUERA'
+    bl_category = 'Arquera Tools'
 
     def draw(self, context):
         layout = self.layout
 
-        box_anim = layout.box()
-        box_anim.label(text="Animaciones", icon='ANIM')
-        box_anim.operator(
-            "arquera.import_fbx_actions",
-            text="Importar FBX Actions",
-            icon='IMPORT',
+        # Botón Limpiar Escena arriba de todo (Destacado en Rojo / Alert)
+        box_clean = layout.box()
+        col_clean = box_clean.column()
+        col_clean.alert = True
+        col_clean.scale_y = 1.25
+        col_clean.operator(
+            "arquera.clean_scene",
+            text="LIMPIAR ESCENA",
+            icon='TRASH',
         )
 
+        # Sección de Animaciones y Rig
+        box_anim = layout.box()
+        box_anim.label(text="Animaciones / Rig", icon='ANIM')
+        
+        col_anim = box_anim.column(align=True)
+        col_anim.scale_y = 1.15
+        col_anim.operator(
+            "arquera.import_glb_clean",
+            text="Importar GLB (Auto-Ajuste)",
+            icon='IMPORT',
+        )
+        col_anim.operator(
+            "arquera.import_fbx_actions",
+            text="Importar FBX Actions",
+            icon='ACTION',
+        )
+
+        # Selector de Actions / Animaciones
+        if len(bpy.data.actions) > 0:
+            box_anim.separator()
+            row_act_lbl = box_anim.row()
+            row_act_lbl.label(text="Visualizar Animacion:", icon='PLAY')
+            box_anim.prop(context.scene, "arquera_active_action", text="")
+
+            box_anim.separator()
+            col_inplace = box_anim.column()
+            col_inplace.scale_y = 1.25
+            col_inplace.operator(
+                "arquera.center_active_action",
+                text="CENTRAR ANIMACION",
+                icon='SNAP_MIDPOINT',
+            )
+
+        # Sección de Exportación
         box_exp = layout.box()
-        box_exp.label(text="Exportacion", icon='EXPORT')
+        box_exp.label(text="Exportacion de Modelos", icon='EXPORT')
 
         mesh_objetivo = resolver_mesh_objetivo(context)
         if mesh_objetivo:
-            box_exp.label(text=f"Objeto: {mesh_objetivo.name}", icon='MESH_DATA')
-            box_exp.prop(context.scene, "arquera_pivot_mode")
+            # Indicador de objeto activo
+            row_obj = box_exp.row(align=True)
+            row_obj.label(text=f"Objeto: {mesh_objetivo.name}", icon='CHECKMARK')
+            
+            # Selector de pivote en botones (Base / Centro)
+            box_exp.label(text="Alineacion Pivote:")
+            row_piv = box_exp.row(align=True)
+            row_piv.scale_y = 1.1
+            row_piv.prop(context.scene, "arquera_pivot_mode", expand=True)
+
             box_exp.prop(context.scene, "arquera_merge_enabled")
+            
+            # Selector de resolución de textura (1K / 2K)
+            box_exp.label(text="Resolucion Textura:")
+            row_res = box_exp.row(align=True)
+            row_res.scale_y = 1.1
+            row_res.prop(context.scene, "arquera_texture_res", expand=True)
+
             box_exp.separator()
-            box_exp.operator(
+            
+            # Botón Paso 1 (Destacado en caja individual)
+            box_p1 = box_exp.box()
+            col_p1 = box_p1.column()
+            col_p1.scale_y = 1.3
+            col_p1.operator(
                 "arquera.prepare_model",
-                text="Preparar Modelo (1-6)",
-                icon='MODIFIER',
+                text="Preparar Modelo - Paso 1",
+                icon='TOOL_SETTINGS',
             )
-            box_exp.operator(
+
+            # Botón Paso 2 GLB (Destacado en caja individual)
+            box_p2 = box_exp.box()
+            col_p2 = box_p2.column()
+            col_p2.scale_y = 1.3
+            col_p2.operator(
                 "arquera.export_model",
-                text="Exportar GLB + JPG (7-8)",
-                icon='EXPORT',
+                text="Exportar GLB + JPG - Paso 2",
+                icon='FILE_TICK',
             )
-            box_exp.operator(
+
+            # Botón FBX
+            box_fbx = box_exp.box()
+            col_fbx = box_fbx.column()
+            col_fbx.scale_y = 1.15
+            col_fbx.operator(
+                "arquera.export_fbx_no_anim",
+                text="Exportar FBX (Sin Animaciones)",
+                icon='OUTLINER_OB_ARMATURE',
+            )
+
+            # Botón Solo Textura
+            box_tex = box_exp.box()
+            col_tex = box_tex.column()
+            col_tex.scale_y = 1.1
+            col_tex.operator(
                 "arquera.export_texture_only",
                 text="Exportar Solo Textura (JPG)",
                 icon='IMAGE_DATA',
             )
-            box_exp.operator(
-                "arquera.prepare_and_export_model",
-                text="Preparar + Exportar (1-8)",
-                icon='FILE_TICK',
-            )
         elif context.active_object:
-            box_exp.label(text="Selecciona MESH o ARMATURE valido", icon='ERROR')
+            row_warn = box_exp.row()
+            row_warn.alert = True
+            row_warn.label(text="Selecciona un MESH o ARMATURE valido", icon='ERROR')
         else:
-            box_exp.label(text="Sin objeto activo", icon='ERROR')
+            row_info = box_exp.row()
+            row_info.label(text="Sin objeto seleccionado en la escena", icon='INFO')
 
         box_info = layout.box()
         box_info.label(text="Info del Proyecto", icon='INFO')
         box_info.label(text="Arrow of Anathema")
-        box_info.label(text="Godot 4.6")
+        box_info.label(text="Godot 4.x Engine")
 
 
 classes = (
+    ARQUERA_OT_clean_scene,
+    ARQUERA_OT_import_glb_clean,
     ARQUERA_OT_import_fbx_actions,
+    ARQUERA_OT_center_active_action,
     ARQUERA_OT_prepare_model,
     ARQUERA_OT_export_model,
+    ARQUERA_OT_export_fbx_no_anim,
     ARQUERA_OT_export_texture_only,
-    ARQUERA_OT_prepare_and_export_model,
     ARQUERA_PT_tools_panel,
 )
 
@@ -768,8 +1500,8 @@ def register():
         name="Alineacion Pivote",
         description="Elige como centrar el pivote del modelo",
         items=[
-            ('BOTTOM', "Base / Punto mas bajo", "Centra el pivote en el fondo del bounding box (ideal para personajes)"),
-            ('CENTER', "Centro geometrico", "Centra el pivote en el centro del bounding box (ideal para proyectiles y objetos voladores)"),
+            ('BOTTOM', "Base", "Centra el pivote en el fondo del bounding box (ideal para personajes)"),
+            ('CENTER', "Centro", "Centra el pivote en el centro del bounding box (ideal para proyectiles y objetos voladores)"),
         ],
         default='BOTTOM'
     )
@@ -777,6 +1509,21 @@ def register():
         name="Merge by Distance",
         description="Activa/desactiva la fusion de vertices duplicados en Preparar Modelo",
         default=True,
+    )
+    bpy.types.Scene.arquera_texture_res = EnumProperty(
+        name="Resolucion de Textura",
+        description="Escala las texturas exportadas a 1K o 2K",
+        items=[
+            ('1K', "1K", "Escala la textura a 1024px"),
+            ('2K', "2K", "Escala la textura a 2048px"),
+        ],
+        default='1K'
+    )
+    bpy.types.Scene.arquera_active_action = EnumProperty(
+        name="Animacion",
+        description="Selecciona una animacion para previsualizar en el modelo",
+        items=obtener_lista_actions,
+        update=al_cambiar_action
     )
     print("OK Arquera Tools registrado")
 
@@ -788,6 +1535,10 @@ def unregister():
         del bpy.types.Scene.arquera_pivot_mode
     if hasattr(bpy.types.Scene, "arquera_merge_enabled"):
         del bpy.types.Scene.arquera_merge_enabled
+    if hasattr(bpy.types.Scene, "arquera_texture_res"):
+        del bpy.types.Scene.arquera_texture_res
+    if hasattr(bpy.types.Scene, "arquera_active_action"):
+        del bpy.types.Scene.arquera_active_action
     print("OK Arquera Tools desregistrado")
 
 

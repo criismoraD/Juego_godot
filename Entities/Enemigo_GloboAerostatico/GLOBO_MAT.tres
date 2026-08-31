@@ -1,6 +1,6 @@
 ﻿[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://cglobomatr01"]
 
-[ext_resource type="Texture2D" uid="uid://clr8kskuoistg" path="res://TEST_/Goblo aerostatico/Globo aerostatico_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://clr8kskuoistg" path="res://Entities/Enemigo_GloboAerostatico/Globo_aerostatico_D.jpg" id="1_tex"]
 
 [resource]
 albedo_texture = ExtResource("1_tex")

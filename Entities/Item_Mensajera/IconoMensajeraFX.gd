@@ -6,7 +6,7 @@ extends Area3D
 
 signal activada
 
-const SFX_REFUERZO_MENSAJERA: AudioStream = preload("res://TEST_/Sonido refuerzo mensajera.mp3")
+const SFX_REFUERZO_MENSAJERA: AudioStream = preload("res://System/Audio/SFX/Sonido_refuerzo_mensajera.mp3")
 
 @export_category("Flotación")
 @export var altura_flotacion: float = 0.75  ## Altura del icono sobre la base del VFX

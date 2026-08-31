@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bm0jqt2dsk6ik"]
+
+[ext_resource type="Texture2D" uid="uid://c6wrdj578x15c" path="res://Entities/Enemigo_Imp/IMP_CABEZA_D.jpg" id="1_xdc7w"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_3pg23"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_uivko"]
+render_priority = 0
+shader = ExtResource("2_3pg23")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_uivko")
+albedo_texture = ExtResource("1_xdc7w")

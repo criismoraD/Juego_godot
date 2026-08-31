@@ -108,8 +108,8 @@ const TEXTURA_PIEDRAS_NEGRAS_RES: Texture2D = preload(
 var explocion_pilar_scene: PackedScene = preload("res://Entities/Enemigo_Lonko/Explocion_Pilar.tscn")
 var sfx_explosion_01: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION01.mp3")
 var sfx_explosion_02: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION02.mp3")
-var sfx_globo_callendo: AudioStream = preload("res://TEST_/Sonido globo callendo.mp3")
-var sfx_fuego1: AudioStream = preload("res://TEST_/Fuego1.mp3")
+var sfx_globo_callendo: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Sonido_globo_callendo.mp3")
+var sfx_fuego1: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Fuego1.mp3")
 
 var _modelo_globo_destruido_node: Node3D = null
 

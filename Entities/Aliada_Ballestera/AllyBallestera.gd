@@ -387,12 +387,12 @@ func _setup_icono_aturdimiento() -> void:
 	_icono_aturdimiento = Sprite3D.new()
 	_icono_aturdimiento.name = "IconoAturdimiento"
 	var tex: Texture2D = null
-	if not FileAccess.file_exists("res://TEST_/Icono aturdimiento.png.import"):
+	if not FileAccess.file_exists("res://UI/Icons/Icono_aturdimiento.png.import"):
 		var img := Image.new()
-		if img.load("res://TEST_/Icono aturdimiento.png") == OK:
+		if img.load("res://UI/Icons/Icono_aturdimiento.png") == OK:
 			tex = ImageTexture.create_from_image(img)
 	if not tex:
-		tex = load("res://TEST_/Icono aturdimiento.png") as Texture2D
+		tex = load("res://UI/Icons/Icono_aturdimiento.png") as Texture2D
 	_icono_aturdimiento.texture = tex
 	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_icono_aturdimiento.pixel_size = 0.0016
@@ -1150,12 +1150,39 @@ func _importar_animaciones_jugador() -> void:
 		return
 	var prota = get_tree().get_first_node_in_group("player")
 	if prota:
-		var prota_ap = prota.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		var prota_ap: AnimationPlayer = null
+		var all_prota_players = prota.find_children("*", "AnimationPlayer", true, false)
+		for p in all_prota_players:
+			var anims = p.get_animation_list()
+			var is_character := false
+			for a in anims:
+				if a.begins_with("Recurve Bow") or "ARCO" in a:
+					continue
+				if "IDLE" in a or "DISPARO" in a or "TOMAR_FLECHA" in a or "CAMINAR" in a or "SUBIR" in a:
+					is_character = true
+					break
+			if is_character:
+				prota_ap = p
+				break
+		if not prota_ap:
+			prota_ap = prota.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		if prota_ap:
 			for lib_name in prota_ap.get_animation_library_list():
+				if "Recurve Bow" in lib_name or "ARCO" in lib_name:
+					continue
 				var lib = prota_ap.get_animation_library(lib_name)
 				if lib and not anim_player.has_animation_library(lib_name):
+					var has_bow := false
+					for an in lib.get_animation_list():
+						if "ARCO" in an or an.begins_with("Recurve Bow"):
+							has_bow = true
+							break
+					if has_bow:
+						continue
 					anim_player.add_animation_library(lib_name, lib)
+			for lib_name in anim_player.get_animation_library_list():
+				if "Recurve Bow" in lib_name or "ARCO" in lib_name:
+					anim_player.remove_animation_library(lib_name)
 
 	# Asegurar looping en todas las animaciones de movimiento y escaleras
 	for a in anim_player.get_animation_list():

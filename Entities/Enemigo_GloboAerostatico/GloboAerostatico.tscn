@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://ckav1w63yds0v"]
 
 [ext_resource type="Script" uid="uid://drrwx2pijhll4" path="res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://83bv0c7r7vwf" path="res://TEST_/Goblo aerostatico/Globo aerostatico.glb" id="2_model_globo"]
+[ext_resource type="PackedScene" uid="uid://83bv0c7r7vwf" path="res://Entities/Enemigo_GloboAerostatico/Globo_aerostatico.glb" id="2_model_globo"]
 [ext_resource type="Material" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_MAT.tres" id="3_mat_globo"]
-[ext_resource type="PackedScene" uid="uid://b8lvuys7l34k8" path="res://TEST_/Globo destruido/Globo destruido.glb" id="6_model_destruido"]
+[ext_resource type="PackedScene" uid="uid://b8lvuys7l34k8" path="res://Entities/Enemigo_GloboAerostatico/Globo_destruido.glb" id="6_model_destruido"]
 [ext_resource type="Material" uid="uid://c3p58tt52hu6c" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_DESTRUIDO_MAT.tres" id="7_mat_destruido"]
-[ext_resource type="PackedScene" uid="uid://ccanastaglb01" path="res://TEST_/Canasta/Canasta.glb" id="8_model_canasta"]
+[ext_resource type="PackedScene" uid="uid://ccanastaglb01" path="res://Entities/Enemigo_GloboAerostatico/Canasta.glb" id="8_model_canasta"]
 [ext_resource type="PackedScene" path="res://Entities/Enemigo_GloboAerostatico/GoblinTripulante.tscn" id="9_tripulante"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
