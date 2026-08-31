@@ -2,27 +2,23 @@ class_name PuertaTrigger
 extends Area3D
 
 ## Controlador de interacción con la puerta de la torre.
-## - Se activa ÚNICAMENTE al terminar la oleada (cortinilla de victoria / intermisión) Y al acercarse el jugador.
-## - Muestra el IconoPuerta de GameUI.tscn en su posición exacta configurada en el editor.
-## - Enciende PLANO_ILUMINADO con efecto parpadeante en blanco semi-transparente.
-## - Al mantener W o Espacio por 2s: camina hacia el fondo y ejecuta la transición circular a Player_Interior.tscn.
-## - Guarda la posición de retorno para volver exactamente al mismo punto al salir de la habitación.
+## - Se activa y muestra ÚNICAMENTE durante las cortinillas entre oleadas (intermisión / victoria) Y al pisar el trigger.
+## - Durante el combate o al inicio de la oleada permanece 100% OCULTO e INACTIVO.
+## - Al presionar Flecha Arriba (↑) o W durante la cortinilla sobre el trigger:
+##   centra al jugador con la puerta en X, gira hacia el fondo, entra caminando y ejecuta la cortinilla circular a Player_Interior.tscn.
 
-@export var tiempo_requerido: float = 2.0
 @export var escena_destino: String = "res://Levels/Player_Interior.tscn"
 
 var _oleada_activa: bool = true
-var _en_cortinilla_victoria: bool = false
+var _en_cortinilla_entre_oleadas: bool = false
 
 var _jugador_dentro: bool = false
 var _jugador_ref: CharacterBody3D = null
-var _tiempo_mantenido: float = 0.0
 var _transicion_en_curso: bool = false
 
 var _plano_iluminado: MeshInstance3D = null
 var _material_plano: StandardMaterial3D = null
 var _icono_ui_gameui: TextureRect = null
-var _label_ui_prompt: Label = null
 var _tiempo_anim: float = 0.0
 
 
@@ -37,6 +33,7 @@ func _inicializar() -> void:
 	_conectar_spawner()
 	_buscar_plano_iluminado()
 	_buscar_icono_gameui()
+	_apagar_todo()
 
 
 func _conectar_spawner() -> void:
@@ -54,13 +51,23 @@ func _conectar_spawner() -> void:
 
 func _on_oleada_iniciada(_numero_oleada: int) -> void:
 	_oleada_activa = true
-	_en_cortinilla_victoria = false
-	_apagar_indicadores()
+	_en_cortinilla_entre_oleadas = false
+	_apagar_todo()
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
 	_oleada_activa = false
-	_en_cortinilla_victoria = true
+	_en_cortinilla_entre_oleadas = true
+
+
+func _esta_en_cortinilla_entre_oleadas() -> bool:
+	if _transicion_en_curso:
+		return false
+	var cortinillas = get_tree().get_nodes_in_group("pantalla_victoria_cortinilla")
+	for c in cortinillas:
+		if is_instance_valid(c) and c.is_inside_tree() and c.visible:
+			return true
+	return (_en_cortinilla_entre_oleadas and not _oleada_activa)
 
 
 func _buscar_plano_iluminado() -> void:
@@ -78,10 +85,10 @@ func _buscar_plano_iluminado() -> void:
 		_material_plano = load("res://Entities/Ambiente_Torre/PLANO_ILUMINADO_MAT.tres") as StandardMaterial3D
 		if _material_plano:
 			_material_plano = _material_plano.duplicate() as StandardMaterial3D
-			_material_plano.albedo_color = Color(1.0, 1.0, 1.0, 0.20)
+			_material_plano.albedo_color = Color(1.0, 1.0, 1.0, 0.06)
 			_material_plano.emission_enabled = true
 			_material_plano.emission = Color(1.0, 1.0, 1.0, 1.0)
-			_material_plano.emission_energy_multiplier = 1.6
+			_material_plano.emission_energy_multiplier = 0.7
 			_plano_iluminado.material_override = _material_plano
 
 
@@ -93,105 +100,41 @@ func _buscar_icono_gameui() -> void:
 		_icono_ui_gameui = game_ui.find_child("IconoPuerta", true, false) as TextureRect
 		if _icono_ui_gameui:
 			_icono_ui_gameui.visible = false
-			# Crear label informativo debajo del icono si no existe
-			if not _label_ui_prompt:
-				_label_ui_prompt = Label.new()
-				_label_ui_prompt.name = "LabelPromptPuerta"
-				_label_ui_prompt.text = "Mantén [W] o [Espacio]"
-				_label_ui_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				_label_ui_prompt.add_theme_font_size_override("font_size", 15)
-				_label_ui_prompt.add_theme_color_override("font_outline_color", Color.BLACK)
-				_label_ui_prompt.add_theme_constant_override("outline_size", 5)
-				_label_ui_prompt.position = Vector2(-35, 115)
-				_label_ui_prompt.size = Vector2(180, 25)
-				_label_ui_prompt.visible = false
-				_icono_ui_gameui.add_child(_label_ui_prompt)
-
-
-func _puede_interactuar() -> bool:
-	if _transicion_en_curso:
-		return false
-	var hay_cortinilla := get_tree().get_nodes_in_group("pantalla_victoria_cortinilla").size() > 0
-	return (_en_cortinilla_victoria or hay_cortinilla or not _oleada_activa)
 
 
 func _process(delta: float) -> void:
 	if _transicion_en_curso:
 		return
 
-	_verificar_proximidad_jugador()
+	var en_cortinilla: bool = _esta_en_cortinilla_entre_oleadas()
 
-	var activo: bool = _puede_interactuar() and _jugador_dentro and is_instance_valid(_jugador_ref)
-
-	if not activo:
-		_apagar_indicadores()
-		_tiempo_mantenido = 0.0
-		return
-
-	# Mostrar indicadores y parpadear plano iluminado en blanco
-	_tiempo_anim += delta * 4.5
+	# 1. La flecha roja SE MUESTRA SIEMPRE durante las cortinillas entre oleadas
 	if not _icono_ui_gameui or not is_instance_valid(_icono_ui_gameui):
 		_buscar_icono_gameui()
 
 	if _icono_ui_gameui:
-		_icono_ui_gameui.visible = true
-		if _label_ui_prompt:
-			_label_ui_prompt.visible = true
+		_icono_ui_gameui.visible = en_cortinilla
 
+	# 2. El plano blanco SOLO se muestra cuando se pisa el trigger durante la cortinilla
+	var pisando_trigger: bool = en_cortinilla and _jugador_dentro and is_instance_valid(_jugador_ref)
 	if _plano_iluminado:
-		_plano_iluminado.visible = true
-		if _material_plano:
-			var alpha_pulso = 0.10 + (sin(_tiempo_anim * 1.5) * 0.5 + 0.5) * 0.18
+		_plano_iluminado.visible = pisando_trigger
+		if pisando_trigger and _material_plano:
+			_tiempo_anim += delta * 4.0
+			var alpha_pulso = 0.03 + (sin(_tiempo_anim * 1.5) * 0.5 + 0.5) * 0.05
 			_material_plano.albedo_color.a = alpha_pulso
 
-	# Detectar pulsación mantenida de W o Espacio
-	var manteniendo := (
-		Input.is_key_pressed(KEY_W)
-		or Input.is_key_pressed(KEY_SPACE)
-		or Input.is_action_pressed("move_up")
-		or Input.is_action_pressed("jump")
-	)
+	# 3. Detectar si presiona Flecha Arriba o W para entrar (solo al pisar el trigger en la cortinilla)
+	if pisando_trigger:
+		var presiono_arriba: bool = (
+			Input.is_action_just_pressed("ui_up")
+			or Input.is_action_just_pressed("move_up")
+			or Input.is_key_pressed(KEY_UP)
+			or Input.is_key_pressed(KEY_W)
+		)
 
-	if manteniendo:
-		_tiempo_mantenido += delta
-		if _label_ui_prompt:
-			var pct := int(clampf(_tiempo_mantenido / tiempo_requerido, 0.0, 1.0) * 100.0)
-			_label_ui_prompt.text = "Entrando... %d%%" % pct
-
-		if _tiempo_mantenido >= tiempo_requerido:
+		if presiono_arriba:
 			_iniciar_secuencia_entrada()
-	else:
-		_tiempo_mantenido = maxf(0.0, _tiempo_mantenido - delta * 3.0)
-		if _label_ui_prompt:
-			_label_ui_prompt.text = "Mantén [W] o [Espacio]"
-
-
-func _apagar_indicadores() -> void:
-	if _icono_ui_gameui and is_instance_valid(_icono_ui_gameui):
-		_icono_ui_gameui.visible = false
-	if _label_ui_prompt and is_instance_valid(_label_ui_prompt):
-		_label_ui_prompt.visible = false
-	if _plano_iluminado:
-		_plano_iluminado.visible = false
-
-
-func _verificar_proximidad_jugador() -> void:
-	if not is_inside_tree():
-		return
-	if not _jugador_ref or not is_instance_valid(_jugador_ref):
-		var prota: Node = get_tree().get_first_node_in_group("player")
-		if not prota:
-			prota = get_tree().root.find_child("Player", true, false)
-		if prota and prota is CharacterBody3D:
-			var dx: float = absf(prota.global_position.x - global_position.x)
-			var dz: float = absf(prota.global_position.z - global_position.z)
-			if dx < 1.8 and dz < 2.5:
-				_on_body_entered(prota)
-	else:
-		var dx: float = absf(_jugador_ref.global_position.x - global_position.x)
-		var dz: float = absf(_jugador_ref.global_position.z - global_position.z)
-		if dx > 2.2 or dz > 3.0:
-			_on_body_exited(_jugador_ref)
 
 
 func _on_body_entered(body: Node3D) -> void:
@@ -200,20 +143,26 @@ func _on_body_entered(body: Node3D) -> void:
 	if body.is_in_group("player") or body.name == "Player" or body is CharacterBody3D:
 		_jugador_dentro = true
 		_jugador_ref = body as CharacterBody3D
-		_tiempo_mantenido = 0.0
 
 
 func _on_body_exited(body: Node3D) -> void:
-	if body == _jugador_ref:
+	if body == _jugador_ref or body.is_in_group("player") or body.name == "Player":
 		_jugador_dentro = false
 		_jugador_ref = null
-		_tiempo_mantenido = 0.0
-		_apagar_indicadores()
+		if _plano_iluminado:
+			_plano_iluminado.visible = false
+
+
+func _apagar_todo() -> void:
+	if _plano_iluminado:
+		_plano_iluminado.visible = false
+	if _icono_ui_gameui and is_instance_valid(_icono_ui_gameui):
+		_icono_ui_gameui.visible = false
 
 
 func _iniciar_secuencia_entrada() -> void:
 	_transicion_en_curso = true
-	_apagar_indicadores()
+	_apagar_todo()
 
 	var dest := escena_destino
 	if not ResourceLoader.exists(dest):
@@ -226,9 +175,9 @@ func _iniciar_secuencia_entrada() -> void:
 		SceneManager.cambiar_escena_cortinilla_circular(dest)
 		return
 
-	# Guardar posición para regresar al mismo punto
+	# Guardar posición de retorno (centrado frente a la puerta)
 	if has_node("/root/SceneManager"):
-		get_node("/root/SceneManager").posicion_retorno_puerta = _jugador_ref.global_position
+		get_node("/root/SceneManager").posicion_retorno_puerta = Vector3(global_position.x, _jugador_ref.global_position.y, _jugador_ref.global_position.z)
 
 	# 1. Desactivar físicas y control de la arquera
 	_jugador_ref.set_physics_process(false)
@@ -243,13 +192,14 @@ func _iniciar_secuencia_entrada() -> void:
 		model = _jugador_ref
 
 	var tween := create_tween().set_parallel(true)
-	tween.tween_property(model, "rotation:y", 0.0, 0.35).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(model, "rotation:y", 0.0, 0.3).set_trans(Tween.TRANS_SINE)
 
-	# Caminar hacia el fondo (-Z)
-	var pos_final: Vector3 = _jugador_ref.global_position + Vector3(0, 0, -1.8)
-	tween.tween_property(_jugador_ref, "global_position:z", pos_final.z, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# 3. Centrar al jugador con la puerta en X y caminar hacia el fondo (-Z)
+	tween.tween_property(_jugador_ref, "global_position:x", global_position.x, 0.3).set_trans(Tween.TRANS_SINE)
+	var pos_final_z: float = _jugador_ref.global_position.z - 1.8
+	tween.tween_property(_jugador_ref, "global_position:z", pos_final_z, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
-	# 3. Activar animación de caminar hacia adelante
+	# 4. Activar animación de caminar hacia adelante
 	var anim_tree = _jugador_ref.find_child("AnimationTree", true, false) as AnimationTree
 	var anim_player = _jugador_ref.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if anim_tree:
@@ -260,6 +210,6 @@ func _iniciar_secuencia_entrada() -> void:
 				anim_player.play(a)
 				break
 
-	# 4. Transición con cortinilla circular
-	await get_tree().create_timer(0.3).timeout
+	# 5. Transición con cortinilla circular
+	await get_tree().create_timer(0.35).timeout
 	SceneManager.cambiar_escena_cortinilla_circular(dest)

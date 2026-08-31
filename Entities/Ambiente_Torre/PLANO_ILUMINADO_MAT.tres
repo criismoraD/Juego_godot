@@ -1,6 +1,11 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bbtp53gfveije"]
+[gd_resource type="StandardMaterial3D" format=3]
 
 [resource]
 transparency = 1
+blend_mode = 0
+cull_mode = 0
 shading_mode = 0
-albedo_color = Color(1, 1, 1, 0.22)
+albedo_color = Color(1.0, 1.0, 1.0, 0.08)
+emission_enabled = true
+emission = Color(1.0, 1.0, 1.0, 1.0)
+emission_energy_multiplier = 0.8

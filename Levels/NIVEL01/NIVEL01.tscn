@@ -129,7 +129,7 @@ material = SubResource("StandardMaterial3D_dust")
 size = Vector2(0.12, 0.12)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_3xd07"]
-size = Vector3(0.9172363, 2.9414063, 6)
+size = Vector3(0.9172363, 2.4794922, 6)
 
 [node name="Node3D" type="Node3D" unique_id=615207129]
 script = ExtResource("Script_Level01")
@@ -846,7 +846,7 @@ collision_mask = 7
 script = ExtResource("48_puerta_script")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PUERTA_TRIGER" unique_id=1633856025]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23718262, -0.5292969, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23718262, -0.7602539, 0)
 shape = SubResource("BoxShape3D_3xd07")
 
 [editable path="Player"]

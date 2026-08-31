@@ -4,7 +4,8 @@
 [ext_resource type="PackedScene" uid="uid://dxecxqd34tdkl" path="res://Levels/Nivel_Interior/ESCUDO_ORNAMENTO.glb" id="2_ymvt4"]
 [ext_resource type="PackedScene" uid="uid://b47rnohfxphm3" path="res://Levels/Nivel_Interior/CAMA.glb" id="3_h1umv"]
 [ext_resource type="PackedScene" uid="uid://cao2k4m8x3p10" path="res://Entities/Jugador_Arquera/Player_Interior.tscn" id="4_k4oaa"]
-[ext_resource type="Script" path="res://Levels/Nivel_Interior/Interio.gd" id="5_script"]
+[ext_resource type="Script" uid="uid://bwoumpgxkr26h" path="res://Levels/Nivel_Interior/Interio.gd" id="5_script"]
+[ext_resource type="PackedScene" uid="uid://cxqj298dm482x" path="res://Levels/Nivel_Interior/MesaConfiguracion.tscn" id="6_mesa"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_estruc"]
 size = Vector3(2, 1.0500488, 2)
@@ -67,8 +68,7 @@ visible = false
 shape = SubResource("BoxShape3D_estruc4")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=303092174]
-transform = Transform3D(0.99976206, 0.00019036434, 0.021814058, -0.0102224285, 0.8874657, 0.46076038, -0.019271517, -0.46087372, 0.88725644, 0.032613397, 0.7255602, 0.99690837)
-projection = 1
+transform = Transform3D(0.99976206, 0.00019036277, 0.021814058, -0.0048413035, 0.9769624, 0.21335663, -0.0212709, -0.21341148, 0.9767308, 0.032613397, 0.4847675, 0.9650651)
 fov = 45.0
 size = 0.565
 
@@ -82,4 +82,7 @@ transform = Transform3D(1, 0, 0, 0, 0.20947836, 0.9778133, 0, -0.9778133, 0.2094
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2242768, 0.05599332, -0.015722513)
 
 [node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_k4oaa")]
-transform = Transform3D(0.09, 0, 0, 0, 0.09, 0, 0, 0, 0.09, -0.0052376688, 0.17480378, 0.09736249)
+transform = Transform3D(0.09, 0, 0, 0, 0.09, 0, 0, 0, 0.09, -0.0052376688, 0.06368168, 0.09736249)
+
+[node name="MesaConfiguracion" parent="." unique_id=8255258 instance=ExtResource("6_mesa")]
+transform = Transform3D(0.9923861, 0, -0.1231656, 0, 1, 0, 0.1231656, 0, 0.9923861, 0.06305926, 0.050048828, -0.23174888)

@@ -1592,16 +1592,19 @@ func _on_state_dying() -> void:
 	_hundir_y_disolver_pilar()
 	_drop_power_up()
 
-	# Muerte por explosión: el arco se desprende de la mano y sale volando con física
-	if murio_por_explosion:
-		_lanzar_arco_explosivo()
-		murio_por_explosion = false
-
-	super._on_state_dying()
-
-	# Desactivar colisiones hostiles
+	# Desactivar colisiones hostiles e ignorar el pilar por completo
 	collision_layer = 0
-	collision_mask = 1
+	collision_mask = 1  # Solo colisiona con el suelo
+
+	if _instancia_pilar and is_instance_valid(_instancia_pilar):
+		if _instancia_pilar is CollisionObject3D:
+			add_collision_exception_with(_instancia_pilar)
+		for child in _instancia_pilar.find_children("*", "CollisionObject3D", true, false):
+			if child is CollisionObject3D:
+				add_collision_exception_with(child)
+
+	set_physics_process(true)
+	super._on_state_dying()
 
 	if anim_player:
 		anim_player.playback_default_blend_time = BLEND_ANIMACIONES
@@ -1610,16 +1613,30 @@ func _on_state_dying() -> void:
 	var rand_death: String = "MUERTE_01" if randf() < 0.5 else "MUERTE_02"
 	_play_animation(rand_death, 0.15, 1.0)
 
-	if _pilar_fue_destruido_primero:
-		# Expulsión inicial y caída con gravedad realista
-		_cayendo_por_destruccion_pilar = true
-		_ha_tocado_suelo_muerte = false
+	_ha_tocado_suelo_muerte = false
+	_cayendo_por_destruccion_pilar = true
+
+	# Impulso explosivo si murió por explosión (similar a Goblin Girl)
+	if murio_por_explosion:
+		_lanzar_arco_explosivo()
+		murio_por_explosion = false
+		var push_dir: float = 1.0
+		if last_hit_position != Vector3.ZERO:
+			var dx: float = global_position.x - last_hit_position.x
+			if absf(dx) > 0.05:
+				push_dir = signf(dx)
+		velocity.x = push_dir * randf_range(2.0, 3.2)
+		velocity.y = randf_range(2.5, 3.8)
+		velocity.z = 0.0
+	elif _pilar_fue_destruido_primero:
 		velocity = Vector3(randf_range(0.8, 1.4), 1.8, 0.0)
 	else:
-		_cayendo_por_destruccion_pilar = false
-		_ha_tocado_suelo_muerte = true
+		# Muerte normal sobre el pilar o suelo: cae por gravedad hacia el suelo
+		velocity.x = randf_range(-0.3, 0.3)
+		velocity.y = 0.0
+		velocity.z = 0.0
 
-	var tiempo_muerte: float = 3.45 if _pilar_fue_destruido_primero else (_get_animation_duration("MUERTE_01") + 0.3)
+	var tiempo_muerte: float = 3.5
 	get_tree().create_timer(tiempo_muerte).timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
 			_die()
@@ -1627,19 +1644,19 @@ func _on_state_dying() -> void:
 
 
 func _process_dying(delta: float) -> void:
-	if _cayendo_por_destruccion_pilar and not _ha_tocado_suelo_muerte:
-		# Gravedad rápida y natural hacia el suelo
-		velocity.y -= 12.0 * delta
-		velocity.x = move_toward(velocity.x, 0.0, 1.2 * delta)
+	var floor_limit_y: float = _base_pos_pilar.y if _base_pos_pilar != Vector3.ZERO else 0.185
 
-		var floor_limit_y: float = _base_pos_pilar.y if _base_pos_pilar != Vector3.ZERO else 0.185
+	if not _ha_tocado_suelo_muerte:
+		# En el aire: frena suavemente en X
+		velocity.x = move_toward(velocity.x, 0.0, delta * 0.8)
+
 		if is_on_floor() or global_position.y <= floor_limit_y + 0.05:
 			_ha_tocado_suelo_muerte = true
-			velocity = Vector3.ZERO
-			global_position.y = floor_limit_y
+			global_position.y = maxf(global_position.y, floor_limit_y)
 			_spawn_impacto_suelo_muerte()
 	else:
-		velocity.x = 0.0
+		# En el suelo: frena rápidamente en X
+		velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
 
 
 func _spawn_impacto_suelo_muerte() -> void:

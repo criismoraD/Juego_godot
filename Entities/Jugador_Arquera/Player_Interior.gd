@@ -2,7 +2,7 @@ class_name PlayerInterior
 extends CharacterBody3D
 
 @export_category("Movimiento")
-@export var velocidad_caminar: float = 2.0
+@export var velocidad_caminar: float = 0.18
 @export var velocidad_rotacion: float = 10.0
 
 const ANIM_IDLE := "Armature|Armature|IDLE"
@@ -20,6 +20,8 @@ var _esta_caminando: bool = false
 func _ready() -> void:
 	add_to_group("player_interior")
 
+	_ajustar_linea_negra_minima()
+
 	_arquera_modelo = find_child("ArqueraModel", true, false) as Node3D
 	if _arquera_modelo:
 		_yaw_base = _arquera_modelo.rotation.y
@@ -35,6 +37,35 @@ func _ready() -> void:
 					_anim_player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
 		_anim_tree.active = true
 		_anim_tree.set("parameters/Locomocion/transition_request", "idle")
+
+
+func _ajustar_linea_negra_minima() -> void:
+	for node in find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		if not mesh_instance:
+			continue
+
+		var count: int = mesh_instance.get_surface_override_material_count()
+		if count == 0 and mesh_instance.mesh:
+			count = mesh_instance.mesh.get_surface_count()
+
+		for i in range(maxi(count, 1)):
+			var mat: Material = mesh_instance.get_active_material(i)
+			if mat and mat is StandardMaterial3D:
+				var dup_mat: StandardMaterial3D = mat.duplicate() as StandardMaterial3D
+				if dup_mat.next_pass and dup_mat.next_pass is ShaderMaterial:
+					var next_p: ShaderMaterial = dup_mat.next_pass.duplicate() as ShaderMaterial
+					next_p.set_shader_parameter("outline_width", 2.0)
+					dup_mat.next_pass = next_p
+				mesh_instance.set_surface_override_material(i, dup_mat)
+
+		if mesh_instance.material_override and mesh_instance.material_override is StandardMaterial3D:
+			var dup_mat: StandardMaterial3D = mesh_instance.material_override.duplicate() as StandardMaterial3D
+			if dup_mat.next_pass and dup_mat.next_pass is ShaderMaterial:
+				var next_p: ShaderMaterial = dup_mat.next_pass.duplicate() as ShaderMaterial
+				next_p.set_shader_parameter("outline_width", 2.0)
+				dup_mat.next_pass = next_p
+			mesh_instance.material_override = dup_mat
 
 
 func _physics_process(delta: float) -> void:

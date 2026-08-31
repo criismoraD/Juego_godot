@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bvsix8ujswxxc"]
+
+[ext_resource type="Texture2D" uid="uid://6ieybs682gy8" path="res://TEST_/MESA_CONFIGURACION/MESA_CONFIG_CUARTO_D.jpg" id="1_27ct4"]
+
+[resource]
+albedo_texture = ExtResource("1_27ct4")
