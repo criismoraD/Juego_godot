@@ -691,8 +691,8 @@ def preparar_modelo(context, obj):
         arm.select_set(True)
         ejecutar_op_viewport(context, bpy.ops.object.transform_apply, location=True, rotation=True, scale=True)
         context.view_layer.objects.active = obj
-        # Limpiar formas gigantes y calibrar huesos al preparar
-        ajustar_huesos_de_armature(context, arm, obj)
+        # Limpiar formas gigantes e icósferas sin alterar ningún hueso
+        limpiar_visual_armature(context, arm, obj)
 
     print("  OK Modelo centrado y transformaciones aplicadas (Loc=0, Rot=0, Scale=1)")
 
@@ -1142,13 +1142,13 @@ def obtener_nombres_huesos_con_peso(mesh_obj) -> set:
     return huesos_con_peso
 
 
-def ajustar_huesos_de_armature(context, armature_obj=None, mesh_obj=None) -> bool:
+def limpiar_visual_armature(context, armature_obj=None, mesh_obj=None) -> bool:
     """
-    Mide el modelo 3D y ajusta la escala visual de los huesos en la Armature:
-    - Elimina todos los huesos terminales/nub bones sin influencia (HeadTop_End, Toe_End, Thumb4_end, etc.)
-    - Elimina icósferas, aros y formas personalizadas
-    - Ajusta la longitud de los huesos restantes a la proporción del cuerpo
-    - Mantiene intactos el skinning, pesos y matrices de animación.
+    Limpia la visualización de la Armature sin alterar ningún hueso:
+    - Conserva todos los huesos exactamente como vienen en el archivo (incluyendo los huesos End/terminales).
+    - Elimina icósferas, aros y formas auxiliares creadas por importadores.
+    - Configura la visualización limpia como STICK y En Frente (In Front).
+    - No modifica edit_bones, rest pose, longitudes ni matrices de animación.
     """
     if not armature_obj:
         if context.active_object and context.active_object.type == 'ARMATURE':
@@ -1166,7 +1166,6 @@ def ajustar_huesos_de_armature(context, armature_obj=None, mesh_obj=None) -> boo
                 break
 
     if not armature_obj or armature_obj.type != 'ARMATURE':
-        print("  AVISO No se encontro un Armature valido para ajustar huesos")
         return False
 
     if not mesh_obj:
@@ -1175,18 +1174,7 @@ def ajustar_huesos_de_armature(context, armature_obj=None, mesh_obj=None) -> boo
                 mesh_obj = o
                 break
 
-    # 1. Medir la altura real del modelo 3D
-    altura_modelo = 1.0
-    if mesh_obj and mesh_obj.data and len(mesh_obj.data.vertices) > 0:
-        z_coords = [(mesh_obj.matrix_world @ v.co).z for v in mesh_obj.data.vertices]
-        if z_coords:
-            altura_modelo = max(0.1, max(z_coords) - min(z_coords))
-    elif armature_obj.dimensions.z > 0:
-        altura_modelo = max(0.1, armature_obj.dimensions.z)
-
-    longitud_ideal_punta = max(0.02, altura_modelo * 0.04)
-
-    # 2. Desactivar y LIMPIAR Custom Shapes (círculos e icósferas) de todos los Pose Bones
+    # 1. Desactivar y LIMPIAR Custom Shapes (círculos e icósferas) de todos los Pose Bones
     if hasattr(armature_obj.data, "show_bone_custom_shapes"):
         armature_obj.data.show_bone_custom_shapes = False
 
@@ -1196,7 +1184,7 @@ def ajustar_huesos_de_armature(context, armature_obj=None, mesh_obj=None) -> boo
             if hasattr(pb, "custom_shape_scale_xyz"):
                 pb.custom_shape_scale_xyz = (1.0, 1.0, 1.0)
 
-    # 3. Eliminar colecciones y objetos huérfanos de formas creadas por el importador glTF
+    # 2. Eliminar colecciones y objetos huérfanos de formas auxiliares de glTF
     objetos_forma_a_borrar = []
     for o in list(bpy.data.objects):
         nombre_lower = o.name.lower()
@@ -1211,50 +1199,20 @@ def ajustar_huesos_de_armature(context, armature_obj=None, mesh_obj=None) -> boo
         if "gltf_not_exported" in col.name.lower():
             bpy.data.collections.remove(col)
 
-    # 4. Modo EDIT: Normalizar la longitud visual de las puntas y cabeza (sin borrar huesos para preservar animaciones)
-    modo_original = context.mode
-    if modo_original != 'OBJECT':
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-    context.view_layer.objects.active = armature_obj
-    armature_obj.select_set(True)
-    bpy.ops.object.mode_set(mode='EDIT')
-
-    huesos_ajustados = 0
-    for eb in armature_obj.data.edit_bones:
-        dir_vec = eb.tail - eb.head
-        if dir_vec.length == 0:
-            continue
-
-        # Si es hueso de punta/terminal (leaf bone) o hueso de cabeza
-        if len(eb.children) == 0:
-            eb.tail = eb.head + dir_vec.normalized() * longitud_ideal_punta
-            huesos_ajustados += 1
-        elif "head" in eb.name.lower() and len(eb.children) <= 1:
-            max_head_len = max(0.04, altura_modelo * 0.08)
-            if dir_vec.length > max_head_len:
-                eb.tail = eb.head + dir_vec.normalized() * max_head_len
-                huesos_ajustados += 1
-        elif dir_vec.length > altura_modelo * 0.35:
-            eb.tail = eb.head + dir_vec.normalized() * (altura_modelo * 0.15)
-            huesos_ajustados += 1
-
-    bpy.ops.object.mode_set(mode='OBJECT')
-
-    # 5. Configurar visualización limpia como STICK (varillas finas)
+    # 3. Configurar visualización limpia como STICK (varillas finas) sin tocar huesos
     if hasattr(armature_obj.data, "display_type"):
         armature_obj.data.display_type = 'STICK'
     armature_obj.show_in_front = True
 
-    print(f"  OK Huesos visualmente normalizados ({huesos_ajustados} huesos)")
+    print("  OK Armature limpia (Huesos End y jerarquia 100% intactos)")
     return True
 
 
 class ARQUERA_OT_import_glb_clean(Operator, ImportHelper):
-    """Importa un archivo GLB/glTF configurando automaticamente los huesos limpios y proporcionales"""
+    """Importa un archivo GLB/glTF manteniendo intactos todos los huesos (incluidos los huesos End) y con visualizacion limpia"""
 
     bl_idname = "arquera.import_glb_clean"
-    bl_label = "Importar GLB (Auto-Ajustar Huesos)"
+    bl_label = "Importar GLB (Auto-Ajuste)"
     bl_options = {'REGISTER', 'UNDO'}
 
     filename_ext = ".glb"
@@ -1267,16 +1225,15 @@ class ARQUERA_OT_import_glb_clean(Operator, ImportHelper):
         try:
             bpy.ops.import_scene.gltf(
                 filepath=self.filepath,
-                bone_heuristic='TEMPERANCE',
                 disable_bone_shape=True,
             )
         except Exception as e:
             self.report({'ERROR'}, f"Error al importar GLB: {e}")
             return {'CANCELLED'}
 
-        # Auto-ajustar visualización de huesos recién importados
-        ajustar_huesos_de_armature(context)
-        self.report({'INFO'}, "GLB importado con huesos limpios y proporcionados")
+        # Limpieza visual de formas sin tocar ningún hueso
+        limpiar_visual_armature(context)
+        self.report({'INFO'}, "GLB importado: todos los huesos End conservados intactos")
         return {'FINISHED'}
 
 
