@@ -13,6 +13,7 @@ var loading_screen_scene: PackedScene = preload("res://UI/LoadingScreen.tscn")
 var _current_loading_screen: CanvasLayer = null
 var _loading_path: String = ""
 var _is_loading: bool = false
+var posicion_retorno_puerta: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -113,3 +114,44 @@ func _finalizar_carga_fallida(target_path: String) -> void:
 	_is_loading = false
 	_loading_path = ""
 	get_tree().change_scene_to_file(target_path)
+
+
+## Transición cinemática con cortinilla circular (Iris in/out)
+func cambiar_escena_cortinilla_circular(target_path: String, duracion: float = 0.75, centro: Vector2 = Vector2(0.5, 0.5)) -> void:
+	var canvas := CanvasLayer.new()
+	canvas.layer = 128
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var shader := load("res://System/Shaders/cortinilla_circular.gdshader") as Shader
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	mat.set_shader_parameter("radio_apertura", 1.5)
+	mat.set_shader_parameter("centro", centro)
+	mat.set_shader_parameter("color_cortinilla", Color.BLACK)
+	rect.material = mat
+
+	canvas.add_child(rect)
+	get_tree().root.add_child(canvas)
+
+	# 1. Cierre de cortinilla
+	var tween_close := get_tree().create_tween()
+	tween_close.tween_property(mat, "shader_parameter/radio_apertura", 0.0, duracion)\
+		.set_trans(Tween.TRANS_CUBIC)\
+		.set_ease(Tween.EASE_IN_OUT)
+	await tween_close.finished
+
+	# 2. Cambio de escena
+	get_tree().change_scene_to_file(target_path)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	# 3. Apertura de cortinilla en la nueva escena
+	var tween_open := get_tree().create_tween()
+	tween_open.tween_property(mat, "shader_parameter/radio_apertura", 1.5, duracion)\
+		.set_trans(Tween.TRANS_CUBIC)\
+		.set_ease(Tween.EASE_OUT)
+	await tween_open.finished
+
+	canvas.queue_free()

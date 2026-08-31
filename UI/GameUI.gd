@@ -48,7 +48,7 @@ var flecha_explosiva_scene_debug: PackedScene = preload("res://Entities/Item_Fle
 var flecha_multiple_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
 var vignette_rect: ColorRect = null
 var _vignette_tween: Tween = null
-const TEXTURA_ICONO_PUERTA: Texture2D = preload("res://UI/Icons/Icono_puerta.png")
+const TEXTURA_ICONO_PUERTA: Texture2D = preload("res://UI/Icons/Flecha_Roja_Abajo.svg")
 var _icono_puerta: TextureRect = null
 var _tween_icono_puerta: Tween = null
 var marco_texto_defensora: Control = null
@@ -747,7 +747,7 @@ func _completar_oleada_actual_debug() -> void:
 		spawner.cola_spawn.clear()
 		spawner.goblins_spawned_in_wave = spawner.enemigos_por_oleada
 
-	# Si estamos en NIVEL01, ejecutar la secuencia normal de finalización que abre la cortinilla
+	# Si estamos en NIVEL01, ejecutar la secuencia de cortinilla primero
 	if is_instance_valid(root_node):
 		var oleada_actual: int = 1
 		if "oleada_combate_actual" in root_node:
@@ -755,7 +755,9 @@ func _completar_oleada_actual_debug() -> void:
 		elif is_instance_valid(spawner) and spawner.oleada_combate > 0:
 			oleada_actual = spawner.oleada_combate
 
-		if root_node.has_method("_on_nivel1_completado"):
+		if root_node.has_method("_mostrar_inter_nivel_continuar"):
+			root_node.call("_mostrar_inter_nivel_continuar")
+		elif root_node.has_method("_on_nivel1_completado"):
 			root_node.call("_on_nivel1_completado", oleada_actual)
 		elif is_instance_valid(spawner):
 			spawner.oleada_completada.emit(oleada_actual)
@@ -940,16 +942,12 @@ func _es_escudo_enemigo_permitido_en_oleada(nombre_escudo: String, numero_oleada
 		return numero_oleada == 3 or numero_oleada == 4
 	if nombre_escudo == "NIVEL_2_Escudo_enemigo2" or nombre_escudo == "NIVEL_2_Escudo_enemigo3":
 		return numero_oleada == 2
-	# Fallback genérico: cualquier otro escudo marcado como enemigo no se permite salvo indicación explícita
 	if "enemigo" in nombre_escudo.to_lower():
 		return false
 	return false
 
 
 func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
-	# Los escudos enemigos solo aparecen en sus respectivos niveles/oleadas.
-	# Oleada 2: NIVEL_2_Escudo_enemigo2/3 | Oleadas 3-4: Escudo_enemigo | Oleada 5+: ninguno.
-	# El signal emite current_wave (1,2...) pero la lógica de escudos depende de oleada_combate (1-5).
 	var oleada_real: int = num_oleada
 	if wave_spawner and is_instance_valid(wave_spawner) and "oleada_combate" in wave_spawner:
 		var oc: int = wave_spawner.oleada_combate
@@ -957,15 +955,11 @@ func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
 			oleada_real = oc
 	var omitir_enemigos := oleada_real >= 5
 	_reconstruir_todos_escudos(omitir_enemigos, oleada_real)
-	# Asegurar visibilidad correcta tras la reconstrucción (por si el nodo existía pero estaba oculto)
 	_sincronizar_visibilidad_escudos_por_oleada(oleada_real)
-	# El icono puerta desaparece al empezar cualquier oleada
 	_ocultar_icono_puerta()
 
 
 func _sincronizar_visibilidad_escudos_por_oleada(numero_oleada: int) -> void:
-	# Re-aplica visibilidad tras reconstruir: los escudos permitidos deben quedar visibles/activos.
-	# Excluir pilares de Lonko (comparten grupo escudos pero no son escudos estáticos)
 	for esc in get_tree().get_nodes_in_group("escudos"):
 		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true or esc.get("es_pilar_enemigo") == true:
 			continue
@@ -977,7 +971,6 @@ func _sincronizar_visibilidad_escudos_por_oleada(numero_oleada: int) -> void:
 				child.disabled = not permitido
 			elif child is CollisionObject3D:
 				child.process_mode = Node.PROCESS_MODE_INHERIT if permitido else Node.PROCESS_MODE_DISABLED
-		# Propagar a hijos recursivos
 		for child in esc.get_children():
 			if child is Node:
 				_sincronizar_visibilidad_recursiva(child, permitido)
@@ -992,82 +985,23 @@ func _sincronizar_visibilidad_recursiva(nodo: Node, permitido: bool) -> void:
 		_sincronizar_visibilidad_recursiva(child, permitido)
 
 
-## Icono puerta pulsante (latido lento) sobre la puerta de la torre, visible
-## mientras la cortinilla de fin de oleada está activa.
-func _mostrar_icono_puerta(overlay: CanvasLayer = null) -> void:
+## Icono puerta delegado al PuertaTrigger 3D en la escena
+func _mostrar_icono_puerta(_overlay: CanvasLayer = null) -> void:
 	_ocultar_icono_puerta()
 
-	# 1. Buscar si ya existe el nodo en la escena UI (colocado manualmente en el editor de escenas)
-	_icono_puerta = get_node_or_null("%IconoPuerta") as TextureRect
-	if not _icono_puerta:
-		_icono_puerta = find_child("IconoPuerta", true, false) as TextureRect
 
-	if _icono_puerta:
-		_icono_puerta.visible = true
-		if overlay and _icono_puerta.get_parent() != overlay:
-			_icono_puerta.top_level = true
-	else:
-		# Fallback dinámico si no existiera en la escena
-		_icono_puerta = TextureRect.new()
-		_icono_puerta.texture = TEXTURA_ICONO_PUERTA
-		_icono_puerta.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_icono_puerta.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		_icono_puerta.anchor_left = 0.0
-		_icono_puerta.anchor_right = 0.0
-		_icono_puerta.anchor_top = 0.0
-		_icono_puerta.anchor_bottom = 0.0
-		var icon_size := Vector2(110.0, 110.0)
-		var center_pos := Vector2(300.0, 815.0)
-		var root_scene := get_tree().current_scene
-		if root_scene:
-			var torre := root_scene.find_child("TORRE", true, false) as Node3D
-			var cam: Camera3D = get_viewport().get_camera_3d()
-			if not cam:
-				cam = root_scene.find_child("PRESPECTIVA", true, false) as Camera3D
-			if not cam:
-				cam = root_scene.find_child("CamaraFondoDOF", true, false) as Camera3D
-			if torre and cam and cam.is_inside_tree():
-				var door_local := Vector3(0.0, 0.15, 0.35)
-				var door_world: Vector3 = torre.to_global(door_local)
-				if not cam.is_position_behind(door_world):
-					var sp: Vector2 = cam.unproject_position(door_world)
-					var vp_size: Vector2 = get_viewport().get_visible_rect().size
-					if vp_size.x > 0 and vp_size.y > 0:
-						sp.x = clamp(sp.x, icon_size.x * 0.5, vp_size.x - icon_size.x * 0.5)
-						sp.y = clamp(sp.y, icon_size.y * 0.5, vp_size.y - icon_size.y * 0.5)
-						center_pos = sp
-		_icono_puerta.offset_left = center_pos.x - icon_size.x * 0.5
-		_icono_puerta.offset_top = center_pos.y - icon_size.y * 0.5
-		_icono_puerta.offset_right = center_pos.x + icon_size.x * 0.5
-		_icono_puerta.offset_bottom = center_pos.y + icon_size.y * 0.5
-		_icono_puerta.pivot_offset = icon_size * 0.5
-		if overlay:
-			overlay.add_child(_icono_puerta)
-		else:
-			add_child(_icono_puerta)
-
-	# Palpitar lento: latido de 1.2 s (crece y vuelve)
-	if _icono_puerta:
-		_icono_puerta.scale = Vector2.ONE
-		_tween_icono_puerta = _icono_puerta.create_tween().set_loops()
-		_tween_icono_puerta.tween_property(_icono_puerta, "scale", Vector2(1.12, 1.12), 0.6) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		_tween_icono_puerta.tween_property(_icono_puerta, "scale", Vector2.ONE, 0.6) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-
-## Oculta el icono puerta y detiene su palpito (al empezar una oleada).
+## Oculta el icono puerta si estuviera activo
 func _ocultar_icono_puerta() -> void:
 	if _tween_icono_puerta and _tween_icono_puerta.is_valid():
 		_tween_icono_puerta.kill()
 	_tween_icono_puerta = null
 	if _icono_puerta and is_instance_valid(_icono_puerta):
-		_icono_puerta.scale = Vector2.ONE
+		_icono_puerta.visible = false
 		if _icono_puerta.is_inside_tree() and (_icono_puerta == get_node_or_null("%IconoPuerta") or _icono_puerta.name == "IconoPuerta"):
 			_icono_puerta.visible = false
 		else:
 			_icono_puerta.queue_free()
-			_icono_puerta = null
+		_icono_puerta = null
 
 
 func _toggle_equal_spawn():

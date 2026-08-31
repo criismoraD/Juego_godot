@@ -172,11 +172,21 @@ func _ready():
 	# Sonido ambiente desde el arranque del juego
 	AudioManager.play_music(3, true, 12.0)  # SONIDO BOSQUE.mp3
 
-	# Esperar un frame para que todos los nodos estén listos
-	_precalentar_vfx_shaders()
-
 	if wave_spawner and not wave_spawner.enemigo_eliminado.is_connected(_on_enemigo_eliminado_nivel):
 		wave_spawner.enemigo_eliminado.connect(_on_enemigo_eliminado_nivel)
+
+	# Reposicionar jugador si regresa de la habitación interior (puerta)
+	if has_node("/root/SceneManager") and get_node("/root/SceneManager").posicion_retorno_puerta != Vector3.ZERO:
+		var p_retorno: Vector3 = get_node("/root/SceneManager").posicion_retorno_puerta
+		get_node("/root/SceneManager").posicion_retorno_puerta = Vector3.ZERO
+		var prota := get_tree().get_first_node_in_group("player") as CharacterBody3D
+		if not prota:
+			prota = find_child("Player", true, false) as CharacterBody3D
+		if prota:
+			prota.global_position = p_retorno
+			var mdl = prota.find_child("ArqueraModel", true, false)
+			if mdl:
+				mdl.rotation.y = deg_to_rad(90.0)
 
 	await get_tree().process_frame
 

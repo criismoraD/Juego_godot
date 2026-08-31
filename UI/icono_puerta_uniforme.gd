@@ -1,16 +1,23 @@
 @tool
 extends TextureRect
 
-## Fuerza escalado uniforme en editor.
-## Evita deformaciones tipo (1.0, -0.36) al arrastrar handles.
-## En runtime no hace nada (el tween de GameUI.gd ya es uniforme).
+## Flecha roja indicadora con animación de flotación vertical continua
+@export var velocidad_flotacion: float = 4.5
+@export var amplitud_flotacion: float = 10.0
 
-@export var escala_uniforme_activa: bool = true
+var _tiempo: float = 0.0
+var _pos_base_y: float = 0.0
+var _iniciado: bool = false
 
-func _process(_delta: float) -> void:
-	if not Engine.is_editor_hint():
+func _ready() -> void:
+	_pos_base_y = position.y
+	_iniciado = true
+
+func _process(delta: float) -> void:
+	if not is_inside_tree() or not visible:
 		return
-	if not escala_uniforme_activa:
-		return
-	if not is_equal_approx(scale.x, scale.y):
-		scale.y = scale.x
+	if not _iniciado:
+		_pos_base_y = position.y
+		_iniciado = true
+	_tiempo += delta * velocidad_flotacion
+	position.y = _pos_base_y + sin(_tiempo) * amplitud_flotacion

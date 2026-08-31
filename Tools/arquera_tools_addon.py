@@ -279,18 +279,15 @@ def obtener_todas_las_fcurves(action):
     return curvas_encontradas
 
 
-def centrar_fcurves_de_action(action, frame_inicio=1, alinear_altura_reposo=True) -> int:
+def centrar_horizontal_de_action(action, frame_inicio=1) -> int:
     """
-    Procesa todas las curvas de posición en un Action:
-    - Ejes X (0) y Z (2): elimina todos los keyframes excepto 1 y lo fija en 0.0.
-    - Eje Y (1): resta el offset inicial de altura respecto a la postura en reposo.
+    Procesa solo los ejes horizontales del suelo en Blender: X (0) e Y (1).
+    - Fija la traslacion horizontal en 0.0 para animaciones In-Place sin alterar la altura Z.
     """
     if not action:
         return 0
 
     todas_fcurves = obtener_todas_las_fcurves(action)
-    print(f"\n[CENTRAR ANIMACION] Action: '{action.name}' | Blender: v{bpy.app.version_string} | FCurves totales encontradas: {len(todas_fcurves)}")
-
     modificadas = 0
 
     for fc in todas_fcurves:
@@ -298,21 +295,15 @@ def centrar_fcurves_de_action(action, frame_inicio=1, alinear_altura_reposo=True
         if "location" not in dp:
             continue
 
-        print(f"  -> Curva de posicion: '{fc.data_path}' [array_index: {fc.array_index}] con {len(fc.keyframe_points)} keyframes")
-
-        # Ejes X (0) y Z (2) en espacio Mixamo/FBX: anclar al origen horizontal 0.0
-        if fc.array_index in (0, 2):
-            # 1. Poner en 0.0 todos los keyframes existentes
+        if fc.array_index in (0, 1):
             for kp in fc.keyframe_points:
                 kp.co[1] = 0.0
                 kp.handle_left[1] = 0.0
                 kp.handle_right[1] = 0.0
 
-            # 2. Eliminar todos los keyframes excepto el primero
             while len(fc.keyframe_points) > 1:
                 fc.keyframe_points.remove(fc.keyframe_points[-1])
 
-            # 3. Fijar el único keyframe restante en (frame_inicio, 0.0)
             if len(fc.keyframe_points) == 1:
                 fc.keyframe_points[0].co = (frame_inicio, 0.0)
                 fc.keyframe_points[0].handle_left = (frame_inicio, 0.0)
@@ -323,54 +314,252 @@ def centrar_fcurves_de_action(action, frame_inicio=1, alinear_altura_reposo=True
             fc.update()
             modificadas += 1
 
-        # Eje Y (1) en espacio Mixamo/FBX: altura vertical calibrada al reposo (0.0 delta)
-        elif fc.array_index == 1 and alinear_altura_reposo:
+    return modificadas
+
+
+def centrar_altura_de_action(action) -> int:
+    """
+    Procesa solo el eje vertical de altura en Blender: Z (2).
+    - Resta el offset inicial de altura para calibrarlo a la postura de reposo sin tocar X ni Y.
+    """
+    if not action:
+        return 0
+
+    todas_fcurves = obtener_todas_las_fcurves(action)
+    modificadas = 0
+
+    for fc in todas_fcurves:
+        dp = fc.data_path.lower()
+        if "location" not in dp:
+            continue
+
+        if fc.array_index == 2:
             if len(fc.keyframe_points) > 0:
-                y_inicial = fc.keyframe_points[0].co[1]
-                print(f"     Desfase de altura inicial Y restado: {y_inicial:.4f}")
-                if abs(y_inicial) > 0.00001:
+                z_inicial = fc.keyframe_points[0].co[1]
+                if abs(z_inicial) > 0.00001:
                     for kp in fc.keyframe_points:
-                        kp.co[1] -= y_inicial
-                        kp.handle_left[1] -= y_inicial
-                        kp.handle_right[1] -= y_inicial
+                        kp.co[1] -= z_inicial
+                        kp.handle_left[1] -= z_inicial
+                        kp.handle_right[1] -= z_inicial
                     fc.update()
                 modificadas += 1
 
     return modificadas
 
 
-def centrar_animacion_in_place(context, action, armature=None, alinear_altura_reposo=True) -> int:
+def procesar_transformacion_action(context, action, modo="COMPLETO", armature=None) -> int:
+    """
+    modo: 'HORIZONTAL' (X/Z), 'ALTURA' (Y), 'COMPLETO' (X/Y/Z)
+    """
     if not action:
         return 0
 
     frame_inicio = int(action.frame_range[0]) if action.frame_range else 1
-    curvas_modificadas = centrar_fcurves_de_action(action, frame_inicio, alinear_altura_reposo)
+    curvas_modificadas = 0
 
-    # Restablecer la posición de objeto en Armature y Mesh
+    if modo == "HORIZONTAL":
+        curvas_modificadas = centrar_horizontal_de_action(action, frame_inicio)
+    elif modo == "ALTURA":
+        curvas_modificadas = centrar_altura_de_action(action)
+    else:
+        curvas_modificadas = centrar_fcurves_de_action(action, frame_inicio, True)
+
     if armature:
-        armature.location = (0.0, 0.0, 0.0)
-
-        if armature.pose:
-            for pb in armature.pose.bones:
-                bn_lower = pb.name.lower()
-                if any(k in bn_lower for k in ("hip", "pelvis", "root", "cintura", "cadera", "bip01")) or pb.parent is None:
-                    pb.location = (0.0, 0.0, 0.0)
-
         if not armature.animation_data:
             armature.animation_data_create()
         armature.animation_data.action = action
         armature.update_tag()
 
-    mesh_obj = resolver_mesh_objetivo(context)
-    if mesh_obj:
-        mesh_obj.location = (0.0, 0.0, 0.0)
-
     context.view_layer.update()
-    current_frame = context.scene.frame_current
-    context.scene.frame_set(current_frame)
-
-    print(f"  Resultado final: {curvas_modificadas} curvas modificadas.")
+    context.scene.frame_set(context.scene.frame_current)
     return curvas_modificadas
+
+
+def centrar_animacion_in_place(context, action, armature=None, alinear_altura_reposo=True) -> int:
+    return procesar_transformacion_action(context, action, "COMPLETO", armature)
+
+
+class ARQUERA_OT_center_horizontal(Operator):
+    """Centra la animacion en el plano horizontal del suelo (Ejes X e Y) fijando la posicion In-Place sin alterar la altura Z"""
+
+    bl_idname = "arquera.center_horizontal"
+    bl_label = "CENTRAR ANIMACION"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        arm = None
+        if context.active_object and context.active_object.type == 'ARMATURE':
+            arm = context.active_object
+        elif context.active_object and context.active_object.type == 'MESH':
+            arm = buscar_armature_vinculado(context.active_object)
+
+        if not arm:
+            for obj in context.scene.objects:
+                if obj.type == 'ARMATURE':
+                    arm = obj
+                    break
+
+        acciones_a_procesar = set()
+        act_name = context.scene.arquera_active_action
+        if act_name and act_name != 'NONE':
+            a = bpy.data.actions.get(act_name)
+            if a:
+                acciones_a_procesar.add(a)
+
+        if arm and arm.animation_data and arm.animation_data.action:
+            acciones_a_procesar.add(arm.animation_data.action)
+
+        if not acciones_a_procesar:
+            for a in bpy.data.actions:
+                acciones_a_procesar.add(a)
+
+        if not acciones_a_procesar:
+            self.report({'ERROR'}, "No se encontro ninguna animacion activa")
+            return {'CANCELLED'}
+
+        total_curvas = 0
+        ultima_act = None
+        for act in acciones_a_procesar:
+            curvas = procesar_transformacion_action(context, act, "HORIZONTAL", arm)
+            total_curvas += curvas
+            ultima_act = act
+
+        if arm and ultima_act:
+            if not arm.animation_data:
+                arm.animation_data_create()
+            arm.animation_data.action = ultima_act
+            arm.update_tag()
+
+        if ultima_act:
+            context.scene.arquera_active_action = ultima_act.name
+
+        context.view_layer.update()
+        context.scene.frame_set(context.scene.frame_current)
+
+        nombre_rep = ultima_act.name if ultima_act else "Activa"
+        if total_curvas > 0:
+            self.report({'INFO'}, f"Animacion centrada en X/Y (In-Place): '{nombre_rep}' ({total_curvas} curvas ajustadas)")
+        else:
+            self.report({'WARNING'}, f"Action '{nombre_rep}': no se encontraron curvas en X/Y")
+        return {'FINISHED'}
+
+
+class ARQUERA_OT_center_height(Operator):
+    """Calibra la altura vertical (Eje Z en Blender) respecto a la pose de reposo"""
+
+    bl_idname = "arquera.center_height"
+    bl_label = "CENTRAR ALTURA"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        arm = None
+        if context.active_object and context.active_object.type == 'ARMATURE':
+            arm = context.active_object
+        elif context.active_object and context.active_object.type == 'MESH':
+            arm = buscar_armature_vinculado(context.active_object)
+
+        if not arm:
+            for obj in context.scene.objects:
+                if obj.type == 'ARMATURE':
+                    arm = obj
+                    break
+
+        acciones_a_procesar = set()
+        act_name = context.scene.arquera_active_action
+        if act_name and act_name != 'NONE':
+            a = bpy.data.actions.get(act_name)
+            if a:
+                acciones_a_procesar.add(a)
+
+        if arm and arm.animation_data and arm.animation_data.action:
+            acciones_a_procesar.add(arm.animation_data.action)
+
+        if not acciones_a_procesar:
+            for a in bpy.data.actions:
+                acciones_a_procesar.add(a)
+
+        if not acciones_a_procesar:
+            self.report({'ERROR'}, "No se encontro ninguna animacion activa")
+            return {'CANCELLED'}
+
+        total_curvas = 0
+        ultima_act = None
+        for act in acciones_a_procesar:
+            curvas = procesar_transformacion_action(context, act, "ALTURA", arm)
+            total_curvas += curvas
+            ultima_act = act
+
+        if arm and ultima_act:
+            if not arm.animation_data:
+                arm.animation_data_create()
+            arm.animation_data.action = ultima_act
+            arm.update_tag()
+
+        if ultima_act:
+            context.scene.arquera_active_action = ultima_act.name
+
+        context.view_layer.update()
+        context.scene.frame_set(context.scene.frame_current)
+
+        nombre_rep = ultima_act.name if ultima_act else "Activa"
+        if total_curvas > 0:
+            self.report({'INFO'}, f"Altura Z calibrada en '{nombre_rep}' ({total_curvas} curvas ajustadas)")
+        else:
+            self.report({'WARNING'}, f"Action '{nombre_rep}': no se encontraron curvas Z")
+        return {'FINISHED'}
+
+
+class ARQUERA_OT_delete_active_action(Operator):
+    """Elimina el Action / Animacion actualmente seleccionada del archivo de Blender"""
+
+    bl_idname = "arquera.delete_active_action"
+    bl_label = "ELIMINAR ACTION"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        act_name = context.scene.arquera_active_action
+        if not act_name or act_name == 'NONE':
+            self.report({'WARNING'}, "No hay ninguna animacion seleccionada para eliminar")
+            return {'CANCELLED'}
+
+        action = bpy.data.actions.get(act_name)
+        if not action:
+            self.report({'ERROR'}, f"Action '{act_name}' no encontrada")
+            return {'CANCELLED'}
+
+        # Desvincular de todos los objetos en la escena
+        for obj in bpy.data.objects:
+            if obj.animation_data and obj.animation_data.action == action:
+                obj.animation_data.action = None
+
+        nombre_borrado = action.name
+        bpy.data.actions.remove(action)
+
+        # Actualizar selector con las acciones restantes
+        if len(bpy.data.actions) > 0:
+            nueva_act = bpy.data.actions[0]
+            context.scene.arquera_active_action = nueva_act.name
+            arm = None
+            if context.active_object and context.active_object.type == 'ARMATURE':
+                arm = context.active_object
+            elif context.active_object and context.active_object.type == 'MESH':
+                arm = buscar_armature_vinculado(context.active_object)
+            if not arm:
+                for obj in context.scene.objects:
+                    if obj.type == 'ARMATURE':
+                        arm = obj
+                        break
+            if arm:
+                if not arm.animation_data:
+                    arm.animation_data_create()
+                arm.animation_data.action = nueva_act
+                arm.update_tag()
+        else:
+            context.scene.arquera_active_action = 'NONE'
+
+        context.view_layer.update()
+        self.report({'INFO'}, f"Action '{nombre_borrado}' eliminada exitosamente")
+        return {'FINISHED'}
 
 
 class ARQUERA_OT_center_active_action(Operator):
@@ -1409,12 +1598,27 @@ class ARQUERA_PT_tools_panel(Panel):
             box_anim.prop(context.scene, "arquera_active_action", text="")
 
             box_anim.separator()
-            col_inplace = box_anim.column()
-            col_inplace.scale_y = 1.25
-            col_inplace.operator(
-                "arquera.center_active_action",
+            col_btns = box_anim.column(align=True)
+            col_btns.scale_y = 1.25
+            col_btns.operator(
+                "arquera.center_horizontal",
                 text="CENTRAR ANIMACION",
                 icon='SNAP_MIDPOINT',
+            )
+            col_btns.operator(
+                "arquera.center_height",
+                text="CENTRAR ALTURA",
+                icon='ARROW_LEFTRIGHT',
+            )
+
+            box_anim.separator()
+            col_del = box_anim.column()
+            col_del.scale_y = 1.15
+            col_del.alert = True
+            col_del.operator(
+                "arquera.delete_active_action",
+                text="ELIMINAR ACTION",
+                icon='TRASH',
             )
 
         # Sección de Exportación
@@ -1500,6 +1704,9 @@ classes = (
     ARQUERA_OT_clean_scene,
     ARQUERA_OT_import_glb_clean,
     ARQUERA_OT_import_fbx_actions,
+    ARQUERA_OT_center_horizontal,
+    ARQUERA_OT_center_height,
+    ARQUERA_OT_delete_active_action,
     ARQUERA_OT_center_active_action,
     ARQUERA_OT_prepare_model,
     ARQUERA_OT_export_model,

@@ -45,6 +45,8 @@
 [ext_resource type="Script" uid="uid://dftm0y1dl2kf0" path="res://Entities/Ambiente_Torre/CaidaPiedrasTorre.gd" id="44_caidapiedras_script"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="45_arboleda"]
 [ext_resource type="PackedScene" uid="uid://sdvsbc3tkfaa" path="res://Entities/Ambiente_Enrredadera/Enrredadera.tscn" id="46_enrredadera"]
+[ext_resource type="Material" path="res://Entities/Ambiente_Torre/PLANO_ILUMINADO_MAT.tres" id="47_plano_mat"]
+[ext_resource type="Script" uid="uid://0bs8x3t2yr52" path="res://Levels/NIVEL01/PuertaTrigger.gd" id="48_puerta_script"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -125,6 +127,9 @@ particles_anim_loop = false
 [sub_resource type="QuadMesh" id="QuadMesh_dust"]
 material = SubResource("StandardMaterial3D_dust")
 size = Vector2(0.12, 0.12)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3xd07"]
+size = Vector3(0.9172363, 2.9414063, 6)
 
 [node name="Node3D" type="Node3D" unique_id=615207129]
 script = ExtResource("Script_Level01")
@@ -661,6 +666,7 @@ transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3
 
 [node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=338321429]
 visible = false
+material_override = ExtResource("47_plano_mat")
 
 [node name="TORRE" parent="TORRE" index="1" unique_id=1270173036]
 transform = Transform3D(1.0111401, 0, 0, 0, 1.0001929, 0, 0, 0, 1.0001929, -0.002997756, 0, 0)
@@ -832,6 +838,16 @@ transform = Transform3D(0.9358511, 0, -0.11479537, 0, 0.8239627, 0, 0.11054993, 
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
 transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
 layers = 2
+
+[node name="PUERTA_TRIGER" type="Area3D" parent="." unique_id=1633856024]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.602432, 1.2, -0.8118286)
+collision_layer = 0
+collision_mask = 7
+script = ExtResource("48_puerta_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PUERTA_TRIGER" unique_id=1633856025]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23718262, -0.5292969, 0)
+shape = SubResource("BoxShape3D_3xd07")
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]
