@@ -691,8 +691,8 @@ def preparar_modelo(context, obj):
         arm.select_set(True)
         ejecutar_op_viewport(context, bpy.ops.object.transform_apply, location=True, rotation=True, scale=True)
         context.view_layer.objects.active = obj
-        # Limpiar formas gigantes e icósferas sin alterar ningún hueso
-        limpiar_visual_armature(context, arm, obj)
+        # Limpiar formas gigantes y calibrar huesos al preparar
+        ajustar_huesos_de_armature(context, arm, obj)
 
     print("  OK Modelo centrado y transformaciones aplicadas (Loc=0, Rot=0, Scale=1)")
 
@@ -883,7 +883,7 @@ def exportar_fbx_sin_animaciones(context, obj, output_dir):
         nombre_base = obj.name
 
     print(f"\n{'=' * 70}")
-    print(f"EXPORTANDO FBX (SIN ANIMACIONES): {nombre_base}")
+    print(f"EXPORTANDO FBX MIXAMO (POSTURA DE REPOSO): {nombre_base}")
     print(f"{'=' * 70}")
 
     objetos_seleccionados = list(context.selected_objects)
@@ -919,12 +919,17 @@ def exportar_fbx_sin_animaciones(context, obj, output_dir):
 
     todos_los_objetos = list(armatures_a_exportar) + list(meshes_a_exportar)
 
-    # Desvincular temporalmente la action de las armatures para garantizar 0 animaciones en el FBX
+    # 1. Guardar estado original de animaciones y forzar postura de reposo (T-Pose / Bind Pose)
     action_originales = {}
+    pose_positions_originales = {}
     for arm in armatures_a_exportar:
         if arm.animation_data and arm.animation_data.action:
             action_originales[arm] = arm.animation_data.action
             arm.animation_data.action = None
+        if hasattr(arm.data, "pose_position"):
+            pose_positions_originales[arm] = arm.data.pose_position
+            # Forzar REST POSE puro para que la malla no se distorsione en Mixamo
+            arm.data.pose_position = 'REST'
 
     fbx_path = output_dir / f"{nombre_base}.fbx"
 
@@ -938,6 +943,8 @@ def exportar_fbx_sin_animaciones(context, obj, output_dir):
     elif todos_los_objetos:
         context.view_layer.objects.active = todos_los_objetos[0]
 
+    context.view_layer.update()
+
     try:
         bpy.ops.export_scene.fbx(
             filepath=str(fbx_path),
@@ -948,21 +955,30 @@ def exportar_fbx_sin_animaciones(context, obj, output_dir):
             add_leaf_bones=False,
             primary_bone_axis='Y',
             secondary_bone_axis='X',
+            axis_forward='-Z',
+            axis_up='Y',
             armature_nodetype='NULL',
+            bake_space_transform=False,
             apply_unit_scale=True,
-            apply_scale_options='FBX_SCALE_ALL'
+            apply_scale_options='FBX_SCALE_NONE'
         )
-        print(f"  OK FBX exportado sin animaciones: {fbx_path.name}")
+        print(f"  OK FBX exportado para Mixamo: {fbx_path.name}")
     except Exception as e:
         print(f"  ERROR al exportar FBX: {e}")
     finally:
-        # Restaurar animaciones en las armatures de la escena
+        # Restaurar animaciones y estado de pose en las armatures de la escena
         for arm, act in action_originales.items():
             if arm.animation_data:
                 arm.animation_data.action = act
+        for arm, pos_orig in pose_positions_originales.items():
+            if hasattr(arm.data, "pose_position"):
+                arm.data.pose_position = pos_orig
+        context.view_layer.update()
+        if context.scene:
+            context.scene.frame_set(context.scene.frame_current)
 
     print(f"\n{'=' * 70}")
-    print("EXPORTACION FBX COMPLETADA")
+    print("EXPORTACION FBX MIXAMO COMPLETADA")
     print(f"Archivo generado: {fbx_path}")
     print(f"{'=' * 70}\n")
 
@@ -1051,10 +1067,10 @@ class ARQUERA_OT_export_model(Operator, ExportHelper):
 
 
 class ARQUERA_OT_export_fbx_no_anim(Operator, ExportHelper):
-    """Exporta el modelo y esqueleto en formato FBX sin ninguna animacion"""
+    """Exporta el modelo y esqueleto en postura de reposo optimizado para Mixamo (sin animaciones)"""
 
     bl_idname = "arquera.export_fbx_no_anim"
-    bl_label = "Exportar FBX (Sin Animaciones)"
+    bl_label = "Exportar FBX MIXAMO"
     bl_options = {'PRESET', 'UNDO'}
 
     filename_ext = ""
@@ -1142,13 +1158,13 @@ def obtener_nombres_huesos_con_peso(mesh_obj) -> set:
     return huesos_con_peso
 
 
-def limpiar_visual_armature(context, armature_obj=None, mesh_obj=None) -> bool:
+def ajustar_huesos_de_armature(context, armature_obj=None, mesh_obj=None) -> bool:
     """
-    Limpia la visualización de la Armature sin alterar ningún hueso:
-    - Conserva todos los huesos exactamente como vienen en el archivo (incluyendo los huesos End/terminales).
-    - Elimina icósferas, aros y formas auxiliares creadas por importadores.
-    - Configura la visualización limpia como STICK y En Frente (In Front).
-    - No modifica edit_bones, rest pose, longitudes ni matrices de animación.
+    Mide el modelo 3D y ajusta la escala visual de los huesos en la Armature:
+    - Elimina todos los huesos terminales/nub bones sin influencia (HeadTop_End, Toe_End, Thumb4_end, etc.)
+    - Elimina icósferas, aros y formas personalizadas
+    - Ajusta la longitud de los huesos restantes a la proporción del cuerpo
+    - Mantiene intactos el skinning, pesos y matrices de animación.
     """
     if not armature_obj:
         if context.active_object and context.active_object.type == 'ARMATURE':
@@ -1166,6 +1182,7 @@ def limpiar_visual_armature(context, armature_obj=None, mesh_obj=None) -> bool:
                 break
 
     if not armature_obj or armature_obj.type != 'ARMATURE':
+        print("  AVISO No se encontro un Armature valido para ajustar huesos")
         return False
 
     if not mesh_obj:
@@ -1174,7 +1191,18 @@ def limpiar_visual_armature(context, armature_obj=None, mesh_obj=None) -> bool:
                 mesh_obj = o
                 break
 
-    # 1. Desactivar y LIMPIAR Custom Shapes (círculos e icósferas) de todos los Pose Bones
+    # 1. Medir la altura real del modelo 3D
+    altura_modelo = 1.0
+    if mesh_obj and mesh_obj.data and len(mesh_obj.data.vertices) > 0:
+        z_coords = [(mesh_obj.matrix_world @ v.co).z for v in mesh_obj.data.vertices]
+        if z_coords:
+            altura_modelo = max(0.1, max(z_coords) - min(z_coords))
+    elif armature_obj.dimensions.z > 0:
+        altura_modelo = max(0.1, armature_obj.dimensions.z)
+
+    longitud_ideal_punta = max(0.02, altura_modelo * 0.04)
+
+    # 2. Desactivar y LIMPIAR Custom Shapes (círculos e icósferas) de todos los Pose Bones
     if hasattr(armature_obj.data, "show_bone_custom_shapes"):
         armature_obj.data.show_bone_custom_shapes = False
 
@@ -1184,7 +1212,7 @@ def limpiar_visual_armature(context, armature_obj=None, mesh_obj=None) -> bool:
             if hasattr(pb, "custom_shape_scale_xyz"):
                 pb.custom_shape_scale_xyz = (1.0, 1.0, 1.0)
 
-    # 2. Eliminar colecciones y objetos huérfanos de formas auxiliares de glTF
+    # 3. Eliminar colecciones y objetos huérfanos de formas creadas por el importador glTF
     objetos_forma_a_borrar = []
     for o in list(bpy.data.objects):
         nombre_lower = o.name.lower()
@@ -1199,20 +1227,50 @@ def limpiar_visual_armature(context, armature_obj=None, mesh_obj=None) -> bool:
         if "gltf_not_exported" in col.name.lower():
             bpy.data.collections.remove(col)
 
-    # 3. Configurar visualización limpia como STICK (varillas finas) sin tocar huesos
+    # 4. Modo EDIT: Normalizar la longitud visual de las puntas y cabeza (sin borrar huesos para preservar animaciones)
+    modo_original = context.mode
+    if modo_original != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    context.view_layer.objects.active = armature_obj
+    armature_obj.select_set(True)
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    huesos_ajustados = 0
+    for eb in armature_obj.data.edit_bones:
+        dir_vec = eb.tail - eb.head
+        if dir_vec.length == 0:
+            continue
+
+        # Si es hueso de punta/terminal (leaf bone) o hueso de cabeza
+        if len(eb.children) == 0:
+            eb.tail = eb.head + dir_vec.normalized() * longitud_ideal_punta
+            huesos_ajustados += 1
+        elif "head" in eb.name.lower() and len(eb.children) <= 1:
+            max_head_len = max(0.04, altura_modelo * 0.08)
+            if dir_vec.length > max_head_len:
+                eb.tail = eb.head + dir_vec.normalized() * max_head_len
+                huesos_ajustados += 1
+        elif dir_vec.length > altura_modelo * 0.35:
+            eb.tail = eb.head + dir_vec.normalized() * (altura_modelo * 0.15)
+            huesos_ajustados += 1
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    # 5. Configurar visualización limpia como STICK (varillas finas)
     if hasattr(armature_obj.data, "display_type"):
         armature_obj.data.display_type = 'STICK'
     armature_obj.show_in_front = True
 
-    print("  OK Armature limpia (Huesos End y jerarquia 100% intactos)")
+    print(f"  OK Huesos visualmente normalizados ({huesos_ajustados} huesos)")
     return True
 
 
 class ARQUERA_OT_import_glb_clean(Operator, ImportHelper):
-    """Importa un archivo GLB/glTF manteniendo intactos todos los huesos (incluidos los huesos End) y con visualizacion limpia"""
+    """Importa un archivo GLB/glTF configurando automaticamente los huesos limpios y proporcionales"""
 
     bl_idname = "arquera.import_glb_clean"
-    bl_label = "Importar GLB (Auto-Ajuste)"
+    bl_label = "Importar GLB (Auto-Ajustar Huesos)"
     bl_options = {'REGISTER', 'UNDO'}
 
     filename_ext = ".glb"
@@ -1225,15 +1283,16 @@ class ARQUERA_OT_import_glb_clean(Operator, ImportHelper):
         try:
             bpy.ops.import_scene.gltf(
                 filepath=self.filepath,
+                bone_heuristic='TEMPERANCE',
                 disable_bone_shape=True,
             )
         except Exception as e:
             self.report({'ERROR'}, f"Error al importar GLB: {e}")
             return {'CANCELLED'}
 
-        # Limpieza visual de formas sin tocar ningún hueso
-        limpiar_visual_armature(context)
-        self.report({'INFO'}, "GLB importado: todos los huesos End conservados intactos")
+        # Auto-ajustar visualización de huesos recién importados
+        ajustar_huesos_de_armature(context)
+        self.report({'INFO'}, "GLB importado con huesos limpios y proporcionados")
         return {'FINISHED'}
 
 
@@ -1404,13 +1463,13 @@ class ARQUERA_PT_tools_panel(Panel):
                 icon='FILE_TICK',
             )
 
-            # Botón FBX
+            # Botón FBX Mixamo
             box_fbx = box_exp.box()
             col_fbx = box_fbx.column()
             col_fbx.scale_y = 1.15
             col_fbx.operator(
                 "arquera.export_fbx_no_anim",
-                text="Exportar FBX (Sin Animaciones)",
+                text="Exportar FBX MIXAMO",
                 icon='OUTLINER_OB_ARMATURE',
             )
 
