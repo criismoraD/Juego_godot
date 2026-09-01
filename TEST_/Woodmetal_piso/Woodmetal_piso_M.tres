@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cxam3woodmet2"]
+
+[ext_resource type="Texture2D" uid="uid://b73t8xrcppmij" path="res://TEST_/Woodmetal_piso/Woodmetal_piso_D.jpg" id="1_wood"]
+
+[resource]
+resource_name = "Woodmetal_piso_M"
+albedo_color = Color(1, 1, 1, 1)
+albedo_texture = ExtResource("1_wood")

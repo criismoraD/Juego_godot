@@ -19,7 +19,7 @@ enum State { IDLE, DISSOLVING }
 # CONSTANTES
 # ═══════════════════════════════════════════════════════════════════════════════
 const ESCALA_BASE: float = 0.63  ## Escala base (+40% idéntica a Flecha Explosiva)
-const SONIDO_PICKUP: String = "res://System/Audio/SFX/Obtencion_arma.mp3"
+const SONIDO_PICKUP: String = "res://TEST_/Obtener arma.mp3"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
