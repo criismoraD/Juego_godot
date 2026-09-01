@@ -52,7 +52,8 @@
 [ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
 [ext_resource type="Texture2D" uid="uid://bnajvbrgm1f4t" path="res://TEST_/Pasto B.png" id="56_pastoB"]
 [ext_resource type="Texture2D" uid="uid://bb5iyjs2c0rvo" path="res://TEST_/Barricada A.png" id="57_barricadaA"]
-[ext_resource type="Texture2D" uid="uid://barricadaB002" path="res://TEST_/Barricada B.png" id="58_barricadaB"]
+[ext_resource type="Texture2D" uid="uid://hagrcma1stqm" path="res://TEST_/Barricada B.png" id="58_barricadaB"]
+[ext_resource type="Texture2D" uid="uid://barricadaC003" path="res://TEST_/Barricada C.png" id="59_barricadaC"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -924,14 +925,19 @@ material_override = SubResource("ShaderMaterial_pastoB")
 texture = ExtResource("56_pastoB")
 
 [node name="BarricadaA" type="Sprite3D" parent="." unique_id=1948201895]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -6.8243866, -0.3, -8.840449)
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -18.093025, -0.3, -8.840449)
 layers = 2
 texture = ExtResource("57_barricadaA")
 
 [node name="BarricadaB" type="Sprite3D" parent="." unique_id=1948201896]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -3.0, -0.3, 1.6)
-layers = 7
+transform = Transform3D(0.51787597, 0, 0, 0, 0.46389326, 0, 0, 0, 0.62157595, -7.211295, -0.3, -28.95296)
+layers = 2
 texture = ExtResource("58_barricadaB")
+
+[node name="BarricadaC" type="Sprite3D" parent="." unique_id=1948201897]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -4.0, -0.3, 2.0)
+layers = 7
+texture = ExtResource("59_barricadaC")
 
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
 transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
