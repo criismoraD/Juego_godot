@@ -118,6 +118,8 @@ func _aplicar_estilos_a_ui() -> void:
 func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
 	var _parent := get_parent()
 	if is_instance_valid(_parent):
+		if _parent is CanvasItem and not _parent.visible:
+			return
 		if "health" in _parent and int(_parent.health) <= 0:
 			return
 		if "current_state" in _parent and "State" in _parent:
