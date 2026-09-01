@@ -1521,6 +1521,7 @@ func take_damage(amount: float) -> void:
 	_flash_red()
 
 	if health <= 0:
+		_detener_sonido_cargando_sp()
 		if _tween_subida and _tween_subida.is_valid():
 			_tween_subida.kill()
 			_tween_subida = null
@@ -1807,6 +1808,7 @@ func _on_pilar_destruido() -> void:
 
 	# Al ser destruido el pilar, matar a Lonko inmediatamente
 	health = 0
+	_detener_sonido_cargando_sp()
 	_change_state(State.DYING)
 
 
@@ -1891,6 +1893,7 @@ func _reproducir_sonido_explosion(spawn_pos: Vector3) -> void:
 
 
 func _exit_tree() -> void:
+	_detener_sonido_cargando_sp()
 	if _instancia_pilar and is_instance_valid(_instancia_pilar):
 		_instancia_pilar.queue_free()
 		_instancia_pilar = null
@@ -2054,9 +2057,13 @@ func _reproducir_sonido_pilar() -> void:
 		player.queue_free()
 
 
+var _player_sfx_cargando_sp: AudioStreamPlayer = null  ## SFX de carga del ult activo (para cancelarlo al morir)
+
+
 func _reproducir_sonido_cargando_sp() -> void:
 	if not sfx_cargando_sp_stream:
 		return
+	_detener_sonido_cargando_sp()
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_cargando_sp_stream
@@ -2066,9 +2073,24 @@ func _reproducir_sonido_cargando_sp() -> void:
 	if root:
 		root.add_child(player)
 		player.play()
-		player.finished.connect(player.queue_free)
+		player.finished.connect(func() -> void:
+			if is_instance_valid(player):
+				player.queue_free()
+			if _player_sfx_cargando_sp == player:
+				_player_sfx_cargando_sp = null
+		)
+		_player_sfx_cargando_sp = player
 	else:
 		player.queue_free()
+
+
+## Corta el sonido de carga del ult (muerte, daño que interrumpe, etc.).
+func _detener_sonido_cargando_sp() -> void:
+	if _player_sfx_cargando_sp and is_instance_valid(_player_sfx_cargando_sp):
+		if _player_sfx_cargando_sp.playing:
+			_player_sfx_cargando_sp.stop()
+		_player_sfx_cargando_sp.queue_free()
+	_player_sfx_cargando_sp = null
 
 
 ## SFX del disparo del ataque especial (ult): TEST_/Ulti Lonko_disparo.wav
