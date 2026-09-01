@@ -51,6 +51,7 @@
 [ext_resource type="Texture2D" uid="uid://cdg6x0n70fr4s" path="res://TEST_/Arboles amarillos A.png" id="51_arbolesamarillos"]
 [ext_resource type="Texture2D" uid="uid://cBamarillosB001" path="res://TEST_/Arboles amarillos B.png" id="53_arbolesamarillosB"]
 [ext_resource type="Texture2D" uid="uid://cCamarillosC003" path="res://TEST_/Arboles amarillos C.png" id="54_arbolesamarillosC"]
+[ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
 [ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="52_shader_arboles"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
@@ -159,6 +160,17 @@ shader_parameter/flutter_strength = 0.012
 render_priority = 0
 shader = ExtResource("52_shader_arboles")
 shader_parameter/albedo_texture = ExtResource("54_arbolesamarillosC")
+shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
+shader_parameter/blur_amount = 2.4
+shader_parameter/wind_speed = 1.6
+shader_parameter/wind_strength = 0.035
+shader_parameter/flutter_speed = 3.2
+shader_parameter/flutter_strength = 0.012
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_arboles_amarillosD"]
+render_priority = 0
+shader = ExtResource("52_shader_arboles")
+shader_parameter/albedo_texture = ExtResource("55_arbolesamarillosD")
 shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
 shader_parameter/blur_amount = 2.4
 shader_parameter/wind_speed = 1.6
@@ -882,6 +894,12 @@ transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -6.8, -0.65, 2.9)
 layers = 7
 material_override = SubResource("ShaderMaterial_arboles_amarillosC")
 texture = ExtResource("54_arbolesamarillosC")
+
+[node name="ArbolesAmarillosD" type="Sprite3D" parent="." unique_id=1948201893]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -2.5, -0.65, 2.6)
+layers = 7
+material_override = SubResource("ShaderMaterial_arboles_amarillosD")
+texture = ExtResource("55_arbolesamarillosD")
 
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
 transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
