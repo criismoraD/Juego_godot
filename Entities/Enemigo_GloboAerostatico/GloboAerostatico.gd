@@ -194,8 +194,8 @@ func _configurar_sonido_movimiento() -> void:
 	var stream: AudioStream = load(SONIDO_MOVIMIENTO_GLOBO)
 	if not stream:
 		return
-	if stream is AudioStreamWAV:
-		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	# NOTA: no usar stream.loop_mode en runtime; con loop_end=0 del import crea un
+	# loop vacío que reproduce silencio eterno. En su lugar, reiniciar en finished().
 	_sfx_movimiento = AudioStreamPlayer.new()
 	_sfx_movimiento.name = "SfxMovimiento"
 	_sfx_movimiento.stream = stream
@@ -204,13 +204,18 @@ func _configurar_sonido_movimiento() -> void:
 	add_child(_sfx_movimiento)
 
 
-## Inicia o detiene el loop según si el globo se está moviendo.
+## Inicia o detiene el sonido según si el globo se está moviendo.
+## El stream se reinicia al terminar mientras siga desplazándose (loop manual).
 func _actualizar_sonido_movimiento() -> void:
 	if not _sfx_movimiento:
 		return
 	var esta_movimiento: bool = current_state != State.DYING and current_state != State.DEAD and absf(velocity.x) > 0.01
-	if esta_movimiento and not _sfx_movimiento.playing:
-		_sfx_movimiento.play()
+	if esta_movimiento:
+		if not _sfx_movimiento.playing:
+			_sfx_movimiento.play()
+		# Reinicio inmediato al terminar: loop manual robusto contra imports sin loop
+		if _sfx_movimiento.get_playback_position() >= _sfx_movimiento.stream.get_length() - 0.05:
+			_sfx_movimiento.play()
 	elif not esta_movimiento and _sfx_movimiento.playing:
 		_sfx_movimiento.stop()
 
