@@ -104,8 +104,6 @@ func _load_all_sounds():
 		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA2.mp3")
 	]
 
-	sfx_streams["tensado_explosivo"] = [load("res://TEST_/Tensado de flecha explosiva.wav")]
-
 	sfx_streams["bow_hold"] = [load("res://Entities/Jugador_Arquera/MANTENER_ARCO.mp3")]
 
 	sfx_streams["player_laugh"] = [load("res://Entities/Jugador_Arquera/RISA_PERSONAJE.mp3")]
@@ -487,19 +485,6 @@ func play_bow_tension():
 	if not sfx_streams.has("bow_tension"):
 		return
 	var sounds = sfx_streams["bow_tension"]
-	if sounds.is_empty():
-		return
-	var sound = sounds[randi() % sounds.size()]
-	if sound:
-		sfx_player.stream = sound
-		sfx_player.play()
-
-
-## Reproducir sonido de tensado explosivo (usa sfx_player fijo)
-func play_tensado_explosivo():
-	if not sfx_streams.has("tensado_explosivo"):
-		return
-	var sounds = sfx_streams["tensado_explosivo"]
 	if sounds.is_empty():
 		return
 	var sound = sounds[randi() % sounds.size()]
