@@ -1229,6 +1229,9 @@ func control_visual_state(delta):
 				_mostrar_flecha_visual(0.0)
 
 		AimState.DRAWING:
+			if Input.is_action_just_pressed("click_derecho"):
+				_cancel_current_shot()
+				return
 			var current = float(anim_tree.get(blend_path))
 			if current < 1.0:
 				anim_tree.set(
@@ -1269,6 +1272,9 @@ func control_visual_state(delta):
 				_ocultar_trayectoria_explosiva()
 
 		AimState.AIMING:
+			if Input.is_action_just_pressed("click_derecho"):
+				_cancel_current_shot()
+				return
 			if float(anim_tree.get(blend_path)) != 1.0:
 				anim_tree.set(blend_path, 1.0)
 
