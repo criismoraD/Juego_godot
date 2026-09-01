@@ -25,6 +25,7 @@ var _explosive_drop_throttled: bool = false
 const UMBRAL_EXPLOSIVO_MAX: int = 30
 const UMBRAL_EXPLOSIVO_RELEASE: int = 25
 const DROP_CHANCE_MITIGADO: float = 0.05
+const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-ups (explosivas y múltiples)
 
 @export_category("Movimiento")
 @export var velocidad_caminar: float = 0.5  # Velocidad al caminar
@@ -1432,7 +1433,7 @@ func cambiar_tipo_municion() -> void:
 
 func agregar_flechas_multiples(cantidad: int = 6) -> void:
 	# El tipo anterior se almacena/conserva intacto en stock
-	flechas_multiples += cantidad
+	flechas_multiples = mini(flechas_multiples + cantidad, MUNICION_POWER_UP_MAX)
 	municion_activa = TipoMunicion.MULTIPLE
 	flechas_multiples_changed.emit(flechas_multiples)
 	tipo_municion_changed.emit(municion_activa)
@@ -1441,7 +1442,7 @@ func agregar_flechas_multiples(cantidad: int = 6) -> void:
 
 func agregar_flechas_explosivas(cantidad: int = 10) -> void:
 	# El tipo anterior se almacena/conserva intacto en stock
-	flechas_explosivas += cantidad  # setter actualiza throttle
+	flechas_explosivas = mini(flechas_explosivas + cantidad, MUNICION_POWER_UP_MAX)  # setter actualiza throttle
 	municion_activa = TipoMunicion.EXPLOSIVA
 	flechas_explosivas_changed.emit(flechas_explosivas)
 	tipo_municion_changed.emit(municion_activa)
