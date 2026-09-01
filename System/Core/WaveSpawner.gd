@@ -151,13 +151,19 @@ func _start_wave():
 	# Para oleada 1 se preserva el valor actual (muertes de pacíficos ocurridas antes del inicio)
 	is_wave_active = true
 	spawn_timer = 0.0  # Spawn inmediato al iniciar oleada
-	
+
 	shield_imps_spawned_this_wave = 0
 	evento_cuerno_activado = false
 	evento_cuerno_en_progreso = false
 	refuerzos_cuerno_spawneados = 0
 
 	_generar_cola_spawn()
+
+	# Oleada 1: ajustar el total a pacíficos vivos + cola, para que el contador
+	# (y el fin de oleada) incluya siempre a los 3 enemigos neutrales del inicio
+	# incluso si alguno ya murió antes o la oleada comenzó sin ellos (continuar/interior).
+	if oleada_combate == 1:
+		enemigos_por_oleada = goblins_spawned_in_wave + cola_spawn.size()
 
 	oleada_iniciada.emit(current_wave)
 
