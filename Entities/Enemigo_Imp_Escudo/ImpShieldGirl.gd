@@ -132,7 +132,7 @@ func _ready():
 	_flash_mat = StandardMaterial3D.new()
 	_flash_mat.albedo_color = Color(1, 1, 1)
 	_flash_mat.emission_enabled = true
-	_flash_mat.emission = Color(1, 1, 1)
+	_flash_mat.emission = Color(1.0, 0.15, 0.15)
 	_flash_mat.emission_energy_multiplier = 3.0
 
 	_setup_animation_player()
