@@ -51,6 +51,8 @@ var _initial_model_y: float = 0.0
 var _nodes_checked: bool = false
 var _is_falling: bool = false
 var _tiempo_vivo: float = 0.0  ## Respaldo por si el SceneTreeTimer no dispara
+var _reintentos_sin_jugador: int = 0
+const RADIO_PICKUP_JUGADOR: float = 0.9  ## Pickup por proximidad (respaldo del body_entered)
 
 var model_root: Node3D = null
 var fire_light: OmniLight3D = null
@@ -146,10 +148,18 @@ func _process(delta: float) -> void:
 		if not _is_falling:
 			_bucle_flotacion()
 
+		# Pickup por proximidad: respaldo si la colisión body_entered no llega
+		_verificar_proximidad_jugador()
+
 		# Respaldo: si el SceneTreeTimer no disparó, consumir tras el tiempo extra
 		_tiempo_vivo += delta
 		if _tiempo_vivo >= tiempo_en_pantalla + 1.0:
 			_auto_consumir()
+
+		# Respaldo de spawn: si el tween de escala inicial se congeló (pausa del árbol),
+		# forzar la escala final para que el item sea visible y recogible
+		if _tiempo_vivo >= tiempo_escala_spawn + 0.5 and scale.x < 0.9:
+			scale = Vector3.ONE
 
 
 func _bucle_rotacion_360(delta: float) -> void:
@@ -186,6 +196,21 @@ func _on_body_entered(body: Node3D) -> void:
 		_auto_consumir()
 
 
+## Respaldo de contacto: consume si el jugador está pegado al item aunque
+## la señal body_entered nunca haya llegado (capas de colisión, CCD, etc).
+func _verificar_proximidad_jugador() -> void:
+	if current_state != State.IDLE:
+		return
+	var player := _buscar_jugador() as Node3D
+	if is_instance_valid(player):
+		var dist_xz: Vector2 = Vector2(
+			global_position.x - player.global_position.x,
+			global_position.z - player.global_position.z)
+		var dist_y: float = absf(global_position.y - player.global_position.y)
+		if dist_xz.length() <= RADIO_PICKUP_JUGADOR and dist_y <= 2.5:
+			_auto_consumir()
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # AUTO-CONSUMO
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -193,18 +218,27 @@ func _on_body_entered(body: Node3D) -> void:
 func _auto_consumir() -> void:
 	if current_state == State.DISSOLVING:
 		return
-	current_state = State.DISSOLVING
 
 	var player: Node3D = _buscar_jugador()
-	if is_instance_valid(player):
-		if player.has_method("agregar_flechas_explosivas"):
-			player.agregar_flechas_explosivas(municion_a_otorgar_jugador)
-		elif "flechas_explosivas" in player:
-			player.flechas_explosivas += municion_a_otorgar_jugador
-			if player.has_signal("flechas_explosivas_changed"):
-				player.flechas_explosivas_changed.emit(player.flechas_explosivas)
-		picked_up.emit(player)
-		_play_pickup_sound()
+	if not is_instance_valid(player):
+		# Sin jugador (transición de escena): reintentar hasta 10s antes de disolverse
+		_reintentos_sin_jugador += 1
+		if _reintentos_sin_jugador <= 20:
+			current_state = State.IDLE  # Mantener vivo el item hasta haber otorgado
+			return
+		current_state = State.DISSOLVING
+		_iniciar_desintegracion(0.8)
+		return
+
+	current_state = State.DISSOLVING
+	if player.has_method("agregar_flechas_explosivas"):
+		player.agregar_flechas_explosivas(municion_a_otorgar_jugador)
+	elif "flechas_explosivas" in player:
+		player.flechas_explosivas += municion_a_otorgar_jugador
+		if player.has_signal("flechas_explosivas_changed"):
+			player.flechas_explosivas_changed.emit(player.flechas_explosivas)
+	picked_up.emit(player)
+	_play_pickup_sound()
 
 	# También otorgar municiones explosivas a las arqueras defensoras / aliadas
 	_otorgar_municion_a_aliadas()
@@ -294,6 +328,12 @@ func _iniciar_desintegracion(duracion: float) -> void:
 		tween.parallel().tween_property(fire_light, "light_energy", 0.0, duracion)
 
 	tween.finished.connect(queue_free)
+
+	# Failsafe: garantizar la liberación aunque el tween se congele (pausa del árbol)
+	get_tree().create_timer(duracion + 1.0).timeout.connect(func() -> void:
+		if is_instance_valid(self):
+			queue_free()
+	)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
