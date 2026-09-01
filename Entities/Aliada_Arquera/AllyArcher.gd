@@ -1361,6 +1361,8 @@ func revivir() -> void:
 
 ## Muestra un diálogo en el globo de este personaje
 func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
+	if current_state == State.DYING or current_state == State.DEAD or health <= 0:
+		return
 	if not speech_bubble or not is_instance_valid(speech_bubble):
 		speech_bubble = get_node_or_null("SpeechBubbleComponent")
 	if speech_bubble and is_instance_valid(speech_bubble):

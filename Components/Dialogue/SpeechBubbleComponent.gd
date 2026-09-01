@@ -116,6 +116,18 @@ func _aplicar_estilos_a_ui() -> void:
 
 ## Muestra un diálogo en el globo de este personaje
 func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
+	var _parent := get_parent()
+	if is_instance_valid(_parent):
+		if "health" in _parent and int(_parent.health) <= 0:
+			return
+		if "current_state" in _parent and "State" in _parent:
+			var _st = _parent.current_state
+			var _State = _parent.State
+			if _st == _State.DYING or _st == _State.DEAD:
+				return
+		if "esta_paralizada" in _parent and _parent.has_method("esta_paralizada") and _parent.esta_paralizada():
+			# Permitir diálogo si solo está paralizada, pero no si está muerta
+			pass
 	_asegurar_ui()
 	if not _bubble_ui:
 		return
