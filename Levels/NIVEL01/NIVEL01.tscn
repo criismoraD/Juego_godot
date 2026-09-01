@@ -54,6 +54,7 @@
 [ext_resource type="Texture2D" uid="uid://bb5iyjs2c0rvo" path="res://TEST_/Barricada A.png" id="57_barricadaA"]
 [ext_resource type="Texture2D" uid="uid://i5j00bo3m33j" path="res://TEST_/Barricada C.png" id="59_barricadaC"]
 [ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://TEST_/Bandera A.png" id="60_banderaA"]
+[ext_resource type="Texture2D" uid="uid://carretaA004" path="res://TEST_/Carreta A.png" id="61_carretaA"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -941,10 +942,15 @@ layers = 2
 texture = ExtResource("57_barricadaA")
 
 [node name="BanderaA" type="Sprite3D" parent="." unique_id=1948201896]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -5.0, -0.3, 1.8)
-layers = 7
+transform = Transform3D(0.4272384, 0, 0, 0, 0.32137963, 0, 0, 0, 0.015609987, 3.8207998, 0.39386657, -7.597229)
+layers = 2
 material_override = SubResource("ShaderMaterial_banderaA")
 texture = ExtResource("60_banderaA")
+
+[node name="CarretaA" type="Sprite3D" parent="." unique_id=1948201898]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -5.0, -0.4, 1.8)
+layers = 7
+texture = ExtResource("61_carretaA")
 
 [node name="BarricadaC" type="Sprite3D" parent="." unique_id=1948201897]
 transform = Transform3D(0.49384293, 0, -0.21692717, 0, 0.46441576, 0, 0.25182492, 0, 0.42540646, -8.933237, -0.3, -38.132065)
