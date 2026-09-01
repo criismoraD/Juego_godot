@@ -1463,6 +1463,9 @@ func _es_tiro_electrico(numero_tiro: int) -> bool:
 ## Disparo eléctrico periódico: la flecha eléctrica sale en vertical (apuntando al cielo),
 ## sale de pantalla, deja la marca de aros rojos en la zona aliada y cae del cielo.
 func _disparar_proyectil_electrico() -> void:
+	# SFX del disparo del ataque especial (ult)
+	_reproducir_sonido_ulti_disparo()
+
 	var vfx_manual := find_child("FlechaElectricaVFX_Manual", true, false) as Node3D
 	var spawn_pos: Vector3 = _cached_spawn_pos
 	if vfx_manual:
@@ -2058,6 +2061,25 @@ func _reproducir_sonido_cargando_sp() -> void:
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_cargando_sp_stream
 	player.volume_db = -14.5  # -12 dB previo -2.5 dB adicionales = -25% extra
+	player.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(player)
+		player.play()
+		player.finished.connect(player.queue_free)
+	else:
+		player.queue_free()
+
+
+## SFX del disparo del ataque especial (ult): TEST_/Ulti Lonko_disparo.wav
+func _reproducir_sonido_ulti_disparo() -> void:
+	var stream: AudioStream = load("res://TEST_/Ulti Lonko_disparo.wav")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.add_to_group("pausable_audio")
+	player.stream = stream
+	player.volume_db = 2.0
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
