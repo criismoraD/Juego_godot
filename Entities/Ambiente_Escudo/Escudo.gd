@@ -303,10 +303,11 @@ func _flash_dano():
 	if not mesh_instance:
 		return
 
-	# Flash blanco rápido
+	# Flash rojo para escudos enemigos, blanco para aliados
+	var flash_color: Color = Color(1.0, 0.15, 0.15) if es_escudo_enemigo else Color.WHITE
 	var flash_mat = StandardMaterial3D.new()
 	flash_mat.emission_enabled = true
-	flash_mat.emission = Color.WHITE
+	flash_mat.emission = flash_color
 	flash_mat.emission_energy_multiplier = intensidad_flash
 
 	mesh_instance.set_surface_override_material(0, flash_mat)

@@ -11,13 +11,12 @@ enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos vivos para empezar a disparar
 @export_category("Disparo")
-@export var tiempo_carga_min: float = 0.5  ## Carga mínima (potencia baja)
-@export_category("Tiempo_carga_max")
-@export var tiempo_carga_max: float = 1.0  ## Carga máxima (potencia alta)
 @export var potencia_minima: float = 5.0
 @export var potencia_maxima: float = 12.0
 @export var altura_spawn_flecha: float = 1.2
-@export var tiempo_suelta_flecha: float = 3.0  ## Segundo en el que la animación TOMAFLEHCA_Y_DISPARA suelta la flecha y sale el proyectil
+@export var tiempo_suelta_flecha: float = 0.25  ## Segundos del inicio de SOLTAR_FLECHA hasta la suelta de la flecha
+@export var tiempo_apuntado_min: float = 0.3  ## Segundos mínimos en IDLE_APUNTANDO (carga mínima)
+@export var tiempo_apuntado_max: float = 1.2  ## Segundos máximos en IDLE_APUNTANDO (más tiempo = más potencia)
 @export_range(0.0, 30.0, 1.0) var angulo_disparo_min: float = 5.0  ## Ángulo mínimo de elevación (grados)
 @export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 35.0  ## Ángulo máximo de elevación (grados)
 @export_range(1.0, 3.0, 0.05) var multiplicador_potencia_volador: float = 1.6  ## Fuerza extra al disparar a enemigos voladores (trayectoria más plana)
@@ -142,11 +141,20 @@ func _iniciar():
 
 
 func _setup_animation_player():
-	# 1. Desactivar cualquier AnimationTree
+	# 1. Desactivar AnimationTree / AnimationMixer importados (GLB trae mixer que secuestra esqueleto)
 	var trees = find_children("*", "AnimationTree", true, false)
 	for tree in trees:
 		tree.active = false
 		_log_debug(["[AllyArcher] AnimationTree desactivado: ", tree.name])
+	var mixers = find_children("*", "AnimationMixer", true, false)
+	for mixer in mixers:
+		if mixer is AnimationPlayer:
+			continue
+		if mixer.has_method("set_active"):
+			mixer.active = false
+		elif "active" in mixer:
+			mixer.set("active", false)
+		_log_debug(["[AllyArcher] AnimationMixer desactivado: ", mixer.name])
 
 	# 2. Buscar AnimationPlayer principal (con IDLE, DISPARO, etc.)
 	#    Acepta nombres con prefijo (Armature|Armature|IDLE) o sin prefijo (IDLE)
@@ -307,6 +315,7 @@ func _crear_hitbox():
 	hitbox_body = StaticBody3D.new()
 	hitbox_body.name = "HitboxBody"
 	hitbox_body.add_to_group("allies")
+	hitbox_body.set_meta("defensora_owner", self)  ## Permite a los proyectiles aplicar estados sobre la defensora dueña de esta hitbox
 	hitbox_body.collision_layer = 2  # Capa 2: el Player (capa 1) no colisiona, flechas enemigas (mask=3) sí
 	hitbox_body.collision_mask = 0
 
@@ -503,7 +512,7 @@ func _process_idle(delta):
 		state_timer = 0.4
 		return
 
-	var hay_enemigos: bool = (_contar_enemigos_vivos() >= enemigos_minimos or _hay_enemigos_en_pantalla())
+	var hay_enemigos: bool = (_contar_enemigos_en_pantalla() >= enemigos_minimos)
 	if not hay_enemigos:
 		# Al inicio de cada oleada o sin enemigos en pantalla, mantiene la animación IDLE_DESARMADO
 		_play_anim(["IDLE_DESARMADO", "IDLE_EXAMINAR", "IDLE"], 0.3)
@@ -512,16 +521,22 @@ func _process_idle(delta):
 
 	state_timer -= delta
 	if state_timer <= 0:
-		_cambiar_estado(State.SHOOTING)
+		# Ciclo Player: TOMAR_FLECHA -> IDLE_APUNTANDO -> SOLTAR_FLECHA
+		_cambiar_estado(State.RELOADING)
 
 
-## RELOADING / AIMING: compatibles con cualquier llamada externa redirigiendo a SHOOTING
+## RELOADING (TOMAR_FLECHA): la arquera saca y carga una flecha
 func _process_reloading(delta):
-	_process_shooting(delta)
+	state_timer -= delta
+	if state_timer <= 0:
+		_cambiar_estado(State.AIMING)
 
 
+## AIMING (IDLE_APUNTANDO): apunta en idle un rato según la carga elegida; al terminar, dispara
 func _process_aiming(delta):
-	_process_shooting(delta)
+	state_timer -= delta
+	if state_timer <= 0:
+		_cambiar_estado(State.SHOOTING)
 
 
 ## SHOOTING: animación TOMAFLEHCA_Y_DISPARA; en el segundo 3.0 suelta la flecha y sale el proyectil
@@ -596,7 +611,7 @@ func _cambiar_estado(nuevo: State):
 	current_state = nuevo
 	match nuevo:
 		State.IDLE:
-			var hay_enemigos: bool = (_contar_enemigos_vivos() >= enemigos_minimos or _hay_enemigos_en_pantalla())
+			var hay_enemigos: bool = (_contar_enemigos_en_pantalla() >= enemigos_minimos)
 			if not hay_enemigos:
 				_play_anim(["IDLE_DESARMADO", "IDLE_EXAMINAR", "IDLE"], 0.3)
 			else:
@@ -606,17 +621,31 @@ func _cambiar_estado(nuevo: State):
 			_ocultar_flecha()
 			_flecha_soltada = false
 
-		State.SHOOTING, State.RELOADING, State.AIMING:
-			current_state = State.SHOOTING
+		State.RELOADING:
+			# TOMAR_FLECHA: referencia Player (draw)
 			_flecha_soltada = false
 			_tiempo_ataque_actual = 0.0
-			charge_duration = tiempo_carga_max
+			_ocultar_flecha()
+			_play_anim(["TOMAR_FLECHA", "TOMAR_FLEHCA", "TOMA_FLECHA"], 0.15, 1.0)
+			_play_bow_anim("ARCO_TENSAR", 0.2, 1.0)
+			state_timer = maxf(_get_anim_length(["TOMAR_FLECHA", "TOMAR_FLEHCA", "TOMA_FLECHA"]), 0.3)
+
+		State.AIMING:
+			# IDLE_APUNTANDO: referencia Player (aim)
+			charge_duration = randf_range(tiempo_apuntado_min, tiempo_apuntado_max)
 			_mostrar_flecha()
-			_play_anim(["TOMAFLEHCA_Y_DISPARA", "TOMAFLECHA_Y_DISPARA", "TOMA_FLECHA_Y_DISPARA", "TOMAFLECHA", "DISPARO"], 0.15, 1.0)
+			_play_anim(["IDLE_APUNTANDO", "APUNTAR_IDLE"], 0.15, 1.0)
 			_play_bow_anim("ARCO_TENSAR", 0.2, 1.0)
 			AudioManager.play_sfx("bow_tension", -6.0)
-			var dur: float = _get_anim_length("TOMAFLEHCA_Y_DISPARA")
-			state_timer = maxf(dur, tiempo_suelta_flecha + 0.3)
+			state_timer = charge_duration
+
+		State.SHOOTING:
+			# SOLTAR_FLECHA: referencia Player (disparar) — disparo aleatorio en rango
+			_flecha_soltada = false
+			_tiempo_ataque_actual = 0.0
+			_play_anim(["SOLTAR_FLECHA", "DISPARAR", "DISPARO"], 0.1, 1.0)
+			_play_bow_anim("ARCO_DISPARO", 0.1, 1.0)
+			state_timer = maxf(_get_anim_length("SOLTAR_FLECHA"), tiempo_suelta_flecha + 0.2)
 
 		State.DYING:
 			_on_dying()
@@ -747,16 +776,15 @@ func _es_lonko_en_pilar_completo(enemy: Node) -> bool:
 	return false
 
 
-## Devuelve true si hay ALGÚN enemigo vivo en pantalla, aunque no sea reconocido como objetivo
-## (incluye Imp de escudo y Lonko aún no emergida). Si no se reconoce ninguno, se dispara al azar.
-func _hay_enemigos_en_pantalla() -> bool:
+## Devuelve la cantidad de enemigos presentes en pantalla, vivos, estén o no reconocidos como objetivos
+func _contar_enemigos_en_pantalla() -> int:
+	var count := 0
 	var enemies: Array = []
 	var wave_spawner = _get_cached_wave_spawner()
 	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
 		enemies = wave_spawner.get_active_enemies()
 	else:
 		enemies = get_tree().get_nodes_in_group("enemies")
-
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
@@ -770,8 +798,8 @@ func _hay_enemigos_en_pantalla() -> bool:
 				continue
 			if enemy is ImpShieldGirl and (st == ImpShieldGirl.State.DYING or st == ImpShieldGirl.State.DEAD):
 				continue
-		return true
-	return false
+		count += 1
+	return count
 
 
 func _contar_enemigos_vivos() -> int:
@@ -960,55 +988,36 @@ func _obtener_enemigos_disponibles() -> Array:
 	return validos
 
 
-## Selecciona un enemigo al azar de los disponibles al frente
-func _obtener_enemigo_al_azar() -> Node3D:
-	var validos = _obtener_enemigos_disponibles()
-	if validos.is_empty():
-		return null
-	return validos[randi() % validos.size()] as Node3D
-
-
-## Evalúa el campo de batalla y decide el objetivo y tipo de munición según las prioridades:
-## 1. Si hay Arquera Lonko / Pilar activo y tiene flechas explosivas -> Objetivo: Lonko/Pilar, Munición: EXPLOSIVO
-## 2. Si hay Gárgola activa -> Objetivo: Gárgola, Munición: NORMAL (prioriza disparo normal contra gárgolas)
-## 2b. Si hay Globo aerostático activo -> Objetivo: Globo, Munición: NORMAL (vehículo volador: apuntado directo)
-## 3. Si tiene flechas múltiples -> Objetivo: Enemigo al azar, Munición: MULTIPLE
-## 4. Si tiene flechas explosivas (sin Lonko en pantalla) -> Objetivo: Enemigo al azar, Munición: EXPLOSIVO
-## 5. Sin munición especial -> Objetivo: Lonko/Enemigo/Arco, Munición: NORMAL
+## Sistema de disparo referencia Player: 3 anims TOMAR_FLECHA → IDLE_APUNTANDO → SOLTAR_FLECHA
+## Prioridades Arquera — Voladores 2, Básicos 0, Elite 0 (Lonko 1 solo sobre pilar), Guardian 0
+## 0 = azar, 1 = fija y apunta, 2 = fija inmediata y elimina
 func _decidir_disparo_y_objetivo() -> Dictionary:
-	var lonko := _obtener_lonko_objetivo()
-	var pilar := _obtener_pilar_lonko_objetivo()
+	# Prioridad 2 - Voladores: Gárgola y Globo aerostático (máxima)
 	var gargola := _obtener_gargola_objetivo()
 	var globo := _obtener_globo_objetivo()
-	var objetivo_lonko = lonko if lonko else pilar
+	var volador: Node3D = null
+	if is_instance_valid(gargola) and is_instance_valid(globo):
+		var d1: float = absf(gargola.global_position.x - global_position.x)
+		var d2: float = absf(globo.global_position.x - global_position.x)
+		volador = gargola if d1 < d2 else globo
+	elif is_instance_valid(gargola):
+		volador = gargola
+	elif is_instance_valid(globo):
+		volador = globo
+	if is_instance_valid(volador):
+		return { "target": volador, "type": TipoDisparoAliada.NORMAL }
 
-	# Regla 1: Flechas explosivas priorizan a las arqueras Lonko / Pilar
-	if objetivo_lonko and flechas_explosivas > 0:
-		return { "target": objetivo_lonko, "type": TipoDisparoAliada.EXPLOSIVO }
+	# Prioridad 1 - Elite excepción: Arquera lonko solo cuando está sobre pilar completo
+	var lonko := _obtener_lonko_objetivo()
+	if is_instance_valid(lonko):
+		return { "target": lonko, "type": TipoDisparoAliada.NORMAL }
 
-	# Regla 2: Contra el enemigo Gárgola prioriza utilizar su disparo normal
-	if gargola:
-		return { "target": gargola, "type": TipoDisparoAliada.NORMAL }
-
-	# Regla 2b: Contra el globo aerostático (vehículo volador) prioriza su disparo normal
-	if globo:
-		return { "target": globo, "type": TipoDisparoAliada.NORMAL }
-
-	# Regla 3: Disparo múltiple lo dispara al azar
+	# Prioridad 0 - Básicos, Elite sin condición y Guardian: disparo al azar en rango
 	if flechas_multiples > 0:
-		var target_rand = _obtener_enemigo_al_azar()
-		var target = target_rand if target_rand else objetivo_lonko
-		return { "target": target, "type": TipoDisparoAliada.MULTIPLE }
-
-	# Regla 4: Si no hay arquera Lonko en pantalla, dispara tiros explosivos al azar
+		return { "target": null, "type": TipoDisparoAliada.MULTIPLE }
 	if flechas_explosivas > 0:
-		var target_rand = _obtener_enemigo_al_azar()
-		var target = target_rand if target_rand else objetivo_lonko
-		return { "target": target, "type": TipoDisparoAliada.EXPLOSIVO }
-
-	# Regla 5: Disparo normal por defecto
-	var target_default = objetivo_lonko if objetivo_lonko else _obtener_enemigo_al_azar()
-	return { "target": target_default, "type": TipoDisparoAliada.NORMAL }
+		return { "target": null, "type": TipoDisparoAliada.EXPLOSIVO }
+	return { "target": null, "type": TipoDisparoAliada.NORMAL }
 
 
 func _obtener_objetivo_actual() -> Node3D:
@@ -1056,10 +1065,10 @@ func _disparar():
 	elif arrow_node and is_instance_valid(arrow_node):
 		spawn_pos = arrow_node.global_position
 
-	# 3. Potencia proporcional al tiempo de carga (100% de potencia con disparo cargado)
+	# 3. Potencia proporcional al tiempo de apuntado (normalizado contra el máximo configurable)
 	var power_ratio: float = 1.0
-	if tiempo_carga_max > 0.0 and charge_duration > 0.0:
-		power_ratio = clamp(charge_duration / tiempo_carga_max, 0.0, 1.0)
+	if tiempo_apuntado_max > 0.0 and charge_duration > 0.0:
+		power_ratio = clamp(charge_duration / tiempo_apuntado_max, 0.0, 1.0)
 	var speed = lerp(potencia_minima, potencia_maxima, power_ratio)
 
 	var direction: Vector3
@@ -1368,6 +1377,9 @@ func _play_anim(anim_target, blend: float = -1.0, speed: float = 1.0):
 		for a in all_anims:
 			var a_str := a.to_lower()
 			if a_str == cand_str or a_str.ends_with("/" + cand_str) or cand_str in a_str:
+				if anim_player.current_animation == a and anim_player.is_playing():
+					anim_player.speed_scale = speed
+					return
 				anim_player.play(a, blend, speed)
 				anim_player.speed_scale = speed
 				return
@@ -1395,16 +1407,23 @@ func _get_bow_anim_length(anim_name: String) -> float:
 	return 1.0
 
 
-func _get_anim_length(anim_name: String) -> float:
+func _get_anim_length(anim_target) -> float:
 	if not anim_player:
 		return 3.5
-	var cand_lower := anim_name.to_lower()
-	for a in anim_player.get_animation_list():
-		var a_lower := a.to_lower()
-		if a_lower == cand_lower or a_lower.ends_with("/" + cand_lower) or cand_lower in a_lower:
-			var anim := anim_player.get_animation(a)
-			if anim:
-				return anim.length
+	var candidates: Array = []
+	if anim_target is Array:
+		candidates = anim_target
+	else:
+		candidates = [str(anim_target)]
+	var all_anims := anim_player.get_animation_list()
+	for cand in candidates:
+		var cand_lower := str(cand).to_lower()
+		for a in all_anims:
+			var a_lower := a.to_lower()
+			if a_lower == cand_lower or a_lower.ends_with("/" + cand_lower) or cand_lower in a_lower:
+				var anim := anim_player.get_animation(a)
+				if anim:
+					return anim.length
 	return 3.5
 
 

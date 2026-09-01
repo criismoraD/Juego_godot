@@ -198,7 +198,7 @@ func _generar_cola_spawn() -> void:
 
 	elif wave_num == 4:
 		# Oleada 4: 10 imp, 9 goblin ballesta + 1 globo (reemplaza 1 ballestero), 10 gárgola + 5 imp escudo garantizados (100%). Total: 35.
-		# La primera en salir siempre es una gárgola. El Globo se spawnea aparte, 3s antes del cuerno.
+		# La primera en salir siempre es una gárgola. El Globo se spawnea aparte, 2s antes del cuerno.
 		for i in range(5):
 			pool.append(escena_imp_escudo)
 		for i in range(10):
@@ -741,12 +741,12 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 		routine_golpe.call()
 
 
-## Oleada 4: spawnea un Globo Aerostático (reemplaza 1 Goblin Ballesta) y, 3 segundos
+## Oleada 4: spawnea un Globo Aerostático (reemplaza 1 Goblin Ballesta) y, 2 segundos
 ## después, dispara el evento del cuerno. Así el globo aparece justo antes de la ráfaga.
 func _secuencia_globo_y_cuerno_oleada_4() -> void:
 	evento_cuerno_activado = true  # Evita re-disparar el cuerno durante la espera
 	_spawnear_globo_oleada_4()
-	await get_tree().create_timer(3.0, false).timeout
+	await get_tree().create_timer(2.0, false).timeout
 	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	# Oleada 4 ya trae 5 escudo fijos en cola, no spawnear extra

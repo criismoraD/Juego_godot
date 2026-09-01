@@ -255,15 +255,24 @@ func _on_body_entered(body: Node) -> void:
 	if body.is_in_group("allies") or body.is_in_group("player"):
 		if not _cuerpos_danados_caida.has(body):
 			_cuerpos_danados_caida[body] = true
-			if body.has_method("take_damage"):
-				body.take_damage(dano)
-			elif body.has_method("recibir_dano"):
-				body.recibir_dano(dano)
-			# El aturdimiento solo afecta a la protagonista, no a las defensoras aliadas
-			if body.is_in_group("player") and body.has_method("aplicar_paralisis"):
-				body.aplicar_paralisis(4.0)
-			elif body.is_in_group("player") and body.has_method("aplicar_estado_paralisis"):
-				body.aplicar_estado_paralisis(4.0)
+			if body.is_in_group("player"):
+				# La protagonista recibe daño y aturdimiento
+				if body.has_method("take_damage"):
+					body.take_damage(dano)
+				elif body.has_method("recibir_dano"):
+					body.recibir_dano(dano)
+				if body.has_method("aplicar_paralisis"):
+					body.aplicar_paralisis(4.0)
+				elif body.has_method("aplicar_estado_paralisis"):
+					body.aplicar_estado_paralisis(4.0)
+			else:
+				# Defensoras aliadas (arqueras y ballesteras): sin daño, solo aturdimiento.
+				# La hitbox es un StaticBody3D: resolver la defensora dueña vía metadata.
+				var defensora: Node = body
+				if body.has_meta("defensora_owner"):
+					defensora = body.get_meta("defensora_owner")
+				if is_instance_valid(defensora) and defensora.has_method("aplicar_paralisis"):
+					defensora.aplicar_paralisis(4.0)
 			_reproducir_sonido_rayo()
 
 

@@ -65,4 +65,4 @@ mouse_filter = 2
 bbcode_enabled = true
 fit_content = true
 scroll_active = false
-autowrap_mode = 0
+autowrap_mode = 2

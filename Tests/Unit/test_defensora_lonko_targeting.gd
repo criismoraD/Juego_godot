@@ -416,3 +416,75 @@ func test_lonko_caida_dinamica_al_destruir_pilar():
 	assert_true(_lonko._ha_tocado_suelo_muerte, "Debe marcar _ha_tocado_suelo_muerte al alcanzar el piso")
 	assert_almost_eq(_lonko.velocity.x, 0.0, 0.01, "La velocidad debe detenerse al tocar el piso")
 
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TESTS DE PRIORIDAD 0: BALLESTERA DISPARA AL AZAR CONTRA LONKOS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+var _ballestera: AllyBallestera = null
+
+
+func _crear_ballestera() -> AllyBallestera:
+	_ballestera = AllyBallesteraScript.new()
+	_ballestera.name = "BallesteraTestAzar"
+	get_tree().root.add_child(_ballestera)
+	_ballestera.global_position = Vector3(0.0, 0.0, 0.0)
+	return _ballestera
+
+
+func _limpiar_ballestera() -> void:
+	if is_instance_valid(_ballestera):
+		if _ballestera.get_parent():
+			_ballestera.get_parent().remove_child(_ballestera)
+		_ballestera.free()
+		_ballestera = null
+
+
+func test_ballestera_reconoce_objetivo_azar_cuando_solo_hay_lonko():
+	# Arrange: ballestera con una Lonko activa a su derecha y ningún básico apuntable
+	_crear_ballestera()
+	_lonko = LonkoScript.new()
+	_lonko.name = "LonkoEnemy"
+	get_tree().root.add_child(_lonko)
+	_lonko.global_position = Vector3(8.0, 0.0, 0.0)
+
+	# Act
+	var hay_azar: bool = _ballestera._hay_objetivo_azar()
+	var objetivo_apuntable: Node3D = _ballestera._obtener_objetivo_prioritario()
+
+	# Assert
+	assert_true(hay_azar, "Con solo Lonkos debe existir objetivo de azar (prioridad 0)")
+	assert_null(objetivo_apuntable, "La Lonko no debe ser objetivo apuntable de prioridad 2")
+
+	_limpiar_ballestera()
+
+
+func test_ballestera_sin_objetivo_azar_sin_hostiles():
+	# Arrange: ballestera sin ningún enemigo activo
+	_crear_ballestera()
+
+	# Act
+	var hay_azar: bool = _ballestera._hay_objetivo_azar()
+
+	# Assert
+	assert_false(hay_azar, "Sin hostiles no debe haber objetivo de azar (caso borde)")
+
+	_limpiar_ballestera()
+
+
+func test_ballestera_ignora_lonko_detras_de_ella():
+	# Arrange: Lonko a la izquierda (x negativa), fuera del arco frontal de disparo
+	_crear_ballestera()
+	_lonko = LonkoScript.new()
+	_lonko.name = "LonkoEnemy"
+	get_tree().root.add_child(_lonko)
+	_lonko.global_position = Vector3(-8.0, 0.0, 0.0)
+
+	# Act
+	var hay_azar: bool = _ballestera._hay_objetivo_azar()
+
+	# Assert
+	assert_false(hay_azar, "Una Lonko detrás de la ballestera no habilita el tiro al azar")
+
+	_limpiar_ballestera()

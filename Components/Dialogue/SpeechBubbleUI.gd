@@ -94,9 +94,11 @@ func mostrar_dialogo(
 	_chars_sonados = 0
 
 	var texto_final := tr(texto)
-	_configurar_dimensiones(texto_final)
-
 	label_texto.text = "[center]%s[/center]" % texto_final
+	_configurar_dimensiones(texto_final)
+	# Reajuste con la altura real del texto una vez que el RichTextLabel calcula su layout
+	call_deferred("_reajustar_altura_tras_layout")
+
 	label_texto.visible_ratio = 0.0
 	visible = true
 	_esta_abierto = true
@@ -215,6 +217,7 @@ func _configurar_dimensiones(texto: String) -> void:
 
 	var font: Font = label_texto.get_theme_default_font()
 	var f_size: int = tamano_fuente
+	var margen_lateral := 21.0
 
 	var lineas: PackedStringArray = texto.split("\n")
 	var max_w_linea: float = 0.0
@@ -226,35 +229,100 @@ func _configurar_dimensiones(texto: String) -> void:
 			max_w_linea = maxf(max_w_linea, float(linea.length()) * 10.0)
 
 	# Espacio para el texto + respiro reducido a la mitad en los laterales
-	var margen_lateral := 21.0
 	var total_w := clampf(max_w_linea + margen_lateral * 2.0, ancho_minimo, ancho_maximo)
 
-	_tamano_actual = Vector2(total_w, ALTO_BANNER)
+	# Calcular líneas reales con word-wrap dentro del ancho útil del banner
+	var ancho_texto := total_w - margen_lateral * 2.0
+	var lineas_envueltas := _envolver_texto_en_lineas(texto, font, f_size, ancho_texto)
+
+	# Altura del banner que crece con las líneas (1 línea = alto base)
+	var altura_linea: float = (font.get_height(f_size) if font else float(f_size)) + 4.0
+	var num_lineas: int = maxi(lineas_envueltas.size(), 1)
+	var alto_banner := ALTO_BANNER + (altura_linea * float(num_lineas - 1))
+
+	_tamano_actual = Vector2(total_w, alto_banner)
 
 	# 1. Cuerpo Central en Mosaico (Solo en la zona interna segura, evitando asomarse por las rasgaduras exteriores)
 	var cuerpo_x := 28.0
 	var cuerpo_w := maxf(total_w - 56.0, 10.0)
 	cuerpo_centro.position = Vector2(cuerpo_x, 0.0)
-	cuerpo_centro.size = Vector2(cuerpo_w, ALTO_BANNER)
+	cuerpo_centro.size = Vector2(cuerpo_w, alto_banner)
 
 	# 2. Punta Izquierda (con difuminado alfa suave sobre el cuerpo central)
 	punta_izq.position = Vector2.ZERO
-	punta_izq.size = Vector2(ANCHO_PUNTA, ALTO_BANNER)
+	punta_izq.size = Vector2(ANCHO_PUNTA, alto_banner)
 
 	# 3. Punta Derecha (con difuminado alfa suave sobre el cuerpo central)
 	punta_der.position = Vector2(total_w - ANCHO_PUNTA, 0.0)
-	punta_der.size = Vector2(ANCHO_PUNTA, ALTO_BANNER)
+	punta_der.size = Vector2(ANCHO_PUNTA, alto_banner)
 
-	# 4. Texto centrado sobre el pergamino con respiro ceñido
+	# 4. Texto centrado sobre el pergamino con respiro ceñido (cubre todo el alto)
 	label_texto.position = Vector2(margen_lateral, 8.0)
-	label_texto.size = Vector2(total_w - margen_lateral * 2.0, ALTO_BANNER - 16.0)
+	label_texto.size = Vector2(ancho_texto, alto_banner - 16.0)
 
 	# 5. Cola centrada bajo el banner
 	if texture_cola:
 		texture_cola.size = Vector2(ANCHO_COLA, ALTO_COLA)
-		texture_cola.position = Vector2(total_w * 0.5 - ANCHO_COLA * 0.5, ALTO_BANNER - SOLAPAMIENTO_COLA_Y)
+		texture_cola.position = Vector2(total_w * 0.5 - ANCHO_COLA * 0.5, alto_banner - SOLAPAMIENTO_COLA_Y)
 
 	banner_container.size = _tamano_actual
+
+
+## Reajusta el alto del banner usando la altura real del texto ya maquetado por el RichTextLabel
+func _reajustar_altura_tras_layout() -> void:
+	if not _esta_abierto or not is_instance_valid(label_texto) or not is_instance_valid(banner_container):
+		return
+
+	var alto_real := float(label_texto.get_content_height())
+	if alto_real <= 0.0:
+		return
+
+	var alto_banner := maxf(ALTO_BANNER, alto_real + 16.0)
+	if is_equal_approx(alto_banner, _tamano_actual.y):
+		return
+
+	var total_w := _tamano_actual.x
+	_tamano_actual = Vector2(total_w, alto_banner)
+
+	var cuerpo_w := maxf(total_w - 56.0, 10.0)
+	cuerpo_centro.size = Vector2(cuerpo_w, alto_banner)
+	punta_izq.size = Vector2(ANCHO_PUNTA, alto_banner)
+	punta_der.position = Vector2(total_w - ANCHO_PUNTA, 0.0)
+	punta_der.size = Vector2(ANCHO_PUNTA, alto_banner)
+
+	label_texto.position = Vector2(21.0, 8.0)
+	label_texto.size = Vector2(total_w - 42.0, alto_banner - 16.0)
+
+	if texture_cola:
+		texture_cola.position = Vector2(total_w * 0.5 - ANCHO_COLA * 0.5, alto_banner - SOLAPAMIENTO_COLA_Y)
+
+	banner_container.size = _tamano_actual
+
+
+## Divide el texto en líneas reales aplicando word-wrap según el ancho útil del banner
+func _envolver_texto_en_lineas(texto: String, font: Font, f_size: int, ancho_util: float) -> PackedStringArray:
+	var resultado: PackedStringArray = []
+	for parrafo in texto.split("\n"):
+		if font == null:
+			resultado.append(parrafo)
+			continue
+		var palabras := parrafo.split(" ")
+		var linea_actual := ""
+		for palabra in palabras:
+			if palabra.is_empty():
+				continue
+			var cand := palabra if linea_actual.is_empty() else linea_actual + " " + palabra
+			var w := font.get_string_size(cand, HORIZONTAL_ALIGNMENT_LEFT, -1, f_size).x
+			if w <= ancho_util:
+				linea_actual = cand
+			elif linea_actual.is_empty():
+				# Una sola palabra supera el ancho: queda en su propia línea
+				linea_actual = palabra
+			else:
+				resultado.append(linea_actual)
+				linea_actual = palabra
+		resultado.append(linea_actual)
+	return resultado
 
 
 func _reproducir_sonido_habla() -> void:

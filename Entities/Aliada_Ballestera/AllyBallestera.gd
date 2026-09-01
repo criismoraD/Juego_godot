@@ -31,6 +31,7 @@ var plataforma_asignada: int = 1  ## Plataforma a la que fue asignada la defenso
 @export var tiempo_carga_max: float = 1.3
 @export var tiempo_recarga: float = 0.6
 @export var altura_spawn_flecha: float = 0.95
+@export var punto_pose_disparo: float = 0.35  ## Fracción (0-1) de DISPARO_01 congelada como postura de apuntado al fijarse en el puesto
 @export var disparos_por_fase: int = 5  ## 5 disparos de pie y luego 5 disparos agachada
 
 @export_category("Tiempos de Espera (Cadencia Lenta)")
@@ -306,6 +307,7 @@ func _crear_hitbox():
 	hitbox_body = StaticBody3D.new()
 	hitbox_body.name = "HitboxBody"
 	hitbox_body.add_to_group("allies")
+	hitbox_body.set_meta("defensora_owner", self)  ## Permite a los proyectiles aplicar estados sobre la defensora dueña de esta hitbox
 	hitbox_body.collision_layer = 2
 	hitbox_body.collision_mask = 0
 
@@ -469,7 +471,7 @@ func _actualizar_apuntado_torso(delta: float) -> void:
 		objetivo_actual = _obtener_objetivo_prioritario()
 
 	var target_pitch: float = 0.0
-	if is_instance_valid(objetivo_actual) and not _es_objetivo_azar(objetivo_actual):
+	if is_instance_valid(objetivo_actual) and not _es_objetivo_azar_ballestera(objetivo_actual):
 		var my_pos: Vector3 = global_position + Vector3(0, 0.75, 0)
 		if fase_agachada:
 			my_pos.y -= 0.35
@@ -568,7 +570,12 @@ func _process_reloading(delta: float):
 func _process_aiming(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
-		if not _puede_atacar() or not is_instance_valid(_obtener_objetivo_prioritario()):
+		if not _puede_atacar():
+			state_timer = 0.25
+			return
+		# Prioridad 2 apuntada o, si solo hay hostiles de prioridad 0 (Lonko, voladores,
+		# escudo, rosada con aura), disparo al azar en cualquier ángulo
+		if not is_instance_valid(_obtener_objetivo_prioritario()) and not _hay_objetivo_azar():
 			# Si no hay enemigos activos, mantenerse apuntando y en guardia sin disparar
 			state_timer = 0.25
 			return
@@ -669,10 +676,14 @@ func _cambiar_estado(nuevo: State):
 			state_timer = duracion_animacion_victoria
 
 
-func _fijar_pose_combate(blend_time: float = 0.35):
+func _fijar_pose_combate(blend_time: float = 0.25):
 	if not anim_player:
 		return
 	_play_anim("DISPARO_01", blend_time, 0.001)
+	# Congelar en el frame de apuntado en vez del frame 0 (postura de preparación rara)
+	var anim: Animation = anim_player.get_animation(anim_player.current_animation)
+	if anim:
+		anim_player.seek(clampf(punto_pose_disparo, 0.0, 1.0) * anim.length, true)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -689,7 +700,7 @@ func _disparar():
 
 	var dir: Vector3
 	# Si no hay objetivo terrestre estándar (solo hay voladores, Lonko, o se dispara al azar)
-	if objetivo == null or _es_objetivo_azar(objetivo):
+	if objetivo == null or _es_objetivo_azar_ballestera(objetivo):
 		# Disparo al azar en abanico frontal con variación aleatoria de elevación
 		var elevacion := deg_to_rad(randf_range(-5.0, 10.0))
 		dir = Vector3(cos(elevacion), sin(elevacion), 0.0).normalized()
@@ -843,33 +854,79 @@ func _es_pacifico_intacto(enemy: Node) -> bool:
 	return false
 
 
-## Determina si un enemigo debe ser tratado como objetivo al azar (voladores, Lonko o no reconocidos)
-func _es_enemigo_reconocido(enemy: Node) -> bool:
+## Clases: Voladores (Gárgola, Globo) / Básicos (Imp, Goblin arquero, Goblin ballestero) / Elite (Lonko, Rosada) / Guardian (Imp escudo)
+## Ballestera: Voladores 0 (azar), Básicos 2 (fija y apunta), Elite 0 (Rosada sin aura 2), Guardian 0 (azar)
+func _es_volador_ballestera(enemy: Node) -> bool:
 	if not is_instance_valid(enemy):
 		return false
 	var n: String = enemy.name.to_lower()
 	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
-	# Patrones de enemigos conocidos del proyecto
-	var patrones_reconocidos: Array[String] = ["imp", "goblin", "gargola", "gargoyle", "lonko", "rosa", "canonero", "canon", "bracero"]
-	for p in patrones_reconocidos:
-		if p in n or p in s:
-			return true
-	# Grupos conocidos también cuentan como reconocidos
-	if enemy.is_in_group("flying_enemies") or enemy.is_in_group("shield_imps"):
+	return enemy.is_in_group("flying_enemies") or ("gargola" in n) or ("gargola" in s) or ("gargoyle" in n) or ("globo" in n) or ("globo" in s)
+
+func _es_basico_ballestera(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	if _es_imp_escudo(enemy):
+		return false
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	# Imp, Goblin arquero (GoblinGirl) y Goblin ballestero (Goblin)
+	if "arquera_rosa" in n or "arquera_rosa" in s or "rosa" in n or "rosa" in s:
+		return false
+	if "lonko" in n or "lonko" in s:
+		return false
+	if _es_volador_ballestera(enemy):
+		return false
+	return ("imp" in n or "imp" in s or "goblin" in n or "goblin" in s)
+
+func _es_rosada(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	return "rosa" in n or "rosa" in s or "arquera_rosa" in n or "arquera_rosa" in s
+
+func _es_rosada_sin_aura(enemy: Node) -> bool:
+	if not _es_rosada(enemy):
+		return false
+	# aura_vida <=0 indica barrera rota (ver ArqueraRosa.gd)
+	var vida = enemy.get("aura_vida")
+	if vida is int or vida is float:
+		return int(vida) <= 0
+	# Fallback: si no expone aura_vida, considerar sin aura solo si el vfx no está visible
+	var vfx = enemy.get("aura_vfx_node")
+	if vfx is Node3D:
+		return not vfx.visible
+	return false
+
+func _es_objetivo_azar_ballestera(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
 		return true
+	if _es_volador_ballestera(enemy):
+		return true  # Voladores 0
+	if _es_imp_escudo(enemy):
+		return true  # Guardian 0
+	if _es_rosada(enemy) and not _es_rosada_sin_aura(enemy):
+		return true  # Rosada con aura 0
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	if "lonko" in enemy.name.to_lower() or "lonko" in s:
+		return true  # Lonko 0 para ballestera
 	return false
 
 
-func _es_objetivo_azar(enemy: Node) -> bool:
-	if not is_instance_valid(enemy):
-		return true
-	var n: String = enemy.name.to_lower()
-	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
-	var es_volador = enemy.is_in_group("flying_enemies") or ("gargola" in n) or ("gargola" in s) or ("gargoyle" in n)
-	var es_lonko = "lonko" in n or "lonko" in s
-	var es_no_reconocido: bool = not _es_enemigo_reconocido(enemy)
-	# Si no se reconoce como enemigo conocido, ataca igual pero al azar (no ignora)
-	return es_volador or es_lonko or es_no_reconocido
+## Prioridad 0: hostiles que no merecen apuntado preciso (Lonko, voladores, guardianes,
+## rosada con aura) pero ante los que la ballestera igual dispara al azar en cualquier ángulo.
+func _hay_objetivo_azar() -> bool:
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(enemy) or not (enemy is Node3D) or not enemy.is_inside_tree():
+			continue
+		if enemy.global_position.x <= global_position.x:
+			continue
+		if _es_enemigo_muerto(enemy) or _es_pacifico_intacto(enemy):
+			continue
+		if _es_objetivo_azar_ballestera(enemy):
+			return true
+	return false
 
 
 func _obtener_enemigos_terrestres_candidatos() -> Array[Node3D]:
@@ -877,50 +934,34 @@ func _obtener_enemigos_terrestres_candidatos() -> Array[Node3D]:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy) or not (enemy is Node3D) or not enemy.is_inside_tree():
 			continue
-		if _es_imp_escudo(enemy):
-			continue  # No reconocer a la Imp de escudo como objetivo directo (se daña por casualidad)
 		if _es_enemigo_muerto(enemy):
 			continue
 		if enemy.global_position.x <= global_position.x:
 			continue
 		if _es_pacifico_intacto(enemy):
 			continue
-		if _es_objetivo_azar(enemy):
+		if _es_objetivo_azar_ballestera(enemy):
 			continue
-
+		# Solo Básicos 2 y Rosada sin aura 2
+		if not (_es_basico_ballestera(enemy) or _es_rosada_sin_aura(enemy)):
+			continue
 		candidatos.append(enemy)
-
 	return candidatos
 
 
 func _obtener_objetivo_prioritario() -> Node3D:
+	# Prioridad 2: Básicos y Rosada sin aura (ambos máxima)
 	var candidatos := _obtener_enemigos_terrestres_candidatos()
 	if candidatos.is_empty():
 		return null
-
-	var grupo_prioridad_1: Array[Node3D] = []
-	var grupo_prioridad_2: Array[Node3D] = []
-
-	for enemy in candidatos:
-		var n: String = enemy.name.to_lower()
-		var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
-		var es_imp: bool = ("imp" in n or "imp" in s) and not _es_imp_escudo(enemy)
-		var es_ballestero: bool = "ballest" in n or "ballest" in s or ("goblin" in n and "girl" not in n)
-		if es_imp or es_ballestero:
-			grupo_prioridad_1.append(enemy)
-		else:
-			grupo_prioridad_2.append(enemy)
-
-	var grupo_elegido = grupo_prioridad_1 if not grupo_prioridad_1.is_empty() else grupo_prioridad_2
-
+	# Todos los candidatos ya son prioridad 2, elegir el más cercano
 	var mejor: Node3D = null
 	var menor_dist: float = INF
-	for enemy in grupo_elegido:
+	for enemy in candidatos:
 		var dist = global_position.distance_to(enemy.global_position)
 		if dist < menor_dist:
 			menor_dist = dist
 			mejor = enemy
-
 	return mejor
 
 
@@ -1184,10 +1225,10 @@ func _importar_animaciones_jugador() -> void:
 				if "Recurve Bow" in lib_name or "ARCO" in lib_name:
 					anim_player.remove_animation_library(lib_name)
 
-	# Asegurar looping en todas las animaciones de movimiento y escaleras
+	# Asegurar looping en todas las animaciones de movimiento y escaleras (incluye CORRER para refuerzo)
 	for a in anim_player.get_animation_list():
 		var a_low := a.to_lower()
-		if "caminar" in a_low or "escalera" in a_low or "escalar" in a_low or "run" in a_low or "walk" in a_low or "subir" in a_low:
+		if "caminar" in a_low or "escalera" in a_low or "escalar" in a_low or "run" in a_low or "walk" in a_low or "subir" in a_low or "correr" in a_low:
 			var anim = anim_player.get_animation(a)
 			if anim:
 				anim.loop_mode = Animation.LOOP_LINEAR
@@ -1230,7 +1271,7 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 	# 1. Caminar por el suelo hacia la Escalera 1
 	if model_root:
 		model_root.rotation.y = _original_model_y_rot
-	_play_anim("CAMINAR_01", 0.15, 1.0)
+	_play_anim("CORRER", 0.15, 1.0)
 
 	var dist1: float = absf(p1_ladder_x - global_position.x)
 	var tw1 := create_tween()
@@ -1261,7 +1302,7 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 		# Posicionarse en Plataforma 1
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_pos := create_tween()
 		tw_pos.tween_property(self, "global_position:x", p1_shoot_x, absf(p1_shoot_x - global_position.x) / walk_speed)
 		await tw_pos.finished
@@ -1272,7 +1313,7 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 	# 3. Caminar por Plataforma 1 hacia Escalera 2 (hacia la izquierda)
 	if model_root:
 		model_root.rotation.y = _original_model_y_rot + PI
-	_play_anim("CAMINAR_01", 0.15, 1.0)
+	_play_anim("CORRER", 0.15, 1.0)
 	var dist2: float = absf(p2_ladder_x - global_position.x)
 	var tw2 := create_tween()
 	tw2.tween_property(self, "global_position:x", p2_ladder_x, dist2 / walk_speed)
@@ -1301,7 +1342,7 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 		# Posicionarse en Plataforma 2
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_pos := create_tween()
 		tw_pos.tween_property(self, "global_position:x", p2_shoot_x, absf(p2_shoot_x - global_position.x) / walk_speed)
 		await tw_pos.finished
@@ -1312,7 +1353,7 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 	# 5. Caminar por Plataforma 2 hacia Escalera 3 (hacia la izquierda)
 	if model_root:
 		model_root.rotation.y = _original_model_y_rot + PI
-	_play_anim("CAMINAR_01", 0.15, 1.0)
+	_play_anim("CORRER", 0.15, 1.0)
 	var dist3: float = absf(p3_ladder_x - global_position.x)
 	var tw3 := create_tween()
 	tw3.tween_property(self, "global_position:x", p3_ladder_x, dist3 / walk_speed)
@@ -1340,7 +1381,7 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 	# 7. Posicionarse en Plataforma 3 (la más alta)
 	if model_root:
 		model_root.rotation.y = _original_model_y_rot
-	_play_anim("CAMINAR_01", 0.15, 1.0)
+	_play_anim("CORRER", 0.15, 1.0)
 	var tw_pos3 := create_tween()
 	tw_pos3.tween_property(self, "global_position:x", p3_shoot_x, absf(p3_shoot_x - global_position.x) / walk_speed)
 	await tw_pos3.finished
@@ -1351,10 +1392,14 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 func _finalizar_despliegue_plataforma() -> void:
 	en_despliegue = false
 	if model_root:
-		model_root.rotation.y = _original_model_y_rot
+		var tween_rot := create_tween()
+		tween_rot.tween_property(model_root, "rotation:y", _original_model_y_rot, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_restaurar_torso()
-	_play_anim(["IDLE", "Armature|Armature|IDLE"], 0.25)
-	_cambiar_estado(State.IDLE)
+	# Entrada natural: pase directo y suave a la postura de disparo, sin reproducir
+	# la animación de disparo completa ni quedarse en la postura de preparación
+	_fijar_pose_combate(0.2)
+	_cambiar_estado(State.RELOADING)
+	state_timer = 0.3
 
 
 ## Al terminar la oleada, la defensora móvil baja las escaleras y se retira por donde vino
@@ -1383,7 +1428,7 @@ func retirarse_y_bajar_escaleras() -> void:
 		# 1. En Plataforma 3: caminar hacia la Escalera 3 (hacia la izquierda)
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot + PI
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_to_l3 := create_tween()
 		tw_to_l3.tween_property(self, "global_position:x", p3_ladder_x, absf(p3_ladder_x - global_position.x) / walk_speed)
 		await tw_to_l3.finished
@@ -1409,7 +1454,7 @@ func retirarse_y_bajar_escaleras() -> void:
 		# 3. En Plataforma 2: caminar hacia la Escalera 2 (hacia la derecha)
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_to_l2 := create_tween()
 		tw_to_l2.tween_property(self, "global_position:x", p2_ladder_x, absf(p2_ladder_x - global_position.x) / walk_speed)
 		await tw_to_l2.finished
@@ -1435,7 +1480,7 @@ func retirarse_y_bajar_escaleras() -> void:
 		# 5. En Plataforma 1: caminar hacia la Escalera 1 (hacia la derecha)
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_to_l1 := create_tween()
 		tw_to_l1.tween_property(self, "global_position:x", p1_ladder_x, absf(p1_ladder_x - global_position.x) / walk_speed)
 		await tw_to_l1.finished
@@ -1456,7 +1501,7 @@ func retirarse_y_bajar_escaleras() -> void:
 		# En Plataforma 2: caminar a Escalera 2
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_to_l2 := create_tween()
 		tw_to_l2.tween_property(self, "global_position:x", p2_ladder_x, absf(p2_ladder_x - global_position.x) / walk_speed)
 		await tw_to_l2.finished
@@ -1481,7 +1526,7 @@ func retirarse_y_bajar_escaleras() -> void:
 		# En Plataforma 1: caminar a Escalera 1
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_to_l1 := create_tween()
 		tw_to_l1.tween_property(self, "global_position:x", p1_ladder_x, absf(p1_ladder_x - global_position.x) / walk_speed)
 		await tw_to_l1.finished
@@ -1502,7 +1547,7 @@ func retirarse_y_bajar_escaleras() -> void:
 		# En Plataforma 1: caminar hacia Escalera 1 (hacia la izquierda)
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot + PI
-		_play_anim("CAMINAR_01", 0.15, 1.0)
+		_play_anim("CORRER", 0.15, 1.0)
 		var tw_to_l1 := create_tween()
 		tw_to_l1.tween_property(self, "global_position:x", p1_ladder_x, absf(p1_ladder_x - global_position.x) / walk_speed)
 		await tw_to_l1.finished
@@ -1528,7 +1573,7 @@ func retirarse_y_bajar_escaleras() -> void:
 	# Caminar hacia la izquierda por donde vino y retirarse
 	if model_root:
 		model_root.rotation.y = _original_model_y_rot + PI
-	_play_anim("CAMINAR_01", 0.15, 1.0)
+	_play_anim("CORRER", 0.15, 1.0)
 	var tw_exit := create_tween()
 	tw_exit.tween_property(self, "global_position:x", exit_x, absf(exit_x - global_position.x) / walk_speed)
 	await tw_exit.finished

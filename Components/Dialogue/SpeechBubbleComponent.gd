@@ -18,7 +18,7 @@ const LAYER_PRIORIDAD: int = 100
 @export_group("Personalidad y Voz")
 @export_range(0.5, 2.0, 0.05) var pitch_voz: float = 1.0
 @export var audio_habla: AudioStream = preload("res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3")
-@export var volumen_audio_db: float = -18.0
+@export var volumen_audio_db: float = -28.0
 
 @export_group("Estilo Visual")
 @export var color_borde: Color = Color(0.95, 0.76, 0.35, 1.0)

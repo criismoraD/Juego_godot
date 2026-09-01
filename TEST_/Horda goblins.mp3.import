@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cksijeiagv887"
+path="res://.godot/imported/Horda goblins.mp3-e63b60a366553be4223e6b4d5b910c3c.mp3str"
+
+[deps]
+
+source_file="res://TEST_/Horda goblins.mp3"
+dest_files=["res://.godot/imported/Horda goblins.mp3-e63b60a366553be4223e6b4d5b910c3c.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

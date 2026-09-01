@@ -51,8 +51,15 @@ var oleada_debug_pendiente: int = 0  ## Oleada solicitada por debug: se aplica t
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
 var _aliadas_activas: bool = true  ## Estado de aliadas para modo debug
-var _dialogo_abajo_mostrado: bool = false
-var _muertes_combate_contador: int = 0
+# Diálogos defensoras — 6 solicitados (eliminar previos, duraciones según spec)
+var _dialogo_cambio_arma_mostrado: bool = false  # arriba PARA CAMBIAR 15s
+var _kills_abajo: int = 0  # conteo personal defensora abajo
+var _dialogo_abajo_3_mostrado: bool = false  # 3 kills 7s
+var _dialogo_abajo_15_mostrado: bool = false  # 15 kills 7s
+var _dialogo_arriba_contar_mostrado: bool = false  # 2s después de 15 -> 5s
+var _dialogo_arriba_pesada_mostrado: bool = false  # globo aplasta 7s
+var _dialogo_abajo_esperando_mostrado: bool = false  # refuerzos nivel5 7s
+var _muertes_combate_contador: int = 0  # global UI
 # === REFERENCIAS ===
 # Preloads para forzar inclusión en export (PCK) aunque el filtro falle - garantiza Lonko en exe
 const PRELOAD_LONKO_EXPORT: PackedScene = preload("res://Entities/Enemigo_Lonko/Lonko.tscn")
@@ -727,10 +734,28 @@ func _on_pacifico_danado():
 
 
 func _on_imp_estandarte_muerto() -> void:
-	# La arquera de arriba (torre) muestra el diálogo "Hola"
+	# Conectar el drop de disparo múltiple del Imp Embajador para el diálogo PARA CAMBIAR (15s)
+	_conectar_power_up_embajador()
+
+
+func _conectar_power_up_embajador() -> void:
+	for _i in range(30):
+		await get_tree().process_frame
+		if _dialogo_cambio_arma_mostrado:
+			return
+		var power_ups := get_tree().get_nodes_in_group("power_ups_flecha_multiple")
+		for pu in power_ups:
+			if is_instance_valid(pu) and pu.has_signal("picked_up") and not pu.is_connected("picked_up", _on_primer_power_up_obtenido):
+				pu.picked_up.connect(_on_primer_power_up_obtenido)
+
+
+func _on_primer_power_up_obtenido(_player: Node) -> void:
+	if _dialogo_cambio_arma_mostrado:
+		return
+	_dialogo_cambio_arma_mostrado = true
 	var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
 	if arquera_arriba and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
-		arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_HOLA", 3.5)
+		arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_CAMBIO_ARMA", 15.0)
 
 
 func _on_enemigo_eliminado_nivel(_enemigo: Node, _total_muertos: int) -> void:
@@ -739,11 +764,49 @@ func _on_enemigo_eliminado_nivel(_enemigo: Node, _total_muertos: int) -> void:
 		return
 
 	_muertes_combate_contador += 1
-	if _muertes_combate_contador >= 3 and not _dialogo_abajo_mostrado:
-		_dialogo_abajo_mostrado = true
-		var arquera_abajo := get_node_or_null("AllyArcher2") as AllyArcher
-		if arquera_abajo and is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
-			arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_TEST", 3.5)
+
+	# Globo nivel 4 aplasta enemigo con canasto al destruirse (7s)
+	if _enemigo and _enemigo.is_in_group("enemies") and _enemigo is GloboAerostatico:
+		if oleada_combate_actual == 4 and not _dialogo_arriba_pesada_mostrado:
+			# Verificar si aplastó (distancia a algún enemigo muerto cercano al globo)
+			_dialogo_arriba_pesada_mostrado = true
+			var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
+			if arquera_arriba and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
+				arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_PESADA", 7.0)
+
+	# Conteo personal defensora abajo (atribuir kill a la más cercana al enemigo muerto)
+	var arquera_abajo := get_node_or_null("AllyArcher2") as AllyArcher
+	var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
+	var defensora_cercana: AllyArcher = null
+	if is_instance_valid(arquera_abajo) and is_instance_valid(arquera_arriba) and is_instance_valid(_enemigo) and _enemigo is Node3D:
+		var d_abajo: float = arquera_abajo.global_position.distance_to((_enemigo as Node3D).global_position)
+		var d_arriba: float = arquera_arriba.global_position.distance_to((_enemigo as Node3D).global_position)
+		defensora_cercana = arquera_abajo if d_abajo < d_arriba else arquera_arriba
+	elif is_instance_valid(arquera_abajo):
+		defensora_cercana = arquera_abajo
+
+	# Solo la de abajo cuenta para 3 y 15 (per-defensora)
+	if defensora_cercana == arquera_abajo:
+		_kills_abajo += 1
+		if _kills_abajo >= 3 and not _dialogo_abajo_3_mostrado:
+			_dialogo_abajo_3_mostrado = true
+			if is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
+				arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_3", 7.0)
+		if _kills_abajo >= 15 and not _dialogo_abajo_15_mostrado:
+			_dialogo_abajo_15_mostrado = true
+			if is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
+				arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_15_Y_TU", 7.0)
+			# 2s después la de arriba responde
+			await get_tree().create_timer(2.0).timeout
+			if not _dialogo_arriba_contar_mostrado and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
+				_dialogo_arriba_contar_mostrado = true
+				arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_TENIA_QUE_CONTARLAS", 5.0)
+	else:
+		# Fallback global 3 por si no hay defensora cercana (mantener compatibilidad)
+		if _kills_abajo >= 3 and not _dialogo_abajo_3_mostrado:
+			_dialogo_abajo_3_mostrado = true
+			if is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
+				arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_3", 7.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -850,7 +913,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.max_imp_escudo_activos = 2
 		wave_spawner.intervalo_check_escudo = 6.0
 	elif numero_oleada == 4:
-		# Oleada 4: 10 Imp + 9 Goblin ballesta + 1 Globo (reemplaza 1 ballestero, sale 3s antes del cuerno) + 10 Gárgola + 5 Imp escudo 100%.
+		# Oleada 4: 10 Imp + 9 Goblin ballesta + 1 Globo (reemplaza 1 ballestero, sale 2s antes del cuerno) + 10 Gárgola + 5 Imp escudo 100%.
 		wave_spawner.probabilidad_imp = 0.0
 		wave_spawner.probabilidad_goblin_girl = 0.0
 		wave_spawner.probabilidad_canonero = 0.0
@@ -2131,6 +2194,12 @@ func _spawn_icono_mensajera_oleada_5() -> void:
 
 
 func _iniciar_mensajera_oleada_5() -> void:
+	# Defensora abajo: LAS ESTABAMOS ESPERANDO CHICAS (7s) — jugador usa item refuerzos nivel 5
+	if not _dialogo_abajo_esperando_mostrado:
+		_dialogo_abajo_esperando_mostrado = true
+		var arquera_abajo_ref := get_node_or_null("AllyArcher2") as AllyArcher
+		if arquera_abajo_ref and is_instance_valid(arquera_abajo_ref) and arquera_abajo_ref.has_method("decir"):
+			arquera_abajo_ref.decir("DIALOGO_ARQUERA_ABAJO_ESPERANDO", 7.0)
 	# Nivel 5: Defensora de ballesta aliada entra por izquierda, se agacha, deja flecha explosiva, dispara 5 tiros y se marcha.
 	# Seguido aparecen 2 defensoras de ballesta móviles que escalan a las plataformas 1 y 3 (la más alta).
 	var ballestera_scene: PackedScene = preload("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
@@ -2158,7 +2227,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 	ballestera._importar_animaciones_jugador()
 
 	# Caminar hasta el punto de entrega
-	ballestera._play_anim("CAMINAR_01", 0.15, 1.0)
+	ballestera._play_anim("CORRER", 0.15, 1.0)
 	var tween_in: Tween = create_tween()
 	var dist_in: float = absf(entrega_pos.x - start_pos.x)
 	tween_in.tween_property(ballestera, "global_position:x", entrega_pos.x, dist_in / 1.0)
@@ -2248,7 +2317,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 	ballestera.en_despliegue = true
 	ballestera.fase_agachada = false
 	ballestera.enemigos_minimos = 999
-	ballestera._play_anim("CAMINAR_01", 0.15, 1.0)
+	ballestera._play_anim("CORRER", 0.15, 1.0)
 	var model_out: Node3D = ballestera.get_node_or_null("BallesteraModel") as Node3D
 	if not model_out:
 		model_out = ballestera.find_child("BallesteraModel", true, false) as Node3D
