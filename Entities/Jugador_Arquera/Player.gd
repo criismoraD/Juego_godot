@@ -1223,6 +1223,8 @@ func control_visual_state(delta):
 				play_bow_animation("ARCO_TENSAR")
 				# Reproducir sonido de tensar cuerda (se puede detener)
 				AudioManager.play_bow_tension()
+				if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
+					AudioManager.play_sfx("fuego_tensado")
 				# Mostrar la flecha correspondiente y resetear escala
 				_mostrar_flecha_visual(0.0)
 
@@ -1335,6 +1337,8 @@ func control_visual_state(delta):
 						anim_tree.set(upper_path, "draw")
 						play_bow_animation("ARCO_TENSAR")
 						AudioManager.play_bow_tension()
+						if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
+							AudioManager.play_sfx("fuego_tensado")
 						_mostrar_flecha_visual(0.0)
 
 

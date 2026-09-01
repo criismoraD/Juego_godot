@@ -716,6 +716,9 @@ func _cambiar_estado(nuevo: State):
 			_play_anim(["IDLE_APUNTANDO", "APUNTAR_IDLE"], 0.15, 1.0)
 			_play_bow_anim("ARCO_TENSAR", 0.2, 1.0)
 			AudioManager.play_sfx("bow_tension", -6.0)
+			var _dec_fuego := _decidir_disparo_y_objetivo()
+			if _dec_fuego.get("type", TipoDisparoAliada.NORMAL) == TipoDisparoAliada.EXPLOSIVO:
+				AudioManager.play_sfx("fuego_tensado", -6.0)
 			state_timer = charge_duration
 
 		State.SHOOTING:

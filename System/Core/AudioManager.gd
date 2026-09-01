@@ -104,6 +104,8 @@ func _load_all_sounds():
 		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA2.mp3")
 	]
 
+	sfx_streams["fuego_tensado"] = [load("res://TEST_/Fuego tensado.wav")]
+
 	sfx_streams["bow_hold"] = [load("res://Entities/Jugador_Arquera/MANTENER_ARCO.mp3")]
 
 	sfx_streams["player_laugh"] = [load("res://Entities/Jugador_Arquera/RISA_PERSONAJE.mp3")]
