@@ -2060,7 +2060,7 @@ func _reproducir_sonido_cargando_sp() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_cargando_sp_stream
-	player.volume_db = -14.5  # -12 dB previo -2.5 dB adicionales = -25% extra
+	player.volume_db = 6.0  ## Fuente silenciosa (RMS 7%): +6 dB para presencia
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
@@ -2079,7 +2079,7 @@ func _reproducir_sonido_ulti_disparo() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = stream
-	player.volume_db = 2.0
+	player.volume_db = 12.0  ## Fuente silenciosa (RMS 3%): +12 dB para presencia
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
