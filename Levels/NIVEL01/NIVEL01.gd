@@ -206,6 +206,7 @@ func _ready():
 		GameUI.oleada_inicial_solicitada = 0
 		oleada_debug_pendiente = 0
 		oleada_combate_actual = oleada_retorno
+		estado_actual = NivelEstado.NIVEL_1  ## La siguiente oleada debe seguir el flujo normal del nivel
 		if game_ui and game_ui.has_method("set_modo_minimo"):
 			game_ui.set_modo_minimo(false)
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
