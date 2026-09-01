@@ -70,6 +70,11 @@ var escudo_scene: PackedScene = preload("res://Entities/Ambiente_Escudo/Escudo.t
 var ballesta_scene: PackedScene = preload("res://Entities/Enemigo_Goblin/BALLES_GOBLING.glb")
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
+const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
+const HUMO_PISADAS_FRAMES_H: int = 9
+const HUMO_PISADAS_FRAMES_V: int = 1
+var _particulas_pisada: GPUParticles3D = null
+
 var anim_player: AnimationPlayer
 var skeleton: Skeleton3D
 var model_root: Node3D
@@ -133,6 +138,7 @@ func _ready():
 	_setup_animation_player()
 	_configurar_arma_ballesta()
 	_crear_hitbox()
+	_configurar_particulas_pisada()
 
 	var _sombra := SombraPersonaje.new()
 	add_child(_sombra)
@@ -149,6 +155,78 @@ func _aplicar_prioridad_renderizado(offset: float) -> void:
 	for node in find_children("*", "VisualInstance3D", true, false):
 		if node is VisualInstance3D:
 			node.sorting_offset = offset
+
+
+func _configurar_particulas_pisada() -> void:
+	if _particulas_pisada and is_instance_valid(_particulas_pisada):
+		return
+	_particulas_pisada = GPUParticles3D.new()
+	_particulas_pisada.name = "Particulas_Pisada"
+	_particulas_pisada.emitting = false
+	_particulas_pisada.amount = 8
+	_particulas_pisada.lifetime = 0.8
+	_particulas_pisada.visibility_aabb = AABB(Vector3(-1, -0.2, -1), Vector3(2, 1.5, 2))
+	add_child(_particulas_pisada)
+	_particulas_pisada.position = Vector3(0, 0.05, 0)
+
+	var mat := StandardMaterial3D.new()
+	if TEXTURA_HUMO_PISADAS:
+		mat.albedo_texture = TEXTURA_HUMO_PISADAS
+		mat.particles_anim_h_frames = HUMO_PISADAS_FRAMES_H
+		mat.particles_anim_v_frames = HUMO_PISADAS_FRAMES_V
+		mat.particles_anim_loop = false
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.billboard_keep_scale = true
+	mat.render_priority = 2
+
+	var mesh := QuadMesh.new()
+	mesh.material = mat
+	mesh.size = Vector2(0.3276, 0.3276)
+	_particulas_pisada.draw_pass_1 = mesh
+
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0.0, 1.0, 0.0)
+	pm.spread = 50.0
+	pm.initial_velocity_min = 0.1
+	pm.initial_velocity_max = 0.25
+	pm.gravity = Vector3(0.0, 0.1, 0.0)
+	pm.scale_min = 0.4
+	pm.scale_max = 0.657
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(0.08, 0.01, 0.08)
+	pm.anim_speed_min = 1.0
+	pm.anim_speed_max = 1.0
+	pm.anim_offset_min = 0.0
+	pm.anim_offset_max = 1.0
+
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.5, 0.5, 0.5, 0.6))
+	grad.set_color(1, Color(0.5, 0.5, 0.5, 0.0))
+	var grad_tex := GradientTexture1D.new()
+	grad_tex.gradient = grad
+	pm.color_ramp = grad_tex
+
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.25), 0.0, 1.2)
+	curve.add_point(Vector2(0.3, 1.0), 0.2, -0.4)
+	curve.add_point(Vector2(0.65, 0.6), -0.6, -0.8)
+	curve.add_point(Vector2(1.0, 0.0), -1.2, 0.0)
+	var curve_tex := CurveTexture.new()
+	curve_tex.curve = curve
+	pm.scale_curve = curve_tex
+
+	_particulas_pisada.process_material = pm
+
+
+func _particulas_pisada_emitir() -> void:
+	if not _particulas_pisada or not is_instance_valid(_particulas_pisada):
+		return
+	var corriendo := en_despliegue or (anim_player and anim_player.current_animation.contains("CORRER"))
+	_particulas_pisada.emitting = corriendo and current_state != State.DYING and current_state != State.DEAD and paralisis_timer <= 0.0
 
 
 func _exit_tree():
@@ -327,6 +405,8 @@ func _crear_hitbox():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float):
+	if _particulas_pisada:
+		_particulas_pisada_emitir()
 	if current_state == State.DYING or current_state == State.DEAD:
 		_restaurar_torso()
 		_ocultar_icono_aturdimiento()

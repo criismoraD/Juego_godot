@@ -674,7 +674,7 @@ func reproducir_sonido_cuerno() -> void:
 	if horda_stream:
 		var horda_player := AudioStreamPlayer.new()
 		horda_player.stream = horda_stream
-		horda_player.volume_db = 0.0
+		horda_player.volume_db = 6.0
 		horda_player.bus = "Master"
 		var h_root := get_tree().current_scene
 		if h_root:

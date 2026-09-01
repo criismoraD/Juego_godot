@@ -2226,6 +2226,8 @@ func _iniciar_mensajera_oleada_5() -> void:
 	ballestera._setup_animation_player()
 	ballestera._importar_animaciones_jugador()
 
+	# SFX: Defensoras entrada - mensajera corriendo
+	_reproducir_defensoras_entrada_sfx()
 	# Caminar hasta el punto de entrega
 	ballestera._play_anim("CORRER", 0.15, 1.0)
 	var tween_in: Tween = create_tween()
@@ -2333,13 +2335,12 @@ func _iniciar_mensajera_oleada_5() -> void:
 
 
 ## Despliega 2 defensoras de ballesta móviles que caminan y escalan a las plataformas 1 y 3
-func _desplegar_defensoras_moviles_plataformas() -> void:
-	# SFX: Defensoras entrada (primera defensora tras usar item refuerzo)
+func _reproducir_defensoras_entrada_sfx() -> void:
 	var defensores_stream: AudioStream = load("res://TEST_/Defensoras entrada.wav") as AudioStream
 	if defensores_stream:
 		var defensores_player := AudioStreamPlayer.new()
 		defensores_player.stream = defensores_stream
-		defensores_player.volume_db = 0.0
+		defensores_player.volume_db = 6.0
 		defensores_player.bus = "Master"
 		var defensores_root := get_tree().current_scene
 		if defensores_root:
@@ -2352,6 +2353,8 @@ func _desplegar_defensoras_moviles_plataformas() -> void:
 				defensores_player.queue_free()
 		)
 
+
+func _desplegar_defensoras_moviles_plataformas() -> void:
 	var ballestera_scene: PackedScene = preload("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
 	if not ballestera_scene:
 		return
@@ -2372,5 +2375,6 @@ func _desplegar_defensoras_moviles_plataformas() -> void:
 		defensora.scale = Vector3(0.3, 0.3, 0.3)
 		defensora.global_position = start_pos
 
+		_reproducir_defensoras_entrada_sfx()
 		defensora.desplegar_a_plataforma(idx_plat)
 		await get_tree().create_timer(2.2).timeout
