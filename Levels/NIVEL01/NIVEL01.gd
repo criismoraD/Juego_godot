@@ -804,6 +804,11 @@ func _on_pacifico_danado():
 		return
 	estado_actual = NivelEstado.TRANSICION
 
+	# Mostrar el HUD (corazones, etc.) al impactar a uno de los pacíficos
+	get_tree().call_group("ui_vida_protagonista", "mostrar")
+	if game_ui and game_ui.has_method("set_modo_minimo"):
+		game_ui.set_modo_minimo(false)
+
 	# Desintegrar estandarte del imp si aún existe (cualquier impacto en pacíficos lo destruye)
 	if (
 		is_instance_valid(imp_estandarte)
