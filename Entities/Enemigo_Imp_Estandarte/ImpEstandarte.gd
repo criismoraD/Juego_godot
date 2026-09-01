@@ -65,6 +65,7 @@ var attachment_flecha_mano: BoneAttachment3D = null
 var flecha_visual_mano: Node3D = null
 var escala_original_flecha_mano: Vector3 = Vector3.ONE
 var escala_original_global_flecha_mano: Vector3 = Vector3.ONE
+var bow_anim_player: AnimationPlayer = null
 
 
 func _on_enemy_ready():
@@ -78,10 +79,12 @@ func _on_enemy_ready():
 	_cachear_visuales_arma()
 	_configurar_flecha_visual_mano()
 	estandarte_ya_soltado = false
+	_configurar_bow()
 	_actualizar_visual_arma(false)
 	_actualizar_visibilidad_flecha_mano(false)
 
 	_play_animation("IMP_IDLE")
+	_play_bow_animation("ARCO_IDLE")
 
 
 func _process(delta):
@@ -94,6 +97,7 @@ func _on_state_walking():
 	_actualizar_visual_arma(false)
 	_actualizar_visibilidad_flecha_mano(false)
 	_play_animation("IMP_IDLE")
+	_play_bow_animation("ARCO_IDLE")
 
 
 func _on_pacifico_detenido():
@@ -125,6 +129,7 @@ func _on_state_shooting():
 	espera_entrada_disparo = 0.0
 	_actualizar_visibilidad_flecha_mano(false)
 	_iniciar_ciclo_disparo()
+	_play_bow_animation("ARCO_TENSAR")
 
 
 func _process_shooting(delta):
@@ -205,6 +210,7 @@ func _throw_projectile():
 		return
 
 	AudioManager.play_sfx("goblin_girl_shoot")
+	_play_bow_animation("ARCO_DISPARO")
 
 	var flecha := PROJECTILE_POOL_REF.acquire(escena_flecha_estandarte) as ImpEstandarteArrowProjectile
 	if not flecha:
@@ -261,6 +267,7 @@ func _on_state_dying():
 	AudioManager.play_sfx("explosion_muerte")
 	_actualizar_visual_arma(true)
 	_actualizar_visibilidad_flecha_mano(false)
+	_play_bow_animation("ARCO_IDLE")
 
 	var anim_length = _get_animation_duration("IMP_MUERTE")
 	_play_animation("IMP_MUERTE")
@@ -494,6 +501,40 @@ func _ease_out_back(x: float) -> float:
 	var c1: float = 1.70158
 	var c3: float = c1 + 1.0
 	return 1.0 + c3 * pow(x - 1.0, 3.0) + c1 * pow(x - 1.0, 2.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANIMACIÓN DEL ARCO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+func _configurar_bow() -> void:
+	# El arco (ArcoCombate) incluye su propio AnimationPlayer con las animaciones ARCO_*
+	if arco_visual and is_instance_valid(arco_visual):
+		var players := arco_visual.find_children("*", "AnimationPlayer", true, false)
+		if players.size() > 0:
+			bow_anim_player = players[0] as AnimationPlayer
+			# El arco usa su propio esqueleto: mantener animaciones en loop
+			for anim_name in bow_anim_player.get_animation_list():
+				if "ARCO_TENSAR" in anim_name or "TENSAR" in anim_name:
+					var anim := bow_anim_player.get_animation(anim_name)
+					if anim:
+						anim.loop_mode = Animation.LOOP_NONE
+
+
+func _play_bow_animation(anim_name: String, custom_blend: float = -1.0) -> void:
+	if not bow_anim_player:
+		return
+	var prefixes: Array[String] = ["", "ENEMY|", "ENEMY| ", "Recurve Bow 2 Armature|"]
+	for prefix in prefixes:
+		var full_name: String = prefix + anim_name
+		if bow_anim_player.has_animation(full_name):
+			bow_anim_player.play(full_name, custom_blend)
+			return
+	for a in bow_anim_player.get_animation_list():
+		if anim_name in a:
+			bow_anim_player.play(a, custom_blend)
+			return
 
 
 func _actualizar_visibilidad_flecha_mano(visible_flecha: bool):
