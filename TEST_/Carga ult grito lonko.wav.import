@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dg2ugyig1uyc8"
+path="res://.godot/imported/Carga ult grito lonko.wav-6c8c7eabe197d1e37949ea352272d68b.sample"
+
+[deps]
+
+source_file="res://TEST_/Carga ult grito lonko.wav"
+dest_files=["res://.godot/imported/Carga ult grito lonko.wav-6c8c7eabe197d1e37949ea352272d68b.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

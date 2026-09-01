@@ -76,7 +76,7 @@ var lonko_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Go
 var sfx_dano_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Daño.mp3")
 var sfx_muerte_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Muerte.mp3")
 var sfx_pilar_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Sonido pilar emergiendo.mp3")
-var sfx_cargando_sp_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Cargando SP.mp3")
+var sfx_cargando_sp_stream: AudioStream = preload("res://TEST_/Carga ult grito lonko.wav")
 var sfx_tensado_streams: Array[AudioStream] = [
 	preload("res://Entities/Jugador_Arquera/TENSADO_CUERDA1.mp3"),
 	preload("res://Entities/Jugador_Arquera/TENSADO_CUERDA2.mp3")
