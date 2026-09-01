@@ -207,6 +207,10 @@ func _ready():
 		oleada_debug_pendiente = 0
 		oleada_combate_actual = oleada_retorno
 		estado_actual = NivelEstado.NIVEL_1  ## La siguiente oleada debe seguir el flujo normal del nivel
+		# Detener cualquier arranque fantasma del spawner hasta pulsar Continuar
+		if is_instance_valid(wave_spawner):
+			wave_spawner.detener_spawning()
+			wave_spawner.oleada_combate = oleada_retorno
 		if game_ui and game_ui.has_method("set_modo_minimo"):
 			game_ui.set_modo_minimo(false)
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
