@@ -2,13 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://tensadoexpl123"
-path="res://.godot/imported/Tensado de flecha explosiva.wav-00000000000000000000000000000000.sample"
+uid="uid://bc8186ymtm0rm"
+path="res://.godot/imported/Tensado de flecha explosiva.wav-f5c672a777a94bebfb6355e15657e01e.sample"
 
 [deps]
 
 source_file="res://TEST_/Tensado de flecha explosiva.wav"
-dest_files=["res://.godot/imported/Tensado de flecha explosiva.wav-00000000000000000000000000000000.sample"]
+dest_files=["res://.godot/imported/Tensado de flecha explosiva.wav-f5c672a777a94bebfb6355e15657e01e.sample"]
 
 [params]
 
