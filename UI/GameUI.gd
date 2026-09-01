@@ -11,6 +11,7 @@ const OUTLINE_WIDTH_RUNTIME := 20.0
 static var oleada_inicial_solicitada: int = 0
 static var modo_debug_solicitado: bool = false  ## Activar panel debug en NIVEL01 al entrar por menú escape
 static var continuar_desde_oleada: int = 0  ## Game Over → Continuar desde la oleada donde se murió (histéresis 1-5)
+static var regreso_desde_interior_oleada: int = 0  ## Regreso desde el cuarto interior: oleada completada cuya cortinilla de continuar hay que restaurar (1-5, 0=desactivado)
 
 @export_category("Debug")
 @export var debug_ui_enabled: bool = true

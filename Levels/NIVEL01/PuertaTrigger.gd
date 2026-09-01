@@ -164,6 +164,13 @@ func _iniciar_secuencia_entrada() -> void:
 	_transicion_en_curso = true
 	_apagar_todo()
 
+	# Registrar la oleada completada cuya cortinilla debemos restaurar al regresar
+	var _spawner := get_tree().get_first_node_in_group("wave_spawners")
+	if not _spawner:
+		_spawner = get_parent().find_child("WaveSpawner", true, false)
+	if _spawner and "oleada_combate" in _spawner and int(_spawner.oleada_combate) > 0:
+		GameUI.regreso_desde_interior_oleada = int(_spawner.oleada_combate)
+
 	var dest := escena_destino
 	if not ResourceLoader.exists(dest):
 		if ResourceLoader.exists("res://Levels/Player_Interior.tscn"):

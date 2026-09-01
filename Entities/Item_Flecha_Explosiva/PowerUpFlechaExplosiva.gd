@@ -50,6 +50,7 @@ var current_state: State = State.IDLE
 var _initial_model_y: float = 0.0
 var _nodes_checked: bool = false
 var _is_falling: bool = false
+var _tiempo_vivo: float = 0.0  ## Respaldo por si el SceneTreeTimer no dispara
 
 var model_root: Node3D = null
 var fire_light: OmniLight3D = null
@@ -132,6 +133,8 @@ func _comprobar_caida_al_suelo() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if not _nodes_checked:
 		_obtener_nodos_directos()
 		_nodes_checked = true
@@ -142,6 +145,11 @@ func _process(delta: float) -> void:
 		_bucle_rotacion_360(delta)
 		if not _is_falling:
 			_bucle_flotacion()
+
+		# Respaldo: si el SceneTreeTimer no disparó, consumir tras el tiempo extra
+		_tiempo_vivo += delta
+		if _tiempo_vivo >= tiempo_en_pantalla + 1.0:
+			_auto_consumir()
 
 
 func _bucle_rotacion_360(delta: float) -> void:

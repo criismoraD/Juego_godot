@@ -197,6 +197,29 @@ func _ready():
 
 	await get_tree().process_frame
 
+	# --- REGRESO DESDE EL CUARTO INTERIOR: restaurar la cortinilla de la oleada ---
+	# El jugador entró a la torre durante una cortinilla entre oleadas. Al regresar,
+	# debemos mostrar de nuevo esa cortinilla para que pueda pulsar Continuar.
+	if GameUI.regreso_desde_interior_oleada > 0:
+		var oleada_retorno: int = clamp(GameUI.regreso_desde_interior_oleada, 1, 5)
+		GameUI.regreso_desde_interior_oleada = 0
+		GameUI.oleada_inicial_solicitada = 0
+		oleada_debug_pendiente = 0
+		oleada_combate_actual = oleada_retorno
+		if game_ui and game_ui.has_method("set_modo_minimo"):
+			game_ui.set_modo_minimo(false)
+		get_tree().call_group("ui_vida_protagonista", "mostrar")
+		_set_aliadas_activas(true)
+		AudioManager.play_music(2)
+		if oleada_retorno == 5:
+			_mostrar_victoria_con_continuar(
+				tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleadas completadas!"
+			)
+		else:
+			transicion_carteles_en_progreso = true
+			_mostrar_inter_nivel_continuar()
+		return
+
 	# --- MODO DEBUG solicitado desde menú escape (botón Nivel Debug) ---
 	# Predominancia NIVEL01: si se entra por el botón debug del pause, se activa
 	# el panel de control de spawn flotante y el modo oleadas libres directamente,
@@ -295,14 +318,66 @@ func _precalentar_vfx_shaders() -> void:
 
 
 func _mostrar_instrucciones_mouse() -> void:
-	# El panel de instrucciones solo debe aparecer al inicio del Nivel 1 (oleada 1).
-	# Si se está en oleadas 2, 3, 4 o cualquier otro nivel, no se muestra.
+	# El panel de instrucciones ya no se muestra: en su lugar aparece el
+	# mensaje centrado "PASO DE MEDEA" durante unos segundos.
 	if oleada_combate_actual != 1:
 		return
 
-	if escena_instrucciones_mouse:
-		var inst = escena_instrucciones_mouse.instantiate()
-		add_child(inst)
+	_mostrar_texto_paso_medea()
+
+
+## Mensaje central "PASO DE MEDEA": texto negro grueso con resplandor verde sutil que se desvanece.
+func _mostrar_texto_paso_medea() -> void:
+	const COLOR_TEXTO_NEGRO := Color.BLACK
+	const COLOR_RESPLANDOR_VERDE := Color("#008000")
+	const COLOR_VERDE_CLARO := Color("#90ee90")
+	const TAMANO_FUENTE := 72
+	const GROSOR_CONTORNO := 8
+	const DURACION_VISIBLE := 15.0
+	const DURACION_DESVANECIDO := 2.0
+	# Franja superior de la pantalla: el texto queda centrado alrededor del 25% de la altura.
+	const BANDA_SUPERIOR_INICIO := 0.0
+	const BANDA_SUPERIOR_FIN := 0.5
+
+	var fuente_sistema := SystemFont.new()
+	fuente_sistema.font_names = PackedStringArray(["Papyrus"])
+	# FontVariation engorda el trazo (bold sintético) para mayor legibilidad.
+	var fuente_papyrus := FontVariation.new()
+	fuente_papyrus.base_font = fuente_sistema
+	fuente_papyrus.variation_embolden = 1.0
+	fuente_papyrus.spacing_glyph = 2
+
+	var etiqueta := Label.new()
+	etiqueta.text = "PASO DE MEDEA"
+	etiqueta.add_theme_font_override("font", fuente_papyrus)
+	etiqueta.add_theme_font_size_override("font_size", TAMANO_FUENTE)
+	etiqueta.add_theme_color_override("font_color", COLOR_TEXTO_NEGRO)
+	etiqueta.add_theme_color_override("font_outline_color", COLOR_RESPLANDOR_VERDE)
+	etiqueta.add_theme_constant_override("outline_size", GROSOR_CONTORNO)
+	etiqueta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	etiqueta.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	etiqueta.anchor_left = BANDA_SUPERIOR_INICIO
+	etiqueta.anchor_right = 1.0
+	etiqueta.anchor_top = BANDA_SUPERIOR_INICIO
+	etiqueta.anchor_bottom = BANDA_SUPERIOR_FIN
+	etiqueta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var capa := CanvasLayer.new()
+	capa.layer = 50
+	capa.add_child(etiqueta)
+	add_child(capa)
+
+	# Desvanecido: el contorno verde migra a un tono más claro mientras todo pierde opacidad.
+	var desvanecido := create_tween()
+	desvanecido.tween_interval(DURACION_VISIBLE)
+	desvanecido.set_parallel(true)
+	desvanecido.tween_property(
+		etiqueta, "modulate:a", 0.0, DURACION_DESVANECIDO
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	desvanecido.tween_property(
+		etiqueta, "theme_override_colors/font_outline_color", COLOR_VERDE_CLARO, DURACION_DESVANECIDO
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	desvanecido.chain().tween_callback(capa.queue_free)
 
 
 func _ajustar_subviewports_3d() -> void:
