@@ -209,16 +209,7 @@ func _revelar_texto():
 
 
 func _reproducir_audio():
-	if not _audio_player or not audio_stream:
-		return
-
-	if _audio_player.stream != audio_stream:
-		_audio_player.stream = audio_stream
-	if _audio_player.volume_db != audio_volume_db:
-		_audio_player.volume_db = audio_volume_db
-	if _audio_player.pitch_scale != audio_pitch_scale:
-		_audio_player.pitch_scale = audio_pitch_scale
-	_audio_player.play()
+	return
 
 
 func _on_continue_pressed():

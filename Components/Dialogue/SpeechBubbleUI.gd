@@ -326,13 +326,7 @@ func _envolver_texto_en_lineas(texto: String, font: Font, f_size: int, ancho_uti
 
 
 func _reproducir_sonido_habla() -> void:
-	if not _audio_stream or not _audio_player:
-		return
-
-	_audio_player.stream = _audio_stream
-	_audio_player.pitch_scale = _audio_pitch * randf_range(0.96, 1.04)
-	_audio_volume_db = _audio_volume_db
-	_audio_player.play()
+	return
 
 
 func _limpiar_tweens() -> void:
