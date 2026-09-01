@@ -368,6 +368,65 @@ func _create_pause_panel():
 	_style_button(quit_pause_btn, Color(0.8, 0.2, 0.2))
 	vbox.add_child(quit_pause_btn)
 
+	# ═══════════════ AUDIO ═══════════════
+	var sep_audio = HSeparator.new()
+	sep_audio.custom_minimum_size = Vector2(200, 10)
+	vbox.add_child(sep_audio)
+
+	var audio_label = Label.new()
+	audio_label.text = "🔊 AUDIO"
+	audio_label.add_theme_font_size_override("font_size", 22)
+	audio_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(audio_label)
+
+	var _sfx_row = HBoxContainer.new()
+	_sfx_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_sfx_row.add_theme_constant_override("separation", 10)
+	vbox.add_child(_sfx_row)
+
+	var _sfx_label = Label.new()
+	_sfx_label.text = "Volumen general"
+	_sfx_label.custom_minimum_size = Vector2(110, 0)
+	_sfx_row.add_child(_sfx_label)
+
+	var _sfx_slider = HSlider.new()
+	_sfx_slider.min_value = 0.0
+	_sfx_slider.max_value = 100.0
+	_sfx_slider.step = 1.0
+	_sfx_slider.custom_minimum_size = Vector2(180, 0)
+	_sfx_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if AudioManager:
+		_sfx_slider.value = clamp(((AudioManager.sfx_volume_db + 40.0) / 40.0) * 100.0, 0.0, 100.0)
+	_sfx_slider.value_changed.connect(func(v: float) -> void:
+		if AudioManager:
+			AudioManager.set_sfx_volume(v)
+	)
+	_sfx_row.add_child(_sfx_slider)
+
+	var _musica_row = HBoxContainer.new()
+	_musica_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_musica_row.add_theme_constant_override("separation", 10)
+	vbox.add_child(_musica_row)
+
+	var _musica_label = Label.new()
+	_musica_label.text = "Música"
+	_musica_label.custom_minimum_size = Vector2(110, 0)
+	_musica_row.add_child(_musica_label)
+
+	var _musica_slider = HSlider.new()
+	_musica_slider.min_value = 0.0
+	_musica_slider.max_value = 100.0
+	_musica_slider.step = 1.0
+	_musica_slider.custom_minimum_size = Vector2(180, 0)
+	_musica_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if AudioManager:
+		_musica_slider.value = clamp(((AudioManager.music_volume_db + 40.0) / 40.0) * 100.0, 0.0, 100.0)
+	_musica_slider.value_changed.connect(func(v: float) -> void:
+		if AudioManager:
+			AudioManager.set_music_volume(v)
+	)
+	_musica_row.add_child(_musica_slider)
+
 	# ═══════════════ SEPARADOR VISUAL ═══════════════
 	var sep_lvl = HSeparator.new()
 	sep_lvl.custom_minimum_size = Vector2(200, 10)
