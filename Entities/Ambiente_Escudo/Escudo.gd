@@ -303,14 +303,22 @@ func _flash_dano():
 	if not mesh_instance:
 		return
 
-	# Flash rojo para escudos enemigos, blanco para aliados
-	var flash_color: Color = Color(1.0, 0.15, 0.15) if es_escudo_enemigo else Color.WHITE
+	# Flash rojo para escudos enemigos, blanco brillante para defensores
+	var flash_color: Color = Color(1.0, 0.15, 0.15) if es_escudo_enemigo else Color(1.0, 1.0, 1.0)
+	var flash_intensity: float = intensidad_flash if es_escudo_enemigo else maxf(intensidad_flash, 4.0)
 	var flash_mat = StandardMaterial3D.new()
 	flash_mat.emission_enabled = true
 	flash_mat.emission = flash_color
-	flash_mat.emission_energy_multiplier = intensidad_flash
+	flash_mat.emission_energy_multiplier = flash_intensity
 
 	mesh_instance.set_surface_override_material(0, flash_mat)
+
+	# Destello extra para defensor: pequeño punch de escala
+	if not es_escudo_enemigo:
+		var _orig_scale: Vector3 = scale
+		var _tw := create_tween()
+		_tw.tween_property(self, "scale", _orig_scale * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_tw.tween_property(self, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	await get_tree().create_timer(duracion_flash).timeout
 
