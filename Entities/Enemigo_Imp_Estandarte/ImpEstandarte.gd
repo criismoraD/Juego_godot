@@ -129,7 +129,6 @@ func _on_state_shooting():
 	espera_entrada_disparo = 0.0
 	_actualizar_visibilidad_flecha_mano(false)
 	_iniciar_ciclo_disparo()
-	_play_bow_animation("ARCO_TENSAR")
 
 
 func _process_shooting(delta):
@@ -191,6 +190,15 @@ func _iniciar_ciclo_disparo():
 	_actualizar_visibilidad_flecha_mano(false)
 	# Blend 0.30 para que IMP_DISPARO (carga de flecha) entre suave desde HIT/IDLE y no falten frames
 	_play_animation("IMP_DISPARO", 0.30, cadencia_actual)
+	# Tensado sincronizado: ARCO_TENSAR termina justo cuando la flecha sale.
+	# El tiempo real hasta el disparo es el mismo que usa _process_shooting.
+	var tiempo_hasta_disparo: float = clamp(
+		tiempo_disparo_en_animacion_arco / cadencia_actual, 0.05, duracion_animacion_disparo)
+	var dur_tensado: float = _obtener_duracion_bow("ARCO_TENSAR")
+	if dur_tensado > 0.01 and tiempo_hasta_disparo > 0.01:
+		_play_bow_animation("ARCO_TENSAR", -1.0, dur_tensado / tiempo_hasta_disparo)
+	else:
+		_play_bow_animation("ARCO_TENSAR")
 
 
 func _obtener_multiplicador_cadencia() -> float:
@@ -522,19 +530,34 @@ func _configurar_bow() -> void:
 						anim.loop_mode = Animation.LOOP_NONE
 
 
-func _play_bow_animation(anim_name: String, custom_blend: float = -1.0) -> void:
+func _play_bow_animation(anim_name: String, custom_blend: float = -1.0, custom_speed: float = 1.0) -> void:
 	if not bow_anim_player:
 		return
 	var prefixes: Array[String] = ["", "ENEMY|", "ENEMY| ", "Recurve Bow 2 Armature|"]
 	for prefix in prefixes:
 		var full_name: String = prefix + anim_name
 		if bow_anim_player.has_animation(full_name):
-			bow_anim_player.play(full_name, custom_blend)
+			bow_anim_player.play(full_name, custom_blend, custom_speed)
 			return
 	for a in bow_anim_player.get_animation_list():
 		if anim_name in a:
-			bow_anim_player.play(a, custom_blend)
+			bow_anim_player.play(a, custom_blend, custom_speed)
 			return
+
+
+## Devuelve la duración (segundos) de una animación del arco. 0.0 si no existe.
+func _obtener_duracion_bow(anim_name: String) -> float:
+	if not bow_anim_player:
+		return 0.0
+	var prefixes: Array[String] = ["", "ENEMY|", "ENEMY| ", "Recurve Bow 2 Armature|"]
+	for prefix in prefixes:
+		var full_name: String = prefix + anim_name
+		if bow_anim_player.has_animation(full_name):
+			return bow_anim_player.get_animation(full_name).length
+	for a in bow_anim_player.get_animation_list():
+		if anim_name in a:
+			return bow_anim_player.get_animation(a).length
+	return 0.0
 
 
 func _actualizar_visibilidad_flecha_mano(visible_flecha: bool):
