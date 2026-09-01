@@ -35,7 +35,7 @@ import os
 import re
 from pathlib import Path
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from bpy.props import CollectionProperty, StringProperty, EnumProperty, BoolProperty
+from bpy.props import CollectionProperty, StringProperty, EnumProperty, BoolProperty, FloatProperty, IntProperty
 from bpy.types import Operator, OperatorFileListElement, Panel
 
 
@@ -179,13 +179,20 @@ class ARQUERA_OT_import_fbx_actions(Operator, ImportHelper):
                     for slot in action_nueva.slots:
                         slot.name_display = armature_principal.name
 
-        # Limpiar bloques huérfanos
+        # Limpiar bloques huérfanos y actions corruptas/basura
         for arm_data in list(bpy.data.armatures):
             if arm_data.users == 0:
                 bpy.data.armatures.remove(arm_data)
         for mesh_data in list(bpy.data.meshes):
             if mesh_data.users == 0:
                 bpy.data.meshes.remove(mesh_data)
+        for act in list(bpy.data.actions):
+            if not es_nombre_action_valido(act.name) or len(obtener_todas_las_fcurves(act)) == 0:
+                if act not in actions_importadas:
+                    try:
+                        bpy.data.actions.remove(act)
+                    except Exception:
+                        pass
 
         # Asignar la primera animación al esqueleto y actualizar el visualizador
         if armature_principal and actions_importadas:
@@ -206,7 +213,7 @@ class ARQUERA_OT_import_fbx_actions(Operator, ImportHelper):
         return {'FINISHED'}
 
 
-def obtener_todas_las_fcurves(action):
+def obtener_todas_las_fcurves(action, arm=None):
     """
     Recopila todas las FCurves de un Action de forma 100% compatible
     tanto con Blender 4.x/clasico como con el nuevo sistema de animaciones de Blender 5.x
@@ -215,74 +222,139 @@ def obtener_todas_las_fcurves(action):
     curvas_encontradas = []
     vistos = set()
 
-    def registrar(fc_iterable):
-        if not fc_iterable:
+    def registrar_fc(fc):
+        if fc and hasattr(fc, "data_path") and hasattr(fc, "keyframe_points"):
+            ptr = fc.as_pointer() if hasattr(fc, "as_pointer") else id(fc)
+            if ptr not in vistos:
+                vistos.add(ptr)
+                curvas_encontradas.append(fc)
+
+    def explorar_objeto(obj, depth=0):
+        if not obj or depth > 6:
             return
-        try:
-            for fc in fc_iterable:
-                if fc and fc not in vistos:
-                    vistos.add(fc)
-                    curvas_encontradas.append(fc)
-        except Exception as e:
-            print(f"  [DEBUG] Error leyendo contenedor de fcurves: {e}")
+        
+        # 1. Atributos directos de curvas
+        for fc_attr in ("fcurves", "curves"):
+            if hasattr(obj, fc_attr):
+                try:
+                    col = getattr(obj, fc_attr)
+                    if col:
+                        for fc in col:
+                            registrar_fc(fc)
+                except Exception:
+                    pass
 
-    # 1. API tradicional (Blender 4.x y legacy)
-    if hasattr(action, "fcurves"):
-        try:
-            registrar(action.fcurves)
-        except Exception:
-            pass
+        # 2. Contenedores anidados (Layers, Strips, ChannelBags, Slots)
+        for sub_name in ("layers", "strips", "channel_bags", "channelbags", "all_channel_bags", "slots"):
+            if hasattr(obj, sub_name):
+                try:
+                    col = getattr(obj, sub_name)
+                    if col:
+                        for sub_obj in col:
+                            explorar_objeto(sub_obj, depth + 1)
+                except Exception:
+                    pass
 
-    # 2. Blender 5.x: Animation 2025 (Layers -> Strips -> ChannelBags -> FCurves)
-    if hasattr(action, "layers"):
-        try:
-            for layer in action.layers:
-                if hasattr(layer, "strips"):
-                    for strip in layer.strips:
-                        if hasattr(strip, "channelbags"):
-                            for cb in strip.channelbags:
-                                if hasattr(cb, "fcurves"):
-                                    registrar(cb.fcurves)
-                        if hasattr(strip, "fcurves"):
-                            registrar(strip.fcurves)
-        except Exception as e:
-            print(f"  [DEBUG] Error en action.layers: {e}")
+    if action:
+        explorar_objeto(action)
 
-    # 3. Blender 5.x: Action Slots
-    if hasattr(action, "slots"):
-        try:
-            for slot in action.slots:
-                if hasattr(slot, "fcurves"):
-                    registrar(slot.fcurves)
-                if hasattr(slot, "channelbags"):
-                    for cb in slot.channelbags:
-                        if hasattr(cb, "fcurves"):
-                            registrar(cb.fcurves)
-        except Exception as e:
-            print(f"  [DEBUG] Error en action.slots: {e}")
-
-    # 4. Blender 5.x: all_channel_bags o curves directas
-    if hasattr(action, "all_channel_bags"):
-        try:
-            for cb in action.all_channel_bags:
-                if hasattr(cb, "fcurves"):
-                    registrar(cb.fcurves)
-        except Exception:
-            pass
-
-    if hasattr(action, "curves"):
-        try:
-            registrar(action.curves)
-        except Exception:
-            pass
+    if arm and arm.animation_data:
+        if arm.animation_data.action and arm.animation_data.action != action:
+            explorar_objeto(arm.animation_data.action)
 
     return curvas_encontradas
 
 
-def centrar_horizontal_de_action(action, frame_inicio=1) -> int:
+def es_curva_hips_y(fc) -> bool:
+    """Identifica con precisión si una curva FCurve pertenece EXCLUSIVAMENTE a la traslación Y del hueso Hips/Pelvis/Root."""
+    if not fc or not hasattr(fc, "array_index"):
+        return False
+    if fc.array_index != 1:  # Eje Y (vertical en Mixamo bone space)
+        return False
+
+    dp = getattr(fc, "data_path", "").lower()
+    group_name = fc.group.name.lower() if (hasattr(fc, "group") and fc.group) else ""
+
+    # Excluir cualquier otro hueso (Spine, Legs, Arms, Head, etc.) para que no se deforme el cuerpo
+    huesos_no_hips = ("spine", "leg", "arm", "shoulder", "head", "neck", "hand", "foot", "toe", "finger", "clavicle")
+    if any(h in dp for h in huesos_no_hips) or any(h in group_name for h in huesos_no_hips):
+        return False
+
+    # Debe ser explícitamente el hueso de la cadera (Hips, Pelvis o Root)
+    es_hips = any(kw in dp for kw in ("hips", "pelvis", "root")) or any(kw in group_name for kw in ("hips", "pelvis", "root"))
+    if not es_hips:
+        return False
+
+    if "location" not in dp and "location" not in group_name:
+        return False
+
+    return True
+
+
+def es_curva_hips_xz(fc) -> bool:
+    """Identifica con precisión si una curva FCurve pertenece EXCLUSIVAMENTE a la traslación X o Z del hueso Hips/Pelvis/Root."""
+    if not fc or not hasattr(fc, "array_index"):
+        return False
+    if fc.array_index not in (0, 2):  # Ejes X y Z (Laterales y Profundidad)
+        return False
+
+    dp = getattr(fc, "data_path", "").lower()
+    group_name = fc.group.name.lower() if (hasattr(fc, "group") and fc.group) else ""
+
+    huesos_no_hips = ("spine", "leg", "arm", "shoulder", "head", "neck", "hand", "foot", "toe", "finger", "clavicle")
+    if any(h in dp for h in huesos_no_hips) or any(h in group_name for h in huesos_no_hips):
+        return False
+
+    es_hips = any(kw in dp for kw in ("hips", "pelvis", "root")) or any(kw in group_name for kw in ("hips", "pelvis", "root"))
+    if not es_hips:
+        return False
+
+    if "location" not in dp and "location" not in group_name:
+        return False
+
+    return True
+
+
+def es_nombre_action_valido(nombre: str) -> bool:
+    """Verifica si el nombre de una acción es válido y legible, descartando bytes o símbolos corruptos."""
+    if not nombre:
+        return False
+    nombre_clean = nombre.strip()
+    if not nombre_clean:
+        return False
+    # Descartar temporales o prefijos de basura
+    if nombre_clean.startswith(('@', '.')):
+        return False
+    # Descartar caracteres de control no imprimibles o decodificaciones binarias corruptas
+    caracteres_corruptos = {'Æ', 'Ð', 'Đ', 'º', 'Ý', 'È', 'ú', 'Ø', 'Þ', 'ÿ', 'Ç', '¢'}
+    for ch in nombre_clean:
+        code = ord(ch)
+        if code < 32 or code == 127:
+            return False
+        if ch in caracteres_corruptos:
+            return False
+    return True
+
+
+def fijar_fcurve_un_fotograma(fc, frame: float, valor: float) -> None:
+    """Deja la curva con exactamente 1 fotograma en el frame inicial y el valor especificado."""
+    while len(fc.keyframe_points) > 1:
+        fc.keyframe_points.remove(fc.keyframe_points[-1])
+
+    if len(fc.keyframe_points) == 1:
+        fc.keyframe_points[0].co = (frame, valor)
+        fc.keyframe_points[0].handle_left = (frame, valor)
+        fc.keyframe_points[0].handle_right = (frame, valor)
+    else:
+        fc.keyframe_points.insert(frame=frame, value=valor)
+
+    fc.update()
+
+
+def centrar_eje_xz_de_action(action, frame_inicio=1) -> int:
     """
-    Procesa solo los ejes horizontales del suelo en Blender: X (0) e Y (1).
-    - Fija la traslacion horizontal en 0.0 para animaciones In-Place sin alterar la altura Z.
+    Fija los ejes horizontales X (0) y Z (2) del Hips a 1 solo fotograma inicial con valor 0.0.
+    Elimina la traslacion horizontal sin alterar la altura ni rotaciones ni mover el Armature Object.
     """
     if not action:
         return 0
@@ -291,65 +363,16 @@ def centrar_horizontal_de_action(action, frame_inicio=1) -> int:
     modificadas = 0
 
     for fc in todas_fcurves:
-        dp = fc.data_path.lower()
-        if "location" not in dp:
-            continue
-
-        if fc.array_index in (0, 1):
-            for kp in fc.keyframe_points:
-                kp.co[1] = 0.0
-                kp.handle_left[1] = 0.0
-                kp.handle_right[1] = 0.0
-
-            while len(fc.keyframe_points) > 1:
-                fc.keyframe_points.remove(fc.keyframe_points[-1])
-
-            if len(fc.keyframe_points) == 1:
-                fc.keyframe_points[0].co = (frame_inicio, 0.0)
-                fc.keyframe_points[0].handle_left = (frame_inicio, 0.0)
-                fc.keyframe_points[0].handle_right = (frame_inicio, 0.0)
-            else:
-                fc.keyframe_points.insert(frame=frame_inicio, value=0.0)
-
-            fc.update()
+        if es_curva_hips_xz(fc):
+            fijar_fcurve_un_fotograma(fc, frame_inicio, 0.0)
             modificadas += 1
 
     return modificadas
 
 
-def centrar_altura_de_action(action) -> int:
+def procesar_transformacion_action(context, action, modo="XZ", armature=None) -> int:
     """
-    Procesa solo el eje vertical de altura en Blender: Z (2).
-    - Resta el offset inicial de altura para calibrarlo a la postura de reposo sin tocar X ni Y.
-    """
-    if not action:
-        return 0
-
-    todas_fcurves = obtener_todas_las_fcurves(action)
-    modificadas = 0
-
-    for fc in todas_fcurves:
-        dp = fc.data_path.lower()
-        if "location" not in dp:
-            continue
-
-        if fc.array_index == 2:
-            if len(fc.keyframe_points) > 0:
-                z_inicial = fc.keyframe_points[0].co[1]
-                if abs(z_inicial) > 0.00001:
-                    for kp in fc.keyframe_points:
-                        kp.co[1] -= z_inicial
-                        kp.handle_left[1] -= z_inicial
-                        kp.handle_right[1] -= z_inicial
-                    fc.update()
-                modificadas += 1
-
-    return modificadas
-
-
-def procesar_transformacion_action(context, action, modo="COMPLETO", armature=None) -> int:
-    """
-    modo: 'HORIZONTAL' (X/Z), 'ALTURA' (Y), 'COMPLETO' (X/Y/Z)
+    modo: 'XZ', 'ALTURA'
     """
     if not action:
         return 0
@@ -357,12 +380,10 @@ def procesar_transformacion_action(context, action, modo="COMPLETO", armature=No
     frame_inicio = int(action.frame_range[0]) if action.frame_range else 1
     curvas_modificadas = 0
 
-    if modo == "HORIZONTAL":
-        curvas_modificadas = centrar_horizontal_de_action(action, frame_inicio)
+    if modo == "XZ":
+        curvas_modificadas = centrar_eje_xz_de_action(action, frame_inicio)
     elif modo == "ALTURA":
         curvas_modificadas = centrar_altura_de_action(action)
-    else:
-        curvas_modificadas = centrar_fcurves_de_action(action, frame_inicio, True)
 
     if armature:
         if not armature.animation_data:
@@ -376,136 +397,112 @@ def procesar_transformacion_action(context, action, modo="COMPLETO", armature=No
 
 
 def centrar_animacion_in_place(context, action, armature=None, alinear_altura_reposo=True) -> int:
-    return procesar_transformacion_action(context, action, "COMPLETO", armature)
+    return procesar_transformacion_action(context, action, "XZ", armature)
 
 
-class ARQUERA_OT_center_horizontal(Operator):
-    """Centra la animacion en el plano horizontal del suelo (Ejes X e Y) fijando la posicion In-Place sin alterar la altura Z"""
+def _ejecutar_centrado_generico(self, context, modo: str, descripcion_eje: str) -> set:
+    arm = None
+    if context.active_object and context.active_object.type == 'ARMATURE':
+        arm = context.active_object
+    elif context.active_object and context.active_object.type == 'MESH':
+        arm = buscar_armature_vinculado(context.active_object)
 
-    bl_idname = "arquera.center_horizontal"
-    bl_label = "CENTRAR ANIMACION"
+    if not arm:
+        for obj in context.scene.objects:
+            if obj.type == 'ARMATURE':
+                arm = obj
+                break
+
+    acciones_a_procesar = set()
+    act_name = context.scene.arquera_active_action
+    if act_name and act_name != 'NONE':
+        a = bpy.data.actions.get(act_name)
+        if a:
+            acciones_a_procesar.add(a)
+
+    if arm and arm.animation_data and arm.animation_data.action:
+        acciones_a_procesar.add(arm.animation_data.action)
+
+    if not acciones_a_procesar:
+        for a in bpy.data.actions:
+            acciones_a_procesar.add(a)
+
+    if not acciones_a_procesar:
+        self.report({'ERROR'}, "No se encontro ninguna animacion activa")
+        return {'CANCELLED'}
+
+    total_curvas = 0
+    ultima_act = None
+    for act in acciones_a_procesar:
+        curvas = procesar_transformacion_action(context, act, modo, arm)
+        total_curvas += curvas
+        ultima_act = act
+
+    if arm and ultima_act:
+        if not arm.animation_data:
+            arm.animation_data_create()
+        arm.animation_data.action = ultima_act
+        arm.update_tag()
+
+    if ultima_act:
+        context.scene.arquera_active_action = ultima_act.name
+
+    context.view_layer.update()
+    context.scene.frame_set(context.scene.frame_current)
+
+    nombre_rep = ultima_act.name if ultima_act else "Activa"
+    if total_curvas > 0:
+        self.report({'INFO'}, f"Centrado {descripcion_eje}: '{nombre_rep}' ({total_curvas} curvas ajustadas)")
+    else:
+        self.report({'WARNING'}, f"Action '{nombre_rep}': no se encontraron curvas de traslacion para {descripcion_eje}")
+    return {'FINISHED'}
+
+
+class ARQUERA_OT_center_xz(Operator):
+    """Centra la animacion en el plano horizontal (Ejes X y Z) fijando la traslacion en 0 (1 fotograma)"""
+
+    bl_idname = "arquera.center_xz"
+    bl_label = "CENTRAR X y Z (SUELO)"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        arm = None
-        if context.active_object and context.active_object.type == 'ARMATURE':
-            arm = context.active_object
-        elif context.active_object and context.active_object.type == 'MESH':
-            arm = buscar_armature_vinculado(context.active_object)
-
-        if not arm:
-            for obj in context.scene.objects:
-                if obj.type == 'ARMATURE':
-                    arm = obj
-                    break
-
-        acciones_a_procesar = set()
-        act_name = context.scene.arquera_active_action
-        if act_name and act_name != 'NONE':
-            a = bpy.data.actions.get(act_name)
-            if a:
-                acciones_a_procesar.add(a)
-
-        if arm and arm.animation_data and arm.animation_data.action:
-            acciones_a_procesar.add(arm.animation_data.action)
-
-        if not acciones_a_procesar:
-            for a in bpy.data.actions:
-                acciones_a_procesar.add(a)
-
-        if not acciones_a_procesar:
-            self.report({'ERROR'}, "No se encontro ninguna animacion activa")
-            return {'CANCELLED'}
-
-        total_curvas = 0
-        ultima_act = None
-        for act in acciones_a_procesar:
-            curvas = procesar_transformacion_action(context, act, "HORIZONTAL", arm)
-            total_curvas += curvas
-            ultima_act = act
-
-        if arm and ultima_act:
-            if not arm.animation_data:
-                arm.animation_data_create()
-            arm.animation_data.action = ultima_act
-            arm.update_tag()
-
-        if ultima_act:
-            context.scene.arquera_active_action = ultima_act.name
-
-        context.view_layer.update()
-        context.scene.frame_set(context.scene.frame_current)
-
-        nombre_rep = ultima_act.name if ultima_act else "Activa"
-        if total_curvas > 0:
-            self.report({'INFO'}, f"Animacion centrada en X/Y (In-Place): '{nombre_rep}' ({total_curvas} curvas ajustadas)")
-        else:
-            self.report({'WARNING'}, f"Action '{nombre_rep}': no se encontraron curvas en X/Y")
-        return {'FINISHED'}
+        return _ejecutar_centrado_generico(self, context, "XZ", "X y Z (Suelo)")
 
 
-class ARQUERA_OT_center_height(Operator):
-    """Calibra la altura vertical (Eje Z en Blender) respecto a la pose de reposo"""
 
-    bl_idname = "arquera.center_height"
-    bl_label = "CENTRAR ALTURA"
+
+class ARQUERA_OT_clean_garbage_actions(Operator):
+    """Elimina acciones invalidas, corruptas, temporales (@...) o sin curvas de animacion"""
+
+    bl_idname = "arquera.clean_garbage_actions"
+    bl_label = "LIMPIAR ACTIONS BASURA"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        arm = None
-        if context.active_object and context.active_object.type == 'ARMATURE':
-            arm = context.active_object
-        elif context.active_object and context.active_object.type == 'MESH':
-            arm = buscar_armature_vinculado(context.active_object)
+        borradas = 0
+        for act in list(bpy.data.actions):
+            curvas = obtener_todas_las_fcurves(act)
+            es_basura = (
+                not es_nombre_action_valido(act.name)
+                or len(curvas) == 0
+            )
+            if es_basura:
+                try:
+                    for obj in bpy.data.objects:
+                        if obj.animation_data and obj.animation_data.action == act:
+                            obj.animation_data.action = None
+                    bpy.data.actions.remove(act)
+                    borradas += 1
+                except Exception:
+                    pass
 
-        if not arm:
-            for obj in context.scene.objects:
-                if obj.type == 'ARMATURE':
-                    arm = obj
-                    break
-
-        acciones_a_procesar = set()
-        act_name = context.scene.arquera_active_action
-        if act_name and act_name != 'NONE':
-            a = bpy.data.actions.get(act_name)
-            if a:
-                acciones_a_procesar.add(a)
-
-        if arm and arm.animation_data and arm.animation_data.action:
-            acciones_a_procesar.add(arm.animation_data.action)
-
-        if not acciones_a_procesar:
-            for a in bpy.data.actions:
-                acciones_a_procesar.add(a)
-
-        if not acciones_a_procesar:
-            self.report({'ERROR'}, "No se encontro ninguna animacion activa")
-            return {'CANCELLED'}
-
-        total_curvas = 0
-        ultima_act = None
-        for act in acciones_a_procesar:
-            curvas = procesar_transformacion_action(context, act, "ALTURA", arm)
-            total_curvas += curvas
-            ultima_act = act
-
-        if arm and ultima_act:
-            if not arm.animation_data:
-                arm.animation_data_create()
-            arm.animation_data.action = ultima_act
-            arm.update_tag()
-
-        if ultima_act:
-            context.scene.arquera_active_action = ultima_act.name
+        curr = context.scene.arquera_active_action
+        if curr and curr != 'NONE' and curr not in bpy.data.actions:
+            validas = [a.name for a in bpy.data.actions if es_nombre_action_valido(a.name) and len(obtener_todas_las_fcurves(a)) > 0]
+            context.scene.arquera_active_action = validas[0] if validas else 'NONE'
 
         context.view_layer.update()
-        context.scene.frame_set(context.scene.frame_current)
-
-        nombre_rep = ultima_act.name if ultima_act else "Activa"
-        if total_curvas > 0:
-            self.report({'INFO'}, f"Altura Z calibrada en '{nombre_rep}' ({total_curvas} curvas ajustadas)")
-        else:
-            self.report({'WARNING'}, f"Action '{nombre_rep}': no se encontraron curvas Z")
+        self.report({'INFO'}, f"Limpieza completada: {borradas} action(s) basura eliminada(s)")
         return {'FINISHED'}
 
 
@@ -562,74 +559,6 @@ class ARQUERA_OT_delete_active_action(Operator):
         return {'FINISHED'}
 
 
-class ARQUERA_OT_center_active_action(Operator):
-    """Centra la animacion seleccionada fijando la posicion X e Y de la cadera en 0 y alineando la altura Z a reposo"""
-
-    bl_idname = "arquera.center_active_action"
-    bl_label = "CENTRAR ANIMACION"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        # 1. Encontrar Armature
-        arm = None
-        if context.active_object and context.active_object.type == 'ARMATURE':
-            arm = context.active_object
-        elif context.active_object and context.active_object.type == 'MESH':
-            arm = buscar_armature_vinculado(context.active_object)
-
-        if not arm:
-            for obj in context.scene.objects:
-                if obj.type == 'ARMATURE':
-                    arm = obj
-                    break
-
-        # 2. Recopilar todas las acciones relevantes
-        acciones_a_procesar = set()
-
-        act_name = context.scene.arquera_active_action
-        if act_name and act_name != 'NONE':
-            a = bpy.data.actions.get(act_name)
-            if a:
-                acciones_a_procesar.add(a)
-
-        if arm and arm.animation_data and arm.animation_data.action:
-            acciones_a_procesar.add(arm.animation_data.action)
-
-        if not acciones_a_procesar:
-            for a in bpy.data.actions:
-                acciones_a_procesar.add(a)
-
-        if not acciones_a_procesar:
-            self.report({'ERROR'}, "No se encontro ninguna animacion activa")
-            return {'CANCELLED'}
-
-        # 3. Centrar curvas de todas las acciones identificadas
-        total_curvas = 0
-        ultima_act = None
-        for act in acciones_a_procesar:
-            curvas = centrar_animacion_in_place(context, act, arm)
-            total_curvas += curvas
-            ultima_act = act
-
-        # 4. Asegurar asignación en la armature y sincronizar UI
-        if arm and ultima_act:
-            if not arm.animation_data:
-                arm.animation_data_create()
-            arm.animation_data.action = ultima_act
-            arm.update_tag()
-
-        if ultima_act:
-            context.scene.arquera_active_action = ultima_act.name
-
-        context.view_layer.update()
-        context.scene.frame_set(context.scene.frame_current)
-
-        nombre_rep = ultima_act.name if ultima_act else "Activa"
-        if total_curvas > 0:
-            self.report({'INFO'}, f"Animacion '{nombre_rep}' centrada exitosamente ({total_curvas} curvas ajustadas)")
-        else:
-            self.report({'WARNING'}, f"Action '{nombre_rep}': no se encontraron curvas de traslacion")
-        return {'FINISHED'}
 
 
 def buscar_textura_difusa(obj):
@@ -1512,9 +1441,80 @@ class ARQUERA_OT_clean_scene(Operator):
 
 def obtener_lista_actions(self, context):
     items = [('NONE', "-- Sin Animacion --", "No reproduce ninguna animacion")]
+    acciones_validas = []
+
     for act in bpy.data.actions:
+        if not act or not act.name:
+            continue
+        if not es_nombre_action_valido(act.name):
+            continue
+        acciones_validas.append(act)
+
+    # Ordenar alfabeticamente para una lista limpia y facil de navegar
+    acciones_validas.sort(key=lambda a: a.name.lower())
+
+    for act in acciones_validas:
         items.append((act.name, act.name, f"Reproducir animacion: {act.name}"))
     return items
+
+
+def al_ajustar_altura_hips_y(self, context):
+    try:
+        ctx = context if context else bpy.context
+        scene = getattr(ctx, "scene", None)
+        if not scene:
+            scene = bpy.context.scene
+        if not scene:
+            return
+
+        nuevo_val = getattr(scene, "arquera_hips_y_offset", 0.0)
+        act_name = getattr(scene, "arquera_active_action", "NONE")
+        action = bpy.data.actions.get(act_name) if act_name and act_name != 'NONE' else None
+        
+        arm = ctx.active_object if (ctx.active_object and ctx.active_object.type == 'ARMATURE') else None
+        if not arm:
+            for obj in scene.objects:
+                if obj.type == 'ARMATURE':
+                    arm = obj
+                    break
+
+        if not action and arm and arm.animation_data and arm.animation_data.action:
+            action = arm.animation_data.action
+
+        if not action:
+            return
+
+        frame_inicio = 1.0
+        if action.frame_range:
+            frame_inicio = float(action.frame_range[0])
+
+        todas_curvas = obtener_todas_las_fcurves(action, arm)
+        curvas_modificadas = 0
+
+        for fc in todas_curvas:
+            if es_curva_hips_y(fc):
+                # Deja exactamente 1 solo fotograma en la curva Y y asigna el valor directo del Slider
+                fijar_fcurve_un_fotograma(fc, frame_inicio, nuevo_val)
+                curvas_modificadas += 1
+
+        if hasattr(action, "tag_update"):
+            action.tag_update()
+        if hasattr(action, "update_tag"):
+            action.update_tag()
+
+        # Forzar redibujado de la animación y del Graph Editor
+        if arm and arm.animation_data:
+            arm.update_tag(refresh={'DATA', 'OBJECT', 'TIME'})
+
+        for window in ctx.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type in {'GRAPH_EDITOR', 'DOPESHEET_EDITOR', 'VIEW_3D'}:
+                    area.tag_redraw()
+
+        ctx.view_layer.update()
+        scene.frame_set(scene.frame_current)
+    except Exception as e:
+        print(f"[Arquera Tools] Error al mover slider Hips Y: {e}")
 
 
 def al_cambiar_action(self, context):
@@ -1549,6 +1549,23 @@ def al_cambiar_action(self, context):
                     context.scene.frame_end = int(act.frame_range[1])
                     context.scene.frame_current = int(act.frame_range[0])
 
+                # Leer el valor actual del fotograma de Y si existe
+                todas = obtener_todas_las_fcurves(act, arm)
+                valor_y = None
+                for fc in todas:
+                    if es_curva_hips_y(fc) and len(fc.keyframe_points) > 0:
+                        valor_y = fc.keyframe_points[0].co[1]
+                        break
+
+                if valor_y is not None:
+                    try:
+                        context.scene["arquera_hips_y_offset"] = valor_y
+                    except Exception:
+                        pass
+
+        arm.update_tag(refresh={'DATA', 'OBJECT'})
+    context.view_layer.update()
+
 
 class ARQUERA_PT_tools_panel(Panel):
     """Panel principal de herramientas Arquera"""
@@ -1581,12 +1598,12 @@ class ARQUERA_PT_tools_panel(Panel):
         col_anim.scale_y = 1.15
         col_anim.operator(
             "arquera.import_glb_clean",
-            text="Importar GLB (Auto-Ajuste)",
+            text="IMPORTAR GLB PARA AÑADIR ANIMACION NUEVA",
             icon='IMPORT',
         )
         col_anim.operator(
             "arquera.import_fbx_actions",
-            text="Importar FBX Actions",
+            text="IMPORTAR ANIMACIONES NUEVAS",
             icon='ACTION',
         )
 
@@ -1598,24 +1615,37 @@ class ARQUERA_PT_tools_panel(Panel):
             box_anim.prop(context.scene, "arquera_active_action", text="")
 
             box_anim.separator()
-            col_btns = box_anim.column(align=True)
-            col_btns.scale_y = 1.25
-            col_btns.operator(
-                "arquera.center_horizontal",
-                text="CENTRAR ANIMACION",
+            box_anim.label(text="Centrado de Animacion:", icon='CON_LOCLIKE')
+            
+            col_centrado = box_anim.column(align=True)
+            col_centrado.scale_y = 1.25
+            col_centrado.operator(
+                "arquera.center_xz",
+                text="CENTRAR X y Z (SUELO)",
                 icon='SNAP_MIDPOINT',
             )
-            col_btns.operator(
-                "arquera.center_height",
-                text="CENTRAR ALTURA",
-                icon='ARROW_LEFTRIGHT',
-            )
+
+            # Slider para el eje Y del Hips (suma/resta a todos los cuadros)
+            box_anim.separator()
+            box_anim.label(text="Ajuste Altura Hips (Eje Y):", icon='ARROW_LEFTRIGHT')
+            row_slider = box_anim.row(align=True)
+            row_slider.scale_y = 1.25
+            row_slider.prop(context.scene, "arquera_hips_y_offset", text="Altura Y (m)", slider=True)
 
             box_anim.separator()
-            col_del = box_anim.column()
-            col_del.scale_y = 1.15
-            col_del.alert = True
-            col_del.operator(
+            row_tools = box_anim.row(align=True)
+            row_tools.scale_y = 1.15
+            
+            col_clean_act = row_tools.column()
+            col_clean_act.operator(
+                "arquera.clean_garbage_actions",
+                text="LIMPIAR BASURA / @",
+                icon='BRUSH_DATA',
+            )
+            
+            col_del_act = row_tools.column()
+            col_del_act.alert = True
+            col_del_act.operator(
                 "arquera.delete_active_action",
                 text="ELIMINAR ACTION",
                 icon='TRASH',
@@ -1704,10 +1734,9 @@ classes = (
     ARQUERA_OT_clean_scene,
     ARQUERA_OT_import_glb_clean,
     ARQUERA_OT_import_fbx_actions,
-    ARQUERA_OT_center_horizontal,
-    ARQUERA_OT_center_height,
+    ARQUERA_OT_center_xz,
+    ARQUERA_OT_clean_garbage_actions,
     ARQUERA_OT_delete_active_action,
-    ARQUERA_OT_center_active_action,
     ARQUERA_OT_prepare_model,
     ARQUERA_OT_export_model,
     ARQUERA_OT_export_fbx_no_anim,
@@ -1748,6 +1777,16 @@ def register():
         items=obtener_lista_actions,
         update=al_cambiar_action
     )
+    bpy.types.Scene.arquera_hips_y_offset = FloatProperty(
+        name="Altura Hips (Y)",
+        description="Suma o resta altura en metros a todos los fotogramas de la curva Y del Hips",
+        default=0.0,
+        min=-20.0,
+        max=20.0,
+        step=1.0,
+        precision=3,
+        update=al_ajustar_altura_hips_y,
+    )
     print("OK Arquera Tools registrado")
 
 
@@ -1762,6 +1801,8 @@ def unregister():
         del bpy.types.Scene.arquera_texture_res
     if hasattr(bpy.types.Scene, "arquera_active_action"):
         del bpy.types.Scene.arquera_active_action
+    if hasattr(bpy.types.Scene, "arquera_hips_y_offset"):
+        del bpy.types.Scene.arquera_hips_y_offset
     print("OK Arquera Tools desregistrado")
 
 

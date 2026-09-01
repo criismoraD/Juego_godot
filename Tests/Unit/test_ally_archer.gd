@@ -41,13 +41,15 @@ func _agregar_animacion_minima(ally: AllyArcher) -> void:
 	
 	var lib = AnimationLibrary.new()
 	lib.add_animation("IDLE", Animation.new())
-	lib.add_animation("IDLE_DESARMADO", Animation.new())
+	lib.add_animation("IDE", Animation.new())
+	lib.add_animation("IDLE_EXAMINAR", Animation.new())
 	lib.add_animation("IDLE_APUNTANDO", Animation.new())
-	lib.add_animation("TOMAFLEHCA_Y_DISPARA", Animation.new())
-	lib.add_animation("DISPARO", Animation.new())
+	lib.add_animation("TOMAR_FLECHA", Animation.new())
+	lib.add_animation("DISPARAR_FLECHA", Animation.new())
 	lib.add_animation("MUERTE_01", Animation.new())
 	lib.add_animation("MUERTE_02", Animation.new())
 	lib.add_animation("AGACHARSE", Animation.new())
+	lib.add_animation("ATERRIZAJE_POST_SALTO_01", Animation.new())
 	lib.add_animation("LEVANTARSE", Animation.new())
 	lib.add_animation("VICTORIA", Animation.new())
 	lib.add_animation("ELECTROCUTAR", Animation.new())
@@ -182,10 +184,31 @@ func test_ataque_suelta_flecha_al_segundo_3():
 	assert_true(_ally._flecha_soltada, "La flecha debe haberse soltado al alcanzar el segundo 3.0")
 
 
-func test_on_oleada_iniciada_activa_idle_desarmado():
+func test_on_oleada_iniciada_activa_idle():
 	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
 	_ally._on_oleada_iniciada(1)
 
 	assert_eq(_ally.current_state, _ally.State.IDLE, "El estado debe ser IDLE al iniciar la oleada")
-	assert_eq(_ally.anim_player.current_animation, "IDLE_DESARMADO", "Debe reproducir la animación IDLE_DESARMADO al inicio de la oleada")
+	assert_eq(_ally.anim_player.current_animation, "IDE", "Debe reproducir la animación IDE al inicio de la oleada")
+
+
+func test_idle_examinar_ciclo_fuera_de_combate():
+	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+	_ally._cambiar_estado(_ally.State.IDLE)
+	assert_eq(_ally.anim_player.current_animation, "IDE", "Debe iniciar en IDE")
+	assert_false(_ally._examinando, "No debe estar examinando inicialmente")
+
+	# Forzar fin del temporizador de examinar
+	_ally._tiempo_para_examinar = 0.0
+	_ally._process_idle(0.1)
+
+	assert_true(_ally._examinando, "Debe pasar a estado examinando")
+	assert_eq(_ally.anim_player.current_animation, "IDLE_EXAMINAR", "Debe reproducir IDLE_EXAMINAR")
+
+	# Simular que termina la animación de examinar
+	_ally.state_timer = 0.0
+	_ally._process_idle(0.1)
+
+	assert_false(_ally._examinando, "Debe regresar del modo examinar")
+	assert_eq(_ally.anim_player.current_animation, "IDE", "Debe volver a la animación IDE")
 
