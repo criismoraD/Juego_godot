@@ -37,6 +37,7 @@ enum State { IDLE, DISSOLVING }
 # ═══════════════════════════════════════════════════════════════════════════════
 const ESCALA_BASE: float = 0.5
 const SONIDO_POSION: String = "res://TEST_/Posion curativa.wav"
+const SONIDO_APARECE_POCION: String = "res://TEST_/Aparece pocion.wav"
 
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
@@ -85,7 +86,8 @@ func _ready() -> void:
 		add_child(sombra)
 
 		call_deferred("_comprobar_caida_al_suelo")
-		
+		_reproducir_sonido_aparece()
+
 		# Timer de auto-consumo a los 3 segundos
 		var timer := get_tree().create_timer(tiempo_en_pantalla)
 		timer.timeout.connect(_auto_consumir)
@@ -265,3 +267,20 @@ func _play_pickup_sound() -> void:
 		root.add_child(sfx)
 		sfx.play()
 		sfx.finished.connect(sfx.queue_free)
+
+
+func _reproducir_sonido_aparece() -> void:
+	var stream := load(SONIDO_APARECE_POCION) as AudioStream
+	if not stream:
+		return
+	var sfx := AudioStreamPlayer.new()
+	sfx.stream = stream
+	sfx.volume_db = 2.0
+	sfx.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(sfx)
+		sfx.play()
+		sfx.finished.connect(sfx.queue_free)
+	else:
+		sfx.queue_free()

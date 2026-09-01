@@ -39,6 +39,7 @@ enum State { IDLE, DISSOLVING }
 # CONSTANTES
 # ═══════════════════════════════════════════════════════════════════════════════
 const SONIDO_CURACION: String = "res://TEST_/Posion curativa.wav"
+const SONIDO_APARECE_POCION: String = "res://TEST_/Aparece pocion.wav"
 
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
@@ -91,6 +92,7 @@ func _ready() -> void:
 
 		call_deferred("_comprobar_caida_al_suelo")
 		call_deferred("_conectar_eventos_oleada")
+		_reproducir_sonido_aparece()
 
 
 func _obtener_nodos_directos() -> void:
@@ -394,3 +396,20 @@ func _play_pickup_sound() -> void:
 		root.add_child(sfx)
 		sfx.play()
 		sfx.finished.connect(sfx.queue_free)
+
+
+func _reproducir_sonido_aparece() -> void:
+	var stream := load(SONIDO_APARECE_POCION) as AudioStream
+	if not stream:
+		return
+	var sfx := AudioStreamPlayer.new()
+	sfx.stream = stream
+	sfx.volume_db = 2.0
+	sfx.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(sfx)
+		sfx.play()
+		sfx.finished.connect(sfx.queue_free)
+	else:
+		sfx.queue_free()
