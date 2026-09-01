@@ -20,7 +20,7 @@ enum State { IDLE, DISSOLVING }
 # ═══════════════════════════════════════════════════════════════════════════════
 @export_category("Munición")
 @export var municion_a_otorgar_jugador: int = 10  ## Otorga 10 flechas explosivas al jugador (el drop del Goblin lo reduce a 5)
-@export var municion_a_otorgar_aliadas: int = 5  ## Otorga 5 flechas explosivas a cada aliada
+@export var municion_a_otorgar_aliadas: int = 3  ## Otorga 3 flechas explosivas a cada aliada
 @export var tiempo_en_pantalla: float = 3.0  ## Segundos antes de auto-consumirse
 @export var tiempo_escala_spawn: float = 0.4  ## Duración del escalado orgánico (0 a 1) al aparecer
 

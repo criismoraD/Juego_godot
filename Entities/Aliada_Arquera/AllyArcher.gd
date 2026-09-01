@@ -1121,11 +1121,17 @@ func _decidir_disparo_y_objetivo() -> Dictionary:
 	elif is_instance_valid(globo):
 		volador = globo
 	if is_instance_valid(volador):
+		# Prioridad 2: reservar flechas explosivas para voladores
+		if flechas_explosivas > 0:
+			return { "target": volador, "type": TipoDisparoAliada.EXPLOSIVO }
 		return { "target": volador, "type": TipoDisparoAliada.NORMAL }
 
 	# Prioridad 1 - Elite excepción: Arquera lonko solo cuando está sobre pilar completo
 	var lonko := _obtener_lonko_objetivo()
 	if is_instance_valid(lonko):
+		# Reservar flechas explosivas para la arquera Lonko emergida
+		if flechas_explosivas > 0:
+			return { "target": lonko, "type": TipoDisparoAliada.EXPLOSIVO }
 		return { "target": lonko, "type": TipoDisparoAliada.NORMAL }
 
 	# Prioridad 0 - Básicos, Elite sin condición y Guardian: disparo al azar en rango
