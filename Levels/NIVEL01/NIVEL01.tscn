@@ -52,8 +52,8 @@
 [ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
 [ext_resource type="Texture2D" uid="uid://bnajvbrgm1f4t" path="res://TEST_/Pasto B.png" id="56_pastoB"]
 [ext_resource type="Texture2D" uid="uid://bb5iyjs2c0rvo" path="res://TEST_/Barricada A.png" id="57_barricadaA"]
-[ext_resource type="Texture2D" uid="uid://hagrcma1stqm" path="res://TEST_/Barricada B.png" id="58_barricadaB"]
-[ext_resource type="Texture2D" uid="uid://barricadaC003" path="res://TEST_/Barricada C.png" id="59_barricadaC"]
+[ext_resource type="Texture2D" uid="uid://i5j00bo3m33j" path="res://TEST_/Barricada C.png" id="59_barricadaC"]
+[ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://TEST_/Bandera A.png" id="60_banderaA"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -156,6 +156,17 @@ shader_parameter/wind_speed = 1.6
 shader_parameter/wind_strength = 0.035
 shader_parameter/flutter_speed = 3.2
 shader_parameter/flutter_strength = 0.012
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaA"]
+render_priority = 0
+shader = ExtResource("52_shader_arboles")
+shader_parameter/albedo_texture = ExtResource("60_banderaA")
+shader_parameter/tint_color = Color(1, 1, 1, 1)
+shader_parameter/blur_amount = 1.0
+shader_parameter/wind_speed = 2.2
+shader_parameter/wind_strength = 0.06
+shader_parameter/flutter_speed = 4.5
+shader_parameter/flutter_strength = 0.02
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_3xd07"]
 size = Vector3(0.9172363, 2.4794922, 6)
@@ -929,14 +940,15 @@ transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -18.093025, -0.3, -8.84
 layers = 2
 texture = ExtResource("57_barricadaA")
 
-[node name="BarricadaB" type="Sprite3D" parent="." unique_id=1948201896]
-transform = Transform3D(0.51787597, 0, 0, 0, 0.46389326, 0, 0, 0, 0.62157595, -7.211295, -0.3, -28.95296)
-layers = 2
-texture = ExtResource("58_barricadaB")
+[node name="BanderaA" type="Sprite3D" parent="." unique_id=1948201896]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -5.0, -0.3, 1.8)
+layers = 7
+material_override = SubResource("ShaderMaterial_banderaA")
+texture = ExtResource("60_banderaA")
 
 [node name="BarricadaC" type="Sprite3D" parent="." unique_id=1948201897]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -4.0, -0.3, 2.0)
-layers = 7
+transform = Transform3D(0.49384293, 0, -0.21692717, 0, 0.46441576, 0, 0.25182492, 0, 0.42540646, -8.933237, -0.3, -38.132065)
+layers = 2
 texture = ExtResource("59_barricadaC")
 
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
