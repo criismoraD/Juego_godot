@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckc8txkva4b8h"
-path="res://.godot/imported/Pasto A.png-5409a33aa334e6cadf5f6b546a0a63e1.ctex"
+uid="uid://bnajvbrgm1f4t"
+path="res://.godot/imported/Pasto B.png-a9004d443950cb50f7cadfd669f2aace.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://TEST_/Pasto A.png"
-dest_files=["res://.godot/imported/Pasto A.png-5409a33aa334e6cadf5f6b546a0a63e1.ctex"]
+source_file="res://TEST_/Pasto B.png"
+dest_files=["res://.godot/imported/Pasto B.png-a9004d443950cb50f7cadfd669f2aace.ctex"]
 
 [params]
 
