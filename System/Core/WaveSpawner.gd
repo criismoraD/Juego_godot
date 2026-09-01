@@ -725,8 +725,8 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 	if incluir_imp_escudo_fijo:
 		_spawnear_imp_escudo_fijo()
 
-	# Oleada 4: los 10 refuerzos salen DE GOLPE cuando suena el cuerno (si la oleada está activa en combate)
-	if oleada_combate == 4 and is_wave_active:
+	# Oleada 4 y 5: los 10 refuerzos salen DE GOLPE cuando suena el cuerno (si la oleada está activa en combate)
+	if (oleada_combate == 4 or oleada_combate == 5) and is_wave_active:
 		var routine_golpe := func():
 			for i in range(refuerzos_cuerno_total):
 				if not is_instance_valid(self) or not is_inside_tree():

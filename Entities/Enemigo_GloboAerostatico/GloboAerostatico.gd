@@ -110,8 +110,11 @@ var sfx_explosion_01: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOS
 var sfx_explosion_02: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION02.mp3")
 var sfx_globo_callendo: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Sonido_globo_callendo.mp3")
 var sfx_fuego1: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Fuego1.mp3")
+const SONIDO_MOVIMIENTO_GLOBO: String = "res://TEST_/Sonido de globo.wav"
+const VOLUMEN_MOVIMIENTO_DB: float = -8.0
 
 var _modelo_globo_destruido_node: Node3D = null
+var _sfx_movimiento: AudioStreamPlayer = null
 
 # ==============================================================================
 # HOOKS DE ENEMYBASE
@@ -137,6 +140,7 @@ func _on_enemy_ready() -> void:
 	_buscar_nodos_visuales()
 	_iniciar_tween_bamboleo()
 	_iniciar_tween_deformacion()
+	_configurar_sonido_movimiento()
 
 
 func _on_state_walking() -> void:
@@ -182,6 +186,33 @@ func _physics_process(delta: float) -> void:
 
 	_empujar_si_en_barrera()
 	move_and_slide()
+	_actualizar_sonido_movimiento()
+
+
+## Configura el sonido de movimiento (loop). Suena mientras el globo se desplaza.
+func _configurar_sonido_movimiento() -> void:
+	var stream: AudioStream = load(SONIDO_MOVIMIENTO_GLOBO)
+	if not stream:
+		return
+	if stream is AudioStreamWAV:
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	_sfx_movimiento = AudioStreamPlayer.new()
+	_sfx_movimiento.name = "SfxMovimiento"
+	_sfx_movimiento.stream = stream
+	_sfx_movimiento.volume_db = VOLUMEN_MOVIMIENTO_DB
+	_sfx_movimiento.bus = "Master"
+	add_child(_sfx_movimiento)
+
+
+## Inicia o detiene el loop según si el globo se está moviendo.
+func _actualizar_sonido_movimiento() -> void:
+	if not _sfx_movimiento:
+		return
+	var esta_movimiento: bool = current_state != State.DYING and current_state != State.DEAD and absf(velocity.x) > 0.01
+	if esta_movimiento and not _sfx_movimiento.playing:
+		_sfx_movimiento.play()
+	elif not esta_movimiento and _sfx_movimiento.playing:
+		_sfx_movimiento.stop()
 
 
 func _procesar_vuelo(delta: float) -> void:
@@ -367,6 +398,10 @@ func take_damage(amount: float) -> void:
 func _on_state_dying() -> void:
 	super._on_state_dying()
 	set_physics_process(true)
+
+	# Detener sonido de movimiento al caer
+	if _sfx_movimiento and _sfx_movimiento.playing:
+		_sfx_movimiento.stop()
 
 	# Detener bamboleo
 	if _tween_bamboleo and _tween_bamboleo.is_valid():
