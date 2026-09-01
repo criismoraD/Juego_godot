@@ -48,9 +48,6 @@
 [ext_resource type="Material" path="res://Entities/Ambiente_Torre/PLANO_ILUMINADO_MAT.tres" id="47_plano_mat"]
 [ext_resource type="Script" uid="uid://0bs8x3t2yr52" path="res://Levels/NIVEL01/PuertaTrigger.gd" id="48_puerta_script"]
 [ext_resource type="PackedScene" uid="uid://c6475nhskw007" path="res://TEST_/Woodmetal_piso/Woodmetal_piso.glb" id="50_woodmetal"]
-[ext_resource type="Texture2D" uid="uid://cdg6x0n70fr4s" path="res://TEST_/Arboles amarillos A.png" id="51_arbolesamarillos"]
-[ext_resource type="Texture2D" uid="uid://cBamarillosB001" path="res://TEST_/Arboles amarillos B.png" id="53_arbolesamarillosB"]
-[ext_resource type="Texture2D" uid="uid://cCamarillosC003" path="res://TEST_/Arboles amarillos C.png" id="54_arbolesamarillosC"]
 [ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
 [ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="52_shader_arboles"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
@@ -133,39 +130,6 @@ particles_anim_loop = false
 [sub_resource type="QuadMesh" id="QuadMesh_dust"]
 material = SubResource("StandardMaterial3D_dust")
 size = Vector2(0.12, 0.12)
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_arboles_amarillos"]
-render_priority = 0
-shader = ExtResource("52_shader_arboles")
-shader_parameter/albedo_texture = ExtResource("51_arbolesamarillos")
-shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
-shader_parameter/blur_amount = 2.4
-shader_parameter/wind_speed = 1.6
-shader_parameter/wind_strength = 0.035
-shader_parameter/flutter_speed = 3.2
-shader_parameter/flutter_strength = 0.012
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_arboles_amarillosB"]
-render_priority = 0
-shader = ExtResource("52_shader_arboles")
-shader_parameter/albedo_texture = ExtResource("53_arbolesamarillosB")
-shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
-shader_parameter/blur_amount = 2.4
-shader_parameter/wind_speed = 1.6
-shader_parameter/wind_strength = 0.035
-shader_parameter/flutter_speed = 3.2
-shader_parameter/flutter_strength = 0.012
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_arboles_amarillosC"]
-render_priority = 0
-shader = ExtResource("52_shader_arboles")
-shader_parameter/albedo_texture = ExtResource("54_arbolesamarillosC")
-shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
-shader_parameter/blur_amount = 2.4
-shader_parameter/wind_speed = 1.6
-shader_parameter/wind_strength = 0.035
-shader_parameter/flutter_speed = 3.2
-shader_parameter/flutter_strength = 0.012
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_arboles_amarillosD"]
 render_priority = 0
@@ -876,24 +840,6 @@ transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -7.3911104, 0.206999
 
 [node name="Arboleda" parent="." unique_id=1948201888 instance=ExtResource("45_arboleda")]
 transform = Transform3D(0.9358511, 0, -0.11479537, 0, 0.8239627, 0, 0.11054993, 0, 0.9717906, -8.931133, -0.6583084, 3.2473335)
-
-[node name="ArbolesAmarillosA" type="Sprite3D" parent="." unique_id=1948201890]
-transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -5.5, -0.65, 2.8)
-layers = 7
-material_override = SubResource("ShaderMaterial_arboles_amarillos")
-texture = ExtResource("51_arbolesamarillos")
-
-[node name="ArbolesAmarillosB" type="Sprite3D" parent="." unique_id=1948201891]
-transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -3.8, -0.65, 2.5)
-layers = 7
-material_override = SubResource("ShaderMaterial_arboles_amarillosB")
-texture = ExtResource("53_arbolesamarillosB")
-
-[node name="ArbolesAmarillosC" type="Sprite3D" parent="." unique_id=1948201892]
-transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -6.8, -0.65, 2.9)
-layers = 7
-material_override = SubResource("ShaderMaterial_arboles_amarillosC")
-texture = ExtResource("54_arbolesamarillosC")
 
 [node name="ArbolesAmarillosD" type="Sprite3D" parent="." unique_id=1948201893]
 transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -2.5, -0.65, 2.6)
