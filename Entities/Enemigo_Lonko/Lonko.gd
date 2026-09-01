@@ -2022,6 +2022,18 @@ func _hundir_y_disolver_pilar() -> void:
 # SONIDO
 # ═══════════════════════════════════════════════════════════════════════════════
 
+## Rebote de proyectiles de la jugadora mientras carga el ataque especial (ult).
+## Mismo patrón que el aura de la Arquera Rosa: Arrow.manejar_impacto_aura -> _rebotar_de_aura.
+func manejar_impacto_aura(flecha: Node) -> bool:
+	if not (_apuntar_arriba and current_state != State.DYING and current_state != State.DEAD):
+		return false
+	# La flecha explosiva perfora igual que en el aura de Rosa
+	if flecha and ("es_explosiva" in flecha and flecha.es_explosiva):
+		return false
+	AudioManager.play_sfx("parry")
+	return true
+
+
 func _reproducir_sonido_pilar() -> void:
 	if not sfx_pilar_stream:
 		return

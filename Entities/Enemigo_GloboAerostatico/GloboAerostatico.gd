@@ -111,7 +111,7 @@ var sfx_explosion_02: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOS
 var sfx_globo_callendo: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Sonido_globo_callendo.mp3")
 var sfx_fuego1: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Fuego1.mp3")
 const SONIDO_MOVIMIENTO_GLOBO: String = "res://TEST_/Sonido de globo.wav"
-const VOLUMEN_MOVIMIENTO_DB: float = -8.0
+const VOLUMEN_MOVIMIENTO_DB: float = 2.0
 
 var _modelo_globo_destruido_node: Node3D = null
 var _sfx_movimiento: AudioStreamPlayer = null
