@@ -2335,7 +2335,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 ## Despliega 2 defensoras de ballesta móviles que caminan y escalan a las plataformas 1 y 3
 func _desplegar_defensoras_moviles_plataformas() -> void:
 	# SFX: Defensoras entrada (primera defensora tras usar item refuerzo)
-	var defensores_stream: AudioStream = load("res://TEST_/Defensoras entrada.mp3") as AudioStream
+	var defensores_stream: AudioStream = load("res://TEST_/Defensoras entrada.wav") as AudioStream
 	if defensores_stream:
 		var defensores_player := AudioStreamPlayer.new()
 		defensores_player.stream = defensores_stream

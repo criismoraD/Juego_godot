@@ -36,7 +36,7 @@ enum State { IDLE, DISSOLVING }
 # CONSTANTES
 # ═══════════════════════════════════════════════════════════════════════════════
 const ESCALA_BASE: float = 0.5
-const SONIDO_POSION: String = "res://TEST_/Posion curativa.mp3"
+const SONIDO_POSION: String = "res://TEST_/Posion curativa.wav"
 
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 

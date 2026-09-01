@@ -108,7 +108,7 @@ func _load_all_sounds():
 
 	sfx_streams["player_laugh"] = [load("res://Entities/Jugador_Arquera/RISA_PERSONAJE.mp3")]
 
-	sfx_streams["obtencion_arma"] = [load("res://TEST_/Obtener arma.mp3")]
+	sfx_streams["obtencion_arma"] = [load("res://TEST_/Obtener arma.wav")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
