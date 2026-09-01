@@ -51,6 +51,7 @@
 [ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="52_shader_arboles"]
 [ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
 [ext_resource type="Texture2D" uid="uid://bnajvbrgm1f4t" path="res://TEST_/Pasto B.png" id="56_pastoB"]
+[ext_resource type="Texture2D" uid="uid://barricadaA001" path="res://TEST_/Barricada A.png" id="57_barricadaA"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -868,10 +869,63 @@ material_override = SubResource("ShaderMaterial_arboles_amarillosD")
 texture = ExtResource("55_arbolesamarillosD")
 
 [node name="PastoB" type="Sprite3D" parent="." unique_id=1948201894]
-transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, -4.5, -0.65, 2.8)
-layers = 7
+transform = Transform3D(0.059876956, 0, 0, 0, 0.05508211, 0, 0, 0, 0.7, -7.4175935, 0.23355126, -4.256086)
+layers = 2
 material_override = SubResource("ShaderMaterial_pastoB")
 texture = ExtResource("56_pastoB")
+
+[node name="PastoB9" type="Sprite3D" parent="." unique_id=527772634]
+transform = Transform3D(0.059876956, 0, 0, 0, 0.05508211, 0, 0, 0, 0.7, -6.7520742, 0.104551315, -4.256086)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB3" type="Sprite3D" parent="." unique_id=608061898]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.443401, 0.12844586, -3.05835)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB4" type="Sprite3D" parent="." unique_id=1596594272]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.093467, 0.12844586, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB5" type="Sprite3D" parent="." unique_id=207804293]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -1.5235401, 0.03782636, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB6" type="Sprite3D" parent="." unique_id=296404973]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, 2.8312197, 0.03782636, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB7" type="Sprite3D" parent="." unique_id=1002430652]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, 3.797128, 0.08901709, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB8" type="Sprite3D" parent="." unique_id=210469789]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, 5.881055, 0.25560677, -2.7105987)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB2" type="Sprite3D" parent="." unique_id=717173454]
+transform = Transform3D(0.058960896, 0, 0.1219768, 0, 0.055082105, 0, -0.010433713, 0, 0.68929064, -6.6556, 0.28762317, -3.3319974)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="BarricadaA" type="Sprite3D" parent="." unique_id=1948201895]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -5.0, -0.3, 1.5)
+layers = 7
+texture = ExtResource("57_barricadaA")
 
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
 transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
