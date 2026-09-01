@@ -48,8 +48,9 @@
 [ext_resource type="Material" path="res://Entities/Ambiente_Torre/PLANO_ILUMINADO_MAT.tres" id="47_plano_mat"]
 [ext_resource type="Script" uid="uid://0bs8x3t2yr52" path="res://Levels/NIVEL01/PuertaTrigger.gd" id="48_puerta_script"]
 [ext_resource type="PackedScene" uid="uid://c6475nhskw007" path="res://TEST_/Woodmetal_piso/Woodmetal_piso.glb" id="50_woodmetal"]
-[ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
 [ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="52_shader_arboles"]
+[ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
+[ext_resource type="Texture2D" uid="uid://ckc8txkva4b8h" path="res://TEST_/Pasto A.png" id="56_pastoA"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -135,6 +136,17 @@ size = Vector2(0.12, 0.12)
 render_priority = 0
 shader = ExtResource("52_shader_arboles")
 shader_parameter/albedo_texture = ExtResource("55_arbolesamarillosD")
+shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
+shader_parameter/blur_amount = 2.4
+shader_parameter/wind_speed = 1.6
+shader_parameter/wind_strength = 0.035
+shader_parameter/flutter_speed = 3.2
+shader_parameter/flutter_strength = 0.012
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pastoA"]
+render_priority = 0
+shader = ExtResource("52_shader_arboles")
+shader_parameter/albedo_texture = ExtResource("56_pastoA")
 shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
 shader_parameter/blur_amount = 2.4
 shader_parameter/wind_speed = 1.6
@@ -719,6 +731,14 @@ light_color = Color(1, 0.85490197, 0.8, 1)
 light_energy = 1.5
 light_cull_mask = 7
 
+[node name="OmniLight3D7" type="OmniLight3D" parent="." unique_id=1712131957]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -9.276741, 6.8470106, -7.8551574)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 0.708
+light_indirect_energy = 0.208
+light_cull_mask = 7
+
 [node name="OmniLight3D5" type="OmniLight3D" parent="." unique_id=1047598206]
 transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.4027233, 4.386972, -4.0679297)
 layers = 3
@@ -842,10 +862,16 @@ transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -7.3911104, 0.206999
 transform = Transform3D(0.9358511, 0, -0.11479537, 0, 0.8239627, 0, 0.11054993, 0, 0.9717906, -8.931133, -0.6583084, 3.2473335)
 
 [node name="ArbolesAmarillosD" type="Sprite3D" parent="." unique_id=1948201893]
-transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -2.5, -0.65, 2.6)
-layers = 7
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -10.746367, 7.099969, -8.132378)
+layers = 2
 material_override = SubResource("ShaderMaterial_arboles_amarillosD")
 texture = ExtResource("55_arbolesamarillosD")
+
+[node name="PastoA" type="Sprite3D" parent="." unique_id=1948201894]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, -4.5, -0.65, 2.8)
+layers = 7
+material_override = SubResource("ShaderMaterial_pastoA")
+texture = ExtResource("56_pastoA")
 
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
 transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
