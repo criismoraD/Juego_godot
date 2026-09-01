@@ -171,6 +171,12 @@ func _iniciar_secuencia_entrada() -> void:
 	if _spawner and "oleada_combate" in _spawner and int(_spawner.oleada_combate) > 0:
 		GameUI.regreso_desde_interior_oleada = int(_spawner.oleada_combate)
 
+	# Guardar los power-ups del jugador para restaurarlos al regresar
+	if is_instance_valid(_jugador_ref):
+		GameUI.regreso_flechas_explosivas = int(_jugador_ref.get("flechas_explosivas")) if "flechas_explosivas" in _jugador_ref else 0
+		GameUI.regreso_flechas_multiples = int(_jugador_ref.get("flechas_multiples")) if "flechas_multiples" in _jugador_ref else 0
+		GameUI.regreso_municion_activa = int(_jugador_ref.get("municion_activa")) if "municion_activa" in _jugador_ref else 0
+
 	var dest := escena_destino
 	if not ResourceLoader.exists(dest):
 		if ResourceLoader.exists("res://Levels/Player_Interior.tscn"):

@@ -211,6 +211,24 @@ func _ready():
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
 		_set_aliadas_activas(true)
 		AudioManager.play_music(2)
+		# Restaurar los power-ups que el jugador tenía al entrar al interior
+		var _prota := get_tree().get_first_node_in_group("player")
+		if _prota:
+			if "flechas_explosivas" in _prota:
+				_prota.flechas_explosivas = GameUI.regreso_flechas_explosivas
+				if _prota.has_signal("flechas_explosivas_changed"):
+					_prota.flechas_explosivas_changed.emit(GameUI.regreso_flechas_explosivas)
+			if "flechas_multiples" in _prota:
+				_prota.flechas_multiples = GameUI.regreso_flechas_multiples
+				if _prota.has_signal("flechas_multiples_changed"):
+					_prota.flechas_multiples_changed.emit(GameUI.regreso_flechas_multiples)
+			if "municion_activa" in _prota:
+				_prota.municion_activa = GameUI.regreso_municion_activa
+				if _prota.has_signal("tipo_municion_changed"):
+					_prota.tipo_municion_changed.emit(GameUI.regreso_municion_activa)
+		GameUI.regreso_flechas_explosivas = 0
+		GameUI.regreso_flechas_multiples = 0
+		GameUI.regreso_municion_activa = 0
 		if oleada_retorno == 5:
 			_mostrar_victoria_con_continuar(
 				tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleadas completadas!"
@@ -329,31 +347,36 @@ func _mostrar_instrucciones_mouse() -> void:
 ## Mensaje central "PASO DE MEDEA": texto negro grueso con resplandor verde sutil que se desvanece.
 func _mostrar_texto_paso_medea() -> void:
 	const COLOR_TEXTO_NEGRO := Color.BLACK
-	const COLOR_RESPLANDOR_VERDE := Color("#008000")
-	const COLOR_VERDE_CLARO := Color("#90ee90")
-	const TAMANO_FUENTE := 72
-	const GROSOR_CONTORNO := 8
-	const DURACION_VISIBLE := 15.0
-	const DURACION_DESVANECIDO := 2.0
+	const COLOR_RESPLANDOR_VERDE := Color("#9fe2a0")
+	const COLOR_VERDE_CLARO := Color("#d4f5d0")
+	const TAMANO_FUENTE := 120
+	const GROSOR_CONTORNO := 6
+	const GROSOR_RESPLANDOR := 32
+	const DURACION_VISIBLE := 30.0
+	const DURACION_APARICION := 2.0
+	const DURACION_DESVANECIDO := 4.0
 	# Franja superior de la pantalla: el texto queda centrado alrededor del 25% de la altura.
 	const BANDA_SUPERIOR_INICIO := 0.0
 	const BANDA_SUPERIOR_FIN := 0.5
 
-	var fuente_sistema := SystemFont.new()
-	fuente_sistema.font_names = PackedStringArray(["Papyrus"])
-	# FontVariation engorda el trazo (bold sintético) para mayor legibilidad.
+	const FUENTE_RAVENNA := preload("res://assets/Fuentes/Ravenna.ttf")
+
+	# Ravenna ya tiene buen cuerpo: sin engrosado artificial para no cerrar los remates.
 	var fuente_papyrus := FontVariation.new()
-	fuente_papyrus.base_font = fuente_sistema
-	fuente_papyrus.variation_embolden = 1.0
-	fuente_papyrus.spacing_glyph = 2
+	fuente_papyrus.base_font = FUENTE_RAVENNA
 
 	var etiqueta := Label.new()
-	etiqueta.text = "PASO DE MEDEA"
+	etiqueta.text = tr("TITULO_PASO_MEDEA")
 	etiqueta.add_theme_font_override("font", fuente_papyrus)
 	etiqueta.add_theme_font_size_override("font_size", TAMANO_FUENTE)
 	etiqueta.add_theme_color_override("font_color", COLOR_TEXTO_NEGRO)
 	etiqueta.add_theme_color_override("font_outline_color", COLOR_RESPLANDOR_VERDE)
 	etiqueta.add_theme_constant_override("outline_size", GROSOR_CONTORNO)
+	# Resplandor difuminado: la sombra sin desplazamiento y con radio amplio actúa de glow verde.
+	etiqueta.add_theme_color_override("font_shadow_color", COLOR_RESPLANDOR_VERDE)
+	etiqueta.add_theme_constant_override("shadow_outline_size", GROSOR_RESPLANDOR)
+	etiqueta.add_theme_constant_override("shadow_offset_x", 0)
+	etiqueta.add_theme_constant_override("shadow_offset_y", 0)
 	etiqueta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	etiqueta.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	etiqueta.anchor_left = BANDA_SUPERIOR_INICIO
@@ -361,23 +384,32 @@ func _mostrar_texto_paso_medea() -> void:
 	etiqueta.anchor_top = BANDA_SUPERIOR_INICIO
 	etiqueta.anchor_bottom = BANDA_SUPERIOR_FIN
 	etiqueta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	etiqueta.modulate.a = 0.0
 
 	var capa := CanvasLayer.new()
 	capa.layer = 50
 	capa.add_child(etiqueta)
 	add_child(capa)
 
-	# Desvanecido: el contorno verde migra a un tono más claro mientras todo pierde opacidad.
-	var desvanecido := create_tween()
-	desvanecido.tween_interval(DURACION_VISIBLE)
-	desvanecido.set_parallel(true)
-	desvanecido.tween_property(
+	# Aparición gradual de 0 a opacidad completa.
+	var animacion := create_tween()
+	animacion.tween_property(
+		etiqueta, "modulate:a", 1.0, DURACION_APARICION
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# Permanece 15 segundos con opacidad completa.
+	animacion.tween_interval(DURACION_VISIBLE)
+	# Desvanecido lento: el contorno verde migra a un tono más claro mientras todo pierde opacidad.
+	animacion.set_parallel(true)
+	animacion.tween_property(
 		etiqueta, "modulate:a", 0.0, DURACION_DESVANECIDO
 	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	desvanecido.tween_property(
+	animacion.tween_property(
 		etiqueta, "theme_override_colors/font_outline_color", COLOR_VERDE_CLARO, DURACION_DESVANECIDO
 	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	desvanecido.chain().tween_callback(capa.queue_free)
+	animacion.tween_property(
+		etiqueta, "theme_override_colors/font_shadow_color", COLOR_VERDE_CLARO, DURACION_DESVANECIDO
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	animacion.chain().tween_callback(capa.queue_free)
 
 
 func _ajustar_subviewports_3d() -> void:
