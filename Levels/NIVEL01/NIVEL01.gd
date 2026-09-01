@@ -2334,6 +2334,24 @@ func _iniciar_mensajera_oleada_5() -> void:
 
 ## Despliega 2 defensoras de ballesta móviles que caminan y escalan a las plataformas 1 y 3
 func _desplegar_defensoras_moviles_plataformas() -> void:
+	# SFX: Defensoras entrada (primera defensora tras usar item refuerzo)
+	var defensores_stream: AudioStream = load("res://TEST_/Defensoras entrada.mp3") as AudioStream
+	if defensores_stream:
+		var defensores_player := AudioStreamPlayer.new()
+		defensores_player.stream = defensores_stream
+		defensores_player.volume_db = 0.0
+		defensores_player.bus = "Master"
+		var defensores_root := get_tree().current_scene
+		if defensores_root:
+			defensores_root.add_child(defensores_player)
+		else:
+			add_child(defensores_player)
+		defensores_player.play()
+		defensores_player.finished.connect(func():
+			if is_instance_valid(defensores_player):
+				defensores_player.queue_free()
+		)
+
 	var ballestera_scene: PackedScene = preload("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
 	if not ballestera_scene:
 		return

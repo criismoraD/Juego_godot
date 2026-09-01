@@ -669,6 +669,24 @@ func reproducir_sonido_cuerno() -> void:
 				player.queue_free()
 		)
 
+	# Sonido adicional: Horda goblins masculina (TEST_)
+	var horda_stream: AudioStream = load("res://TEST_/Horda goblins masculina.mp3") as AudioStream
+	if horda_stream:
+		var horda_player := AudioStreamPlayer.new()
+		horda_player.stream = horda_stream
+		horda_player.volume_db = 0.0
+		horda_player.bus = "Master"
+		var h_root := get_tree().current_scene
+		if h_root:
+			h_root.add_child(horda_player)
+		else:
+			add_child(horda_player)
+		horda_player.play()
+		horda_player.finished.connect(func():
+			if is_instance_valid(horda_player):
+				horda_player.queue_free()
+		)
+
 
 func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fijo: bool = false) -> void:
 	evento_cuerno_activado = true

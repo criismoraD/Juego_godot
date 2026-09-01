@@ -38,7 +38,7 @@ enum State { IDLE, DISSOLVING }
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTES
 # ═══════════════════════════════════════════════════════════════════════════════
-const SONIDO_CURACION: String = "res://Entities/Item_Pocion/Sonido posion.mp3"
+const SONIDO_CURACION: String = "res://TEST_/Posion curativa.mp3"
 
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
