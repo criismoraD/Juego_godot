@@ -76,7 +76,7 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 var _particulas_pisada: GPUParticles3D = null
 var _sfx_correr: AudioStreamPlayer = null  ## Loop de armadura mientras corre
 const SONIDO_CORRER_ARMADURA: String = "res://TEST_/sonido_correr_armadura.wav"
-const VOLUMEN_CORRER_DB: float = 16.0  ## Fuente extremadamente silenciosa (RMS 0.7%): +16 dB
+const VOLUMEN_CORRER_DB: float = 8.0  ## Fuente muy silenciosa (RMS 0.7%): +8 dB audible sin saturar
 
 var anim_player: AnimationPlayer
 var skeleton: Skeleton3D
