@@ -53,6 +53,7 @@
 [ext_resource type="Texture2D" uid="uid://bxwp2vtq13j1c" path="res://TEST_/Carreta A.png" id="61_carretaA"]
 [ext_resource type="Texture2D" uid="uid://c0seb337nvcqk" path="res://TEST_/Fondo nivel 2.png" id="62_fondonivel2"]
 [ext_resource type="Texture2D" uid="uid://cswk5bfsf3odx" path="res://TEST_/Piso fondo level tutorial.png" id="63_pisofondo"]
+[ext_resource type="Texture2D" uid="uid://jc7rrudwf7xx" path="res://TEST_/Piso fondo sombra level tutorial.png" id="64_pisofondosombra"]
 [ext_resource type="Script" uid="uid://bcpjqg6l15ngt" path="res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
