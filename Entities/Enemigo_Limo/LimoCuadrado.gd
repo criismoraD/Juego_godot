@@ -21,11 +21,11 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 @export var pausa_idle_max: float = 2.0  ## Pausa máxima en IDLE entre lanzamientos
 
 @export_category("Babosa - Deformación")
-@export var velocidad_pulso: float = 5.0  ## Velocidad del pulso gelatinoso al avanzar
-@export var amplitud_aplastar: float = 0.22  ## Cuánto se aplasta/estira en cada pulso
-@export var estiramiento_avance: float = 0.18  ## Estiramiento horizontal extra mientras camina
-@export var amplitud_impacto: float = 0.45  ## Deformación lateral al recibir un impacto
-@export var duracion_impacto: float = 0.32  ## Duración del rebote elástico del impacto
+@export var velocidad_pulso: float = 3.0  ## Velocidad del pulso gelatinoso al avanzar (suave)
+@export var amplitud_aplastar: float = 0.08  ## Cuánto se aplasta/estira en cada pulso (sutil)
+@export var estiramiento_avance: float = 0.07  ## Estiramiento horizontal extra mientras camina
+@export var amplitud_impacto: float = 0.3  ## Deformación lateral al recibir un impacto
+@export var duracion_impacto: float = 0.45  ## Duración del rebote elástico del impacto
 
 # === REFERENCIAS Y ESTADO ===
 var imp_arrow_scene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
@@ -129,10 +129,12 @@ func _actualizar_deformacion_babosa(delta: float) -> void:
 		escala_y *= 1.0 - absf(costado) * 0.3
 
 	var raiz: Node3D = _modelo_limo
+	## El modelo está rotado 90° en Y (mirando de costado): su Z local apunta al
+	## eje X del mundo, por eso la deformación lateral se aplica sobre la Z local.
 	if raiz != self:
-		raiz.scale = Vector3(escala_xz * (1.0 + costado * 0.5), escala_y, escala_xz * (1.0 - costado * 0.5))
+		raiz.scale = Vector3(escala_xz, escala_y, escala_xz * (1.0 + costado * 0.5))
 	else:
-		scale = Vector3(escala_xz * (1.0 + costado * 0.5), escala_y, escala_xz * (1.0 - costado * 0.5))
+		scale = Vector3(escala_xz, escala_y, escala_xz * (1.0 + costado * 0.5))
 
 
 ## Deformación elástica hacia un costado al recibir un impacto.
@@ -219,11 +221,11 @@ func _iniciar_lanzamiento() -> void:
 	throw_anim_timer = 0.0
 	throw_anim_duration = 0.9
 	current_throw_time = 0.55
-	# Contracción gelatinosa previa al lanzamiento
+	# Contracción gelatinosa previa al lanzamiento (sutil)
 	if _modelo_limo and is_instance_valid(_modelo_limo) and _modelo_limo != self:
 		var tw := create_tween()
-		tw.tween_property(_modelo_limo, "scale:y", 1.35, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tw.tween_property(_modelo_limo, "scale:y", 1.0, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_modelo_limo, "scale:y", 1.18, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_modelo_limo, "scale:y", 1.0, 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _throw_projectile() -> void:
