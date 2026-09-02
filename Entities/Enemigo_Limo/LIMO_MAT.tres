@@ -1,15 +1,25 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://i873tekpznyx5"]
+[gd_resource type="ShaderMaterial" format=3]
 
-[ext_resource type="Texture2D" uid="uid://c7prnhb5u6i7e" path="res://Entities/Enemigo_Limo/Limo cuadrado_D.jpg" id="1_limo"]
-
-[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+[ext_resource type="Shader" uid="uid://mvzswq02ho6bf" path="res://System/Shaders/slime_fluido.gdshader" id="1_slime_shader"]
+[ext_resource type="Texture2D" uid="uid://c7prnhb5u6i7e" path="res://Entities/Enemigo_Limo/Limo cuadrado_D.jpg" id="2_limo_d"]
+[ext_resource type="Texture2D" uid="uid://lal0xoui7nmj" path="res://Entities/Enemigo_Limo/Slime.png" id="3_slime_tex"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="4_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline_limo"]
 render_priority = 0
-shader = ExtResource("2_outline")
+shader = ExtResource("4_outline")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
 shader_parameter/outline_width = 5.0
 
 [resource]
+render_priority = 0
+shader = ExtResource("1_slime_shader")
+shader_parameter/albedo_texture = ExtResource("2_limo_d")
+shader_parameter/slime_texture = ExtResource("3_slime_tex")
+shader_parameter/slime_tint = Color(0.4, 1, 0.5, 1)
+shader_parameter/slime_intensity = 0.55
+shader_parameter/flow_speed = 0.12
+shader_parameter/flow_scale = 1.6
+shader_parameter/smoothness = 0.35
+shader_parameter/emission_energy = 0.35
 next_pass = SubResource("ShaderMaterial_outline_limo")
-albedo_texture = ExtResource("1_limo")
