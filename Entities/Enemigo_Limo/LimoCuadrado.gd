@@ -24,8 +24,9 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 @export var velocidad_pulso: float = 3.0  ## Velocidad del pulso gelatinoso al avanzar (suave)
 @export var amplitud_aplastar: float = 0.08  ## Cuánto se aplasta/estira en cada pulso (sutil)
 @export var estiramiento_avance: float = 0.07  ## Estiramiento horizontal extra mientras camina
-@export var amplitud_impacto: float = 0.3  ## Deformación lateral al recibir un impacto
-@export var duracion_impacto: float = 0.45  ## Duración del rebote elástico del impacto
+@export var amplitud_impacto: float = 0.55  ## Intensidad de la compresión gelatinosa al impactar
+@export var duracion_impacto: float = 0.6  ## Duración del rebote de goma completo
+@export var frecuencia_rebote: float = 9.0  ## Velocidad de oscilación de la gelatina (wobble)
 
 # === REFERENCIAS Y ESTADO ===
 var imp_arrow_scene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
@@ -33,8 +34,8 @@ var material_limo: Material = preload("res://Entities/Enemigo_Limo/LIMO_MAT.tres
 
 var _modelo_limo: Node3D = null
 var _pulso_fase: float = 0.0
-var _tween_impacto: Tween = null
-var _deformacion_impacto: float = 0.0  ## -1..1: costado de la deformación actual
+var _impacto_dir: float = 0.0  ## Dirección de la compresión (derecha->izquierda según el golpe)
+var _impacto_tiempo: float = -1.0  ## <0: sin impacto activo; >=0: segundos desde el impacto
 
 # Ataque (mismo ciclo que el Imp). shoot_timer se hereda de EnemyBase.
 var is_throwing: bool = false
@@ -100,8 +101,8 @@ func _process(delta: float) -> void:
 	_actualizar_deformacion_babosa(delta)
 
 
-## Pulso gelatinoso: squash & stretch vertical sincronizado con el avance.
-## Al avanzar se estira en X (avance) y se aplasta en Y en el punto bajo del pulso.
+## Pulso gelatinoso: squash & stretch vertical sincronizado con el avance,
+## mezclado con la compresión de goma del impacto (jelly wobble amortiguado).
 func _actualizar_deformacion_babosa(delta: float) -> void:
 	if not _modelo_limo or not is_instance_valid(_modelo_limo):
 		return
@@ -122,35 +123,41 @@ func _actualizar_deformacion_babosa(delta: float) -> void:
 	if moviendose:
 		escala_xz += estiramiento_avance * absf(onda)
 
-	# Deformación lateral por impacto (se aplica sobre el pulso)
-	var costado: float = _deformacion_impacto
-	if absf(costado) > 0.001:
-		escala_xz *= 1.0
-		escala_y *= 1.0 - absf(costado) * 0.3
+	# ═══ IMPACTO GELATINOSO (rebote de goma) ═══
+	# El golpe comprime el cuerpo en el eje derecha-izquierda (eje Z local del
+	# modelo girado) y lo abomba en Y/X local, oscilando como gelatina.
+	var compresion: float = 0.0
+	var abombado: float = 0.0
+	if _impacto_tiempo >= 0.0:
+		_impacto_tiempo += delta
+		if _impacto_tiempo >= duracion_impacto:
+			_impacto_tiempo = -1.0  # Fin del rebote
+		else:
+			# T: 0->1 a lo largo del impacto
+			var t: float = _impacto_tiempo / duracion_impacto
+			# Oscilación amortiguada (gelatina): sin(t*freq) * decaimiento
+			var wobble: float = sin(t * TAU * frecuencia_rebote * 0.5) * (1.0 - t)
+			compresion = wobble * amplitud_impacto * _impacto_dir
+			# Compresión en el eje del golpe, abombado compensatorio (volumen)
+			escala_xz *= 1.0 - absf(compresion)
+			abombado = absf(compresion) * 0.6
+			escala_y *= 1.0 + abombado
 
-	var raiz: Node3D = _modelo_limo
 	## El modelo está rotado 90° en Y (mirando de costado): su Z local apunta al
-	## eje X del mundo, por eso la deformación lateral se aplica sobre la Z local.
+	## eje X del mundo (derecha-izquierda en pantalla), por eso la compresión del
+	## golpe se aplica sobre la Z local y el abombado sobre X local.
+	var raiz: Node3D = _modelo_limo
 	if raiz != self:
-		raiz.scale = Vector3(escala_xz, escala_y, escala_xz * (1.0 + costado * 0.5))
+		raiz.scale = Vector3(escala_xz + abombado, escala_y, escala_xz)
 	else:
-		scale = Vector3(escala_xz, escala_y, escala_xz * (1.0 + costado * 0.5))
+		scale = Vector3(escala_xz + abombado, escala_y, escala_xz)
 
 
-## Deformación elástica hacia un costado al recibir un impacto.
-## La flecha entra desde la izquierda: el limo se desparrama hacia la derecha.
+## Dispara la compresión gelatinosa al recibir un impacto.
+## La flecha entra desde la izquierda: el cuerpo se comprime de derecha a izquierda.
 func _deformar_por_impacto(direccion_lateral: float) -> void:
-	_deformacion_impacto = direccion_lateral * amplitud_impacto
-	if _tween_impacto and _tween_impacto.is_valid():
-		_tween_impacto.kill()
-	_tween_impacto = create_tween()
-	_tween_impacto.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	# Rebote elástico: la deformación vuelve a 0 oscilando (jelly)
-	_tween_impacto.tween_method(
-		func(val: float) -> void:
-			_deformacion_impacto = val,
-		_deformacion_impacto, 0.0, duracion_impacto
-	)
+	_impacto_dir = signf(direccion_lateral)
+	_impacto_tiempo = 0.0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -173,9 +180,7 @@ func take_damage(amount: float) -> void:
 
 func _on_state_dying() -> void:
 	# Congelar deformación y escala neutra antes de la disolución
-	if _tween_impacto and _tween_impacto.is_valid():
-		_tween_impacto.kill()
-		_deformacion_impacto = 0.0
+	_impacto_tiempo = -1.0
 	if _modelo_limo and is_instance_valid(_modelo_limo) and _modelo_limo != self:
 		_modelo_limo.scale = Vector3.ONE
 	super._on_state_dying()
