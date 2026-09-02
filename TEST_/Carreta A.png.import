@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://carretaA004"
-path.s3tc="res://.godot/imported/Carreta A.png-3042e9b67186dd736e70c1636d2ef3ef.s3tc.ctex"
-path.etc2="res://.godot/imported/Carreta A.png-3042e9b67186dd736e70c1636d2ef3ef.etc2.ctex"
+uid="uid://bxwp2vtq13j1c"
+path.s3tc="res://.godot/imported/Carreta A.png-ec92fa49b83ccdba885703c184d3e294.s3tc.ctex"
+path.etc2="res://.godot/imported/Carreta A.png-ec92fa49b83ccdba885703c184d3e294.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://TEST_/Carreta A.png"
-dest_files=["res://.godot/imported/Carreta A.png-3042e9b67186dd736e70c1636d2ef3ef.s3tc.ctex", "res://.godot/imported/Carreta A.png-3042e9b67186dd736e70c1636d2ef3ef.etc2.ctex"]
+dest_files=["res://.godot/imported/Carreta A.png-ec92fa49b83ccdba885703c184d3e294.s3tc.ctex", "res://.godot/imported/Carreta A.png-ec92fa49b83ccdba885703c184d3e294.etc2.ctex"]
 
 [params]
 
@@ -40,4 +40,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=0
-

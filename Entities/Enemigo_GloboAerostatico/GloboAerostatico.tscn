@@ -6,14 +6,14 @@
 [ext_resource type="PackedScene" uid="uid://b8lvuys7l34k8" path="res://Entities/Enemigo_GloboAerostatico/Globo_destruido.glb" id="6_model_destruido"]
 [ext_resource type="Material" uid="uid://c3p58tt52hu6c" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_DESTRUIDO_MAT.tres" id="7_mat_destruido"]
 [ext_resource type="PackedScene" uid="uid://ccanastaglb01" path="res://Entities/Enemigo_GloboAerostatico/Canasta.glb" id="8_model_canasta"]
-[ext_resource type="PackedScene" path="res://Entities/Enemigo_GloboAerostatico/GoblinTripulante.tscn" id="9_tripulante"]
+[ext_resource type="PackedScene" uid="uid://bqdm44vqatl0p" path="res://Entities/Enemigo_GloboAerostatico/GoblinTripulante.tscn" id="9_tripulante"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
 radius = 0.35
 height = 1.4
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_canasta_rango"]
-size = Vector3(0.9689453, 0.5121527, 0.8712891)
+size = Vector3(0.9689453, 0.58371305, 0.8712891)
 
 [node name="GloboAerostatico" type="CharacterBody3D" unique_id=245115629]
 collision_layer = 4
@@ -32,7 +32,7 @@ shape = SubResource("CapsuleShape3D_col")
 
 [node name="ModeloGlobo" parent="PivotBamboleo" unique_id=1832631609 instance=ExtResource("2_model_globo")]
 
-[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=758088354]
+[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=1260285538]
 transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
 surface_material_override/0 = ExtResource("3_mat_globo")
 
@@ -43,15 +43,15 @@ transform = Transform3D(0.8, 0, -3.6679783e-08, 0, 0.8, 0, 3.6679783e-08, 0, 0.8
 transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 visible = false
 
-[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0" unique_id=1620448280]
+[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0" unique_id=183135368]
 transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
 surface_material_override/0 = ExtResource("7_mat_destruido")
 
 [node name="ModeloCanasta" parent="PivotBamboleo" unique_id=283746192 instance=ExtResource("8_model_canasta")]
-transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 0, -0.18, 0)
+transform = Transform3D(0.64995676, 0.007494867, 0, -0.007494867, 0.64995676, 0, 0, 0, 0.65, 0.009118631, -0.19150734, 0)
 visible = false
 
-[node name="modelo 3d (1K)" parent="PivotBamboleo/ModeloCanasta" index="0" unique_id=1015720493]
+[node name="modelo 3d (1K)" parent="PivotBamboleo/ModeloCanasta" index="0" unique_id=1866252364]
 transform = Transform3D(-0.4296071, 0, -0.9030159, 0, 1, 0, 0.9030159, 0, -0.4296071, 0.09473237, 0.41738158, 0)
 
 [node name="RangoDanoCanasta" type="Area3D" parent="PivotBamboleo/ModeloCanasta" unique_id=88990011]
@@ -61,7 +61,7 @@ monitoring = false
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PivotBamboleo/ModeloCanasta/RangoDanoCanasta" unique_id=88990012]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013964807, 0.54057074, -0.0544434)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013964807, 0.5047904, -0.0544434)
 shape = SubResource("BoxShape3D_canasta_rango")
 debug_color = Color(0.15, 0.6, 1, 0.35)
 
