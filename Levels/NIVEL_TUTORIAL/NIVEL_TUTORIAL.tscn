@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://xigqsvudk950r"]
+[gd_scene format=3 uid="uid://b0jakct62wg6"]
 
 [ext_resource type="Environment" uid="uid://dla06m2nrcawf" path="res://Recursos_Compartidos/new_environment.tres" id="2_qcvbp"]
 [ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Entities/Jugador_Arquera/Player.tscn" id="4_1cr8j"]
@@ -38,7 +38,7 @@
 [ext_resource type="PackedScene" uid="uid://c5b8r2a3c4e5f" path="res://Entities/Enemigo_Bracero/Bracero.tscn" id="36_omov4"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Pajaros/PajarosPlane.tscn" id="37_pajaros"]
 [ext_resource type="Shader" uid="uid://bdmqy0jdcwtq0" path="res://System/Shaders/sombra_falsa.gdshader" id="38_sombrafalsa_shader"]
-[ext_resource type="Texture2D" uid="uid://uqrgdco7aeipv" path="res://Levels/NIVEL_TUTORIAL/sombra_falsa_nivel01.png" id="39_sombrafalsa_mask"]
+[ext_resource type="Texture2D" uid="uid://bfp3e13xgd4w2" path="res://Levels/NIVEL_TUTORIAL/sombra_falsa_nivel01.png" id="39_sombrafalsa_mask"]
 [ext_resource type="Shader" uid="uid://c4l5t5tlx7cbq" path="res://System/Shaders/tono_calido.gdshader" id="40_tonocalido"]
 [ext_resource type="Shader" uid="uid://bo028vclvrb74" path="res://System/Shaders/luz_haces_fija.gdshader" id="41_luz_haces_fija"]
 [ext_resource type="Texture2D" uid="uid://b7sqddmatavpl" path="res://VFX/Textures/T_basic1_vfx.PNG" id="42_dust_tex"]
@@ -46,16 +46,16 @@
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="45_arboleda"]
 [ext_resource type="PackedScene" uid="uid://sdvsbc3tkfaa" path="res://Entities/Ambiente_Enrredadera/Enrredadera.tscn" id="46_enrredadera"]
 [ext_resource type="Material" path="res://Entities/Ambiente_Torre/PLANO_ILUMINADO_MAT.tres" id="47_plano_mat"]
-[ext_resource type="Script" uid="uid://lxiohkrm1e63q" path="res://Levels/NIVEL_TUTORIAL/PuertaTrigger.gd" id="48_puerta_script"]
+[ext_resource type="Script" uid="uid://da2pe0vcsktg" path="res://Levels/NIVEL_TUTORIAL/PuertaTrigger.gd" id="48_puerta_script"]
 [ext_resource type="PackedScene" uid="uid://c6475nhskw007" path="res://TEST_/Woodmetal_piso/Woodmetal_piso.glb" id="50_woodmetal"]
 [ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="52_shader_arboles"]
 [ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
 [ext_resource type="Texture2D" uid="uid://bnajvbrgm1f4t" path="res://TEST_/Pasto B.png" id="56_pastoB"]
-[ext_resource type="Texture2D" uid="uid://bb5iyjs2c0rvo" path="res://TEST_/Barricada A.png" id="57_barricadaA"]
 [ext_resource type="Texture2D" uid="uid://i5j00bo3m33j" path="res://TEST_/Barricada C.png" id="59_barricadaC"]
+[ext_resource type="Texture2D" uid="uid://c0seb337nvcqk" path="res://TEST_/Fondo nivel 2.png" id="62_fondonivel2"]
 [ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://TEST_/Bandera A.png" id="60_banderaA"]
 [ext_resource type="Texture2D" uid="uid://bxwp2vtq13j1c" path="res://TEST_/Carreta A.png" id="61_carretaA"]
-[ext_resource type="Script" uid="uid://qscz3oumbx5hv" path="res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.gd" id="Script_Level01"]
+[ext_resource type="Script" uid="uid://bcpjqg6l15ngt" path="res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
 dof_blur_far_distance = 45.0
@@ -941,11 +941,6 @@ layers = 2
 material_override = SubResource("ShaderMaterial_pastoB")
 texture = ExtResource("56_pastoB")
 
-[node name="BarricadaA" type="Sprite3D" parent="." unique_id=1948201895]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -18.093025, -0.3, -8.840449)
-layers = 2
-texture = ExtResource("57_barricadaA")
-
 [node name="BanderaA" type="Sprite3D" parent="." unique_id=1948201896]
 transform = Transform3D(0.4272384, 0, 0, 0, 0.32137963, 0, 0, 0, 0.015609987, 3.8207998, 0.39386657, -7.597229)
 layers = 2
@@ -986,6 +981,11 @@ script = ExtResource("48_puerta_script")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PUERTA_TRIGER" unique_id=1633856025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23718262, -0.7602539, 0)
 shape = SubResource("BoxShape3D_3xd07")
+
+[node name="FondoNivel2" type="Sprite3D" parent="." unique_id=993006990]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -2.0, 3.0, -38.0)
+layers = 2
+texture = ExtResource("62_fondonivel2")
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]
