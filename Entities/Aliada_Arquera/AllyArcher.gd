@@ -838,7 +838,7 @@ func _reproducir_grito_victoria() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = stream
-	player.volume_db = 2.0
+	player.volume_db = -4.0
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
