@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://i873tekpznyx5"]
+
+[ext_resource type="Texture2D" uid="uid://c7prnhb5u6i7e" path="res://Entities/Enemigo_Limo/Limo cuadrado_D.jpg" id="1_limo"]
+
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline_limo"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 5.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_outline_limo")
+albedo_texture = ExtResource("1_limo")

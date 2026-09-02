@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bolpvuh2aaolj"
-path="res://.godot/imported/Limo cuadrado.glb-f2fdcd26575b2ff852afa9007e6966e5.scn"
+path="res://.godot/imported/Limo cuadrado.glb-1b513c4c23f211f9925272e5c1782733.scn"
 
 [deps]
 
-source_file="res://TEST_/Limo cuadrado/Limo cuadrado.glb"
-dest_files=["res://.godot/imported/Limo cuadrado.glb-f2fdcd26575b2ff852afa9007e6966e5.scn"]
+source_file="res://Entities/Enemigo_Limo/Limo cuadrado.glb"
+dest_files=["res://.godot/imported/Limo cuadrado.glb-1b513c4c23f211f9925272e5c1782733.scn"]
 
 [params]
 
