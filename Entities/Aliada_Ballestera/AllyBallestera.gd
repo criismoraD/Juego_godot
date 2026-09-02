@@ -1521,22 +1521,33 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 
 
 func _finalizar_despliegue_plataforma() -> void:
-	en_despliegue = false
+	# Mantener en_despliegue activo durante la secuencia de llegada para que
+	# los frames del proceso de combate no interrumpan ni congelen la pose de carrera
+	en_despliegue = true
+	_restaurar_torso()
+
 	if model_root:
 		var tween_rot := create_tween()
-		tween_rot.tween_property(model_root, "rotation:y", _original_model_y_rot, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	_restaurar_torso()
-	# Toma de posición como la mensajera: se agacha al llegar (baja la pierna del
-	# CORRER de forma natural, sin el frame congelado de pierna al aire) y luego
-	# se levanta directamente hacia la postura de disparo
+		tween_rot.tween_property(model_root, "rotation:y", _original_model_y_rot, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	# 1. Agacharse una vez al llegar al puesto (baja y apoya la pierna de CORRER al suelo limpiamente)
 	fase_agachada = true
-	_play_anim("DISPARO_AGACHADO", 0.25, 1.0)
-	await get_tree().create_timer(0.45).timeout
+	_play_anim(["DISPARO_AGACHADO", "AGACHARSE"], 0.25, 1.0)
+	await get_tree().create_timer(0.55).timeout
 	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 		return
-	# Levantarse y pasar suave a la postura de disparo
+
+	# 2. Levantarse suavemente hacia la postura de combate de pie
 	fase_agachada = false
-	_fijar_pose_combate(0.25)
+	disparos_en_fase = 0
+	_play_anim("DISPARO_01", 0.3, 1.0)
+	await get_tree().create_timer(0.25).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 3. Adoptar la postura fija de combate y habilitar el ciclo de ataque
+	_fijar_pose_combate(0.2)
+	en_despliegue = false
 	_cambiar_estado(State.RELOADING)
 	state_timer = 0.3
 

@@ -109,7 +109,7 @@ void fragment() {
 
 	EMISSION = ALBEDO * emission_strength;
 
-	float alpha_mask = clamp(0.5 - (alpha_smoothness * .5), 0.5 + (alpha_smoothness * .5), mask_value);
+	float alpha_mask = smoothstep(0.5 - (alpha_smoothness * .5), 0.5 + (alpha_smoothness * .5), mask_value);
 	float alpha = clamp((pow(alpha_mask, 3.0) * alpha_multiplier) * (COLOR.a), 0.0, 1.0);
 	if(edge_cutoff != vec4(0.0)){
 		if(UV.x < edge_cutoff.x){ discard; }

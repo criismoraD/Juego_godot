@@ -149,6 +149,29 @@ func test_despliegue_plataforma_3_mas_alta():
 	assert_almost_eq(_ballestera.scale.x, 0.3, 0.01, "La escala debe ser 0.3 como las defensoras fijas")
 
 
+func test_finalizar_despliegue_plataforma_agacharse_y_postura_combate():
+	# Arrange
+	_ballestera = AllyBallesteraScript.new()
+	_agregar_animacion_minima(_ballestera)
+	get_tree().root.add_child(_ballestera)
+	_ballestera.en_despliegue = true
+	_ballestera.es_movil = true
+
+	# Act: llamar a _finalizar_despliegue_plataforma()
+	var tw = _ballestera._finalizar_despliegue_plataforma()
+	assert_true(_ballestera.en_despliegue, "Durante la transición de agachado inicial debe seguir en_despliegue")
+	assert_true(_ballestera.fase_agachada, "Debe agacharse inicialmente para asentar las piernas al suelo")
+
+	# Esperar que complete la transición
+	await get_tree().create_timer(0.85).timeout
+
+	# Assert: finalizado el agachado y puesta de pie
+	assert_false(_ballestera.en_despliegue, "Debe salir de en_despliegue tras completar la pose")
+	assert_false(_ballestera.fase_agachada, "Debe levantarse hacia la postura de pie para el combate")
+	assert_eq(_ballestera.current_state, _ballestera.State.RELOADING, "Debe entrar en estado RELOADING")
+
+
+
 func test_muerte_ballestera_movil_desprende_ballesta_y_particulas():
 	# Arrange
 	_ballestera = AllyBallesteraScript.new()

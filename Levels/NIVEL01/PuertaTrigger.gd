@@ -163,6 +163,7 @@ func _apagar_todo() -> void:
 func _iniciar_secuencia_entrada() -> void:
 	_transicion_en_curso = true
 	_apagar_todo()
+	_reproducir_sonido_puerta()
 
 	# Registrar la oleada completada cuya cortinilla debemos restaurar al regresar
 	var _spawner := get_tree().get_first_node_in_group("wave_spawners")
@@ -226,3 +227,22 @@ func _iniciar_secuencia_entrada() -> void:
 	# 5. Transición con cortinilla circular
 	await get_tree().create_timer(0.35).timeout
 	SceneManager.cambiar_escena_cortinilla_circular(dest)
+
+
+## SFX de puerta al entrar a la torre.
+func _reproducir_sonido_puerta() -> void:
+	var stream: AudioStream = load("res://TEST_/abrir_puerta.wav")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.add_to_group("pausable_audio")
+	player.stream = stream
+	player.volume_db = 2.0
+	player.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(player)
+		player.play()
+		player.finished.connect(player.queue_free)
+	else:
+		player.queue_free()
