@@ -33,12 +33,10 @@ var hueso_arrow_scene = preload("res://Entities/Proyectil_Hueso_Limo/HuesoLimo.t
 var material_limo: Material = preload("res://Entities/Enemigo_Limo/LIMO_MAT.tres")
 
 var _modelo_limo: Node3D = null
-var _modelo_ataque: Node3D = null
-var _en_modelo_ataque: bool = false
-var _intercambiando: bool = false  ## True durante el tween de cobertura del intercambio
 var _pulso_fase: float = 0.0
 var _impacto_dir: float = 0.0  ## Dirección de la compresión (derecha->izquierda según el golpe)
 var _impacto_tiempo: float = -1.0  ## <0: sin impacto activo; >=0: segundos desde el impacto
+var _tween_escala_activo: bool = false  ## True mientras un tween (contracción de ataque) controla la escala
 
 # Ataque (mismo ciclo que el Imp). shoot_timer se hereda de EnemyBase.
 var is_throwing: bool = false
@@ -74,9 +72,6 @@ func _buscar_modelo() -> void:
 		var meshes := find_children("*", "MeshInstance3D", true, false)
 		if meshes.size() > 0:
 			_modelo_limo = meshes[0] as Node3D
-	_modelo_ataque = find_child("LimoModeloAtaque", true, false) as Node3D
-	if _modelo_ataque and is_instance_valid(_modelo_ataque):
-		_modelo_ataque.visible = false
 
 
 func _aplicar_material() -> void:
@@ -114,8 +109,8 @@ func _actualizar_deformacion_babosa(delta: float) -> void:
 		return
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
-	# Durante el intercambio de modelos el tween de cobertura manda la escala
-	if _intercambiando:
+	# Durante la contracción de ataque el tween manda la escala
+	if _tween_escala_activo:
 		return
 
 	var moviendose: bool = current_state == State.WALKING and absf(velocity.x) > 0.01
@@ -155,53 +150,27 @@ func _actualizar_deformacion_babosa(delta: float) -> void:
 	## El modelo está rotado 90° en Y (mirando de costado): su Z local apunta al
 	## eje X del mundo (derecha-izquierda en pantalla), por eso la compresión del
 	## golpe se aplica sobre la Z local y el abombado sobre X local.
-	var raiz: Node3D = _modelo_activo()
-	if raiz != self:
-		raiz.scale = Vector3(escala_xz + abombado, escala_y, escala_xz)
+	if _modelo_limo != self:
+		_modelo_limo.scale = Vector3(escala_xz + abombado, escala_y, escala_xz)
 	else:
 		scale = Vector3(escala_xz + abombado, escala_y, escala_xz)
 
 
-## Modelo visible actual: normal o de ataque.
-func _modelo_activo() -> Node3D:
-	if _en_modelo_ataque and _modelo_ataque and is_instance_valid(_modelo_ataque):
-		return _modelo_ataque
-	return _modelo_limo
-
-
-## Intercambia al modelo de ataque (o vuelve al normal) dentro de una compresión
-## gelatinosa: el cambio de malla ocurre en el punto de máxima contracción, donde
-## el ojo no distingue un modelo del otro.
-func _intercambiar_modelo_ataque(a_ataque: bool) -> void:
-	if a_ataque == _en_modelo_ataque:
+## Contracción gelatinosa de ataque (sin cambio de malla): el limo se comprime
+## antes de escupir el hueso y rebota elásticamente al soltarlo.
+func _contraccion_ataque() -> void:
+	if not _modelo_limo or not is_instance_valid(_modelo_limo) or _modelo_limo == self:
 		return
-	if not _modelo_ataque or not is_instance_valid(_modelo_ataque) or not _modelo_limo or not is_instance_valid(_modelo_limo):
-		return
-	if current_state == State.DYING or current_state == State.DEAD:
-		return
-
-	var viejo: Node3D = _modelo_activo()
-	_intercambiando = true
-	# 1. Contracción rápida (squash) que oculta el pop
+	_tween_escala_activo = true
 	var tw := create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(viejo, "scale:y", 0.55, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw.tween_property(viejo, "scale:x", 1.25, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw.tween_property(viejo, "scale:z", 1.25, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(_modelo_limo, "scale:y", 0.55, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(_modelo_limo, "scale:x", 1.25, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(_modelo_limo, "scale:z", 1.25, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.chain().tween_property(_modelo_limo, "scale", Vector3.ONE * 1.15, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.chain().tween_property(_modelo_limo, "scale", Vector3.ONE, 0.35).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	tw.chain().tween_callback(func() -> void:
-		# 2. Punto de máxima compresión: intercambio de malla invisible
-		_en_modelo_ataque = a_ataque
-		_modelo_limo.visible = not a_ataque
-		_modelo_ataque.visible = a_ataque
-		_modelo_limo.scale = Vector3.ONE
-		_modelo_ataque.scale = Vector3.ONE
-	)
-	# 3. Expansión elástica de retorno (jelly pop)
-	var nuevo: Node3D = _modelo_ataque if a_ataque else _modelo_limo
-	tw.chain().tween_property(nuevo, "scale", Vector3.ONE * 1.15, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.chain().tween_property(nuevo, "scale", Vector3.ONE, 0.35).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	tw.chain().tween_callback(func() -> void:
-		_intercambiando = false
+		_tween_escala_activo = false
 	)
 
 
@@ -233,11 +202,8 @@ func take_damage(amount: float) -> void:
 func _on_state_dying() -> void:
 	# Congelar deformación y escala neutra antes de la disolución
 	_impacto_tiempo = -1.0
-	_en_modelo_ataque = false
-	if _modelo_ataque and is_instance_valid(_modelo_ataque):
-		_modelo_ataque.visible = false
+	_tween_escala_activo = false
 	if _modelo_limo and is_instance_valid(_modelo_limo) and _modelo_limo != self:
-		_modelo_limo.visible = true
 		_modelo_limo.scale = Vector3.ONE
 	super._on_state_dying()
 	AudioManager.play_sfx("imp_death")
@@ -265,8 +231,6 @@ func _process_shooting(delta):
 			is_throwing = false
 			is_idle_pause = true
 			shoot_timer = randf_range(pausa_idle_min, pausa_idle_max)
-			# Fin del ataque: volver al modelo normal con la misma deformación
-			_intercambiar_modelo_ataque(false)
 	elif is_idle_pause:
 		shoot_timer -= delta
 		if shoot_timer <= 0:
@@ -276,15 +240,14 @@ func _process_shooting(delta):
 		_iniciar_lanzamiento()
 
 
-## Al atacar se cambia al modelo de ataque dentro de una compresión gelatinosa
-## (el intercambio de malla queda oculto en el punto de máxima contracción).
+## Contracción gelatinosa previa al lanzamiento del hueso.
 func _iniciar_lanzamiento() -> void:
 	is_throwing = true
 	has_thrown = false
 	throw_anim_timer = 0.0
 	throw_anim_duration = 0.9
 	current_throw_time = 0.55
-	_intercambiar_modelo_ataque(true)
+	_contraccion_ataque()
 
 
 func _throw_projectile() -> void:
