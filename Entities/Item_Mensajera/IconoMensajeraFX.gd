@@ -29,6 +29,11 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	_icono = get_node_or_null("Icono") as Sprite3D
 	_vfx_luz = get_node_or_null("VFXLuz") as Node3D
+	# Reproducir la animación del VFX de área (sin ella el área queda gris/estática)
+	if _vfx_luz:
+		var vfx_anim := _vfx_luz.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if vfx_anim and vfx_anim.has_animation("main"):
+			vfx_anim.play("main")
 	# Inactivo hasta pasar el retardo de armado
 	set_deferred("monitoring", false)
 	get_tree().create_timer(retardo_armado).timeout.connect(func():
