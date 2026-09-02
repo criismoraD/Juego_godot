@@ -7,8 +7,8 @@ render_mode blend_mix, depth_draw_opaque, cull_back;
 //   la textura "fluye" hacia abajo en bucle (scroll UV) simulando
 //   líquido viscoso escurriéndose por el cuerpo.
 
-uniform sampler2D albedo_texture : source_color, filter_linear_mipmap;
-uniform sampler2D slime_texture : source_color, filter_linear_repeat;
+uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D slime_texture : source_color, filter_linear_mipmap, repeat_enable;
 uniform vec4 slime_tint : source_color = vec4(0.4, 1.0, 0.5, 1.0);
 uniform float slime_intensity : hint_range(0.0, 1.0) = 0.55; // Fuerza de la capa viscosa
 uniform float flow_speed : hint_range(0.0, 1.0) = 0.12; // Velocidad del flujo hacia abajo
