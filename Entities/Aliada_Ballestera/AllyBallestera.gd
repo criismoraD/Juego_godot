@@ -74,6 +74,9 @@ const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_P
 const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
 var _particulas_pisada: GPUParticles3D = null
+var _sfx_correr: AudioStreamPlayer = null  ## Loop de armadura mientras corre
+const SONIDO_CORRER_ARMADURA: String = "res://TEST_/sonido_correr_armadura.wav"
+const VOLUMEN_CORRER_DB: float = 16.0  ## Fuente extremadamente silenciosa (RMS 0.7%): +16 dB
 
 var anim_player: AnimationPlayer
 var skeleton: Skeleton3D
@@ -139,6 +142,7 @@ func _ready():
 	_configurar_arma_ballesta()
 	_crear_hitbox()
 	_configurar_particulas_pisada()
+	_configurar_sonido_correr()
 
 	var _sombra := SombraPersonaje.new()
 	add_child(_sombra)
@@ -227,6 +231,37 @@ func _particulas_pisada_emitir() -> void:
 		return
 	var corriendo := en_despliegue or (anim_player and anim_player.current_animation.contains("CORRER"))
 	_particulas_pisada.emitting = corriendo and current_state != State.DYING and current_state != State.DEAD and paralisis_timer <= 0.0
+
+
+## Loop de sonido de armadura mientras la ballestera corre (entrada y retirada).
+func _configurar_sonido_correr() -> void:
+	if _sfx_correr and is_instance_valid(_sfx_correr):
+		return
+	var stream: AudioStream = load(SONIDO_CORRER_ARMADURA)
+	if not stream:
+		return
+	_sfx_correr = AudioStreamPlayer.new()
+	_sfx_correr.name = "SfxCorrerArmadura"
+	_sfx_correr.stream = stream
+	_sfx_correr.volume_db = VOLUMEN_CORRER_DB
+	_sfx_correr.bus = "Master"
+	_sfx_correr.add_to_group("pausable_audio")
+	add_child(_sfx_correr)
+
+
+## Enciende o apaga el loop según si está corriendo (anim CORRER).
+func _actualizar_sonido_correr() -> void:
+	if not _sfx_correr or not is_instance_valid(_sfx_correr):
+		return
+	var corriendo: bool = (
+		(anim_player and anim_player.current_animation.contains("CORRER"))
+		and current_state != State.DYING
+		and current_state != State.DEAD
+	)
+	if corriendo and not _sfx_correr.playing:
+		_sfx_correr.play()
+	elif not corriendo and _sfx_correr.playing:
+		_sfx_correr.stop()
 
 
 func _exit_tree():
@@ -409,9 +444,12 @@ func _crear_hitbox():
 func _process(delta: float):
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
+	_actualizar_sonido_correr()
 	if current_state == State.DYING or current_state == State.DEAD:
 		_restaurar_torso()
 		_ocultar_icono_aturdimiento()
+		if _sfx_correr and _sfx_correr.playing:
+			_sfx_correr.stop()
 		return
 
 	if en_despliegue:

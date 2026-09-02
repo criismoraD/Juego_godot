@@ -754,6 +754,22 @@ light_energy = 0.708
 light_indirect_energy = 0.208
 light_cull_mask = 7
 
+[node name="OmniLight3D8" type="OmniLight3D" parent="." unique_id=264391587]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -9.276741, 6.8470106, -7.8551574)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 0.708
+light_indirect_energy = 0.208
+light_cull_mask = 7
+
+[node name="OmniLight3D9" type="OmniLight3D" parent="." unique_id=822415265]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -3.873211, 1.4749467, -3.2978258)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 0.708
+light_indirect_energy = 0.208
+light_cull_mask = 7
+
 [node name="OmniLight3D5" type="OmniLight3D" parent="." unique_id=1047598206]
 transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.4027233, 4.386972, -4.0679297)
 layers = 3
