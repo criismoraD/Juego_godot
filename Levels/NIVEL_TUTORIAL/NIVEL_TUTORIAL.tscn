@@ -1,0 +1,994 @@
+[gd_scene format=3 uid="uid://xigqsvudk950r"]
+
+[ext_resource type="Environment" uid="uid://dla06m2nrcawf" path="res://Recursos_Compartidos/new_environment.tres" id="2_qcvbp"]
+[ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Entities/Jugador_Arquera/Player.tscn" id="4_1cr8j"]
+[ext_resource type="Script" uid="uid://dhksy0vksfyqc" path="res://System/Core/WaveSpawner.gd" id="5_spawner"]
+[ext_resource type="PackedScene" uid="uid://dh6gp8m68vbd3" path="res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn" id="6_an7ty"]
+[ext_resource type="PackedScene" uid="uid://dgatsttvqixnc" path="res://Entities/Enemigo_Goblin/Goblin.tscn" id="6_goblin"]
+[ext_resource type="PackedScene" uid="uid://db57wrw5vlbsc" path="res://Entities/Enemigo_Imp/ImpEnemy.tscn" id="7_i7crs"]
+[ext_resource type="PackedScene" uid="uid://cr61kgfu7qhp0" path="res://Entities/Ambiente_Escalera/ESCALERA.tscn" id="7_ladder"]
+[ext_resource type="PackedScene" uid="uid://d3x1a2b3c4d5e" path="res://Entities/Enemigo_Canonero/Canonero.tscn" id="8_koe3n"]
+[ext_resource type="PackedScene" uid="uid://dcqn4obnv8xjm" path="res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.tscn" id="8_qcvbp"]
+[ext_resource type="PackedScene" uid="uid://c7a4c82odgcle" path="res://Entities/Ambiente_Barrera_Limite/BarreraLimite.tscn" id="9_8uf3n"]
+[ext_resource type="PackedScene" uid="uid://d3e4f5g6h7i8j" path="res://Entities/Ambiente_Escudo/Escudo.tscn" id="10_j54d2"]
+[ext_resource type="PackedScene" uid="uid://v8ci5ta3tkkr" path="res://Entities/Ambiente_Plataforma_Oneway/PlataformaOneway.tscn" id="11_j5qtk"]
+[ext_resource type="PackedScene" uid="uid://c0gtu2yrqpnxw" path="res://UI/GameUI.tscn" id="15_gameui"]
+[ext_resource type="Texture2D" uid="uid://bvx7egiurhae4" path="res://UI/Assets/1frame.png" id="16_gfe6n"]
+[ext_resource type="VideoStream" uid="uid://yaua7cp2sunt" path="res://System/Videos/FONDo.ogv" id="16_nmxfx"]
+[ext_resource type="PackedScene" uid="uid://cbygqy1b5iiw7" path="res://Entities/Ambiente_Torre_2/torre_2.tscn" id="17_cx8r4"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Niebla/FogPlane.tscn" id="17_fogplane"]
+[ext_resource type="PackedScene" uid="uid://ca65fjxn6rl4a" path="res://Entities/Ambiente_Busto_Bronce/busto_bronce.tscn" id="17_qcvbp"]
+[ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Entities/Ambiente_Agua/WaterPlane.tscn" id="18_gpjsk"]
+[ext_resource type="PackedScene" uid="uid://c20j7pudi7arc" path="res://Entities/Ambiente_Base_Arquera/BASE_ARQUERA.tscn" id="19_mbwsw"]
+[ext_resource type="PackedScene" uid="uid://dusffdtovx70" path="res://Entities/Aliada_Arquera/AllyArcher.tscn" id="20_cayny"]
+[ext_resource type="PackedScene" uid="uid://d36lv4hhnbipo" path="res://Entities/Ambiente_Tronco/Tronco.tscn" id="25_cx8r4"]
+[ext_resource type="PackedScene" uid="uid://dx6jgap4y6f5n" path="res://Entities/Ambiente_Pilar/Pilar.glb" id="25_koe3n"]
+[ext_resource type="PackedScene" uid="uid://cb5c03pe088q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="25_pez01"]
+[ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Entities/Ambiente_Pinchos/PINCHO.glb" id="25_qcvbp"]
+[ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="26_cx8r4"]
+[ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Entities/Ambiente_Piso/PISO.glb" id="26_koe3n"]
+[ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Entities/Ambiente_Piso/PISO ALIADO.glb" id="28_072lj"]
+[ext_resource type="PackedScene" uid="uid://bmei2xlho4of8" path="res://Entities/Ambiente_Muro_Plataforma/Muro_Plataforma.tscn" id="29_ecyc1"]
+[ext_resource type="PackedScene" uid="uid://boae4yg408kxa" path="res://Entities/Ambiente_Rampa_Subida/Escena_rampa_nivel3.tscn" id="30_qlcu2"]
+[ext_resource type="PackedScene" uid="uid://bjn66i0gdcsyf" path="res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn" id="31_lhtjo"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Hojas/HojasPlane.tscn" id="32_dapvp"]
+[ext_resource type="PackedScene" uid="uid://ce4x7k7odgcle" path="res://Entities/Ambiente_Barrera_Limite/BarreraDestruyeFlechas.tscn" id="33_jrbhj"]
+[ext_resource type="PackedScene" uid="uid://t0whis8d7cuv" path="res://Entities/Enemigo_Gargola/Gargola.tscn" id="34_gargola"]
+[ext_resource type="PackedScene" uid="uid://b7v8x2y1w4n0k" path="res://UI/UI_Vida_Protagonista.tscn" id="35_uivida"]
+[ext_resource type="PackedScene" uid="uid://c5b8r2a3c4e5f" path="res://Entities/Enemigo_Bracero/Bracero.tscn" id="36_omov4"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Pajaros/PajarosPlane.tscn" id="37_pajaros"]
+[ext_resource type="Shader" uid="uid://bdmqy0jdcwtq0" path="res://System/Shaders/sombra_falsa.gdshader" id="38_sombrafalsa_shader"]
+[ext_resource type="Texture2D" uid="uid://uqrgdco7aeipv" path="res://Levels/NIVEL_TUTORIAL/sombra_falsa_nivel01.png" id="39_sombrafalsa_mask"]
+[ext_resource type="Shader" uid="uid://c4l5t5tlx7cbq" path="res://System/Shaders/tono_calido.gdshader" id="40_tonocalido"]
+[ext_resource type="Shader" uid="uid://bo028vclvrb74" path="res://System/Shaders/luz_haces_fija.gdshader" id="41_luz_haces_fija"]
+[ext_resource type="Texture2D" uid="uid://b7sqddmatavpl" path="res://VFX/Textures/T_basic1_vfx.PNG" id="42_dust_tex"]
+[ext_resource type="Script" uid="uid://dftm0y1dl2kf0" path="res://Entities/Ambiente_Torre/CaidaPiedrasTorre.gd" id="44_caidapiedras_script"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="45_arboleda"]
+[ext_resource type="PackedScene" uid="uid://sdvsbc3tkfaa" path="res://Entities/Ambiente_Enrredadera/Enrredadera.tscn" id="46_enrredadera"]
+[ext_resource type="Material" path="res://Entities/Ambiente_Torre/PLANO_ILUMINADO_MAT.tres" id="47_plano_mat"]
+[ext_resource type="Script" uid="uid://lxiohkrm1e63q" path="res://Levels/NIVEL_TUTORIAL/PuertaTrigger.gd" id="48_puerta_script"]
+[ext_resource type="PackedScene" uid="uid://c6475nhskw007" path="res://TEST_/Woodmetal_piso/Woodmetal_piso.glb" id="50_woodmetal"]
+[ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="52_shader_arboles"]
+[ext_resource type="Texture2D" uid="uid://busf7c4b0xduc" path="res://TEST_/Arboles amarillos D.png" id="55_arbolesamarillosD"]
+[ext_resource type="Texture2D" uid="uid://bnajvbrgm1f4t" path="res://TEST_/Pasto B.png" id="56_pastoB"]
+[ext_resource type="Texture2D" uid="uid://bb5iyjs2c0rvo" path="res://TEST_/Barricada A.png" id="57_barricadaA"]
+[ext_resource type="Texture2D" uid="uid://i5j00bo3m33j" path="res://TEST_/Barricada C.png" id="59_barricadaC"]
+[ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://TEST_/Bandera A.png" id="60_banderaA"]
+[ext_resource type="Texture2D" uid="uid://bxwp2vtq13j1c" path="res://TEST_/Carreta A.png" id="61_carretaA"]
+[ext_resource type="Script" uid="uid://qscz3oumbx5hv" path="res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.gd" id="Script_Level01"]
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
+dof_blur_far_distance = 45.0
+dof_blur_far_transition = 1.0
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_gfe6n"]
+viewport_path = NodePath("SubViewportFondo3D/SubViewport")
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_cx8r4"]
+dof_blur_far_enabled = true
+dof_blur_far_distance = 45.0
+dof_blur_far_transition = 1.0
+dof_blur_amount = 0.05
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_cx8r4"]
+viewport_path = NodePath("SubViewportFondo3D")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_medio_3d"]
+viewport_path = NodePath("SubViewportMedio3D")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_frente_3d"]
+viewport_path = NodePath("SubViewportFrente3D")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sombra_falsa"]
+shader = ExtResource("38_sombrafalsa_shader")
+shader_parameter/shadow_mask = ExtResource("39_sombrafalsa_mask")
+shader_parameter/shadow_color = Color(0.04, 0.05, 0.09, 1)
+shader_parameter/shadow_opacity = 0.52
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tono_calido"]
+shader = ExtResource("40_tonocalido")
+shader_parameter/warm_tint = Color(0.98, 0.74, 0.48, 1)
+shader_parameter/shadow_tint = Color(0.22, 0.14, 0.18, 1)
+shader_parameter/intensity = 0.28
+shader_parameter/saturation_boost = 1.06
+shader_parameter/contrast_boost = 1.04
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_luz_haces_fija"]
+shader = ExtResource("41_luz_haces_fija")
+shader_parameter/ray_color = Color(1, 0.9, 0.72, 0.22)
+shader_parameter/ray_density = 4.2
+shader_parameter/angle = -0.58
+
+[sub_resource type="Gradient" id="Gradient_dust"]
+offsets = PackedFloat32Array(0, 0.2, 0.75, 1)
+colors = PackedColorArray(1, 0.85, 0.5, 0, 1, 0.85, 0.5, 0.75, 1, 0.85, 0.5, 0.75, 1, 0.85, 0.5, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_dust"]
+gradient = SubResource("Gradient_dust")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_dust"]
+emission_shape = 3
+emission_box_extents = Vector3(16, 9, 3)
+direction = Vector3(0.5, -0.3, 0.1)
+spread = 30.0
+initial_velocity_min = 0.08
+initial_velocity_max = 0.25
+gravity = Vector3(0, -0.015, 0)
+scale_min = 0.015
+scale_max = 0.035
+color_ramp = SubResource("GradientTexture1D_dust")
+turbulence_enabled = true
+turbulence_noise_strength = 0.01
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dust"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("42_dust_tex")
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_dust"]
+material = SubResource("StandardMaterial3D_dust")
+size = Vector2(0.12, 0.12)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_arboles_amarillosD"]
+render_priority = 0
+shader = ExtResource("52_shader_arboles")
+shader_parameter/albedo_texture = ExtResource("55_arbolesamarillosD")
+shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
+shader_parameter/blur_amount = 2.4
+shader_parameter/wind_speed = 1.6
+shader_parameter/wind_strength = 0.035
+shader_parameter/flutter_speed = 3.2
+shader_parameter/flutter_strength = 0.012
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pastoB"]
+render_priority = 0
+shader = ExtResource("52_shader_arboles")
+shader_parameter/albedo_texture = ExtResource("56_pastoB")
+shader_parameter/tint_color = Color(1, 0.96, 0.9, 0.92)
+shader_parameter/blur_amount = 2.4
+shader_parameter/wind_speed = 1.6
+shader_parameter/wind_strength = 0.035
+shader_parameter/flutter_speed = 3.2
+shader_parameter/flutter_strength = 0.012
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaA"]
+render_priority = 0
+shader = ExtResource("52_shader_arboles")
+shader_parameter/albedo_texture = ExtResource("60_banderaA")
+shader_parameter/tint_color = Color(1, 1, 1, 1)
+shader_parameter/blur_amount = 1.0
+shader_parameter/wind_speed = 2.2
+shader_parameter/wind_strength = 0.06
+shader_parameter/flutter_speed = 4.5
+shader_parameter/flutter_strength = 0.02
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3xd07"]
+size = Vector3(0.9172363, 2.4794922, 6)
+
+[node name="Node3D" type="Node3D" unique_id=615207129]
+script = ExtResource("Script_Level01")
+velocidad_pacificos = 0.6
+offset_entre_pacificos = 0.6
+tamano_imagen_emisario = Vector2(200, 200)
+retroceso_parada_arqueras = 0.5
+delay_dialogo_pacifico = 0.5
+
+[node name="Lighting" type="Node3D" parent="." unique_id=1625041957]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting" unique_id=1150657961]
+transform = Transform3D(0.8290376, 0.3294379, -0.4520935, 0, 0.809017, 0.5877852, 0.5591929, -0.4872958, 0.6707056, -5.7785883, 2.29496, 2.7377172)
+layers = 7
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 0.85
+light_cull_mask = 7
+shadow_enabled = true
+shadow_opacity = 0.8
+shadow_blur = 0.6
+directional_shadow_split_2 = 0.25
+directional_shadow_split_3 = 0.55
+directional_shadow_blend_splits = true
+directional_shadow_fade_start = 0.85
+directional_shadow_max_distance = 65.0
+
+[node name="DirectionalLight3D2" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=775095667]
+transform = Transform3D(0.37613553, -0.35728383, 0.9424466, 0.18451758, 1.107951, 0.26640055, -0.8248061, 0.084928155, 0.48937958, 11.101227, 3.21533, -2.8423324)
+layers = 7
+light_color = Color(0.76, 0.86, 0.98, 1)
+light_energy = 0.35
+light_cull_mask = 7
+shadow_opacity = 0.0
+shadow_blur = 0.0
+
+[node name="LuzCentroPiso" type="SpotLight3D" parent="Lighting" unique_id=1849203810]
+transform = Transform3D(0.9659258, 0.1294095, -0.2241439, 0, 0.8660254, 0.5, 0.258819, -0.4829629, 0.8365163, 1.5, 4.5, 1.2)
+layers = 7
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.2
+light_cull_mask = 7
+shadow_enabled = true
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzTorreDiagonal" type="SpotLight3D" parent="Lighting" unique_id=1928471029]
+transform = Transform3D(0.8660254, 0.25, -0.4330127, 0, 0.8660254, 0.5, 0.5, -0.4330127, 0.75, -4.5, 7.5, 3.5)
+layers = 7
+light_color = Color(1, 0.94, 0.82, 1)
+light_energy = 1.35
+light_cull_mask = 7
+shadow_enabled = true
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 16.0
+spot_angle = 46.0
+spot_angle_attenuation = 1.5
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Lighting" unique_id=1658111597]
+environment = ExtResource("2_qcvbp")
+
+[node name="PRESPECTIVA" type="Camera3D" parent="Lighting" unique_id=61242936]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 0
+attributes = SubResource("CameraAttributesPractical_frente")
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_1cr8j")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 0.05)
+rotacion_torso_escalera = 180.0
+color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
+escala_min_salto = 0.01
+escala_max_salto = 0.05
+
+[node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
+transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
+
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1608648112) index="0" unique_id=1978748589]
+bones/0/position = Vector3(4.172325e-07, -0.35407498, -40.838314)
+bones/0/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
+bones/1/rotation = Quaternion(-0.05186307, 0, 0, 0.9986542)
+bones/2/rotation = Quaternion(-8.5681684e-08, 0, 0, 1)
+bones/3/rotation = Quaternion(1.1175873e-08, 0, 0, 1)
+bones/4/position = Vector3(-2.842171e-14, 4.568968, 9.536743e-07)
+bones/4/rotation = Quaternion(0.051863156, 0, 0, 0.9986542)
+bones/5/position = Vector3(2.842171e-14, 1.8695375, 0.49844107)
+bones/5/rotation = Quaternion(7.231517e-09, 0, 0, 1)
+bones/7/rotation = Quaternion(-0.5764751, -0.40513003, 0.5884839, -0.3965259)
+bones/8/position = Vector3(1.7881393e-07, 3.3792224, -3.2037497e-06)
+bones/8/rotation = Quaternion(-0.012218612, 0.0003671051, -0.03003127, 0.9994742)
+bones/9/position = Vector3(-1.1920929e-07, 8.645224, -7.4505806e-06)
+bones/9/rotation = Quaternion(-0.01255417, -0.0015517239, 0.12266051, 0.99236804)
+bones/10/rotation = Quaternion(-0.049686134, 0.032871086, -0.060879674, 0.9963656)
+bones/11/position = Vector3(-1.5110818, 1.2801869, 0.59453773)
+bones/11/rotation = Quaternion(0.13405713, 0.056813844, 0.3860492, 0.91091543)
+bones/12/position = Vector3(-0.10483289, 1.650899, 7.4505806e-07)
+bones/12/rotation = Quaternion(0.04131712, 1.2863235e-07, -5.9655584e-08, 0.9991461)
+bones/13/position = Vector3(0.034588814, 1.7884665, -1.6272068e-05)
+bones/13/rotation = Quaternion(-0.11507522, -3.750203e-07, -2.4282565e-07, 0.99335676)
+bones/14/position = Vector3(0.070244074, 1.4120591, 3.2484531e-06)
+bones/15/position = Vector3(-1.8568518, 4.4084377, 0.12695336)
+bones/15/rotation = Quaternion(-0.017732747, -0.0018451171, 0.103474304, 0.9944723)
+bones/16/rotation = Quaternion(0.009211149, -8.38226e-08, -1.8161565e-08, 0.99995756)
+bones/17/rotation = Quaternion(0.0024612672, 3.259639e-08, 1.17347014e-07, 0.99999696)
+bones/18/position = Vector3(0.00015568733, 1.0318339, 8.940697e-07)
+bones/19/position = Vector3(-0.59761065, 4.313531, -0.12906338)
+bones/19/rotation = Quaternion(0.018429467, 0.0007378409, 0.040004417, 0.9990293)
+bones/20/rotation = Quaternion(-0.016587397, 1.341289e-07, 2.608062e-08, 0.99986243)
+bones/21/position = Vector3(0.0006893873, 1.5864649, 2.0079315e-06)
+bones/21/rotation = Quaternion(-0.09833217, -1.9027163e-07, -6.192748e-08, 0.99515367)
+bones/22/position = Vector3(-0.0019598007, 1.3681722, -3.643334e-06)
+bones/23/position = Vector3(0.7200104, 4.3551745, -0.06481641)
+bones/23/rotation = Quaternion(0.00958021, -0.00055062224, -0.05736038, 0.9983074)
+bones/24/position = Vector3(0.00045859814, 1.4447268, 2.5965273e-06)
+bones/24/rotation = Quaternion(-0.01837797, 8.616189e-08, 5.379297e-08, 0.99983114)
+bones/25/position = Vector3(0.00017356873, 1.4057366, -4.1648746e-06)
+bones/25/rotation = Quaternion(-0.09926513, -3.741588e-08, 2.4378451e-08, 0.995061)
+bones/26/position = Vector3(-0.00063198805, 1.178915, 1.3880432e-05)
+bones/27/position = Vector3(1.7344513, 3.984641, 0.11187081)
+bones/27/rotation = Quaternion(-0.021911193, 0.0053883535, -0.23875229, 0.97081834)
+bones/28/position = Vector3(-0.0005156994, 1.2034165, 1.3962388e-05)
+bones/28/rotation = Quaternion(0.004810985, -1.8533537e-07, -9.825568e-08, 0.99998844)
+bones/29/position = Vector3(-0.000608325, 0.96407485, -4.440546e-06)
+bones/29/rotation = Quaternion(-0.093687035, 2.312867e-07, 1.7278539e-07, 0.9956017)
+bones/30/position = Vector3(0.0011235476, 0.810724, -6.504357e-06)
+bones/31/rotation = Quaternion(0.5647823, -0.4136402, 0.5982046, 0.3899666)
+bones/32/position = Vector3(4.7683716e-07, 3.3792238, 1.5348196e-06)
+bones/32/rotation = Quaternion(-0.025312511, -0.003728108, 0.14566591, 0.98900294)
+bones/33/position = Vector3(8.6426735e-07, 9.079689, 5.0365925e-06)
+bones/33/rotation = Quaternion(0.0040803314, -0.01220512, -0.3170415, 0.9483244)
+bones/34/position = Vector3(-2.682209e-06, 10.081579, 4.902482e-06)
+bones/34/rotation = Quaternion(-0.04722054, -0.017192982, 0.079916276, 0.99553406)
+bones/35/position = Vector3(1.7011878, 1.413155, 0.7137493)
+bones/35/rotation = Quaternion(0.14562711, -0.057562, -0.3630608, 0.91851306)
+bones/36/position = Vector3(0.22018528, 1.8460376, 9.447336e-06)
+bones/36/rotation = Quaternion(0.0098526785, -2.9058674e-07, -1.5833255e-07, 0.9999515)
+bones/37/position = Vector3(-0.02051115, 1.8437076, -7.033348e-06)
+bones/37/rotation = Quaternion(0.037672434, 6.337492e-07, 3.2060254e-07, 0.99929017)
+bones/38/position = Vector3(-0.19967484, 1.3860097, 1.0728836e-06)
+bones/39/position = Vector3(1.9567345, 4.399867, 0.057476938)
+bones/39/rotation = Quaternion(-0.0041871276, 0.00037299265, -0.088708065, 0.9960488)
+bones/40/rotation = Quaternion(0.012512219, 1.499547e-07, 1.471605e-07, 0.99992174)
+bones/41/position = Vector3(-0.0031855702, 1.415621, -4.1276217e-06)
+bones/41/rotation = Quaternion(-0.06556282, -3.1266578e-07, -3.40199e-07, 0.99784845)
+bones/42/position = Vector3(0.004738033, 1.1826587, 1.5199184e-06)
+bones/43/position = Vector3(0.6385516, 4.51495, -0.0335838)
+bones/43/rotation = Quaternion(-0.020557674, 0.0004321621, -0.021012211, 0.99956775)
+bones/44/position = Vector3(-0.00053880364, 1.6362386, 2.4810433e-06)
+bones/44/rotation = Quaternion(0.013825167, 1.3971177e-07, 5.169336e-08, 0.99990445)
+bones/45/position = Vector3(-0.002221495, 1.5418923, 7.022172e-06)
+bones/45/rotation = Quaternion(-0.044346407, -1.3470867e-07, -6.875268e-08, 0.9990162)
+bones/46/position = Vector3(0.0027600229, 1.2750552, -4.902482e-06)
+bones/47/position = Vector3(-0.7841947, 4.388388, 0.037491307)
+bones/47/rotation = Quaternion(-0.032225695, -0.0021477996, 0.06646898, 0.99726564)
+bones/48/position = Vector3(0.00041094422, 1.3775269, -2.0861626e-07)
+bones/48/rotation = Quaternion(-0.0020668136, -1.0099052e-07, -3.3062022e-08, 0.99999785)
+bones/49/position = Vector3(0.00059998035, 1.3798623, 3.6358833e-06)
+bones/49/rotation = Quaternion(0.024199499, 5.525525e-08, 1.6768716e-08, 0.99970716)
+bones/50/position = Vector3(-0.0010094345, 1.0266852, -4.924834e-06)
+bones/51/rotation = Quaternion(-0.0535197, -0.011677546, 0.21285582, 0.97554684)
+bones/52/position = Vector3(-0.0008610189, 1.1855118, 6.146729e-06)
+bones/52/rotation = Quaternion(0.044743046, 1.16532e-10, -6.9919226e-10, 0.9989985)
+bones/53/position = Vector3(-0.0011895895, 1.0052581, 4.172325e-06)
+bones/53/rotation = Quaternion(-0.15431401, 6.327292e-08, -5.0680196e-08, 0.98802185)
+bones/54/position = Vector3(0.0020505488, 0.72995555, -2.451241e-06)
+bones/55/rotation = Quaternion(-0.0015378789, -0.028171344, 0.9981175, -0.05445568)
+bones/56/rotation = Quaternion(-0.025862345, -0.0010414954, 0.04024191, 0.99885464)
+bones/57/rotation = Quaternion(0.4979976, 0.0033084385, -0.0018999152, 0.86717004)
+bones/58/rotation = Quaternion(0.297626, -0.10716862, 0.033643663, 0.9480516)
+bones/60/rotation = Quaternion(0.0016130627, -0.02962677, 0.99807584, 0.05444518)
+bones/61/rotation = Quaternion(-0.020913921, 0.0008450082, -0.040281884, 0.99896914)
+bones/62/rotation = Quaternion(0.49585, -0.0030770455, 0.0017571901, 0.868401)
+bones/63/rotation = Quaternion(0.29675886, 0.106778584, -0.03341305, 0.9483755)
+
+[node name="BoneAttach_Arco" parent="Player/ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
+transform = Transform3D(0.054257803, 0.97654355, -0.20836914, -0.9961719, 0.06726051, 0.055827394, 0.068532914, 0.20454228, 0.9764552, 22.01161, -0.32546687, -48.460365)
+
+[node name="BoneAttach_Flecha" parent="Player/ArqueraModel/Armature/Skeleton3D" index="2" unique_id=1617127062]
+transform = Transform3D(0.1440695, -0.9648233, 0.21990779, 0.98453426, 0.16213691, 0.06635452, -0.09967554, 0.2069471, 0.9732611, -22.011608, -1.5592103, -48.460354)
+
+[node name="WaveSpawner" type="Node3D" parent="." unique_id=818768354]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 4.746284, 0.6275799, 0)
+script = ExtResource("5_spawner")
+escena_goblin = ExtResource("6_goblin")
+escena_goblin_girl = ExtResource("6_an7ty")
+escena_imp = ExtResource("7_i7crs")
+escena_canonero = ExtResource("8_koe3n")
+escena_gargola = ExtResource("34_gargola")
+intervalo_aparicion = 3.0
+probabilidad_goblin_girl = 0.0
+probabilidad_imp = 1.0
+probabilidad_igual = true
+escena_imp_escudo = ExtResource("8_qcvbp")
+
+[node name="SpawnMarker" type="Marker3D" parent="WaveSpawner" unique_id=1697843293]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.7735796, 0)
+gizmo_extents = 0.5
+
+[node name="LIMITZONE" parent="." unique_id=2108357977 instance=ExtResource("9_8uf3n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.736953, 0.15665722, -0.18122053)
+collision_layer = 512
+
+[node name="LIMITZONE2" parent="." unique_id=1939650596 instance=ExtResource("9_8uf3n")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.998319, 1.3309662, -0.022488594)
+collision_layer = 512
+
+[node name="PlataformaOneway1" parent="." unique_id=725119582 instance=ExtResource("11_j5qtk")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -7.617247, 1.7013383, -0.37669206)
+
+[node name="Ladder1" parent="PlataformaOneway1" unique_id=310400546 instance=ExtResource("7_ladder")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -2.9612694, 0.1503278)
+
+[node name="PlataformaOneway2" parent="." unique_id=37264662 instance=ExtResource("11_j5qtk")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -8.364106, 3.248637, -0.37669206)
+
+[node name="Ladder2" parent="PlataformaOneway2" unique_id=282977133 instance=ExtResource("7_ladder")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
+
+[node name="PlataformaOneway3" parent="." unique_id=1626444728 instance=ExtResource("11_j5qtk")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -9.14372, 4.721031, -0.37669206)
+
+[node name="Ladder3" parent="PlataformaOneway3" unique_id=238257157 instance=ExtResource("7_ladder")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
+
+[node name="CaidaPiedrasTorre" type="Node3D" parent="." unique_id=1948201999]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 4.2, 0)
+script = ExtResource("44_caidapiedras_script")
+
+[node name="GameUI" parent="." unique_id=370663490 instance=ExtResource("15_gameui")]
+
+[node name="UIVidaProtagonista" parent="." unique_id=2104918274 instance=ExtResource("35_uivida")]
+
+[node name="SubViewportFondo3D" type="SubViewport" parent="." unique_id=209823411]
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+render_target_update_mode = 4
+
+[node name="FogPlane" parent="SubViewportFondo3D" unique_id=1524639475 instance=ExtResource("17_fogplane")]
+transform = Transform3D(0.19913417, 0, 0, 0, 0.15469623, 0, 0, 0, 1.0000006, 1.680629, -0.25954807, -35.018787)
+layers = 2
+skeleton = NodePath("../../..")
+
+[node name="FONDO ANIMADO" type="Sprite3D" parent="SubViewportFondo3D" unique_id=625058086]
+transform = Transform3D(1.9454114, 0, 0, 0, 1.55, 0, 0, 0, 1.55, -2.062877, 2.3371563, -39.5)
+layers = 2
+texture = SubResource("ViewportTexture_gfe6n")
+
+[node name="BUSTO_BRONCE2" parent="SubViewportFondo3D" unique_id=1905570369 instance=ExtResource("17_qcvbp")]
+transform = Transform3D(3.705421, 0.46153456, -3.6189556, -0.6427276, 5.1601257, 3.7732615e-08, 3.591205, 0.44730818, 3.7340539, 5.822, -2.15, -30.774483)
+
+[node name="012" parent="SubViewportFondo3D/BUSTO_BRONCE2" index="1" unique_id=920637542]
+transform = Transform3D(0.8946598, -0.07065181, 0.4411258, 0.013340352, 0.99119985, 0.13169722, -0.44654828, -0.111939624, 0.8877298, 0.19106698, 0.07903123, 0.71204615)
+
+[node name="SpotLight3D" type="SpotLight3D" parent="SubViewportFondo3D/BUSTO_BRONCE2/012" index="1" unique_id=900513883]
+transform = Transform3D(0.07183692, -0.13120604, -0.12085824, 0.06142813, -0.10412672, 0.14955424, -0.16747627, -0.09447154, 0.0030139051, -0.55454445, 1.494175, 0.030014038)
+layers = 7
+light_color = Color(1, 0.7338797, 0.56962836, 1)
+light_energy = 35.0
+spot_range = 6.478371
+spot_angle = 27.815594
+
+[node name="SpotLight3D2" type="SpotLight3D" parent="SubViewportFondo3D/BUSTO_BRONCE2/012" index="2" unique_id=660652912]
+transform = Transform3D(0.14078517, 0.03251133, -0.12690479, 0.042317644, -0.18759061, -0.0011120541, -0.123979904, -0.027111497, -0.14448601, -0.73419785, 0.5290687, -0.44583607)
+layers = 7
+light_color = Color(1, 0.7338797, 0.56962836, 1)
+light_energy = 50.0
+spot_range = 6.478371
+spot_angle = 27.815594
+
+[node name="BUSTO_BRONCE3" parent="SubViewportFondo3D" unique_id=1432659507 instance=ExtResource("17_qcvbp")]
+transform = Transform3D(4.324531, 0.9981095, -2.3026528, -0.60623753, 4.8671656, 0.9711718, 2.4353456, -0.5607815, 4.33066, 5.822, -2.15, -35.004)
+visible = false
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportFondo3D" unique_id=1162834119]
+size = Vector2i(1505, 1080)
+render_target_update_mode = 4
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="SubViewportFondo3D/SubViewport" unique_id=763944868]
+custom_minimum_size = Vector2(1504, 1080)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stream = ExtResource("16_nmxfx")
+autoplay = true
+expand = true
+loop = true
+
+[node name="TextureRect" type="TextureRect" parent="SubViewportFondo3D/SubViewport" unique_id=22287514]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("16_gfe6n")
+expand_mode = 1
+
+[node name="CamaraFondoDOF" type="Camera3D" parent="SubViewportFondo3D" unique_id=130995211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 2
+attributes = SubResource("CameraAttributesPractical_cx8r4")
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="PISO ALIADO2" parent="SubViewportFondo3D" unique_id=130398847 instance=ExtResource("28_072lj")]
+transform = Transform3D(5.8257546, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -9.008362, -0.60681725, -1.4656932)
+
+[node name="SubViewportMedio3D" type="SubViewport" parent="." unique_id=164925320]
+transparent_bg = true
+msaa_3d = 2
+screen_space_aa = 1
+size = Vector2i(1152, 648)
+render_target_update_mode = 4
+
+[node name="CamaraMedio" type="Camera3D" parent="SubViewportMedio3D" unique_id=912225740]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0601563, 3.265016, 40.971046)
+cull_mask = 4
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="SubViewportFrente3D" type="SubViewport" parent="." unique_id=164925310]
+transparent_bg = true
+handle_input_locally = false
+msaa_3d = 2
+screen_space_aa = 1
+size = Vector2i(1920, 1080)
+render_target_update_mode = 4
+
+[node name="CamaraFrente" type="Camera3D" parent="SubViewportFrente3D" unique_id=912225730]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+cull_mask = 1048569
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="Compositor3D" type="CanvasLayer" parent="." unique_id=1168423000]
+layer = 20
+
+[node name="Fondo3DRect" type="TextureRect" parent="Compositor3D" unique_id=1287558300]
+texture_filter = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_cx8r4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Medio3DRect" type="TextureRect" parent="Compositor3D" unique_id=1380745700]
+texture_filter = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_medio_3d")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Frente3DRect" type="TextureRect" parent="Compositor3D" unique_id=1380745600]
+texture_filter = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("ViewportTexture_frente_3d")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SombraFalsaRect" type="ColorRect" parent="Compositor3D" unique_id=1587391024]
+material = SubResource("ShaderMaterial_sombra_falsa")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TonoCalidoRect" type="ColorRect" parent="Compositor3D" unique_id=1672391099]
+material = SubResource("ShaderMaterial_tono_calido")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LuzHacesFijaRect" type="ColorRect" parent="Compositor3D" unique_id=1938201948]
+material = SubResource("ShaderMaterial_luz_haces_fija")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9324427, -0.17290789, -12.304441)
+layers = 2
+
+[node name="TestCube-BASE_ALIADa" parent="." unique_id=1864087643 instance=ExtResource("19_mbwsw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.782, -0.843, -1.6083212)
+mesh_size = Vector3(5, 2, 6)
+uv_scale_sides = Vector2(0.2, 0.4)
+uv_scale_top = Vector2(0.1, 0.2)
+blend_sharpness = 4.0
+normal_intensity = 0.2
+displacement_scale_y = 0.05
+displacement_scale_xz = 0.264
+roughness = 1.0
+bevel_radius = 0.15
+
+[node name="TestCube2-BASE_ENEMIGA" parent="." unique_id=1680604205 instance=ExtResource("19_mbwsw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.94, -0.843, -0.888)
+mesh_size = Vector3(17, 2, 3.855)
+subdivide_width = 10
+subdivide_height = 10
+subdivide_depth = 10
+uv_scale_sides = Vector2(0.2, 0.4)
+uv_scale_top = Vector2(0.2, 0.5)
+blend_sharpness = 4.0
+normal_intensity = 0.2
+displacement_scale_y = 0.0
+displacement_scale_xz = 0.166
+bevel_radius = 0.15
+
+[node name="EscudoDestruible3" parent="." unique_id=831090704 instance=ExtResource("10_j54d2")]
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -8.159778, 4.582726, -0.10453305)
+golpes_para_destruir = 4
+intensidad_flash = 2.5
+fuerza_explosion = 1.0
+fuerza_horizontal = -2.0
+fuerza_vertical = 0.0
+torque_min = 0.0
+torque_max = 0.5
+tiempo_congelar = 4.0
+
+[node name="EscudoDestruible4" parent="." unique_id=343112744 instance=ExtResource("10_j54d2")]
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -7.381792, 3.0993502, -0.104533106)
+golpes_para_destruir = 4
+intensidad_flash = 2.5
+fuerza_explosion = 1.0
+fuerza_horizontal = -2.0
+fuerza_vertical = 0.0
+torque_min = 0.0
+torque_max = 0.5
+tiempo_congelar = 4.0
+
+[node name="EscudoDestruible5" parent="." unique_id=354870652 instance=ExtResource("10_j54d2")]
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -6.6350684, 1.5966773, -0.10453305)
+golpes_para_destruir = 4
+intensidad_flash = 2.5
+fuerza_explosion = 1.0
+fuerza_horizontal = -2.0
+fuerza_vertical = 0.0
+torque_min = 0.0
+torque_max = 0.5
+tiempo_congelar = 4.0
+
+[node name="EscudoDestruible6" parent="." unique_id=134499812 instance=ExtResource("10_j54d2")]
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -6.516018, 0.18503836, -0.104533106)
+golpes_para_destruir = 4
+intensidad_flash = 2.5
+fuerza_explosion = 1.0
+fuerza_horizontal = -2.0
+fuerza_vertical = 0.0
+torque_min = 0.0
+torque_max = 0.5
+tiempo_congelar = 4.0
+
+[node name="ParticulasPolvoLuminoso" type="GPUParticles3D" parent="." unique_id=1874920194]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3.5, 0)
+layers = 7
+amount = 120
+lifetime = 8.0
+preprocess = 4.0
+randomness = 0.5
+visibility_aabb = AABB(-18, -10, -5, 36, 20, 10)
+process_material = SubResource("ParticleProcessMaterial_dust")
+draw_pass_1 = SubResource("QuadMesh_dust")
+
+[node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
+transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
+
+[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=1726377201]
+visible = false
+material_override = ExtResource("47_plano_mat")
+
+[node name="TORRE" parent="TORRE" index="1" unique_id=1986805220]
+transform = Transform3D(1.0111401, 0, 0, 0, 1.0001929, 0, 0, 0, 1.0001929, -0.002997756, 0, 0)
+layers = 2
+
+[node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.8802323, 3.1431754, -0.02)
+idle_max = 2.0
+
+[node name="AllyArcher2" parent="." unique_id=1802001803 instance=ExtResource("20_cayny")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.1104116, 1.585446, -0.02)
+idle_max = 2.0
+
+[node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.092516, -0.20376292, 3.083572)
+
+[node name="Pez" parent="." unique_id=741029831 instance=ExtResource("25_pez01")]
+transform = Transform3D(1, 0, 0, 0, 0.59464955, 0, 0, 0, 1, 7.7409735, -0.46706888, 2.211814)
+
+[node name="Pez2" parent="." unique_id=1187899457 instance=ExtResource("25_pez01")]
+transform = Transform3D(0.8312861, 0, 0, 0, 0.6332924, 0, 0, 0, 1.450843, 8.459318, -0.38978657, 2.7503676)
+
+[node name="PINCHO" parent="." unique_id=1272800596 instance=ExtResource("25_qcvbp")]
+transform = Transform3D(0.5052033, 0.32352856, 0.009941371, -0.29118463, 0.46231574, -0.24794276, -0.14135437, 0.20394458, 0.54628336, -6.318142, 0.1362295, 0.826589)
+
+[node name="PINCHO5" parent="." unique_id=975363423 instance=ExtResource("25_qcvbp")]
+transform = Transform3D(0.38889393, 0.3764421, 0.03367601, -0.16841969, 0.7789061, -0.17040402, -0.07277604, 0.20903748, 0.5743069, -6.480166, 0.006891027, 0.51001906)
+
+[node name="PINCHO2" parent="." unique_id=1487982446 instance=ExtResource("25_qcvbp")]
+transform = Transform3D(0.44602785, 0.54782546, -0.019494671, -0.38826168, 0.57895917, -0.17260231, -0.10154799, 0.19259633, 0.57430685, -6.268942, 0.1362295, 0.46189582)
+
+[node name="PINCHO3" parent="." unique_id=2048260845 instance=ExtResource("25_qcvbp")]
+transform = Transform3D(0.25721568, 0.4815443, 0.13402732, -0.3615131, 0.35619125, -0.12463923, -0.13918827, -0.03525476, 0.5714033, -6.33541, -0.011719421, 0.8468009)
+
+[node name="PINCHO4" parent="." unique_id=423758153 instance=ExtResource("25_qcvbp")]
+transform = Transform3D(0.38059038, 0.41478068, 0.025668446, -0.1864259, 0.7647175, -0.17179276, -0.07277604, 0.21021195, 0.5743069, -6.2178087, 0.12612298, 0.17788735)
+
+[node name="Pilar" parent="." unique_id=1553470682 instance=ExtResource("25_koe3n")]
+transform = Transform3D(1.2852708, 0, 0, 0, 1.1745448, 0, 0, 0, 1, -8.618146, 0.2131063, 0.22708756)
+
+[node name="Pilar3" parent="." unique_id=1621849628 instance=ExtResource("25_koe3n")]
+transform = Transform3D(0.40953207, 1.1470709, 0.04482469, 0, 0.15306571, -1.0523095, -0.28043136, 1.6751416, 0.065460384, -8.953327, 2.9028888, -2.589658)
+
+[node name="Pilar2" parent="." unique_id=1450324726 instance=ExtResource("25_koe3n")]
+transform = Transform3D(1.1655468, 0, 0, 0, 1.25827, 0, 0, 0, 1, -7.039701, 0.13212493, -1.0751619)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=153904671]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.735461, 3.6315558, -3.5144835)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D2" type="OmniLight3D" parent="." unique_id=1941825653]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.96842, 3.0480542, -0.8372054)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D3" type="OmniLight3D" parent="." unique_id=1955273177]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.1700253, 0.75263596, 4.4107823)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D4" type="OmniLight3D" parent="." unique_id=510579518]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -10.583302, 6.760356, -3.7805552)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D7" type="OmniLight3D" parent="." unique_id=1712131957]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -9.276741, 6.8470106, -7.8551574)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 0.708
+light_indirect_energy = 0.208
+light_cull_mask = 7
+
+[node name="OmniLight3D5" type="OmniLight3D" parent="." unique_id=1047598206]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.4027233, 4.386972, -4.0679297)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="OmniLight3D6" type="OmniLight3D" parent="." unique_id=1739966465]
+transform = Transform3D(1, 0, 0, 0, 0.99988323, 0.015283731, 0, -0.015283731, 0.99988323, -7.4027233, 5.8055634, -0.6570871)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="CAPA001" type="Sprite3D" parent="." unique_id=712228843]
+transform = Transform3D(0.33966187, 0, 0, 0, 0.44676116, 0, 0, 0, 0.267, -2.9680815, 2.7402468, 24.064978)
+layers = 7
+modulate = Color(1, 1, 1, 0.15294118)
+texture = ExtResource("26_cx8r4")
+
+[node name="PISO2" parent="." unique_id=835517437 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, -2.7538373, -0.8408709, -0.8788506)
+
+[node name="PISO3" parent="." unique_id=227306970 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 2.5800648, -0.8408709, -0.8788506)
+
+[node name="PISO4" parent="." unique_id=1396447181 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 8.0085745, -0.8408709, -0.8788506)
+
+[node name="Woodmetal_piso" parent="." unique_id=2108357978 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -7.6941657, 1.438156, -1.094736)
+
+[node name="Woodmetal_piso6" parent="." unique_id=1451558868 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -7.6941657, 1.438156, 0.33921558)
+
+[node name="Woodmetal_piso4" parent="." unique_id=1054819951 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(0.022335617, -0.021603156, 1.2669097, -8.3541457e-17, 1.5926845, 0.017188132, -1.504783, -0.00032065882, 0.01880484, -6.6092753, 1.4265611, -0.31277564)
+
+[node name="Woodmetal_piso5" parent="." unique_id=1748044871 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(0.022335617, -0.021603156, 1.2669097, -8.3541457e-17, 1.5926845, 0.017188132, -1.504783, -0.00032065882, 0.01880484, -7.364113, 2.964116, -0.3278972)
+
+[node name="Woodmetal_piso9" parent="." unique_id=1980216750 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(0.022335617, -0.021603156, 1.2669097, -8.3541457e-17, 1.5926845, 0.017188132, -1.504783, -0.00032065882, 0.01880484, -8.1339245, 4.4382005, -0.23471218)
+
+[node name="Woodmetal_piso2" parent="." unique_id=771904683 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -8.4338, 2.9675593, 0.33921558)
+
+[node name="Woodmetal_piso7" parent="." unique_id=1559076540 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -8.4338, 2.9929326, -1.1128731)
+
+[node name="Woodmetal_piso3" parent="." unique_id=188427445 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -9.207453, 4.4585867, 0.46011364)
+
+[node name="Woodmetal_piso8" parent="." unique_id=1611477549 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -9.207453, 4.4585867, -1.0437516)
+
+[node name="EscenaRampaNivel3" parent="." unique_id=866737437 instance=ExtResource("30_qlcu2")]
+transform = Transform3D(2.0570645, 0.7056116, 1.6840472e-08, -0.964515, 1.4956216, -0.09218207, -0.075925976, 0.117734276, 1.1710234, -0.58331776, 0.42464143, -0.3177722)
+visible = false
+
+[node name="Muro_Plataforma" parent="." unique_id=919155994 instance=ExtResource("29_ecyc1")]
+transform = Transform3D(1.74, 0, 0, 0, 1.74, 0, 0, 0, 1.74, -2.4091039, 0.12527376, -0.9258966)
+visible = false
+
+[node name="Muro_Plataforma2" parent="." unique_id=1676189083 instance=ExtResource("29_ecyc1")]
+transform = Transform3D(1.74, 0, 0, 0, 1.74, 0, 0, 0, 1.74, -4.1019354, 0.12527376, -0.9258966)
+visible = false
+
+[node name="Escudo_enemigo" parent="." unique_id=967318067 instance=ExtResource("31_lhtjo")]
+transform = Transform3D(0.25374106, 0, -0.9672722, 0, 1, 0, 0.9672722, 0, 0.25374106, -4.5382166, 0.9809667, -0.37353668)
+visible = false
+fuerza_explosion = 1.0
+fuerza_horizontal = 2.0
+torque_min = -1.0
+torque_max = 1.0
+tiempo_congelar = 5.0
+color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
+
+[node name="NIVEL_2_Escudo_enemigo2" parent="." unique_id=1771597087 instance=ExtResource("31_lhtjo")]
+transform = Transform3D(0.48633456, 0, -0.8737727, 0, 1, 0, 0.8737727, 0, 0.48633456, -3.5757003, 0.20317256, -0.26494488)
+fuerza_explosion = 1.0
+fuerza_horizontal = 2.0
+torque_min = -1.0
+torque_max = 1.0
+tiempo_congelar = 5.0
+color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
+
+[node name="NIVEL_2_Escudo_enemigo3" parent="." unique_id=646823642 instance=ExtResource("31_lhtjo")]
+transform = Transform3D(0.3880142, 0, -0.92165345, 0, 1, 0, 0.92165345, 0, 0.3880142, 0.04679942, 0.20317256, -0.26494488)
+fuerza_explosion = 1.0
+fuerza_horizontal = 2.0
+torque_min = -1.0
+torque_max = 1.0
+tiempo_congelar = 5.0
+color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
+
+[node name="HojasPlane" parent="." unique_id=250802195 instance=ExtResource("32_dapvp")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 2.6863995, 4.974465, -6.77036)
+amount = 100
+
+[node name="HojasPlane2" parent="." unique_id=1613658433 instance=ExtResource("32_dapvp")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -19.122095, -3.4211488, 1.9674244)
+amount = 100
+
+[node name="PajarosPlane" parent="." unique_id=250802196 instance=ExtResource("37_pajaros")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -4.95278, 4.0258794, -2.4745846)
+
+[node name="PajarosPlane2" parent="." unique_id=628851056 instance=ExtResource("37_pajaros")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, -16.538982, 2.9, -17.962505)
+
+[node name="PajarosPlane3" parent="." unique_id=27604262 instance=ExtResource("37_pajaros")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 5.033394, 5.7284675, -17.962505)
+
+[node name="BarreraDestruyeFlechas" parent="." unique_id=1852478489 instance=ExtResource("33_jrbhj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.775, 4.765, 0)
+
+[node name="Bracero" parent="." unique_id=2051267930 instance=ExtResource("36_omov4")]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -7.3911104, 0.20699996, -2.3187857)
+
+[node name="Arboleda" parent="." unique_id=1948201888 instance=ExtResource("45_arboleda")]
+transform = Transform3D(0.9358511, 0, -0.11479537, 0, 0.8239627, 0, 0.11054993, 0, 0.9717906, -8.931133, -0.6583084, 3.2473335)
+layers = 2
+
+[node name="Arboleda2" parent="." unique_id=959139353 instance=ExtResource("45_arboleda")]
+transform = Transform3D(0.9358511, 0, -0.11479537, 0, 0.8239627, 0, 0.11054993, 0, 0.9717906, -8.931133, -0.6583084, 3.2473335)
+layers = 2
+
+[node name="ArbolesAmarillosD" type="Sprite3D" parent="." unique_id=1948201893]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -10.746367, 7.099969, -8.132378)
+layers = 2
+material_override = SubResource("ShaderMaterial_arboles_amarillosD")
+texture = ExtResource("55_arbolesamarillosD")
+
+[node name="PastoB" type="Sprite3D" parent="." unique_id=1948201894]
+transform = Transform3D(0.059876956, 0, 0, 0, 0.05508211, 0, 0, 0, 0.7, -7.4175935, 0.23355126, -4.256086)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB9" type="Sprite3D" parent="." unique_id=527772634]
+transform = Transform3D(0.059876956, 0, 0, 0, 0.05508211, 0, 0, 0, 0.7, -6.7520742, 0.104551315, -4.256086)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB3" type="Sprite3D" parent="." unique_id=608061898]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.443401, 0.12844586, -3.05835)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB4" type="Sprite3D" parent="." unique_id=1596594272]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.093467, 0.12844586, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB5" type="Sprite3D" parent="." unique_id=207804293]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -1.5235401, 0.03782636, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB6" type="Sprite3D" parent="." unique_id=296404973]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, 2.8312197, 0.03782636, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB7" type="Sprite3D" parent="." unique_id=1002430652]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, 3.797128, 0.08901709, -2.9913955)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB8" type="Sprite3D" parent="." unique_id=210469789]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, 5.881055, 0.25560677, -2.7105987)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB2" type="Sprite3D" parent="." unique_id=717173454]
+transform = Transform3D(0.058960896, 0, 0.1219768, 0, 0.055082105, 0, -0.010433713, 0, 0.68929064, -6.6556, 0.28762317, -3.3319974)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="BarricadaA" type="Sprite3D" parent="." unique_id=1948201895]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -18.093025, -0.3, -8.840449)
+layers = 2
+texture = ExtResource("57_barricadaA")
+
+[node name="BanderaA" type="Sprite3D" parent="." unique_id=1948201896]
+transform = Transform3D(0.4272384, 0, 0, 0, 0.32137963, 0, 0, 0, 0.015609987, 3.8207998, 0.39386657, -7.597229)
+layers = 2
+material_override = SubResource("ShaderMaterial_banderaA")
+texture = ExtResource("60_banderaA")
+
+[node name="CarretaA" type="Sprite3D" parent="." unique_id=1948201898]
+transform = Transform3D(0.26288572, 0, 0, 0, 0.22413635, 0, 0, 0, 1.0579704, 5.3946524, 0.30109382, -5.2389355)
+layers = 2
+texture = ExtResource("61_carretaA")
+
+[node name="CarretaA2" type="Sprite3D" parent="." unique_id=922990415]
+transform = Transform3D(0.26288572, 0, 0, 0, 0.22413635, 0, 0, 0, 1.0579704, -8.10577, 0.32580853, -4.1445627)
+layers = 2
+texture = ExtResource("61_carretaA")
+
+[node name="CarretaA3" type="Sprite3D" parent="." unique_id=89542506]
+transform = Transform3D(0.26288572, 0, 0, 0, 0.22413635, 0, 0, 0, 1.0579704, 3.2046359, -0.3732767, -5.9144607)
+layers = 2
+flip_h = true
+texture = ExtResource("61_carretaA")
+
+[node name="BarricadaC" type="Sprite3D" parent="." unique_id=1948201897]
+transform = Transform3D(0.49384293, 0, -0.21692717, 0, 0.46441576, 0, 0.25182492, 0, 0.42540646, -8.933237, -0.3, -38.132065)
+layers = 2
+texture = ExtResource("59_barricadaC")
+
+[node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
+transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
+layers = 2
+
+[node name="PUERTA_TRIGER" type="Area3D" parent="." unique_id=1633856024]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.602432, 1.2, -0.8118286)
+collision_layer = 0
+collision_mask = 7
+script = ExtResource("48_puerta_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PUERTA_TRIGER" unique_id=1633856025]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23718262, -0.7602539, 0)
+shape = SubResource("BoxShape3D_3xd07")
+
+[editable path="Player"]
+[editable path="Player/ArqueraModel"]
+[editable path="SubViewportFondo3D/BUSTO_BRONCE2"]
+[editable path="SubViewportFondo3D/BUSTO_BRONCE3"]
+[editable path="TORRE"]
