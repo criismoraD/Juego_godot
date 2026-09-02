@@ -950,14 +950,14 @@ func _es_basico_ballestera(enemy: Node) -> bool:
 		return false
 	var n: String = enemy.name.to_lower()
 	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
-	# Imp, Goblin arquero (GoblinGirl) y Goblin ballestero (Goblin)
+	# Imp, Goblin arquero (GoblinGirl), Goblin ballestero (Goblin) y Limo cuadrado
 	if "arquera_rosa" in n or "arquera_rosa" in s or "rosa" in n or "rosa" in s:
 		return false
 	if "lonko" in n or "lonko" in s:
 		return false
 	if _es_volador_ballestera(enemy):
 		return false
-	return ("imp" in n or "imp" in s or "goblin" in n or "goblin" in s)
+	return ("imp" in n or "imp" in s or "goblin" in n or "goblin" in s or "limo" in n or "limo" in s)
 
 func _es_rosada(enemy: Node) -> bool:
 	if not is_instance_valid(enemy):
