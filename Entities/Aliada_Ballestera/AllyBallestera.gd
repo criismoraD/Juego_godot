@@ -1488,14 +1488,16 @@ func _finalizar_despliegue_plataforma() -> void:
 		var tween_rot := create_tween()
 		tween_rot.tween_property(model_root, "rotation:y", _original_model_y_rot, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_restaurar_torso()
-	# Transición natural: primero fundir a IDLE para bajar la pierna del CORRER
-	# (antes se congelaba el último frame de la corrida y luego saltaba de golpe
-	# a la pose de disparo, dejando la pierna levantada un momento raro)
-	_play_anim(["IDLE", "IDLE_001"], 0.25, 1.0)
-	await get_tree().create_timer(0.3).timeout
+	# Toma de posición como la mensajera: se agacha al llegar (baja la pierna del
+	# CORRER de forma natural, sin el frame congelado de pierna al aire) y luego
+	# se levanta directamente hacia la postura de disparo
+	fase_agachada = true
+	_play_anim("DISPARO_AGACHADO", 0.25, 1.0)
+	await get_tree().create_timer(0.45).timeout
 	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 		return
-	# Pase directo y suave a la postura de disparo desde el IDLE asentado
+	# Levantarse y pasar suave a la postura de disparo
+	fase_agachada = false
 	_fijar_pose_combate(0.25)
 	_cambiar_estado(State.RELOADING)
 	state_timer = 0.3
