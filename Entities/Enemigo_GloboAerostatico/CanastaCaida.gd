@@ -7,6 +7,7 @@ extends GoblinPiezaFisica
 const COLOR_MORADO: Color = Color(0.8, 0.2, 0.8)
 const RADIO_DANO: float = 1.5
 const DANO: float = 5.0
+const MAX_ENEMIGOS_DANADOS: int = 6  ## Tope de enemigos aplastados por impacto de canasta
 const TEXTURA_ROCAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS.png")
 const SFX_IMPACTO_PESADO: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Impacto_pesado.mp3")
 
@@ -129,6 +130,8 @@ func _chequear_area() -> void:
 	return
 
 func _chequear_area_impacto_once() -> void:
+	# Recolectar candidatos dentro del radio con su distancia
+	var candidatos: Array = []
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
@@ -142,8 +145,14 @@ func _chequear_area_impacto_once() -> void:
 			continue
 		if not (enemy is Node3D):
 			continue
-		if global_position.distance_to((enemy as Node3D).global_position) <= RADIO_DANO:
-			_aplicar(enemy)
+		var dist: float = global_position.distance_to((enemy as Node3D).global_position)
+		if dist <= RADIO_DANO:
+			candidatos.append({"enemy": enemy, "dist": dist})
+	# Aplastar como máximo a MAX_ENEMIGOS_DANADOS, priorizando los más cercanos
+	candidatos.sort_custom(func(a, b): return a["dist"] < b["dist"])
+	var a_aplastar: int = mini(candidatos.size(), MAX_ENEMIGOS_DANADOS - _golpeados.size())
+	for i in range(a_aplastar):
+		_aplicar(candidatos[i]["enemy"])
 
 func _on_body_entered(body: Node) -> void:
 	if not _danio_habilitado: return
@@ -170,6 +179,9 @@ func _on_area_entered(area: Area3D) -> void:
 
 func _aplicar(enemy: Node) -> void:
 	if enemy is GloboAerostatico:
+		return
+	# Tope de enemigos dañados por impacto: la canasta solo aplasta a 6 como máximo
+	if _golpeados.size() >= MAX_ENEMIGOS_DANADOS:
 		return
 	var id := enemy.get_instance_id()
 	_golpeados[id] = true
