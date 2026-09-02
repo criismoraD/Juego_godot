@@ -3,7 +3,6 @@
 [ext_resource type="Script" path="res://Entities/Enemigo_Limo/LimoCuadrado.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bolpvuh2aaolj" path="res://Entities/Enemigo_Limo/Limo cuadrado.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://b5h6jybqcjtni" path="res://Entities/Enemigo_Limo/Limo ataque.glb" id="3_model_ataque"]
-[ext_resource type="Texture2D" uid="uid://qh25rgwv2j6w" path="res://Entities/Enemigo_Limo/ataque limo.png" id="4_ataque_fx"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_limo"]
 size = Vector3(0.95, 0.8, 0.9)
@@ -26,15 +25,6 @@ transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
 [node name="LimoModeloAtaque" parent="." instance=ExtResource("3_model_ataque")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
 visible = false
-
-[node name="AtaqueLimoFX" type="Sprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.35, -0.06)
-visible = false
-hframes = 8
-pixel_size = 0.0014
-billboard = 1
-shaded = false
-texture = ExtResource("4_ataque_fx")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
