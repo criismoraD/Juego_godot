@@ -262,6 +262,7 @@ func _process_shooting(delta):
 
 	if is_throwing:
 		throw_anim_timer += delta
+		_actualizar_fx_secuencia_ataque()
 		if not has_thrown and throw_anim_timer >= current_throw_time:
 			_throw_projectile()
 			has_thrown = true
@@ -289,8 +290,7 @@ func _iniciar_lanzamiento() -> void:
 	throw_anim_duration = 0.9
 	current_throw_time = 0.55
 	_intercambiar_modelo_ataque(true)
-	# Secuencia FX: frame 0 (interior abierto, cargando el hueso)
-	_mostrar_fx_ataque(0)
+	_iniciar_fx_secuencia_ataque()
 
 
 func _throw_projectile() -> void:
@@ -327,34 +327,51 @@ func _throw_projectile() -> void:
 
 	PROJECTILE_POOL_REF.activate(hueso, get_tree().root, spawn_pos)
 
-	# Secuencia FX: frame 1 (expulsión del hueso desde el interior)
-	_mostrar_fx_ataque(1)
+	# Secuencia FX: frame final (expulsión del hueso desde el interior)
+	_mostrar_fx_expulsion()
 
 
-## Muestra un frame de la secuencia de ataque (spritesheet 2 frames) y lo
-## desvanece tras un instante. Complementa la animación del modelo de ataque
-## simulando que el hueso sale expulsado desde el interior del limo.
-func _mostrar_fx_ataque(frame: int) -> void:
+## Inicia la secuencia de ataque (spritesheet de 8 frames) sincronizada con
+## la carga del lanzamiento: frames 0..6 durante la contracción, frame 7 al
+## expulsar el hueso. Complementa el modelo de ataque simulando que el hueso
+## sale desde el interior del limo.
+func _iniciar_fx_secuencia_ataque() -> void:
 	var fx := find_child("AtaqueLimoFX", true, false) as Sprite3D
 	if not fx:
 		return
-	fx.frame = clampi(frame, 0, fx.hframes - 1)
+	fx.frame = 0
 	fx.visible = true
 	fx.modulate.a = 1.0
-	# Desvanecer el frame tras mostrarse (el frame 0 persiste hasta la expulsión)
-	var duracion: float = 0.55 if frame == 0 else 0.3
+
+
+## Avanza la secuencia con el progreso del lanzamiento (llamado por frame
+## mientras is_throwing). El último frame queda fijo hasta la expulsión.
+func _actualizar_fx_secuencia_ataque() -> void:
+	var fx := find_child("AtaqueLimoFX", true, false) as Sprite3D
+	if not fx or not fx.visible:
+		return
+	var total_frames: int = fx.hframes
+	if total_frames <= 1:
+		return
+	# Progreso 0..1 de la carga (hasta el momento del disparo)
+	var progreso: float = clampf(throw_anim_timer / current_throw_time, 0.0, 1.0)
+	# Recorrer todos los frames menos el último (reservado para la expulsión)
+	fx.frame = int(progreso * (total_frames - 1))
+
+
+## Muestra el frame final de la expulsión y lo desvanece.
+func _mostrar_fx_expulsion() -> void:
+	var fx := find_child("AtaqueLimoFX", true, false) as Sprite3D
+	if not fx:
+		return
+	fx.frame = fx.hframes - 1
+	fx.visible = true
+	fx.modulate.a = 1.0
 	var tw := create_tween()
-	if frame == 0:
-		# Mantener visible durante la carga; se apaga solo si la expulsión no llega
-		tw.tween_interval(duracion + 0.35)
-		tw.tween_callback(func() -> void:
-			if is_instance_valid(fx) and not has_thrown:
-				fx.visible = false
-		)
-	else:
-		tw.tween_property(fx, "modulate:a", 0.0, duracion).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tw.tween_callback(func() -> void:
-			if is_instance_valid(fx):
-				fx.visible = false
-				fx.modulate.a = 1.0
-		)
+	tw.tween_property(fx, "modulate:a", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(fx):
+			fx.visible = false
+			fx.modulate.a = 1.0
+			fx.frame = 0
+	)
