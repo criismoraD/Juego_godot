@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://kylz72if84e1p"]
+
+[ext_resource type="Texture2D" uid="uid://ddi3ip11myiv8" path="res://Entities/Proyectil_Hueso_Limo/hueso_D.jpg" id="1_hueso"]
+
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline_hueso"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 5.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_outline_hueso")
+albedo_texture = ExtResource("1_hueso")

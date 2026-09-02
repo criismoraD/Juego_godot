@@ -29,7 +29,7 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 @export var frecuencia_rebote: float = 9.0  ## Velocidad de oscilación de la gelatina (wobble)
 
 # === REFERENCIAS Y ESTADO ===
-var imp_arrow_scene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
+var hueso_arrow_scene = preload("res://Entities/Proyectil_Hueso_Limo/HuesoLimo.tscn")
 var material_limo: Material = preload("res://Entities/Enemigo_Limo/LIMO_MAT.tres")
 
 var _modelo_limo: Node3D = null
@@ -301,11 +301,11 @@ func _throw_projectile() -> void:
 	if player_ref.get("is_dead"):
 		return
 
-	var trident := PROJECTILE_POOL_REF.acquire(imp_arrow_scene) as ImpTridentProjectile
-	if not trident:
+	var hueso := PROJECTILE_POOL_REF.acquire(hueso_arrow_scene) as HuesoLimoProjectile
+	if not hueso:
 		return
 
-	trident.scale = PROJECTILE_SCALE
+	hueso.scale = PROJECTILE_SCALE
 	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
 	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
 	var direction = (target_pos - spawn_pos).normalized()
@@ -316,7 +316,7 @@ func _throw_projectile() -> void:
 	direction = direction.normalized()
 
 	var potencia = randf_range(velocidad_flecha_min, velocidad_flecha_max)
-	trident.initialize(direction, potencia / 8.0)
-	trident.gravedad = gravedad_tridente
+	hueso.initialize(direction, potencia / 8.0)
+	hueso.gravedad = gravedad_tridente
 
-	PROJECTILE_POOL_REF.activate(trident, get_tree().root, spawn_pos)
+	PROJECTILE_POOL_REF.activate(hueso, get_tree().root, spawn_pos)

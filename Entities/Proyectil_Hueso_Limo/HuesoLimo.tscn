@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://lxw7hsk05vyba"]
+
+[ext_resource type="Script" path="res://Entities/Proyectil_Hueso_Limo/HuesoLimo.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://ddl8q5s3y4q80" path="res://Entities/Proyectil_Hueso_Limo/hueso.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_hueso"]
+size = Vector3(0.2, 0.2, 0.36)
+
+[node name="HuesoLimo" type="Area3D"]
+collision_layer = 4
+collision_mask = 67
+monitorable = false
+script = ExtResource("1_script")
+color_proyectil = Color(0.95, 0.92, 0.8, 1)
+
+[node name="HuesoModel" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(0.3, 0, 0, 0, 0, -0.3, 0, 0.3, 0, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("BoxShape_hueso")
