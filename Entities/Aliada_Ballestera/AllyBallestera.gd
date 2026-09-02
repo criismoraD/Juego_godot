@@ -256,7 +256,9 @@ func _on_oleada_completada(_numero_oleada: int) -> void:
 			_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
 			_cambiar_estado(State.CELEBRATING)
 			# Esperar que termine la celebracion completa antes de retirarse
-			var duracion_festejo: float = duracion_animacion_victoria * float(_loops_victoria_restantes + 1) + 0.5
+			# (duración del clip REAL en loop, no el valor export fijo)
+			var dur_clip_victoria: float = maxf(_get_anim_length("VICTORIA"), 0.3)
+			var duracion_festejo: float = dur_clip_victoria * float(_loops_victoria_restantes) + 0.5
 			await get_tree().create_timer(duracion_festejo).timeout
 		if is_instance_valid(self) and current_state != State.DYING and current_state != State.DEAD:
 			retirarse_y_bajar_escaleras()
@@ -686,20 +688,27 @@ func _process_getting_up(delta: float):
 func _process_celebrating(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
-		if _loops_victoria_restantes > 1:
-			_loops_victoria_restantes -= 1
-			if anim_player:
-				anim_player.seek(0.0, true)
-			_play_anim("VICTORIA", 0.35, 1.0)
-			state_timer = duracion_animacion_victoria
+		_loops_victoria_restantes = 0
+		# Defensoras moviles quedan en IDLE: el timer del await maneja la retirada
+		# Defensoras fijas vuelven a apuntar directamente
+		if es_movil or es_mensajera:
+			_cambiar_estado(State.IDLE)
 		else:
-			_loops_victoria_restantes = 0
-			# Defensoras moviles quedan en IDLE: el timer del await maneja la retirada
-			# Defensoras fijas vuelven a apuntar directamente
-			if es_movil or es_mensajera:
-				_cambiar_estado(State.IDLE)
-			else:
-				_cambiar_estado(State.AIMING)
+			_cambiar_estado(State.AIMING)
+
+
+## Busca el clip VICTORIA real y lo configura en LOOP_LINEAR para que la
+## celebración se repita sin cortes (el re-loop manual con blend cortaba el
+## levantamiento de brazos a mitad, pareciendo que faltan frames).
+func _configurar_victoria_loop() -> void:
+	if not anim_player:
+		return
+	for a in anim_player.get_animation_list():
+		if "victoria" in a.to_lower():
+			var anim := anim_player.get_animation(a)
+			if anim:
+				anim.loop_mode = Animation.LOOP_LINEAR
+			return
 
 
 func _cambiar_estado(nuevo: State):
@@ -751,9 +760,12 @@ func _cambiar_estado(nuevo: State):
 			_blink_timer = 0.0
 		State.CELEBRATING:
 			_restaurar_torso()
+			# Victoria fluida: clip en LOOP (sin re-plays que cortan los brazos a mitad)
+			_configurar_victoria_loop()
 			_play_anim("VICTORIA", 0.25, 1.0)
 			AudioManager.play_sfx("risa_victoria_ballestera")
-			state_timer = duracion_animacion_victoria
+			var _dur_clip: float = _get_anim_length("VICTORIA")
+			state_timer = maxf(_dur_clip, 0.3) * _loops_victoria_restantes
 
 
 func _fijar_pose_combate(blend_time: float = 0.25):

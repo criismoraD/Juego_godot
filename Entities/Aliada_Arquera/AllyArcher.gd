@@ -685,19 +685,27 @@ func _process_getting_up(delta: float) -> void:
 		_cambiar_estado(State.IDLE)
 
 
-## CELEBRATING: animación VICTORIA en loop (3-4 veces)
+## CELEBRATING: la animación VICTORIA corre en LOOP (el AnimationPlayer
+## la repite sola); aquí solo se agota el tiempo total y se corta a IDLE.
 func _process_celebrating(delta: float) -> void:
 	state_timer -= delta
 	if state_timer <= 0:
-		if _loops_victoria_restantes > 1:
-			_loops_victoria_restantes -= 1
-			if anim_player:
-				anim_player.seek(0.0, true)
-			_play_anim("VICTORIA", 0.35, 1.0)
-			state_timer = duracion_animacion_victoria
-		else:
-			_loops_victoria_restantes = 0
-			_cambiar_estado(State.IDLE)
+		_loops_victoria_restantes = 0
+		_cambiar_estado(State.IDLE)
+
+
+## Busca el clip VICTORIA real y lo configura en LOOP_LINEAR para que la
+## celebración se repita sin cortes (antes cada re-loop con blend cortaba
+## el levantamiento de brazos a mitad, pareciendo que faltan frames).
+func _configurar_victoria_loop() -> void:
+	if not anim_player:
+		return
+	for a in anim_player.get_animation_list():
+		if "victoria" in a.to_lower():
+			var anim := anim_player.get_animation(a)
+			if anim:
+				anim.loop_mode = Animation.LOOP_LINEAR
+			return
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -777,9 +785,12 @@ func _cambiar_estado(nuevo: State):
 		State.CELEBRATING:
 			_restaurar_torso()
 			_ocultar_flecha()
+			# Victoria fluida: clip en LOOP (sin re-plays que cortan los brazos a mitad)
+			_configurar_victoria_loop()
 			_play_anim("VICTORIA", 0.25, 1.0)
 			_play_bow_anim("ARCO_IDLE", 0.25, 1.0)
-			state_timer = duracion_animacion_victoria
+			var _dur_clip: float = _get_anim_length("VICTORIA")
+			state_timer = maxf(_dur_clip, 0.3) * _loops_victoria_restantes
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
