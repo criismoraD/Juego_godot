@@ -509,6 +509,13 @@ func _exit_tree() -> void:
 	super._exit_tree()
 
 
+## Umbral de munición múltiple de la protagonista:
+## - Con 3 o menos: el drop del power-up es 100% garantizado.
+## - Con más de 3: el drop baja a 15%.
+const UMBRAL_MUNICION_MULTIPLE_DROP: int = 3
+const DROP_CHANCE_MUNICION_ALTA: float = 0.15
+
+
 func _dropear_power_up_multiple() -> void:
 	if drop_realizado:
 		return
@@ -516,6 +523,13 @@ func _dropear_power_up_multiple() -> void:
 
 	if not power_up_multiple_scene:
 		return
+
+	# Histéresis de drop según munición múltiple de la protagonista
+	var player := get_tree().get_first_node_in_group("player")
+	if is_instance_valid(player) and "flechas_multiples" in player:
+		if int(player.flechas_multiples) > UMBRAL_MUNICION_MULTIPLE_DROP:
+			if randf() > DROP_CHANCE_MUNICION_ALTA:
+				return
 
 	var power_up = power_up_multiple_scene.instantiate()
 	if not power_up:
