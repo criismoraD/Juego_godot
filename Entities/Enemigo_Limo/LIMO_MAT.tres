@@ -20,4 +20,5 @@ shader_parameter/slime_intensity = 0.45
 shader_parameter/flow_speed = 0.12
 shader_parameter/flow_scale = 1.6
 shader_parameter/smoothness = 0.4
+shader_parameter/seam_blend = 0.25
 next_pass = SubResource("ShaderMaterial_outline_limo")
