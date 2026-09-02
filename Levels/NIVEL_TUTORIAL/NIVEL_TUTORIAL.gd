@@ -29,6 +29,12 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var pausar_video_fondo_en_combate: bool = false
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
+# === MODO TUTORIAL ===
+const TUTORIAL_SIN_OLEADAS: bool = true  ## Sin oleadas: el spawner queda detenido (oleadas propias a futuro)
+const X_SPAWN_ENTRADA_TUTORIAL: float = -16.5  ## X fuera de pantalla donde aparece la protagonista
+const X_DESTINO_ENTRADA_TUTORIAL: float = -7.5  ## X donde se detiene tras entrar
+const Y_SUELO_TUTORIAL: float = 0.2  ## Altura del suelo para la entrada
+const VELOCIDAD_ENTRADA_TUTORIAL: float = 1.4  ## Unidades/seg de la caminata de entrada
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
 @export_category("Nivel 0 — Pacifista")
 @export var velocidad_pacificos: float = 0.5  ## Velocidad de caminata de los pacíficos
@@ -195,7 +201,24 @@ func _ready():
 			if mdl:
 				mdl.rotation.y = deg_to_rad(90.0)
 
+	# ═══════════════════════════════════════════════════════════════════════════
+	# MODO TUTORIAL: sin oleadas. La protagonista entra caminando desde la
+	# izquierda en lugar de aparecer desde el aire.
+	# Reposicionarla YA (antes del primer frame de física) para que no caiga del aire.
+	# ═══════════════════════════════════════════════════════════════════════════
+	if TUTORIAL_SIN_OLEADAS and GameUI.regreso_desde_interior_oleada <= 0:
+		var _prota_pre := get_tree().get_first_node_in_group("player") as CharacterBody3D
+		if not _prota_pre:
+			_prota_pre = find_child("Player", true, false) as CharacterBody3D
+		if _prota_pre:
+			_prota_pre.global_position = Vector3(X_SPAWN_ENTRADA_TUTORIAL, Y_SUELO_TUTORIAL, 0.05)
+			_prota_pre.set_physics_process(false)
+
 	await get_tree().process_frame
+
+	if TUTORIAL_SIN_OLEADAS and GameUI.regreso_desde_interior_oleada <= 0:
+		_iniciar_modo_tutorial()
+		return
 
 	# --- REGRESO DESDE EL CUARTO INTERIOR: restaurar la cortinilla de la oleada ---
 	# El jugador entró a la torre durante una cortinilla entre oleadas. Al regresar,
@@ -324,6 +347,60 @@ func _ready():
 
 	# Iniciar Nivel 0
 	_iniciar_nivel_0()
+
+
+## MODO TUTORIAL: sin oleadas. La protagonista entra caminando desde la
+## izquierda (fuera de pantalla) hasta su puesto, en lugar de caer desde el aire.
+func _iniciar_modo_tutorial() -> void:
+	# 1. Spawner detenido por completo: el tutorial aún no tiene oleadas
+	if is_instance_valid(wave_spawner):
+		wave_spawner.detener_spawning()
+		wave_spawner.oleada_combate = 0
+
+	# 2. UI en modo mínimo (sin barra de oleadas)
+	if game_ui:
+		if game_ui.has_method("set_modo_minimo"):
+			game_ui.set_modo_minimo(true)
+		if game_ui.has_method("set_bottom_panel_visible"):
+			game_ui.set_bottom_panel_visible(false)
+
+	# 3. Preparar a la protagonista fuera de pantalla, mirando a la derecha
+	var prota := get_tree().get_first_node_in_group("player") as CharacterBody3D
+	if not prota:
+		prota = find_child("Player", true, false) as CharacterBody3D
+	if not prota:
+		return
+
+	prota.global_position = Vector3(X_SPAWN_ENTRADA_TUTORIAL, Y_SUELO_TUTORIAL, 0.05)
+	if "velocity" in prota:
+		prota.velocity = Vector3.ZERO
+	# Bloquear control durante la entrada
+	prota.set_physics_process(false)
+	var model := prota.find_child("ArqueraModel", true, false) as Node3D
+	if not model:
+		model = prota.find_child("Armature", true, false) as Node3D
+	if model:
+		model.rotation.y = deg_to_rad(90.0)  ## Mirar a la derecha
+
+	# 4. Animación de caminar mientras avanza (árbol del Player: idle/walk_fwd)
+	var anim_tree := prota.find_child("AnimationTree", true, false) as AnimationTree
+	if anim_tree:
+		anim_tree.set("parameters/Locomotion/transition_request", "walk_fwd")
+
+	# 5. Caminar hasta el puesto de inicio
+	var dist: float = absf(X_DESTINO_ENTRADA_TUTORIAL - X_SPAWN_ENTRADA_TUTORIAL)
+	var tween := create_tween()
+	tween.tween_property(prota, "global_position:x", X_DESTINO_ENTRADA_TUTORIAL, dist / VELOCIDAD_ENTRADA_TUTORIAL) \
+		.set_trans(Tween.TRANS_LINEAR)
+	await tween.finished
+	if not is_instance_valid(self) or not is_instance_valid(prota):
+		return
+
+	# 6. Volver a idle y liberar el control
+	if anim_tree and is_instance_valid(anim_tree):
+		anim_tree.set("parameters/Locomotion/transition_request", "idle")
+	prota.set_physics_process(true)
+	_log_debug("[NIVEL_TUTORIAL] Protagonista en posición. Modo tutorial activo (sin oleadas).")
 
 
 ## Precalienta y compila en GPU los shaders de efectos para evitar tirones y asegurar tamaño correcto en el primer tiro
