@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://lxw7hsk05vyba"]
+[gd_scene format=3 uid="uid://dplpmtahbc0y"]
 
 [ext_resource type="Script" path="res://Entities/Proyectil_Hueso_Limo/HuesoLimo.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://ddl8q5s3y4q80" path="res://Entities/Proyectil_Hueso_Limo/hueso.glb" id="2_model"]
