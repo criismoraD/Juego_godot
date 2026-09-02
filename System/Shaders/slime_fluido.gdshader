@@ -20,8 +20,8 @@ uniform float seam_blend : hint_range(0.05, 0.5) = 0.25; // Ancho del cross-fade
 void fragment() {
 	vec3 base = texture(albedo_texture, UV).rgb;
 
-	// Coordenada de flujo: cae continuamente (bucle infinito)
-	float flow = UV.y * flow_scale - TIME * flow_speed;
+	// Coordenada de flujo: la baba cae continuamente (bucle infinito)
+	float flow = UV.y * flow_scale + TIME * flow_speed;
 
 	// Dos muestras desfasadas medio tile + cross-fade triangular:
 	// la costura de cada capa queda enmascarada por la otra.
