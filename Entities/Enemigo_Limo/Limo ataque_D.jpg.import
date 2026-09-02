@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://lal0xoui7nmj"
-path="res://.godot/imported/Slime.png-f0797ae4a2e7973cb3aa5b342c67efab.ctex"
+uid="uid://duhlsea3v16xu"
+path="res://.godot/imported/Limo ataque_D.jpg-1d65230860c7543b10743266d34cb34d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Entities/Enemigo_Limo/Slime.png"
-dest_files=["res://.godot/imported/Slime.png-f0797ae4a2e7973cb3aa5b342c67efab.ctex"]
+source_file="res://Entities/Enemigo_Limo/Limo ataque_D.jpg"
+dest_files=["res://.godot/imported/Limo ataque_D.jpg-1d65230860c7543b10743266d34cb34d.ctex"]
 
 [params]
 

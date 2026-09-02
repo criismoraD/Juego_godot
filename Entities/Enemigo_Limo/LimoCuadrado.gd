@@ -33,6 +33,9 @@ var imp_arrow_scene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.
 var material_limo: Material = preload("res://Entities/Enemigo_Limo/LIMO_MAT.tres")
 
 var _modelo_limo: Node3D = null
+var _modelo_ataque: Node3D = null
+var _en_modelo_ataque: bool = false
+var _intercambiando: bool = false  ## True durante el tween de cobertura del intercambio
 var _pulso_fase: float = 0.0
 var _impacto_dir: float = 0.0  ## Dirección de la compresión (derecha->izquierda según el golpe)
 var _impacto_tiempo: float = -1.0  ## <0: sin impacto activo; >=0: segundos desde el impacto
@@ -64,19 +67,22 @@ func _on_enemy_ready() -> void:
 func _buscar_modelo() -> void:
 	if _modelo_limo and is_instance_valid(_modelo_limo):
 		return
-	_modelo_limo = find_child("Limo cuadrado", true, false) as Node3D
+	_modelo_limo = find_child("LimoModel", true, false) as Node3D
+	if not _modelo_limo:
+		_modelo_limo = find_child("Limo cuadrado", true, false) as Node3D
 	if not _modelo_limo:
 		var meshes := find_children("*", "MeshInstance3D", true, false)
 		if meshes.size() > 0:
 			_modelo_limo = meshes[0] as Node3D
+	_modelo_ataque = find_child("LimoModeloAtaque", true, false) as Node3D
+	if _modelo_ataque and is_instance_valid(_modelo_ataque):
+		_modelo_ataque.visible = false
 
 
 func _aplicar_material() -> void:
-	if not material_limo or not _modelo_limo:
+	if not material_limo:
 		return
-	var meshes := _modelo_limo.find_children("*", "MeshInstance3D", true, false)
-	if _modelo_limo is MeshInstance3D:
-		meshes.append(_modelo_limo)
+	var meshes := find_children("*", "MeshInstance3D", true, false)
 	for mesh in meshes:
 		(mesh as MeshInstance3D).material_override = material_limo
 
@@ -107,6 +113,9 @@ func _actualizar_deformacion_babosa(delta: float) -> void:
 	if not _modelo_limo or not is_instance_valid(_modelo_limo):
 		return
 	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	# Durante el intercambio de modelos el tween de cobertura manda la escala
+	if _intercambiando:
 		return
 
 	var moviendose: bool = current_state == State.WALKING and absf(velocity.x) > 0.01
@@ -146,11 +155,54 @@ func _actualizar_deformacion_babosa(delta: float) -> void:
 	## El modelo está rotado 90° en Y (mirando de costado): su Z local apunta al
 	## eje X del mundo (derecha-izquierda en pantalla), por eso la compresión del
 	## golpe se aplica sobre la Z local y el abombado sobre X local.
-	var raiz: Node3D = _modelo_limo
+	var raiz: Node3D = _modelo_activo()
 	if raiz != self:
 		raiz.scale = Vector3(escala_xz + abombado, escala_y, escala_xz)
 	else:
 		scale = Vector3(escala_xz + abombado, escala_y, escala_xz)
+
+
+## Modelo visible actual: normal o de ataque.
+func _modelo_activo() -> Node3D:
+	if _en_modelo_ataque and _modelo_ataque and is_instance_valid(_modelo_ataque):
+		return _modelo_ataque
+	return _modelo_limo
+
+
+## Intercambia al modelo de ataque (o vuelve al normal) dentro de una compresión
+## gelatinosa: el cambio de malla ocurre en el punto de máxima contracción, donde
+## el ojo no distingue un modelo del otro.
+func _intercambiar_modelo_ataque(a_ataque: bool) -> void:
+	if a_ataque == _en_modelo_ataque:
+		return
+	if not _modelo_ataque or not is_instance_valid(_modelo_ataque) or not _modelo_limo or not is_instance_valid(_modelo_limo):
+		return
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	var viejo: Node3D = _modelo_activo()
+	_intercambiando = true
+	# 1. Contracción rápida (squash) que oculta el pop
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(viejo, "scale:y", 0.55, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(viejo, "scale:x", 1.25, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(viejo, "scale:z", 1.25, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(func() -> void:
+		# 2. Punto de máxima compresión: intercambio de malla invisible
+		_en_modelo_ataque = a_ataque
+		_modelo_limo.visible = not a_ataque
+		_modelo_ataque.visible = a_ataque
+		_modelo_limo.scale = Vector3.ONE
+		_modelo_ataque.scale = Vector3.ONE
+	)
+	# 3. Expansión elástica de retorno (jelly pop)
+	var nuevo: Node3D = _modelo_ataque if a_ataque else _modelo_limo
+	tw.chain().tween_property(nuevo, "scale", Vector3.ONE * 1.15, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.chain().tween_property(nuevo, "scale", Vector3.ONE, 0.35).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	tw.chain().tween_callback(func() -> void:
+		_intercambiando = false
+	)
 
 
 ## Dispara la compresión gelatinosa al recibir un impacto.
@@ -181,7 +233,11 @@ func take_damage(amount: float) -> void:
 func _on_state_dying() -> void:
 	# Congelar deformación y escala neutra antes de la disolución
 	_impacto_tiempo = -1.0
+	_en_modelo_ataque = false
+	if _modelo_ataque and is_instance_valid(_modelo_ataque):
+		_modelo_ataque.visible = false
 	if _modelo_limo and is_instance_valid(_modelo_limo) and _modelo_limo != self:
+		_modelo_limo.visible = true
 		_modelo_limo.scale = Vector3.ONE
 	super._on_state_dying()
 	AudioManager.play_sfx("imp_death")
@@ -209,6 +265,8 @@ func _process_shooting(delta):
 			is_throwing = false
 			is_idle_pause = true
 			shoot_timer = randf_range(pausa_idle_min, pausa_idle_max)
+			# Fin del ataque: volver al modelo normal con la misma deformación
+			_intercambiar_modelo_ataque(false)
 	elif is_idle_pause:
 		shoot_timer -= delta
 		if shoot_timer <= 0:
@@ -218,19 +276,15 @@ func _process_shooting(delta):
 		_iniciar_lanzamiento()
 
 
-## El limo no tiene animaciones GLB: el "lanzamiento" es una contracción rápida
-## del cuerpo (estiramiento vertical) antes de soltar el tridente.
+## Al atacar se cambia al modelo de ataque dentro de una compresión gelatinosa
+## (el intercambio de malla queda oculto en el punto de máxima contracción).
 func _iniciar_lanzamiento() -> void:
 	is_throwing = true
 	has_thrown = false
 	throw_anim_timer = 0.0
 	throw_anim_duration = 0.9
 	current_throw_time = 0.55
-	# Contracción gelatinosa previa al lanzamiento (sutil)
-	if _modelo_limo and is_instance_valid(_modelo_limo) and _modelo_limo != self:
-		var tw := create_tween()
-		tw.tween_property(_modelo_limo, "scale:y", 1.18, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		tw.tween_property(_modelo_limo, "scale:y", 1.0, 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_intercambiar_modelo_ataque(true)
 
 
 func _throw_projectile() -> void:

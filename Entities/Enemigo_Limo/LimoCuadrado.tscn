@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://Entities/Enemigo_Limo/LimoCuadrado.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bolpvuh2aaolj" path="res://Entities/Enemigo_Limo/Limo cuadrado.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://b5h6jybqcjtni" path="res://Entities/Enemigo_Limo/Limo ataque.glb" id="3_model_ataque"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_limo"]
 size = Vector3(0.95, 0.8, 0.9)
@@ -19,6 +20,10 @@ particulas_detener_emision = 0.5
 
 [node name="LimoModel" parent="." instance=ExtResource("2_model")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
+
+[node name="LimoModeloAtaque" parent="." instance=ExtResource("3_model_ataque")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
+visible = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
