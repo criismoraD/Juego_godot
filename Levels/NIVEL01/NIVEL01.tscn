@@ -973,6 +973,17 @@ transform = Transform3D(0.49384293, 0, -0.21692717, 0, 0.46441576, 0, 0.25182492
 layers = 2
 texture = ExtResource("59_barricadaC")
 
+[node name="BarricadaC2" type="Sprite3D" parent="." unique_id=1006604226]
+transform = Transform3D(0.4124206, 0, -0.21692717, 0, 0.3270525, 0, 0.2103053, 0, 0.42540646, -6.9622574, 0.19363472, -4.6025023)
+layers = 2
+texture = ExtResource("59_barricadaC")
+
+[node name="BarricadaC3" type="Sprite3D" parent="." unique_id=1028923956]
+transform = Transform3D(0.33547366, 0, 0.055765085, 0, 0.3270525, 0, -0.039446488, 0, 0.47425553, 4.4664063, -0.18479735, -3.3223062)
+layers = 2
+flip_h = true
+texture = ExtResource("59_barricadaC")
+
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
 transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
 layers = 2

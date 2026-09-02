@@ -111,7 +111,7 @@ var sfx_explosion_02: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOS
 var sfx_globo_callendo: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Sonido_globo_callendo.mp3")
 var sfx_fuego1: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Fuego1.mp3")
 const SONIDO_MOVIMIENTO_GLOBO: String = "res://TEST_/Sonido de globo.wav"
-const VOLUMEN_MOVIMIENTO_DB: float = 18.0  ## La fuente WAV es muy silenciosa (RMS 2%): +18 dB para que sea audible
+const VOLUMEN_MOVIMIENTO_DB: float = 9.0  ## La fuente WAV es muy silenciosa (RMS 2%): +9 dB audible sin saturar
 
 var _modelo_globo_destruido_node: Node3D = null
 var _sfx_movimiento: AudioStreamPlayer = null

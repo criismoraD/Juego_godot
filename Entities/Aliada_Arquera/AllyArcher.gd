@@ -475,10 +475,13 @@ func aplicar_paralisis(duracion: float = 4.0) -> void:
 	paralisis_timer = duracion
 	_ocultar_flecha()
 	_restaurar_torso()
-	_play_anim(["ELECTROCUTAR", "ELECTROCUTADA"], 0.15, 1.0)
-	_mostrar_icono_aturdimiento()
+	# Cambiar a IDLE PRIMERO: su handler reproduce la animación de idle, y la
+	# electrocución se reproduce DESPUÉS para que no la pise (antes el cambio de
+	# estado sobreescribía ELECTROCUTAR con el idle y no se veía el calambre)
 	if current_state != State.IDLE and current_state != State.GETTING_UP:
 		_cambiar_estado(State.IDLE)
+	_play_anim(["ELECTROCUTAR", "ELECTROCUTADA"], 0.15, 1.0)
+	_mostrar_icono_aturdimiento()
 
 
 func _setup_icono_aturdimiento() -> void:
@@ -824,6 +827,26 @@ func celebrar_victoria() -> void:
 	if current_state != State.DYING and current_state != State.DEAD:
 		_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
 		_cambiar_estado(State.CELEBRATING)
+		_reproducir_grito_victoria()
+
+
+## SFX de festejo: grito de victoria de la defensora arquera.
+func _reproducir_grito_victoria() -> void:
+	var stream: AudioStream = load("res://TEST_/victoria grito defensora arquera aliada.wav")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.add_to_group("pausable_audio")
+	player.stream = stream
+	player.volume_db = 2.0
+	player.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(player)
+		player.play()
+		player.finished.connect(player.queue_free)
+	else:
+		player.queue_free()
 
 
 func probar_animacion_victoria() -> void:

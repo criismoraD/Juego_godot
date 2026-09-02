@@ -458,10 +458,11 @@ func aplicar_paralisis(duracion: float = 4.0) -> void:
 		return
 	paralisis_timer = duracion
 	_restaurar_torso()
-	_play_anim("ELECTROCUTADA", 0.15, 1.0)
-	_mostrar_icono_aturdimiento()
+	# Cambiar a IDLE PRIMERO para que su handler no pise la electrocución
 	if current_state != State.IDLE and current_state != State.GETTING_UP and current_state != State.CELEBRATING:
 		_cambiar_estado(State.IDLE)
+	_play_anim("ELECTROCUTADA", 0.15, 1.0)
+	_mostrar_icono_aturdimiento()
 
 
 func _setup_icono_aturdimiento() -> void:
