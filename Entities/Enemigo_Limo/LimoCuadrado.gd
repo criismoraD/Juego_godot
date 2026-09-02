@@ -36,14 +36,13 @@ var _pulso_fase: float = 0.0
 var _tween_impacto: Tween = null
 var _deformacion_impacto: float = 0.0  ## -1..1: costado de la deformación actual
 
-# Ataque (mismo ciclo que el Imp)
+# Ataque (mismo ciclo que el Imp). shoot_timer se hereda de EnemyBase.
 var is_throwing: bool = false
 var has_thrown: bool = false
 var is_idle_pause: bool = false
 var throw_anim_timer: float = 0.0
 var throw_anim_duration: float = 1.7
 var current_throw_time: float = 1.0
-var shoot_timer: float = 0.0
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOOKS DE ENEMYBASE
