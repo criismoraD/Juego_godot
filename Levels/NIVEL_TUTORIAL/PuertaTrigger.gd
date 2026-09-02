@@ -1,4 +1,4 @@
-class_name PuertaTrigger
+class_name PuertaTriggerTutorial
 extends Area3D
 
 ## Controlador de interacción con la puerta de la torre.
