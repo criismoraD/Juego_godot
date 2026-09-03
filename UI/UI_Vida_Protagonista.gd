@@ -47,6 +47,11 @@ func _buscar_y_conectar_player() -> void:
 		get_tree().process_frame.connect(_intentar_conectar_player, CONNECT_ONE_SHOT)
 
 
+## Reconecta el HUD al "player" activo actual (llamado al cambiar de personaje).
+func reconectar_player() -> void:
+	_buscar_y_conectar_player()
+
+
 func _intentar_conectar_player() -> void:
 	var player = get_tree().get_first_node_in_group("player")
 	if player:

@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://rhbtx5qh81qq"]
+
+[ext_resource type="Script" path="res://Entities/Jugador_Perrena/Perrena.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bt02acngkrbhl" path="res://Entities/Jugador_Perrena/Perrena.glb" id="2_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_perrena"]
+radius = 0.4
+height = 1.9814942
+
+[node name="Perrena" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_script")
+velocidad_caminar = 0.5
+velocidad_correr = 1.0
+fuerza_salto = 2.35
+vida_maxima = 3
+
+[node name="PerrenaModel" parent="." instance=ExtResource("2_model")]
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+root_node = NodePath("../PerrenaModel")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0)
+shape = SubResource("CapsuleShape_perrena")

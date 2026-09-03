@@ -368,6 +368,23 @@ func _create_pause_panel():
 	_style_button(quit_pause_btn, Color(0.8, 0.2, 0.2))
 	vbox.add_child(quit_pause_btn)
 
+	# ═══════════════ CAMBIO DE PERSONAJE ═══════════════
+	var sep_personaje = HSeparator.new()
+	sep_personaje.custom_minimum_size = Vector2(200, 10)
+	vbox.add_child(sep_personaje)
+
+	var btn_perrena := Button.new()
+	btn_perrena.name = "BtnControlarPerrena"
+	btn_perrena.text = "🦊 CONTROLAR PERRENA"
+	btn_perrena.custom_minimum_size = Vector2(200, 44)
+	_style_button(btn_perrena, Color(0.55, 0.4, 0.25))
+	btn_perrena.pressed.connect(
+		func():
+			_toggle_pause()
+			_cambiar_personaje_controlable()
+	)
+	vbox.add_child(btn_perrena)
+
 	# ═══════════════ AUDIO ═══════════════
 	var sep_audio = HSeparator.new()
 	sep_audio.custom_minimum_size = Vector2(200, 10)
@@ -502,6 +519,17 @@ func _create_pause_panel():
 	_style_button(btn_oleada_5, Color(0.7, 0.2, 0.5))
 	hbox_levels.add_child(btn_oleada_5)
 
+	var btn_oleada_6 = Button.new()
+	btn_oleada_6.text = "Oleada 6"
+	btn_oleada_6.custom_minimum_size = Vector2(110, 40)
+	btn_oleada_6.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_cambio_oleada_debug(6)
+	)
+	_style_button(btn_oleada_6, Color(0.8, 0.25, 0.2))
+	hbox_levels.add_child(btn_oleada_6)
+
 	# Fila de Navegación de Nivees (Debug)
 	var hbox_nav_debug = HBoxContainer.new()
 	hbox_nav_debug.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -509,10 +537,21 @@ func _create_pause_panel():
 	hbox_nav_debug.visible = debug_ui_enabled
 	vbox.add_child(hbox_nav_debug)
 
-	var lvl6_btn = Button.new()
-	lvl6_btn.text = "🏆 Ir al Nivel 6"
-	lvl6_btn.custom_minimum_size = Vector2(170, 40)
-	lvl6_btn.pressed.connect(
+	var btn_ir_nivel6 = Button.new()
+	btn_ir_nivel6.text = "⚔️ Ir al Nivel 6 (anterior 5)"
+	btn_ir_nivel6.custom_minimum_size = Vector2(210, 40)
+	btn_ir_nivel6.pressed.connect(
+		func():
+			_toggle_pause()
+			_ejecutar_cambio_oleada_debug(6)
+	)
+	_style_button(btn_ir_nivel6, Color(0.75, 0.25, 0.2))
+	hbox_nav_debug.add_child(btn_ir_nivel6)
+
+	var lvl_beta_btn = Button.new()
+	lvl_beta_btn.text = "🏆 Ir al Nivel Beta"
+	lvl_beta_btn.custom_minimum_size = Vector2(170, 40)
+	lvl_beta_btn.pressed.connect(
 		func():
 			if is_paused:
 				is_paused = false
@@ -523,8 +562,9 @@ func _create_pause_panel():
 			else:
 				get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
 	)
-	_style_button(lvl6_btn, Color(0.6, 0.4, 0.1))
-	hbox_nav_debug.add_child(lvl6_btn)
+	_style_button(lvl_beta_btn, Color(0.6, 0.4, 0.1))
+	hbox_nav_debug.add_child(lvl_beta_btn)
+
 
 	var debug_btn = Button.new()
 	debug_btn.text = "🔧 Modo Debug (NIVEL01)"
@@ -744,9 +784,13 @@ func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:
 		get_tree().reload_current_scene()
 		return
 
-	if numero_oleada == 5:
+	if numero_oleada == 6:
+		if root_node.has_method("debug_ir_a_oleada_6"):
+			root_node.call("debug_ir_a_oleada_6")
+	elif numero_oleada == 5:
 		if root_node.has_method("debug_ir_a_oleada_5"):
 			root_node.call("debug_ir_a_oleada_5")
+
 	elif numero_oleada == 4:
 		if root_node.has_method("debug_ir_a_oleada_4"):
 			root_node.call("debug_ir_a_oleada_4")
@@ -955,6 +999,67 @@ func _quit_game():
 	get_tree().quit()
 
 
+## Alterna el control entre la protagonista y Perrena (defensora con jabalina).
+## El personaje que queda sin control se oculta y sale del grupo "player";
+## el HUD de corazones se reconecta automáticamente al nuevo "player".
+static var _perrena_instanciada: Node3D = null
+static var _protagonista_reservada: Node3D = null
+
+func _cambiar_personaje_controlable() -> void:
+	var tree := get_tree()
+	var actual := tree.get_first_node_in_group("player")
+	if not actual:
+		return
+
+	var es_perrena_activa: bool = actual is Perrena
+
+	if es_perrena_activa:
+		# Volver a la protagonista
+		if _protagonista_reservada and is_instance_valid(_protagonista_reservada):
+			_activar_personaje(_protagonista_reservada)
+			_desactivar_personaje(actual)
+			_perrena_instanciada = null
+			get_tree().call_group("ui_vida_protagonista", "reconectar_player")
+		return
+
+	# Cambiar a Perrena: instanciarla (o reusarla) en la posición de la protagonista
+	if not _perrena_instanciada or not is_instance_valid(_perrena_instanciada):
+		var escena_perrena: PackedScene = load("res://Entities/Jugador_Perrena/Perrena.tscn")
+		if not escena_perrena:
+			return
+		_perrena_instanciada = escena_perrena.instantiate() as Node3D
+		if not _perrena_instanciada:
+			return
+		var root := tree.current_scene
+		if root:
+			root.add_child(_perrena_instanciada)
+		else:
+			return
+	_perrena_instanciada.global_position = actual.global_position
+
+	_protagonista_reservada = actual
+	_desactivar_personaje(actual)
+	_activar_personaje(_perrena_instanciada)
+	# El HUD de corazones sigue al "player" activo
+	get_tree().call_group("ui_vida_protagonista", "reconectar_player")
+
+
+func _activar_personaje(personaje: Node3D) -> void:
+	personaje.visible = true
+	personaje.set_physics_process(true)
+	personaje.set_process(true)
+	if not personaje.is_in_group("player"):
+		personaje.add_to_group("player")
+
+
+func _desactivar_personaje(personaje: Node3D) -> void:
+	personaje.visible = false
+	personaje.set_physics_process(false)
+	personaje.set_process(false)
+	if personaje.is_in_group("player"):
+		personaje.remove_from_group("player")
+
+
 func _play_music(index: int):
 	AudioManager.play_music(index)
 
@@ -1018,6 +1123,8 @@ func _on_oleada_iniciada_reconstruir_escudos(num_oleada: int) -> void:
 			oleada_real = oc
 	var omitir_enemigos := oleada_real >= 5
 	_reconstruir_todos_escudos(omitir_enemigos, oleada_real)
+
+
 	_sincronizar_visibilidad_escudos_por_oleada(oleada_real)
 	_ocultar_icono_puerta()
 
