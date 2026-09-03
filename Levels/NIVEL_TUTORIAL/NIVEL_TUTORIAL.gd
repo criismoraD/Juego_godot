@@ -409,6 +409,13 @@ func _precalentar_vfx_shaders() -> void:
 	if explosion_scene:
 		var vfx := explosion_scene.instantiate() as Node3D
 		if vfx:
+			# Silenciar el audio del VFX: es solo warm-up de shaders, no debe sonar
+			for audio in vfx.find_children("*", "AudioStreamPlayer*", true, false):
+				(audio as Node).set_deferred("autoplay", false)
+				if audio is AudioStreamPlayer3D:
+					(audio as AudioStreamPlayer3D).stream = null
+				elif audio is AudioStreamPlayer:
+					(audio as AudioStreamPlayer).stream = null
 			add_child(vfx)
 			vfx.global_position = Vector3(0.0, -200.0, 0.0)
 			get_tree().create_timer(0.2).timeout.connect(func():
@@ -1916,7 +1923,8 @@ func _crear_panel_controles_spawn() -> void:
 		{"nombre": "🏹 Lonko", "id": 6},
 		{"nombre": "🌸 Arquera Rosa", "id": 7},
 		{"nombre": "🎈 Globo Goblin", "id": 8},
-		{"nombre": "🟩 Limo Cuadrado", "id": 9}
+		{"nombre": "🟩 Limo Cuadrado", "id": 9},
+		{"nombre": "🛡️ Goblina Escudo", "id": 10}
 	]
 	for opt in opciones:
 		var btn := Button.new()
