@@ -652,10 +652,6 @@ func recibir_dano(amount: int):
 	take_damage(float(amount))
 
 
-func _reproducir_sonido_escudo_cayendo() -> void:
-	if AudioManager and AudioManager.has_method("play_sfx"):
-		AudioManager.play_sfx("shield_hit")
-
 
 
 func _flash_escudo():
@@ -877,23 +873,31 @@ func _emitir_muerte_por_escudo_roto() -> void:
 	died.emit()
 
 
-## SFX del escudo metálico cayendo al romperse (TEST_/Escudo metal callendo.wav).
+## SFX del escudo metálico cayendo al romperse
 func _reproducir_sonido_escudo_cayendo() -> void:
-	var stream: AudioStream = load("res://TEST_/Escudo metal callendo.wav")
-	if not stream:
-		return
-	var player := AudioStreamPlayer.new()
-	player.add_to_group("pausable_audio")
-	player.stream = stream
-	player.volume_db = 4.0  ## Fuente silenciosa (RMS 2.7%)
-	player.bus = "Master"
-	var root := get_tree().current_scene
-	if root:
-		root.add_child(player)
-		player.play()
-		player.finished.connect(player.queue_free)
+	if AudioManager and AudioManager.has_method("play_escudo_metal_cayendo"):
+		AudioManager.play_escudo_metal_cayendo()
 	else:
-		player.queue_free()
+		var stream: AudioStream = null
+		if ResourceLoader.exists("res://System/Audio/SFX/Escudo metal callendo.wav"):
+			stream = load("res://System/Audio/SFX/Escudo metal callendo.wav") as AudioStream
+		elif ResourceLoader.exists("res://TEST_/Escudo metal callendo.wav"):
+			stream = load("res://TEST_/Escudo metal callendo.wav") as AudioStream
+		if not stream:
+			return
+		var player := AudioStreamPlayer.new()
+		player.add_to_group("pausable_audio")
+		player.stream = stream
+		player.volume_db = -1.0
+		player.bus = "Master"
+		var root := get_tree().current_scene
+		if root:
+			root.add_child(player)
+			player.play()
+			player.finished.connect(player.queue_free)
+		else:
+			player.queue_free()
+
 
 
 func _drop_pocion() -> void:

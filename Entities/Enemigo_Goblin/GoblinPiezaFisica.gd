@@ -6,6 +6,7 @@ extends Node3D
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
 @export var es_piernas: bool = false
+@export var humo_al_aterrizar: bool = false  ## Humo a ambos lados al tocar el suelo (escudo pesado)
 var velocity: Vector3 = Vector3.ZERO
 var rot_speed_z: float = 0.0
 var active: bool = false
@@ -17,6 +18,7 @@ var _static_body: StaticBody3D = null
 var _tiempo_vida: float = 0.0
 var _disolviendo: bool = false
 var _tiempo_para_disolver: float = 2.5  ## Tiempo de reposo antes de disolverse
+var _humo_impacto_hecho: bool = false  ## Un solo estallido de humo al aterrizar
 
 
 func _ready() -> void:
@@ -48,6 +50,14 @@ func _crear_colisionador_flechas() -> void:
 	_static_body.add_child(col_shape)
 	add_child(_static_body)
 
+	# Excluir explícitamente a todos los enemigos presentes para que jamás les corte el paso
+	for enemigo in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(enemigo) and enemigo is CollisionObject3D:
+			_static_body.add_collision_exception_with(enemigo)
+			if enemigo is PhysicsBody3D:
+				enemigo.add_collision_exception_with(_static_body)
+
+
 
 func _physics_process(delta: float) -> void:
 	_tiempo_vida += delta
@@ -77,6 +87,10 @@ func _physics_process(delta: float) -> void:
 	if hit and hit.has("position"):
 		global_position.y = hit.position.y
 		global_position.x = hit.position.x
+		# Humo a ambos lados en el primer impacto contra el suelo (escudo pesado)
+		if humo_al_aterrizar and not _humo_impacto_hecho:
+			_humo_impacto_hecho = true
+			VFXFactory.spawn_shield_break_smoke(self, global_position)
 		var normal: Vector3 = hit.normal
 		if normal.dot(velocity) < 0:
 			velocity = velocity.bounce(normal) * 0.3

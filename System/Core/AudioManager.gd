@@ -303,6 +303,17 @@ func _load_all_sounds():
 	if _sfx_impacto_escudo:
 		sfx_streams["impacto_escudo_pesado"] = [_sfx_impacto_escudo]
 
+	var _sfx_escudo_cayendo: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/Escudo metal callendo.wav"):
+		_sfx_escudo_cayendo = load("res://System/Audio/SFX/Escudo metal callendo.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/Escudo metal callendo.wav"):
+		_sfx_escudo_cayendo = load("res://TEST_/Escudo metal callendo.wav") as AudioStream
+	if _sfx_escudo_cayendo:
+		sfx_streams["escudo_metal_cayendo"] = [_sfx_escudo_cayendo]
+		sfx_streams["Escudo metal callendo"] = [_sfx_escudo_cayendo]
+		sfx_streams["escudo_cayendo"] = [_sfx_escudo_cayendo]
+
+
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# MÚSICA
 	# ═══════════════════════════════════════════════════════════════════════════════
@@ -399,6 +410,10 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		elif sound_name == "sangre_splash":
 			# Splash de sangre balanceado para evitar volumen excesivo o duplicado
 			volume_to_use = sfx_volume_db - 6.0
+		elif sound_name in ["escudo_metal_cayendo", "Escudo metal callendo", "escudo_cayendo"]:
+			# Volumen reducido a pedido: contundente pero sin saturar
+			volume_to_use = sfx_volume_db - 1.0
+
 
 		temp_player.volume_db = volume_to_use + volume_boost_db
 		temp_player.bus = "Master"
@@ -651,3 +666,9 @@ func set_enemy_damage_volume(value: float):
 ## Obtener volumen de daño a enemigos
 func get_enemy_damage_volume() -> float:
 	return enemy_damage_volume
+
+
+## Reproducir sonido de escudo metálico cayendo al suelo con volumen aumentado
+func play_escudo_metal_cayendo(volume_boost: float = 0.0) -> void:
+	play_sfx("escudo_metal_cayendo", volume_boost)
+
