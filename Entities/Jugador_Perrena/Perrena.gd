@@ -11,9 +11,9 @@ const JABALINA_SCENE: PackedScene = preload("res://Entities/Proyectil_Tridente_I
 const POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const MAT_PERRENA: Material = preload("res://Entities/Jugador_Perrena/PERRENA_MAT.tres")
 
-## El GLB de Perrena trae el rig raíz (Armature) a escala 0.01 (mixamo).
-## ESCALA_MODELO compensa para que mida lo mismo que la protagonista.
-const ESCALA_MODELO: float = 96.0
+## Mismo flujo que la protagonista: el Player del nivel se instancia con scale 0.3.
+## Perrena trae su rig idéntico a PROTA (Armature mixamo a 0.01), así que NO lleva
+## escala extra en el modelo; la escala del CharacterBody (0.3) la fija la escena.
 
 ## Mapeo de clips del GLB de Perrena -> nombres que el AnimationTree del Player espera.
 ## Debe registrarse ANTES de que el Player construya su árbol dinámico.
@@ -53,12 +53,11 @@ func _ready():
 	if tree and anim_p:
 		tree.anim_player = tree.get_path_to(anim_p)
 
-	# 2. Corregir escala del rig mixamo (0.01 embebido) y aplicar textura
+	# 2. Aplicar textura (la escala la fija la escena: mismo rig mixamo que PROTA)
 	var modelo := find_child("PerrenaModel", true, false) as Node3D
 	if not modelo:
 		modelo = find_child("Perrena", true, false) as Node3D
 	if modelo:
-		modelo.scale = Vector3.ONE * ESCALA_MODELO
 		for mesh in modelo.find_children("*", "MeshInstance3D", true, false):
 			(mesh as MeshInstance3D).material_override = MAT_PERRENA
 
