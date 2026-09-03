@@ -24,10 +24,6 @@ boot_splash/stretch_mode=0
 boot_splash/image="uid://dd5lt6avm0ojb"
 config/icon="uid://b0krrdes1usyr"
 
-[audio]
-
-buses/default_bus_layout="uid://dcled5jpi5lun"
-
 [autoload]
 
 AudioManager="*res://System/Core/AudioManager.gd"
@@ -104,7 +100,6 @@ lights_and_shadows/directional_shadow/size=512
 lights_and_shadows/directional_shadow/size.mobile=512
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
 lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
-anti_aliasing/quality/msaa_3d=2
 environment/volumetric_fog/volume_size=48
 environment/volumetric_fog/use_filter=true
 anti_aliasing/quality/screen_space_aa=1

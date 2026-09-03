@@ -117,7 +117,7 @@ func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("shield_imps")
 	add_to_group("guardians")
-	add_to_group("escudos")
+
 
 
 	health = vida_maxima

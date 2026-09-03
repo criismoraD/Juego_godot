@@ -55,6 +55,7 @@
 [ext_resource type="Texture2D" uid="uid://i5j00bo3m33j" path="res://TEST_/Barricada C.png" id="59_barricadaC"]
 [ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://TEST_/Bandera A.png" id="60_banderaA"]
 [ext_resource type="Texture2D" uid="uid://ct3dbmo55umt0" path="res://TEST_/Carreta_A.png" id="61_carretaA"]
+[ext_resource type="PackedScene" uid="uid://dqh1kb0rvuddm" path="res://Entities/Torre_de_asedio/Torre_de_asedio.tscn" id="62_torre_asedio"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -849,7 +850,7 @@ tiempo_congelar = 5.0
 color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
 
 [node name="NIVEL_2_Escudo_enemigo2" parent="." unique_id=1771597087 instance=ExtResource("31_lhtjo")]
-transform = Transform3D(0.48633456, 0, -0.8737727, 0, 1, 0, 0.8737727, 0, 0.48633456, -3.5757003, 0.20317256, -0.26494488)
+transform = Transform3D(0.48633456, 0, -0.8737727, 0, 1, 0, 0.8737727, 0, 0.48633456, -3.5757003, 0.1752429, -0.26494488)
 fuerza_explosion = 1.0
 fuerza_horizontal = 2.0
 torque_min = -1.0
@@ -858,7 +859,7 @@ tiempo_congelar = 5.0
 color_borde_disolucion = Color(0.8039216, 0.14901961, 0.19607843, 1)
 
 [node name="NIVEL_2_Escudo_enemigo3" parent="." unique_id=646823642 instance=ExtResource("31_lhtjo")]
-transform = Transform3D(0.3880142, 0, -0.92165345, 0, 1, 0, 0.92165345, 0, 0.3880142, 0.04679942, 0.20317256, -0.26494488)
+transform = Transform3D(0.3880142, 0, -0.92165345, 0, 1, 0, 0.92165345, 0, 0.3880142, 0.04679942, 0.16189653, -0.26494488)
 fuerza_explosion = 1.0
 fuerza_horizontal = 2.0
 torque_min = -1.0
@@ -1013,6 +1014,9 @@ script = ExtResource("48_puerta_script")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PUERTA_TRIGER" unique_id=1633856025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23718262, -0.7602539, 0)
 shape = SubResource("BoxShape3D_3xd07")
+
+[node name="Torre_de_asedio" parent="." unique_id=987123456 instance=ExtResource("62_torre_asedio")]
+transform = Transform3D(0.030259425, 0, -1.777069, 0, 1.8436748, 0, 1.3535084, 0, 0.039728634, 3.1228988, 0.067294836, -2.500832)
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

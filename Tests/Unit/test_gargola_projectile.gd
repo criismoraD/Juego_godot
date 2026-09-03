@@ -111,7 +111,7 @@ func test_sonidos_y_escala_configurados() -> void:
 	assert_eq(String(GargolaProjectile.SFX_FUEGO), "gargola_fire")
 	assert_eq(String(GargolaProjectile.SFX_IMPACTO), "gargola_impacto")
 	assert_eq(GargolaProjectile.VFX_LOCAL_SCALE, 0.375)
-	assert_almost_eq(GargolaProjectile.BOOST_VOLUMEN_X3_DB, 9.5, 0.01)
+	assert_almost_eq(GargolaProjectile.VOLUMEN_FUEGO_REDUCIDO_DB, 1.5, 0.01)
 
 
 func test_cache_meshes_excluye_vfx_tras_ready() -> void:

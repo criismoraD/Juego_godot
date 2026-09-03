@@ -1,0 +1,152 @@
+[gd_scene format=3 uid="uid://2vduis8hn5qy"]
+
+[ext_resource type="Script" uid="uid://dx1iit1cey47y" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/GoblinaEscudoPesado.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://caav1wyvsb8if" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/Goblina escudo Pesado.glb" id="2_glb"]
+[ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/EscudoPesado.tscn" id="4_shield"]
+[ext_resource type="Texture2D" uid="uid://co802i012y46f" path="res://Entities/Enemigo_Lonko/humo pisada.png" id="5_polvo"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.22
+height = 0.85
+
+[sub_resource type="Gradient" id="Grad_polvo"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 1, 0.9, 1, 1, 1, 0.5, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradTex_polvo"]
+gradient = SubResource("Grad_polvo")
+
+[sub_resource type="Curve" id="Curve_size_polvo"]
+_data = [Vector2(0, 0.4), 0.0, 1.5, 0, 0, Vector2(0.4, 1.1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTex_size_polvo"]
+curve = SubResource("Curve_size_polvo")
+
+[sub_resource type="ParticleProcessMaterial" id="PPM_polvo"]
+emission_shape = 3
+emission_box_extents = Vector3(0.22, 0.02, 0.22)
+direction = Vector3(0, 1, 0)
+spread = 60.0
+initial_velocity_min = 0.3
+initial_velocity_max = 0.7
+gravity = Vector3(0, 0.3, 0)
+scale_min = 0.8
+scale_max = 1.3
+scale_curve = SubResource("CurveTex_size_polvo")
+color_ramp = SubResource("GradTex_polvo")
+
+[sub_resource type="StandardMaterial3D" id="Mat_polvo"]
+render_priority = 2
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("5_polvo")
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_polvo"]
+material = SubResource("Mat_polvo")
+size = Vector2(0.65, 0.65)
+
+[node name="GoblinaEscudoPesado" type="CharacterBody3D" unique_id=1555641251]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_script")
+
+vida_maxima = null
+velocidad_carrera = null
+distancia_proteccion = null
+rotacion_y_modelo = null
+color_borde_disolucion = null
+altura_spawn_tridente = null
+zona_roja_min_x = null
+zona_roja_max_x = null
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1818475409]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.43, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Modelo" parent="." unique_id=1735846083 instance=ExtResource("2_glb")]
+transform = Transform3D(-3.40949e-08, 0, -0.78, 0, 0.78, 0, 0.78, 0, -3.40949e-08, 0, 0, 0)
+
+[node name="Skeleton3D" parent="Modelo/Armature" parent_id_path=PackedInt32Array(1735846083, 654175281) index="0" unique_id=252514028]
+bones/0/position = Vector3(-7.3244014, -28.435308, -7.5358047)
+bones/0/rotation = Quaternion(-0.9726063, 0.22084653, -0.0717729, -0.010611565)
+bones/1/rotation = Quaternion(0.46780974, 0.19077241, 0.84710264, -0.1648545)
+bones/2/rotation = Quaternion(-0.20731111, -0.030970663, 0.06623654, 0.9755387)
+bones/3/rotation = Quaternion(0.34740978, 0.0014747435, -0.087325834, 0.93363726)
+bones/4/rotation = Quaternion(0.3556034, -0.19672367, 0.07683543, 0.9104627)
+bones/6/rotation = Quaternion(0.2947039, 0.34496975, 0.861631, 0.22745913)
+bones/7/rotation = Quaternion(-0.85256994, -0.1215622, 0.10216341, 0.49790546)
+bones/8/rotation = Quaternion(0.2590467, 0.07487582, 0.26624537, 0.9254198)
+bones/9/rotation = Quaternion(0.35719195, 0.19928102, -0.07829396, 0.90915954)
+bones/10/position = Vector3(-3.2037508e-07, 3.6976888, -1.102686e-06)
+bones/11/rotation = Quaternion(-0.07371551, -0.006439337, -0.013889353, 0.9971618)
+bones/12/rotation = Quaternion(0.042199593, -0.015782686, -0.015170679, 0.99886936)
+bones/13/rotation = Quaternion(0.04282409, -0.0119886575, -0.015895698, 0.99888426)
+bones/14/rotation = Quaternion(-0.58984256, -0.39779735, 0.58475983, -0.38974223)
+bones/15/position = Vector3(2.0061833e-08, 6.8014007, 1.4789975e-06)
+bones/15/rotation = Quaternion(0.006068873, -0.20395477, -0.06366938, 0.9768889)
+bones/16/position = Vector3(1.4257791e-06, 9.260479, -5.012449e-06)
+bones/16/rotation = Quaternion(0.10153608, -0.29567495, -0.002024714, 0.9498751)
+bones/17/rotation = Quaternion(0.071875, -0.256973, 0.001235, 0.963741)
+bones/18/position = Vector3(-5.4742304e-07, 3.5592992, 3.7341078e-07)
+bones/18/rotation = Quaternion(-0.012301798, -0.0057573793, -0.08104697, 0.9966178)
+bones/19/position = Vector3(0.10987806, 2.9013832, 1.3113031e-06)
+bones/19/rotation = Quaternion(0.08060583, 0.0022294226, -0.14729029, 0.9858008)
+bones/20/position = Vector3(0.014416814, 1.8726441, 9.1741435e-07)
+bones/20/rotation = Quaternion(0.017332425, 0.015506858, -0.16783862, 0.98554015)
+bones/21/position = Vector3(-1.3483269, 2.4178646, -0.6657597)
+bones/21/rotation = Quaternion(0.0032349739, -0.09717331, 0.010635677, 0.9952054)
+bones/22/rotation = Quaternion(0.30307925, 0.1569833, 0.16714075, 0.92496663)
+bones/23/position = Vector3(0.40207812, 2.19298, 5.096013e-06)
+bones/23/rotation = Quaternion(0.00068612205, 0.007994086, -0.09572411, 0.99537563)
+bones/24/position = Vector3(-0.021501008, 2.0704238, -3.3481967e-07)
+bones/24/rotation = Quaternion(-0.007946023, -0.005459073, -0.14293605, 0.98968506)
+bones/25/position = Vector3(-0.38056388, 1.5720443, 7.914317e-06)
+bones/25/rotation = Quaternion(0.0056529613, -0.02366384, 0.0030393924, 0.99969935)
+bones/26/rotation = Quaternion(-0.04629439, 0.012958675, -0.006577191, 0.99882215)
+bones/27/rotation = Quaternion(-0.19282503, 0.23208436, -0.06169583, 0.9513932)
+bones/29/rotation = Quaternion(0.53888744, -0.43866867, 0.60683197, 0.3859082)
+bones/30/position = Vector3(3.3637363e-07, 6.801398, -1.2308658e-06)
+bones/30/rotation = Quaternion(0.41623968, 0.11376275, -0.0075978017, 0.90207815)
+bones/31/position = Vector3(3.2200916e-07, 9.284194, 3.6874496e-06)
+bones/31/rotation = Quaternion(0.6861689, 0.18883872, -0.14253254, 0.687893)
+bones/32/position = Vector3(-3.7173759e-06, 13.33333, -2.088616e-07)
+bones/32/rotation = Quaternion(0.02910771, -0.35613224, 0.23992492, 0.9026398)
+bones/33/position = Vector3(6.068406e-06, 3.1614318, -2.8271272e-06)
+bones/33/rotation = Quaternion(0.29367387, 0.028343325, 0.37803894, 0.87751865)
+bones/34/rotation = Quaternion(0.3607982, -0.017523335, 0.48597035, 0.7958333)
+bones/35/position = Vector3(0.15507019, 1.868748, -2.1525866e-06)
+bones/35/rotation = Quaternion(0.29539964, -0.032901946, 0.38182354, 0.8751385)
+bones/36/position = Vector3(1.0721054, 2.5044866, -1.177636)
+bones/36/rotation = Quaternion(0.010254254, 0.23596266, -0.01103681, 0.97164536)
+bones/37/rotation = Quaternion(0.2580003, -0.014855966, 0.29669395, 0.91934097)
+bones/38/position = Vector3(-0.43392107, 2.2071671, 6.8402423e-06)
+bones/38/rotation = Quaternion(-0.025562618, -0.1644215, 0.041502934, 0.98518515)
+bones/39/rotation = Quaternion(-0.16462216, 0.15237702, 0.0036426403, 0.97450894)
+bones/40/position = Vector3(0.27730608, 1.4380686, 2.5883523e-06)
+bones/40/rotation = Quaternion(0.008211645, 0.04288118, -0.0012762406, 0.99904567)
+
+[node name="BoneAttachment_Shield" type="BoneAttachment3D" parent="Modelo/Armature/Skeleton3D" index="1" unique_id=1041090357]
+transform = Transform3D(0.28067374, 0.9559412, 0.08601581, 0.29819897, -0.0016678125, -0.954502, -0.9123045, 0.29355347, -0.2855292, 16.16027, -44.817123, -2.293423)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
+
+[node name="EscudoPesado" parent="Modelo/Armature/Skeleton3D/BoneAttachment_Shield" unique_id=714769417 instance=ExtResource("4_shield")]
+transform = Transform3D(0, 0, -100, -99.03907, 13.829748, 0, 13.829748, 99.03907, 0, -14.293121, -19.74059, -40.459183)
+
+[node name="Particulas_Pisada" type="GPUParticles3D" parent="." unique_id=1025611560]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+emitting = false
+amount = 14
+lifetime = 0.55
+randomness = 0.15
+process_material = SubResource("PPM_polvo")
+draw_pass_1 = SubResource("QuadMesh_polvo")
+
+[editable path="Modelo"]

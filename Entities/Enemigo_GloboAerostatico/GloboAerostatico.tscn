@@ -9,14 +9,15 @@
 [ext_resource type="PackedScene" uid="uid://bqdm44vqatl0p" path="res://Entities/Enemigo_GloboAerostatico/GoblinTripulante.tscn" id="9_tripulante"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_col"]
-radius = 0.35
-height = 1.4
+radius = 0.65
+height = 2.4
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_canasta_rango"]
 size = Vector3(0.9689453, 0.58371305, 0.8712891)
 
 [node name="GloboAerostatico" type="CharacterBody3D" unique_id=245115629]
 collision_layer = 4
+collision_mask = 0
 script = ExtResource("1_script")
 distancia_minima_caminar = 2.0
 vida_maxima = 3
@@ -25,7 +26,7 @@ sombra_tamano = Vector2(1.8, 1.7)
 sombra_altura_max = 30.0
 
 [node name="ColisionGlobo" type="CollisionShape3D" parent="." unique_id=350177709]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 shape = SubResource("CapsuleShape3D_col")
 
 [node name="PivotBamboleo" type="Node3D" parent="." unique_id=1478761593]

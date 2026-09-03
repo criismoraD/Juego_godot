@@ -142,6 +142,11 @@ func _on_enemy_ready() -> void:
 	_iniciar_tween_deformacion()
 	_configurar_sonido_movimiento()
 
+	# Alinear estrictamente al plano Z de gameplay 2.5D para que las flechas impacten de lleno
+	var player = get_tree().get_first_node_in_group("player")
+	var z_juego: float = player.global_position.z if player else 0.05
+	global_position.z = z_juego
+
 
 func _on_state_walking() -> void:
 	pass
@@ -177,6 +182,11 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0
 	velocity.z = 0.0
 	global_position.y = _altura_base + sin(_oscilacion_fase) * amplitud_oscilacion
+
+	# Forzar el plano Z de gameplay 2.5D en cada frame (evita desfasajes en Z por colisión o spawn)
+	var player = get_tree().get_first_node_in_group("player")
+	var z_juego: float = player.global_position.z if player else 0.05
+	global_position.z = z_juego
 
 	match current_state:
 		State.WALKING:

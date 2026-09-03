@@ -9,6 +9,7 @@ signal scene_load_progress(progress: float)
 signal scene_load_completed(path: String)
 
 var loading_screen_scene: PackedScene = preload("res://UI/LoadingScreen.tscn")
+const ShaderPrewarmer = preload("res://System/Core/ShaderPrewarmer.gd")
 
 var _current_loading_screen: CanvasLayer = null
 var _loading_path: String = ""
@@ -82,7 +83,18 @@ func _monitorear_carga_async(target_path: String) -> void:
 		_finalizar_carga_fallida(target_path)
 		return
 
-	# 4. Completar progreso al 100%
+	# 4. Precalentar Shaders y Efectos de Vulkan para evitar tirones en combate
+	if is_instance_valid(_current_loading_screen):
+		_current_loading_screen.set_status_text("Optimizando shaders y efectos...")
+		_current_loading_screen.set_progress(0.96)
+
+
+	await ShaderPrewarmer.prewarm(get_tree(), func(p: float):
+		if is_instance_valid(_current_loading_screen):
+			_current_loading_screen.set_progress(0.96 + (p * 0.04))
+	)
+
+	# 5. Completar progreso al 100%
 	if is_instance_valid(_current_loading_screen):
 		_current_loading_screen.set_progress(1.0)
 		_current_loading_screen.set_status_text("¡Listo!")
@@ -91,7 +103,7 @@ func _monitorear_carga_async(target_path: String) -> void:
 	# Pausa breve para que se aprecie la barra llena
 	await get_tree().create_timer(0.12, false, false, true).timeout
 
-	# 5. Cambiar a la nueva escena
+	# 6. Cambiar a la nueva escena
 	get_tree().change_scene_to_packed(packed_scene)
 	scene_load_completed.emit(target_path)
 

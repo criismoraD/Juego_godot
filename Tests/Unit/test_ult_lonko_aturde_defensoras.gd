@@ -24,7 +24,7 @@ func before_each():
 
 func after_each():
 	for escena in ["arquera", "ballestera"]:
-		var nodo: Node = get_meta_or_null(escena)
+		var nodo: Node = get_meta(escena, null) as Node
 		if is_instance_valid(nodo):
 			if nodo.get_parent():
 				nodo.get_parent().remove_child(nodo)

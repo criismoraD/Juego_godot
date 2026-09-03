@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/Escudo pesado.glb" id="1_mesh"]
+[ext_resource type="Material" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/EscudoPesado_MAT.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/EscudoPesadoArea.gd" id="3_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_shield"]
+size = Vector3(0.7, 1.0, 0.14)
+
+[node name="EscudoPesado" type="Node3D"]
+
+[node name="ModeloEscudo" parent="." instance=ExtResource("1_mesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.45, 0, 0, 0)
+
+[node name="Escudo pesado" parent="ModeloEscudo" index="0"]
+material_override = ExtResource("2_mat")
+
+[node name="EscudoArea" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("3_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EscudoArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape3D_shield")
+
+[editable path="ModeloEscudo"]

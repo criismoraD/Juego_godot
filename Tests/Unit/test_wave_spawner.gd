@@ -289,3 +289,23 @@ func test_predefined_wave_spawn_queue_wave_3():
 		var is_consecutive = (_spawner.cola_spawn[i] == _spawner.escena_imp_escudo and _spawner.cola_spawn[i+1] == _spawner.escena_imp_escudo)
 		assert_false(is_consecutive, "No two imp shields can be consecutive in Wave 3")
 
+
+func test_standby_pool_con_instancia_liberada_no_crashea():
+	# Arrange: simular que el pool de standby contiene una instancia previamente liberada (freed)
+	var dummy_freed = Node3D.new()
+	get_tree().root.add_child(dummy_freed)
+	dummy_freed.free()  # Ahora es un previously freed instance
+	
+	_spawner._standby_pool[_spawner.escena_goblin] = [dummy_freed]
+	var cola_tipada: Array[PackedScene] = [_spawner.escena_goblin]
+	_spawner.cola_spawn = cola_tipada
+
+	
+	# Act: Spawner debe vaciar el elemento muerto y crear uno nuevo sin crashear
+	_spawner._spawn_goblin()
+	
+	# Assert
+	assert_eq(_spawner.active_goblins.size(), 1, "Debe spawnear un goblin valido a pesar de haber tenido una instancia liberada en el pool")
+	assert_true(is_instance_valid(_spawner.active_goblins[0]), "El enemigo spawneado debe ser una instancia valida")
+
+

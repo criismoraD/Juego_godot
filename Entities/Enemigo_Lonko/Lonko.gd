@@ -104,6 +104,7 @@ var _cached_spawn_pos: Vector3 = Vector3.ZERO
 var _particulas_pilar: GPUParticles3D = null
 var _particulas_humo_pilar: GPUParticles3D = null  ## Humo SmokeFX 1A-8 durante elevación
 var _particulas_pisada: GPUParticles3D = null  ## Polvo de las pisadas al correr
+var _audio_correr_descalzo: AudioStreamPlayer3D = null
 var _instancia_pilar: Node3D = null
 var _base_pos_pilar: Vector3 = Vector3.ZERO
 var _tiros_realizados: int = 0  ## Contador de tiros lanzados (para el ataque eléctrico periódico)
@@ -150,6 +151,7 @@ func _on_enemy_ready() -> void:
 
 	_configurar_flecha_mano()
 	_configurar_particulas_pisada()
+	_setup_audio_correr_descalzo()
 	_play_random_run_animation()
 
 
@@ -215,6 +217,33 @@ func _configurar_particulas_pisada() -> void:
 	_particulas_pisada.process_material = pm
 	_particulas_pisada.amount = 16  # Reducido a la mitad
 	_particulas_pisada.lifetime = 1.15  # Estela suave duradera
+
+
+func _setup_audio_correr_descalzo() -> void:
+	var stream: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):
+		stream = load("res://System/Audio/SFX/sonido_correr_descalzo.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.wav"):
+		stream = load("res://TEST_/sonido_correr_descalzo.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.mp3"):
+		stream = load("res://System/Audio/SFX/sonido_correr_descalzo.mp3") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.mp3"):
+		stream = load("res://TEST_/sonido_correr_descalzo.mp3") as AudioStream
+
+	if stream:
+		var stream_mp3 = stream as AudioStreamMP3
+		if stream_mp3:
+			stream_mp3.loop = true
+		var stream_wav = stream as AudioStreamWAV
+		if stream_wav:
+			stream_wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		_audio_correr_descalzo = AudioStreamPlayer3D.new()
+		_audio_correr_descalzo.name = "AudioCorrerDescalzo"
+		_audio_correr_descalzo.stream = stream
+		_audio_correr_descalzo.bus = "Master"
+		_audio_correr_descalzo.unit_size = 15.0
+		_audio_correr_descalzo.max_db = 0.0
+		add_child(_audio_correr_descalzo)
 
 
 func _configurar_flecha_mano() -> void:
@@ -455,21 +484,31 @@ func _on_state_walking() -> void:
 func _process_walking(delta: float) -> void:
 	if _pilar_desplegado or _reached_position:
 		velocity.x = 0
+		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+			_audio_correr_descalzo.stop()
 		_change_state(State.SHOOTING)
 		return
 
 	if _is_taking_damage or _is_invulnerable:
 		velocity.x = 0
+		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+			_audio_correr_descalzo.stop()
 		return
 
 	velocity.x = -velocidad_caminar
 	walked_distance += velocidad_caminar * delta
+
+	# Audio de pisadas descalzas mientras corre
+	if _audio_correr_descalzo and not _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.play()
 
 	if modo_pacifico:
 		velocity.x = -velocidad_caminar
 		walked_distance += velocidad_caminar * delta
 		if global_position.x <= limite_pacifico_x:
 			velocity.x = 0
+			if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+				_audio_correr_descalzo.stop()
 			if not pacifico_detenido:
 				pacifico_detenido = true
 				_on_pacifico_detenido()
@@ -481,6 +520,8 @@ func _process_walking(delta: float) -> void:
 		global_position.x = max(global_position.x, limite_izq)
 		_reached_position = true
 		_base_pos_pilar = global_position
+		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+			_audio_correr_descalzo.stop()
 		_change_state(State.SHOOTING)
 		return
 
@@ -488,6 +529,8 @@ func _process_walking(delta: float) -> void:
 	walked_distance += velocidad_caminar * delta
 
 	if walked_distance >= target_walk_distance:
+		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+			_audio_correr_descalzo.stop()
 		if _check_spacing():
 			_reached_position = true
 			_base_pos_pilar = global_position
@@ -502,6 +545,8 @@ func _process_walking(delta: float) -> void:
 
 
 func _on_state_shooting() -> void:
+	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.stop()
 	if _is_shooting or _is_taking_damage:
 		return
 	if not _pilar_invocado and not _pilar_desplegado:
@@ -512,6 +557,8 @@ func _on_state_shooting() -> void:
 
 func _process_shooting(_delta: float) -> void:
 	velocity.x = 0
+	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.stop()
 	if _pilar_desplegado or _is_invulnerable or _pilar_invocado:
 		velocity.y = 0
 
@@ -519,6 +566,8 @@ func _process_shooting(_delta: float) -> void:
 func _play_random_run_animation() -> void:
 	var rand_run: String = "CORRER_01" if randf() < 0.5 else "CORRE_02"
 	_play_animation(rand_run)
+	if _audio_correr_descalzo and not _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.play()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -526,6 +575,8 @@ func _play_random_run_animation() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _iniciar_secuencia_pilar() -> void:
+	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.stop()
 	if _pilar_invocado or (_instancia_pilar and is_instance_valid(_instancia_pilar)):
 		return
 	_pilar_invocado = true
@@ -1567,6 +1618,8 @@ func take_damage(amount: float) -> void:
 
 
 func _on_state_dying() -> void:
+	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.stop()
 	_is_taking_damage = true
 	_is_shooting = false
 	_apuntar_arriba = false

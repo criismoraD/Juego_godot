@@ -1,6 +1,6 @@
-﻿extends res://addons/gut/test.gd
+extends "res://addons/gut/test.gd"
 
-var CanoneroScene: PackedScene = preload(res://Entities/Enemigo_Canonero/Canonero.tscn)
+var CanoneroScene: PackedScene = preload("res://Entities/Enemigo_Canonero/Canonero.tscn")
 var canonero: Canonero = null
 
 

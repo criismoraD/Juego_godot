@@ -1,7 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://3nybtdhf2xsvo"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bl37ox1n4jolc"]
 
 [ext_resource type="Texture2D" uid="uid://bcj5kjwx6mhpy" path="res://Entities/Jugador_Perrena/Perrena_D.jpg" id="1_perrena"]
-
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline_perrena"]

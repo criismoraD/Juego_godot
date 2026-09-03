@@ -288,3 +288,18 @@ func test_ejecutar_cambio_oleada_guarda_solicitud() -> void:
 	GameUIScript.oleada_inicial_solicitada = 0
 	remove_child(_game_ui)
 
+
+func test_ejecutar_cambio_oleada_6_guarda_solicitud() -> void:
+	# Arrange
+	add_child(_game_ui)
+	GameUIScript.oleada_inicial_solicitada = 0
+
+	# Act
+	_game_ui._ejecutar_cambio_oleada_debug(6)
+
+	# Assert
+	assert_eq(GameUIScript.oleada_inicial_solicitada, 6, "Debe registrar oleada 6 al solicitar cambio")
+	GameUIScript.oleada_inicial_solicitada = 0
+	remove_child(_game_ui)
+
+

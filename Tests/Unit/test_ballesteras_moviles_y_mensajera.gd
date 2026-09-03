@@ -158,7 +158,7 @@ func test_finalizar_despliegue_plataforma_agacharse_y_postura_combate():
 	_ballestera.es_movil = true
 
 	# Act: llamar a _finalizar_despliegue_plataforma()
-	var tw = _ballestera._finalizar_despliegue_plataforma()
+	_ballestera.call("_finalizar_despliegue_plataforma")
 	assert_true(_ballestera.en_despliegue, "Durante la transición de agachado inicial debe seguir en_despliegue")
 	assert_true(_ballestera.fase_agachada, "Debe agacharse inicialmente para asentar las piernas al suelo")
 

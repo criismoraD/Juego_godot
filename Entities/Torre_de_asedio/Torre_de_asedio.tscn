@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://dqh1kb0rvuddm"]
+
+[ext_resource type="Script" uid="uid://c77pujemgkkuw" path="res://Entities/Torre_de_asedio/Torre_de_asedio.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dytg0a02u4hb0" path="res://TEST_/Torre de asedio/Torre asedio.glb" id="2_glb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rampa_piso"]
+size = Vector3(1.6795533, 0.12, 1.2973877)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_barrera_lateral"]
+size = Vector3(1.3579102, 1.2, 0.15)
+
+[node name="Torre_de_asedio" type="Node3D" unique_id=1692078532 node_paths=PackedStringArray("punto_spawn", "rampa_piso", "colision_rampa", "limites_rampa")]
+script = ExtResource("1_script")
+punto_spawn = NodePath("Aparicion")
+rampa_piso = NodePath("RampaPiso")
+colision_rampa = NodePath("RampaPiso/CollisionShape3D")
+limites_rampa = NodePath("LimitesRampa")
+
+[node name="ModeloTorre" parent="." unique_id=1992199087 instance=ExtResource("2_glb")]
+transform = Transform3D(5.0431304e-16, 0, 7.101735, 0, 3.9587367, 0, -4.1180325, 0, 8.69711e-16, 0.00047290325, 0, 0)
+
+[node name="RampaPiso" type="StaticBody3D" parent="." unique_id=1768438788]
+transform = Transform3D(0.67163694, -0.009317568, 0, 0.0062392624, 1.0030068, 0, 0, 0, 1, 0.013877332, 2.05, 0.38722622)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RampaPiso" unique_id=272113132]
+transform = Transform3D(3.7222502, -9.313226e-10, 0, -2.2351742e-08, 0.20619085, 0, 0, 0, 2.1309736, -0.094533935, 0.26876473, -0.550198)
+shape = SubResource("BoxShape3D_rampa_piso")
+
+[node name="LimitesRampa" type="StaticBody3D" parent="." unique_id=823684301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8340299, 2.05, 0)
+collision_layer = 512
+collision_mask = 0
+
+[node name="BarreraLateralSur" type="CollisionShape3D" parent="LimitesRampa" unique_id=186065325]
+transform = Transform3D(1, 0, 0, 0, 0.49658942, 0, 0, 0, 1, 1.7235494, 0.42059946, 1.2055091)
+shape = SubResource("BoxShape3D_barrera_lateral")
+
+[node name="BarreraLateralNorte" type="CollisionShape3D" parent="LimitesRampa" unique_id=1130692807]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9810787, 0.11990118, -1.0493068)
+shape = SubResource("BoxShape3D_barrera_lateral")
+
+[node name="Aparicion" type="Marker3D" parent="." unique_id=1117755323]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.49791342, 2.8409257, -0.2971695)
+gizmo_extents = 0.6

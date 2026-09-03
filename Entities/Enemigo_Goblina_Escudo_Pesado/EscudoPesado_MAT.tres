@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://8akoqah3ans7"]
+
+[ext_resource type="Texture2D" uid="uid://djfkjsqvomsqw" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/Escudo pesado_D.jpg" id="1_tex"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+resource_name = "EscudoPesado_MAT"
+next_pass = SubResource("ShaderMaterial_outline")
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")

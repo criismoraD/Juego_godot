@@ -19,7 +19,9 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 30  ## Enemigos totales en la Oleada 3
 @export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos cuerno)
-@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (40 base + 10 refuerzos cuerno)
+@export var total_enemigos_oleada_5: int = 40  ## Enemigos totales en la nueva Oleada 5 (12 arqueras, 15 ballesteros, 5 globos, 6 goblinas de escudo)
+@export var total_enemigos_oleada_6: int = 50  ## Enemigos totales en la Oleada 6 (anterior Oleada 5: 40 base + 10 refuerzos cuerno)
+
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
@@ -811,7 +813,30 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# Spawnear Medikit en la puerta de la torre al inicio de la oleada 4
 		_spawn_medikit_puerta_torre()
 	elif numero_oleada == 5:
-		# Oleada 5: 40 enemigos (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 9 GoblinGirl, 9 Goblin)
+		# NUEVA Oleada 5: 40 enemigos (12 arqueras goblin, 15 ballesteros goblin, 5 globos, 6 goblinas de escudo pesado)
+		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
+		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+		wave_spawner.intervalo_aparicion = 2.0
+		# REGLA: En el nivel 5 no va el item de refuerzo, ni tampoco defensas estáticas ni plataformas
+		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
+		_set_elemento_nivel3_activo(muro_plataforma, false)
+		_set_elemento_nivel3_activo(muro_plataforma2, false)
+		if is_instance_valid(escudo_enemigo):
+			_set_elemento_nivel3_activo(escudo_enemigo, false)
+		if is_instance_valid(escudo_enemigo2):
+			_set_elemento_nivel3_activo(escudo_enemigo2, false)
+		if is_instance_valid(escudo_enemigo3):
+			_set_elemento_nivel3_activo(escudo_enemigo3, false)
+		# Limpiar cualquier medikit o item de refuerzo
+		for m in get_tree().get_nodes_in_group("medikits"):
+			if is_instance_valid(m):
+				m.queue_free()
+		for n in get_tree().get_nodes_in_group("icono_mensajera"):
+			if is_instance_valid(n):
+				n.queue_free()
+
+	elif numero_oleada == 6:
+		# Oleada 6 (anterior Oleada 5): 50 enemigos (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 9 GoblinGirl, 9 Goblin + 10 cuerno)
 		wave_spawner.probabilidad_imp = 0.0
 		wave_spawner.probabilidad_goblin_girl = 0.0
 		wave_spawner.probabilidad_canonero = 0.0
@@ -819,12 +844,12 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.max_imp_escudo_activos = 2
 		wave_spawner.intervalo_check_escudo = 999.0
-		# EXCEPCIÓN: Lonko siempre aparecen cuando se indica oleada 5
+		# EXCEPCIÓN: Lonko siempre aparecen cuando se indica oleada 6
 		if wave_spawner.has_method("solicitar_excepcion_lonko"):
 			wave_spawner.solicitar_excepcion_lonko(11)
-		# Fallback para export: si en 2.5s no hay Lonko en escena ni en cola, forzar spawn directo (garantiza aparición en exe)
+		# Fallback para export: si en 2.5s no hay Lonko en escena ni en cola, forzar spawn directo
 		get_tree().create_timer(2.5).timeout.connect(func():
-			if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 5:
+			if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 6:
 				return
 			var vivos_lonko: int = 0
 			for e in wave_spawner.get_active_enemies():
@@ -837,7 +862,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 			if vivos_lonko == 0 and pendientes_lonko == 0 and wave_spawner.has_method("forzar_spawn_lonko_excepcion"):
 				wave_spawner.forzar_spawn_lonko_excepcion(11)
 		)
-		# En la Oleada 5 las defensas enemigas permanecen OCULTAS
+		# En la Oleada 6 las defensas enemigas permanecen OCULTAS
 		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
 		_set_elemento_nivel3_activo(muro_plataforma, false)
 		_set_elemento_nivel3_activo(muro_plataforma2, false)
@@ -851,11 +876,21 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# Spawnear Power-Up inicial en el medio de la base enemiga
 		_spawn_power_up_inicial_oleada_5()
 
-	# Música según la oleada: Oleada 5 usa "Noche Aplastante" (índice 5), anteriores usan música de batalla (índice 2)
-	if numero_oleada == 5:
+	# Música según la oleada: Oleada 6 usa "Noche Aplastante" (índice 5), anteriores usan música de batalla (índice 2)
+	if numero_oleada == 6:
 		AudioManager.play_music(5)
 	else:
 		AudioManager.play_music(2)
+
+	# Torre de asedio: solo visible y activa en la Oleada 5
+	var torre_asedio_ref = get_node_or_null("Torre_de_asedio")
+	if is_instance_valid(torre_asedio_ref):
+		if numero_oleada == 5:
+			torre_asedio_ref.activar_torre()
+		else:
+			torre_asedio_ref.desactivar_torre()
+
+
 
 	# Conectar señal de oleada completada
 	if not wave_spawner.oleada_completada.is_connected(_on_nivel1_completado):
@@ -911,11 +946,32 @@ func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
 			if is_instance_valid(nodo):
 				nodo.queue_free()
 		for esc in get_tree().get_nodes_in_group("escudos"):
-			if is_instance_valid(esc) and esc.get("es_escudo_enemigo") == true and esc.get("es_pilar_enemigo") != true:
+			if not is_instance_valid(esc):
+				continue
+			if esc is EnemyBase or esc.is_in_group("enemies") or esc is EscudoPesadoArea:
+				continue
+			if esc.owner and esc.owner.is_in_group("enemies"):
+				continue
+			if esc.get_parent() and esc.get_parent().is_in_group("enemies"):
+				continue
+			if esc.get("es_escudo_enemigo") == true and esc.get("es_pilar_enemigo") != true:
 				esc.queue_free()
+		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
+		_set_elemento_nivel3_activo(muro_plataforma, false)
+		_set_elemento_nivel3_activo(muro_plataforma2, false)
 		return
+
+	# Excluir pilares de Lonko y unidades enemigas
 	for esc in get_tree().get_nodes_in_group("escudos"):
-		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true or esc.get("es_pilar_enemigo") == true:
+		if not is_instance_valid(esc):
+			continue
+		if esc is EnemyBase or esc.is_in_group("enemies") or esc is EscudoPesadoArea:
+			continue
+		if esc.owner and esc.owner.is_in_group("enemies"):
+			continue
+		if esc.get_parent() and esc.get_parent().is_in_group("enemies"):
+			continue
+		if esc.get("es_escudo_enemigo") != true or esc.get("es_pilar_enemigo") == true:
 			continue
 		var permitido := false
 		if esc.name == "Escudo_enemigo":
@@ -924,6 +980,7 @@ func _on_oleada_iniciada_eliminar_defensas(_num_oleada: int) -> void:
 			permitido = (num == 2)
 		if not permitido:
 			_set_elemento_nivel3_activo(esc, false)
+
 
 
 func _on_nivel1_completado(_numero_oleada: int):
@@ -935,7 +992,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 
 	var oleada_actual: int = wave_spawner.oleada_combate if is_instance_valid(wave_spawner) and wave_spawner.oleada_combate > 0 else oleada_combate_actual
 
-	if oleada_actual in [1, 2, 3, 4]:
+	if oleada_actual in [1, 2, 3, 4, 5]:
 		if transicion_carteles_en_progreso:
 			return
 		transicion_carteles_en_progreso = true
@@ -943,7 +1000,8 @@ func _on_nivel1_completado(_numero_oleada: int):
 		return
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
-	_log_debug("[NIVEL01] ¡Oleada 5 completada! Mostrando victoria con botón continuar...")
+	_log_debug("[NIVEL01] ¡Oleada 6 completada! Mostrando victoria con botón continuar...")
+
 	_mostrar_victoria_con_continuar(
 		(
 			tr("NIVEL_1_COMPLETADO")
@@ -1029,8 +1087,10 @@ func _mostrar_inter_nivel_continuar():
 		msg = "¡Oleada 2 completada!"
 	elif oleada_combate_actual == 3:
 		msg = "¡Oleada 3 completada!"
-	else:
+	elif oleada_combate_actual == 4:
 		msg = "¡Oleada 4 completada!"
+	else:
+		msg = "¡Oleada 5 completada!"
 
 	if game_ui:
 		game_ui.mostrar_pantalla_victoria(msg, func():
@@ -1055,6 +1115,10 @@ func _mostrar_inter_nivel_continuar():
 				_mostrar_cartel_nivel_5()
 				oleada_combate_actual = 5
 				_configurar_oleada_combate(total_enemigos_oleada_5, 5)
+			elif oleada_combate_actual == 5:
+				_mostrar_cartel_nivel_6()
+				oleada_combate_actual = 6
+				_configurar_oleada_combate(total_enemigos_oleada_6, 6)
 			transicion_carteles_en_progreso = false
 		)
 	else:
@@ -1077,6 +1141,10 @@ func _mostrar_inter_nivel_continuar():
 			_mostrar_cartel_nivel_5()
 			oleada_combate_actual = 5
 			_configurar_oleada_combate(total_enemigos_oleada_5, 5)
+		elif oleada_combate_actual == 5:
+			_mostrar_cartel_nivel_6()
+			oleada_combate_actual = 6
+			_configurar_oleada_combate(total_enemigos_oleada_6, 6)
 		transicion_carteles_en_progreso = false
 
 
@@ -1093,10 +1161,14 @@ func _precargar_elementos_oleada(numero_oleada_siguiente: int) -> void:
 			_precalentar_instancia_breve(ESCENA_PROYECTIL_GARGOLA)
 			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo)
 		5:
+			_precalentar_instancia_breve(wave_spawner.escena_goblina_escudo)
+			_precalentar_instancia_breve(wave_spawner.escena_globo_aerostatico)
+		6:
 			_precalentar_instancia_breve(wave_spawner.escena_lonko)
 			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo)
 		_:
 			pass
+
 
 
 ## Warm-up de shaders durante el diálogo de intro: instancia brevemente los
@@ -1238,6 +1310,25 @@ func _mostrar_cartel_nivel_5() -> void:
 		overlay.queue_free()
 
 
+func _mostrar_cartel_nivel_6() -> void:
+	_limpiar_carteles_transicion()
+	var overlay := CanvasLayer.new()
+	overlay.layer = 205
+	overlay.name = "CartelNivel6"
+	add_child(overlay)
+
+	var texto = "Level 06"
+
+	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
+	overlay.add_child(label)
+	label.modulate = Color(1, 1, 1, 1)
+	label.scale = Vector2.ONE
+	await get_tree().create_timer(1.2).timeout
+
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+
+
 func _limpiar_carteles_transicion() -> void:
 	var cartel_1 = get_node_or_null("CartelNivel1Completado")
 	if is_instance_valid(cartel_1):
@@ -1254,6 +1345,9 @@ func _limpiar_carteles_transicion() -> void:
 	var cartel_5 = get_node_or_null("CartelNivel5")
 	if is_instance_valid(cartel_5):
 		cartel_5.queue_free()
+	var cartel_6 = get_node_or_null("CartelNivel6")
+	if is_instance_valid(cartel_6):
+		cartel_6.queue_free()
 
 
 func debug_mostrar_carteles_transicion() -> void:
@@ -1265,6 +1359,7 @@ func debug_mostrar_carteles_transicion() -> void:
 	await _mostrar_cartel_nivel_3()
 	await _mostrar_cartel_nivel_4()
 	await _mostrar_cartel_nivel_5()
+	await _mostrar_cartel_nivel_6()
 	transicion_carteles_en_progreso = false
 
 
@@ -1288,6 +1383,10 @@ func debug_ir_a_oleada_5() -> void:
 	_iniciar_oleada_debug(5)
 
 
+func debug_ir_a_oleada_6() -> void:
+	_iniciar_oleada_debug(6)
+
+
 func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) -> void:
 	if not is_instance_valid(wave_spawner):
 		return
@@ -1308,12 +1407,15 @@ func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) 
 		game_ui.set_modo_minimo(false)
 
 	_set_aliadas_activas(true)
-	if numero_oleada == 5:
+	if numero_oleada == 6:
 		AudioManager.play_music(5)
 	else:
 		AudioManager.play_music(2)
 
-	if numero_oleada == 5:
+	if numero_oleada == 6:
+		oleada_combate_actual = 6
+		_configurar_oleada_combate(total_enemigos_oleada_6, 6)
+	elif numero_oleada == 5:
 		oleada_combate_actual = 5
 		_configurar_oleada_combate(total_enemigos_oleada_5, 5)
 	elif numero_oleada == 4:
@@ -1328,6 +1430,30 @@ func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) 
 	else:
 		oleada_combate_actual = 1
 		_configurar_oleada_combate(total_enemigos_nivel1, 1)
+
+	# Reconstrucción inmediata de escudos para el selector de pausa
+	if game_ui and game_ui.has_method("_reconstruir_todos_escudos"):
+		game_ui._reconstruir_todos_escudos(numero_oleada >= 5, numero_oleada)
+		if game_ui.has_method("_sincronizar_visibilidad_escudos_por_oleada"):
+			game_ui._sincronizar_visibilidad_escudos_por_oleada(numero_oleada)
+	# Re-aplicar visibilidad local
+	var _activa_oleada2 := (numero_oleada == 2)
+	var _activa_nivel3 := (numero_oleada == 3 or numero_oleada == 4)
+	_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo2"), _activa_oleada2)
+	_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo3"), _activa_oleada2)
+	_set_elemento_nivel3_activo(get_node_or_null("Escudo_enemigo"), _activa_nivel3)
+	_set_elemento_nivel3_activo(escena_rampa_nivel3, _activa_nivel3)
+	_set_elemento_nivel3_activo(muro_plataforma, _activa_nivel3)
+	_set_elemento_nivel3_activo(muro_plataforma2, _activa_nivel3)
+	if numero_oleada >= 5:
+		_set_elemento_nivel3_activo(get_node_or_null("Escudo_enemigo"), false)
+		_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo2"), false)
+		_set_elemento_nivel3_activo(get_node_or_null("NIVEL_2_Escudo_enemigo3"), false)
+		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
+		_set_elemento_nivel3_activo(muro_plataforma, false)
+		_set_elemento_nivel3_activo(muro_plataforma2, false)
+
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

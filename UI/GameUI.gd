@@ -1133,7 +1133,14 @@ func _sincronizar_visibilidad_escudos_por_oleada(numero_oleada: int) -> void:
 	for esc in get_tree().get_nodes_in_group("escudos"):
 		if not is_instance_valid(esc) or esc.get("es_escudo_enemigo") != true or esc.get("es_pilar_enemigo") == true:
 			continue
+		if esc is EnemyBase or esc.is_in_group("enemies") or esc is EscudoPesadoArea:
+			continue
+		if esc.owner and esc.owner.is_in_group("enemies"):
+			continue
+		if esc.get_parent() and esc.get_parent().is_in_group("enemies"):
+			continue
 		var permitido: bool = _es_escudo_enemigo_permitido_en_oleada(esc.name, numero_oleada)
+
 		esc.visible = permitido
 		esc.process_mode = Node.PROCESS_MODE_INHERIT if permitido else Node.PROCESS_MODE_DISABLED
 		for child in esc.get_children():

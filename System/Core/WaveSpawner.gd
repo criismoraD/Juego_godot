@@ -16,6 +16,7 @@ signal evento_cuerno_iniciado
 @export var escena_arquera_rosa: PackedScene  # Escena de la nueva Arquera Rosa
 @export var escena_globo_aerostatico: PackedScene  # Escena del globo aerostatico goblin
 @export var escena_limo: PackedScene  # Escena del limo cuadrado gelatinoso
+@export var escena_goblina_escudo: PackedScene = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GoblinaEscudoPesado.tscn")  ## Escena de Goblina Escudo Pesado
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns (más lento)
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
@@ -33,7 +34,7 @@ signal evento_cuerno_iniciado
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa, 8=globo_aerostatico, 9=limo_cuadrado
+var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa, 8=globo_aerostatico, 9=limo_cuadrado, 10=goblina_escudo
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
@@ -53,6 +54,7 @@ var refuerzos_cuerno_total: int = 10  ## Cantidad de refuerzos que trae el event
 var refuerzos_cuerno_spawneados: int = 0
 var lonko_excepcion_pendiente: int = 0  ## Excepción: Lonko siempre aparecen cuando se indique (oleada 5 debe tener 11)
 var lonko_forzado_restantes: int = 0  ## Contador para forzar spawns de Lonko bypassando cola/probabilidades
+var _standby_pool: Dictionary = {}  ## [PackedScene, Array[Node3D]] pre-instanciados para evitar picos de frame
 
 # === SEÑALES ===
 
@@ -102,7 +104,8 @@ func _precalentar_enemigos() -> void:
 		escena_arquera_rosa,
 		escena_imp_escudo,
 		escena_globo_aerostatico,
-		escena_limo
+		escena_limo,
+		escena_goblina_escudo
 	]
 
 	var holder := Node3D.new()
@@ -134,8 +137,17 @@ func _process(delta):
 		spawn_timer -= delta
 		if spawn_timer <= 0 and (spawn_infinito or goblins_spawned_in_wave < enemigos_por_oleada):
 			_spawn_goblin()
-			var intervalo_actual: float = (intervalo_aparicion / 2.0) if evento_cuerno_en_progreso else intervalo_aparicion
+			var intervalo_actual: float = intervalo_aparicion
+			if oleada_combate == 5:
+				# En Oleada 5 los enemigos van aumentando en frecuencia mientras menos queden
+				var restantes: int = max(0, enemigos_por_oleada - goblins_spawned_in_wave)
+				var factor: float = clampf(float(restantes) / float(enemigos_por_oleada), 0.0, 1.0)
+				# Desde intervalo_aparicion al inicio hasta 0.5s al final
+				intervalo_actual = lerpf(0.5, intervalo_aparicion, factor)
+			if evento_cuerno_en_progreso:
+				intervalo_actual /= 2.0
 			spawn_timer = intervalo_actual
+
 
 		# Verificar si la oleada terminó
 		if not spawn_infinito and (goblins_spawned_in_wave >= enemigos_por_oleada or (enemigos_por_oleada > 0 and enemigos_muertos_en_oleada >= enemigos_por_oleada)):
@@ -220,8 +232,20 @@ func _generar_cola_spawn() -> void:
 			pool.append(escena_goblin)
 
 	elif wave_num == 5:
-		# Oleada 5: 40 enemigos totales
-		# 11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 Arqueras Goblin + 1 Arquera Rosa (sustituye 1 Arquera Goblin), 9 Goblins Ballesta. Total = 40.
+		# NUEVA Oleada 5: 40 enemigos totales
+		# 12 arqueras goblin, 15 ballesteros goblin, 5 globos, 6 goblinas de escudo pesado
+		for i in range(12):
+			pool.append(escena_goblin_girl)
+		for i in range(15):
+			pool.append(escena_goblin)
+		for i in range(5):
+			pool.append(escena_globo_aerostatico)
+		for i in range(6):
+			pool.append(escena_goblina_escudo)
+
+	elif wave_num == 6:
+		# Oleada 6 (anterior Oleada 5): 40 enemigos base + 10 cuerno (Total 50)
+		# 11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 Arqueras Goblin + 1 Arquera Rosa, 9 Goblins Ballesta. Total = 40.
 		for i in range(11):
 			pool.append(escena_lonko)
 		for i in range(4):
@@ -251,8 +275,8 @@ func _generar_cola_spawn() -> void:
 			pool.remove_at(idx_gargola)
 			pool.push_front(escena_gargola)
 
-	# En Oleada 5: distribuir los 11 Lonko uniformemente para garantizar que aparezcan 11 visibles (cada ~4 spawns)
-	if wave_num == 5 and escena_lonko:
+	# En Oleada 6: distribuir los 11 Lonko uniformemente para garantizar que aparezcan 11 visibles (cada ~4 spawns)
+	if wave_num == 6 and escena_lonko:
 		var lonkos: Array[PackedScene] = []
 		var otros: Array[PackedScene] = []
 		for p in pool:
@@ -285,7 +309,7 @@ func _generar_cola_spawn() -> void:
 
 	cola_spawn = pool
 	# EXCEPCIÓN Lonko: si se indicó explícitamente que deben aparecer 11, garantizarlos aunque la cola haya sido manipulada
-	if wave_num == 5 and lonko_excepcion_pendiente > 0 and escena_lonko:
+	if wave_num == 6 and lonko_excepcion_pendiente > 0 and escena_lonko:
 		var count_lonko: int = 0
 		for p in cola_spawn:
 			if p == escena_lonko:
@@ -304,20 +328,49 @@ func _generar_cola_spawn() -> void:
 	elif wave_num == 4:
 		enemigos_por_oleada = 45  # 35 base + 10 refuerzos cuerno
 	elif wave_num == 5:
+		enemigos_por_oleada = 40  # 12 arqueras + 15 ballesteros + 5 globos + 6 goblinas escudo
+	elif wave_num == 6:
 		enemigos_por_oleada = max(50, goblins_spawned_in_wave + cola_spawn.size())  # 40 base + 10 cuerno, ajustado si excepción añadió más
 	elif enemigos_por_oleada <= 0:
 		enemigos_por_oleada = cola_spawn.size()
 
 
+	call_deferred("_preparar_enemigos_en_espera")
+
+
+func _preparar_enemigos_en_espera() -> void:
+	# Pre-instanciar hasta 4 enemigos por tipo presente en la cola para no bloquear frames de combate
+	var conteo_por_escena: Dictionary = {}
+	for sc in cola_spawn:
+		if sc:
+			conteo_por_escena[sc] = conteo_por_escena.get(sc, 0) + 1
+
+	for sc in conteo_por_escena.keys():
+		if not _standby_pool.has(sc):
+			_standby_pool[sc] = []
+		var faltantes: int = min(conteo_por_escena[sc], 4) - _standby_pool[sc].size()
+		for i in range(faltantes):
+			var enemy = sc.instantiate() as Node3D
+			if enemy:
+				enemy.process_mode = Node.PROCESS_MODE_DISABLED
+				enemy.visible = false
+				_obtener_nodo_padre_spawn().add_child(enemy)
+				enemy.position = Vector3(0.0, -400.0, 0.0)
+				_standby_pool[sc].append(enemy)
+
+
 func _es_valida_cola(pool: Array[PackedScene]) -> bool:
 	if pool.is_empty():
 		return true
-	if pool.back() == escena_imp_escudo:
+	if pool.back() == escena_imp_escudo or pool.back() == escena_goblina_escudo:
 		return false
 	for i in range(pool.size() - 1):
 		if pool[i] == escena_imp_escudo and pool[i+1] == escena_imp_escudo:
 			return false
+		if pool[i] == escena_goblina_escudo and pool[i+1] == escena_goblina_escudo:
+			return false
 	return true
+
 
 
 func _elegir_escena_probabilidades() -> PackedScene:
@@ -362,6 +415,8 @@ func _elegir_escena_probabilidades() -> PackedScene:
 			return escena_globo_aerostatico
 		elif forzar_tipo_enemigo == 9:
 			return escena_limo
+		elif forzar_tipo_enemigo == 10:
+			return escena_goblina_escudo
 		elif probabilidad_igual:
 			# Probabilidad igual: 20% cada tipo (5 tipos)
 			var roll = randf()
@@ -397,13 +452,26 @@ func _spawn_goblin():
 		% [goblins_spawned_in_wave, enemigos_por_oleada]
 	)
 	# EXCEPCIÓN Lonko: si se indicó, forzar spawn de Lonko bypassando cola y probabilidades (garantiza 11)
-	if lonko_forzado_restantes > 0 and oleada_combate == 5 and escena_lonko:
+	if lonko_forzado_restantes > 0 and oleada_combate == 6 and escena_lonko:
 		lonko_forzado_restantes -= 1
-		var lonko = escena_lonko.instantiate()
+		var lonko: Node3D = null
+		if _standby_pool.has(escena_lonko):
+			while _standby_pool[escena_lonko].size() > 0:
+				var cand = _standby_pool[escena_lonko].pop_back()
+				if is_instance_valid(cand) and not cand.is_queued_for_deletion():
+					lonko = cand as Node3D
+					lonko.process_mode = Node.PROCESS_MODE_INHERIT
+					lonko.visible = true
+					break
+
+		if not lonko:
+			lonko = escena_lonko.instantiate()
+			_obtener_nodo_padre_spawn().add_child(lonko)
+
+
 		var spawn_pos_lonko = global_position
 		spawn_pos_lonko.y += altura_spawn
 		spawn_pos_lonko.y += randf_range(-0.2, 0.2)
-		_obtener_nodo_padre_spawn().add_child(lonko)
 		lonko.global_position = spawn_pos_lonko
 		if lonko.has_signal("died"):
 			lonko.died.connect(_on_goblin_died.bind(lonko))
@@ -418,13 +486,14 @@ func _spawn_goblin():
 		goblins_spawned_in_wave += 1
 		goblin_spawneado.emit(lonko)
 		return
-	# Trigger del Evento de Cuerno: Oleada 5 al haber 12 spawns, Oleada 4 al haber 10
+	# Trigger del Evento de Cuerno: Oleada 6 al haber 12 spawns, Oleada 4 al haber 10
 	if not evento_cuerno_activado:
-		if oleada_combate == 5 and goblins_spawned_in_wave >= 12:
+		if oleada_combate == 6 and goblins_spawned_in_wave >= 12:
 			_iniciar_evento_cuerno(10, false)
 		elif oleada_combate == 4 and goblins_spawned_in_wave >= 10:
 			# Oleada 4: el Globo aparece 3s ANTES del cuerno (reemplaza 1 ballestero)
 			_secuencia_globo_y_cuerno_oleada_4()
+
 
 	if evento_cuerno_en_progreso:
 		refuerzos_cuerno_spawneados += 1
@@ -448,7 +517,20 @@ func _spawn_goblin():
 		push_error("[WaveSpawner] No scene to spawn!")
 		return
 
-	var goblin = scene_to_spawn.instantiate()
+	var goblin: Node3D = null
+	if _standby_pool.has(scene_to_spawn):
+		while _standby_pool[scene_to_spawn].size() > 0:
+			var cand = _standby_pool[scene_to_spawn].pop_back()
+			if is_instance_valid(cand) and not cand.is_queued_for_deletion():
+				goblin = cand as Node3D
+				goblin.process_mode = Node.PROCESS_MODE_INHERIT
+				goblin.visible = true
+				break
+
+	if not goblin:
+		goblin = scene_to_spawn.instantiate()
+		_obtener_nodo_padre_spawn().add_child(goblin)
+
 
 	# Posicionar en el punto de spawn (este nodo)
 	var spawn_pos = global_position
@@ -456,9 +538,6 @@ func _spawn_goblin():
 
 	# Añadir variación vertical aleatoria
 	spawn_pos.y += randf_range(-0.2, 0.2)
-
-	# Añadir al mundo
-	_obtener_nodo_padre_spawn().add_child(goblin)
 	goblin.global_position = spawn_pos
 
 	# Conectar señal de muerte
@@ -719,7 +798,7 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 			burst.append(escena_goblin)
 		for i in range(2):
 			burst.append(escena_imp)
-	elif oleada_combate == 5:
+	elif oleada_combate == 6:
 		for i in range(5):
 			burst.append(escena_goblin_girl)
 			burst.append(escena_goblin)
@@ -732,15 +811,16 @@ func _iniciar_evento_cuerno(cantidad_refuerzos: int = 10, incluir_imp_escudo_fij
 	cola_spawn = burst
 
 	# Asegurar que el total de enemigos de la oleada contabilice los refuerzos del cuerno sin duplicar
-	var meta_oleada: int = 45 if oleada_combate == 4 else (50 if oleada_combate == 5 else cola_spawn.size())
+	var meta_oleada: int = 45 if oleada_combate == 4 else (50 if oleada_combate == 6 else (40 if oleada_combate == 5 else cola_spawn.size()))
 	enemigos_por_oleada = max(enemigos_por_oleada, meta_oleada)
 
 	# La oleada 4 incluye fijo 1 Imp de Escudo con el evento (desactivado, ya tiene 5 en cola)
 	if incluir_imp_escudo_fijo:
 		_spawnear_imp_escudo_fijo()
 
-	# Oleada 4 y 5: los 10 refuerzos salen DE GOLPE cuando suena el cuerno (si la oleada está activa en combate)
-	if (oleada_combate == 4 or oleada_combate == 5) and is_wave_active:
+	# Oleada 4 y 6: los 10 refuerzos salen DE GOLPE cuando suena el cuerno (si la oleada está activa en combate)
+	if (oleada_combate == 4 or oleada_combate == 6) and is_wave_active:
+
 		var routine_golpe := func():
 			for i in range(refuerzos_cuerno_total):
 				if not is_instance_valid(self) or not is_inside_tree():
@@ -1021,8 +1101,9 @@ func iniciar_oleada_custom(
 ## Llamar cuando el nivel indique explícitamente que deben aparecer (bypass de filtros).
 func solicitar_excepcion_lonko(cantidad: int = 11) -> void:
 	lonko_excepcion_pendiente = cantidad
-	# Si la oleada 5 ya está generada, inyectar inmediatamente al frente de la cola
-	if oleada_combate == 5 and is_inside_tree() and escena_lonko:
+	# Si la oleada 6 ya está generada, inyectar inmediatamente al frente de la cola
+	if oleada_combate == 6 and is_inside_tree() and escena_lonko:
+
 		var count_lonko: int = 0
 		for p in cola_spawn:
 			if p == escena_lonko:

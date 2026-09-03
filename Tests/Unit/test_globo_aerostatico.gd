@@ -1,4 +1,4 @@
-﻿extends "res://addons/gut/test.gd"
+extends "res://addons/gut/test.gd"
 
 ## Tests del Globo Aerostatico Goblin:
 ## - Vuelo por fases: avance lento, pausa de 18 s en el punto medio de la isla
@@ -284,3 +284,31 @@ func test_explosion_individual_genera_vfx_y_rocas():
 			rocas += 1
 	assert_gt(vfx, 0, "Debe instanciarse el VFX de explosion del pilar de Lonko")
 	assert_gt(rocas, 0, "Debe instanciarse la rafaga de rocas negras")
+
+
+func test_impacto_flecha_en_canasta_y_globo():
+	# Arrange
+	var escena_globo = load("res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.tscn")
+	var escena_flecha = load("res://Entities/Proyectil_Flecha/Arrow.tscn")
+	var globo = escena_globo.instantiate() as GloboAerostatico
+	add_child_autofree(globo)
+	globo._physics_process(0.016)
+
+	var flecha = escena_flecha.instantiate()
+	add_child_autofree(flecha)
+	flecha.escala_gravedad = 0.0
+	flecha.velocity = Vector3(15.0, 0, 0)
+	# Disparar directo al centro del collider
+	var col = globo.get_node("ColisionGlobo") as CollisionShape3D
+	flecha.global_position = Vector3(-1.5, col.global_position.y, 0.05)
+
+	# Act: procesar físicas hasta el impacto
+	for i in range(15):
+		globo._physics_process(0.016)
+		flecha._physics_process(0.016)
+		await get_tree().physics_frame
+		if globo.health < 3:
+			break
+
+	# Assert: la flecha impactó y dañó al globo
+	assert_lt(globo.health, 3, "La flecha debe impactar y reducir la salud del globo")

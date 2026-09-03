@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://doqx7emgj8v5p"
+path="res://.godot/imported/Goblina jabalina.wav-0a782b8294a6d107bd00bb085d9d1aa3.sample"
+
+[deps]
+
+source_file="res://System/Audio/SFX/Goblina jabalina.wav"
+dest_files=["res://.godot/imported/Goblina jabalina.wav-0a782b8294a6d107bd00bb085d9d1aa3.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -1,8 +1,8 @@
 [gd_scene format=4 uid="uid://xw2rfre4dj8n"]
 
 [ext_resource type="Texture2D" uid="uid://ed44j8f3a8us" path="res://assets/BinbunVFX_Vol2/shared/story_studio_02_1k.hdr" id="1_5k71p"]
-[ext_resource type="Shader" uid="uid://mvwi25cb826n" path="res://assets/BinbunVFX_Vol2/shared/shader/checker.gdshader" id="2_myj8n"]
-[ext_resource type="Material" uid="uid://7dp87qqiog4n" path="res://assets/BinbunVFX_Vol2/StatusFX/effects/overlay/poison_overlay.tres" id="3_kerq4"]
+[ext_resource type="Shader" path="res://assets/BinbunVFX_Vol2/shared/shader/checker.gdshader" id="2_myj8n"]
+[ext_resource type="Material" path="res://assets/BinbunVFX_Vol2/StatusFX/effects/overlay/poison_overlay.tres" id="3_kerq4"]
 [ext_resource type="PackedScene" uid="uid://clu5eubrxgbj5" path="res://assets/BinbunVFX_Vol2/StatusFX/effects/status/vfx_status_shatter.tscn" id="18_562wp"]
 [ext_resource type="Animation" uid="uid://cv5xp431oru3u" path="res://assets/BinbunVFX_Vol2/shared/guy/animation/idle.anim" id="22_hnxin"]
 [ext_resource type="Material" uid="uid://gnpaaon1rqti" path="res://assets/BinbunVFX_Vol2/StatusFX/effects/overlay/shatter_overlay.tres" id="36_ai3c8"]
