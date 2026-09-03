@@ -94,8 +94,6 @@ static func _get_available(scene_path: String) -> Array:
 
 
 static func _free_node(node: Node) -> void:
-	if node.is_inside_tree():
-		node.queue_free()
-		return
-
-	node.free()
+	# NUNCA usar free() inmediato: deja referencias rotas ("previously freed")
+	# en caches/arrays de otros sistemas. queue_free() es siempre seguro.
+	node.queue_free()
