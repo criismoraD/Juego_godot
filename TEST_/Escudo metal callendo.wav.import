@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://cu31l07wsmi4y"
+path="res://.godot/imported/Escudo metal callendo.wav-4649a833677bc2566fb88f607c1673ef.sample"
+
+[deps]
+
+source_file="res://TEST_/Escudo metal callendo.wav"
+dest_files=["res://.godot/imported/Escudo metal callendo.wav-4649a833677bc2566fb88f607c1673ef.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -638,6 +638,7 @@ func take_damage(_amount: float):
 				VFXFactory.spawn_shield_break_smoke(self, escudo_node.global_position)
 						
 			AudioManager.play_shield_break()
+			_reproducir_sonido_escudo_cayendo()
 			_cambiar_estado(State.FLEEING)
 			_emitir_muerte_por_escudo_roto()
 	else:
@@ -649,6 +650,12 @@ func take_damage(_amount: float):
 
 func recibir_dano(amount: int):
 	take_damage(float(amount))
+
+
+func _reproducir_sonido_escudo_cayendo() -> void:
+	if AudioManager and AudioManager.has_method("play_sfx"):
+		AudioManager.play_sfx("shield_hit")
+
 
 
 func _flash_escudo():
@@ -868,6 +875,25 @@ func _emitir_muerte_por_escudo_roto() -> void:
 		return
 	_died_emitted = true
 	died.emit()
+
+
+## SFX del escudo metálico cayendo al romperse (TEST_/Escudo metal callendo.wav).
+func _reproducir_sonido_escudo_cayendo() -> void:
+	var stream: AudioStream = load("res://TEST_/Escudo metal callendo.wav")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.add_to_group("pausable_audio")
+	player.stream = stream
+	player.volume_db = 4.0  ## Fuente silenciosa (RMS 2.7%)
+	player.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(player)
+		player.play()
+		player.finished.connect(player.queue_free)
+	else:
+		player.queue_free()
 
 
 func _drop_pocion() -> void:
