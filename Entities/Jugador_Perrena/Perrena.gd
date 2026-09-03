@@ -9,8 +9,14 @@ extends "res://Entities/Jugador_Arquera/Player.gd"
 
 const JABALINA_SCENE: PackedScene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
 const POOL_REF = preload("res://System/Core/ProjectilePool.gd")
+const MAT_PERRENA: Material = preload("res://Entities/Jugador_Perrena/PERRENA_MAT.tres")
 
-## Mapeo de clips del GLB de Perrena -> nombres que el AnimationTree del Player espera
+## El GLB de Perrena trae el rig raíz (Armature) a escala 0.01 (mixamo).
+## ESCALA_MODELO compensa para que mida lo mismo que la protagonista.
+const ESCALA_MODELO: float = 96.0
+
+## Mapeo de clips del GLB de Perrena -> nombres que el AnimationTree del Player espera.
+## Debe registrarse ANTES de que el Player construya su árbol dinámico.
 const MAPEO_ANIMS: Dictionary = {
 	"Idle": "Armature|Armature|IDLE",
 	"Caminar": "Armature|Armature|CAMINAR_ADELANTE",
@@ -33,45 +39,56 @@ const SUBSTITUCIONES_ANIMS: Dictionary = {
 	"@escalar": "Caminar",
 }
 
-
-func _ready():
-	# Conectar el AnimationTree al AnimationPlayer del GLB de Perrena
-	# (el Player espera la ruta del GLB de la protagonista; aquí se recalcula)
-	var tree := find_child("AnimationTree", true, false) as AnimationTree
-	if tree:
-		var anim_p := find_child("AnimationPlayer", true, false) as AnimationPlayer
-		if anim_p:
-			tree.anim_player = tree.get_path_to(anim_p)
-	super._ready()
-	_remapear_animaciones_perrena()
-
-
-## El AnimationTree dinámico del Player usa nombres "Armature|Armature|XXX" del
-## GLB de la protagonista. Perrena trae sus clips con otros nombres: se registran
-## alias en la librería para que el árbol los encuentre sin tocar el Player.
-func _remapear_animaciones_perrena() -> void:
-	if not anim_player:
-		return
-	var lib := anim_player.get_animation_library("")
-	if not lib:
-		return
-	for clip_origen in MAPEO_ANIMS.keys():
-		var clip_destino: String = MAPEO_ANIMS[clip_origen]
-		if anim_player.has_animation(clip_destino):
-			continue
-		# Los "@..." usan una animación sustituta de otro clip del mapeo
-		var buscar: String = SUBSTITUCIONES_ANIMS.get(clip_origen, clip_origen)
-		# Buscar el clip origen por nombre exacto o prefijado
-		for candidato in anim_player.get_animation_list():
-			if candidato.ends_with(buscar) and not lib.has_animation(clip_destino):
-				lib.add_animation(clip_destino, anim_player.get_animation(candidato))
-				break
-
 ## Jabalina: arco parabólico configurable (mismos valores base del Imp)
 @export_category("Jabalina - Perrena")
 @export var arco_altura_min: float = 0.8
 @export var arco_altura_max: float = 1.6
 @export var gravedad_jabalina: float = 1.0
+
+
+func _ready():
+	# 1. Conectar el AnimationTree al AnimationPlayer del GLB de Perrena
+	var tree := find_child("AnimationTree", true, false) as AnimationTree
+	var anim_p := find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if tree and anim_p:
+		tree.anim_player = tree.get_path_to(anim_p)
+
+	# 2. Corregir escala del rig mixamo (0.01 embebido) y aplicar textura
+	var modelo := find_child("PerrenaModel", true, false) as Node3D
+	if not modelo:
+		modelo = find_child("Perrena", true, false) as Node3D
+	if modelo:
+		modelo.scale = Vector3.ONE * ESCALA_MODELO
+		for mesh in modelo.find_children("*", "MeshInstance3D", true, false):
+			(mesh as MeshInstance3D).material_override = MAT_PERRENA
+
+	# 3. Registrar los alias de animación ANTES de que el Player construya
+	#    su árbol dinámico (si no, los nodos quedarían con clips inexistentes)
+	if anim_p:
+		_remapear_animaciones_perrena(anim_p)
+
+	# 4. Ahora sí: inicialización completa del Player (árbol, hitbox, sombra, etc.)
+	super._ready()
+
+
+## El AnimationTree dinámico del Player usa nombres "Armature|Armature|XXX" del
+## GLB de la protagonista. Perrena trae sus clips con otros nombres: se registran
+## alias en la librería para que el árbol los encuentre sin tocar el Player.
+func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
+	var lib := anim_p.get_animation_library("")
+	if not lib:
+		return
+	for clip_origen in MAPEO_ANIMS.keys():
+		var clip_destino: String = MAPEO_ANIMS[clip_origen]
+		if anim_p.has_animation(clip_destino):
+			continue
+		# Los "@..." usan una animación sustituta de otro clip del mapeo
+		var buscar: String = SUBSTITUCIONES_ANIMS.get(clip_origen, clip_origen)
+		# Buscar el clip origen por nombre exacto o prefijado
+		for candidato in anim_p.get_animation_list():
+			if candidato.ends_with(buscar) and not lib.has_animation(clip_destino):
+				lib.add_animation(clip_destino, anim_p.get_animation(candidato))
+				break
 
 
 func _init() -> void:
