@@ -229,6 +229,80 @@ func _load_all_sounds():
 	sfx_streams["ballestera_victoria"] = sfx_streams["risa_victoria_ballestera"]
 	sfx_streams["ballestera_laugh"] = sfx_streams["risa_victoria_ballestera"]
 
+	# Sonido de correr descalzo (Lonko y Goblina Pesada)
+	var _sfx_correr: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):
+		_sfx_correr = load("res://System/Audio/SFX/sonido_correr_descalzo.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.wav"):
+		_sfx_correr = load("res://TEST_/sonido_correr_descalzo.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.mp3"):
+		_sfx_correr = load("res://System/Audio/SFX/sonido_correr_descalzo.mp3") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.mp3"):
+		_sfx_correr = load("res://TEST_/sonido_correr_descalzo.mp3") as AudioStream
+	if _sfx_correr:
+		sfx_streams["correr_descalzo"] = [_sfx_correr]
+		sfx_streams["sonido_correr_descalzo"] = [_sfx_correr]
+
+	# Sonidos Goblina Escudo Pesado
+	var _sfx_jabalina: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/Goblina jabalina.wav"):
+		_sfx_jabalina = load("res://System/Audio/SFX/Goblina jabalina.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/Goblina jabalina.wav"):
+		_sfx_jabalina = load("res://TEST_/Goblina jabalina.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/Goblina jabalina.mp3"):
+		_sfx_jabalina = load("res://System/Audio/SFX/Goblina jabalina.mp3") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/Goblina jabalina.mp3"):
+		_sfx_jabalina = load("res://TEST_/Goblina jabalina.mp3") as AudioStream
+	if _sfx_jabalina:
+		sfx_streams["goblina_jabalina"] = [_sfx_jabalina]
+		sfx_streams["Goblina jabalina"] = [_sfx_jabalina]
+
+	var _sfx_goblina_ataque: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/goblina ataque.wav"):
+		_sfx_goblina_ataque = load("res://System/Audio/SFX/goblina ataque.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/goblina ataque.wav"):
+		_sfx_goblina_ataque = load("res://TEST_/goblina ataque.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/goblina ataque.mp3"):
+		_sfx_goblina_ataque = load("res://System/Audio/SFX/goblina ataque.mp3") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/goblina ataque.mp3"):
+		_sfx_goblina_ataque = load("res://TEST_/goblina ataque.mp3") as AudioStream
+	if _sfx_goblina_ataque:
+		sfx_streams["goblina_ataque"] = [_sfx_goblina_ataque]
+		sfx_streams["goblina ataque"] = [_sfx_goblina_ataque]
+		sfx_streams["goblina atque"] = [_sfx_goblina_ataque]
+
+	var _sfx_goblina_dano: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/Goblina daño.wav"):
+		_sfx_goblina_dano = load("res://System/Audio/SFX/Goblina daño.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/Goblina daño.wav"):
+		_sfx_goblina_dano = load("res://TEST_/Goblina daño.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/Goblina daño.mp3"):
+		_sfx_goblina_dano = load("res://System/Audio/SFX/Goblina daño.mp3") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/Goblina daño.mp3"):
+		_sfx_goblina_dano = load("res://TEST_/Goblina daño.mp3") as AudioStream
+	if _sfx_goblina_dano:
+		sfx_streams["goblina_dano"] = [_sfx_goblina_dano]
+		sfx_streams["Goblina daño"] = [_sfx_goblina_dano]
+
+	var _sfx_goblina_muerte: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/goblina muerte.wav"):
+		_sfx_goblina_muerte = load("res://System/Audio/SFX/goblina muerte.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/goblina muerte.wav"):
+		_sfx_goblina_muerte = load("res://TEST_/goblina muerte.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/goblina muerte.mp3"):
+		_sfx_goblina_muerte = load("res://System/Audio/SFX/goblina muerte.mp3") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/goblina muerte.mp3"):
+		_sfx_goblina_muerte = load("res://TEST_/goblina muerte.mp3") as AudioStream
+	if _sfx_goblina_muerte:
+		sfx_streams["goblina_muerte"] = [_sfx_goblina_muerte]
+		sfx_streams["goblina muerte"] = [_sfx_goblina_muerte]
+
+	var _sfx_impacto_escudo: AudioStream = null
+	if sfx_streams.has("shield_hit"):
+		_sfx_impacto_escudo = sfx_streams["shield_hit"][0]
+	if _sfx_impacto_escudo:
+		sfx_streams["impacto_escudo_pesado"] = [_sfx_impacto_escudo]
+
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# MÚSICA
 	# ═══════════════════════════════════════════════════════════════════════════════
