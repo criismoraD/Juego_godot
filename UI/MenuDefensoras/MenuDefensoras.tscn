@@ -157,50 +157,55 @@ stretch_mode = 5
 [node name="PanelPiso2" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas"]
 unique_name_in_owner = true
 layout_mode = 1
-offset_left = 445.0
-offset_top = 170.0
-offset_right = 595.0
-offset_bottom = 280.0
+offset_left = 440.0
+offset_top = 155.0
+offset_right = 615.0
+offset_bottom = 300.0
 mouse_filter = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_piso_selected")
 
 [node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2"]
 layout_mode = 2
-theme_override_constants/separation = 3
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 13
 text = "PISO SUPERIOR"
 horizontal_alignment = 1
 
 [node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox"]
 layout_mode = 2
+size_flags_vertical = 3
 alignment = 1
 
 [node name="BtnPiso2Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(18, 48)
+custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
+theme_override_font_sizes/font_size = 16
 flat = true
 text = "◀"
 
 [node name="TexDefensoraPiso2" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(68, 70)
+custom_minimum_size = Vector2(105, 105)
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 texture = ExtResource("3_arquera")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="BtnPiso2Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(18, 48)
+custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
+theme_override_font_sizes/font_size = 16
 flat = true
 text = "▶"
 
@@ -209,48 +214,53 @@ unique_name_in_owner = true
 layout_mode = 1
 offset_left = 525.0
 offset_top = 315.0
-offset_right = 675.0
-offset_bottom = 425.0
+offset_right = 700.0
+offset_bottom = 460.0
 mouse_filter = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_piso_normal")
 
 [node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1"]
 layout_mode = 2
-theme_override_constants/separation = 3
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 13
 text = "PISO INFERIOR"
 horizontal_alignment = 1
 
 [node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox"]
 layout_mode = 2
+size_flags_vertical = 3
 alignment = 1
 
 [node name="BtnPiso1Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(18, 48)
+custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
+theme_override_font_sizes/font_size = 16
 flat = true
 text = "◀"
 
 [node name="TexDefensoraPiso1" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(68, 70)
+custom_minimum_size = Vector2(105, 105)
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 texture = ExtResource("3_arquera")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="BtnPiso1Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(18, 48)
+custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
+theme_override_font_sizes/font_size = 16
 flat = true
 text = "▶"
 
