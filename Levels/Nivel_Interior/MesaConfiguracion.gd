@@ -20,17 +20,17 @@ signal salir_presionado
 @onready var menu_defensoras: MenuDefensoras = %MenuDefensoras
 
 var _jugador_cerca: bool = false
-var _outline_mat: StandardMaterial3D = null
+var _tint_mat: StandardMaterial3D = null
 var _tween_efecto: Tween = null
 
 
 func _ready() -> void:
-	_configurar_outline_mesa()
+	_configurar_tinte_mueble()
 
 	if prompt_e:
 		prompt_e.text = "[E] " + tr("PROMPT_INTERACTUAR")
-		prompt_e.modulate.a = 0.0
-		prompt_e.outline_modulate.a = 0.0
+		prompt_e.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		prompt_e.outline_modulate = Color(0.05, 0.05, 0.08, 0.0)
 		prompt_e.visible = false
 
 	if area_interaccion:
@@ -55,40 +55,30 @@ func _ready() -> void:
 	_cerrar_menu(false)
 
 
-func _configurar_outline_mesa() -> void:
-	_outline_mat = StandardMaterial3D.new()
-	_outline_mat.cull_mode = BaseMaterial3D.CULL_FRONT
-	_outline_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_outline_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_outline_mat.grow = true
-	_outline_mat.grow_amount = 0.0022
-	_outline_mat.albedo_color = Color(0.7, 0.3, 0.95, 0.0)
+func _configurar_tinte_mueble() -> void:
+	# El mueble cambia sutilmente de color a un tono morado claro con transparencia
+	# al interactuar con él (sin líneas de contorno).
+	_tint_mat = StandardMaterial3D.new()
+	_tint_mat.cull_mode = BaseMaterial3D.CULL_BACK
+	_tint_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_tint_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_tint_mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	_tint_mat.albedo_color = Color(0.78, 0.48, 0.95, 0.0)
 
-	# El contorno morado solo debe ser en el borde exterior del mueble, no en su interior
-	# (evitando que frascos, pociones, libros y caldero tengan líneas moradas).
-	var nodo_contorno := Node3D.new()
-	nodo_contorno.name = "ContornoExteriorMueble"
-	add_child(nodo_contorno)
+	var model_node: Node = get_node_or_null("Model")
+	if model_node:
+		var meshes: Array[MeshInstance3D] = _obtener_mesh_instances(model_node)
+		for mi in meshes:
+			mi.material_overlay = _tint_mat
 
-	# 1. Base del mueble (cuerpo inferior de la mesa)
-	var box_base := BoxMesh.new()
-	box_base.size = Vector3(0.305, 0.130, 0.190)
-	var mi_base := MeshInstance3D.new()
-	mi_base.name = "ContornoBase"
-	mi_base.mesh = box_base
-	mi_base.position = Vector3(0.0, 0.065, 0.0)
-	mi_base.material_override = _outline_mat
-	nodo_contorno.add_child(mi_base)
 
-	# 2. Repisa superior (estante trasero)
-	var box_repisa := BoxMesh.new()
-	box_repisa.size = Vector3(0.305, 0.106, 0.095)
-	var mi_repisa := MeshInstance3D.new()
-	mi_repisa.name = "ContornoRepisa"
-	mi_repisa.mesh = box_repisa
-	mi_repisa.position = Vector3(0.0, 0.183, -0.048)
-	mi_repisa.material_override = _outline_mat
-	nodo_contorno.add_child(mi_repisa)
+func _obtener_mesh_instances(nodo: Node) -> Array[MeshInstance3D]:
+	var lista: Array[MeshInstance3D] = []
+	if nodo is MeshInstance3D:
+		lista.append(nodo)
+	for hijo in nodo.get_children():
+		lista.append_array(_obtener_mesh_instances(hijo))
+	return lista
 
 
 func _on_body_entered(body: Node3D) -> void:
@@ -114,7 +104,7 @@ func _animar_proximidad(activo: bool) -> void:
 	_tween_efecto = create_tween().set_parallel(true)
 	var duracion := 0.3 if activo else 0.25
 	var target_alpha := 1.0 if activo else 0.0
-	var outline_target_alpha := 0.45 if activo else 0.0
+	var tint_target_alpha := 0.22 if activo else 0.0
 
 	if prompt_e:
 		if activo:
@@ -127,12 +117,12 @@ func _animar_proximidad(activo: bool) -> void:
 					prompt_e.visible = false
 			)
 
-	if _outline_mat:
+	if _tint_mat:
 		_tween_efecto.tween_method(
 			func(alpha: float):
-				_outline_mat.albedo_color = Color(0.7, 0.3, 0.95, alpha),
-			_outline_mat.albedo_color.a,
-			outline_target_alpha,
+				_tint_mat.albedo_color = Color(0.78, 0.48, 0.95, alpha),
+			_tint_mat.albedo_color.a,
+			tint_target_alpha,
 			duracion
 		).set_trans(Tween.TRANS_SINE)
 
