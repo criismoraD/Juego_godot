@@ -1983,6 +1983,15 @@ func _revivir_aliadas_debug() -> void:
 			ally.visible = true
 
 
+func _matar_aliadas_debug() -> void:
+	for ally in AllyArcher.active_allies_cache:
+		if not is_instance_valid(ally) or not (ally is AllyArcher or ally is AllyBallestera):
+			continue
+		if ally.current_state != ally.State.DEAD and ally.current_state != ally.State.DYING:
+			ally.health = 0
+			ally._cambiar_estado(ally.State.DYING)
+
+
 func _crear_panel_controles_spawn() -> void:
 	if not game_ui:
 		return
@@ -2317,6 +2326,14 @@ func _crear_panel_controles_spawn() -> void:
 		_revivir_aliadas_debug()
 	)
 	grid_items.add_child(btn_revivir_aliadas)
+	var btn_matar_aliadas := Button.new()
+	btn_matar_aliadas.text = "💀 Matar"
+	btn_matar_aliadas.custom_minimum_size = Vector2(84, 26)
+	btn_matar_aliadas.add_theme_font_size_override("font_size", 11)
+	btn_matar_aliadas.pressed.connect(func():
+		_matar_aliadas_debug()
+	)
+	grid_items.add_child(btn_matar_aliadas)
 	var btn_cortinilla := Button.new()
 	btn_cortinilla.text = "🎭 Cortinilla"
 	btn_cortinilla.custom_minimum_size = Vector2(84, 26)

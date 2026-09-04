@@ -93,6 +93,8 @@ func _agregar_animaciones_lonko(lonko: Lonko) -> void:
 	anim_player.name = "AnimationPlayer"
 	var lib = AnimationLibrary.new()
 	lib.add_animation("IDLE", Animation.new())
+	lib.add_animation("HIT_01", Animation.new())
+	lib.add_animation("HIT_02", Animation.new())
 	lib.add_animation("IMPACTO_01", Animation.new())
 	lib.add_animation("IMPACTO_02", Animation.new())
 	lib.add_animation("MUERTE_01", Animation.new())

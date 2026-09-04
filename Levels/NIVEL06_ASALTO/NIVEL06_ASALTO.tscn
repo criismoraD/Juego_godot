@@ -265,7 +265,6 @@ stretch_mode = 5
 
 [node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("20_teecx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8948145, -0.17290789, -12.293223)
-layers = 2
 
 [node name="LuciernagasPlane" parent="." unique_id=20260612 instance=ExtResource("28_luciernagas")]
 transform = Transform3D(0.46957362, 0, 0, 0, 0.4591892, 0, 0, 0, 1, -2, -2.7711232, -13.379387)

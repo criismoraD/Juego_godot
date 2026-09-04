@@ -46,11 +46,6 @@ _subresources={
 "use_external/fallback_path": "res://Entities/Ambiente_Piso/PISO ALIADO_M.tres",
 "use_external/path": "uid://cokani123hvge"
 }
-},
-"nodes": {
-"PATH:PISO ALIADO": {
-"mesh_instance/layers": 2
-}
 }
 }
 gltf/naming_version=2

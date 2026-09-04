@@ -2074,8 +2074,13 @@ func _revivir_aliadas():
 
 func _matar_aliadas():
 	for ally in AllyArcher.active_allies_cache:
-		if ally is AllyArcher and ally.current_state != AllyArcher.State.DEAD and ally.current_state != AllyArcher.State.DYING:
-			ally.recibir_dano(9999)
+		if is_instance_valid(ally) and (ally is AllyArcher or ally is AllyBallestera):
+			if ally.current_state != ally.State.DEAD and ally.current_state != ally.State.DYING:
+				if ally.has_method("recibir_dano"):
+					ally.recibir_dano(9999)
+				else:
+					ally.health = 0
+					ally._cambiar_estado(ally.State.DYING)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

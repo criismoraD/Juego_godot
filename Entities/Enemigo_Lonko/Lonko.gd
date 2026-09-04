@@ -7,9 +7,9 @@ extends "res://System/Core/EnemyBase.gd"
 ## Al morir, el pilar se hunde en la tierra y se disuelve.
 ## Animaciones:
 ## - Caminar/Correr: CORRER_01, CORRE_02 (variantes aleatorias)
-## - Daño/Impacto: IMPACTO_01, IMPACTO_02 (variantes aleatorias) + Daño.mp3
+## - Daño/Impacto: HIT_01, HIT_02 (compatibilidad con IMPACTO_01, IMPACTO_02) + Daño.mp3
 ## - Muerte normal: MUERTE_01, MUERTE_02 (variantes aleatorias) + Muerte.mp3
-## - Invocación: PILAR_SUBIDA (hasta seg 9.5 a 1.15x velocidad, emergiendo PILAR_LONKO.glb)
+## - Invocación: PILAR_SUBIDA (emergiendo PILAR_LONKO.glb, sin escala de velocidad)
 ## - Disparo: RECARGA (toma la flecha y la escala) -> DISPARO (la suelta y lanza proyectil)
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
@@ -67,8 +67,7 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 @export_range(-90.0, 90.0, 0.5) var debug_pitch_deg: float = 0.0  ## Slider para probar la rotación en vivo
 
 @export_category("Orientación del Modelo - Lonko")
-@export_range(-360.0, 360.0, 5.0) var correccion_yaw_idle: float = 0.0  ## Giro extra en Y solo durante la pausa IDLE (con espejo activo dejar en 0: el espejo ya voltea el perfil a frente)
-@export var espejar_modelo_idle: bool = true  ## Espeja el modelo (scale.x negativo) durante la pausa IDLE para invertir la mirada
+@export var espejar_modelo_idle: bool = false  ## Desactivado: IDLE reproduce de forma frontal natural sin invertir ni espejar
 @export_range(1.0, 30.0, 0.5) var suavidad_giro: float = 8.0  ## Velocidad del giro suave del modelo (lerp_angle, mismo patrón que Player)
 
 # Referencias
@@ -147,6 +146,7 @@ func _on_enemy_ready() -> void:
 		_escala_original_modelo = _lonko_modelo.scale
 
 	if anim_player:
+		anim_player.speed_scale = 1.0
 		anim_player.playback_default_blend_time = BLEND_ANIMACIONES
 
 	_configurar_flecha_mano()
@@ -296,20 +296,85 @@ func _play_bow_animation(anim_name: String, custom_blend: float = -1.0) -> void:
 			bow_anim_player.play(a, custom_blend)
 			return
 
+func _play_animation(anim_target, custom_blend: float = -1.0, speed: float = 1.0) -> void:
+	if not anim_player:
+		return
+
+	var candidates: Array = []
+	if anim_target is Array:
+		candidates = anim_target.duplicate()
+	else:
+		candidates = [str(anim_target)]
+
+	# Expansión de alias: soporte bidireccional HIT_* <-> IMPACTO_*
+	var expanded: Array[String] = []
+	for cand in candidates:
+		var s := str(cand)
+		expanded.append(s)
+		if s == "IMPACTO_01":
+			expanded.append("HIT_01")
+		elif s == "HIT_01":
+			expanded.append("IMPACTO_01")
+		elif s == "IMPACTO_02":
+			expanded.append("HIT_02")
+		elif s == "HIT_02":
+			expanded.append("IMPACTO_02")
+
+	for cand_str in expanded:
+		var possible_names: Array[String] = [
+			cand_str,
+			"Armature|" + cand_str,
+			"Armature|Armature|" + cand_str,
+			"ENEMY|" + cand_str
+		]
+		for possible in possible_names:
+			if anim_player.has_animation(possible):
+				anim_player.play(possible, custom_blend, speed)
+				return
+
+
+func _get_animation_duration(anim_target) -> float:
+	if not anim_player:
+		return 2.0
+
+	var candidates: Array = []
+	if anim_target is Array:
+		candidates = anim_target.duplicate()
+	else:
+		candidates = [str(anim_target)]
+
+	var expanded: Array[String] = []
+	for cand in candidates:
+		var s := str(cand)
+		expanded.append(s)
+		if s == "IMPACTO_01":
+			expanded.append("HIT_01")
+		elif s == "HIT_01":
+			expanded.append("IMPACTO_01")
+		elif s == "IMPACTO_02":
+			expanded.append("HIT_02")
+		elif s == "HIT_02":
+			expanded.append("IMPACTO_02")
+
+	for cand_str in expanded:
+		var possible_names: Array[String] = [
+			cand_str,
+			"Armature|" + cand_str,
+			"Armature|Armature|" + cand_str,
+			"ENEMY|" + cand_str
+		]
+		for possible in possible_names:
+			if anim_player.has_animation(possible):
+				return anim_player.get_animation(possible).length
+
+	return 2.0
+
+
 func _play_idle_invertido() -> void:
 	if not anim_player:
 		return
-	# Invertir IDLE: buscar nombre real y reproducir hacia atrás desde el final
 	var idle_name: String = "IDLE"
-	var _real_name: StringName = idle_name
-	for n in anim_player.get_animation_list():
-		if idle_name in n:
-			_real_name = n
-			break
-	var dur: float = _get_animation_duration(_real_name)
-	# Colocar al final y reproducir en reversa (from_end = true vía seek)
-	anim_player.seek(dur, true)
-	_play_animation(idle_name, 0.2, -1.0)
+	_play_animation(idle_name, 0.2, 1.0)
 
 
 func _recolorear_flecha_mano() -> void:
@@ -380,12 +445,10 @@ func _particulas_pisada_emitir() -> void:
 
 
 ## Yaw objetivo del modelo según el estado actual.
-## Prioridad: secuencia del pilar > corrección de idle > base (izquierda).
+## Prioridad: secuencia del pilar (fondo) > base (izquierda, hacia el jugador).
 func _obtener_yaw_objetivo_grados() -> float:
 	if _girando_hacia_fondo:
 		return YAW_HACIA_FONDO
-	if _correccion_idle_activa:
-		return YAW_BASE_IZQUIERDA + correccion_yaw_idle
 	return YAW_BASE_IZQUIERDA
 
 
@@ -400,20 +463,13 @@ func _aplicar_yaw_suave(delta: float) -> void:
 	_aplicar_espejo_idle()
 
 
-## Espeja el modelo (scale.x negativo) solo durante la pausa IDLE: el clip IDLE
-## está autorado con quiralidad invertida y la mirada sale hacia el lado contrario.
-## El volteo se anima (scale.x cruza por 0) para evitar un salto/parpadeo visual.
+## Asegura que la escala del modelo siempre sea positiva y natural (sin espejo ni inversión)
 func _aplicar_espejo_idle() -> void:
 	if not _lonko_modelo or not is_instance_valid(_lonko_modelo):
 		return
-	var objetivo_x: float = -absf(_escala_original_modelo.x) if (_correccion_idle_activa and espejar_modelo_idle) else absf(_escala_original_modelo.x)
-	if is_equal_approx(_lonko_modelo.scale.x, objetivo_x):
-		return
-	if _tween_espejo and _tween_espejo.is_valid():
-		_tween_espejo.kill()
-	_tween_espejo = create_tween()
-	_tween_espejo.tween_property(_lonko_modelo, "scale:x", objetivo_x, DURACION_ESPEJO_SG) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	var objetivo_x: float = absf(_escala_original_modelo.x)
+	if not is_equal_approx(_lonko_modelo.scale.x, objetivo_x):
+		_lonko_modelo.scale.x = objetivo_x
 
 
 func _lonko_track_player() -> void:
@@ -604,12 +660,12 @@ func _iniciar_secuencia_pilar() -> void:
 		_lonko_modelo.position = Vector3.ZERO
 
 	var duracion_base: float = 9.5
-	var velocidad_anim: float = 1.15
-	var duracion_real: float = duracion_base / velocidad_anim
+	var velocidad_anim: float = 1.0
+	var duracion_real: float = duracion_base
 	_crear_humo_pilar(base_x, base_y, base_z, duracion_real)
 
-	# 2. Animación PILAR_SUBIDA 15% más rápida
-	_play_animation("PILAR_SUBIDA", 0.2, velocidad_anim)
+	# 2. Animación PILAR_SUBIDA a velocidad normal (1.0x, sin escala)
+	_play_animation("PILAR_SUBIDA", 0.2, 1.0)
 
 	# 3. Instanciar PILAR_LONKO.glb vinculado a este Lonko (sin colisión con enemigos)
 	if pilar_lonko_scene:
@@ -939,9 +995,8 @@ func _iniciar_secuencia_disparo() -> void:
 
 	# 1. RECARGA: toma la flecha y la escala - suavizada ult y post-daño
 	if _apuntar_arriba:
-		# Ult: blend largo y velocidad natural (no estirar brusco que deforma)
-		var duracion_clip_recarga: float = max(0.1, _get_animation_duration("RECARGA"))
-		_play_animation("RECARGA", 0.35, duracion_clip_recarga / tiempo_recarga_actual * 0.88)
+		# Ult: velocidad natural 1.0x sin estirar
+		_play_animation("RECARGA", 0.35, 1.0)
 		_mostrar_flecha_electrica_en_mano(tiempo_recarga_actual)
 		_iniciar_vfx_carga_ult(tiempo_recarga_actual)
 		_iniciar_temblor_pilar_ult(tiempo_recarga_actual)
@@ -994,9 +1049,8 @@ func _iniciar_secuencia_disparo() -> void:
 
 	# Pausa entre disparos, luego volver a disparar
 	if not _is_taking_damage:
-		# El clip IDLE trae un yaw interno distinto: aplicar la corrección suave mientras dure
-		_correccion_idle_activa = true
-		_play_idle_invertido()
+		_correccion_idle_activa = false
+		_play_animation("IDLE", 0.25, 1.0)
 		_play_bow_animation("ARCO_IDLE")
 		await get_tree().create_timer(pausa_entre_disparos, false).timeout
 		if not is_instance_valid(self) or current_state != State.SHOOTING:
@@ -1588,8 +1642,8 @@ func take_damage(amount: float) -> void:
 		_reset_spine_rotation()
 		_reproducir_sonido_dano()
 
-		var rand_impact: String = "IMPACTO_01" if randf() < 0.5 else "IMPACTO_02"
-		_play_animation(rand_impact)
+		var rand_impact: String = "HIT_01" if randf() < 0.5 else "HIT_02"
+		_play_animation(rand_impact, 0.1, 1.0)
 
 		var dur: float = max(0.3, _get_animation_duration(rand_impact))
 		get_tree().create_timer(dur).timeout.connect(func():

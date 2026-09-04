@@ -21,6 +21,10 @@ uniform sampler2D displacement_texture; // Vertex displacement (use Simplex/Perl
 uniform vec2 displacement_scale = vec2(0.1, 0.5);
 uniform float displacement_speed : hint_range(0.0, 0.5) = 0.02;
 
+group_uniforms UV_Settings;
+uniform vec2 uv_scale = vec2(1.0, 1.0);
+uniform vec2 uv_offset = vec2(0.0, 0.0);
+
 group_uniforms Z_Mask_Gradient;
 uniform float z_min = -10.0;
 uniform float z_max = 10.0;
@@ -51,7 +55,8 @@ void vertex() {
 	z_mask = smoothstep(z_min, z_max, VERTEX.z);
 	
 	// Sample displacement texture with its own scale and speed
-	vec2 disp_uv = UV * displacement_scale + TIME * displacement_speed;
+	vec2 base_uv = UV * uv_scale + uv_offset;
+	vec2 disp_uv = base_uv * displacement_scale + TIME * displacement_speed;
 	float noise_val = textureLod(displacement_texture, disp_uv, 0.0).r;
 	
 	// Apply mask to wave height
@@ -62,11 +67,12 @@ void vertex() {
 }
 
 void fragment() {
+	vec2 base_uv = UV * uv_scale + uv_offset;
 	// TIME calculations for moving normals
 	vec2 time = (TIME * wave_direction) * time_scale;
 	
 	// Single texture normal
-	vec3 normal_map = texture(texture_normal, UV * noise_scale + time).rgb;
+	vec3 normal_map = texture(texture_normal, base_uv * noise_scale + time).rgb;
 	
 	// Base Color
 	METALLIC = metallic;
@@ -90,7 +96,7 @@ void fragment() {
 	depth_transmission = clamp(depth_transmission, 0.0, 1.0);
 	
 	// ===== ORGANIC FOAM WITH NOISE DISSOLVE =====
-	float foam_noise_val = texture(foam_noise, UV * foam_noise_scale + time * 0.5).r;
+	float foam_noise_val = texture(foam_noise, base_uv * foam_noise_scale + time * 0.5).r;
 	float foam_edge = foam_level + foam_dissolve * (foam_noise_val * 2.0 - 1.0);
 	float foam_factor = smoothstep(foam_edge, foam_edge * 0.5, diff);
 	foam_factor *= foam_noise_val; // Add holes/irregularity

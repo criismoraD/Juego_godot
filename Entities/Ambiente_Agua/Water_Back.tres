@@ -1,4 +1,4 @@
-[gd_resource type="ShaderMaterial" format=3 uid="uid://cs4gdbqaiqnek"]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cifxoxbexc8a0"]
 
 [ext_resource type="Shader" uid="uid://c1q2svqubxbb5" path="res://System/Shaders/Water.gdshader" id="1_water"]
 
@@ -52,7 +52,7 @@ shader_parameter/wave_height = 0.2000000095
 shader_parameter/displacement_texture = SubResource("NoiseTexture2D_disp")
 shader_parameter/displacement_scale = Vector2(0.1, 0.5)
 shader_parameter/displacement_speed = 0.0030000001425
-shader_parameter/uv_scale = Vector2(1, 1)
+shader_parameter/uv_scale = Vector2(1, 0.6666667)
 shader_parameter/uv_offset = Vector2(0, 0)
 shader_parameter/z_min = -22.0
 shader_parameter/z_max = 10.0

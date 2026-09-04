@@ -53,7 +53,7 @@ func change_scene(target_path: String, _extra_prewarms: Array = []) -> void:
 func _monitorear_carga_async(target_path: String) -> void:
 	var progress_array: Array = []
 	var status: ResourceLoader.ThreadLoadStatus = ResourceLoader.THREAD_LOAD_IN_PROGRESS
-	var max_wait_time: float = 6.0
+	var max_wait_time: float = 60.0
 	var elapsed: float = 0.0
 
 	while status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
@@ -87,7 +87,6 @@ func _monitorear_carga_async(target_path: String) -> void:
 		_current_loading_screen.set_status_text("Optimizando shaders y efectos...")
 		_current_loading_screen.set_progress(0.96)
 
-
 	await ShaderPrewarmer.prewarm(get_tree(), func(p: float):
 		if is_instance_valid(_current_loading_screen):
 			_current_loading_screen.set_progress(0.96 + (p * 0.04))
@@ -99,14 +98,18 @@ func _monitorear_carga_async(target_path: String) -> void:
 		_current_loading_screen.set_status_text("¡Listo!")
 	scene_load_progress.emit(1.0)
 
-	# Pausa breve para que se aprecie la barra llena
-	await get_tree().create_timer(0.12, false, false, true).timeout
+	# Pausa para que la barra alcance visualmente el 100% de forma fluida
+	var espera_visual: float = 0.0
+	while is_instance_valid(_current_loading_screen) and _current_loading_screen.get("_current_progress") != null and float(_current_loading_screen.get("_current_progress")) < 0.99 and espera_visual < 1.0:
+		await get_tree().process_frame
+		espera_visual += get_process_delta_time()
+	await get_tree().create_timer(0.2, false, false, true).timeout
 
 	# 6. Cambiar a la nueva escena
 	get_tree().change_scene_to_packed(packed_scene)
 	scene_load_completed.emit(target_path)
 
-	# 6. Desvanecer la pantalla de carga suavemente para revelar el juego sin bloquear inputs
+	# 7. Desvanecer la pantalla de carga suavemente para revelar el juego sin bloquear inputs
 	if is_instance_valid(_current_loading_screen):
 		if _current_loading_screen.has_method("fade_out"):
 			_current_loading_screen.fade_out(0.35)
@@ -120,8 +123,15 @@ func _monitorear_carga_async(target_path: String) -> void:
 
 func _finalizar_carga_fallida(target_path: String) -> void:
 	if is_instance_valid(_current_loading_screen):
-		_current_loading_screen.queue_free()
-		_current_loading_screen = null
+		_current_loading_screen.set_progress(1.0)
+		_current_loading_screen.set_status_text("¡Listo!")
+		await get_tree().create_timer(0.25, false, false, true).timeout
+		if is_instance_valid(_current_loading_screen):
+			if _current_loading_screen.has_method("fade_out"):
+				_current_loading_screen.fade_out(0.25)
+			else:
+				_current_loading_screen.queue_free()
+			_current_loading_screen = null
 	_is_loading = false
 	_loading_path = ""
 	get_tree().change_scene_to_file(target_path)

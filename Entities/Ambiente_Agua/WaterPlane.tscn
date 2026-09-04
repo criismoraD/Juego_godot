@@ -1,12 +1,28 @@
 [gd_scene format=3 uid="uid://cxqcex5ugbppo"]
 
-[ext_resource type="Material" uid="uid://cs4gdbqaiqnek" path="res://Entities/Ambiente_Agua/Water.tres" id="1_mat"]
+[ext_resource type="Material" uid="uid://water_back_mat_uid" path="res://Entities/Ambiente_Agua/Water_Back.tres" id="1_back_mat"]
+[ext_resource type="Material" uid="uid://water_front_mat_uid" path="res://Entities/Ambiente_Agua/Water_Front.tres" id="2_front_mat"]
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_1"]
-size = Vector2(30, 50)
+[sub_resource type="PlaneMesh" id="PlaneMesh_Atras"]
+size = Vector2(30, 33.333333)
 subdivide_width = 150
-subdivide_depth = 150
+subdivide_depth = 100
+center_offset = Vector3(0, 0, -8.333333)
 
-[node name="WaterPlane" type="MeshInstance3D" unique_id=1903931376]
-mesh = SubResource("PlaneMesh_1")
-surface_material_override/0 = ExtResource("1_mat")
+[sub_resource type="PlaneMesh" id="PlaneMesh_Adelante"]
+size = Vector2(30, 16.666667)
+subdivide_width = 150
+subdivide_depth = 50
+center_offset = Vector3(0, 0, 16.666667)
+
+[node name="WaterPlane" type="Node3D" unique_id=1903931376]
+
+[node name="WaterPlane_Atras" type="MeshInstance3D" parent="." unique_id=1903931377]
+layers = 2
+mesh = SubResource("PlaneMesh_Atras")
+surface_material_override/0 = ExtResource("1_back_mat")
+
+[node name="WaterPlane_Adelante" type="MeshInstance3D" parent="." unique_id=1903931378]
+layers = 1
+mesh = SubResource("PlaneMesh_Adelante")
+surface_material_override/0 = ExtResource("2_front_mat")

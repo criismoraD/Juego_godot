@@ -320,12 +320,11 @@ func _iniciar_desintegracion(duracion: float) -> void:
 		dissolve_mats.append(mat)
 
 	var tween := create_tween()
-	tween.tween_method(
-		func(val: float) -> void:
-			for m in dissolve_mats:
-				if is_instance_valid(m):
-					m.set_shader_parameter("dissolve_amount", val),
-		0.0, 1.0, duracion)
+	var update_dissolve := func(val: float) -> void:
+		for m in dissolve_mats:
+			if is_instance_valid(m):
+				m.set_shader_parameter("dissolve_amount", val)
+	tween.tween_method(update_dissolve, 0.0, 1.0, duracion)
 
 	if magic_light:
 		tween.parallel().tween_property(magic_light, "light_energy", 0.0, duracion)
