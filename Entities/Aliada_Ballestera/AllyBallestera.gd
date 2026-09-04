@@ -440,6 +440,69 @@ func _setup_animation_player():
 	if not anim_player and all_players.size() > 0:
 		anim_player = all_players[0]
 
+	_generar_poses_apuntado()
+
+
+## Genera poses estáticas continuas para apuntar de pie y agachada a partir
+## de los clips de disparo, permitiendo crossfades suaves sin congelar AnimationMixer.
+func _generar_poses_apuntado() -> void:
+	if not anim_player:
+		return
+	_extraer_pose_estatica("DISPARO_01", "POSE_APUNTAR", punto_pose_disparo)
+	_extraer_pose_estatica("DISPARO_AGACHADO", "POSE_APUNTAR_AGACHADO", 0.0)
+
+
+func _extraer_pose_estatica(origen_nombre: String, destino_nombre: String, ratio_tiempo: float) -> void:
+	if not anim_player:
+		return
+	var anim_fuente: Animation = null
+	var lib_fuente: AnimationLibrary = null
+
+	for lib_name in anim_player.get_animation_library_list():
+		var lib: AnimationLibrary = anim_player.get_animation_library(lib_name)
+		if not lib:
+			continue
+		for anim_name in lib.get_animation_list():
+			var an_str := str(anim_name).to_lower()
+			if an_str == origen_nombre.to_lower() or an_str.ends_with("/" + origen_nombre.to_lower()):
+				anim_fuente = lib.get_animation(anim_name)
+				lib_fuente = lib
+				break
+		if anim_fuente:
+			break
+
+	if not anim_fuente or not lib_fuente:
+		return
+	if lib_fuente.has_animation(destino_nombre):
+		return
+
+	var t_muestra: float = clampf(ratio_tiempo, 0.0, 1.0) * anim_fuente.length
+	var pose := Animation.new()
+	pose.length = 1.0
+	pose.loop_mode = Animation.LOOP_LINEAR
+
+	for track_idx in range(anim_fuente.get_track_count()):
+		var path := anim_fuente.track_get_path(track_idx)
+		var type := anim_fuente.track_get_type(track_idx)
+		var new_track := pose.add_track(type)
+		pose.track_set_path(new_track, path)
+		pose.track_set_interpolation_type(new_track, Animation.INTERPOLATION_LINEAR)
+
+		var count := anim_fuente.track_get_key_count(track_idx)
+		if count == 0:
+			continue
+		var best_k := 0
+		for k in range(count):
+			if anim_fuente.track_get_key_time(track_idx, k) <= t_muestra:
+				best_k = k
+			else:
+				break
+		var val = anim_fuente.track_get_key_value(track_idx, best_k)
+		pose.track_insert_key(new_track, 0.0, val)
+		pose.track_insert_key(new_track, 1.0, val)
+
+	lib_fuente.add_animation(destino_nombre, pose)
+
 
 func _crear_hitbox():
 	hitbox_body = StaticBody3D.new()
@@ -715,7 +778,7 @@ func _process_idle(delta: float):
 func _process_reloading(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
-		_cambiar_estado(State.IDLE)
+		_cambiar_estado(State.AIMING)
 
 
 func _process_aiming(delta: float):
@@ -757,6 +820,11 @@ func _process_getting_up(delta: float):
 func _process_celebrating(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
+		if _loops_victoria_restantes > 1:
+			_loops_victoria_restantes -= 1
+			var _dur_clip: float = _get_anim_length("VICTORIA")
+			state_timer = maxf(_dur_clip, 0.3)
+			return
 		_loops_victoria_restantes = 0
 		# Defensoras moviles quedan en IDLE: el timer del await maneja la retirada
 		# Defensoras fijas vuelven a apuntar directamente
@@ -791,10 +859,7 @@ func _cambiar_estado(nuevo: State):
 	match nuevo:
 		State.IDLE:
 			objetivo_actual = _obtener_objetivo_prioritario() if _puede_atacar() else null
-			if fase_agachada:
-				_play_anim("DISPARO_AGACHADO", 0.35, 0.001)
-			else:
-				_fijar_pose_combate(0.35)
+			_fijar_pose_combate(0.35)
 			state_timer = randf_range(idle_min, idle_max)
 		State.RELOADING:
 			objetivo_actual = _obtener_objetivo_prioritario()
@@ -806,10 +871,7 @@ func _cambiar_estado(nuevo: State):
 		State.AIMING:
 			if not is_instance_valid(objetivo_actual):
 				objetivo_actual = _obtener_objetivo_prioritario()
-			if fase_agachada:
-				_play_anim("DISPARO_AGACHADO", 0.35, 1.0)
-			else:
-				_fijar_pose_combate(0.35)
+			_fijar_pose_combate(0.25)
 			charge_duration = randf_range(tiempo_carga_min, tiempo_carga_max)
 			state_timer = charge_duration
 		State.SHOOTING:
@@ -834,17 +896,17 @@ func _cambiar_estado(nuevo: State):
 			if _puede_celebrar():
 				AudioManager.play_sfx("risa_victoria_ballestera")
 			var _dur_clip: float = _get_anim_length("VICTORIA")
-			state_timer = maxf(_dur_clip, 0.3) * _loops_victoria_restantes
+			state_timer = maxf(_dur_clip, 0.3)
 
 
-func _fijar_pose_combate(blend_time: float = 0.25):
+func _fijar_pose_combate(blend_time: float = 0.25) -> void:
 	if not anim_player:
 		return
-	_play_anim("DISPARO_01", blend_time, 0.001)
-	# Congelar en el frame de apuntado en vez del frame 0 (postura de preparación rara)
-	var anim: Animation = anim_player.get_animation(anim_player.current_animation)
-	if anim:
-		anim_player.seek(clampf(punto_pose_disparo, 0.0, 1.0) * anim.length, true)
+	if fase_agachada:
+		_play_anim(["POSE_APUNTAR_AGACHADO", "DISPARO_AGACHADO"], blend_time, 1.0)
+	else:
+		_play_anim(["POSE_APUNTAR", "DISPARO_01"], blend_time, 1.0)
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1842,8 +1904,8 @@ func _play_anim(anim_target, blend: float = 0.2, speed: float = 1.0):
 		for a in all_anims:
 			var a_str := a.to_lower()
 			if a_str == cand_str or a_str.ends_with("/" + cand_str) or cand_str in a_str:
+				anim_player.speed_scale = 1.0
 				anim_player.play(a, blend, speed)
-				anim_player.speed_scale = speed
 				return
 
 
