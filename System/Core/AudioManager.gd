@@ -232,6 +232,25 @@ func _load_all_sounds():
 	sfx_streams["ballestera_victoria"] = sfx_streams["risa_victoria_ballestera"]
 	sfx_streams["ballestera_laugh"] = sfx_streams["risa_victoria_ballestera"]
 
+	var _sfx_recarga_ballesta: AudioStream = null
+	if ResourceLoader.exists("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.wav"):
+		_sfx_recarga_ballesta = load("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/recarga_ballesta.wav"):
+		_sfx_recarga_ballesta = load("res://TEST_/recarga_ballesta.wav") as AudioStream
+	elif ResourceLoader.exists("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.mp3"):
+		_sfx_recarga_ballesta = load("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.mp3") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/recarga_ballesta.mp3"):
+		_sfx_recarga_ballesta = load("res://TEST_/recarga_ballesta.mp3") as AudioStream
+
+	if _sfx_recarga_ballesta:
+		sfx_streams["recarga_ballesta"] = [_sfx_recarga_ballesta]
+		sfx_streams["recarga_ballestera"] = [_sfx_recarga_ballesta]
+		sfx_streams["recarga ballesta"] = [_sfx_recarga_ballesta]
+		sfx_streams["crossbow_reload"] = [_sfx_recarga_ballesta]
+	elif sfx_streams.has("bow_tension"):
+		sfx_streams["recarga_ballesta"] = sfx_streams["bow_tension"]
+
+
 	# Sonido de correr descalzo (Lonko y Goblina Pesada)
 	var _sfx_correr: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):

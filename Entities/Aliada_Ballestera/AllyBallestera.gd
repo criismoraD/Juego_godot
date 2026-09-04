@@ -863,7 +863,7 @@ func _cambiar_estado(nuevo: State):
 			state_timer = randf_range(idle_min, idle_max)
 		State.RELOADING:
 			objetivo_actual = _obtener_objetivo_prioritario()
-			AudioManager.play_sfx("bow_tension", -6.0)
+			_reproducir_sonido_recarga()
 			_restaurar_torso()
 			_play_anim(["Recargar", "RECARGAR"], 0.15, 1.0)
 			var dur_recarga: float = _get_anim_length("Recargar")
@@ -1011,7 +1011,11 @@ func regenerar_escudo_enemigo_explicito() -> void:
 	_regenerar_escudo_piso(true)
 
 
-func _reproducir_sonido_disparo():
+func _reproducir_sonido_recarga() -> void:
+	AudioManager.play_sfx("recarga_ballesta")
+
+
+func _reproducir_sonido_disparo() -> void:
 	AudioManager.play_sfx("player_shoot", -6.0)
 
 

@@ -5,7 +5,9 @@ var EscudoScript = load("res://Entities/Ambiente_Escudo/Escudo.gd")
 var _ballestera: AllyBallestera = null
 
 class MockAudioManager extends Node:
-	func play_sfx(_name, _boost = 0.0): pass
+	var sonidos_reproducidos: Array[String] = []
+	func play_sfx(_name, _boost = 0.0):
+		sonidos_reproducidos.append(str(_name))
 	func stop_bow_tension(): pass
 	func reset_bow_hold(): pass
 
@@ -92,6 +94,10 @@ func test_disparo_transiciona_a_recarga():
 	assert_eq(_ballestera.current_state, _ballestera.State.RELOADING, "Tras finalizar el disparo debe transicionar a RELOADING")
 	var ap: AnimationPlayer = _ballestera.find_child("AnimationPlayer", true, false)
 	assert_true(ap.current_animation.to_lower().contains("recargar"), "Debe reproducir la animación de recarga")
+	var mock_audio = get_tree().root.get_node_or_null("AudioManager")
+	if mock_audio and "sonidos_reproducidos" in mock_audio:
+		assert_true(mock_audio.sonidos_reproducidos.has("recarga_ballesta"), "Debe reproducir el sonido de recarga de ballesta")
+
 
 
 func test_recarga_transiciona_a_apuntar():
