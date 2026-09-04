@@ -12,6 +12,7 @@ const SPAWN_COLLISION_DELAY: float = 0.1
 const DESTROY_DELAY: float = 0.3
 const MIN_DIRECTION_LENGTH_SQUARED: float = 0.01
 const ARROW_TIP_OFFSET: float = 0.165
+const SHADER_OUTLINE: Shader = preload("res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader")
 
 @export_category("Tiempo")
 @export var tiempo_vida: float = 10.0
@@ -425,6 +426,10 @@ func _check_destroy() -> void:
 
 
 func _check_off_screen() -> void:
+	if global_position.y < MIN_WORLD_Y or global_position.x < -25.0 or global_position.x > 55.0 or global_position.y > 50.0:
+		_safe_destroy()
+		return
+
 	var camera := CAMERA_UTILS_REF.obtener_camara_juego(self )
 	if not camera:
 		return
@@ -436,8 +441,6 @@ func _check_off_screen() -> void:
 	elif screen_pos.y < -offscreen_margin_top:
 		_safe_destroy()
 	elif screen_pos.y > viewport_size.y + offscreen_margin_bottom:
-		_safe_destroy()
-	elif global_position.y < MIN_WORLD_Y:
 		_safe_destroy()
 
 
@@ -519,13 +522,11 @@ static func _get_shared_projectile_material(
 	material.emission_energy_multiplier = emission_energy
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
-	var shader = load("res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader") as Shader
-	if shader:
-		var outline_mat = ShaderMaterial.new()
-		outline_mat.shader = shader
-		outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
-		outline_mat.set_shader_parameter("outline_width", p_outline_width)
-		material.next_pass = outline_mat
+	var outline_mat := ShaderMaterial.new()
+	outline_mat.shader = SHADER_OUTLINE
+	outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+	outline_mat.set_shader_parameter("outline_width", p_outline_width)
+	material.next_pass = outline_mat
 
 	_projectile_material_cache[key] = material
 	return material

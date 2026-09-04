@@ -10,6 +10,8 @@ const DANO: float = 5.0
 const MAX_ENEMIGOS_DANADOS: int = 6  ## Tope de enemigos aplastados por impacto de canasta
 const TEXTURA_ROCAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS.png")
 const SFX_IMPACTO_PESADO: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Impacto_pesado.mp3")
+const TEXTURA_SANGRE_DECAL: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png")
+const TEXTURA_HUMO_CANASTA: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_2A-2.png")
 
 var _area_dano: Area3D = null
 var _golpeados: Dictionary = {}
@@ -201,9 +203,7 @@ func _aplicar(enemy: Node) -> void:
 
 func _manchar_canasta_con_sangre() -> void:
 	# Decal proyectado sobre la propia canasta — la textura toma la forma del mimbre/trenzado
-	var tex: Texture2D = null
-	if ResourceLoader.exists("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png"):
-		tex = load("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png")
+	var tex: Texture2D = TEXTURA_SANGRE_DECAL
 	if not tex:
 		return
 	var meshes := find_children("*", "MeshInstance3D", true, false)
@@ -291,8 +291,8 @@ func _crear_particulas_piedras_rebote() -> void:
 
 func _crear_humo_escalado(factor: float = 1.28) -> void:
 	# Replica exacta del humo VFXFactory pero escalado factor ~1.28 para "un poco más grande"
-	var tex: Texture2D = load("res://VFX/Textures/Smoke/Smoke_2A-2.png")
-	if not ResourceLoader.exists("res://VFX/Textures/Smoke/Smoke_2A-2.png"):
+	var tex: Texture2D = TEXTURA_HUMO_CANASTA
+	if not tex:
 		return
 	var floor_pos := global_position
 	var world_3d := get_world_3d()

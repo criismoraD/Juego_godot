@@ -383,15 +383,8 @@ func _physics_process(delta):
 
 
 func _obtener_limite_izquierdo_x() -> float:
-	var barreras := get_tree().get_nodes_in_group("barrera_limite")
-	for barrera: Node3D in barreras:
-		if is_instance_valid(barrera) and barrera.is_inside_tree():
-			if barrera.global_position.x < global_position.x and barrera.global_position.x > -12.0:
-				var tam_x: float = 1.0
-				if "tamano" in barrera:
-					tam_x = barrera.tamano.x
-				return barrera.global_position.x + (tam_x * 0.5) + 0.35
-	return -4.8
+	EnemyBase._asegurar_cache_barreras(get_tree())
+	return EnemyBase._cached_limite_izq_x
 
 
 func _process_walking(_delta):

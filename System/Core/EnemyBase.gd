@@ -86,6 +86,42 @@ var dissolve_particles: GPUParticles3D = null
 static var _cached_wave_spawner: Node = null
 static var active_enemies_cache: Array[Node] = []
 static var active_shield_imps_cache: Array[Node] = []
+static var _cached_limite_barrera_destruye_x: float = -INF
+static var _cached_limite_izq_x: float = -4.8
+static var _cached_scene_barreras: Node = null
+
+static func invalidar_cache_barreras() -> void:
+	_cached_scene_barreras = null
+	_cached_limite_barrera_destruye_x = -INF
+	_cached_limite_izq_x = -4.8
+
+static func _asegurar_cache_barreras(tree: SceneTree) -> void:
+	if not tree:
+		return
+	var escena_actual := tree.current_scene
+	if _cached_scene_barreras == escena_actual and _cached_limite_barrera_destruye_x != -INF:
+		return
+
+	_cached_scene_barreras = escena_actual
+	_cached_limite_barrera_destruye_x = -INF
+	_cached_limite_izq_x = -4.8
+
+	var barreras_df := tree.get_nodes_in_group("barrera_destruye_flechas")
+	for b in barreras_df:
+		if is_instance_valid(b) and b is Node3D:
+			var tam_x: float = b.tamano.x if "tamano" in b else 1.0
+			var lim: float = b.global_position.x - (tam_x * 0.5) - 0.5
+			if lim > _cached_limite_barrera_destruye_x:
+				_cached_limite_barrera_destruye_x = lim
+
+	var barreras_lim := tree.get_nodes_in_group("barrera_limite")
+	for b in barreras_lim:
+		if is_instance_valid(b) and b is Node3D and b.is_inside_tree():
+			if b.global_position.x > -12.0:
+				var tam_x: float = b.tamano.x if "tamano" in b else 1.0
+				var lim: float = b.global_position.x + (tam_x * 0.5) + 0.35
+				_cached_limite_izq_x = lim
+				break
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
 var _red_flash_material: StandardMaterial3D = null
@@ -262,20 +298,8 @@ func _physics_process(delta):
 	# Si el enemigo está en el área de la barrera destruye flechas (o a la derecha de ella),
 	# se le obliga a seguir caminando hacia la izquierda para salir de la zona de invulnerabilidad.
 	if current_state != State.DYING and current_state != State.DEAD:
-		var esta_en_barrera = false
-		var barreras = get_tree().get_nodes_in_group("barrera_destruye_flechas")
-		for barrera in barreras:
-			if is_instance_valid(barrera):
-				var tam_x = 1.0
-				if "tamano" in barrera:
-					tam_x = barrera.tamano.x
-				var limite_izquierdo = barrera.global_position.x - (tam_x * 0.5)
-				# Margen de seguridad de 0.5 para asegurar que quede completamente fuera de la barrera
-				if global_position.x >= limite_izquierdo - 0.5:
-					esta_en_barrera = true
-					break
-		
-		if esta_en_barrera:
+		_asegurar_cache_barreras(get_tree())
+		if _cached_limite_barrera_destruye_x != -INF and global_position.x >= _cached_limite_barrera_destruye_x:
 			if current_state != State.WALKING:
 				_change_state(State.WALKING)
 			else:
@@ -289,15 +313,8 @@ func _physics_process(delta):
 
 
 func _obtener_limite_izquierdo_x() -> float:
-	var barreras := get_tree().get_nodes_in_group("barrera_limite")
-	for barrera: Node3D in barreras:
-		if is_instance_valid(barrera) and barrera.is_inside_tree():
-			if barrera.global_position.x < global_position.x and barrera.global_position.x > -12.0:
-				var tam_x: float = 1.0
-				if "tamano" in barrera:
-					tam_x = barrera.tamano.x
-				return barrera.global_position.x + (tam_x * 0.5) + 0.35
-	return -4.8
+	_asegurar_cache_barreras(get_tree())
+	return _cached_limite_izq_x
 
 
 func _process_walking(delta):

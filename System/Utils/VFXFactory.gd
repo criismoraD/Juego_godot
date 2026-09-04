@@ -585,7 +585,7 @@ static func create_arrow_trail(
 	return particles
 
 
-const TEXTURA_MANCHA_SANGRE: String = "res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png"
+const TEXTURA_MANCHA_SANGRE: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png")
 
 ## Alinea la orientación y posición de un MeshInstance3D (QuadMesh) exactamente
 ## a la normal de la superficie impactada (suelos planos, rampas inclinadas o plataformas).
@@ -663,10 +663,7 @@ static func spawn_ground_blood_splatter(
 	mat.albedo_color = color_modulate
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.render_priority = -2
-
-	if ResourceLoader.exists(TEXTURA_MANCHA_SANGRE):
-		mat.albedo_texture = load(TEXTURA_MANCHA_SANGRE)
-
+	mat.albedo_texture = TEXTURA_MANCHA_SANGRE
 	mesh_inst.material_override = mat
 
 	root.add_child(mesh_inst)
@@ -684,7 +681,7 @@ static func spawn_ground_blood_splatter(
 	return mesh_inst
 
 
-const TEXTURA_HUMO_SALTO_DEFENSORA: String = "res://VFX/Textures/Smoke/Smoke_2A-2.png"
+const TEXTURA_HUMO_SALTO_DEFENSORA: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_2A-2.png")
 
 ## Crea la animación de humo de salto de la defensora expandiéndose a ambos lados
 ## cuando se rompe un escudo enemigo.
@@ -711,9 +708,7 @@ static func spawn_shield_break_smoke(source_node: Node, pos: Vector3) -> void:
 		if hit and hit.has("position"):
 			floor_pos = hit.position
 
-	var tex: Texture2D = null
-	if ResourceLoader.exists(TEXTURA_HUMO_SALTO_DEFENSORA):
-		tex = load(TEXTURA_HUMO_SALTO_DEFENSORA)
+	var tex: Texture2D = TEXTURA_HUMO_SALTO_DEFENSORA
 	if not tex:
 		return
 

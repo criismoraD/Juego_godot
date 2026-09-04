@@ -26,7 +26,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
 @export_range(1.0, 1.4, 0.01) var escala_cobertura_fondo_animado: float = 1.18
-@export var limitar_fps_subviewport_fondo_3d: bool = true
+@export var limitar_fps_subviewport_fondo_3d: bool = false
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
 @export var pausar_video_fondo_en_combate: bool = false
 @export_category("Debug")
@@ -484,12 +484,12 @@ func _configurar_render_subviewports() -> void:
 		)
 
 	if subviewport_medio_3d:
-		subviewport_medio_3d.msaa_3d = Viewport.MSAA_4X
+		subviewport_medio_3d.msaa_3d = Viewport.MSAA_2X
 		subviewport_medio_3d.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 		subviewport_medio_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 	if subviewport_frente_3d:
-		subviewport_frente_3d.msaa_3d = Viewport.MSAA_4X
+		subviewport_frente_3d.msaa_3d = Viewport.MSAA_2X
 		subviewport_frente_3d.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 		subviewport_frente_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 

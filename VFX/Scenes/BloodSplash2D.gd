@@ -18,6 +18,9 @@ const DEFAULT_FPS: float = 14.0
 @export var custom_regions: Array[Rect2] = []
 @export var base_faces_left: bool = false
 
+# === CACHÉ ESTÁTICA DE SPRITEFRAMES ===
+static var _frames_cache: Dictionary = {}
+
 
 func _ready() -> void:
 	# Configuración visual para 2.5D
@@ -38,6 +41,13 @@ func _ready() -> void:
 
 
 func _build_sprite_frames_from_strip() -> void:
+	var path: String = texture_strip.resource_path if texture_strip else ""
+	var cache_key: String = "%s_%d_%dx%d_%.1f" % [path, frame_count, frame_size.x, frame_size.y, custom_fps]
+
+	if _frames_cache.has(cache_key):
+		sprite_frames = _frames_cache[cache_key]
+		return
+
 	var sf := SpriteFrames.new()
 	if not sf.has_animation(autoplay_animation):
 		sf.add_animation(autoplay_animation)
@@ -57,6 +67,7 @@ func _build_sprite_frames_from_strip() -> void:
 			atlas.region = Rect2(float(i * frame_size.x), 0.0, float(frame_size.x), float(frame_size.y))
 			sf.add_frame(autoplay_animation, atlas)
 
+	_frames_cache[cache_key] = sf
 	sprite_frames = sf
 
 

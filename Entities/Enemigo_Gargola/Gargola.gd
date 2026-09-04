@@ -606,25 +606,11 @@ func _procesar_combate(delta):
 func _empujar_si_en_barrera():
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
-	var barreras: Array[Node] = []
-	barreras.assign(get_tree().get_nodes_in_group("barrera_destruye_flechas"))
-	if barreras.is_empty():
-		return
-	for barrera_untyped in barreras:
-		if not is_instance_valid(barrera_untyped):
-			continue
-		var barrera := barrera_untyped as Node3D
-		if not barrera:
-			continue
-		var tam_x: float = 1.0
-		if "tamano" in barrera:
-			tam_x = barrera.tamano.x
-		var limite_izquierdo: float = barrera.global_position.x - (tam_x * 0.5)
-		if global_position.x >= limite_izquierdo - 0.5:
-			if current_state != State.WALKING:
-				_change_state(State.WALKING)
-			velocity.x = -velocidad_caminar
-			return
+	_asegurar_cache_barreras(get_tree())
+	if _cached_limite_barrera_destruye_x != -INF and global_position.x >= _cached_limite_barrera_destruye_x:
+		if current_state != State.WALKING:
+			_change_state(State.WALKING)
+		velocity.x = -velocidad_caminar
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

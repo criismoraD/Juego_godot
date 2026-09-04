@@ -4,6 +4,8 @@ extends Node3D
 ## Proyecta una elipse oscura debajo del personaje usando RayCast3D y maneja el recorte en bordes.
 
 
+const SHADER_SOMBRA: Shader = preload("res://System/Shaders/sombra_personaje.gdshader")
+
 # === CONFIGURACIÓN - APARIENCIA ===
 @export_category("Sombra Apariencia")
 @export var opacidad: float = 1.0
@@ -45,13 +47,8 @@ func _crear_mesh() -> void:
 	quad.size = tamano
 	_mesh.mesh = quad
 
-	var shader := load("res://System/Shaders/sombra_personaje.gdshader") as Shader
-	if not shader:
-		push_error("[SombraPersonaje] No se pudo cargar sombra_personaje.gdshader")
-		return
-
 	_material = ShaderMaterial.new()
-	_material.shader = shader
+	_material.shader = SHADER_SOMBRA
 	_material.render_priority = prioridad_render
 	_material.set_shader_parameter("opacidad", opacidad)
 	_material.set_shader_parameter("suavizado", suavizado)

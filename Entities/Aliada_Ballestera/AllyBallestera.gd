@@ -71,8 +71,13 @@ var ballesta_scene: PackedScene = preload("res://Entities/Enemigo_Goblin/BALLES_
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
+const TEXTURA_ICONO_ATURDIMIENTO: Texture2D = preload("res://UI/Icons/Icono_aturdimiento.png")
 const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
+const PUEDE_ATACAR_INTERVAL: float = 0.1
+
+var _puede_atacar_timer: float = 0.0
+var _puede_atacar_cached: bool = false
 var _particulas_pisada: GPUParticles3D = null
 var _sfx_correr: AudioStreamPlayer = null  ## Loop de armadura mientras corre
 const SONIDO_CORRER_ARMADURA: String = "res://TEST_/sonido_correr_armadura.wav"
@@ -459,6 +464,8 @@ func _crear_hitbox():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float):
+	if _puede_atacar_timer > 0.0:
+		_puede_atacar_timer -= delta
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
 	_actualizar_sonido_correr()
@@ -501,7 +508,8 @@ func _process(delta: float):
 			_process_celebrating(delta)
 
 	_actualizar_rotacion_modelo(delta)
-	if paralisis_timer <= 0.0:
+	# Apuntado visual del torso hacia el objetivo activo o elevación natural
+	if paralisis_timer <= 0.0 and current_state != State.CELEBRATING:
 		_actualizar_apuntado_torso(delta)
 
 
@@ -513,10 +521,12 @@ func aplicar_paralisis(duracion: float = 4.0) -> void:
 		return
 	paralisis_timer = duracion
 	_restaurar_torso()
+	if _sfx_correr and _sfx_correr.playing:
+		_sfx_correr.stop()
 	# Cambiar a IDLE PRIMERO para que su handler no pise la electrocución
 	if current_state != State.IDLE and current_state != State.GETTING_UP and current_state != State.CELEBRATING:
 		_cambiar_estado(State.IDLE)
-	_play_anim("ELECTROCUTADA", 0.15, 1.0)
+	_play_anim(["ELECTROCUTAR", "ELECTROCUTADA"], 0.15, 1.0)
 	_mostrar_icono_aturdimiento()
 
 
@@ -526,14 +536,7 @@ func _setup_icono_aturdimiento() -> void:
 
 	_icono_aturdimiento = Sprite3D.new()
 	_icono_aturdimiento.name = "IconoAturdimiento"
-	var tex: Texture2D = null
-	if not FileAccess.file_exists("res://UI/Icons/Icono_aturdimiento.png.import"):
-		var img := Image.new()
-		if img.load("res://UI/Icons/Icono_aturdimiento.png") == OK:
-			tex = ImageTexture.create_from_image(img)
-	if not tex:
-		tex = load("res://UI/Icons/Icono_aturdimiento.png") as Texture2D
-	_icono_aturdimiento.texture = tex
+	_icono_aturdimiento.texture = TEXTURA_ICONO_ATURDIMIENTO
 	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_icono_aturdimiento.pixel_size = 0.0016
 	_icono_aturdimiento.shaded = false
@@ -956,24 +959,38 @@ func _es_imp_escudo(enemy: Node) -> bool:
 
 
 func _puede_atacar() -> bool:
+	if _puede_atacar_timer > 0.0:
+		return _puede_atacar_cached
+
+	_puede_atacar_timer = PUEDE_ATACAR_INTERVAL
+
 	var spawner = _get_cached_wave_spawner()
-	if spawner:
+	var enemies: Array = []
+	if spawner and spawner.has_method("get_active_enemies"):
 		if "is_wave_active" in spawner and not spawner.is_wave_active:
-			var hay_hostiles = false
-			for e in get_tree().get_nodes_in_group("enemies"):
+			var hay_hostiles := false
+			for e in spawner.get_active_enemies():
 				if is_instance_valid(e) and not _es_pacifico_intacto(e) and not _es_enemigo_muerto(e) and not _es_imp_escudo(e):
 					hay_hostiles = true
 					break
 			if not hay_hostiles:
+				_puede_atacar_cached = false
 				return false
+		enemies = spawner.get_active_enemies()
+	else:
+		enemies = get_tree().get_nodes_in_group("enemies")
 
 	var hostiles_activos: int = 0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy is Node3D and enemy.global_position.x > global_position.x:
 			if not _es_pacifico_intacto(enemy) and not _es_enemigo_muerto(enemy) and not _es_imp_escudo(enemy):
 				hostiles_activos += 1
+				if hostiles_activos >= enemigos_minimos:
+					_puede_atacar_cached = true
+					return true
 
-	return hostiles_activos >= enemigos_minimos
+	_puede_atacar_cached = false
+	return false
 
 
 func _es_enemigo_muerto(enemy: Node) -> bool:

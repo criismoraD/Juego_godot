@@ -159,6 +159,11 @@ func _physics_process(delta):
 
 
 func _check_off_screen():
+	# Verificación ultra-rápida en coordenadas 3D para evitar cálculos de proyección por matriz
+	if global_position.y < -20.0 or global_position.x < -25.0 or global_position.x > 55.0 or global_position.y > 50.0:
+		_safe_destroy()
+		return
+
 	var camera = CameraUtilsRef.obtener_camara_juego(self)
 	if not camera:
 		return
@@ -178,8 +183,6 @@ func _check_off_screen():
 	elif screen_pos.y < -margin_top:
 		_safe_destroy()
 	elif screen_pos.y > viewport_size.y + margin_bottom:
-		_safe_destroy()
-	elif global_position.y < -20:
 		_safe_destroy()
 
 

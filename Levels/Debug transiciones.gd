@@ -26,7 +26,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
 @export_range(1.0, 1.4, 0.01) var escala_cobertura_fondo_animado: float = 1.18
-@export var limitar_fps_subviewport_fondo_3d: bool = true
+@export var limitar_fps_subviewport_fondo_3d: bool = false
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
 @export var pausar_video_fondo_en_combate: bool = false
 @export_category("Debug")

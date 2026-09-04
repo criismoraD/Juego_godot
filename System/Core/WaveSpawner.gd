@@ -85,10 +85,10 @@ func _ready():
 		escena_arquera_rosa = preload("res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.tscn")
 
 	if not escena_globo_aerostatico:
-		escena_globo_aerostatico = load("res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.tscn")
+		escena_globo_aerostatico = preload("res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.tscn")
 
 	if not escena_limo:
-		escena_limo = load("res://Entities/Enemigo_Limo/LimoCuadrado.tscn")
+		escena_limo = preload("res://Entities/Enemigo_Limo/LimoCuadrado.tscn")
 
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.tscn")
@@ -768,10 +768,10 @@ func reproducir_sonido_cuerno() -> void:
 	if game_ui and game_ui.has_method("activar_efecto_viñeta_cuerno"):
 		game_ui.activar_efecto_viñeta_cuerno(3.0)
 
-	var cuerno_stream: AudioStream = load("res://System/Audio/SFX/Cuerno de guerra.mp3")
-	if cuerno_stream:
+	const CUERNO_STREAM: AudioStream = preload("res://System/Audio/SFX/Cuerno de guerra.mp3")
+	if CUERNO_STREAM:
 		var player := AudioStreamPlayer.new()
-		player.stream = cuerno_stream
+		player.stream = CUERNO_STREAM
 		player.volume_db = -7.0  # Disminuido para equilibrar con el combate y la música
 		player.bus = "Master"
 		var root := get_tree().current_scene
@@ -782,7 +782,7 @@ func reproducir_sonido_cuerno() -> void:
 		player.play()
 
 		# Desvanecimiento (fade out) al sonido del cuerno
-		var duracion_audio: float = cuerno_stream.get_length() if cuerno_stream.has_method("get_length") else 4.0
+		var duracion_audio: float = CUERNO_STREAM.get_length() if CUERNO_STREAM.has_method("get_length") else 4.0
 		if duracion_audio <= 0.0:
 			duracion_audio = 4.0
 		var tiempo_fade_inicio: float = max(1.0, duracion_audio - 1.5)
@@ -797,10 +797,10 @@ func reproducir_sonido_cuerno() -> void:
 		)
 
 	# Sonido adicional: Horda goblins masculina (TEST_)
-	var horda_stream: AudioStream = load("res://TEST_/Horda goblins masculina.mp3") as AudioStream
-	if horda_stream:
+	const HORDA_STREAM: AudioStream = preload("res://TEST_/Horda goblins masculina.mp3")
+	if HORDA_STREAM:
 		var horda_player := AudioStreamPlayer.new()
-		horda_player.stream = horda_stream
+		horda_player.stream = HORDA_STREAM
 		horda_player.volume_db = 6.0
 		horda_player.bus = "Master"
 		var h_root := get_tree().current_scene

@@ -51,8 +51,15 @@ var arrow_scene = preload("res://Entities/Proyectil_Flecha_Aliada/AllyArrow.tscn
 var explosive_arrow_scene = preload("res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn")
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
-const HUMO_PISADAS_FRAMES_H: int = 9
-const HUMO_PISADAS_FRAMES_V: int = 1
+const TEXTURA_ICONO_ATURDIMIENTO: Texture2D = preload("res://UI/Icons/Icono_aturdimiento.png")
+const SFX_VICTORIA_GRITO: AudioStream = preload("res://TEST_/victoria grito defensora arquera aliada.wav")
+const CHECK_ENEMIGOS_INTERVAL: float = 0.1
+const TARGET_UPDATE_INTERVAL: float = 0.1
+
+var _check_enemigos_timer: float = 0.0
+var _hay_enemigos_cache: bool = false
+var _target_update_timer: float = 0.0
+var _cached_target: Node3D = null
 var _particulas_pisada: GPUParticles3D = null
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer
@@ -426,6 +433,8 @@ func _crear_hitbox():
 
 
 func _process(delta):
+	if _target_update_timer > 0.0:
+		_target_update_timer -= delta
 	_actualizar_rotacion_modelo(delta)
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
@@ -491,14 +500,7 @@ func _setup_icono_aturdimiento() -> void:
 
 	_icono_aturdimiento = Sprite3D.new()
 	_icono_aturdimiento.name = "IconoAturdimiento"
-	var tex: Texture2D = null
-	if not FileAccess.file_exists("res://UI/Icons/Icono_aturdimiento.png.import"):
-		var img := Image.new()
-		if img.load("res://UI/Icons/Icono_aturdimiento.png") == OK:
-			tex = ImageTexture.create_from_image(img)
-	if not tex:
-		tex = load("res://UI/Icons/Icono_aturdimiento.png") as Texture2D
-	_icono_aturdimiento.texture = tex
+	_icono_aturdimiento.texture = TEXTURA_ICONO_ATURDIMIENTO
 	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_icono_aturdimiento.pixel_size = 0.0016
 	_icono_aturdimiento.shaded = false
@@ -607,7 +609,12 @@ func _process_idle(delta: float) -> void:
 		state_timer = 0.4
 		return
 
-	var hay_enemigos: bool = (_contar_enemigos_en_pantalla() >= enemigos_minimos)
+	_check_enemigos_timer -= delta
+	if _check_enemigos_timer <= 0.0:
+		_check_enemigos_timer = CHECK_ENEMIGOS_INTERVAL
+		_hay_enemigos_cache = (_contar_enemigos_en_pantalla() >= enemigos_minimos)
+
+	var hay_enemigos: bool = _hay_enemigos_cache
 	if not hay_enemigos:
 		# Fuera de combate: alternar IDE normal y periódicamente IDLE_EXAMINAR
 		if _examinando:
@@ -850,7 +857,7 @@ func _puede_celebrar() -> bool:
 func _reproducir_grito_victoria() -> void:
 	if not _puede_celebrar():
 		return
-	var stream: AudioStream = load("res://TEST_/victoria grito defensora arquera aliada.wav")
+	var stream: AudioStream = SFX_VICTORIA_GRITO
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()
@@ -1194,9 +1201,16 @@ func _decidir_disparo_y_objetivo() -> Dictionary:
 	return { "target": null, "type": TipoDisparoAliada.NORMAL }
 
 
-func _obtener_objetivo_actual() -> Node3D:
+func _obtener_objetivo_actual(forzar_refresco: bool = false) -> Node3D:
+	if not forzar_refresco and _target_update_timer > 0.0:
+		if is_instance_valid(_cached_target) and _cached_target.is_inside_tree():
+			if not _cached_target.get("is_dead") and not _cached_target.get("is_dying") and not _cached_target.get("muerto"):
+				return _cached_target
+
+	_target_update_timer = TARGET_UPDATE_INTERVAL
 	var decision := _decidir_disparo_y_objetivo()
-	return decision.get("target", null)
+	_cached_target = decision.get("target", null)
+	return _cached_target
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
