@@ -61,8 +61,8 @@ func _configurar_outline_mesa() -> void:
 	_outline_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_outline_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_outline_mat.grow = true
-	_outline_mat.grow_amount = 0.005
-	_outline_mat.albedo_color = Color(0.75, 0.25, 1.0, 0.0)
+	_outline_mat.grow_amount = 0.0022
+	_outline_mat.albedo_color = Color(0.7, 0.3, 0.95, 0.0)
 
 	# El contorno morado solo debe ser en el borde exterior del mueble, no en su interior
 	# (evitando que frascos, pociones, libros y caldero tengan líneas moradas).
@@ -104,6 +104,7 @@ func _on_body_exited(body: Node3D) -> void:
 		_cerrar_menu(true)
 		if menu_defensoras and menu_defensoras.visible:
 			menu_defensoras.cerrar()
+		_set_player_movimiento(true)
 
 
 func _animar_proximidad(activo: bool) -> void:
@@ -113,6 +114,7 @@ func _animar_proximidad(activo: bool) -> void:
 	_tween_efecto = create_tween().set_parallel(true)
 	var duracion := 0.3 if activo else 0.25
 	var target_alpha := 1.0 if activo else 0.0
+	var outline_target_alpha := 0.45 if activo else 0.0
 
 	if prompt_e:
 		if activo:
@@ -128,9 +130,9 @@ func _animar_proximidad(activo: bool) -> void:
 	if _outline_mat:
 		_tween_efecto.tween_method(
 			func(alpha: float):
-				_outline_mat.albedo_color = Color(0.75, 0.25, 1.0, alpha),
+				_outline_mat.albedo_color = Color(0.7, 0.3, 0.95, alpha),
 			_outline_mat.albedo_color.a,
-			target_alpha,
+			outline_target_alpha,
 			duracion
 		).set_trans(Tween.TRANS_SINE)
 

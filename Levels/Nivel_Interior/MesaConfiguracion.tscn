@@ -90,15 +90,15 @@ shape = SubResource("BoxShape3D_interaccion")
 
 [node name="PromptE" type="Label3D" parent="."]
 unique_name_in_owner = true
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.165, 0.035)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0.035)
 billboard = 1
 no_depth_test = false
 modulate = Color(0.95, 0.6, 1, 0)
 outline_modulate = Color(0.08, 0, 0.15, 0)
 text = "[E] Interactuar"
-font_size = 20
-pixel_size = 0.0008
-outline_size = 4
+font_size = 24
+pixel_size = 0.0018
+outline_size = 6
 
 [node name="MenuDefensoras" parent="." instance=ExtResource("3_defensoras")]
 unique_name_in_owner = true
