@@ -46,7 +46,9 @@ enum State { WALKING, SHOOTING, DYING, DEAD }
 # === CONFIGURACIÓN - SANGRE ===
 @export_category("Sangre")
 @export var tiene_sangre: bool = true
+@export var es_volador: bool = false
 @export var escena_sangre: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+@export var escena_sangre_no_letal: PackedScene = preload("res://VFX/Scenes/BloodSplashNoLetal.tscn")
 @export var offset_sangre: Vector3 = Vector3.ZERO  ## Offset adicional de ajuste para el spawn de la sangre
 # === CONFIGURACIÓN - SOMBRA ===
 @export_category("Sombra")
@@ -73,6 +75,7 @@ var original_materials: Array = []
 var _test_floor_normal_override = null
 var last_hit_position: Vector3 = Vector3.ZERO
 var last_hit_direction: Vector3 = Vector3.ZERO
+var ultimo_atacante: Node = null  ## Quién dio el último golpe (Player o defensora): conteo de muertes por defensora
 var _died_signal_emitted: bool = false
 # === EFECTO DE DISOLUCIÓN ===
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
@@ -476,6 +479,53 @@ func _spawn_blood_splash(custom_modulate: Color = Color.WHITE) -> void:
 		splash_node.global_position = splash_pos
 
 
+## Determina si la entidad es un enemigo volador excluido de efectos terrestres de sangre.
+func _es_enemigo_volador() -> bool:
+	if es_volador:
+		return true
+	if is_in_group("flying_enemies"):
+		return true
+	var n: String = name.to_lower()
+	var s: String = get_script().resource_path.to_lower() if get_script() else ""
+	return ("gargola" in n) or ("gargola" in s) or ("gargoyle" in n) or ("globo" in n) or ("globo" in s)
+
+
+## Spawnea el efecto de impacto de sangre no letal (para disparos que no terminan en muerte).
+## Excluye explícitamente a los enemigos voladores y entidades con tiene_sangre = false.
+func _spawn_blood_splash_no_letal(custom_modulate: Color = Color.WHITE) -> void:
+	if not tiene_sangre or not escena_sangre_no_letal:
+		return
+	if _es_enemigo_volador():
+		return
+
+	var splash_pos: Vector3 = last_hit_position
+	if splash_pos == Vector3.ZERO:
+		var bone_pos: Vector3 = _get_hips_global_position()
+		if bone_pos != Vector3.ZERO:
+			splash_pos = bone_pos
+		else:
+			splash_pos = global_position + Vector3(0.0, 0.4, 0.0)
+	else:
+		splash_pos += offset_sangre
+
+	var splash_node = escena_sangre_no_letal.instantiate()
+	if not splash_node:
+		return
+
+	var target_parent: Node = get_tree().current_scene
+	if not target_parent:
+		target_parent = get_parent()
+	if not target_parent:
+		target_parent = self
+
+	target_parent.add_child(splash_node)
+
+	if splash_node.has_method("setup"):
+		splash_node.setup(splash_pos, last_hit_direction, custom_modulate)
+	elif splash_node is Node3D:
+		splash_node.global_position = splash_pos
+
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ANIMACIÓN
@@ -533,6 +583,8 @@ func take_damage(amount: float):
 				game_feel.on_enemy_death()
 		_change_state(State.DYING)
 		died.emit()
+	else:
+		_spawn_blood_splash_no_letal()
 
 
 func _flash_red():

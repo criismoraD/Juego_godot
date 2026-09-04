@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://cbcunmrjn50jx"]
+
+[ext_resource type="Script" path="res://VFX/Scenes/BloodSplash2D.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://TEST_/impacto sangre no letal.png" id="2_tex"]
+
+[node name="BloodSplashNoLetal" type="AnimatedSprite3D"]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+billboard = 1
+shaded = false
+render_priority = 1
+script = ExtResource("1_script")
+texture_strip = ExtResource("2_tex")
+frame_count = 4
+frame_size = Vector2i(46, 55)
+custom_regions = [Rect2(0, 0, 46, 55), Rect2(0, 90, 46, 55), Rect2(0, 182, 46, 55), Rect2(0, 270, 46, 45)]
+base_faces_left = true
+custom_fps = 14.0

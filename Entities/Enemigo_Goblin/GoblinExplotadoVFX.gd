@@ -56,7 +56,8 @@ func _spawn_sangre_animada() -> void:
 	sprite.scale = Vector3(2.2, 2.2, 2.2)  # Duplicado de 1.1 para mayor impacto visual
 
 	var sf := SpriteFrames.new()
-	sf.add_animation(&"default")
+	if not sf.has_animation(&"default"):
+		sf.add_animation(&"default")
 	sf.set_animation_loop(&"default", false)
 	sf.set_animation_speed(&"default", 20.0)
 

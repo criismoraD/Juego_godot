@@ -198,6 +198,8 @@ func test_nivel_debug_player_inicia_con_5_flechas_explosivas() -> void:
 	assert_not_null(player, "Debe existir el nodo Player en NIVEL01 (modo debug)")
 	if player:
 		assert_eq(player.flechas_explosivas, 5, "El jugador debe iniciar con 5 flechas explosivas en modo debug (unificado)")
+	assert_false(instancia_nivel._aliadas_activas, "En modo debug las defensoras deben iniciar desactivadas por defecto")
+	assert_false(instancia_nivel.wave_spawner.is_wave_active, "En modo debug los enemigos deben iniciar en pausa")
 	GameUI.modo_debug_solicitado = false
 
 

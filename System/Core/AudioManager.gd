@@ -99,6 +99,9 @@ func _load_all_sounds():
 		load("res://Entities/Jugador_Arquera/DISPARO_FLECHA2.mp3")
 	]
 
+	sfx_streams["disparo_cargado"] = [load("res://TEST_/Disparo cargado.wav")]
+	sfx_streams["sonido_100_carga"] = [load("res://TEST_/sonido 100% carga.mp3")]
+
 	sfx_streams["bow_tension"] = [
 		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA1.mp3"),
 		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA2.mp3")
@@ -323,6 +326,7 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://System/Audio/Music/SONIDO BOSQUE.mp3"))  # Índice 3 - Nivel 0 pacifista
 	bgm_streams.append(load("res://System/Audio/Music/VICTORY.mp3"))  # Índice 4 - Victoria
 	bgm_streams.append(load("res://System/Audio/Music/Noche Aplastante.mp3"))  # Índice 5 - Noche Aplastante (Oleada 5)
+	bgm_streams.append(load("res://TEST_/Torre interior.mp3"))  # Índice 6 - Torre interior
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -363,7 +367,8 @@ func _get_available_sfx_3d_player() -> AudioStreamPlayer3D:
 
 ## Reproduce un efecto de sonido (selección aleatoria si hay variantes)
 ## Usa reproductores temporales para permitir sonidos simultáneos
-func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
+## pitch_override > 0 fuerza esa velocidad de reproducción (1.0 = normal)
+func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: float = 0.0):
 	if not sfx_streams.has(sound_name):
 		push_warning("[AudioManager] Sonido no encontrado: " + sound_name)
 		return
@@ -373,6 +378,9 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		return
 
 	var sound = sounds[randi() % sounds.size()]
+	if sound == null:
+		push_warning("[AudioManager] Recurso de audio nulo en: " + sound_name + " (reimportar el archivo)")
+		return
 	if sound:
 		# Usar object pooling
 		var temp_player = _get_available_sfx_player()
@@ -418,11 +426,15 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0):
 		temp_player.volume_db = volume_to_use + volume_boost_db
 		temp_player.bus = "Master"
 
-		# Pitch dithering
-		if "shoot" in sound_name:
+		# Pitch dithering (o velocidad forzada si se indica)
+		if pitch_override > 0.0:
+			temp_player.pitch_scale = pitch_override
+		elif "shoot" in sound_name:
 			temp_player.pitch_scale = randf_range(shoot_pitch_min, shoot_pitch_max)
 		elif "hurt" in sound_name or "death" in sound_name or "impact" in sound_name or "hit" in sound_name:
 			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
+		else:
+			temp_player.pitch_scale = 1.0
 
 		if not temp_player.is_inside_tree():
 			add_child(temp_player)
@@ -470,6 +482,7 @@ var bgm_volume_offsets: Dictionary = {
 	3: 12.0,  ## SONIDO BOSQUE (-3.0 dB base)
 	4: 0.0,   ## VICTORY (-15.0 dB base)
 	5: 2.0,   ## Noche Aplastante (Oleada 5: -13.0 dB base, aumentado +4.0 dB)
+	6: 0.0,   ## Torre interior (-15.0 dB base)
 }
 
 

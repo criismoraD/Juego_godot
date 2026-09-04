@@ -1,0 +1,324 @@
+[gd_scene format=3 uid="uid://c6lvdv381tkyv"]
+
+[ext_resource type="Script" path="res://UI/MenuDefensoras/MenuDefensoras.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://b23v8i82y01y2" path="res://UI/MenuDefensoras/silueta_plataformas_blanca.png" id="2_plataformas"]
+[ext_resource type="Texture2D" uid="uid://ceh7n25w7oqv4" path="res://UI/MenuDefensoras/silueta_arquera_celeste.png" id="3_arquera"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.04, 0.04, 0.06, 0.95)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_piso_selected"]
+bg_color = Color(0.09, 0.1, 0.16, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.85, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.6)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_piso_normal"]
+bg_color = Color(0.06, 0.07, 0.11, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.28, 0.4, 0.7)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_side"]
+bg_color = Color(0.06, 0.07, 0.1, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.45, 0.6, 0.7)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.7)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+bg_color = Color(0.12, 0.13, 0.18, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.6, 0.65, 0.8, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.2, 0.22, 0.32, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.9, 0.92, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="MenuDefensoras" type="CanvasLayer"]
+layer = 60
+script = ExtResource("1_script")
+
+[node name="PanelRaiz" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Fondo" type="Panel" parent="PanelRaiz"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelRaiz"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 25
+
+[node name="VBoxPrincipal" type="VBoxContainer" parent="PanelRaiz/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Titulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 26
+text = "ASIGNACIÓN DE DEFENSORAS"
+horizontal_alignment = 1
+
+[node name="Subtitulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 15
+text = "Usa W / S para seleccionar piso y A / D para alternar entre Arquera y Ballestera"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+layout_mode = 2
+
+[node name="Contenido" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+
+[node name="AreaPlataformas" type="Control" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido"]
+custom_minimum_size = Vector2(700, 480)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TexPlataformas" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas"]
+self_modulate = Color(0.3, 0.35, 0.48, 1)
+layout_mode = 1
+anchors_preset = 0
+offset_left = 10.0
+offset_top = -10.0
+offset_right = 530.0
+offset_bottom = 510.0
+texture = ExtResource("2_plataformas")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PanelPiso2" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas"]
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 445.0
+offset_top = 170.0
+offset_right = 595.0
+offset_bottom = 280.0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_piso_selected")
+
+[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2"]
+layout_mode = 2
+theme_override_constants/separation = 3
+alignment = 1
+
+[node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "PISO SUPERIOR"
+horizontal_alignment = 1
+
+[node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="BtnPiso2Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(18, 48)
+layout_mode = 2
+focus_mode = 0
+flat = true
+text = "◀"
+
+[node name="TexDefensoraPiso2" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(68, 70)
+layout_mode = 2
+texture = ExtResource("3_arquera")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BtnPiso2Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(18, 48)
+layout_mode = 2
+focus_mode = 0
+flat = true
+text = "▶"
+
+[node name="PanelPiso1" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas"]
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 525.0
+offset_top = 315.0
+offset_right = 675.0
+offset_bottom = 425.0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_piso_normal")
+
+[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1"]
+layout_mode = 2
+theme_override_constants/separation = 3
+alignment = 1
+
+[node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "PISO INFERIOR"
+horizontal_alignment = 1
+
+[node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="BtnPiso1Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(18, 48)
+layout_mode = 2
+focus_mode = 0
+flat = true
+text = "◀"
+
+[node name="TexDefensoraPiso1" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(68, 70)
+layout_mode = 2
+texture = ExtResource("3_arquera")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BtnPiso1Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(18, 48)
+layout_mode = 2
+focus_mode = 0
+flat = true
+text = "▶"
+
+[node name="PanelLateral" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido"]
+custom_minimum_size = Vector2(330, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_side")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 28
+
+[node name="VBoxInfo" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LblTituloDefensora" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.22, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 22
+text = "DEFENSORA ARQUERA"
+
+[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+layout_mode = 2
+
+[node name="LblDescripcionDefensora" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.9, 0.92, 0.98, 1)
+theme_override_constants/line_spacing = 6
+theme_override_font_sizes/font_size = 17
+text = "Defensora arquera: Vida 2
+Eficaz contra objetivos aéreos y en altura
+Puede utilizar diferentes tipos de flechas
+Cadencia de disparo alta"
+autowrap_mode = 2
+
+[node name="PanelControles" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_btn")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo/PanelControles"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="LblControles" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo/PanelControles/Margin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_constants/line_spacing = 4
+theme_override_font_sizes/font_size = 14
+text = "W / S: Seleccionar Piso
+A / D: Cambiar Defensora
+E / ESC: Confirmar y Salir"
+
+[node name="BtnVolver" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "CONFIRMAR Y SALIR"

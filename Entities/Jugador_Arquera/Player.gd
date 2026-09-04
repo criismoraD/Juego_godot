@@ -43,6 +43,10 @@ const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-
 @export var velocidad_recarga: float = 2.0  # Multiplicador de velocidad de recarga (draw→aim→shoot)
 @export var velocidad_flecha_minima: float = 2.5  # Velocidad mínima de la flecha (clic rápido)
 @export var velocidad_flecha_maxima: float = 15.0  # Velocidad máxima de la flecha (carga completa)
+@export var multiplicador_tiro_maximo: float = 0.96  ## Bonus de potencia y alcance solo con medidor al 100%
+@export var duracion_sobrecarga: float = 0.8  ## Segundos para llenar la segunda barra morada tras el tensado máximo
+@export var multiplicador_sobrecarga_max: float = 2.0  ## Bonus extra con sobrecarga morada al 100%
+@export var pitch_disparo_cargado: float = 1.4  ## Velocidad del sonido Disparo cargado (1.0 = normal)
 @export var Reduccion_Velocidad_Por_Angulo: float = 0.35  # Reducción de velocidad por ángulo vertical de disparo
 # === CONFIGURACIÓN - APUNTADO ===
 @export_category("Apuntado")
@@ -110,8 +114,12 @@ var ladder_cooldown: float = 0.0  # Tiempo de espera para volver a agarrar la es
 var is_inside_platform: bool = false  # Bloquea movimiento lateral
 var charge_time = 0.0
 var last_charge_power = 0.0  # Potencia al momento de disparar (0.0 a 1.0)
+var sobrecarga_time = 0.0  ## Tiempo en sobrecarga morada (tras power >= 0.98)
+var last_sobrecarga_power = 0.0  ## Sobrecarga al momento de disparar (0.0 a 1.0)
+var _sonido_morada_max_reproducido: bool = false  ## Evita repetir sonido 100% carga cada frame
 var _cooldown_disparo_timer: float = 0.0  # Temporizador de cooldown entre disparos
 var charge_bar: ProgressBar
+var overcharge_bar: ProgressBar  ## Segunda barra morada de sobrecarga (0.8s tras el máximo, superpuesta)
 var _bow_hold_timer: float = 0.0  # Timer para delay de sonido mantener arco
 # === TRAYECTORIA VISUAL (FLECHA EXPLOSIVA) ===
 var _trajectory_mesh_instance: MeshInstance3D = null
@@ -621,6 +629,23 @@ func create_charge_bar():
 
 	canvas.add_child(charge_bar)
 
+	overcharge_bar = ProgressBar.new()
+	overcharge_bar.max_value = 100
+	overcharge_bar.value = 0
+	overcharge_bar.show_percentage = false
+	overcharge_bar.size = Vector2(50, 5)
+	overcharge_bar.visible = false
+
+	var over_style = StyleBoxFlat.new()
+	over_style.bg_color = Color(0.65, 0.2, 0.95)
+	overcharge_bar.add_theme_stylebox_override("fill", over_style)
+
+	var over_bg = StyleBoxFlat.new()
+	over_bg.bg_color = Color(0.1, 0.1, 0.1, 0.0)
+	overcharge_bar.add_theme_stylebox_override("background", over_bg)
+
+	canvas.add_child(overcharge_bar)
+
 
 func _process(delta):
 	# Actualizar visibilidad del debug de hitbox en tiempo real
@@ -872,9 +897,23 @@ func apply_movement(input_dir: float, delta: float = 0.016) -> void:
 	var current_speed: float = velocidad_correr
 	if current_aim_state == AimState.DRAWING or current_aim_state == AimState.AIMING:
 		current_speed = velocidad_caminar
+		# La sobrecarga morada arraiga: menos movimiento a más carga, inmóvil al 100%
+		current_speed *= (1.0 - _potencia_sobrecarga_actual())
 
 	var target_vel_x: float = input_dir * current_speed
 	velocity.x = move_toward(velocity.x, target_vel_x, aceleracion_movimiento * delta)
+
+
+## Sobrecarga morada actual de 0.0 a 1.0 (0.0 si no es disparo NORMAL en AIMING al máximo)
+func _potencia_sobrecarga_actual() -> float:
+	if current_aim_state != AimState.AIMING:
+		return 0.0
+	if municion_activa != TipoMunicion.NORMAL:
+		return 0.0
+	var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+	if adjusted_over_dur <= 0.0:
+		return 0.0
+	return clampf(sobrecarga_time / adjusted_over_dur, 0.0, 1.0)
 
 
 func start_landing():
@@ -893,7 +932,13 @@ func start_landing():
 	# CANCELAR AIM / SHOOT
 	current_aim_state = AimState.NONE
 	charge_time = 0.0
+	sobrecarga_time = 0.0
+	last_sobrecarga_power = 0.0
+	_sonido_morada_max_reproducido = false
 	charge_bar.visible = false
+	if overcharge_bar:
+		overcharge_bar.visible = false
+		overcharge_bar.value = 0.0
 	AudioManager.reset_bow_hold()
 	if anim_tree:
 		anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
@@ -1015,6 +1060,10 @@ func set_motion_anim(state_name):
 func update_locomotion_anim(input_dir):
 	var loc_path = "parameters/Locomotion/transition_request"
 	if current_aim_state == AimState.AIMING or current_aim_state == AimState.DRAWING:
+		# Arraigada con sobrecarga al 100%: pose quieta aunque se pulse moverse
+		if _potencia_sobrecarga_actual() >= 0.99:
+			anim_tree.set(loc_path, "idle")
+			return
 		# Al tensar el arco / apuntar con click:
 		if _mirando_derecha:
 			# Apuntando a la derecha:
@@ -1060,7 +1109,7 @@ func _process_gameplay(delta):
 
 
 func update_charge_bar_position():
-	if not charge_bar.visible:
+	if not charge_bar.visible and (overcharge_bar == null or not overcharge_bar.visible):
 		return
 
 	var camera = CameraUtilsRef.obtener_camara_juego(self)
@@ -1071,9 +1120,14 @@ func update_charge_bar_position():
 
 	if not camera.is_position_behind(head_pos):
 		var screen_pos = camera.unproject_position(head_pos)
-		charge_bar.position = screen_pos - (charge_bar.size / 2)
+		if charge_bar.visible:
+			charge_bar.position = screen_pos - (charge_bar.size / 2)
+		if overcharge_bar and overcharge_bar.visible:
+			overcharge_bar.position = screen_pos - (overcharge_bar.size / 2)
 	else:
 		charge_bar.visible = false
+		if overcharge_bar:
+			overcharge_bar.visible = false
 
 
 ## True si el cursor está sobre un Control interactivo (botón/panel con
@@ -1259,7 +1313,13 @@ func control_visual_state(delta):
 				current_aim_state = AimState.AIMING
 				anim_tree.set(upper_path, "aim")
 				charge_time = 0.0
+				sobrecarga_time = 0.0
+				last_sobrecarga_power = 0.0
+				_sonido_morada_max_reproducido = false
 				charge_bar.visible = true
+				if overcharge_bar:
+					overcharge_bar.visible = false
+					overcharge_bar.value = 0.0
 
 				# Asegurar escala final
 				_mostrar_flecha_visual(1.0)
@@ -1286,6 +1346,25 @@ func control_visual_state(delta):
 			charge_time = min(charge_time, adjusted_charge_dur)
 			var charge_percent = (charge_time / adjusted_charge_dur) * 100
 			charge_bar.value = charge_percent
+
+			# Segunda barra morada: solo disparo NORMAL tras tensado máximo (power >= 0.98).
+			# Los power-ups (explosiva/múltiple) topan en la verde y no acumulan sobrecarga.
+			var base_power := clampf(charge_time / adjusted_charge_dur, 0.0, 1.0)
+			if base_power >= 0.98 and municion_activa == TipoMunicion.NORMAL:
+				var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+				sobrecarga_time = minf(sobrecarga_time + delta, adjusted_over_dur)
+				if overcharge_bar:
+					overcharge_bar.visible = true
+					overcharge_bar.value = (sobrecarga_time / adjusted_over_dur) * 100.0
+				if sobrecarga_time >= adjusted_over_dur * 0.99 and not _sonido_morada_max_reproducido:
+					_sonido_morada_max_reproducido = true
+					AudioManager.play_sfx("sonido_100_carga")
+			else:
+				sobrecarga_time = 0.0
+				_sonido_morada_max_reproducido = false
+				if overcharge_bar:
+					overcharge_bar.visible = false
+					overcharge_bar.value = 0.0
 
 			# Sonido de mantener arco al máximo (con delay configurable)
 			if charge_percent >= 100:
@@ -1364,6 +1443,8 @@ func start_shooting():
 
 	anim_tree.set("parameters/UpperBody/transition_request", "shoot")
 	charge_bar.visible = false
+	if overcharge_bar:
+		overcharge_bar.visible = false
 
 	# Reproducir animación de disparo del arco
 	play_bow_animation("ARCO_DISPARO")
@@ -1390,13 +1471,25 @@ func start_shooting():
 	# Asegurar límites de potencia
 	last_charge_power = clamp(last_charge_power, 0.05, 1.0)
 
+	# Sobrecarga morada: solo disparo NORMAL con base al máximo (power >= 0.98)
+	var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+	if municion_activa == TipoMunicion.NORMAL and last_charge_power >= 0.98 and sobrecarga_time > 0.0:
+		last_sobrecarga_power = clampf(sobrecarga_time / adjusted_over_dur, 0.0, 1.0)
+	else:
+		last_sobrecarga_power = 0.0
+
 	# Disparar la flecha física
 	spawn_arrow_projectile()
 
-	# Reproducir sonido de disparo de la arquera
-	AudioManager.play_sfx("player_shoot")
+	# Sonido: Disparo cargado con volumen aumentado reemplaza al normal solo con barra morada llena
+	if last_sobrecarga_power >= 0.99:
+		AudioManager.play_sfx("disparo_cargado", 6.0, pitch_disparo_cargado)
+	else:
+		AudioManager.play_sfx("player_shoot")
 
 	charge_time = 0.0
+	sobrecarga_time = 0.0
+	_sonido_morada_max_reproducido = false
 
 
 func cambiar_tipo_municion() -> void:
@@ -1489,6 +1582,10 @@ func spawn_arrow_projectile():
 	arrow_speed *= Factor_Angulo
 
 	var es_potencia_maxima: bool = (last_charge_power >= 0.98)
+	if es_potencia_maxima:
+		arrow_speed *= multiplicador_tiro_maximo
+	if last_sobrecarga_power > 0.0:
+		arrow_speed *= lerpf(1.0, multiplicador_sobrecarga_max, last_sobrecarga_power)
 
 	# CASO 1: Flechas Múltiples activas
 	if municion_activa == TipoMunicion.MULTIPLE and flechas_multiples > 0:
@@ -1528,9 +1625,14 @@ func spawn_arrow_projectile():
 
 	# Inicializar la flecha con dirección y velocidad calculada
 	arrow_instance.initialize(shoot_dir, arrow_speed)
+	if "tirador" in arrow_instance:
+		arrow_instance.tirador = self
 
 	if es_potencia_maxima:
 		arrow_instance.set_meta("is_max_power", true)
+	# El x2 de daño por morada llena es solo del disparo normal, no de power-ups
+	if last_sobrecarga_power >= 0.99 and not es_flecha_explosiva:
+		arrow_instance.set_meta("sobrecarga_max", true)
 
 	# Agregar al árbol PRIMERO (para que _ready se ejecute y sea válido en el tree)
 	get_tree().root.add_child(arrow_instance)
@@ -1547,9 +1649,11 @@ func spawn_arrow_projectile():
 
 
 func _disparar_rafaga_flechas_multiples(data: Dictionary, shoot_dir: Vector3, arrow_speed: float, es_potencia_maxima: bool) -> void:
-	# Flecha 1: disparo inmediato
+	# Flecha 1: disparo inmediato (ráfaga múltiple = power-up, sin x2 de daño)
 	var arrow_1 := arrow_scene.instantiate()
 	arrow_1.initialize(shoot_dir, arrow_speed)
+	if "tirador" in arrow_1:
+		arrow_1.tirador = self
 	if es_potencia_maxima:
 		arrow_1.set_meta("is_max_power", true)
 	get_tree().root.add_child(arrow_1)
@@ -1570,12 +1674,17 @@ func _disparar_rafaga_flechas_multiples(data: Dictionary, shoot_dir: Vector3, ar
 
 		var arr: Node = arrow_scene.instantiate()
 		arr.initialize(dir, arrow_speed)
+		if "tirador" in arr:
+			arr.tirador = self
 		if es_potencia_maxima:
 			arr.set_meta("is_max_power", true)
 		get_tree().root.add_child(arr)
 		arr.global_position = origin
 
-		AudioManager.play_sfx("player_shoot")
+		if last_sobrecarga_power >= 0.99:
+			AudioManager.play_sfx("disparo_cargado", 6.0, pitch_disparo_cargado)
+		else:
+			AudioManager.play_sfx("player_shoot")
 		if has_node("/root/GameFeel"):
 			get_node("/root/GameFeel").on_player_shoot()
 
@@ -1739,6 +1848,14 @@ func calculate_shoot_data() -> Dictionary:
 	if shoot_direction.y > 0.0:
 		Factor_Angulo = 1.0 - (Reduccion_Velocidad_Por_Angulo * shoot_direction.y)
 	speed *= Factor_Angulo
+	if current_power >= 0.98:
+		speed *= multiplicador_tiro_maximo
+		# Sobrecarga morada solo en disparo NORMAL (power-ups topan en verde)
+		if municion_activa == TipoMunicion.NORMAL:
+			var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+			var over_power := clampf(sobrecarga_time / adjusted_over_dur, 0.0, 1.0)
+			if over_power > 0.0:
+				speed *= lerpf(1.0, multiplicador_sobrecarga_max, over_power)
 	result["velocity"] = shoot_direction * speed
 	result["valid"] = true
 
@@ -1765,10 +1882,16 @@ func _cancel_current_shot():
 
 		current_aim_state = AimState.NONE
 		charge_time = 0.0
+		sobrecarga_time = 0.0
+		last_sobrecarga_power = 0.0
+		_sonido_morada_max_reproducido = false
 		state_timer = 0.0
 
 		if charge_bar:
 			charge_bar.visible = false
+		if overcharge_bar:
+			overcharge_bar.visible = false
+			overcharge_bar.value = 0.0
 
 		_ocultar_flecha_visual()
 

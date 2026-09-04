@@ -2,19 +2,27 @@ extends "res://addons/gut/test.gd"
 
 const BLOOD_NORMAL_SCENE := preload("res://VFX/Scenes/BloodSplashNormal.tscn")
 const BLOOD_EMBAJADOR_SCENE := preload("res://VFX/Scenes/BloodSplashEmbajador.tscn")
+const BLOOD_NO_LETAL_SCENE := preload("res://VFX/Scenes/BloodSplashNoLetal.tscn")
 const GARGOLA_SCRIPT := preload("res://Entities/Enemigo_Gargola/Gargola.gd")
+const GLOBO_SCRIPT := preload("res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.gd")
 const IMP_ESTANDARTE_SCRIPT := preload("res://Entities/Enemigo_Imp_Estandarte/ImpEstandarte.gd")
 const ENEMY_BASE_SCRIPT := preload("res://System/Core/EnemyBase.gd")
 
 
 class TestEnemy extends "res://System/Core/EnemyBase.gd":
-	var spawned_splash: Node = null
+	var spawned_splash: PackedScene = null
+	var spawned_no_letal_called: bool = false
 
 	func _ready() -> void:
 		pass
 
 	func _spawn_blood_splash(custom_modulate: Color = Color.WHITE) -> void:
 		super._spawn_blood_splash(custom_modulate)
+		spawned_splash = escena_sangre
+
+	func _spawn_blood_splash_no_letal(custom_modulate: Color = Color.WHITE) -> void:
+		spawned_no_letal_called = true
+		super._spawn_blood_splash_no_letal(custom_modulate)
 
 
 func test_blood_splash_normal_setup() -> void:
@@ -117,7 +125,8 @@ func test_impacto_gargola_vfx_spritesheet_configuration() -> void:
 
 func test_ally_archer_blood_splash_direction() -> void:
 	# Arrange
-	var ally := AllyArcher.new()
+	var ally_scene: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+	var ally := ally_scene.instantiate() as AllyArcher
 	add_child_autofree(ally)
 	ally.last_hit_position = Vector3(1.0, 1.0, 0.0)
 	ally.last_hit_direction = Vector3.LEFT
@@ -136,3 +145,107 @@ func test_goblin_explotado_vfx_instantiation():
 
 	# Assert
 	assert_not_null(vfx, "GoblinExplotadoVFX should instantiate cleanly")
+
+
+func test_blood_splash_no_letal_setup_and_frames() -> void:
+	# Arrange
+	var splash := BLOOD_NO_LETAL_SCENE.instantiate() as BloodSplash2D
+	add_child_autofree(splash)
+	var hit_pos := Vector3(3.0, 1.5, 0.0)
+	var hit_dir := Vector3(1.0, 0.0, 0.0)
+
+	# Act
+	splash.setup(hit_pos, hit_dir)
+
+	# Assert
+	assert_eq(splash.global_position, hit_pos, "BloodSplashNoLetal should be at hit position")
+	assert_true(splash.base_faces_left, "BloodSplashNoLetal must declare base_faces_left = true")
+	assert_true(splash.flip_h, "When arrow flies right (+X), base facing left should be flipped")
+	assert_gt(splash.offset.x, 0.0, "Offset should project to the right")
+	assert_eq(splash.sprite_frames.get_frame_count(&"default"), 4, "BloodSplashNoLetal should have 4 frames configured")
+
+
+func test_blood_splash_no_letal_direction_left() -> void:
+	# Arrange
+	var splash := BLOOD_NO_LETAL_SCENE.instantiate() as BloodSplash2D
+	add_child_autofree(splash)
+	var hit_pos := Vector3(3.0, 1.5, 0.0)
+	var hit_dir := Vector3(-1.0, 0.0, 0.0)
+
+	# Act
+	splash.setup(hit_pos, hit_dir)
+
+	# Assert
+	assert_false(splash.flip_h, "When arrow flies left (-X), base facing left stays unflipped")
+	assert_lt(splash.offset.x, 0.0, "Offset should project to the left")
+
+
+func test_enemy_base_disparo_no_letal_spawnea_sangre() -> void:
+	# Arrange: enemigo con 3 vidas recibe 1 punto de daño (no letal)
+	var enemy := TestEnemy.new()
+	add_child_autofree(enemy)
+	enemy.vida_maxima = 3
+	enemy.health = 3
+	enemy.tiene_sangre = true
+	enemy.es_volador = false
+	enemy.last_hit_position = Vector3(2.0, 1.0, 0.0)
+	enemy.last_hit_direction = Vector3.RIGHT
+
+	# Act
+	enemy.take_damage(1.0)
+
+	# Assert
+	assert_eq(enemy.health, 2, "Enemy should have 2 health remaining")
+	assert_true(enemy.spawned_no_letal_called, "Non-lethal hit must trigger _spawn_blood_splash_no_letal")
+	assert_null(enemy.spawned_splash, "Non-lethal hit must NOT trigger lethal _spawn_blood_splash")
+
+
+func test_enemy_base_disparo_letal_no_spawnea_sangre_no_letal() -> void:
+	# Arrange: enemigo con 1 vida recibe 1 de daño (letal)
+	var enemy := TestEnemy.new()
+	add_child_autofree(enemy)
+	enemy.vida_maxima = 1
+	enemy.health = 1
+	enemy.tiene_sangre = true
+	enemy.es_volador = false
+
+	# Act
+	enemy.take_damage(1.0)
+
+	# Assert
+	assert_eq(enemy.health, 0, "Enemy should be at 0 health")
+	assert_false(enemy.spawned_no_letal_called, "Lethal hit must NOT call _spawn_blood_splash_no_letal")
+	assert_not_null(enemy.spawned_splash, "Lethal hit must trigger lethal _spawn_blood_splash")
+
+
+func test_gargola_voladora_excluye_sangre_no_letal() -> void:
+	# Arrange
+	var gargola := GARGOLA_SCRIPT.new()
+	add_child_autofree(gargola)
+	gargola._on_enemy_ready()
+	gargola.health = 3
+
+	# Act: disparo no letal
+	gargola.take_damage(1.0)
+
+	# Assert
+	assert_true(gargola.es_volador, "Gargola must be flagged as es_volador")
+	assert_true(gargola.is_in_group("flying_enemies"), "Gargola must belong to flying_enemies group")
+	assert_false(gargola.tiene_sangre, "Gargola must have tiene_sangre = false")
+
+
+func test_globo_aerostatico_volador_excluye_sangre_no_letal() -> void:
+	# Arrange
+	var globo := GLOBO_SCRIPT.new()
+	add_child_autofree(globo)
+	globo._on_enemy_ready()
+	globo.health = 3
+
+	# Act: disparo no letal
+	globo.take_damage(1.0)
+
+	# Assert
+	assert_true(globo.es_volador, "GloboAerostatico must be flagged as es_volador")
+	assert_true(globo.is_in_group("flying_enemies"), "GloboAerostatico must belong to flying_enemies group")
+	assert_false(globo.tiene_sangre, "GloboAerostatico must have tiene_sangre = false")
+

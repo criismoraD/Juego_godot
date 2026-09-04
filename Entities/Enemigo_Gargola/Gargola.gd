@@ -120,8 +120,10 @@ func _on_enemy_ready():
 
 	# Color místico para partículas de disolución
 	color_borde_disolucion = Color(0.4, 0.2, 0.8)
-	# Excluida de efectos de sangre
+	# Excluida de efectos de sangre (enemigo volador)
 	tiene_sangre = false
+	es_volador = true
+	add_to_group("flying_enemies")
 
 	scale = Vector3(0.9, 0.9, 0.9)
 	_crear_punto_spawn()

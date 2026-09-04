@@ -32,9 +32,9 @@ const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
 
 @export_category("Combate - Lonko")
-@export var tiempo_recarga_min: float = 1.5
-@export var tiempo_recarga_max: float = 3.0
-@export var pausa_entre_disparos: float = 2.0
+@export var tiempo_recarga_min: float = 1.0
+@export var tiempo_recarga_max: float = 2.0
+@export var pausa_entre_disparos: float = 1.2
 @export var potencia_disparo_min: float = 2.0  ## Potencia mínima de disparo (x2)
 @export var potencia_disparo_max: float = 3.0  ## Potencia máxima de disparo (x3)
 @export var velocidad_proyectil: float = 12.0
@@ -241,8 +241,9 @@ func _setup_audio_correr_descalzo() -> void:
 		_audio_correr_descalzo.name = "AudioCorrerDescalzo"
 		_audio_correr_descalzo.stream = stream
 		_audio_correr_descalzo.bus = "Master"
-		_audio_correr_descalzo.unit_size = 15.0
-		_audio_correr_descalzo.max_db = 0.0
+		_audio_correr_descalzo.volume_db = 6.0
+		_audio_correr_descalzo.unit_size = 30.0
+		_audio_correr_descalzo.max_db = 6.0
 		add_child(_audio_correr_descalzo)
 
 

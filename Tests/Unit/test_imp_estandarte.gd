@@ -66,3 +66,21 @@ func test_imp_embajador_drop_100_porciento_disparo_multiple():
 	assert_not_null(power_up, "Debe instanciar el item de disparo múltiple al morir")
 	if is_instance_valid(power_up):
 		power_up.queue_free()
+
+
+func test_imp_embajador_deja_charco_sangre_al_morir():
+	# Arrange
+	var imp = IMP_ESTANDARTE_SCENE.instantiate()
+	add_child_autofree(imp)
+	await get_tree().process_frame
+
+	# Act: muerte (como por flecha explosiva)
+	imp._on_state_dying()
+	await get_tree().process_frame
+
+	# Assert: charco de sangre en el suelo
+	var manchas := get_tree().root.find_children("ManchaSangreSuelo", "MeshInstance3D", true, false)
+	assert_gt(manchas.size(), 0, "El imp embajador debe dejar charco de sangre al morir")
+	for m in manchas:
+		if is_instance_valid(m):
+			m.queue_free()

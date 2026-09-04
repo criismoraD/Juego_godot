@@ -273,6 +273,8 @@ func _on_state_dying():
 	_drop_power_up()
 	_reproducir_sonido_muerte_estandarte()
 	AudioManager.play_sfx("explosion_muerte")
+	# Charco de sangre en el suelo como si muriera por flecha explosiva
+	VFXFactory.spawn_ground_blood_splatter(self, global_position)
 	_actualizar_visual_arma(true)
 	_actualizar_visibilidad_flecha_mano(false)
 	_play_bow_animation("ARCO_IDLE")
@@ -299,11 +301,11 @@ func _drop_power_up() -> void:
 	if not power_up:
 		return
 
-	# El Imp Embajador otorga 10 de munición múltiple
+	# El Imp Embajador otorga 10 de munición múltiple al jugador y 5 a las aliadas
 	if "municion_a_otorgar_jugador" in power_up:
 		power_up.municion_a_otorgar_jugador = 10
 	if "municion_a_otorgar_aliadas" in power_up:
-		power_up.municion_a_otorgar_aliadas = 10
+		power_up.municion_a_otorgar_aliadas = 5
 
 	var root_scene := get_tree().current_scene
 	if not root_scene:

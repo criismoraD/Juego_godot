@@ -15,6 +15,45 @@ static var regreso_desde_interior_oleada: int = 0  ## Regreso desde el cuarto in
 static var regreso_flechas_explosivas: int = 0  ## Power-ups al entrar al interior: flechas explosivas del jugador
 static var regreso_flechas_multiples: int = 0  ## Power-ups al entrar al interior: flechas múltiples del jugador
 static var regreso_municion_activa: int = 0  ## Power-ups al entrar al interior: tipo de munición activa del jugador (enum como int)
+## Configuración de defensoras asignadas en la torre (1: Plataforma inferior, 2: Plataforma superior)
+## Valores posibles: "arquera" o "ballestera"
+static var defensoras_config: Dictionary = {
+	1: "arquera",
+	2: "arquera",
+}
+## Diálogos de defensoras ya dichos: sobreviven a la recarga de escena al entrar/salir
+## de la torre para que no se reinicien si ya se dijeron en oleadas pasadas.
+## Solo cubre los 6 diálogos de oleada (el resto de claves sigue repitiéndose normal).
+static var dialogos_defensoras_dichos: Dictionary = {}
+const DIALOGOS_DEFENSORAS_UNICOS: Array[String] = [
+	"DIALOGO_ARQUERA_ARRIBA_CAMBIO_ARMA",
+	"DIALOGO_ARQUERA_ABAJO_3",
+	"DIALOGO_ARQUERA_ABAJO_15_Y_TU",
+	"DIALOGO_ARQUERA_ARRIBA_TENIA_QUE_CONTARLAS",
+	"DIALOGO_ARQUERA_ARRIBA_PESADA",
+	"DIALOGO_ARQUERA_ABAJO_ESPERANDO",
+]
+
+
+## True si es un diálogo de oleada con memoria anti-reinicio.
+static func es_dialogo_defensora_unico(clave: String) -> bool:
+	return clave in DIALOGOS_DEFENSORAS_UNICOS
+
+
+## True si esta clave de diálogo de defensora ya se mostró en la sesión actual.
+static func dialogo_defensora_ya_dicho(clave: String) -> bool:
+	return bool(dialogos_defensoras_dichos.get(clave, false))
+
+
+## Marca una clave de diálogo de defensora como ya dicha.
+static func marcar_dialogo_defensora_dicho(clave: String) -> void:
+	if not clave.is_empty():
+		dialogos_defensoras_dichos[clave] = true
+
+
+## Limpia la memoria de diálogos (inicio fresco de nivel, no regreso de torre).
+static func limpiar_dialogos_defensoras() -> void:
+	dialogos_defensoras_dichos.clear()
 
 @export_category("Debug")
 @export var debug_ui_enabled: bool = true
@@ -2390,9 +2429,16 @@ func mostrar_dialogo_desde_punto(punto: PuntoNacimientoDialogo) -> Vector2:
 	if not punto or not is_instance_valid(punto):
 		return Vector2.ZERO
 
+	# No reiniciar puntos ya dichos al entrar/salir de la torre
+	if not punto.id_dialogo.is_empty() and dialogo_defensora_ya_dicho(punto.id_dialogo):
+		return Vector2.ZERO
+
 	_asegurar_marco_texto_defensora()
 	if not marco_texto_defensora or not texto_defensora:
 		return Vector2.ZERO
+
+	if not punto.id_dialogo.is_empty():
+		marcar_dialogo_defensora_dicho(punto.id_dialogo)
 
 	# Aplicar colores y estilos configurados en este nodo específico
 	var panel := marco_texto_defensora as PanelContainer

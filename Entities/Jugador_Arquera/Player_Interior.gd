@@ -15,6 +15,7 @@ var _anim_player: AnimationPlayer
 var _yaw_base: float = 0.0
 var _yaw_objetivo: float = 0.0
 var _esta_caminando: bool = false
+var puede_moverse: bool = true
 
 
 func _ready() -> void:
@@ -71,6 +72,14 @@ func _ajustar_linea_negra_minima() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+
+	if not puede_moverse:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		move_and_slide()
+		_esta_caminando = false
+		_actualizar_animacion()
+		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var dir_mundo := Vector3(input.x, 0.0, input.y)

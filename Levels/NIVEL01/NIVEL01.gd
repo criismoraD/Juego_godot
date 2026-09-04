@@ -16,11 +16,11 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
 @export var total_enemigos_nivel1: int = 15  ## Enemigos totales en la Oleada 1 (12 en cola + 3 pacíficos convertidos)
-@export var total_enemigos_oleada_2: int = 25  ## Enemigos totales en la Oleada 2
+@export var total_enemigos_oleada_2: int = 26  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 30  ## Enemigos totales en la Oleada 3
 @export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos cuerno)
-@export var total_enemigos_oleada_5: int = 40  ## Enemigos totales en la nueva Oleada 5 (12 arqueras, 15 ballesteros, 5 globos, 6 goblinas de escudo)
-@export var total_enemigos_oleada_6: int = 50  ## Enemigos totales en la Oleada 6 (anterior Oleada 5: 40 base + 10 refuerzos cuerno)
+@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 GoblinGirl + 1 Arquera Rosa, 9 Goblin + 10 cuerno)
+@export var total_enemigos_oleada_6: int = 40  ## Enemigos totales en la Oleada 6 Asalto final (12 arqueras, 15 ballesteros, 5 globos, 6 goblinas de escudo)
 
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
@@ -55,7 +55,8 @@ var transicion_carteles_en_progreso: bool = false
 var _aliadas_activas: bool = true  ## Estado de aliadas para modo debug
 # Diálogos defensoras — 6 solicitados (eliminar previos, duraciones según spec)
 var _dialogo_cambio_arma_mostrado: bool = false  # arriba PARA CAMBIAR 15s
-var _kills_abajo: int = 0  # conteo personal defensora abajo
+var _kills_abajo: int = 0  # muertes propias de la defensora abajo
+var _kills_arriba: int = 0  # muertes propias de la defensora arriba
 var _dialogo_abajo_3_mostrado: bool = false  # 3 kills 7s
 var _dialogo_abajo_15_mostrado: bool = false  # 15 kills 7s
 var _dialogo_arriba_contar_mostrado: bool = false  # 2s después de 15 -> 5s
@@ -145,9 +146,14 @@ var escudo_enemigo3: EscudoDestruible:
 
 
 func _ready():
+	# Los diálogos de defensoras ya dichos sobreviven a entrar/salir de la torre.
+	# Solo se limpian en inicio fresco (regreso de torre los conserva).
+	if GameUI.regreso_desde_interior_oleada <= 0:
+		GameUI.limpiar_dialogos_defensoras()
 	_dialogo_audio_player = AudioStreamPlayer.new()
 	_dialogo_audio_player.bus = "Master"
 	add_child(_dialogo_audio_player)
+	_aplicar_configuracion_defensoras()
 	
 	# Ocultar elementos de la oleada 2, 3 y 4 al inicio
 	if is_instance_valid(escena_rampa_nivel3):
@@ -218,6 +224,7 @@ func _ready():
 		if game_ui and game_ui.has_method("set_modo_minimo"):
 			game_ui.set_modo_minimo(false)
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
+		_aplicar_configuracion_defensoras()
 		_set_aliadas_activas(true)
 		AudioManager.play_music(2)
 		# Restaurar los power-ups que el jugador tenía al entrar al interior
@@ -272,9 +279,12 @@ func _ready():
 			if is_instance_valid(ally) and ally is AllyArcher:
 				ally.flechas_explosivas = 5
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
-		_set_aliadas_activas(true)
+		# Debug por defecto: defensoras desactivadas y enemigos en pausa (se activan desde el panel)
+		_aliadas_activas = false
+		_set_aliadas_activas(false)
 		AudioManager.play_music(2)
 		_iniciar_oleadas_libres()
+		wave_spawner.detener_spawning()
 		_crear_panel_controles_spawn()
 		if wave_spawner and not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
 			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
@@ -904,39 +914,32 @@ func _on_enemigo_eliminado_nivel(_enemigo: Node, _total_muertos: int) -> void:
 			if arquera_arriba and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
 				arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_PESADA", 7.0)
 
-	# Conteo personal defensora abajo (atribuir kill a la más cercana al enemigo muerto)
+	# Conteo personal por defensora según la AUTORA del golpe letal (no proximidad):
+	# las muertes del jugador u otras fuentes no cuentan para sus diálogos.
 	var arquera_abajo := get_node_or_null("AllyArcher2") as AllyArcher
 	var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
-	var defensora_cercana: AllyArcher = null
-	if is_instance_valid(arquera_abajo) and is_instance_valid(arquera_arriba) and is_instance_valid(_enemigo) and _enemigo is Node3D:
-		var d_abajo: float = arquera_abajo.global_position.distance_to((_enemigo as Node3D).global_position)
-		var d_arriba: float = arquera_arriba.global_position.distance_to((_enemigo as Node3D).global_position)
-		defensora_cercana = arquera_abajo if d_abajo < d_arriba else arquera_arriba
-	elif is_instance_valid(arquera_abajo):
-		defensora_cercana = arquera_abajo
+	var autora: Node = _enemigo.get("ultimo_atacante") if is_instance_valid(_enemigo) and "ultimo_atacante" in _enemigo else null
 
-	# Solo la de abajo cuenta para 3 y 15 (per-defensora)
-	if defensora_cercana == arquera_abajo:
+	# Solo la de abajo cuenta para 3 y 15 (muertes propias)
+	if is_instance_valid(arquera_abajo) and is_instance_valid(autora) and autora == arquera_abajo:
 		_kills_abajo += 1
 		if _kills_abajo >= 3 and not _dialogo_abajo_3_mostrado:
 			_dialogo_abajo_3_mostrado = true
-			if is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
+			if arquera_abajo.has_method("decir"):
 				arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_3", 7.0)
 		if _kills_abajo >= 15 and not _dialogo_abajo_15_mostrado:
 			_dialogo_abajo_15_mostrado = true
-			if is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
+			if arquera_abajo.has_method("decir"):
 				arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_15_Y_TU", 7.0)
 			# 2s después la de arriba responde
 			await get_tree().create_timer(2.0).timeout
 			if not _dialogo_arriba_contar_mostrado and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
 				_dialogo_arriba_contar_mostrado = true
 				arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_TENIA_QUE_CONTARLAS", 5.0)
-	else:
-		# Fallback global 3 por si no hay defensora cercana (mantener compatibilidad)
-		if _kills_abajo >= 3 and not _dialogo_abajo_3_mostrado:
-			_dialogo_abajo_3_mostrado = true
-			if is_instance_valid(arquera_abajo) and arquera_abajo.has_method("decir"):
-				arquera_abajo.decir("DIALOGO_ARQUERA_ABAJO_3", 7.0)
+
+	# Contador propio de la de arriba (simetría y futuros diálogos)
+	if is_instance_valid(arquera_arriba) and is_instance_valid(autora) and autora == arquera_arriba:
+		_kills_arriba += 1
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1061,11 +1064,53 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# Spawnear Medikit en la puerta de la torre al inicio de la oleada 4
 		_spawn_medikit_puerta_torre()
 	elif numero_oleada == 5:
-		# NUEVA Oleada 5: 40 enemigos (12 arqueras goblin, 15 ballesteros goblin, 5 globos, 6 goblinas de escudo pesado)
+		# Oleada 5: 50 enemigos (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 9 GoblinGirl, 9 Goblin + 10 cuerno)
+		wave_spawner.probabilidad_imp = 0.0
+		wave_spawner.probabilidad_goblin_girl = 0.0
+		wave_spawner.probabilidad_canonero = 0.0
+		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
+		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
+		wave_spawner.max_imp_escudo_activos = 2
+		wave_spawner.intervalo_check_escudo = 999.0
+		# EXCEPCIÓN: Lonko siempre aparecen cuando se indica oleada 5 (bypass de filtros)
+		if wave_spawner.has_method("solicitar_excepcion_lonko"):
+			wave_spawner.solicitar_excepcion_lonko(11)
+		# En la Oleada 5 las defensas enemigas permanecen OCULTAS
+		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
+		_set_elemento_nivel3_activo(muro_plataforma, false)
+		_set_elemento_nivel3_activo(muro_plataforma2, false)
+		if is_instance_valid(escudo_enemigo):
+			_set_elemento_nivel3_activo(escudo_enemigo, false)
+		if is_instance_valid(escudo_enemigo2):
+			_set_elemento_nivel3_activo(escudo_enemigo2, false)
+		if is_instance_valid(escudo_enemigo3):
+			_set_elemento_nivel3_activo(escudo_enemigo3, false)
+
+		# Spawnear icono de mensajera: el jugador lo activa al pasar sobre él
+		_spawn_icono_mensajera_oleada_5()
+
+		# Fallback para export: si en 2.5s no hay Lonko en escena ni en cola, forzar spawn directo
+		get_tree().create_timer(2.5).timeout.connect(func():
+			if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 5:
+				return
+			var vivos_lonko: int = 0
+			for e in wave_spawner.get_active_enemies():
+				if is_instance_valid(e) and ("lonko" in e.name.to_lower() or (e.get_script() and "lonko" in e.get_script().resource_path.to_lower())):
+					vivos_lonko += 1
+			var pendientes_lonko: int = 0
+			for p in wave_spawner.cola_spawn:
+				if p == wave_spawner.escena_lonko:
+					pendientes_lonko += 1
+			if vivos_lonko == 0 and pendientes_lonko == 0 and wave_spawner.has_method("forzar_spawn_lonko_excepcion"):
+				wave_spawner.forzar_spawn_lonko_excepcion(11)
+		)
+
+	elif numero_oleada == 6:
+		# Oleada 6 Asalto Final: 40 enemigos (12 arqueras goblin, 15 ballesteros goblin, 5 globos, 6 goblinas de escudo pesado)
 		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.intervalo_aparicion = 2.0
-		# REGLA: En el nivel 5 no va el item de refuerzo, ni tampoco defensas estáticas ni plataformas
+		# REGLA: En el nivel 6 no va el item de refuerzo, ni tampoco defensas estáticas ni plataformas
 		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
 		_set_elemento_nivel3_activo(muro_plataforma, false)
 		_set_elemento_nivel3_activo(muro_plataforma2, false)
@@ -1083,57 +1128,15 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 			if is_instance_valid(n):
 				n.queue_free()
 
-	elif numero_oleada == 6:
-		# Oleada 6 (anterior Oleada 5): 50 enemigos (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 9 GoblinGirl, 9 Goblin + 10 cuerno)
-		wave_spawner.probabilidad_imp = 0.0
-		wave_spawner.probabilidad_goblin_girl = 0.0
-		wave_spawner.probabilidad_canonero = 0.0
-		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
-		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
-		wave_spawner.max_imp_escudo_activos = 2
-		wave_spawner.intervalo_check_escudo = 999.0
-		# EXCEPCIÓN: Lonko siempre aparecen cuando se indica oleada 6 (bypass de filtros)
-		if wave_spawner.has_method("solicitar_excepcion_lonko"):
-			wave_spawner.solicitar_excepcion_lonko(11)
-		# En la Oleada 6 las defensas enemigas permanecen OCULTAS
-		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
-		_set_elemento_nivel3_activo(muro_plataforma, false)
-		_set_elemento_nivel3_activo(muro_plataforma2, false)
-		if is_instance_valid(escudo_enemigo):
-			_set_elemento_nivel3_activo(escudo_enemigo, false)
-		if is_instance_valid(escudo_enemigo2):
-			_set_elemento_nivel3_activo(escudo_enemigo2, false)
-		if is_instance_valid(escudo_enemigo3):
-			_set_elemento_nivel3_activo(escudo_enemigo3, false)
-
-		# Spawnear icono de mensajera: el jugador lo activa al pasar sobre él
-		_spawn_icono_mensajera_oleada_5()
-
-		# Fallback para export: si en 2.5s no hay Lonko en escena ni en cola, forzar spawn directo
-		get_tree().create_timer(2.5).timeout.connect(func():
-			if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 6:
-				return
-			var vivos_lonko: int = 0
-			for e in wave_spawner.get_active_enemies():
-				if is_instance_valid(e) and ("lonko" in e.name.to_lower() or (e.get_script() and "lonko" in e.get_script().resource_path.to_lower())):
-					vivos_lonko += 1
-			var pendientes_lonko: int = 0
-			for p in wave_spawner.cola_spawn:
-				if p == wave_spawner.escena_lonko:
-					pendientes_lonko += 1
-			if vivos_lonko == 0 and pendientes_lonko == 0 and wave_spawner.has_method("forzar_spawn_lonko_excepcion"):
-				wave_spawner.forzar_spawn_lonko_excepcion(11)
-		)
-
-	# Música según la oleada: Oleada 6 usa "Noche Aplastante" (índice 5), anteriores usan música de batalla (índice 2)
-	if numero_oleada == 6:
+	# Música según la oleada: Oleada 5 usa "Noche Aplastante" (índice 5), anteriores y oleada 6 usan música de batalla (índice 2)
+	if numero_oleada == 5:
 		AudioManager.play_music(5)
 	else:
 		AudioManager.play_music(2)
 
-	# Torre de asedio: solo visible y activa en la Oleada 5
+	# Torre de asedio: solo visible y activa en la Oleada 6 (Asalto final)
 	if is_instance_valid(torre_de_asedio):
-		if numero_oleada == 5:
+		if numero_oleada == 6:
 			torre_de_asedio.activar_torre()
 		else:
 			torre_de_asedio.desactivar_torre()
@@ -1350,7 +1353,7 @@ func _mostrar_inter_nivel_continuar():
 		game_ui.mostrar_pantalla_victoria(msg, func():
 			# Revivir aliadas al pasar de nivel
 			for ally in AllyArcher.active_allies_cache:
-				if ally is AllyArcher and (ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING):
+				if is_instance_valid(ally) and (ally is AllyArcher or ally is AllyBallestera) and (ally.current_state == ally.State.DEAD or ally.current_state == ally.State.DYING):
 					ally.revivir()
 			
 			if oleada_combate_actual == 1:
@@ -1377,7 +1380,7 @@ func _mostrar_inter_nivel_continuar():
 		)
 	else:
 		for ally in AllyArcher.active_allies_cache:
-			if ally is AllyArcher and (ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING):
+			if is_instance_valid(ally) and (ally is AllyArcher or ally is AllyBallestera) and (ally.current_state == ally.State.DEAD or ally.current_state == ally.State.DYING):
 				ally.revivir()
 		if oleada_combate_actual == 1:
 			_mostrar_cartel_nivel_2()
@@ -1415,11 +1418,11 @@ func _precargar_elementos_oleada(numero_oleada_siguiente: int) -> void:
 			_precalentar_instancia_breve(ESCENA_PROYECTIL_GARGOLA)
 			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo)
 		5:
-			_precalentar_instancia_breve(wave_spawner.escena_goblina_escudo)
-			_precalentar_instancia_breve(wave_spawner.escena_globo_aerostatico)
-		6:
 			_precalentar_instancia_breve(wave_spawner.escena_lonko)
 			_precalentar_instancia_breve(wave_spawner.escena_imp_escudo)
+		6:
+			_precalentar_instancia_breve(wave_spawner.escena_goblina_escudo)
+			_precalentar_instancia_breve(wave_spawner.escena_globo_aerostatico)
 		_:
 			pass
 
@@ -1661,7 +1664,7 @@ func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) 
 		game_ui.set_modo_minimo(false)
 
 	_set_aliadas_activas(true)
-	if numero_oleada == 6:
+	if numero_oleada == 5:
 		AudioManager.play_music(5)
 	else:
 		AudioManager.play_music(2)
@@ -1816,9 +1819,58 @@ func _iniciar_oleadas_libres():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+## Aplica la configuración de defensoras seleccionadas en la torre para las plataformas
+func _aplicar_configuracion_defensoras() -> void:
+	if GameUI.defensoras_config == null or not (GameUI.defensoras_config is Dictionary):
+		return
+
+	var ballestera_scene: PackedScene = preload("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
+	var arquera_scene: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+
+	# Piso 1 (Inferior): AllyArcher2 en (-7.1104116, 1.585446, -0.02)
+	var tipo_piso1: String = GameUI.defensoras_config.get(1, "arquera")
+	var nodo1 = get_node_or_null("AllyArcher2")
+	if is_instance_valid(nodo1):
+		var es_ballestera1: bool = (nodo1 is AllyBallestera)
+		var necesita1: bool = (tipo_piso1 == "ballestera" and not es_ballestera1) or (tipo_piso1 == "arquera" and es_ballestera1)
+		if necesita1:
+			var t1: Transform3D = nodo1.transform
+			var parent1: Node = nodo1.get_parent()
+			nodo1.name = "AllyArcher2_Old"
+			nodo1.queue_free()
+			var nueva1: Node3D = (ballestera_scene if tipo_piso1 == "ballestera" else arquera_scene).instantiate() as Node3D
+			nueva1.name = "AllyArcher2"
+			nueva1.transform = t1
+			if nueva1 is AllyBallestera:
+				nueva1.es_movil = false
+				nueva1.vida_maxima = 4
+				nueva1.health = 4
+			parent1.add_child(nueva1)
+
+	# Piso 2 (Superior): AllyArcher en (-7.8802323, 3.1431754, -0.02)
+	var tipo_piso2: String = GameUI.defensoras_config.get(2, "arquera")
+	var nodo2 = get_node_or_null("AllyArcher")
+	if is_instance_valid(nodo2):
+		var es_ballestera2: bool = (nodo2 is AllyBallestera)
+		var necesita2: bool = (tipo_piso2 == "ballestera" and not es_ballestera2) or (tipo_piso2 == "arquera" and es_ballestera2)
+		if necesita2:
+			var t2: Transform3D = nodo2.transform
+			var parent2: Node = nodo2.get_parent()
+			nodo2.name = "AllyArcher_Old"
+			nodo2.queue_free()
+			var nueva2: Node3D = (ballestera_scene if tipo_piso2 == "ballestera" else arquera_scene).instantiate() as Node3D
+			nueva2.name = "AllyArcher"
+			nueva2.transform = t2
+			if nueva2 is AllyBallestera:
+				nueva2.es_movil = false
+				nueva2.vida_maxima = 4
+				nueva2.health = 4
+			parent2.add_child(nueva2)
+
+
 func _set_aliadas_activas(activas: bool):
 	for ally in AllyArcher.active_allies_cache:
-		if ally is AllyArcher:
+		if is_instance_valid(ally) and (ally is AllyArcher or ally is AllyBallestera):
 			ally.visible = activas
 			ally.set_process(activas)
 			ally.set_physics_process(activas)
@@ -1827,10 +1879,10 @@ func _set_aliadas_activas(activas: bool):
 				hitbox.collision_layer = 2 if activas else 0
 
 
-## Arqueras visibles en pose IDLE pero sin disparar
+## Arqueras y ballesteras visibles en pose IDLE pero sin disparar
 func _set_aliadas_modo_pacifico():
 	for ally in AllyArcher.active_allies_cache:
-		if ally is AllyArcher:
+		if is_instance_valid(ally) and (ally is AllyArcher or ally is AllyBallestera):
 			ally.visible = true
 			ally.set_process(false)  # No disparan
 			ally.set_physics_process(false)
@@ -1846,9 +1898,9 @@ func _toggle_aliadas_visibles() -> void:
 
 func _revivir_aliadas_debug() -> void:
 	for ally in AllyArcher.active_allies_cache:
-		if not is_instance_valid(ally) or not (ally is AllyArcher):
+		if not is_instance_valid(ally) or not (ally is AllyArcher or ally is AllyBallestera):
 			continue
-		if ally.current_state == AllyArcher.State.DEAD or ally.current_state == AllyArcher.State.DYING:
+		if ally.current_state == ally.State.DEAD or ally.current_state == ally.State.DYING:
 			ally.revivir()
 		else:
 			ally.health = ally.vida_maxima

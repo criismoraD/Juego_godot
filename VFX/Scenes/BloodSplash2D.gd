@@ -15,6 +15,8 @@ const DEFAULT_FPS: float = 14.0
 @export var texture_strip: Texture2D = null
 @export var frame_count: int = 4
 @export var frame_size: Vector2i = Vector2i(110, 53)
+@export var custom_regions: Array[Rect2] = []
+@export var base_faces_left: bool = false
 
 
 func _ready() -> void:
@@ -42,11 +44,18 @@ func _build_sprite_frames_from_strip() -> void:
 	sf.set_animation_loop(autoplay_animation, false)
 	sf.set_animation_speed(autoplay_animation, custom_fps)
 
-	for i in range(frame_count):
-		var atlas := AtlasTexture.new()
-		atlas.atlas = texture_strip
-		atlas.region = Rect2(float(i * frame_size.x), 0.0, float(frame_size.x), float(frame_size.y))
-		sf.add_frame(autoplay_animation, atlas)
+	if not custom_regions.is_empty():
+		for reg in custom_regions:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = texture_strip
+			atlas.region = reg
+			sf.add_frame(autoplay_animation, atlas)
+	else:
+		for i in range(frame_count):
+			var atlas := AtlasTexture.new()
+			atlas.atlas = texture_strip
+			atlas.region = Rect2(float(i * frame_size.x), 0.0, float(frame_size.x), float(frame_size.y))
+			sf.add_frame(autoplay_animation, atlas)
 
 	sprite_frames = sf
 
@@ -57,14 +66,27 @@ func setup(hit_position: Vector3, hit_direction: Vector3 = Vector3.ZERO, custom_
 	modulate = custom_modulate
 
 	var half_w: float = float(frame_size.x) * 0.5
-	if hit_direction != Vector3.ZERO and hit_direction.x < 0.0:
-		# Flecha viajando hacia la izquierda (X < 0): voltear y anclar origen en hit_position proyectando a la izquierda
-		flip_h = true
-		offset = Vector2(-half_w, 0.0)
+	if not custom_regions.is_empty():
+		half_w = custom_regions[0].size.x * 0.5
+
+	if base_faces_left:
+		# Textura base orientada hacia la izquierda
+		if hit_direction != Vector3.ZERO and hit_direction.x < 0.0:
+			flip_h = false
+			offset = Vector2(-half_w, 0.0)
+		else:
+			flip_h = true
+			offset = Vector2(half_w, 0.0)
 	else:
-		# Flecha viajando hacia la derecha (X >= 0 o por defecto): anclar origen en hit_position proyectando a la derecha
-		flip_h = false
-		offset = Vector2(half_w, 0.0)
+		# Textura base orientada hacia la derecha (por defecto)
+		if hit_direction != Vector3.ZERO and hit_direction.x < 0.0:
+			# Flecha viajando hacia la izquierda (X < 0): voltear y anclar origen en hit_position proyectando a la izquierda
+			flip_h = true
+			offset = Vector2(-half_w, 0.0)
+		else:
+			# Flecha viajando hacia la derecha (X >= 0 o por defecto): anclar origen en hit_position proyectando a la derecha
+			flip_h = false
+			offset = Vector2(half_w, 0.0)
 
 
 func _on_animation_finished() -> void:

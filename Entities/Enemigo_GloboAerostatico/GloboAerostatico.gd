@@ -126,6 +126,8 @@ func _on_enemy_ready() -> void:
 	health = 3
 	rastrear_jugador = false
 	tiene_sangre = false
+	es_volador = true
+	add_to_group("flying_enemies")
 	color_borde_disolucion = Color(0.8, 0.2, 0.8)
 
 	# Altura inicial aleatoria entre baja y alta, luego varía naturalmente entre ambas

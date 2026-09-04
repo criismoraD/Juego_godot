@@ -46,6 +46,7 @@ enum State { WALKING, DEFENDING, SHIELD_HIT, ESCAPING, FLEEING, DYING, DEAD }
 @export_category("Sangre")
 @export var tiene_sangre: bool = true
 @export var escena_sangre: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+@export var escena_sangre_no_letal: PackedScene = preload("res://VFX/Scenes/BloodSplashNoLetal.tscn")
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 
@@ -71,6 +72,7 @@ var escudo_vida_actual: int = 3
 var health: int = 1
 var last_hit_position: Vector3 = Vector3.ZERO
 var last_hit_direction: Vector3 = Vector3.ZERO
+var ultimo_atacante: Node = null  ## Quién dio el último golpe: conteo de muertes por defensora
 var enemigo_protegido: Node3D = null  ## Referencia al enemigo que estamos protegiendo
 var spawn_position: Vector3 = Vector3.ZERO  ## Posición de spawn original
 var is_dissolving: bool = false
@@ -646,6 +648,33 @@ func take_damage(_amount: float):
 		health -= int(_amount)
 		if health <= 0:
 			_cambiar_estado(State.DYING)
+		else:
+			_spawn_blood_splash_no_letal()
+
+
+func _spawn_blood_splash_no_letal() -> void:
+	if not tiene_sangre or not escena_sangre_no_letal:
+		return
+
+	var splash_pos: Vector3 = last_hit_position
+	if splash_pos == Vector3.ZERO:
+		splash_pos = global_position + Vector3(0.0, 0.4, 0.0)
+
+	var splash_node = escena_sangre_no_letal.instantiate()
+	if not splash_node:
+		return
+
+	var target_parent: Node = get_tree().current_scene
+	if not target_parent:
+		target_parent = get_parent()
+	if not target_parent:
+		target_parent = self
+
+	target_parent.add_child(splash_node)
+	if splash_node.has_method("setup"):
+		splash_node.setup(splash_pos, last_hit_direction)
+	elif splash_node is Node3D:
+		splash_node.global_position = splash_pos
 
 
 func recibir_dano(amount: int):

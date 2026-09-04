@@ -285,6 +285,8 @@ func _conectar_eventos_oleada() -> void:
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
+	if not _puede_celebrar():
+		return
 	if es_movil:
 		# Las defensoras moviles festejan y luego se retiran
 		if current_state != State.DYING and current_state != State.DEAD:
@@ -302,9 +304,24 @@ func _on_oleada_completada(_numero_oleada: int) -> void:
 
 
 func celebrar_victoria() -> void:
-	if current_state != State.DYING and current_state != State.DEAD:
-		_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
-		_cambiar_estado(State.CELEBRATING)
+	# Solo festeja si está activa, visible y viva (nada de risas fuera de pantalla)
+	if not _puede_celebrar():
+		return
+	_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
+	_cambiar_estado(State.CELEBRATING)
+
+
+## True si la defensora está activa, visible y viva para festejar y sonar
+func _puede_celebrar() -> bool:
+	if not is_inside_tree() or not visible:
+		return false
+	if not is_processing() and not is_physics_processing():
+		return false
+	if current_state == State.DYING or current_state == State.DEAD:
+		return false
+	if health <= 0:
+		return false
+	return true
 
 
 func probar_animacion_victoria() -> void:
@@ -802,7 +819,8 @@ func _cambiar_estado(nuevo: State):
 			# Victoria fluida: clip en LOOP (sin re-plays que cortan los brazos a mitad)
 			_configurar_victoria_loop()
 			_play_anim("VICTORIA", 0.25, 1.0)
-			AudioManager.play_sfx("risa_victoria_ballestera")
+			if _puede_celebrar():
+				AudioManager.play_sfx("risa_victoria_ballestera")
 			var _dur_clip: float = _get_anim_length("VICTORIA")
 			state_timer = maxf(_dur_clip, 0.3) * _loops_victoria_restantes
 
@@ -1797,3 +1815,36 @@ func _get_anim_length(anim_target: String) -> float:
 			if anim:
 				return anim.length
 	return 1.0
+
+
+var speech_bubble: Node = null
+
+## Muestra un diálogo en el globo de este personaje
+func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
+	if not visible or current_state == State.DYING or current_state == State.DEAD or health <= 0:
+		return
+	if GameUI.es_dialogo_defensora_unico(clave_o_texto) and GameUI.dialogo_defensora_ya_dicho(clave_o_texto):
+		return
+	if not speech_bubble or not is_instance_valid(speech_bubble):
+		speech_bubble = get_node_or_null("SpeechBubbleComponent")
+	if not speech_bubble:
+		var sb_scene = load("res://Components/Dialogue/SpeechBubbleComponent.tscn")
+		if sb_scene:
+			speech_bubble = sb_scene.instantiate()
+			speech_bubble.name = "SpeechBubbleComponent"
+			add_child(speech_bubble)
+			if "offset_globo" in speech_bubble:
+				speech_bubble.offset_globo = Vector3(0.0, 2.2, 0.0)
+	if speech_bubble and is_instance_valid(speech_bubble):
+		if GameUI.es_dialogo_defensora_unico(clave_o_texto):
+			GameUI.marcar_dialogo_defensora_dicho(clave_o_texto)
+		speech_bubble.decir(clave_o_texto, duracion)
+
+
+## Retorna true si la ballestera está mostrando un diálogo
+func esta_hablando() -> bool:
+	if not speech_bubble or not is_instance_valid(speech_bubble):
+		return false
+	if speech_bubble.has_method("esta_hablando"):
+		return speech_bubble.esta_hablando()
+	return false

@@ -52,6 +52,7 @@ static func prewarm(tree: SceneTree, on_progress: Callable = Callable()) -> void
 	var processed_items: int = 0
 
 	# 2. Instanciar y renderizar escenas críticas
+	ExplosionFlechaExplosiva.suprimir_sonido_prewarm = true
 	for path in ESCENAS_CRITICAS:
 		if ResourceLoader.exists(path):
 			var packed := load(path) as PackedScene
@@ -69,6 +70,8 @@ static func prewarm(tree: SceneTree, on_progress: Callable = Callable()) -> void
 		processed_items += 1
 		if on_progress.is_valid():
 			on_progress.call(float(processed_items) / float(total_items))
+
+	ExplosionFlechaExplosiva.suprimir_sonido_prewarm = false
 
 	# 3. Renderizar mallas con materiales/shaders sueltos
 	for mat_path in MATERIALES_CRITICOS:
@@ -117,8 +120,13 @@ static func _activar_particulas_y_mallas(node: Node) -> void:
 
 ## Quita el stream y el autoplay de todo AudioStreamPlayer dentro de la escena
 ## para que el precalentamiento sea completamente mudo.
+## NOTA: el tipo debe ser el nombre exacto de clase ("AudioStreamPlayer*"
+## con comodín no coincide con ninguna clase y no silenciaba nada).
 static func _silenciar_audio(node: Node) -> void:
-	for audio in node.find_children("*", "AudioStreamPlayer*", true, false):
+	var audios: Array[Node] = []
+	audios.append_array(node.find_children("*", "AudioStreamPlayer", true, false))
+	audios.append_array(node.find_children("*", "AudioStreamPlayer3D", true, false))
+	for audio in audios:
 		if audio is AudioStreamPlayer3D:
 			var p3d := audio as AudioStreamPlayer3D
 			p3d.autoplay = false

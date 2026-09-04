@@ -12,6 +12,7 @@ const DURACION_DESVANECIMIENTO: float = 0.6
 # === TIPO DE FLECHA ===
 enum TipoFlecha { JUGADOR, ENEMIGO }
 @export var tipo_dueño: TipoFlecha = TipoFlecha.JUGADOR
+@export var multiplicador_dano_sobrecarga: float = 2.0  ## Daño x2 solo con flecha de sobrecarga morada al 100% (meta "sobrecarga_max")
 
 # === FLECHA EXPLOSIVA ===
 @export_category("Flecha Explosiva")
@@ -27,6 +28,7 @@ enum TipoFlecha { JUGADOR, ENEMIGO }
 # === ESTADO INTERNO ===
 var velocity: Vector3 = Vector3.ZERO
 var power: float = 0.0
+var tirador: Node = null  ## Quién disparó (Player o AllyArcher): autoría de la muerte para diálogos
 var world_gravity: float = 0.0
 var is_stuck: bool = false
 var _destroying: bool = false
@@ -264,7 +266,7 @@ func _on_body_entered(body):
 
 	# Verificar si es un objetivo válido
 	if tipo_dueño == TipoFlecha.JUGADOR:
-		# Las flechas del jugador dañan enemigos - daño fijo de 1
+		# Las flechas del jugador dañan enemigos (x2 con sobrecarga morada al 100%)
 		if body.has_method("take_damage") and body.is_in_group("enemies"):
 			# Verificar interacción con aura repelente (ej: Arquera Rosa)
 			if body.has_method("manejar_impacto_aura") and body.manejar_impacto_aura(self):
@@ -280,7 +282,13 @@ func _on_body_entered(body):
 				body.last_hit_position = global_position
 			if body.has_method("set") and "last_hit_direction" in body:
 				body.last_hit_direction = velocity.normalized()
-			body.take_damage(1.0)
+			# Autoría del golpe para el conteo de muertes por defensora
+			if body.has_method("set") and "ultimo_atacante" in body:
+				body.ultimo_atacante = tirador
+			var dano_final: float = 1.0
+			if has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max")):
+				dano_final *= multiplicador_dano_sobrecarga
+			body.take_damage(dano_final)
 			_safe_destroy()
 	elif tipo_dueño == TipoFlecha.ENEMIGO:
 		# Las flechas del enemigo dañan al jugador
@@ -747,6 +755,7 @@ func _explotar(hit_target: Node = null) -> void:
 			expl.dano_base = dano_base_explosiva
 			expl.bono_dano_estructuras = bono_dano_estructuras
 			expl.hit_target_directo = hit_target
+			expl.tirador_origen = tirador
 			expl.position = global_position
 			var root := get_tree().current_scene
 			if not root:

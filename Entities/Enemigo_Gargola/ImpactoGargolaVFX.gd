@@ -13,7 +13,8 @@ func _ready() -> void:
 	var tex: Texture2D = preload("res://VFX/Textures/ExplosionSpritesheet.png")
 	if tex:
 		var sf := SpriteFrames.new()
-		sf.add_animation(&"default")
+		if not sf.has_animation(&"default"):
+			sf.add_animation(&"default")
 		sf.set_animation_loop(&"default", false)
 		sf.set_animation_speed(&"default", 18.0)
 

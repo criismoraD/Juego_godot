@@ -14,7 +14,7 @@ extends CharacterBody3D
 enum State { RUNNING, ATTACKING, DEFENDING, SHIELD_HIT, DYING, DEAD, TURNING }
 
 const VULNERABILIDAD_ATAQUE_DANO_EXTRA: float = 5.0
-const VIDA_MAXIMA_DEFAULT: int = 13
+const VIDA_MAXIMA_DEFAULT: int = 10
 const VELOCIDAD_CARRERA_DEFAULT: float = 1.8
 const DISTANCIA_PROTECCION_DEFAULT: float = 0.65
 const POTENCIA_TRIDENTE_PESADO: float = 2.0
@@ -22,9 +22,9 @@ const GRAVEDAD_TRIDENTE_PESADO: float = 0.5
 const DANO_TRIDENTE_PESADO: float = 2.0
 const TIEMPO_LANZAMIENTO_EN_ATAQUE: float = 0.65
 const DURACION_ATAQUE_TOTAL: float = 1.53
-const INTERVALO_ATAQUE_DEFENSA: float = 7.0  ## Ataca cada 7 segundos mientras defiende
+const INTERVALO_ATAQUE_DEFENSA: float = 6.0  ## Ataca cada 6 segundos mientras defiende (sin enemigos cercanos para reposicionarse)
 const TIEMPO_MINIMO_DEFENSA_PRIMER_ATAQUE: float = 6.0
-const TIEMPO_DEFENSA_SIN_ENEMIGOS_ATAQUE: float = 7.0
+const TIEMPO_DEFENSA_SIN_ENEMIGOS_ATAQUE: float = 6.0
 
 const TIEMPO_VENTANA_IMPACTOS_CONCENTRADOS: float = 0.9
 const UMBRAL_IMPACTOS_CONCENTRADOS: int = 3
@@ -37,6 +37,7 @@ const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader"
 const TRIDENTE_SCENE: PackedScene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
 const MEDIKIT_SCENE: PackedScene = preload("res://Entities/Item_Medikit/Medikit.tscn")
 const SANGRE_SCENE: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+const SANGRE_NO_LETAL_SCENE: PackedScene = preload("res://VFX/Scenes/BloodSplashNoLetal.tscn")
 const TEXTURA_SANGRE_EXPLOSION: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_explosion.png")
 const ESCUDO_ROTO_SCENE: PackedScene = preload("res://Entities/Enemigo_Imp_Escudo/EscudoImpRoto.tscn")
 
@@ -66,6 +67,7 @@ var es_escudo_enemigo: bool = true  ## Reconocimiento por Arrow.gd
 var murio_por_explosion: bool = false
 var last_hit_position: Vector3 = Vector3.ZERO
 var last_hit_direction: Vector3 = Vector3.ZERO
+var ultimo_atacante: Node = null  ## Quién dio el último golpe: conteo de muertes por defensora
 
 var enemigo_protegido: Node3D = null
 var posicion_objetivo_zona_roja: float = -1.0
@@ -331,7 +333,7 @@ func _process_attacking(delta: float) -> void:
 		_ha_atacado_en_animacion = true
 		_lanzar_tridente_pesado()
 
-	# Fin de animación de ataque -> después de atacar cada 7 segundos, debe posicionarse delante de otro enemigo cercano
+	# Fin de animación de ataque -> después de atacar cada 6 segundos, debe posicionarse delante de otro enemigo cercano
 	if _attack_timer >= DURACION_ATAQUE_TOTAL:
 		_attack_timer = 0.0
 		_timer_defensa = 0.0
@@ -362,7 +364,7 @@ func _process_defending(delta: float) -> void:
 		if not is_instance_valid(enemigo_protegido) or not enemigo_protegido.is_inside_tree():
 			_buscar_enemigo_a_proteger()
 
-	# REGLA: Ataca cada 7 segundos mientras defiende
+	# REGLA: Ataca cada 6 segundos mientras defiende
 	_timer_defensa += delta
 	if _timer_defensa >= INTERVALO_ATAQUE_DEFENSA:
 		_timer_defensa = 0.0
@@ -535,6 +537,8 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 		health = 0
 		_cambiar_estado(State.DYING)
 	else:
+		if not golpe_en_escudo:
+			_spawn_sangre_no_letal()
 		if current_state == State.DEFENDING:
 			_cambiar_estado(State.SHIELD_HIT)
 
@@ -594,6 +598,21 @@ func _spawn_sangre() -> void:
 			target_parent.add_child(sangre)
 			var pos_sangre = last_hit_position if last_hit_position != Vector3.ZERO else global_position + Vector3(0.0, 0.5, 0.0)
 			sangre.global_position = pos_sangre
+
+
+func _spawn_sangre_no_letal() -> void:
+	if SANGRE_NO_LETAL_SCENE:
+		var sangre: Node3D = SANGRE_NO_LETAL_SCENE.instantiate() as Node3D
+		if sangre:
+			var target_parent = get_tree().current_scene if get_tree().current_scene else get_parent()
+			if not target_parent:
+				target_parent = self
+			target_parent.add_child(sangre)
+			var pos_sangre = last_hit_position if last_hit_position != Vector3.ZERO else global_position + Vector3(0.0, 0.5, 0.0)
+			if sangre.has_method("setup"):
+				sangre.setup(pos_sangre, last_hit_direction)
+			elif sangre is Node3D:
+				sangre.global_position = pos_sangre
 
 
 func _soltar_recompensas_muerte() -> void:
@@ -946,8 +965,9 @@ func _setup_audio_correr_descalzo() -> void:
 		_audio_correr_descalzo.name = "AudioCorrerDescalzo"
 		_audio_correr_descalzo.stream = stream
 		_audio_correr_descalzo.bus = "Master"
-		_audio_correr_descalzo.unit_size = 15.0
-		_audio_correr_descalzo.max_db = 0.0
+		_audio_correr_descalzo.volume_db = 6.0
+		_audio_correr_descalzo.unit_size = 30.0
+		_audio_correr_descalzo.max_db = 6.0
 		add_child(_audio_correr_descalzo)
 
 

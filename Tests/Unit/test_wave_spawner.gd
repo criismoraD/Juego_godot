@@ -27,6 +27,7 @@ func before_each():
 	_spawner.escena_canonero = _create_dummy_scene("CanoneroNode")
 	_spawner.escena_imp_escudo = _create_dummy_scene("ImpShieldNode")
 	_spawner.escena_globo_aerostatico = _create_dummy_scene("GloboAerostaticoNode")
+	_spawner.escena_goblina_escudo = _create_dummy_scene("GoblinaEscudoNode")
 
 	get_tree().root.add_child(_spawner)
 
@@ -232,12 +233,14 @@ func test_predefined_wave_spawn_queue_wave_2():
 	_spawner.oleada_combate = 2
 	_spawner._start_wave()
 	
-	assert_eq(_spawner.cola_spawn.size(), 25, "Wave 2 queue should have 25 elements")
+	assert_eq(_spawner.cola_spawn.size(), 26, "Wave 2 queue should have 26 elements")
+	assert_eq(_spawner.enemigos_por_oleada, 26, "Wave 2 total enemies should be 26")
 	
 	var imp_count = 0
 	var girl_count = 0
 	var goblin_count = 0
 	var shield_count = 0
+	var goblina_escudo_count = 0
 	
 	for scene in _spawner.cola_spawn:
 		if scene == _spawner.escena_imp:
@@ -248,17 +251,29 @@ func test_predefined_wave_spawn_queue_wave_2():
 			goblin_count += 1
 		elif scene == _spawner.escena_imp_escudo:
 			shield_count += 1
+		elif scene == _spawner.escena_goblina_escudo:
+			goblina_escudo_count += 1
 			
 	assert_eq(shield_count, 2, "Wave 2 should have 2 imps shield")
 	assert_eq(imp_count, 7, "Wave 2 should have 7 imps normal")
 	assert_eq(girl_count, 8, "Wave 2 should have 8 goblin archers")
 	assert_eq(goblin_count, 8, "Wave 2 should have 8 goblin crossbows")
+	assert_eq(goblina_escudo_count, 1, "Wave 2 should have 1 goblina shield")
 
 	# Verificar restricciones
 	assert_ne(_spawner.cola_spawn.back(), _spawner.escena_imp_escudo, "The imp shield cannot be the last one in Wave 2")
+	assert_ne(_spawner.cola_spawn.back(), _spawner.escena_goblina_escudo, "The goblina shield cannot be the last one in Wave 2")
 	for i in range(_spawner.cola_spawn.size() - 1):
 		var is_consecutive = (_spawner.cola_spawn[i] == _spawner.escena_imp_escudo and _spawner.cola_spawn[i+1] == _spawner.escena_imp_escudo)
 		assert_false(is_consecutive, "No two imp shields can be consecutive in Wave 2")
+
+	# Verificar que la goblina de escudo pesado aparece en la mitad de la oleada
+	var idx_goblina = _spawner.cola_spawn.find(_spawner.escena_goblina_escudo)
+	assert_true(idx_goblina >= 10 and idx_goblina <= 15, "La goblina de escudo debe aparecer en la mitad de la oleada (indice entre 10 y 15)")
+	if idx_goblina > 0:
+		assert_ne(_spawner.cola_spawn[idx_goblina - 1], _spawner.escena_imp_escudo, "No debe haber un imp escudo inmediatamente antes de la goblina")
+	if idx_goblina < _spawner.cola_spawn.size() - 1:
+		assert_ne(_spawner.cola_spawn[idx_goblina + 1], _spawner.escena_imp_escudo, "No debe haber un imp escudo inmediatamente despues de la goblina")
 
 
 func test_predefined_wave_spawn_queue_wave_3():
@@ -290,6 +305,39 @@ func test_predefined_wave_spawn_queue_wave_3():
 		assert_false(is_consecutive, "No two imp shields can be consecutive in Wave 3")
 
 
+func test_predefined_wave_spawn_queue_wave_6():
+	_spawner.oleada_combate = 6
+	_spawner._start_wave()
+
+	assert_eq(_spawner.cola_spawn.size(), 40, "Wave 6 queue should have 40 elements")
+	assert_eq(_spawner.enemigos_por_oleada, 40, "Wave 6 total enemies should be 40")
+
+	var girl_count = 0
+	var goblin_count = 0
+	var globo_count = 0
+	var shield_goblina_count = 0
+
+	for scene in _spawner.cola_spawn:
+		if scene == _spawner.escena_goblin_girl:
+			girl_count += 1
+		elif scene == _spawner.escena_goblin:
+			goblin_count += 1
+		elif scene == _spawner.escena_globo_aerostatico:
+			globo_count += 1
+		elif scene == _spawner.escena_goblina_escudo:
+			shield_goblina_count += 1
+
+	assert_eq(girl_count, 12, "Wave 6 should have 12 goblin archers")
+	assert_eq(goblin_count, 15, "Wave 6 should have 15 goblin crossbows")
+	assert_eq(globo_count, 5, "Wave 6 should have 5 hot air balloons")
+	assert_eq(shield_goblina_count, 6, "Wave 6 should have 6 heavy shield goblinas")
+
+	assert_ne(_spawner.cola_spawn.back(), _spawner.escena_goblina_escudo, "The shield goblina cannot be the last one in Wave 6")
+	for i in range(_spawner.cola_spawn.size() - 1):
+		var is_consecutive = (_spawner.cola_spawn[i] == _spawner.escena_goblina_escudo and _spawner.cola_spawn[i+1] == _spawner.escena_goblina_escudo)
+		assert_false(is_consecutive, "No two shield goblinas can be consecutive in Wave 6")
+
+
 func test_standby_pool_con_instancia_liberada_no_crashea():
 	# Arrange: simular que el pool de standby contiene una instancia previamente liberada (freed)
 	var dummy_freed = Node3D.new()
@@ -307,5 +355,80 @@ func test_standby_pool_con_instancia_liberada_no_crashea():
 	# Assert
 	assert_eq(_spawner.active_goblins.size(), 1, "Debe spawnear un goblin valido a pesar de haber tenido una instancia liberada en el pool")
 	assert_true(is_instance_valid(_spawner.active_goblins[0]), "El enemigo spawneado debe ser una instancia valida")
+
+
+func test_intervalo_aparicion_dinamico_inicio_oleada():
+	# Arrange: Oleada iniciada con 100% de enemigos restantes en la barra de progreso
+	_spawner.enemigos_por_oleada = 20
+	_spawner.intervalo_aparicion = 4.0
+	_spawner.intervalo_minimo_aparicion = 1.0
+	_spawner.enemigos_muertos_en_oleada = 0
+
+	# Act: Calcular intervalo al inicio
+	var intervalo: float = _spawner._calcular_intervalo_actual()
+
+	# Assert: Con 20/20 restantes (factor 1.0), el intervalo debe ser el base (4.0s)
+	assert_almost_eq(intervalo, 4.0, 0.01, "Al inicio con todos los enemigos restantes el intervalo debe ser intervalo_aparicion")
+
+
+func test_intervalo_aparicion_dinamico_mitad_oleada():
+	# Arrange: 10 de 20 enemigos muertos (50% en la barra de progreso)
+	_spawner.enemigos_por_oleada = 20
+	_spawner.intervalo_aparicion = 4.0
+	_spawner.intervalo_minimo_aparicion = 1.0
+	_spawner.enemigos_muertos_en_oleada = 10
+
+	# Act: Calcular intervalo
+	var intervalo: float = _spawner._calcular_intervalo_actual()
+
+	# Assert: Con 10 restantes de 20 (factor 0.5), el intervalo debe ser lerp(1.0, 4.0, 0.5) = 2.5s
+	assert_almost_eq(intervalo, 2.5, 0.01, "A mitad de la barra de progreso el intervalo debe ser 2.5s")
+
+
+func test_intervalo_aparicion_dinamico_final_oleada():
+	# Arrange: 20 de 20 enemigos muertos (0 restantes en la barra de progreso)
+	_spawner.enemigos_por_oleada = 20
+	_spawner.intervalo_aparicion = 4.0
+	_spawner.intervalo_minimo_aparicion = 1.0
+	_spawner.enemigos_muertos_en_oleada = 20
+
+	# Act: Calcular intervalo
+	var intervalo: float = _spawner._calcular_intervalo_actual()
+
+	# Assert: Con 0 restantes (factor 0.0), el intervalo debe ser el mínimo (1.0s)
+	assert_almost_eq(intervalo, 1.0, 0.01, "Al agotarse los enemigos de la barra el intervalo debe ser el mínimo")
+
+
+func test_intervalo_aparicion_con_evento_cuerno():
+	# Arrange: Oleada al inicio pero con evento de cuerno activo
+	_spawner.enemigos_por_oleada = 20
+	_spawner.intervalo_aparicion = 4.0
+	_spawner.intervalo_minimo_aparicion = 1.0
+	_spawner.enemigos_muertos_en_oleada = 0
+	_spawner.evento_cuerno_en_progreso = true
+
+	# Act: Calcular intervalo durante evento de cuerno
+	var intervalo: float = _spawner._calcular_intervalo_actual()
+
+	# Assert: Durante el cuerno el intervalo debe reducirse a la mitad (4.0 / 2 = 2.0s)
+	assert_almost_eq(intervalo, 2.0, 0.01, "Durante el cuerno el intervalo debe reducirse a la mitad")
+
+
+func test_ajuste_inmediato_spawn_timer_al_morir_enemigo():
+	# Arrange: Oleada activa con timer esperando a 4.0s
+	_spawner.is_wave_active = true
+	_spawner.enemigos_por_oleada = 20
+	_spawner.intervalo_aparicion = 4.0
+	_spawner.intervalo_minimo_aparicion = 1.0
+	_spawner.goblins_spawned_in_wave = 5
+	_spawner.enemigos_muertos_en_oleada = 0
+	_spawner.spawn_timer = 4.0
+
+	# Act: Mueren 10 enemigos, activando el setter de enemigos_muertos_en_oleada
+	_spawner.enemigos_muertos_en_oleada = 10
+
+	# Assert: spawn_timer debe recortarse inmediatamente al nuevo intervalo calculado (2.5s)
+	assert_almost_eq(_spawner.spawn_timer, 2.5, 0.01, "El spawn_timer debe acelerarse inmediatamente al morir enemigos")
+
 
 

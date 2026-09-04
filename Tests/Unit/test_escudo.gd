@@ -1,6 +1,7 @@
 extends "res://addons/gut/test.gd"
 
 const ESCUDO_SCENE := preload("res://Entities/Ambiente_Escudo/Escudo.tscn")
+const ESCUDO_ENEMIGO_SCENE := preload("res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn")
 
 
 func test_material_dano_hereda_sombreado_y_outline() -> void:
@@ -82,6 +83,38 @@ func test_flash_y_dano_no_dejan_material_negro_permanente() -> void:
 				(actual as StandardMaterial3D).shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED,
 				"El material aplicado debe seguir siendo UNSHADED"
 			)
+
+
+func test_flash_rojo_enemigo_cubre_todas_las_mallas() -> void:
+	# Arrange
+	var escudo = ESCUDO_ENEMIGO_SCENE.instantiate()
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+	escudo.golpes_para_destruir = 5
+
+	# Act: golpe no letal (el flash se aplica síncrono antes del await interno)
+	escudo.recibir_golpe(1)
+
+	# Assert: TODAS las mallas y superficies parpadean en rojo
+	var mallas := escudo._recolectar_mallas()
+	assert_gt(mallas.size(), 0, "El escudo enemigo debe tener al menos una malla")
+	for mi in mallas:
+		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
+		for si in range(num_sups):
+			var mat = mi.get_surface_override_material(si) as StandardMaterial3D
+			assert_not_null(mat, "Cada superficie debe tener material de flash durante el impacto")
+			if mat:
+				assert_true(mat.emission_enabled, "El flash debe usar emisión")
+				assert_eq(mat.emission, Color(1.0, 0.15, 0.15), "El flash enemigo debe ser rojo")
+
+	# Assert: tras el parpadeo (3 pulsos x 2 x 0.09s) se restauran los materiales previos
+	await wait_seconds(0.9)
+	var primera: MeshInstance3D = escudo.mesh_instance
+	if primera:
+		assert_eq(
+			primera.get_surface_override_material(0), escudo.material_dano,
+			"Tras el flash debe volver el material de daño"
+		)
 
 
 func test_fisica_trozos_escudo_realista() -> void:

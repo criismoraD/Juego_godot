@@ -33,6 +33,7 @@ enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 @export var duracion_animacion_victoria: float = 1.0  ## Tiempo en segundos de cada loop de victoria
 @export var rotacion_victoria_grados: float = 15.0  ## Grados de giro del personaje durante la celebración de victoria
 @export var velocidad_giro_victoria: float = 4.5  ## Velocidad de rotación suave para la celebración
+@export var velocidad_anim_victoria: float = 1.25  ## Velocidad del clip VICTORIA (más rápido = festejo enérgico y natural)
 @export var probar_victoria: bool = false:  ## Botón para reproducir la animación de victoria desde el Inspector
 	set(val):
 		if val:
@@ -788,12 +789,12 @@ func _cambiar_estado(nuevo: State):
 		State.CELEBRATING:
 			_restaurar_torso()
 			_ocultar_flecha()
-			# Victoria fluida: clip en LOOP (sin re-plays que cortan los brazos a mitad)
+			# Victoria fluida: clip en LOOP acelerado (sin re-plays que cortan los brazos a mitad)
 			_configurar_victoria_loop()
-			_play_anim("VICTORIA", 0.25, 1.0)
+			_play_anim("VICTORIA", 0.25, velocidad_anim_victoria)
 			_play_bow_anim("ARCO_IDLE", 0.25, 1.0)
 			var _dur_clip: float = _get_anim_length("VICTORIA")
-			state_timer = maxf(_dur_clip, 0.3) * _loops_victoria_restantes
+			state_timer = maxf(_dur_clip / velocidad_anim_victoria, 0.3) * _loops_victoria_restantes
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -824,21 +825,38 @@ func _on_oleada_completada(_numero_oleada: int) -> void:
 
 
 func celebrar_victoria() -> void:
-	if current_state != State.DYING and current_state != State.DEAD:
-		_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
-		_cambiar_estado(State.CELEBRATING)
-		_reproducir_grito_victoria()
+	# Solo festeja si está activa, visible y viva (nada de gritos fuera de pantalla)
+	if not _puede_celebrar():
+		return
+	_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
+	_cambiar_estado(State.CELEBRATING)
+	_reproducir_grito_victoria()
+
+
+## True si la defensora está activa, visible y viva para festejar y sonar
+func _puede_celebrar() -> bool:
+	if not is_inside_tree() or not visible:
+		return false
+	if not is_processing() and not is_physics_processing():
+		return false
+	if current_state == State.DYING or current_state == State.DEAD:
+		return false
+	if health <= 0:
+		return false
+	return true
 
 
 ## SFX de festejo: grito de victoria de la defensora arquera.
 func _reproducir_grito_victoria() -> void:
+	if not _puede_celebrar():
+		return
 	var stream: AudioStream = load("res://TEST_/victoria grito defensora arquera aliada.wav")
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = stream
-	player.volume_db = -4.0
+	player.volume_db = -10.0
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
@@ -1291,6 +1309,8 @@ func _disparar():
 		arrow.es_explosiva = es_explosiva
 
 	arrow.initialize(direction, speed)
+	if "tirador" in arrow:
+		arrow.tirador = self
 	get_tree().root.add_child(arrow)
 	arrow.global_position = spawn_pos
 
@@ -1298,6 +1318,8 @@ func _disparar():
 func _disparar_rafaga_aliada(base_direction: Vector3, speed: float, spawn_pos: Vector3) -> void:
 	var arrow_1: Node = arrow_scene.instantiate()
 	arrow_1.initialize(base_direction, speed)
+	if "tirador" in arrow_1:
+		arrow_1.tirador = self
 	get_tree().root.add_child(arrow_1)
 	arrow_1.global_position = spawn_pos
 
@@ -1309,6 +1331,8 @@ func _disparar_rafaga_aliada(base_direction: Vector3, speed: float, spawn_pos: V
 		var arr: Node = arrow_scene.instantiate()
 		var dir := base_direction + Vector3(randf_range(-0.02, 0.02), randf_range(-0.02, 0.02), 0.0)
 		arr.initialize(dir.normalized(), speed)
+		if "tirador" in arr:
+			arr.tirador = self
 		get_tree().root.add_child(arr)
 		arr.global_position = spawn_pos
 		AudioManager.play_sfx("player_shoot", -8.0)
@@ -1404,9 +1428,14 @@ func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
 	# No mostrar diálogos si la defensora no está activa (oculta/modo pacífico) o está muerta
 	if not visible or current_state == State.DYING or current_state == State.DEAD or health <= 0:
 		return
+	# No reiniciar diálogos de oleada ya dichos (sobrevive a entrar/salir de la torre)
+	if GameUI.es_dialogo_defensora_unico(clave_o_texto) and GameUI.dialogo_defensora_ya_dicho(clave_o_texto):
+		return
 	if not speech_bubble or not is_instance_valid(speech_bubble):
 		speech_bubble = get_node_or_null("SpeechBubbleComponent")
 	if speech_bubble and is_instance_valid(speech_bubble):
+		if GameUI.es_dialogo_defensora_unico(clave_o_texto):
+			GameUI.marcar_dialogo_defensora_dicho(clave_o_texto)
 		speech_bubble.decir(clave_o_texto, duracion)
 
 

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://Levels/Nivel_Interior/MesaConfiguracion.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://04m0axdhp4op" path="res://TEST_/MESA_CONFIGURACION/MESA_CONFIG_CUARTO.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://c6lvdv381tkyv" path="res://UI/MenuDefensoras/MenuDefensoras.tscn" id="3_defensoras"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_mesa"]
 size = Vector3(0.26, 0.22, 0.18)
@@ -86,6 +87,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion"]
 shape = SubResource("BoxShape3D_interaccion")
+
+[node name="PromptE" type="Label3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.165, 0.035)
+billboard = 1
+no_depth_test = false
+modulate = Color(0.95, 0.6, 1, 0)
+outline_modulate = Color(0.08, 0, 0.15, 0)
+text = "[E] Interactuar"
+font_size = 20
+pixel_size = 0.0008
+outline_size = 4
+
+[node name="MenuDefensoras" parent="." instance=ExtResource("3_defensoras")]
+unique_name_in_owner = true
 
 [node name="CanvasMenu" type="CanvasLayer" parent="."]
 layer = 55

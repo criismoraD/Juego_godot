@@ -9,6 +9,8 @@ signal destruido
 @export var intensidad_tinte_dano: float = 0.5
 @export var duracion_flash: float = 0.1
 @export var intensidad_flash: float = 3.0
+@export var parpadeos_rojo_enemigo: int = 1  ## Pulsos rojos por impacto en escudo enemigo (1 = un parpadeo)
+@export var intervalo_parpadeo: float = 0.09  ## Segundos de cada fase del parpadeo
 @export_category("Bando")
 @export var es_escudo_enemigo: bool = false
 @export_category("Colisión")
@@ -51,6 +53,8 @@ signal destruido
 # Estado interno
 var golpes_recibidos: int = 0
 var mesh_instance: MeshInstance3D
+var sombra_nodo: Node = null  ## Sombra falsa (excluida del parpadeo)
+var _flash_gen: int = 0  ## Generación del flash: golpes seguidos no se pisan entre sí
 var material_original: Material
 var material_dano: StandardMaterial3D
 
@@ -102,6 +106,7 @@ func _ready():
 		# transparente y siempre queda POR DEBAJO del modelo 3D.
 		_sombra.prioridad_render = -128
 		add_child(_sombra)
+		sombra_nodo = _sombra
 
 
 func _find_mesh_instance(node: Node):
@@ -110,6 +115,22 @@ func _find_mesh_instance(node: Node):
 			mesh_instance = child
 			return
 		_find_mesh_instance(child)
+
+
+## Recolecta TODAS las mallas del escudo (las barricadas tienen varias piezas)
+func _recolectar_mallas() -> Array[MeshInstance3D]:
+	var lista: Array[MeshInstance3D] = []
+	_agregar_mallas(self, lista)
+	return lista
+
+
+func _agregar_mallas(nodo: Node, lista: Array[MeshInstance3D]) -> void:
+	for child in nodo.get_children():
+		if child == sombra_nodo:
+			continue  # La sombra falsa no parpadea
+		if child is MeshInstance3D:
+			lista.append(child)
+		_agregar_mallas(child, lista)
 
 
 # Estado Gris Metálico (Reflejante)
@@ -267,12 +288,11 @@ func recibir_golpe(amount: int = 1):
 	# Actualizar visual de daño
 	_actualizar_visual_dano()
 
-	# Siempre hacer flash blanco (incluyendo el golpe final)
-	_flash_dano()
+	# Parpadeo (enemigo: rojo múltiple; defensor: blanco único) y luego destruir si toca
+	await _flash_dano()
 
-	# Verificar si debe destruirse (después del flash)
+	# Verificar si debe destruirse (tras el parpadeo)
 	if golpes_recibidos >= golpes_para_destruir:
-		await get_tree().create_timer(duracion_flash).timeout
 		_destruir()
 
 
@@ -300,34 +320,79 @@ func _actualizar_visual_dano():
 
 
 func _flash_dano():
-	if not mesh_instance:
+	var mallas := _recolectar_mallas()
+	if mallas.is_empty():
 		return
 
-	# Flash rojo para escudos enemigos, blanco brillante para defensores
-	var flash_color: Color = Color(1.0, 0.15, 0.15) if es_escudo_enemigo else Color(1.0, 1.0, 1.0)
-	var flash_intensity: float = intensidad_flash if es_escudo_enemigo else maxf(intensidad_flash, 4.0)
-	var flash_mat = StandardMaterial3D.new()
-	flash_mat.emission_enabled = true
-	flash_mat.emission = flash_color
-	flash_mat.emission_energy_multiplier = flash_intensity
+	_flash_gen += 1
+	var gen_actual: int = _flash_gen
 
-	mesh_instance.set_surface_override_material(0, flash_mat)
-
-	# Destello extra para defensor: pequeño punch de escala
+	# Defensor: un destello blanco único + punch de escala
 	if not es_escudo_enemigo:
+		var flash_mat := _crear_material_flash(Color(1.0, 1.0, 1.0), maxf(intensidad_flash, 4.0))
+		var previos := _aplicar_flash(mallas, flash_mat)
 		var _orig_scale: Vector3 = scale
 		var _tw := create_tween()
 		_tw.tween_property(self, "scale", _orig_scale * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		_tw.tween_property(self, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		await get_tree().create_timer(duracion_flash).timeout
+		if gen_actual != _flash_gen:
+			return
+		_restaurar_flash(previos)
+		return
 
-	await get_tree().create_timer(duracion_flash).timeout
+	# Enemigo: parpadeo rojo múltiple bien visible
+	var flash_rojo := _crear_material_flash(Color(1.0, 0.15, 0.15), intensidad_flash)
+	var previos_rojo := _tomar_previos(mallas)
+	for _rep in range(maxi(parpadeos_rojo_enemigo, 1)):
+		if gen_actual != _flash_gen or not is_inside_tree():
+			return
+		_aplicar_material(previos_rojo, flash_rojo)
+		await get_tree().create_timer(intervalo_parpadeo).timeout
+		if gen_actual != _flash_gen or not is_inside_tree():
+			return
+		_restaurar_flash(previos_rojo)
+		await get_tree().create_timer(intervalo_parpadeo).timeout
 
-	# Volver al material correspondiente
-	if mesh_instance:
-		if es_metalico and aguante_metalico > 0:
-			_aplicar_visual_metalico()
-		elif material_dano:
-			mesh_instance.set_surface_override_material(0, material_dano)
+
+func _crear_material_flash(color: Color, intensidad: float) -> StandardMaterial3D:
+	var flash_mat := StandardMaterial3D.new()
+	flash_mat.emission_enabled = true
+	flash_mat.emission = color
+	flash_mat.emission_energy_multiplier = intensidad
+	return flash_mat
+
+
+## Guarda los overrides actuales de todas las superficies
+func _tomar_previos(mallas: Array[MeshInstance3D]) -> Array:
+	var previos: Array = []
+	for mi in mallas:
+		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
+		for si in range(num_sups):
+			previos.append([mi, si, mi.get_surface_override_material(si)])
+	return previos
+
+
+## Aplica el material de flash y devuelve los previos guardados
+func _aplicar_flash(mallas: Array[MeshInstance3D], flash_mat: Material) -> Array:
+	var previos := _tomar_previos(mallas)
+	_aplicar_material(previos, flash_mat)
+	return previos
+
+
+func _aplicar_material(previos: Array, flash_mat: Material) -> void:
+	for p in previos:
+		var mi_prev: MeshInstance3D = p[0] as MeshInstance3D
+		if is_instance_valid(mi_prev):
+			mi_prev.set_surface_override_material(int(p[1]), flash_mat)
+
+
+## Restaura los overrides previos (un golpe posterior no corta el destello ajeno)
+func _restaurar_flash(previos: Array) -> void:
+	for p in previos:
+		var mi_prev: MeshInstance3D = p[0] as MeshInstance3D
+		if is_instance_valid(mi_prev):
+			mi_prev.set_surface_override_material(int(p[1]), p[2] as Material)
 
 
 func _destruir():

@@ -6,6 +6,8 @@ extends Node3D
 func _ready() -> void:
 	if btn_regresar:
 		btn_regresar.pressed.connect(_on_btn_regresar_pressed)
+	# Música del interior de la torre (al salir, NIVEL01 restaura la de batalla)
+	AudioManager.play_music(6)
 
 func _on_btn_regresar_pressed() -> void:
 	if btn_regresar:

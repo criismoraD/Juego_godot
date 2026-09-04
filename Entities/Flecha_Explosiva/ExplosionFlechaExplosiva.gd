@@ -36,14 +36,17 @@ const OFFSET_Y_CENIZA: float = 0.02
 
 # === STATIC CONFIG ===
 static var debug_collider_global: bool = false  ## Control global para activar/desactivar el visor en tiempo de ejecución
+static var suprimir_sonido_prewarm: bool = false  ## El precalentador de shaders lo activa para instanciar mudo
 
 # === VARIABLES PÚBLICAS ===
 var hit_target_directo: Node = null
+var tirador_origen: Node = null  ## Quién disparó la flecha explosiva: autoría de muertes en área
 
 
 func _ready() -> void:
-	# 1. Reproducir sonido de explosión
-	AudioManager.play_sfx("explosion_flecha_explosiva")
+	# 1. Reproducir sonido de explosión (mudo durante el precalentamiento de shaders)
+	if not suprimir_sonido_prewarm:
+		AudioManager.play_sfx("explosion_flecha_explosiva")
 
 	# 2. Dejar marca de ceniza en el suelo
 	if habilitar_rastro_ceniza:
@@ -132,6 +135,8 @@ func _aplicar_dano_area(radio: float) -> void:
 				enemy.last_hit_position = global_position
 			if "last_hit_direction" in enemy:
 				enemy.last_hit_direction = Vector3.RIGHT
+			if "ultimo_atacante" in enemy:
+				enemy.ultimo_atacante = tirador_origen
 
 			var es_estructura: bool = (enemy is PilarLonkoBody or "es_pilar_enemigo" in enemy)
 			var dmg: float = (dano_base + bono_dano_estructuras) if es_estructura else dano_base
