@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://2vduis8hn5qy"]
 
-[ext_resource type="Script" uid="uid://dx1iit1cey47y" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/GoblinaEscudoPesado.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dx1iit1cey47y" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bqtj0p5t3fnyo" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/Moradit Gurdianaa.glb" id="2_glb"]
 [ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/EscudoPesado.tscn" id="4_shield"]
 [ext_resource type="Texture2D" uid="uid://co802i012y46f" path="res://Entities/Enemigo_Lonko/humo pisada.png" id="5_polvo"]
@@ -52,7 +52,7 @@ particles_anim_loop = false
 material = SubResource("Mat_polvo")
 size = Vector2(0.65, 0.65)
 
-[node name="GoblinaEscudoPesado" type="CharacterBody3D" unique_id=1555641251]
+[node name="GuardianaMoradita" type="CharacterBody3D" unique_id=1555641251]
 collision_layer = 4
 script = ExtResource("1_script")
 

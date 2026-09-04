@@ -19,7 +19,7 @@ const INTERVALO_MINIMO_ABSOLUTO: float = 0.25
 @export var escena_arquera_rosa: PackedScene  # Escena de la nueva Arquera Rosa
 @export var escena_globo_aerostatico: PackedScene  # Escena del globo aerostatico goblin
 @export var escena_limo: PackedScene  # Escena del limo cuadrado gelatinoso
-@export var escena_goblina_escudo: PackedScene = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GoblinaEscudoPesado.tscn")  ## Escena de Goblina Escudo Pesado
+@export var escena_goblina_escudo: PackedScene = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.tscn")  ## Escena de Guardiana Moradita (antes Goblina Escudo Pesado)
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns base (más lento)
 @export var intervalo_minimo_aparicion: float = 0.5  ## Segundos mínimos entre spawns cuando quedan pocos enemigos en la barra de progreso
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada

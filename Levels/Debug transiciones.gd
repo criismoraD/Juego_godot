@@ -1766,7 +1766,7 @@ func _crear_panel_controles_spawn() -> void:
 		{"nombre": "🌸 Arquera Rosa", "id": 7},
 		{"nombre": "🎈 Globo Goblin", "id": 8},
 		{"nombre": "🟩 Limo Cuadrado", "id": 9},
-		{"nombre": "🛡️ Goblina Escudo", "id": 10}
+		{"nombre": "🛡️ Guardiana Moradita", "id": 10}
 	]
 	for opt in opciones:
 		var btn := Button.new()

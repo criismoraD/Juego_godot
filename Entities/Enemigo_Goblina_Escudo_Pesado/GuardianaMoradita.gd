@@ -1,7 +1,7 @@
-class_name GoblinaEscudoPesado
+class_name GuardianaMoradita
 extends CharacterBody3D
 
-## Enemigo Goblina Escudo Pesado (Clase Guardian).
+## Enemigo Guardiana Moradita (Clase Guardian).
 ## Entra corriendo a gran velocidad con humo de pisadas, busca posicionarse
 ## delante de sus aliados para cubrirlos con su Escudo Pesado.
 ## Lanza un potente tridente al llegar y cada vez que se reposiciona.
@@ -453,7 +453,7 @@ func _buscar_enemigo_a_proteger() -> void:
 	for enemy in enemies:
 		if enemy == self or not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
-		if enemy is ImpShieldGirl or enemy is GoblinaEscudoPesado:
+		if enemy is ImpShieldGirl or enemy is GuardianaMoradita:
 			continue  # No proteger a otras guardianas con escudo
 
 		if enemy is EnemyBase:
@@ -487,7 +487,7 @@ func _buscar_otro_enemigo_cercano() -> Node3D:
 	for enemy in enemies:
 		if enemy == self or not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
-		if enemy is ImpShieldGirl or enemy is GoblinaEscudoPesado:
+		if enemy is ImpShieldGirl or enemy is GuardianaMoradita:
 			continue  # No proteger a otras guardianas con escudo
 
 		if enemy is EnemyBase:
@@ -865,7 +865,7 @@ func _setup_anim_player() -> void:
 					a.loop_mode = Animation.LOOP_LINEAR
 
 
-const MAT_GOBLINA: Material = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GoblinaEscudoPesado_MAT.tres")
+const MAT_GOBLINA: Material = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita_MAT.tres")
 const MAT_ESCUDO: Material = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/EscudoPesado_MAT.tres")
 
 func _setup_materiales() -> void:

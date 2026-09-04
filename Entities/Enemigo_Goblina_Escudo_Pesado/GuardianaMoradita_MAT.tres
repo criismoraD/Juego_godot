@@ -10,7 +10,7 @@ shader_parameter/outline_color = Color(0, 0, 0, 1)
 shader_parameter/outline_width = 20.0
 
 [resource]
-resource_name = "GoblinaEscudoPesado_MAT"
+resource_name = "GuardianaMoradita_MAT"
 next_pass = SubResource("ShaderMaterial_outline")
 cull_mode = 2
 albedo_texture = ExtResource("1_tex")
