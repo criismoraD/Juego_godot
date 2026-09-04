@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://cqkbx65wyhtya"]
 
-[ext_resource type="Texture2D" uid="uid://c14s8wnu3jwmw" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/Goblina escudo Pesado_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://caxtm7frra1ie" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/Moradit Gurdianaa_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

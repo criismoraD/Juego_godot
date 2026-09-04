@@ -103,6 +103,7 @@ var charge_duration: float = 0.0
 var health: int = 4
 var paralisis_timer: float = 0.0  ## Tiempo restante de parálisis (4 segundos sin atacar)
 var _paralisis_vfx_timer: float = 0.0
+var _impacto_timer: float = 0.0
 var is_dissolving: bool = false
 
 # Ciclo: 5 disparos de pie -> 5 disparos agachada -> repite
@@ -480,6 +481,15 @@ func _process(delta: float):
 		_restaurar_torso()
 		return
 
+	if _impacto_timer > 0.0:
+		_impacto_timer -= delta
+		_restaurar_torso()
+		if _impacto_timer <= 0.0:
+			_impacto_timer = 0.0
+			if current_state != State.DYING and current_state != State.DEAD:
+				_cambiar_estado(current_state)
+		return
+
 	if paralisis_timer > 0.0:
 		paralisis_timer -= delta
 		_restaurar_torso()
@@ -599,11 +609,11 @@ func _actualizar_rotacion_modelo(delta: float) -> void:
 
 
 func _actualizar_apuntado_torso(delta: float) -> void:
-	if not skeleton or paralisis_timer > 0.0:
+	if not skeleton or paralisis_timer > 0.0 or _impacto_timer > 0.0:
 		_restaurar_torso()
 		return
 
-	if current_state == State.DYING or current_state == State.DEAD or current_state == State.CELEBRATING:
+	if current_state == State.DYING or current_state == State.DEAD or current_state == State.CELEBRATING or current_state == State.RELOADING:
 		_restaurar_torso()
 		return
 
@@ -697,7 +707,7 @@ func _process_idle(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
 		if _puede_atacar():
-			_cambiar_estado(State.RELOADING)
+			_cambiar_estado(State.AIMING)
 		else:
 			state_timer = 0.6
 
@@ -705,7 +715,7 @@ func _process_idle(delta: float):
 func _process_reloading(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
-		_cambiar_estado(State.AIMING)
+		_cambiar_estado(State.IDLE)
 
 
 func _process_aiming(delta: float):
@@ -727,7 +737,7 @@ func _process_aiming(delta: float):
 func _process_shooting(delta: float):
 	state_timer -= delta
 	if state_timer <= 0:
-		_cambiar_estado(State.IDLE)
+		_cambiar_estado(State.RELOADING)
 
 
 func _process_getting_up(delta: float):
@@ -789,11 +799,10 @@ func _cambiar_estado(nuevo: State):
 		State.RELOADING:
 			objetivo_actual = _obtener_objetivo_prioritario()
 			AudioManager.play_sfx("bow_tension", -6.0)
-			if fase_agachada:
-				_play_anim("DISPARO_AGACHADO", 0.15, 0.001)
-			else:
-				_fijar_pose_combate(0.2)
-			state_timer = tiempo_recarga
+			_restaurar_torso()
+			_play_anim(["Recargar", "RECARGAR"], 0.15, 1.0)
+			var dur_recarga: float = _get_anim_length("Recargar")
+			state_timer = dur_recarga if dur_recarga > 0.1 else tiempo_recarga
 		State.AIMING:
 			if not is_instance_valid(objetivo_actual):
 				objetivo_actual = _obtener_objetivo_prioritario()
@@ -1157,9 +1166,24 @@ func recibir_dano(cantidad: int = 1):
 	AudioManager.play_sfx("player_hurt")
 
 	if health <= 0:
+		_impacto_timer = 0.0
 		_cambiar_estado(State.DYING)
 	else:
 		_blink_timer = 0.0
+		var dur: float = _get_anim_length("Impacto")
+		_impacto_timer = dur if dur > 0.05 else 0.5
+		_restaurar_torso()
+		_play_anim(["Impacto", "IMPACTO"], 0.08, 1.0)
+		if get_tree():
+			get_tree().create_timer(_impacto_timer).timeout.connect(func():
+				if not is_instance_valid(self):
+					return
+				if current_state == State.DYING or current_state == State.DEAD:
+					return
+				if _impacto_timer <= 0.05:
+					_impacto_timer = 0.0
+					_cambiar_estado(current_state)
+			)
 
 
 func take_damage(amount: int = 1):

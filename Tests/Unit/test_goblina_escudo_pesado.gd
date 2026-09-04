@@ -593,3 +593,24 @@ func test_torre_de_asedio_instanciacion_y_propiedades() -> void:
 	# Assert de que LimitesRampa NO está en capa 1 (para no bloquear flechas del jugador)
 	if torre.limites_rampa:
 		assert_eq(torre.limites_rampa.collision_layer & 1, 0, "LimitesRampa NO debe tener capa 1 para no bloquear proyectiles")
+
+
+func test_modelo_moradit_guardiana_y_animaciones() -> void:
+	# Arrange
+	var scene = GoblinaEscudoPesadoScene.instantiate() as GoblinaEscudoPesado
+	add_child_autofree(scene)
+
+	# Assert: modelo Moradit cargado correctamente
+	var mesh = scene.find_child("Moradit Gurdianaa", true, false) as MeshInstance3D
+	assert_not_null(mesh, "La malla de Moradit Gurdianaa debe existir en la escena")
+	assert_not_null(mesh.material_override, "La malla de Moradit debe tener material_override asignado")
+	var mat = mesh.material_override as StandardMaterial3D
+	assert_not_null(mat, "El material debe ser StandardMaterial3D")
+	assert_not_null(mat.albedo_texture, "El material debe tener textura albedo asignada")
+	assert_string_contains(mat.albedo_texture.resource_path.to_lower(), "moradit", "La textura debe ser de Moradit Guardiana")
+
+	# Assert: reproducción de animaciones
+	assert_not_null(scene.anim_player, "AnimationPlayer debe estar presente")
+	for anim in ["Correr", "Ataque arrojar", "Idle escudo", "Impacto escudo", "Voltearse", "Muerte 1", "Muerte 2"]:
+		scene._play_anim(anim)
+		assert_true(scene.anim_player.is_playing(), "La animación '%s' debe reproducirse correctamente" % anim)

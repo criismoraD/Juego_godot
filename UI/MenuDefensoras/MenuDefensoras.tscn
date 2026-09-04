@@ -279,7 +279,7 @@ theme_override_constants/separation = 16
 [node name="LblTituloDefensora" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo" unique_id=5265056]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.22, 0.9, 0.95, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "DEFENSORA ARQUERA"
 

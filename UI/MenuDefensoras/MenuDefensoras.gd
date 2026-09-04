@@ -12,7 +12,7 @@ const TEXTO_ARQUERA: String = "Defensora arquera: Vida 2\nEficaz contra objetivo
 const TEXTO_BALLESTERA: String = "Defensora ballestera: Vida 4\nEficaz contra infantería enemiga básica \nCada 5 tiros puedes aplicar la habilidad “refuerzo de escudo” que otorga + 2 de vida a su escudo de piso  \nCadencia de disparo media"
 
 const COLOR_ARQUERA := Color(0.22, 0.9, 0.95, 1.0)
-const COLOR_BALLESTERA := Color(1.0, 0.55, 0.1, 1.0)
+const COLOR_BALLESTERA := Color(0.992, 0.498, 0.0, 1.0)
 
 @onready var panel_raiz: Control = %PanelRaiz
 @onready var tex_defensora_piso1: TextureRect = %TexDefensoraPiso1
@@ -207,12 +207,13 @@ func _actualizar_panel_descripcion() -> void:
 	var tipo: String = config_local.get(piso_seleccionado, "arquera")
 
 	if lbl_titulo_defensora:
+		lbl_titulo_defensora.modulate = Color.WHITE
 		if tipo == "ballestera":
 			lbl_titulo_defensora.text = tr("DEFENSORA_BALLESTERA_TITULO")
-			lbl_titulo_defensora.modulate = COLOR_BALLESTERA
+			lbl_titulo_defensora.add_theme_color_override("font_color", COLOR_BALLESTERA)
 		else:
 			lbl_titulo_defensora.text = tr("DEFENSORA_ARQUERA_TITULO")
-			lbl_titulo_defensora.modulate = COLOR_ARQUERA
+			lbl_titulo_defensora.add_theme_color_override("font_color", COLOR_ARQUERA)
 
 	if lbl_descripcion_defensora:
 		lbl_descripcion_defensora.text = tr("DESC_DEFENSORA_BALLESTERA") if tipo == "ballestera" else tr("DESC_DEFENSORA_ARQUERA")

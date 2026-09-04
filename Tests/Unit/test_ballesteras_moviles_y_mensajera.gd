@@ -59,6 +59,8 @@ func _agregar_animacion_minima(ballestera: AllyBallestera) -> void:
 	lib.add_animation("MUERTE_01", Animation.new())
 	lib.add_animation("MUERTE02", Animation.new())
 	lib.add_animation("VICTORIA", Animation.new())
+	lib.add_animation("Recargar", Animation.new())
+	lib.add_animation("Impacto", Animation.new())
 
 	anim_player.add_animation_library("", lib)
 	ballestera.add_child(anim_player)

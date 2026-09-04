@@ -150,3 +150,17 @@ func test_textos_sujetos_a_traduccion():
 	assert_string_contains(tr("DESC_DEFENSORA_BALLESTERA"), "Vida 4", "La traducción de ballestera debe contener Vida 4")
 
 
+func test_color_titulo_ballestera_naranja():
+	# Arrange
+	_menu.abrir()
+	_menu.config_local[1] = "ballestera"
+
+	# Act: seleccionar piso 1 (ballestera)
+	_menu._cambiar_piso(1)
+
+	# Assert: texto y color de la defensora seleccionada
+	assert_eq(_menu.lbl_titulo_defensora.text, "DEFENSORA BALLESTERA", "El título debe decir DEFENSORA BALLESTERA")
+	var font_color: Color = _menu.lbl_titulo_defensora.get_theme_color("font_color")
+	assert_eq(font_color, MenuDefensoras.COLOR_BALLESTERA, "El color del texto debe ser naranja para coincidir con el icono")
+
+

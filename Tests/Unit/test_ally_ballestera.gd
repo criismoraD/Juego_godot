@@ -50,6 +50,8 @@ func _agregar_animacion_minima(ballestera: AllyBallestera) -> void:
 	lib.add_animation("CAMINAR_ESP", Animation.new())
 	lib.add_animation("MUERTE_01", Animation.new())
 	lib.add_animation("MUERTE02", Animation.new())
+	lib.add_animation("Recargar", Animation.new())
+	lib.add_animation("Impacto", Animation.new())
 
 	anim_player.add_animation_library("", lib)
 	ballestera.add_child(anim_player)
@@ -72,6 +74,23 @@ func test_recibir_dano():
 	# Assert
 	assert_eq(_ballestera.health, 3, "La salud debería reducirse a 3")
 	assert_ne(_ballestera.current_state, _ballestera.State.DYING, "No debe morir con 3 de vida")
+	assert_gt(_ballestera._impacto_timer, 0.0, "Debe tener timer de impacto activo tras recibir daño")
+	var ap: AnimationPlayer = _ballestera.find_child("AnimationPlayer", true, false)
+	assert_true(ap.current_animation.to_lower().contains("impacto"), "Debe reproducir la animación de Impacto")
+
+
+func test_disparo_transiciona_a_recarga():
+	# Arrange
+	_ballestera.current_state = _ballestera.State.SHOOTING
+	_ballestera.state_timer = 0.0
+
+	# Act
+	_ballestera._process_shooting(0.01)
+
+	# Assert
+	assert_eq(_ballestera.current_state, _ballestera.State.RELOADING, "Tras finalizar el disparo debe transicionar a RELOADING")
+	var ap: AnimationPlayer = _ballestera.find_child("AnimationPlayer", true, false)
+	assert_true(ap.current_animation.to_lower().contains("recargar"), "Debe reproducir la animación de recarga")
 
 
 func test_recibir_dano_mortal():

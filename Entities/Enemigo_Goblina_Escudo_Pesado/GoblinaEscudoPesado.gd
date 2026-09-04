@@ -859,7 +859,7 @@ func _setup_anim_player() -> void:
 
 	if anim_player:
 		for anim_name in anim_player.get_animation_list():
-			if "Correr" in anim_name or "Idle" in anim_name or "Baile" in anim_name:
+			if "Correr" in anim_name or "Idle" in anim_name or "Baile" in anim_name or "Dance" in anim_name:
 				var a = anim_player.get_animation(anim_name)
 				if a:
 					a.loop_mode = Animation.LOOP_LINEAR
@@ -889,8 +889,18 @@ func _aplicar_rotacion_modelo() -> void:
 
 
 func _play_anim(anim_name: String, blend_time: float = 0.2, speed: float = 1.0) -> void:
-	if anim_player and anim_player.has_animation(anim_name):
+	if not anim_player:
+		return
+	if anim_player.has_animation(anim_name):
 		anim_player.play(anim_name, blend_time, speed)
+		return
+	# Fallback para variaciones de nombres de animación entre modelos (ej: "Correr" -> "Correr con escudo", "Baile" -> "Dance")
+	var anim_name_lower := anim_name.to_lower()
+	for a in anim_player.get_animation_list():
+		var a_lower := a.to_lower()
+		if a_lower == anim_name_lower or anim_name_lower in a_lower or (anim_name_lower == "baile" and a_lower == "dance"):
+			anim_player.play(a, blend_time, speed)
+			return
 
 
 func _configurar_particulas_pisada() -> void:

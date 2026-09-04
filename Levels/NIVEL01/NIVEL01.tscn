@@ -680,11 +680,57 @@ layers = 2
 
 [node name="AllyArcher" parent="." unique_id=606928033 instance=ExtResource("20_cayny")]
 transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.8802323, 3.1431754, -0.02)
+enemigos_minimos = null
+potencia_minima = null
+potencia_maxima = null
+altura_spawn_flecha = null
+tiempo_suelta_flecha = null
+tiempo_apuntado_min = null
+tiempo_apuntado_max = null
+angulo_disparo_min = null
+angulo_disparo_max = null
+multiplicador_potencia_volador = null
+idle_min = null
 idle_max = 2.0
+tiempo_entre_examinar_min = null
+tiempo_entre_examinar_max = null
+repeticiones_victoria_min = null
+repeticiones_victoria_max = null
+duracion_animacion_victoria = null
+rotacion_victoria_grados = null
+velocidad_giro_victoria = null
+velocidad_anim_victoria = null
+probar_victoria = null
+vida_maxima = null
+plano_profundidad_z = null
+debug_logs_enabled = null
 
 [node name="AllyArcher2" parent="." unique_id=1802001803 instance=ExtResource("20_cayny")]
 transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -7.1104116, 1.585446, -0.02)
+enemigos_minimos = null
+potencia_minima = null
+potencia_maxima = null
+altura_spawn_flecha = null
+tiempo_suelta_flecha = null
+tiempo_apuntado_min = null
+tiempo_apuntado_max = null
+angulo_disparo_min = null
+angulo_disparo_max = null
+multiplicador_potencia_volador = null
+idle_min = null
 idle_max = 2.0
+tiempo_entre_examinar_min = null
+tiempo_entre_examinar_max = null
+repeticiones_victoria_min = null
+repeticiones_victoria_max = null
+duracion_animacion_victoria = null
+rotacion_victoria_grados = null
+velocidad_giro_victoria = null
+velocidad_anim_victoria = null
+probar_victoria = null
+vida_maxima = null
+plano_profundidad_z = null
+debug_logs_enabled = null
 
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.092516, -0.20376292, 3.083572)
@@ -805,6 +851,9 @@ transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684
 
 [node name="Woodmetal_piso6" parent="." unique_id=1451558868 instance=ExtResource("50_woodmetal")]
 transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -7.6941657, 1.438156, 0.33921558)
+
+[node name="Woodmetal_piso10" parent="." unique_id=1058340024 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(-0.022196103, 1.5928422, -1.8626451e-09, -2.1478577, -0.016457507, 0.017112095, 0.029136728, 0.00022325665, 1.2614435, -9.220974, 0.6855252, -0.76294845)
 
 [node name="Woodmetal_piso4" parent="." unique_id=1054819951 instance=ExtResource("50_woodmetal")]
 transform = Transform3D(0.022335617, -0.021603156, 1.2669097, -8.3541457e-17, 1.5926845, 0.017188132, -1.504783, -0.00032065882, 0.01880484, -6.6092753, 1.4265611, -0.31277564)

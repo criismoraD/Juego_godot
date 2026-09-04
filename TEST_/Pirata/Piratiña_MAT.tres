@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c15y5xr0b0pc1"]
+
+[ext_resource type="Texture2D" uid="uid://gub4kwq4h7se" path="res://TEST_/Pirata/Piratiña_D.jpg" id="1_yrq4l"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_y7thv"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7027c"]
+render_priority = 0
+shader = ExtResource("2_y7thv")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_7027c")
+albedo_texture = ExtResource("1_yrq4l")
