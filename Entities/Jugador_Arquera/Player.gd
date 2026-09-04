@@ -1049,7 +1049,9 @@ func _spawn_fall_smoke() -> void:
 		puf.emitting = true
 		# Asegurar visibilidad en viewport del juego (capa Frente)
 		puf.layers = 1048575
-		get_tree().create_timer(1.2).timeout.connect(func(): if is_instance_valid(puf): puf.queue_free())
+		var tw_puf := puf.create_tween()
+		tw_puf.tween_interval(1.2)
+		tw_puf.tween_callback(puf.queue_free)
 
 
 func set_motion_anim(state_name):
@@ -1121,9 +1123,9 @@ func update_charge_bar_position():
 	if not camera.is_position_behind(head_pos):
 		var screen_pos = camera.unproject_position(head_pos)
 		if charge_bar.visible:
-			charge_bar.position = screen_pos - (charge_bar.size / 2)
+			charge_bar.position = screen_pos - (charge_bar.size / 2.0)
 		if overcharge_bar and overcharge_bar.visible:
-			overcharge_bar.position = screen_pos - (overcharge_bar.size / 2)
+			overcharge_bar.position = screen_pos - (overcharge_bar.size / 2.0)
 	else:
 		charge_bar.visible = false
 		if overcharge_bar:
@@ -2570,7 +2572,6 @@ func _get_soft_particle_material() -> StandardMaterial3D:
 	_soft_particle_material = StandardMaterial3D.new()
 	_soft_particle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_soft_particle_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_soft_particle_material.use_particle_colors = true
 	_soft_particle_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	_soft_particle_material.vertex_color_use_as_albedo = true
 	_soft_particle_material.albedo_texture = tex

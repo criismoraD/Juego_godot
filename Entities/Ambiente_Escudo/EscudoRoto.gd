@@ -57,16 +57,13 @@ func _iniciar_conversion():
 		if is_instance_valid(rb):
 			rb.visible = true
 
-	# Autolimpieza de seguridad individual en cada RigidBody
+	# Autolimpieza de seguridad individual en cada RigidBody (atada a su propio ciclo de vida)
 	var tiempo_limpieza_total: float = tiempo_congelar + tiempo_antes_disolver + duracion_disolucion + 1.0
 	for rb in _rigid_bodies:
 		if is_instance_valid(rb):
-			var rb_ref: RigidBody3D = rb
-			get_tree().create_timer(tiempo_limpieza_total, false).timeout.connect(
-				func():
-					if is_instance_valid(rb_ref):
-						rb_ref.queue_free()
-			)
+			var tw_rb := rb.create_tween()
+			tw_rb.tween_interval(tiempo_limpieza_total)
+			tw_rb.tween_callback(rb.queue_free)
 
 	# Fase 1: Congelar piezas después de que caigan
 	await get_tree().create_timer(tiempo_congelar, false).timeout
@@ -234,15 +231,10 @@ func _start_dissolve_effect():
 	_create_dissolve_particles()
 
 	# Detener emisión de partículas al 70% de la disolución
-	get_tree().create_timer(duracion_disolucion * 0.7).timeout.connect(
-		func():
-			if (
-				_dissolve_particles
-				and is_instance_valid(_dissolve_particles)
-				and is_instance_valid(self)
-			):
-				_dissolve_particles.emitting = false
-	)
+	if _dissolve_particles and is_instance_valid(_dissolve_particles):
+		var tw_p := _dissolve_particles.create_tween()
+		tw_p.tween_interval(duracion_disolucion * 0.7)
+		tw_p.tween_property(_dissolve_particles, "emitting", false, 0.0)
 
 	# Animar la disolución de 0 a 1
 	var tween = create_tween()
@@ -268,11 +260,9 @@ func _finish_dissolve():
 		_dissolve_particles.global_position = global_pos
 		_dissolve_particles.emitting = false
 		var particles_ref = _dissolve_particles
-		get_tree().create_timer(particulas_vida + 0.5).timeout.connect(
-			func():
-				if is_instance_valid(particles_ref) and particles_ref.is_inside_tree():
-					particles_ref.queue_free()
-		)
+		var tw_clean := particles_ref.create_tween()
+		tw_clean.tween_interval(particulas_vida + 0.5)
+		tw_clean.tween_callback(particles_ref.queue_free)
 
 	# Eliminar los RigidBody3D de los trozos (están en el scene root, no son hijos nuestros)
 	for rb in _rigid_bodies:

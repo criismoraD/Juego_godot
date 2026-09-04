@@ -1719,16 +1719,26 @@ func _animar_aparicion_escudo_disolucion(escudo: Node) -> void:
 		mi.material_override = mat
 		dissolve_mats.append({"mesh": mi, "material": mat, "original": orig})
 
-	# Guardar la escala objetivo original
-	var target_scale: Vector3 = Vector3.ONE
-	if escudo is Node3D:
-		target_scale = (escudo as Node3D).scale
-		if target_scale.is_zero_approx():
-			target_scale = Vector3.ONE
+	# Encontrar el nodo visual 3D (para no deformar la colisión del StaticBody3D en Jolt Physics)
+	var nodo_visual: Node3D = null
+	for child in escudo.get_children():
+		if child is Node3D and not (child is CollisionShape3D) and not (child is SombraPersonaje):
+			nodo_visual = child
+			break
 
-	# Iniciar el escudo aplanado en la base (escala Y casi cero)
-	if escudo is Node3D:
-		(escudo as Node3D).scale = Vector3(target_scale.x * 0.4, 0.01, target_scale.z * 0.4)
+	var target_vis_scale: Vector3 = Vector3.ONE
+	if nodo_visual:
+		target_vis_scale = nodo_visual.scale
+		if target_vis_scale.is_zero_approx():
+			target_vis_scale = Vector3.ONE
+		nodo_visual.scale = Vector3(target_vis_scale.x * 0.4, 0.01, target_vis_scale.z * 0.4)
+
+	# Desactivar colisiones mientras se materializa
+	var col_shapes: Array[CollisionShape3D] = []
+	for child in escudo.get_children():
+		if child is CollisionShape3D:
+			col_shapes.append(child)
+			child.set_deferred("disabled", true)
 
 	var duracion: float = 1.2
 	var tween := escudo.create_tween().set_parallel(true)
@@ -1742,9 +1752,9 @@ func _animar_aparicion_escudo_disolucion(escudo: Node) -> void:
 		1.0, 0.0, duracion
 	)
 
-	# 2. Crecimiento/Escalado vertical desde la base hacia arriba
-	if escudo is Node3D:
-		tween.tween_property(escudo, "scale", target_scale, duracion) \
+	# 2. Crecimiento/Escalado vertical desde la base hacia arriba en el nodo visual
+	if nodo_visual:
+		tween.tween_property(nodo_visual, "scale", target_vis_scale, duracion) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	tween.finished.connect(
@@ -1752,8 +1762,11 @@ func _animar_aparicion_escudo_disolucion(escudo: Node) -> void:
 			for item in dissolve_mats:
 				if is_instance_valid(item["mesh"]):
 					item["mesh"].material_override = item["original"]
-			if is_instance_valid(escudo) and escudo is Node3D:
-				(escudo as Node3D).scale = target_scale
+			if is_instance_valid(nodo_visual):
+				nodo_visual.scale = target_vis_scale
+			for col in col_shapes:
+				if is_instance_valid(col):
+					col.set_deferred("disabled", false)
 	)
 
 
@@ -1842,7 +1855,7 @@ func _on_resolution_changed(index: int):
 		var screen_size = DisplayServer.screen_get_size()
 		var actual_size = DisplayServer.window_get_size()
 		var win_pos = Vector2i(
-			(screen_size.x - actual_size.x) / 2, (screen_size.y - actual_size.y) / 2
+			int((screen_size.x - actual_size.x) / 2.0), int((screen_size.y - actual_size.y) / 2.0)
 		)
 		DisplayServer.window_set_position(win_pos)
 
@@ -1862,7 +1875,7 @@ func _on_fullscreen_toggled(toggled_on: bool):
 				var screen_size = DisplayServer.screen_get_size()
 				var actual_size = DisplayServer.window_get_size()
 				var win_pos = Vector2i(
-					(screen_size.x - actual_size.x) / 2, (screen_size.y - actual_size.y) / 2
+					int((screen_size.x - actual_size.x) / 2.0), int((screen_size.y - actual_size.y) / 2.0)
 				)
 				DisplayServer.window_set_position(win_pos)
 

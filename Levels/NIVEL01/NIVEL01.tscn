@@ -255,7 +255,7 @@ escala_max_salto = 0.05
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1608648112) index="0" unique_id=1978748589]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 2059030867) index="0" unique_id=1468985749]
 bones/0/position = Vector3(4.172325e-07, -0.35407498, -40.838314)
 bones/0/rotation = Quaternion(-0.70710677, 0, 0, 0.70710677)
 bones/1/rotation = Quaternion(-0.05186307, 0, 0, 0.9986542)
@@ -670,11 +670,11 @@ draw_pass_1 = SubResource("QuadMesh_dust")
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=1726377201]
+[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=338321429]
 visible = false
 material_override = ExtResource("47_plano_mat")
 
-[node name="TORRE" parent="TORRE" index="1" unique_id=1986805220]
+[node name="TORRE" parent="TORRE" index="1" unique_id=1270173036]
 transform = Transform3D(1.0111401, 0, 0, 0, 1.0001929, 0, 0, 0, 1.0001929, -0.002997756, 0, 0)
 layers = 2
 

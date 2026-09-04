@@ -226,7 +226,9 @@ func _manchar_canasta_con_sangre() -> void:
 			decal.position = offset
 			decal.rotation_degrees = Vector3(90 + randf_range(-18, 18), randf_range(0, 360), randf_range(-12, 12))
 			# Desvanecer con la canasta (ella se disuelve a los 4s)
-			get_tree().create_timer(3.2).timeout.connect(func(): if is_instance_valid(decal): decal.queue_free())
+			var tw_d := decal.create_tween()
+			tw_d.tween_interval(3.2)
+			tw_d.tween_callback(decal.queue_free)
 
 func _spawn_humo_y_piedras_impacto() -> void:
 	# Humo de destrucción de escudo a ambos lados — mismo efecto pero un poco más grande (x1.25)
@@ -347,7 +349,9 @@ func _crear_humo_escalado(factor: float = 1.28) -> void:
 		root.add_child(puf)
 		puf.global_position = floor_pos + Vector3(side * 0.25, 0.04, 0)
 		puf.emitting = true
-		get_tree().create_timer(1.2).timeout.connect(func(): if is_instance_valid(puf): puf.queue_free())
+		var tw_puf := puf.create_tween()
+		tw_puf.tween_interval(1.2)
+		tw_puf.tween_callback(puf.queue_free)
 
 func _reproducir_sonido_impacto_pesado() -> void:
 	if not SFX_IMPACTO_PESADO:

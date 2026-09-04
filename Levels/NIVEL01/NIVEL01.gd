@@ -904,20 +904,19 @@ func _on_enemigo_eliminado_nivel(_enemigo: Node, _total_muertos: int) -> void:
 		return
 
 	_muertes_combate_contador += 1
+	var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
+	var arquera_abajo := get_node_or_null("AllyArcher2") as AllyArcher
 
 	# Globo nivel 4 aplasta enemigo con canasto al destruirse (7s)
 	if _enemigo and _enemigo.is_in_group("enemies") and _enemigo is GloboAerostatico:
 		if oleada_combate_actual == 4 and not _dialogo_arriba_pesada_mostrado:
 			# Verificar si aplastó (distancia a algún enemigo muerto cercano al globo)
 			_dialogo_arriba_pesada_mostrado = true
-			var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
 			if arquera_arriba and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
 				arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_PESADA", 7.0)
 
 	# Conteo personal por defensora según la AUTORA del golpe letal (no proximidad):
 	# las muertes del jugador u otras fuentes no cuentan para sus diálogos.
-	var arquera_abajo := get_node_or_null("AllyArcher2") as AllyArcher
-	var arquera_arriba := get_node_or_null("AllyArcher") as AllyArcher
 	var autora: Node = _enemigo.get("ultimo_atacante") if is_instance_valid(_enemigo) and "ultimo_atacante" in _enemigo else null
 
 	# Solo la de abajo cuenta para 3 y 15 (muertes propias)

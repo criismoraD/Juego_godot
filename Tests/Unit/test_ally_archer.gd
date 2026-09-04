@@ -184,12 +184,48 @@ func test_ataque_suelta_flecha_al_segundo_3():
 	assert_true(_ally._flecha_soltada, "La flecha debe haberse soltado al alcanzar el segundo 3.0")
 
 
-func test_on_oleada_iniciada_activa_idle():
+func test_on_oleada_iniciada_se_levanta():
 	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
 	_ally._on_oleada_iniciada(1)
 
-	assert_eq(_ally.current_state, _ally.State.IDLE, "El estado debe ser IDLE al iniciar la oleada")
-	assert_eq(_ally.anim_player.current_animation, "IDE", "Debe reproducir la animación IDE al inicio de la oleada")
+	assert_eq(_ally.current_state, _ally.State.GETTING_UP, "El estado debe ser GETTING_UP al iniciar la oleada")
+	assert_eq(_ally.anim_player.current_animation, "LEVANTARSE", "Debe reproducir la animación LEVANTARSE al inicio de la oleada")
+
+	# Al completarse el tiempo de levantarse, pasa a IDLE
+	_ally._process_getting_up(_ally.state_timer + 0.1)
+	assert_eq(_ally.current_state, _ally.State.IDLE, "Debe pasar a IDLE tras levantarse")
+
+
+func test_on_oleada_iniciada_revive_si_esta_muerta():
+	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+	_ally.health = 0
+	_ally.current_state = _ally.State.DEAD
+	_ally.set_process(false)
+
+	_ally._on_oleada_iniciada(2)
+
+	assert_eq(_ally.health, _ally.vida_maxima, "Debe restaurar la vida al iniciar oleada")
+	assert_eq(_ally.current_state, _ally.State.GETTING_UP, "Debe pasar a GETTING_UP")
+	assert_eq(_ally.anim_player.current_animation, "LEVANTARSE", "Debe reproducir LEVANTARSE al revivir en inicio de oleada")
+
+
+func test_flecha_al_tensar_arco_tiene_material_celeste():
+	var flecha_dummy := Node3D.new()
+	flecha_dummy.name = "FLECHA"
+	var mesh_inst := MeshInstance3D.new()
+	flecha_dummy.add_child(mesh_inst)
+	_ally.add_child(flecha_dummy)
+	_ally.arrow_node = flecha_dummy
+
+	_ally._aplicar_material_celeste_flecha(flecha_dummy)
+
+	assert_not_null(mesh_inst.material_override, "La malla de la flecha debe tener material_override asignado")
+	var mat = mesh_inst.material_override as StandardMaterial3D
+	assert_not_null(mat, "El material debe ser StandardMaterial3D")
+	assert_eq(mat.albedo_color, Color(0.3, 0.75, 1.0), "El color de la flecha tensada debe ser celeste")
+	assert_true(mat.emission_enabled, "Debe tener emisión activada para brillar como el proyectil")
+	assert_eq(mat.emission, Color(0.3, 0.75, 1.0), "La emisión debe ser celeste")
+	assert_almost_eq(mat.emission_energy_multiplier, 4.0, 0.01, "La energía de emisión debe coincidir con el proyectil")
 
 
 func test_idle_examinar_ciclo_fuera_de_combate():
@@ -211,4 +247,17 @@ func test_idle_examinar_ciclo_fuera_de_combate():
 
 	assert_false(_ally._examinando, "Debe regresar del modo examinar")
 	assert_eq(_ally.anim_player.current_animation, "IDE", "Debe volver a la animación IDE")
+
+
+func test_punto_disparo_manual_personalizado():
+	var marker := Marker3D.new()
+	marker.name = "PuntoDisparo"
+	marker.position = Vector3(0.5, 1.4, 0.2)
+	_ally.add_child(marker)
+	_ally._spawn_punto_nodo = marker
+	_ally.punto_disparo_proyectil = marker
+
+	assert_eq(_ally.punto_disparo_proyectil, marker, "Debe aceptar un nodo de punto de disparo manual")
+	assert_eq(_ally.punto_disparo_proyectil.position, Vector3(0.5, 1.4, 0.2), "La posición del punto de disparo debe ser personalizable")
+
 

@@ -22,9 +22,9 @@ const GRAVEDAD_TRIDENTE_PESADO: float = 0.5
 const DANO_TRIDENTE_PESADO: float = 2.0
 const TIEMPO_LANZAMIENTO_EN_ATAQUE: float = 0.65
 const DURACION_ATAQUE_TOTAL: float = 1.53
-const INTERVALO_ATAQUE_DEFENSA: float = 6.0  ## Ataca cada 6 segundos mientras defiende (sin enemigos cercanos para reposicionarse)
+const INTERVALO_ATAQUE_DEFENSA: float = 6.0  ## Ataca cada 6 segundos mientras defiende protegiendo a un aliado
 const TIEMPO_MINIMO_DEFENSA_PRIMER_ATAQUE: float = 6.0
-const TIEMPO_DEFENSA_SIN_ENEMIGOS_ATAQUE: float = 6.0
+const TIEMPO_DEFENSA_SIN_ENEMIGOS_ATAQUE: float = 7.0  ## Ataca tras 7 segundos si no hay enemigos a los que proteger
 
 const TIEMPO_VENTANA_IMPACTOS_CONCENTRADOS: float = 0.9
 const UMBRAL_IMPACTOS_CONCENTRADOS: int = 3
@@ -213,6 +213,7 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 			velocity.x = 0.0
 			velocity.z = 0.0
 			_timer_defensa = 0.0
+			_timer_defensa_sin_enemigos = 0.0
 			_play_anim("Idle escudo", 0.25, 1.0)
 
 
@@ -266,10 +267,9 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 			if anim_player and anim_player.has_animation(anim_muerte):
 				dur_anim = anim_player.get_animation(anim_muerte).length
 			var tiempo_en_piso: float = dur_anim + 0.8
-			get_tree().create_timer(tiempo_en_piso).timeout.connect(func():
-				if is_instance_valid(self) and is_inside_tree():
-					_start_dissolve()
-			)
+			var tw_muerte := create_tween()
+			tw_muerte.tween_interval(tiempo_en_piso)
+			tw_muerte.tween_callback(_start_dissolve)
 
 
 
@@ -357,6 +357,8 @@ func _process_attacking(delta: float) -> void:
 
 
 func _process_defending(delta: float) -> void:
+	tiempo_defensa_primer_ataque += delta
+
 	# Monitorear periódicamente si el aliado protegido sigue vivo o buscar uno nuevo
 	_check_enemigos_timer -= delta
 	if _check_enemigos_timer <= 0.0:
@@ -364,15 +366,16 @@ func _process_defending(delta: float) -> void:
 		if not is_instance_valid(enemigo_protegido) or not enemigo_protegido.is_inside_tree():
 			_buscar_enemigo_a_proteger()
 
-	# REGLA: Ataca cada 6 segundos mientras defiende
-	_timer_defensa += delta
-	if _timer_defensa >= INTERVALO_ATAQUE_DEFENSA:
-		_timer_defensa = 0.0
-		_cambiar_estado(State.ATTACKING)
-		return
+	if is_instance_valid(enemigo_protegido) and enemigo_protegido.is_inside_tree():
+		_timer_defensa_sin_enemigos = 0.0
+		# REGLA: Ataca cada 6 segundos mientras defiende protegiendo a un aliado
+		_timer_defensa += delta
+		if _timer_defensa >= INTERVALO_ATAQUE_DEFENSA:
+			_timer_defensa = 0.0
+			_cambiar_estado(State.ATTACKING)
+			return
 
-	# Si el aliado al que protege se desplazó significativamente, mantener la cobertura
-	if is_instance_valid(enemigo_protegido):
+		# Si el aliado al que protege se desplazó significativamente, mantener la cobertura
 		var destino_x: float = min(enemigo_protegido.global_position.x - distancia_proteccion, zona_roja_max_x)
 		var diff_x: float = destino_x - global_position.x
 		if abs(diff_x) > 1.2:
@@ -380,6 +383,14 @@ func _process_defending(delta: float) -> void:
 				_cambiar_estado(State.TURNING)
 			else:
 				_cambiar_estado(State.RUNNING)
+	else:
+		_timer_defensa = 0.0
+		# REGLA: Ataca tras 7 segundos si no hay aliados a los que proteger
+		_timer_defensa_sin_enemigos += delta
+		if _timer_defensa_sin_enemigos >= TIEMPO_DEFENSA_SIN_ENEMIGOS_ATAQUE:
+			_timer_defensa_sin_enemigos = 0.0
+			_cambiar_estado(State.ATTACKING)
+			return
 
 
 
@@ -823,10 +834,9 @@ func _finish_dissolve() -> void:
 		_dissolve_particles.global_position = g_pos
 		_dissolve_particles.emitting = false
 		var p_ref: GPUParticles3D = _dissolve_particles
-		get_tree().create_timer(1.5).timeout.connect(func():
-			if is_instance_valid(p_ref):
-				p_ref.queue_free()
-		)
+		var tw_p := p_ref.create_tween()
+		tw_p.tween_interval(1.5)
+		tw_p.tween_callback(p_ref.queue_free)
 		_dissolve_particles = null
 
 	current_state = State.DEAD
@@ -1002,13 +1012,7 @@ func _spawn_sangre_animada(pos: Vector3) -> void:
 	root.add_child(sprite)
 	sprite.global_position = pos + Vector3(0.0, 0.40, 0.0)
 
-	var anim_task := func():
-		for f in range(14):
-			if not is_instance_valid(sprite) or not sprite.is_inside_tree():
-				return
-			sprite.frame = f
-			await sprite.get_tree().create_timer(0.04, false).timeout
-		if is_instance_valid(sprite):
-			sprite.queue_free()
-
-	anim_task.call()
+	var tw_sangre := sprite.create_tween()
+	for f in range(14):
+		tw_sangre.tween_property(sprite, "frame", f, 0.04)
+	tw_sangre.tween_callback(sprite.queue_free)

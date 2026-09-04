@@ -9,7 +9,6 @@ signal scene_load_progress(progress: float)
 signal scene_load_completed(path: String)
 
 var loading_screen_scene: PackedScene = preload("res://UI/LoadingScreen.tscn")
-const ShaderPrewarmer = preload("res://System/Core/ShaderPrewarmer.gd")
 
 var _current_loading_screen: CanvasLayer = null
 var _loading_path: String = ""

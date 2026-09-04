@@ -22,7 +22,7 @@ INSTALACION:
 bl_info = {
     "name": "Arquera Tools",
     "author": "Arrow of Anathema Team",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (4, 0, 0),
     "location": "View3D > Sidebar > ARQUERA",
     "description": "Herramientas de pipeline para Arrow of Anathema (Godot 4.6)",
@@ -651,6 +651,16 @@ def resolver_mesh_objetivo(context):
     return None
 
 
+def obtener_target_dim(res_mode: str) -> int:
+    """Mapea el modo de resolucion del panel a dimension en pixeles (lado mayor)."""
+    mapping = {
+        '512': 512,
+        '1K': 1024,
+        '2K': 2048,
+    }
+    return mapping.get(res_mode, 1024)
+
+
 def construir_opciones_animacion():
     propiedades = bpy.ops.export_scene.gltf.get_rna_type().properties.keys()
     opciones = {}
@@ -716,6 +726,30 @@ def preparar_modelo(context, obj):
                     image_name = f"{nombre_base}_D"
                     image_node.image.name = image_name
                     print(f"  OK Textura difusa encontrada: {image_name}")
+
+                    # Escalar textura al tamaño elegido en el panel (512 / 1K / 2K).
+                    # Se aplica en Paso 1 para que el modelo quede ya optimizado.
+                    try:
+                        res_mode = getattr(context.scene, "arquera_texture_res", '1K')
+                        target_dim = obtener_target_dim(res_mode)
+                        img = image_node.image
+                        orig_w, orig_h = img.size
+                        if orig_w > 0 and orig_h > 0 and (orig_w != target_dim and orig_h != target_dim):
+                            if orig_w >= orig_h:
+                                new_w = target_dim
+                                new_h = max(1, int(orig_h * (target_dim / orig_w)))
+                            else:
+                                new_h = target_dim
+                                new_w = max(1, int(orig_w * (target_dim / orig_h)))
+                            if (new_w, new_h) != (orig_w, orig_h):
+                                img.scale(new_w, new_h)
+                                print(f"  OK Textura escalada de {orig_w}x{orig_h} a {new_w}x{new_h} ({res_mode})")
+                            else:
+                                print(f"  OK Textura ya en tamaño objetivo ({res_mode})")
+                        else:
+                            print(f"  OK Textura ya en tamaño objetivo ({res_mode})")
+                    except Exception as e:
+                        print(f"  AVISO No se pudo escalar la textura: {e}")
 
                     if base_color_input:
                         for link in list(base_color_input.links):
@@ -851,7 +885,7 @@ def exportar_solo_textura(context, obj, output_dir):
                 meshes_a_exportar.add(child)
 
     res_mode = getattr(context.scene, "arquera_texture_res", '1K')
-    target_dim = 1024 if res_mode == '1K' else 2048
+    target_dim = obtener_target_dim(res_mode)
 
     texturas_exportadas = 0
     for o in meshes_a_exportar:
@@ -1669,7 +1703,7 @@ class ARQUERA_PT_tools_panel(Panel):
 
             box_exp.prop(context.scene, "arquera_merge_enabled")
             
-            # Selector de resolución de textura (1K / 2K)
+            # Selector de resolución de textura (512 / 1K / 2K)
             box_exp.label(text="Resolucion Textura:")
             row_res = box_exp.row(align=True)
             row_res.scale_y = 1.1
@@ -1764,8 +1798,9 @@ def register():
     )
     bpy.types.Scene.arquera_texture_res = EnumProperty(
         name="Resolucion de Textura",
-        description="Escala las texturas exportadas a 1K o 2K",
+        description="Escala las texturas a 512, 1K o 2K (se aplica en Paso 1 y en exportacion)",
         items=[
+            ('512', "512", "Escala la textura a 512px"),
             ('1K', "1K", "Escala la textura a 1024px"),
             ('2K', "2K", "Escala la textura a 2048px"),
         ],

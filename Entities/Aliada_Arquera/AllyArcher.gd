@@ -11,6 +11,7 @@ enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos vivos para empezar a disparar
 @export_category("Disparo")
+@export var punto_disparo_proyectil: Node3D = null  ## Nodo Marker3D/Node3D manual para definir el nacimiento del proyectil
 @export var potencia_minima: float = 5.0
 @export var potencia_maxima: float = 12.0
 @export var altura_spawn_flecha: float = 1.2
@@ -51,6 +52,8 @@ var arrow_scene = preload("res://Entities/Proyectil_Flecha_Aliada/AllyArrow.tscn
 var explosive_arrow_scene = preload("res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn")
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
+const HUMO_PISADAS_FRAMES_H: int = 9
+const HUMO_PISADAS_FRAMES_V: int = 1
 const TEXTURA_ICONO_ATURDIMIENTO: Texture2D = preload("res://UI/Icons/Icono_aturdimiento.png")
 const SFX_VICTORIA_GRITO: AudioStream = preload("res://TEST_/victoria grito defensora arquera aliada.wav")
 const CHECK_ENEMIGOS_INTERVAL: float = 0.1
@@ -73,6 +76,7 @@ var ultima_muerte_anim: String = ""
 var _flecha_soltada: bool = false
 var _tiempo_ataque_actual: float = 0.0
 @onready var speech_bubble: SpeechBubbleComponent = get_node_or_null("SpeechBubbleComponent")
+@onready var _spawn_punto_nodo: Node3D = (get_node_or_null("%PuntoDisparo") if has_node("%PuntoDisparo") else get_node_or_null("PuntoDisparo"))
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -303,7 +307,7 @@ func _setup_animation_player():
 	# 3. Configurar loops en IDE, IDLE y CORRER (EXAMINAR y DISPARO sin loop)
 	for anim_name in anim_player.get_animation_list():
 		var an_upper := anim_name.to_upper()
-		if "EXAMINAR" in an_upper or "DISPAR" in an_upper or "TOMA" in an_upper or "DAÑO" in an_upper or "MUERTE" in an_upper or "VICTORIA" in an_upper:
+		if "EXAMINAR" in an_upper or "DISPAR" in an_upper or "TOMA" in an_upper or "DAÑO" in an_upper or "MUERTE" in an_upper or "VICTORIA" in an_upper or "LEVANTAR" in an_upper:
 			var anim = anim_player.get_animation(anim_name)
 			if anim:
 				anim.loop_mode = Animation.LOOP_NONE
@@ -383,6 +387,8 @@ func _buscar_arrow_node():
 	arrow_node = find_child("FLECHA", true, false)
 	if not arrow_node:
 		arrow_node = find_child("BoneAttach_Flecha", true, false)
+	if arrow_node:
+		_aplicar_material_celeste_flecha(arrow_node)
 	if arrow_node and arrow_node.get_parent():
 		var parent_attach = arrow_node.get_parent()
 		explosive_arrow_node = parent_attach.get_node_or_null("FLECHA_EXPLOSIVA_VISUAL") as Node3D
@@ -682,17 +688,11 @@ func _process_shooting(delta: float) -> void:
 ## GETTING_UP: esperar a que termine de levantarse
 func _process_getting_up(delta: float) -> void:
 	state_timer -= delta
-	
-	# Parpadeo de invulnerabilidad
-	_blink_timer += delta
-	if _blink_timer >= 0.16:
-		_blink_timer = 0.0
-		if model_root:
-			model_root.visible = not model_root.visible
 
 	if state_timer <= 0:
 		if model_root:
 			model_root.visible = true
+			model_root.rotation.y = _original_model_y_rot
 		_cambiar_estado(State.IDLE)
 
 
@@ -786,13 +786,18 @@ func _cambiar_estado(nuevo: State):
 		State.DEAD:
 			pass
 		State.GETTING_UP:
-			_play_anim(["AGACHARSE", "ATERRIZAJE_POST_SALTO_01", "ATERRIZAJE_POST_SALTO_0", "LEVANTARSE"], 0.0)
-			_play_bow_anim("ARCO_IDLE", 0.0)
-			state_timer = _get_anim_length(["AGACHARSE", "ATERRIZAJE_POST_SALTO_01"])
+			_play_anim(["LEVANTARSE", "AGACHARSE", "ATERRIZAJE_POST_SALTO_01"], 0.1, 1.0)
+			_play_bow_anim("ARCO_IDLE", 0.1)
+			state_timer = _get_anim_length(["LEVANTARSE", "AGACHARSE", "ATERRIZAJE_POST_SALTO_01"])
 			_blink_timer = 0.0
 			_ocultar_flecha()
-			if ultima_muerte_anim == "MUERTE_01" and model_root:
-				model_root.rotation.y = _original_model_y_rot + deg_to_rad(90)
+			_restaurar_torso()
+			if model_root:
+				model_root.visible = true
+				if ultima_muerte_anim == "MUERTE_01":
+					model_root.rotation.y = _original_model_y_rot + deg_to_rad(90)
+				else:
+					model_root.rotation.y = _original_model_y_rot
 		State.CELEBRATING:
 			_restaurar_torso()
 			_ocultar_flecha()
@@ -821,10 +826,10 @@ func _conectar_eventos_oleada() -> void:
 
 
 func _on_oleada_iniciada(_numero_oleada: int) -> void:
-	if current_state != State.DYING and current_state != State.DEAD:
-		_cambiar_estado(State.IDLE)
-		_play_anim(["IDE", "IDLE_001", "IDLE"], 0.3)
-		_play_bow_anim("ARCO_IDLE", 0.3)
+	if current_state == State.DYING or current_state == State.DEAD or health <= 0:
+		revivir()
+	else:
+		_cambiar_estado(State.GETTING_UP)
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
@@ -1246,9 +1251,13 @@ func _disparar():
 
 	AudioManager.play_sfx("player_shoot", -6.0)
 
-	# 2. Posición de spawn según el nodo visual activo
-	var spawn_pos = global_position + Vector3(0, altura_spawn_flecha, 0)
-	if es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+	# 2. Posición de spawn según nodo manual asignado o nodo visual activo
+	var spawn_pos: Vector3 = global_position + Vector3(0, altura_spawn_flecha, 0)
+	if punto_disparo_proyectil and is_instance_valid(punto_disparo_proyectil):
+		spawn_pos = punto_disparo_proyectil.global_position
+	elif _spawn_punto_nodo and is_instance_valid(_spawn_punto_nodo):
+		spawn_pos = _spawn_punto_nodo.global_position
+	elif es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 		spawn_pos = explosive_arrow_node.global_position
 	elif arrow_node and is_instance_valid(arrow_node):
 		spawn_pos = arrow_node.global_position
@@ -1370,7 +1379,38 @@ func _mostrar_flecha():
 		if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 			explosive_arrow_node.visible = false
 		if arrow_node and is_instance_valid(arrow_node):
+			_aplicar_material_celeste_flecha(arrow_node)
 			arrow_node.visible = true
+
+
+func _aplicar_material_celeste_flecha(nodo: Node) -> void:
+	if not is_instance_valid(nodo):
+		return
+	var color_celeste := Color(0.3, 0.75, 1.0)
+	var energia_emision := 4.0
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color_celeste
+	mat.emission_enabled = true
+	mat.emission = color_celeste
+	mat.emission_energy_multiplier = energia_emision
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	var outline_shader = load("res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader") as Shader
+	if outline_shader:
+		var outline_mat = ShaderMaterial.new()
+		outline_mat.shader = outline_shader
+		outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+		outline_mat.set_shader_parameter("outline_width", 20.0)
+		mat.next_pass = outline_mat
+
+	var meshes: Array[Node] = nodo.find_children("*", "MeshInstance3D", true, false)
+	if nodo is MeshInstance3D:
+		meshes.append(nodo)
+	for m in meshes:
+		var mi := m as MeshInstance3D
+		if is_instance_valid(mi):
+			mi.material_override = mat
 
 
 func _ocultar_flecha():
@@ -1426,14 +1466,14 @@ func curar(cantidad: int = 1) -> void:
 
 
 func revivir() -> void:
-	if current_state != State.DEAD and current_state != State.DYING:
-		return
-
 	health = vida_maxima
 	set_process(true)
 	if hitbox_body:
 		hitbox_body.collision_layer = 2
-
+	if model_root:
+		model_root.visible = true
+	_restaurar_torso()
+	_ocultar_flecha()
 	_cambiar_estado(State.GETTING_UP)
 
 

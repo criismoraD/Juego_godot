@@ -145,14 +145,11 @@ func _crear_particulas_disolucion_moradas() -> void:
 		root.add_child(particles)
 		particles.global_position = global_position + Vector3(0.0, altura_flotacion, 0.0)
 		particles.emitting = true
-		get_tree().create_timer(1.3).timeout.connect(func():
-			if is_instance_valid(particles):
-				particles.emitting = false
-				get_tree().create_timer(0.7).timeout.connect(func():
-					if is_instance_valid(particles):
-						particles.queue_free()
-				)
-		)
+		var tw_m := particles.create_tween()
+		tw_m.tween_interval(1.3)
+		tw_m.tween_property(particles, "emitting", false, 0.0)
+		tw_m.tween_interval(0.7)
+		tw_m.tween_callback(particles.queue_free)
 
 
 func _reproducir_sonido_refuerzo() -> void:

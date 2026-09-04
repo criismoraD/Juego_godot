@@ -27,10 +27,9 @@ func _ready() -> void:
 	_spawn_partes_cuerpo()
 
 	# 4. Auto-limpieza tras 4.5 segundos
-	get_tree().create_timer(4.5).timeout.connect(func():
-		if is_instance_valid(self):
-			queue_free()
-	)
+	var tw := create_tween()
+	tw.tween_interval(4.5)
+	tw.tween_callback(queue_free)
 
 
 func _reproducir_audio() -> void:

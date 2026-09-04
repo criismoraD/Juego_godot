@@ -222,11 +222,8 @@ func _crear_particulas_disolucion(color_part: Color, duracion: float) -> void:
 	root.add_child(particles)
 	particles.global_position = global_position
 
-	get_tree().create_timer(duracion).timeout.connect(func():
-		if is_instance_valid(particles):
-			particles.emitting = false
-			get_tree().create_timer(0.7).timeout.connect(func():
-				if is_instance_valid(particles):
-					particles.queue_free()
-			)
-	)
+	var tw_p := particles.create_tween()
+	tw_p.tween_interval(duracion)
+	tw_p.tween_property(particles, "emitting", false, 0.0)
+	tw_p.tween_interval(0.7)
+	tw_p.tween_callback(particles.queue_free)

@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://c6lvdv381tkyv"]
 
-[ext_resource type="Script" path="res://UI/MenuDefensoras/MenuDefensoras.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://b23v8i82y01y2" path="res://UI/MenuDefensoras/silueta_plataformas_blanca.png" id="2_plataformas"]
-[ext_resource type="Texture2D" uid="uid://ceh7n25w7oqv4" path="res://UI/MenuDefensoras/silueta_arquera_celeste.png" id="3_arquera"]
+[ext_resource type="Script" uid="uid://bfw32omxltds3" path="res://UI/MenuDefensoras/MenuDefensoras.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bjxxqloy3856m" path="res://UI/MenuDefensoras/silueta_plataformas_blanca.png" id="2_plataformas"]
+[ext_resource type="Texture2D" uid="uid://cbfdor73v8xgy" path="res://UI/MenuDefensoras/silueta_arquera_celeste.png" id="3_arquera"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.04, 0.04, 0.06, 0.95)
@@ -18,7 +18,6 @@ corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-shadow_color = Color(0, 0, 0, 0.6)
 shadow_size = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_piso_normal"]
@@ -73,11 +72,11 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="MenuDefensoras" type="CanvasLayer"]
+[node name="MenuDefensoras" type="CanvasLayer" unique_id=1143587029]
 layer = 60
 script = ExtResource("1_script")
 
-[node name="PanelRaiz" type="Control" parent="."]
+[node name="PanelRaiz" type="Control" parent="." unique_id=1249624355]
 unique_name_in_owner = true
 layout_mode = 3
 anchors_preset = 15
@@ -86,7 +85,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Fondo" type="Panel" parent="PanelRaiz"]
+[node name="Fondo" type="Panel" parent="PanelRaiz" unique_id=274252796]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -95,7 +94,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
 
-[node name="MarginContainer" type="MarginContainer" parent="PanelRaiz"]
+[node name="MarginContainer" type="MarginContainer" parent="PanelRaiz" unique_id=1519813172]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -107,90 +106,88 @@ theme_override_constants/margin_top = 25
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 25
 
-[node name="VBoxPrincipal" type="VBoxContainer" parent="PanelRaiz/MarginContainer"]
+[node name="VBoxPrincipal" type="VBoxContainer" parent="PanelRaiz/MarginContainer" unique_id=305686864]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Header" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+[node name="Header" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal" unique_id=1347376182]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Titulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
+[node name="Titulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header" unique_id=1038021998]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 26
 text = "ASIGNACIÓN DE DEFENSORAS"
 horizontal_alignment = 1
 
-[node name="Subtitulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
+[node name="Subtitulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header" unique_id=234791439]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 15
 text = "Usa W / S para seleccionar piso y A / D para alternar entre Arquera y Ballestera"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal" unique_id=149221207]
 layout_mode = 2
 
-[node name="Contenido" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+[node name="Contenido" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal" unique_id=591497704]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 30
 
-[node name="AreaPlataformas" type="Control" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido"]
+[node name="AreaPlataformas" type="Control" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido" unique_id=1034766231]
 custom_minimum_size = Vector2(700, 480)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="TexPlataformas" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas"]
+[node name="TexPlataformas" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas" unique_id=1651124819]
 self_modulate = Color(0.3, 0.35, 0.48, 1)
 layout_mode = 1
-anchors_preset = 0
-offset_left = 10.0
-offset_top = -10.0
-offset_right = 530.0
-offset_bottom = 510.0
+offset_left = -39.0
+offset_top = 69.0
+offset_right = 1083.0
+offset_bottom = 861.0
 texture = ExtResource("2_plataformas")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PanelPiso2" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas"]
+[node name="PanelPiso2" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas" unique_id=1433936706]
 unique_name_in_owner = true
 layout_mode = 1
-offset_left = 440.0
-offset_top = 155.0
-offset_right = 615.0
-offset_bottom = 300.0
-mouse_filter = 0
+offset_left = 680.0
+offset_top = 290.0
+offset_right = 855.0
+offset_bottom = 435.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_piso_selected")
 
-[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2"]
+[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2" unique_id=1187222271]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
-[node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox"]
+[node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox" unique_id=82245757]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 13
 text = "PISO SUPERIOR"
 horizontal_alignment = 1
 
-[node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox"]
+[node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox" unique_id=899063692]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="BtnPiso2Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
+[node name="BtnPiso2Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox" unique_id=1859303346]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 16
-flat = true
 text = "◀"
+flat = true
 
-[node name="TexDefensoraPiso2" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
+[node name="TexDefensoraPiso2" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox" unique_id=1455051590]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(105, 105)
 layout_mode = 2
@@ -200,52 +197,51 @@ texture = ExtResource("3_arquera")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="BtnPiso2Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox"]
+[node name="BtnPiso2Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso2/VBox/HBox" unique_id=209163975]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 16
-flat = true
 text = "▶"
+flat = true
 
-[node name="PanelPiso1" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas"]
+[node name="PanelPiso1" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas" unique_id=1601088973]
 unique_name_in_owner = true
 layout_mode = 1
-offset_left = 525.0
-offset_top = 315.0
-offset_right = 700.0
-offset_bottom = 460.0
-mouse_filter = 0
+offset_left = 787.0
+offset_top = 518.0
+offset_right = 962.0
+offset_bottom = 663.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_piso_normal")
 
-[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1"]
+[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1" unique_id=182442835]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
-[node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox"]
+[node name="LblPiso" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox" unique_id=34694489]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 13
 text = "PISO INFERIOR"
 horizontal_alignment = 1
 
-[node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox"]
+[node name="HBox" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox" unique_id=1737182011]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="BtnPiso1Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
+[node name="BtnPiso1Prev" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox" unique_id=812235514]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 16
-flat = true
 text = "◀"
+flat = true
 
-[node name="TexDefensoraPiso1" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
+[node name="TexDefensoraPiso1" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox" unique_id=1281796383]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(105, 105)
 layout_mode = 2
@@ -255,42 +251,42 @@ texture = ExtResource("3_arquera")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="BtnPiso1Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox"]
+[node name="BtnPiso1Next" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/AreaPlataformas/PanelPiso1/VBox/HBox" unique_id=1513573423]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(22, 60)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 16
-flat = true
 text = "▶"
+flat = true
 
-[node name="PanelLateral" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido"]
+[node name="PanelLateral" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido" unique_id=1068434917]
 custom_minimum_size = Vector2(330, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_side")
 
-[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral"]
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral" unique_id=1084482962]
 layout_mode = 2
 theme_override_constants/margin_left = 28
 theme_override_constants/margin_top = 28
 theme_override_constants/margin_right = 28
 theme_override_constants/margin_bottom = 28
 
-[node name="VBoxInfo" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin"]
+[node name="VBoxInfo" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin" unique_id=918701474]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="LblTituloDefensora" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+[node name="LblTituloDefensora" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo" unique_id=5265056]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.22, 0.9, 0.95, 1)
 theme_override_font_sizes/font_size = 22
 text = "DEFENSORA ARQUERA"
 
-[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo" unique_id=1128913243]
 layout_mode = 2
 
-[node name="LblDescripcionDefensora" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+[node name="LblDescripcionDefensora" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo" unique_id=1052097633]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -303,18 +299,18 @@ Puede utilizar diferentes tipos de flechas
 Cadencia de disparo alta"
 autowrap_mode = 2
 
-[node name="PanelControles" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+[node name="PanelControles" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo" unique_id=899093321]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_btn")
 
-[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo/PanelControles"]
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo/PanelControles" unique_id=1279105571]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 10
 
-[node name="LblControles" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo/PanelControles/Margin"]
+[node name="LblControles" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo/PanelControles/Margin" unique_id=1233163375]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
 theme_override_constants/line_spacing = 4
@@ -323,7 +319,7 @@ text = "W / S: Seleccionar Piso
 A / D: Cambiar Defensora
 E / ESC: Confirmar y Salir"
 
-[node name="BtnVolver" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo"]
+[node name="BtnVolver" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLateral/Margin/VBoxInfo" unique_id=47015225]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
