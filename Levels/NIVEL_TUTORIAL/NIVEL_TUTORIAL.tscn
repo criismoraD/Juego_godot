@@ -570,7 +570,6 @@ mouse_filter = 2
 [node name="WaterPlane" parent="." unique_id=211860328 instance=ExtResource("18_gpjsk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9324427, -0.17290789, -12.304441)
 visible = false
-layers = 2
 
 [node name="TestCube2-BASE_ENEMIGA" parent="." unique_id=1680604205 instance=ExtResource("19_mbwsw")]
 transform = Transform3D(1.762424, 0, 0, 0, 1, 0, 0, 0, 1, 0.80479765, -0.843, -0.888)

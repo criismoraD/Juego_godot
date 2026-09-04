@@ -10,6 +10,7 @@ enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP, CELEBRA
 enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos vivos para empezar a disparar
+@export var es_aliada_inicial: bool = true  ## Si es una de las 2 defensoras iniciales que reviven al inicio de cada oleada posterior
 @export_category("Disparo")
 @export var punto_disparo_proyectil: Node3D = null  ## Nodo Marker3D/Node3D manual para definir el nacimiento del proyectil
 @export var potencia_minima: float = 5.0
@@ -40,6 +41,9 @@ enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 		if val:
 			probar_victoria = false
 			celebrar_victoria()
+@export_category("Levantarse")
+@export var duracion_levantarse_total: float = 3.5  ## Duración total en segundos para levantarse en juego (bajar para que no se quede de pie parada)
+@export var segundos_recortados_levantarse: float = 8.5  ## Segundos a reproducir del clip original (8.5s corta justo cuando termina de levantarse)
 @export_category("Vida")
 @export var vida_maxima: int = 2
 @export var plano_profundidad_z: float = -0.02  ## Plano Z retrasado (detrás de ballesteras y protagonista)
@@ -75,6 +79,11 @@ var _original_model_y_rot: float = 0.0
 var ultima_muerte_anim: String = ""
 var _flecha_soltada: bool = false
 var _tiempo_ataque_actual: float = 0.0
+var _arrow_base_scale: Vector3 = Vector3.ONE
+var _explosive_arrow_base_scale: Vector3 = Vector3.ONE
+var _duracion_reload_actual: float = 0.5
+const SEGUNDOS_RECORTADOS_LEVANTARSE: float = 8.5  ## Solo los primeros 8.5 segundos del clip de 11.43s (al terminar de pararse)
+const DURACION_LEVANTARSE_TOTAL: float = 3.5        ## De esos 8.5 segundos, dura 3.5s en juego para entrar dinámicamente a IDLE
 @onready var speech_bubble: SpeechBubbleComponent = get_node_or_null("SpeechBubbleComponent")
 @onready var _spawn_punto_nodo: Node3D = (get_node_or_null("%PuntoDisparo") if has_node("%PuntoDisparo") else get_node_or_null("PuntoDisparo"))
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -303,6 +312,7 @@ func _setup_animation_player():
 		return
 
 	_log_debug(["[AllyArcher] AnimationPlayer seleccionado: ", anim_player.name])
+	anim_player.playback_default_blend_time = 0.25
 
 	# 3. Configurar loops en IDE, IDLE y CORRER (EXAMINAR y DISPARO sin loop)
 	for anim_name in anim_player.get_animation_list():
@@ -388,6 +398,8 @@ func _buscar_arrow_node():
 	if not arrow_node:
 		arrow_node = find_child("BoneAttach_Flecha", true, false)
 	if arrow_node:
+		if arrow_node.scale.length_squared() > 0.001:
+			_arrow_base_scale = arrow_node.scale
 		_aplicar_material_celeste_flecha(arrow_node)
 	if arrow_node and arrow_node.get_parent():
 		var parent_attach = arrow_node.get_parent()
@@ -411,6 +423,8 @@ func _buscar_arrow_node():
 				tip_light.position = Vector3(0.0, 0.0, 0.45)
 				explosive_arrow_node.add_child(tip_light)
 		if explosive_arrow_node:
+			if explosive_arrow_node.scale.length_squared() > 0.001:
+				_explosive_arrow_base_scale = explosive_arrow_node.scale
 			explosive_arrow_node.visible = false
 
 
@@ -486,7 +500,7 @@ func _process(delta):
 ## No es acumulable (debe pasar el efecto para volver a aplicarse).
 ## No puede atacar, reproduce animación ELECTROCUTADA, muestra el icono flotante de aturdimiento y restaura el torso.
 func aplicar_paralisis(duracion: float = 4.0) -> void:
-	if current_state == State.DYING or current_state == State.DEAD or esta_paralizada() or paralisis_timer > 0.0:
+	if current_state == State.DYING or current_state == State.DEAD or current_state == State.GETTING_UP or esta_paralizada() or paralisis_timer > 0.0:
 		return
 	paralisis_timer = duracion
 	_ocultar_flecha()
@@ -650,10 +664,13 @@ func _process_idle(delta: float) -> void:
 		_cambiar_estado(State.RELOADING)
 
 
-## RELOADING (TOMAR_FLECHA): la arquera saca y carga una flecha
+## RELOADING (TOMAR_FLECHA): la arquera saca y carga una flecha escalándola de 0 a 1
 func _process_reloading(delta: float) -> void:
 	state_timer -= delta
+	var progreso: float = 1.0 - clampf(state_timer / maxf(_duracion_reload_actual, 0.001), 0.0, 1.0)
+	_mostrar_flecha(progreso)
 	if state_timer <= 0:
+		_mostrar_flecha(1.0)
 		_cambiar_estado(State.AIMING)
 
 
@@ -689,10 +706,18 @@ func _process_shooting(delta: float) -> void:
 func _process_getting_up(delta: float) -> void:
 	state_timer -= delta
 
+	# Parpadeo transparente de invulnerabilidad
+	_blink_timer += delta
+	if _blink_timer >= 0.08:
+		_blink_timer = 0.0
+		if model_root:
+			model_root.visible = not model_root.visible
+
 	if state_timer <= 0:
+		if hitbox_body:
+			hitbox_body.collision_layer = 2
 		if model_root:
 			model_root.visible = true
-			model_root.rotation.y = _original_model_y_rot
 		_cambiar_estado(State.IDLE)
 
 
@@ -725,7 +750,7 @@ func _configurar_victoria_loop() -> void:
 
 
 func _cambiar_estado(nuevo: State):
-	if nuevo != State.GETTING_UP and nuevo != State.CELEBRATING and model_root:
+	if nuevo != State.GETTING_UP and nuevo != State.CELEBRATING and nuevo != State.DYING and nuevo != State.DEAD and model_root:
 		model_root.visible = true
 		if model_root.rotation.y != _original_model_y_rot:
 			if is_inside_tree():
@@ -756,16 +781,17 @@ func _cambiar_estado(nuevo: State):
 			# TOMAR_FLECHA: saca una flecha
 			_flecha_soltada = false
 			_tiempo_ataque_actual = 0.0
-			_ocultar_flecha()
-			_play_anim(["TOMAR_FLECHA", "TOMAR_FLEHCA", "TOMA_FLECHA"], 0.15, 1.0)
+			_duracion_reload_actual = maxf(_get_anim_length(["TOMAR_FLECHA", "TOMAR_FLEHCA", "TOMA_FLECHA"]), 0.3)
+			state_timer = _duracion_reload_actual
+			_mostrar_flecha(0.0)
+			_play_anim(["TOMAR_FLECHA", "TOMAR_FLEHCA", "TOMA_FLECHA"], 0.2, 1.0)
 			_play_bow_anim("ARCO_TENSAR", 0.2, 1.0)
-			state_timer = maxf(_get_anim_length(["TOMAR_FLECHA", "TOMAR_FLEHCA", "TOMA_FLECHA"]), 0.3)
 
 		State.AIMING:
 			# IDLE_APUNTANDO: mantiene la flecha tensada apuntando
 			charge_duration = randf_range(tiempo_apuntado_min, tiempo_apuntado_max)
-			_mostrar_flecha()
-			_play_anim(["IDLE_APUNTANDO", "APUNTAR_IDLE"], 0.15, 1.0)
+			_mostrar_flecha(1.0)
+			_play_anim(["IDLE_APUNTANDO", "APUNTAR_IDLE"], 0.2, 1.0)
 			_play_bow_anim("ARCO_TENSAR", 0.2, 1.0)
 			AudioManager.play_sfx("bow_tension", -6.0)
 			var _dec_fuego := _decidir_disparo_y_objetivo()
@@ -777,8 +803,8 @@ func _cambiar_estado(nuevo: State):
 			# DISPARAR_FLECHA: suelta y dispara
 			_flecha_soltada = false
 			_tiempo_ataque_actual = 0.0
-			_play_anim(["DISPARAR_FLECHA", "SOLTAR_FLECHA", "DISPARAR", "DISPARO"], 0.1, 1.0)
-			_play_bow_anim("ARCO_DISPARO", 0.05, 1.0)
+			_play_anim(["DISPARAR_FLECHA", "SOLTAR_FLECHA", "DISPARAR", "DISPARO"], 0.15, 1.0)
+			_play_bow_anim("ARCO_DISPARO", 0.1, 1.0)
 			state_timer = maxf(_get_anim_length(["DISPARAR_FLECHA", "SOLTAR_FLECHA", "DISPARAR"]), tiempo_suelta_flecha + 0.2)
 
 		State.DYING:
@@ -786,15 +812,19 @@ func _cambiar_estado(nuevo: State):
 		State.DEAD:
 			pass
 		State.GETTING_UP:
-			_play_anim(["LEVANTARSE", "AGACHARSE", "ATERRIZAJE_POST_SALTO_01"], 0.1, 1.0)
-			_play_bow_anim("ARCO_IDLE", 0.1)
-			state_timer = _get_anim_length(["LEVANTARSE", "AGACHARSE", "ATERRIZAJE_POST_SALTO_01"])
+			var dur_total: float = maxf(duracion_levantarse_total, 0.1)
+			var speed: float = segundos_recortados_levantarse / dur_total
+			_play_anim(["LEVANTARSE", "AGACHARSE", "ATERRIZAJE_POST_SALTO_01"], 0.25, speed)
+			_play_bow_anim("ARCO_IDLE", 0.25, speed)
+			state_timer = dur_total
 			_blink_timer = 0.0
 			_ocultar_flecha()
 			_restaurar_torso()
+			if hitbox_body:
+				hitbox_body.collision_layer = 0  # Invulnerable mientras se levanta
 			if model_root:
 				model_root.visible = true
-				if ultima_muerte_anim == "MUERTE_01":
+				if ultima_muerte_anim == "MUERTE_01" or ultima_muerte_anim == "MUERTE_02":
 					model_root.rotation.y = _original_model_y_rot + deg_to_rad(90)
 				else:
 					model_root.rotation.y = _original_model_y_rot
@@ -825,11 +855,25 @@ func _conectar_eventos_oleada() -> void:
 				spawner.oleada_completada.connect(_on_oleada_completada)
 
 
-func _on_oleada_iniciada(_numero_oleada: int) -> void:
-	if current_state == State.DYING or current_state == State.DEAD or health <= 0:
+func _on_oleada_iniciada(numero_oleada: int) -> void:
+	# En la oleada 1 no debe levantarse bajo ningún concepto (inicia en IDLE normal).
+	if numero_oleada <= 1:
+		if current_state != State.DYING and current_state != State.DEAD and health > 0:
+			_cambiar_estado(State.IDLE)
+			_play_anim(["IDE", "IDLE_001", "IDLE"], 0.3)
+			_play_bow_anim("ARCO_IDLE", 0.3)
+		return
+
+	# En oleadas posteriores (> 1), solo las defensoras iniciales que estén muertas reviven y se levantan
+	var es_inicial: bool = es_aliada_inicial or name == "AllyArcher" or name == "AllyArcher2"
+	if es_inicial and (current_state == State.DYING or current_state == State.DEAD or health <= 0):
 		revivir()
 	else:
-		_cambiar_estado(State.GETTING_UP)
+		# Si estaba viva y festejando oleada anterior, vuelve a IDLE normal sin levantarse
+		if current_state == State.CELEBRATING:
+			_cambiar_estado(State.IDLE)
+			_play_anim(["IDE", "IDLE_001", "IDLE"], 0.3)
+			_play_bow_anim("ARCO_IDLE", 0.3)
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
@@ -1366,7 +1410,8 @@ func _disparar_rafaga_aliada(base_direction: Vector3, speed: float, spawn_pos: V
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _mostrar_flecha():
+func _mostrar_flecha(factor_progreso: float = 1.0) -> void:
+	var factor := clampf(factor_progreso, 0.0, 1.0)
 	var decision := _decidir_disparo_y_objetivo()
 	var tipo: TipoDisparoAliada = decision.get("type", TipoDisparoAliada.NORMAL)
 	var es_explosiva: bool = (tipo == TipoDisparoAliada.EXPLOSIVO)
@@ -1374,13 +1419,15 @@ func _mostrar_flecha():
 	if es_explosiva and explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 		if arrow_node and is_instance_valid(arrow_node):
 			arrow_node.visible = false
-		explosive_arrow_node.visible = true
+		explosive_arrow_node.visible = (factor > 0.001)
+		explosive_arrow_node.scale = _explosive_arrow_base_scale * factor
 	else:
 		if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 			explosive_arrow_node.visible = false
 		if arrow_node and is_instance_valid(arrow_node):
 			_aplicar_material_celeste_flecha(arrow_node)
-			arrow_node.visible = true
+			arrow_node.visible = (factor > 0.001)
+			arrow_node.scale = _arrow_base_scale * factor
 
 
 func _aplicar_material_celeste_flecha(nodo: Node) -> void:
@@ -1416,8 +1463,10 @@ func _aplicar_material_celeste_flecha(nodo: Node) -> void:
 func _ocultar_flecha():
 	if arrow_node and is_instance_valid(arrow_node):
 		arrow_node.visible = false
+		arrow_node.scale = _arrow_base_scale
 	if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
 		explosive_arrow_node.visible = false
+		explosive_arrow_node.scale = _explosive_arrow_base_scale
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1469,7 +1518,7 @@ func revivir() -> void:
 	health = vida_maxima
 	set_process(true)
 	if hitbox_body:
-		hitbox_body.collision_layer = 2
+		hitbox_body.collision_layer = 0  # Invulnerable mientras se levanta
 	if model_root:
 		model_root.visible = true
 	_restaurar_torso()
@@ -1535,8 +1584,13 @@ func _on_dying():
 	# Reproducir muerte (elegir aleatoriamente entre MUERTE_01 y MUERTE_02)
 	var death_anim = ["MUERTE_01", "MUERTE_02"][randi() % 2]
 	ultima_muerte_anim = death_anim
-	_play_anim(death_anim)
-	_play_bow_anim("ARCO_IDLE")
+	if model_root:
+		if death_anim == "MUERTE_02" or death_anim == "MUERTE_01":
+			model_root.rotation.y = _original_model_y_rot + deg_to_rad(90)
+		else:
+			model_root.rotation.y = _original_model_y_rot
+	_play_anim(death_anim, 0.2)
+	_play_bow_anim("ARCO_IDLE", 0.2)
 
 	var dur = _get_anim_length(death_anim)
 	get_tree().create_timer(dur + 0.5).timeout.connect(
@@ -1602,10 +1656,12 @@ func _finish_dissolve():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _play_anim(anim_target, blend: float = -1.0, speed: float = 1.0) -> void:
+func _play_anim(anim_target, blend: float = 0.25, speed: float = 1.0) -> void:
 	if not anim_player:
 		return
 	anim_player.active = true
+	if blend < 0.0:
+		blend = 0.25
 
 	var candidates: Array = []
 	if anim_target is Array:

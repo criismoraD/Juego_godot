@@ -2,11 +2,11 @@ class_name PlayerInterior
 extends CharacterBody3D
 
 @export_category("Movimiento")
-@export var velocidad_caminar: float = 0.18
+@export var velocidad_caminar: float = 0.20  ## +10% de velocidad al caminar en el interior
 @export var velocidad_rotacion: float = 10.0
 
-const ANIM_IDLE := "Armature|Armature|IDLE"
-const ANIM_CAMINAR := "Armature|Armature|CAMINAR_ADELANTE"
+const ANIM_IDLE := "IDLE_INTERIOR"
+const ANIM_CAMINAR := "CAMINAR_INTERIOR"
 
 var _arquera_modelo: Node3D
 var _anim_tree: AnimationTree
@@ -30,12 +30,19 @@ func _ready() -> void:
 
 	_anim_tree = find_child("AnimationTree", true, false) as AnimationTree
 	if _anim_tree:
-		_configurar_arbol_anim_dinamico()
-		_anim_player = _anim_tree.get_node(_anim_tree.anim_player) as AnimationPlayer
+		if _anim_tree.anim_player and has_node(_anim_tree.anim_player):
+			_anim_player = _anim_tree.get_node(_anim_tree.anim_player) as AnimationPlayer
+		if not _anim_player:
+			_anim_player = find_child("AnimationPlayer", true, false) as AnimationPlayer
+
 		if _anim_player:
-			for anim_name in [ANIM_IDLE, ANIM_CAMINAR]:
+			var anim_caminar_real := _obtener_anim_nombre(ANIM_CAMINAR)
+			var anim_idle_real := _obtener_anim_nombre(ANIM_IDLE)
+			for anim_name in [anim_idle_real, anim_caminar_real, "Armature|Armature|CAMINAR_ADELANTE", "Armature|Armature|IDLE", "IDLE_INTERIOR", "CAMINAR_INTERIOR"]:
 				if _anim_player.has_animation(anim_name):
 					_anim_player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
+
+		_configurar_arbol_anim_dinamico()
 		_anim_tree.active = true
 		_anim_tree.set("parameters/Locomocion/transition_request", "idle")
 
@@ -119,14 +126,40 @@ func _actualizar_animacion() -> void:
 	_anim_tree.set("parameters/Locomocion/transition_request", estado)
 
 
+func _obtener_anim_nombre(preferido: String) -> String:
+	if not _anim_player:
+		return preferido
+	if _anim_player.has_animation(preferido):
+		return preferido
+	var pref_lower := preferido.to_lower()
+	for anim in _anim_player.get_animation_list():
+		var a_lower := anim.to_lower()
+		if a_lower == pref_lower or a_lower.ends_with("/" + pref_lower) or pref_lower in a_lower:
+			return anim
+	if preferido == ANIM_IDLE:
+		for fallback in ["Armature|Armature|IDLE", "Armature|IDLE", "IDLE"]:
+			if _anim_player.has_animation(fallback):
+				return fallback
+	elif preferido == ANIM_CAMINAR:
+		for fallback in ["Armature|Armature|CAMINAR_ADELANTE", "Armature|CAMINAR_ADELANTE", "CAMINAR"]:
+			if _anim_player.has_animation(fallback):
+				return fallback
+	return preferido
+
+
 func _configurar_arbol_anim_dinamico() -> void:
 	var root := AnimationNodeBlendTree.new()
 
+	var anim_idle_real := _obtener_anim_nombre(ANIM_IDLE)
+	var anim_caminar_real := _obtener_anim_nombre(ANIM_CAMINAR)
+
 	var nodo_idle := AnimationNodeAnimation.new()
-	nodo_idle.animation = ANIM_IDLE
+	nodo_idle.animation = anim_idle_real
 
 	var nodo_caminar := AnimationNodeAnimation.new()
-	nodo_caminar.animation = ANIM_CAMINAR
+	nodo_caminar.animation = anim_caminar_real
+
+	var timescale_caminar := AnimationNodeTimeScale.new()
 
 	var trans_loco := AnimationNodeTransition.new()
 	trans_loco.input_count = 2
@@ -135,11 +168,14 @@ func _configurar_arbol_anim_dinamico() -> void:
 	trans_loco.xfade_time = 0.2
 
 	root.add_node("Idle", nodo_idle)
-	root.add_node("Caminar", nodo_caminar)
+	root.add_node("CaminarAnim", nodo_caminar)
+	root.add_node("TimeScaleCaminar", timescale_caminar)
 	root.add_node("Locomocion", trans_loco)
 
+	root.connect_node("TimeScaleCaminar", 0, "CaminarAnim")
 	root.connect_node("Locomocion", 0, "Idle")
-	root.connect_node("Locomocion", 1, "Caminar")
+	root.connect_node("Locomocion", 1, "TimeScaleCaminar")
 	root.connect_node("output", 0, "Locomocion")
 
 	_anim_tree.tree_root = root
+	_anim_tree.set("parameters/TimeScaleCaminar/scale", 1.1)

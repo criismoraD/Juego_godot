@@ -39,7 +39,9 @@ func _agregar_animacion_minima(ally: AllyArcher) -> void:
 	var anim_player := AnimationPlayer.new()
 	anim_player.name = "AnimationPlayer"
 	
-	var lib = AnimationLibrary.new()
+	var lib := AnimationLibrary.new()
+	var anim_levantarse = Animation.new()
+	anim_levantarse.length = 1.0
 	lib.add_animation("IDLE", Animation.new())
 	lib.add_animation("IDE", Animation.new())
 	lib.add_animation("IDLE_EXAMINAR", Animation.new())
@@ -50,7 +52,7 @@ func _agregar_animacion_minima(ally: AllyArcher) -> void:
 	lib.add_animation("MUERTE_02", Animation.new())
 	lib.add_animation("AGACHARSE", Animation.new())
 	lib.add_animation("ATERRIZAJE_POST_SALTO_01", Animation.new())
-	lib.add_animation("LEVANTARSE", Animation.new())
+	lib.add_animation("LEVANTARSE", anim_levantarse)
 	lib.add_animation("VICTORIA", Animation.new())
 	lib.add_animation("ELECTROCUTAR", Animation.new())
 	lib.add_animation("DAÑO_01", Animation.new())
@@ -58,6 +60,18 @@ func _agregar_animacion_minima(ally: AllyArcher) -> void:
 	
 	anim_player.add_animation_library("", lib)
 	ally.add_child(anim_player)
+	ally.anim_player = anim_player
+
+	var model := Node3D.new()
+	model.name = "ArqueraModel"
+	ally.add_child(model)
+	ally.model_root = model
+
+	var hitbox := StaticBody3D.new()
+	hitbox.name = "Hitbox"
+	hitbox.collision_layer = 2
+	ally.add_child(hitbox)
+	ally.hitbox_body = hitbox
 
 func test_inicializacion_vida():
 	assert_eq(_ally.vida_maxima, 2, "La vida máxima por defecto debería ser 2")
@@ -92,6 +106,10 @@ func test_revivir_desde_muerta():
 	assert_eq(_ally.health, _ally.vida_maxima, "La salud debería restablecerse a vida_maxima")
 	assert_eq(_ally.current_state, _ally.State.GETTING_UP, "El estado debería cambiar a GETTING_UP")
 	assert_true(_ally.is_processing(), "El procesamiento del nodo debería estar activo")
+	if _ally.hitbox_body:
+		assert_eq(_ally.hitbox_body.collision_layer, 0, "El hitbox debería estar en capa 0 (invulnerable) mientras se levanta")
+	_ally._process_getting_up(_ally.state_timer + 0.1)
+	assert_eq(_ally.current_state, _ally.State.IDLE, "Debe pasar a IDLE al terminar")
 	if _ally.hitbox_body:
 		assert_eq(_ally.hitbox_body.collision_layer, 2, "El hitbox debería volver a la capa de colisión 2")
 
@@ -147,17 +165,15 @@ func test_celebracion_victoria_activacion_y_rotacion():
 func test_celebracion_victoria_loops_y_retorno_idle():
 	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
 	_ally.celebrar_victoria()
-	_ally._loops_victoria_restantes = 2
+	_ally.state_timer = 2.0
 
-	# Simular fin de primer loop
-	_ally.state_timer = 0.0
-	_ally._process_celebrating(0.01)
-	assert_eq(_ally._loops_victoria_restantes, 1, "Debe decrementar a 1 loop restante")
+	# Simular avance mientras state_timer > 0
+	_ally._process_celebrating(1.0)
+	assert_gt(_ally.state_timer, 0.0, "Aún debe quedar tiempo restante de celebración")
 	assert_eq(_ally.current_state, _ally.State.CELEBRATING, "Debe permanecer en CELEBRATING")
 
-	# Simular fin del último loop
-	_ally.state_timer = 0.0
-	_ally._process_celebrating(0.01)
+	# Simular que termina el tiempo total
+	_ally._process_celebrating(1.5)
 	assert_eq(_ally._loops_victoria_restantes, 0, "Los loops restantes deben ser 0")
 	assert_eq(_ally.current_state, _ally.State.IDLE, "Debe volver a IDLE tras completar la celebración")
 
@@ -171,6 +187,7 @@ func test_on_oleada_completada_activa_celebracion():
 
 func test_ataque_suelta_flecha_al_segundo_3():
 	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+	_ally.tiempo_suelta_flecha = 3.0
 	_ally._cambiar_estado(_ally.State.SHOOTING)
 	assert_eq(_ally.current_state, _ally.State.SHOOTING, "Debe entrar en estado SHOOTING")
 	assert_false(_ally._flecha_soltada, "La flecha no debe haberse soltado al inicio del ataque")
@@ -184,29 +201,111 @@ func test_ataque_suelta_flecha_al_segundo_3():
 	assert_true(_ally._flecha_soltada, "La flecha debe haberse soltado al alcanzar el segundo 3.0")
 
 
-func test_on_oleada_iniciada_se_levanta():
-	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+func test_oleada_1_no_se_levanta_mantiene_idle():
+	# Arrange
+	_ally._cambiar_estado(_ally.State.IDLE)
+	_ally.health = 2
+
+	# Act
 	_ally._on_oleada_iniciada(1)
 
-	assert_eq(_ally.current_state, _ally.State.GETTING_UP, "El estado debe ser GETTING_UP al iniciar la oleada")
-	assert_eq(_ally.anim_player.current_animation, "LEVANTARSE", "Debe reproducir la animación LEVANTARSE al inicio de la oleada")
-
-	# Al completarse el tiempo de levantarse, pasa a IDLE
-	_ally._process_getting_up(_ally.state_timer + 0.1)
-	assert_eq(_ally.current_state, _ally.State.IDLE, "Debe pasar a IDLE tras levantarse")
+	# Assert
+	assert_eq(_ally.current_state, _ally.State.IDLE, "En la oleada 1 NO debe levantarse, debe mantenerse en IDLE")
+	assert_ne(_ally.anim_player.current_animation, "LEVANTARSE", "No debe reproducir LEVANTARSE en la oleada 1")
 
 
-func test_on_oleada_iniciada_revive_si_esta_muerta():
-	_ally.anim_player = _ally.find_child("AnimationPlayer", true, false)
+func test_oleada_posterior_si_esta_viva_no_se_levanta():
+	# Arrange
+	_ally._cambiar_estado(_ally.State.IDLE)
+	_ally.health = 2
+
+	# Act
+	_ally._on_oleada_iniciada(2)
+
+	# Assert
+	assert_eq(_ally.current_state, _ally.State.IDLE, "En oleadas posteriores, si está viva NO debe levantarse")
+	assert_ne(_ally.anim_player.current_animation, "LEVANTARSE", "No debe reproducir LEVANTARSE si está viva")
+
+
+func test_oleada_posterior_si_esta_celebrando_vuelve_a_idle():
+	# Arrange
+	_ally._cambiar_estado(_ally.State.CELEBRATING)
+	_ally.health = 2
+
+	# Act
+	_ally._on_oleada_iniciada(2)
+
+	# Assert
+	assert_eq(_ally.current_state, _ally.State.IDLE, "Si estaba celebrando, debe pasar a IDLE al iniciar oleada")
+	assert_eq(_ally.anim_player.current_animation, "IDE", "Debe reproducir IDE al pasar a IDLE")
+
+
+func test_oleada_posterior_revive_si_esta_muerta_dura_3_5_segundos_e_invulnerable():
+	# Arrange
 	_ally.health = 0
 	_ally.current_state = _ally.State.DEAD
 	_ally.set_process(false)
 
+	# Act
 	_ally._on_oleada_iniciada(2)
 
-	assert_eq(_ally.health, _ally.vida_maxima, "Debe restaurar la vida al iniciar oleada")
-	assert_eq(_ally.current_state, _ally.State.GETTING_UP, "Debe pasar a GETTING_UP")
-	assert_eq(_ally.anim_player.current_animation, "LEVANTARSE", "Debe reproducir LEVANTARSE al revivir en inicio de oleada")
+	# Assert
+	assert_eq(_ally.health, _ally.vida_maxima, "Debe restaurar la vida completa al revivir")
+	assert_eq(_ally.current_state, _ally.State.GETTING_UP, "Debe pasar al estado GETTING_UP")
+	assert_eq(_ally.anim_player.current_animation, "LEVANTARSE", "Debe reproducir la animación LEVANTARSE")
+	assert_almost_eq(_ally.state_timer, 3.5, 0.05, "La secuencia de levantarse debe durar exactamente 3.5 segundos en total")
+	assert_almost_eq(_ally.segundos_recortados_levantarse, 8.5, 0.01, "Solo se reproducen los primeros 8.5 segundos del clip")
+	assert_almost_eq(_ally.segundos_recortados_levantarse / _ally.duracion_levantarse_total, 8.5 / 3.5, 0.01, "La velocidad debe coincidir con la relación configurada")
+	assert_eq(_ally.hitbox_body.collision_layer, 0, "El hitbox debe estar en layer 0 (invulnerable) mientras se levanta")
+
+
+func test_getting_up_inmunidad_a_dano_y_paralisis():
+	# Arrange
+	_ally._cambiar_estado(_ally.State.GETTING_UP)
+	var vida_previa := _ally.health
+
+	# Act
+	_ally.take_damage(5.0)
+	_ally.aplicar_paralisis(4.0)
+
+	# Assert
+	assert_eq(_ally.health, vida_previa, "No debe recibir daño mientras está en GETTING_UP")
+	assert_eq(_ally.paralisis_timer, 0.0, "No debe verse afectada por parálisis mientras está en GETTING_UP")
+	assert_eq(_ally.current_state, _ally.State.GETTING_UP, "Debe permanecer en GETTING_UP")
+
+
+func test_getting_up_parpadeo_transparente_y_restauracion_final():
+	# Arrange
+	_ally._cambiar_estado(_ally.State.GETTING_UP)
+	assert_true(_ally.model_root.visible, "El modelo debe comenzar visible")
+
+	# Act & Assert 1: Parpadeo transparente (visibilidad alternada)
+	_ally._process_getting_up(0.085)
+	assert_false(_ally.model_root.visible, "Debe alternar a invisible para el parpadeo")
+
+	_ally._process_getting_up(0.085)
+	assert_true(_ally.model_root.visible, "Debe alternar a visible en el siguiente ciclo de parpadeo")
+
+	# Act & Assert 2: Al completarse el tiempo pasa a IDLE y se restaura visibilidad y colisión
+	_ally._process_getting_up(_ally.state_timer + 0.1)
+	assert_eq(_ally.current_state, _ally.State.IDLE, "Debe pasar a IDLE tras levantarse")
+	assert_true(_ally.model_root.visible, "El modelo debe quedar visible al terminar")
+	assert_eq(_ally.hitbox_body.collision_layer, 2, "El hitbox debe restaurar layer 2 al terminar de levantarse")
+
+
+func test_no_inicial_no_revive_en_oleada():
+	# Arrange
+	_ally.es_aliada_inicial = false
+	_ally.name = "AliadaInvocadaTemporal"
+	_ally.health = 0
+	_ally.current_state = _ally.State.DEAD
+
+	# Act
+	_ally._on_oleada_iniciada(2)
+
+	# Assert
+	assert_eq(_ally.current_state, _ally.State.DEAD, "Una aliada no inicial no debe revivir al comenzar oleada")
+	assert_eq(_ally.health, 0, "La salud debe mantenerse en 0")
 
 
 func test_flecha_al_tensar_arco_tiene_material_celeste():
@@ -259,5 +358,44 @@ func test_punto_disparo_manual_personalizado():
 
 	assert_eq(_ally.punto_disparo_proyectil, marker, "Debe aceptar un nodo de punto de disparo manual")
 	assert_eq(_ally.punto_disparo_proyectil.position, Vector3(0.5, 1.4, 0.2), "La posición del punto de disparo debe ser personalizable")
+
+
+func test_muerte_02_rotacion_90_grados():
+	# Arrange
+	var dummy_model := Node3D.new()
+	dummy_model.name = "ArqueraModel"
+	_ally.add_child(dummy_model)
+	_ally.model_root = dummy_model
+	_ally._original_model_y_rot = 0.0
+
+	# Act: Forzar MUERTE_02 en _on_dying
+	_ally.ultima_muerte_anim = "MUERTE_02"
+	_ally._cambiar_estado(_ally.State.GETTING_UP)
+
+	# Assert
+	assert_almost_eq(_ally.model_root.rotation.y, deg_to_rad(90.0), 0.01, "El modelo debe rotar 90 grados en Y para MUERTE_02")
+
+
+func test_recarga_escala_flecha_de_0_a_1():
+	# Arrange
+	var flecha_dummy := Node3D.new()
+	flecha_dummy.name = "FLECHA"
+	flecha_dummy.scale = Vector3(1.0, 1.0, 1.0)
+	_ally.add_child(flecha_dummy)
+	_ally.arrow_node = flecha_dummy
+	_ally._arrow_base_scale = Vector3(1.0, 1.0, 1.0)
+
+	# Act: Cambiar a RELOADING
+	_ally._cambiar_estado(_ally.State.RELOADING)
+	# Al inicio debe ser invisible o escala 0
+	assert_almost_eq(flecha_dummy.scale.x, 0.0, 0.05, "La flecha debe iniciar en escala 0 al recargar")
+
+	# Simular avance del 50% de la recarga
+	_ally._process_reloading(_ally._duracion_reload_actual * 0.5)
+	assert_almost_eq(flecha_dummy.scale.x, 0.5, 0.08, "A mitad de la recarga debe escalar aproximadamente al 50%")
+
+	# Simular que completa la recarga
+	_ally._process_reloading(_ally._duracion_reload_actual * 0.6)
+	assert_almost_eq(flecha_dummy.scale.x, 1.0, 0.05, "Al terminar la recarga debe estar completamente al 100%")
 
 

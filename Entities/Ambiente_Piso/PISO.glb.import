@@ -46,11 +46,6 @@ _subresources={
 "use_external/fallback_path": "res://Entities/Ambiente_Piso/PISO_M.tres",
 "use_external/path": "uid://bnpufauv07uav"
 }
-},
-"nodes": {
-"PATH:PISO": {
-"mesh_instance/layers": 2
-}
 }
 }
 gltf/naming_version=2
