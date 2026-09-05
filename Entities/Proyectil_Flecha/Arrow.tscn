@@ -5,7 +5,7 @@
 
 [sub_resource type="CapsuleShape3D" id="collision_shape"]
 radius = 0.03
-height = 0.37906495
+height = 0.30325
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qaq63"]
 emission_enabled = true
@@ -32,14 +32,14 @@ collision_mask = 71
 script = ExtResource("1_script")
 
 [node name="FLECHA" parent="." unique_id=1765054146 instance=ExtResource("2_model")]
-transform = Transform3D(-0.4, 0, -6.039832e-08, 0, 0.4, 0, 6.039832e-08, 0, -0.4, -0.20053375, -2.9802322e-08, -0.0053989887)
+transform = Transform3D(-0.32, 0, -4.831865e-08, 0, 0.32, 0, 4.831865e-08, 0, -0.32, -0.1604, -2.9802322e-08, -0.0053989887)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1693301136]
-transform = Transform3D(-4.371139e-08, 1, -4.371139e-08, 0, -4.371139e-08, -1, -1, -4.371139e-08, 1.9106855e-15, -0.04058227, 1.7739075e-09, 1.7739075e-09)
+transform = Transform3D(-4.371139e-08, 1, -4.371139e-08, 0, -4.371139e-08, -1, -1, -4.371139e-08, 1.9106855e-15, -0.0325, 1.7739075e-09, 1.7739075e-09)
 shape = SubResource("collision_shape")
 
 [node name="TrailParticles" type="GPUParticles3D" parent="." unique_id=1162098694]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17913201, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1433, 0, 0)
 material_override = SubResource("StandardMaterial3D_qaq63")
 amount = 12
 process_material = SubResource("trail_process")

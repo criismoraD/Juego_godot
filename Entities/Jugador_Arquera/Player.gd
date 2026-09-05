@@ -476,8 +476,9 @@ func setup_animation_tree_dynamic():
 
 
 # === Variables Escalera ===
-var current_ladder = null
-var is_near_ladder = false
+var current_ladder: Area3D = null
+var is_near_ladder: bool = false
+var _nearby_ladders: Array[Area3D] = []
 @export var velocidad_escalar_subir: float = 0.65  ## Velocidad al subir escaleras (+30% sobre 0.5)
 @export var velocidad_escalar_bajar: float = 0.65  ## Velocidad al bajar escaleras
 @export_range(-360, 360, 1.0) var rotacion_personaje_escalera: float = 180.0  # Giro del modelo al escalar
@@ -488,14 +489,52 @@ var armature_original_rotation: Vector3 = Vector3.ZERO
 var _mirando_derecha: bool = true  ## Dirección actual a la que mira el personaje (true=derecha, false=izquierda)
 
 
-func set_near_ladder(val, ladder_area):
-	is_near_ladder = val
+func set_near_ladder(val: bool, ladder_area: Area3D) -> void:
 	if val:
-		current_ladder = ladder_area
+		if is_instance_valid(ladder_area) and not _nearby_ladders.has(ladder_area):
+			_nearby_ladders.append(ladder_area)
+		is_near_ladder = true
+		if current_move_state != MoveState.CLIMBING or current_ladder == null:
+			current_ladder = _get_best_ladder()
 	else:
-		current_ladder = null
-		if current_move_state == MoveState.CLIMBING:
-			stop_climbing()
+		if is_instance_valid(ladder_area):
+			_nearby_ladders.erase(ladder_area)
+		elif ladder_area == null:
+			_nearby_ladders.clear()
+
+		_nearby_ladders = _nearby_ladders.filter(func(lad: Area3D) -> bool: return is_instance_valid(lad))
+
+		if _nearby_ladders.is_empty():
+			is_near_ladder = false
+			current_ladder = null
+			if current_move_state == MoveState.CLIMBING:
+				stop_climbing()
+		else:
+			is_near_ladder = true
+			if current_move_state == MoveState.CLIMBING:
+				if current_ladder == ladder_area:
+					stop_climbing()
+					current_ladder = _get_best_ladder()
+			else:
+				current_ladder = _get_best_ladder()
+
+
+func _get_best_ladder() -> Area3D:
+	if _nearby_ladders.is_empty():
+		return null
+	if _nearby_ladders.size() == 1:
+		return _nearby_ladders[0]
+
+	var best: Area3D = _nearby_ladders[0]
+	var min_dist: float = absf(global_position.x - best.global_position.x)
+	for i in range(1, _nearby_ladders.size()):
+		var lad: Area3D = _nearby_ladders[i]
+		if is_instance_valid(lad):
+			var dist: float = absf(global_position.x - lad.global_position.x)
+			if dist < min_dist:
+				min_dist = dist
+				best = lad
+	return best
 
 
 func stop_climbing():
@@ -515,14 +554,17 @@ func stop_climbing():
 ## Salida suave por la parte superior de la escalera hacia la plataforma
 func dismount_ladder_top(direction_x: float = 0.0) -> void:
 	ladder_cooldown = 0.5
+	is_inside_platform = false
 	current_move_state = MoveState.GROUND
 	set_motion_anim("ground")
 	velocity.y = 0.0
 	_mirando_derecha = true
+	_reset_armature_rotation(false)
 	if not is_zero_approx(direction_x):
 		velocity.x = direction_x
 	else:
 		velocity.x = velocidad_caminar * 0.4
+
 
 
 func _apply_climbing_rotation(delta: float, snap: bool = false):
@@ -747,10 +789,11 @@ func _physics_process(delta):
 	# 3. DETECCIÓN DE ATERRIZAJE (Post-movimiento)
 	if is_on_floor():
 		if current_move_state == MoveState.CLIMBING:
-			if input_vert > 0:  # Bajando
+			if input_vert > 0 or absf(input_dir) > 0.1:
 				current_move_state = MoveState.GROUND
 				set_motion_anim("ground")
 				_reset_armature_rotation()
+
 
 		# Acabamos de tocar suelo viniendo del aire?
 		elif current_move_state == MoveState.AIR:
@@ -1055,7 +1098,9 @@ func _spawn_fall_smoke() -> void:
 		tw_puf.tween_callback(puf.queue_free)
 
 
-func set_motion_anim(state_name):
+func set_motion_anim(state_name: String) -> void:
+	if not anim_tree:
+		return
 	if anim_tree.get("parameters/MotionState/current_state") != state_name:
 		anim_tree.set("parameters/MotionState/transition_request", state_name)
 
@@ -1444,8 +1489,10 @@ func start_shooting():
 	state_timer = 0.0  # Reset timer para contar duración del disparo
 	_cooldown_disparo_timer = cadencia_disparo  # Cooldown antes de poder iniciar otro tensado
 
-	anim_tree.set("parameters/UpperBody/transition_request", "shoot")
-	charge_bar.visible = false
+	if anim_tree:
+		anim_tree.set("parameters/UpperBody/transition_request", "shoot")
+	if charge_bar:
+		charge_bar.visible = false
 	if overcharge_bar:
 		overcharge_bar.visible = false
 
@@ -2471,6 +2518,7 @@ func _die():
 		if current_move_state == MoveState.CLIMBING:
 			is_near_ladder = false
 			current_ladder = null
+			_nearby_ladders.clear()
 
 		current_move_state = MoveState.AIR
 		# Esperar a tocar el suelo antes de reproducir muerte

@@ -728,8 +728,6 @@ func _soltar_escudo_pesado(por_explosion: bool = false) -> void:
 	# Quitar de _escudo_meshes para que la disolución de la goblina no afecte al escudo caído
 	_escudo_meshes.clear()
 
-	contenedor.add_child(escudo)
-
 	# Reproducir sonido de escudo metálico cayendo al suelo con volumen aumentado
 	AudioManager.play_escudo_metal_cayendo()
 

@@ -1,19 +1,16 @@
 class_name Perrena
 extends "res://Entities/Jugador_Arquera/Player.gd"
 
-## Perrena — defensora controlable (variante de la protagonista):
+## Perrena — defensora controlable (variante arquera de la protagonista):
 ## - Movimientos completos de la protagonista (correr, saltar, agacharse, escaleras).
-## - Su ataque principal es la JABALINA del Imp: trayectoria parabólica con arco.
-## - Mantiene el HUD y sistema de corazones de la protagonista (señales heredadas).
-## - Como defensora invocable tiene 3 de vida (vida_maxima).
+## - Disparo con arco animado y mecánicas completas de proyectiles (normales, explosivas, múltiples).
+## - Mantiene el HUD y sistema de corazones de la protagonista.
+## - Como defensora controlable tiene 3 de vida (vida_maxima).
 
-const JABALINA_SCENE: PackedScene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
-const POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 const MAT_PERRENA: Material = preload("res://Entities/Jugador_Perrena/PERRENA_MAT.tres")
-
-## Mismo flujo que la protagonista: el Player del nivel se instancia con scale 0.3.
-## Perrena trae su rig idéntico a PROTA (Armature mixamo a 0.01), así que NO lleva
-## escala extra en el modelo; la escala del CharacterBody (0.3) la fija la escena.
+const ARCO_SCENE: PackedScene = preload("res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx")
+const FLECHA_SCENE: PackedScene = preload("res://Entities/Jugador_Arquera/FLECHA.fbx")
+const FLECHA_EXPLOSIVA_SCENE: PackedScene = preload("res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb")
 
 ## Mapeo de clips del GLB de Perrena -> nombres que el AnimationTree del Player espera.
 ## Debe registrarse ANTES de que el Player construya su árbol dinámico.
@@ -21,7 +18,7 @@ const MAPEO_ANIMS: Dictionary = {
 	"Idle": "Armature|Armature|IDLE",
 	"Caminar": "Armature|Armature|CAMINAR_ADELANTE",
 	"Correr": "Armature|Armature|CORRER_ADELANTE",
-	"arrojar": "Armature|Armature|DISPARAR",
+	"Disparo arco": "Armature|Armature|DISPARAR",
 	"Aterrizar": "Armature|Armature|ATERRIZAJE",
 	"Saltar": "Armature|Armature|CAER_SALTAR",
 	"agacharse": "Armature|Armature|CAER_SALTAR",
@@ -36,26 +33,25 @@ const MAPEO_ANIMS: Dictionary = {
 }
 const SUBSTITUCIONES_ANIMS: Dictionary = {
 	"@caminar_atras": "Caminar",
-	"@apuntar": "Idle",
-	"@tomar_flecha": "Idle",
+	"@apuntar": "Disparo arco",
+	"@tomar_flecha": "Disparo arco",
 	"@escalar": "Caminar",
 }
 
-## Jabalina: arco parabólico configurable (mismos valores base del Imp)
-@export_category("Jabalina - Perrena")
-@export var arco_altura_min: float = 0.8
-@export var arco_altura_max: float = 1.6
-@export var gravedad_jabalina: float = 1.0
+
+func _init() -> void:
+	vida_maxima = 3
+	duracion_maxima_disparo = 0.20
 
 
-func _ready():
+func _ready() -> void:
 	# 1. Conectar el AnimationTree al AnimationPlayer del GLB de Perrena
 	var tree := find_child("AnimationTree", true, false) as AnimationTree
 	var anim_p := find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if tree and anim_p:
 		tree.anim_player = tree.get_path_to(anim_p)
 
-	# 2. Aplicar textura (la escala la fija la escena: mismo rig mixamo que PROTA)
+	# 2. Aplicar textura personalizada de Perrena
 	var modelo := find_child("PerrenaModel", true, false) as Node3D
 	if not modelo:
 		modelo = find_child("Perrena", true, false) as Node3D
@@ -63,19 +59,85 @@ func _ready():
 		for mesh in modelo.find_children("*", "MeshInstance3D", true, false):
 			(mesh as MeshInstance3D).material_override = MAT_PERRENA
 
-	# 3. Registrar los alias de animación ANTES de que el Player construya
-	#    su árbol dinámico (si no, los nodos quedarían con clips inexistentes)
+	# 3. Equipar arco animado y flechas en el esqueleto antes del setup del Player
+	_setup_equipamiento_arco()
+
+	# 4. Registrar los alias de animación ANTES de que el Player construya su árbol
 	if anim_p:
 		_remapear_animaciones_perrena(anim_p)
 
-	# 4. Ahora sí: inicialización completa del Player (árbol, hitbox, sombra, etc.)
+	# 5. Inicialización completa heredada del Player (árbol dinámico, hitbox, sombra, etc.)
 	super._ready()
-	_ocultar_flecha_visual()
 
 
-## El AnimationTree dinámico del Player usa nombres "Armature|Armature|XXX" del
-## GLB de la protagonista. Perrena trae sus clips con otros nombres: se registran
-## alias en la librería para que el árbol los encuentre sin tocar el Player.
+## Instancia los attachments de huesos para el arco animado y las flechas en las manos de Perrena
+func _setup_equipamiento_arco() -> void:
+	var skel: Skeleton3D = find_child("Skeleton3D", true, false) as Skeleton3D
+	if not skel:
+		return
+
+	# Mano Izquierda: Arco animado y punto de spawn de flechas explosivas
+	var idx_mano_izq: int = skel.find_bone("mixamorig_LeftHand")
+	if idx_mano_izq != -1 and not skel.has_node("BoneAttach_Arco"):
+		var attach_arco := BoneAttachment3D.new()
+		attach_arco.name = "BoneAttach_Arco"
+		attach_arco.bone_name = "mixamorig_LeftHand"
+		attach_arco.bone_idx = idx_mano_izq
+		skel.add_child(attach_arco)
+
+		var arco: Node3D = ARCO_SCENE.instantiate() as Node3D
+		arco.name = "ARCO_ANIMADO"
+		arco.transform = Transform3D(
+			Vector3(-5.398, -38.306, 10.174),
+			Vector3(34.926, 0.257, 19.496),
+			Vector3(-18.735, 11.514, 33.413),
+			Vector3(-0.73, 4.909, 1.21)
+		)
+		attach_arco.add_child(arco)
+
+		var spawn_exp := Marker3D.new()
+		spawn_exp.name = "SpawnPosition_FlechaExplosiva"
+		spawn_exp.transform = Transform3D(
+			Vector3(4.498, 31.18, -6.942),
+			Vector3(-30.294, 1.941, -10.912),
+			Vector3(-10.129, 8.041, 29.552),
+			Vector3(-10.05, -18.27, 7.743)
+		)
+		attach_arco.add_child(spawn_exp)
+
+	# Mano Derecha: Flecha regular y Flecha explosiva
+	var idx_mano_der: int = skel.find_bone("mixamorig_RightHand")
+	if idx_mano_der != -1 and not skel.has_node("BoneAttach_Flecha"):
+		var attach_flecha := BoneAttachment3D.new()
+		attach_flecha.name = "BoneAttach_Flecha"
+		attach_flecha.bone_name = "mixamorig_RightHand"
+		attach_flecha.bone_idx = idx_mano_der
+		skel.add_child(attach_flecha)
+
+		var flecha: Node3D = FLECHA_SCENE.instantiate() as Node3D
+		flecha.name = "FLECHA"
+		flecha.transform = Transform3D(
+			Vector3(-8.404, -23.576, -19.938),
+			Vector3(30.812, -7.737, -3.839),
+			Vector3(-1.992, -20.207, 24.733),
+			Vector3(-0.497, 3.163, -0.089)
+		)
+		flecha.visible = false
+		attach_flecha.add_child(flecha)
+
+		var flecha_exp: Node3D = FLECHA_EXPLOSIVA_SCENE.instantiate() as Node3D
+		flecha_exp.name = "FlechaExplosiva"
+		flecha_exp.transform = Transform3D(
+			Vector3(8.055, -24.329, 28.643),
+			Vector3(-36.252, 2.692, 12.481),
+			Vector3(-9.907, -29.632, -22.383),
+			Vector3(5.39, 15.488, 7.723)
+		)
+		flecha_exp.visible = false
+		attach_flecha.add_child(flecha_exp)
+
+
+## Registra alias de animación en la librería para que el AnimationTree dinámico los reconozca
 func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
 	var lib := anim_p.get_animation_library("")
 	if not lib:
@@ -84,65 +146,8 @@ func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
 		var clip_destino: String = MAPEO_ANIMS[clip_origen]
 		if anim_p.has_animation(clip_destino):
 			continue
-		# Los "@..." usan una animación sustituta de otro clip del mapeo
 		var buscar: String = SUBSTITUCIONES_ANIMS.get(clip_origen, clip_origen)
-		# Buscar el clip origen por nombre exacto o prefijado
 		for candidato in anim_p.get_animation_list():
 			if candidato.ends_with(buscar) and not lib.has_animation(clip_destino):
 				lib.add_animation(clip_destino, anim_p.get_animation(candidato))
 				break
-
-
-func _init() -> void:
-	# Defensora: 3 corazones de vida (los movimientos/HUD se heredan del Player)
-	vida_maxima = 3
-	duracion_maxima_disparo = 0.55
-
-
-## Ataque principal: jabalina parabólica del Imp en lugar de la flecha recta.
-## El resto del flujo de disparo (múltiples, explosivas, screen shake, sonido)
-## se conserva del Player; solo cambia el proyectil NORMAL.
-func spawn_arrow_projectile():
-	# Calcular datos de disparo (dirección al mouse, origen, carga)
-	var data = calculate_shoot_data()
-	if not data["valid"]:
-		return
-
-	var shoot_dir: Vector3 = data["velocity"].normalized()
-	var jab_speed: float = lerp(velocidad_flecha_minima, velocidad_flecha_maxima, last_charge_power)
-
-	# CASO 1: Flechas Múltiples activas (igual que la protagonista)
-	if municion_activa == TipoMunicion.MULTIPLE and flechas_multiples > 0:
-		super.spawn_arrow_projectile()
-		return
-
-	# CASO 2: Flechas Explosivas activas (igual que la protagonista)
-	if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
-		super.spawn_arrow_projectile()
-		return
-
-	# CASO PRINCIPAL: jabalina del Imp con arco parabólico
-	AudioManager.play_sfx("trident_shot")
-
-	var jabalina := POOL_REF.acquire(JABALINA_SCENE) as ImpTridentProjectile
-	if not jabalina:
-		return
-	jabalina.scale = Vector3.ONE
-	jabalina.disparado_por_jugador = true
-	jabalina.tirador = self
-
-	# Arco parabólico: sumar altura al cálculo de dirección (mismo patrón del Imp)
-	var arco: float = randf_range(arco_altura_min, arco_altura_max)
-	var dir_con_arco: Vector3 = shoot_dir + Vector3(0.0, arco * 0.35, 0.0)
-	dir_con_arco = dir_con_arco.normalized()
-
-	jabalina.initialize(dir_con_arco, jab_speed / 8.0)
-	jabalina.gravedad = gravedad_jabalina
-
-	POOL_REF.activate(jabalina, get_tree().root, data["origin"])
-
-	_ocultar_flecha_visual()
-
-	# Game feel: screen shake como al disparar la protagonista
-	if has_node("/root/GameFeel"):
-		get_node("/root/GameFeel").on_player_shoot()

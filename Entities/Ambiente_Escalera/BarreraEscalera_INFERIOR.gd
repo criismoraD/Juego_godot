@@ -18,7 +18,6 @@ func _physics_process(_delta: float) -> void:
 	if not pressing_down:
 		return
 
-	_aplicar_cooldown(player_ref)
 	if not pressing_up and _esta_en_escalera(player_ref):
 		_soltar_solo_escalera(player_ref, IMPULSO_SALIDA_ESCALERA)
 

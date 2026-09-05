@@ -246,7 +246,7 @@ func test_audio_correr_descalzo_configurado() -> void:
 func test_probabilidades_recompensas_muerte() -> void:
 	# Arrange
 	assert_not_null(_goblina)
-	assert_not_null(GoblinaScript.MEDIKIT_SCENE, "La escena de Medikit debe estar precargada")
+	assert_not_null(GoblinaScript.POCION_SCENE, "La escena de Poción debe estar precargada")
 
 
 
@@ -423,8 +423,7 @@ func test_escudo_no_queda_rojo_al_morir() -> void:
 	scene._cambiar_estado(GoblinaScript.State.DYING)
 
 	# Assert: Los meshes del escudo no deben conservar overlay rojo
-	for mesh in scene._escudo_meshes:
-		assert_null(mesh.material_overlay, "El overlay rojo debe removerse al morir")
+	assert_true(scene._escudo_meshes.is_empty(), "_escudo_meshes debe limpiarse al soltar el escudo al morir")
 
 
 func test_sonido_escudo_metal_cayendo_registrado() -> void:

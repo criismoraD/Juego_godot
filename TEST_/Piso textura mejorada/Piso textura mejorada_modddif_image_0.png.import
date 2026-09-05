@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://h1xfp3e81e32"
-path.s3tc="res://.godot/imported/PISO_D.png-a2bff688c75888b0ad7f57ff9d19e52a.s3tc.ctex"
-path.etc2="res://.godot/imported/PISO_D.png-a2bff688c75888b0ad7f57ff9d19e52a.etc2.ctex"
+uid="uid://xgtckcgqkswp"
+path.s3tc="res://.godot/imported/Piso textura mejorada_modddif_image_0.png-7c02e9b60fb4dba129a1c006e51a9766.s3tc.ctex"
+path.etc2="res://.godot/imported/Piso textura mejorada_modddif_image_0.png-7c02e9b60fb4dba129a1c006e51a9766.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -15,8 +15,8 @@ generator_parameters={
 
 [deps]
 
-source_file="res://Entities/Ambiente_Piso/PISO_D.png"
-dest_files=["res://.godot/imported/PISO_D.png-a2bff688c75888b0ad7f57ff9d19e52a.s3tc.ctex", "res://.godot/imported/PISO_D.png-a2bff688c75888b0ad7f57ff9d19e52a.etc2.ctex"]
+source_file="res://TEST_/Piso textura mejorada/Piso textura mejorada_modddif_image_0.png"
+dest_files=["res://.godot/imported/Piso textura mejorada_modddif_image_0.png-7c02e9b60fb4dba129a1c006e51a9766.s3tc.ctex", "res://.godot/imported/Piso textura mejorada_modddif_image_0.png-7c02e9b60fb4dba129a1c006e51a9766.etc2.ctex"]
 
 [params]
 

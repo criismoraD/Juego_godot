@@ -159,7 +159,7 @@ transform = Transform3D(8.05503, -36.252083, -9.907173, -24.329357, 2.6922657, -
 visible = false
 
 [node name="FLECHA" parent="ArqueraModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=1873166664 instance=ExtResource("4_7pt4t")]
-transform = Transform3D(-10.504959, 38.515537, -2.4899244, -29.470072, -9.670731, -25.25851, -24.923117, -4.7990274, 30.916132, -0.49650955, 3.162592, -0.08917618)
+transform = Transform3D(-8.403967, 30.81243, -1.99194, -23.576058, -7.736585, -20.206808, -19.938494, -3.839222, 24.732906, -0.49650955, 3.162592, -0.08917618)
 visible = false
 
 [node name="AnimationTree" type="AnimationTree" parent="ArqueraModel" unique_id=1879798461]

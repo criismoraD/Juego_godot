@@ -1007,6 +1007,8 @@ func _aplicar_efecto_escudo_piso():
 			_escudo_piso_ref.activar_modo_metalico(2)
 	else:
 		_regenerar_escudo_piso()
+		if _escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and _escudo_piso_ref.has_method("activar_modo_metalico"):
+			_escudo_piso_ref.activar_modo_metalico(2)
 
 
 func _regenerar_escudo_piso(forzar_enemigo: bool = false):

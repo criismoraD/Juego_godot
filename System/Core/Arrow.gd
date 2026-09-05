@@ -251,8 +251,15 @@ func _on_body_entered(body):
 				return
 		elif tipo_dueño == TipoFlecha.JUGADOR:
 			if es_enemigo:
-				body.recibir_golpe()
-				_stick_to_shield(body)
+				var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
+				var dano_escudo: float = 1.0
+				if es_sobrecarga:
+					dano_escudo = 999.0
+				body.recibir_golpe(dano_escudo)
+				if es_sobrecarga:
+					_safe_destroy()
+				else:
+					_stick_to_shield(body)
 				return
 			else:
 				if _ray_ccd: _ray_ccd.add_exception(body)
@@ -291,8 +298,11 @@ func _on_body_entered(body):
 			if body.has_method("set") and "ultimo_atacante" in body:
 				body.ultimo_atacante = tirador
 			var dano_final: float = 1.0
-			if has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max")):
+			var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
+			if es_sobrecarga:
 				dano_final *= multiplicador_dano_sobrecarga
+				if body is GuardianaMoradita or body.is_in_group("guardians") or body.name.begins_with("Guardiana"):
+					dano_final = maxf(dano_final, float(body.health if "health" in body else 999.0))
 			body.take_damage(dano_final)
 			_safe_destroy()
 	elif tipo_dueño == TipoFlecha.ENEMIGO:
@@ -327,6 +337,36 @@ func _on_area_entered(area: Area3D):
 		if platform and (platform is AnimatableBody3D or platform is StaticBody3D):
 			_stick_to_surface()
 			return
+
+	# Interacción con escudos o áreas enemigas (ej: EscudoPesadoArea de GuardianaMoradita)
+	if tipo_dueño == TipoFlecha.JUGADOR and (area.is_in_group("escudos") or area.has_method("recibir_golpe")):
+		var es_enemigo: bool = false
+		if "es_escudo_enemigo" in area:
+			es_enemigo = area.es_escudo_enemigo
+		elif "es_pilar_enemigo" in area:
+			es_enemigo = area.es_pilar_enemigo
+		elif area.is_in_group("enemies"):
+			es_enemigo = true
+
+		if not es_enemigo:
+			if _ray_ccd: _ray_ccd.add_exception(area)
+			return  # Ignorar escudos aliados
+
+		var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
+		var dano_escudo: float = 1.0
+		if es_sobrecarga:
+			dano_escudo = 999.0
+
+		if area.has_method("recibir_golpe"):
+			area.recibir_golpe(dano_escudo)
+		elif area.has_method("take_damage"):
+			area.take_damage(dano_escudo)
+
+		if es_sobrecarga:
+			_safe_destroy()
+		else:
+			_stick_to_shield(area)
+		return
 
 
 func _stick_to_surface():

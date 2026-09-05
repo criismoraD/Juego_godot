@@ -70,7 +70,7 @@ func test_flash_y_dano_no_dejan_material_negro_permanente() -> void:
 	# Act: recibir un golpe no letal
 	escudo.golpes_para_destruir = 3
 	escudo.recibir_golpe(1)
-	await wait_seconds(0.25)
+	await wait_seconds(0.4)
 
 	# Assert: tras el flash, la malla queda con el material de daño (no negro)
 	var mesh = escudo.mesh_instance
@@ -96,7 +96,7 @@ func test_flash_rojo_enemigo_cubre_todas_las_mallas() -> void:
 	escudo.recibir_golpe(1)
 
 	# Assert: TODAS las mallas y superficies parpadean en rojo
-	var mallas := escudo._recolectar_mallas()
+	var mallas: Array[MeshInstance3D] = escudo._recolectar_mallas()
 	assert_gt(mallas.size(), 0, "El escudo enemigo debe tener al menos una malla")
 	for mi in mallas:
 		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
@@ -105,7 +105,7 @@ func test_flash_rojo_enemigo_cubre_todas_las_mallas() -> void:
 			assert_not_null(mat, "Cada superficie debe tener material de flash durante el impacto")
 			if mat:
 				assert_true(mat.emission_enabled, "El flash debe usar emisión")
-				assert_eq(mat.emission, Color(1.0, 0.15, 0.15), "El flash enemigo debe ser rojo")
+				assert_eq(mat.emission, Color(1.0, 0.08, 0.08), "El flash enemigo debe ser rojo")
 
 	# Assert: tras el parpadeo (3 pulsos x 2 x 0.09s) se restauran los materiales previos
 	await wait_seconds(0.9)
@@ -143,5 +143,64 @@ func test_destruccion_escudo_genera_humo_lados() -> void:
 	assert_gt(humos.size(), 0, "Debe generar las partículas de humo a los lados al destruirse el escudo")
 	for h in humos:
 		h.queue_free()
+
+
+func test_punch_impacto_no_agiganta_escudo_colocado_tarde() -> void:
+	# Arrange: escudo cuya escala definitiva se aplica DESPUÉS del _ready
+	# (como hace AllyBallestera._regenerar_escudo_piso con global_transform)
+	var escudo = ESCUDO_SCENE.instantiate()
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+	escudo.scale = Vector3(0.6, 0.6, 0.6)
+
+	# Act: un impacto no letal
+	escudo.golpes_para_destruir = 5
+	escudo.recibir_golpe(1)
+	await wait_seconds(0.3)
+
+	# Assert: el punch debe volver a la escala real colocada (0.6), NO a la del prefab (1.0)
+	assert_almost_eq(
+		escudo.scale.x, 0.6, 0.001,
+		"Tras el impacto el escudo debe volver a su escala real, sin quedar gigante"
+	)
+
+
+func test_punch_impacto_golpes_rapidos_no_acumulan_tamano() -> void:
+	# Arrange
+	var escudo = ESCUDO_SCENE.instantiate()
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+	escudo.scale = Vector3(0.6, 0.6, 0.6)
+	escudo.golpes_para_destruir = 10
+
+	# Act: tres golpes casi simultáneos (el punch anterior se mata y se reinicia)
+	escudo.recibir_golpe(1)
+	escudo.recibir_golpe(1)
+	escudo.recibir_golpe(1)
+	await wait_seconds(0.3)
+
+	# Assert: sin acumulación de escala
+	assert_almost_eq(
+		escudo.scale.x, 0.6, 0.001,
+		"Golpes seguidos no deben acumular tamaño en el escudo"
+	)
+
+
+func test_punch_impacto_pico_acotado() -> void:
+	# Arrange
+	var escudo = ESCUDO_SCENE.instantiate()
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+	escudo.scale = Vector3(0.5, 0.5, 0.5)
+	escudo.golpes_para_destruir = 10
+
+	# Act: golpear y muestrear en pleno punch
+	escudo.recibir_golpe(1)
+	await wait_seconds(0.03)
+
+	# Assert: la expansión máxima acotada (~8%)
+	assert_lt(escudo.scale.x, 0.5 * 1.2, "El punch no debe expandir más del ~8-20% la escala")
+	await wait_seconds(0.3)
+	assert_almost_eq(escudo.scale.x, 0.5, 0.001, "El punch debe volver exactamente a la escala base")
 
 

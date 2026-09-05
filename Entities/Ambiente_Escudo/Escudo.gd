@@ -66,7 +66,12 @@ var material_dano: StandardMaterial3D
 
 func _ready():
 	add_to_group("escudos")
-	_escala_base = scale
+	# NOTA: _escala_base NO se captura aquí. Si el escudo se coloca/regenera por
+	# código, su escala definitiva se aplica DESPUÉS de add_child y este _ready
+	# guardaría la escala del prefab (1.0): el punch del impacto "restauraría"
+	# esa escala obsoleta y el escudo quedaría gigante. Se captura de forma
+	# perezosa en _flash_dano(), en el momento del primer impacto, cuando la
+	# escala ya es la definitiva (ver también AllyBallestera._regenerar_escudo_piso).
 
 	# En perspectiva 2.5D, los escudos aliados deben permanecer detrás de la protagonista y defensoras
 	# para evitar que la malla 3D atraviese o corte al personaje que se mueva por la plataforma
@@ -261,33 +266,44 @@ func _crear_material_metalico() -> void:
 		return
 	material_metalico = StandardMaterial3D.new()
 	if material_original is StandardMaterial3D:
-		material_metalico.albedo_texture = material_original.albedo_texture
 		material_metalico.shading_mode = material_original.shading_mode
 		material_metalico.next_pass = material_original.next_pass
-	material_metalico.albedo_color = Color(0.68, 0.72, 0.82, 1.0)  # Tinte gris metálico acerado
-	material_metalico.metallic = 0.8
+	# Color gris metálico acerado visible e inconfundible (sin textura de madera)
+	material_metalico.albedo_color = Color(0.70, 0.72, 0.76, 1.0)
+	material_metalico.metallic = 0.85
 	material_metalico.roughness = 0.25
 	material_metalico.emission_enabled = true
-	material_metalico.emission = Color(0.5, 0.7, 0.9)
-	material_metalico.emission_energy_multiplier = 0.4
+	material_metalico.emission = Color(0.35, 0.38, 0.45)
+	material_metalico.emission_energy_multiplier = 0.35
 
 
 func _aplicar_visual_metalico() -> void:
-	if mesh_instance and material_metalico:
-		mesh_instance.set_surface_override_material(0, material_metalico)
+	_crear_material_metalico()
+	if not material_metalico:
+		return
+	var mallas: Array[MeshInstance3D] = _recolectar_mallas()
+	for mi in mallas:
+		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
+		for si in range(num_sups):
+			mi.set_surface_override_material(si, material_metalico)
 
 
 func _flash_metalico() -> void:
-	if not mesh_instance:
+	var mallas: Array[MeshInstance3D] = _recolectar_mallas()
+	if mallas.is_empty():
 		return
 	var flash_mat := StandardMaterial3D.new()
+	flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	flash_mat.emission_enabled = true
 	flash_mat.emission = Color(0.8, 0.95, 1.0)
 	flash_mat.emission_energy_multiplier = 4.0
-	mesh_instance.set_surface_override_material(0, flash_mat)
+	for mi in mallas:
+		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
+		for si in range(num_sups):
+			mi.set_surface_override_material(si, flash_mat)
 
 	await get_tree().create_timer(duracion_flash).timeout
-	if is_instance_valid(self) and mesh_instance:
+	if is_instance_valid(self):
 		if es_metalico and aguante_metalico > 0:
 			_aplicar_visual_metalico()
 		else:
@@ -320,7 +336,8 @@ func _actualizar_visual_dano():
 		_aplicar_visual_metalico()
 		return
 
-	if not mesh_instance or not material_dano:
+	var mallas: Array[MeshInstance3D] = _recolectar_mallas()
+	if mallas.is_empty() or not material_dano:
 		return
 
 	# Calcular progreso de daño (0.0 a 1.0)
@@ -334,8 +351,11 @@ func _actualizar_visual_dano():
 	else:
 		material_dano.albedo_color = Color.WHITE.lerp(color_dano, progreso * intensidad_tinte_dano)
 
-	# Aplicar material
-	mesh_instance.set_surface_override_material(0, material_dano)
+	var mat_aplicar: Material = material_dano if progreso > 0.001 else material_original
+	for mi in mallas:
+		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
+		for si in range(num_sups):
+			mi.set_surface_override_material(si, mat_aplicar)
 
 
 func _flash_dano() -> void:
@@ -348,10 +368,13 @@ func _flash_dano() -> void:
 
 	# Punch de escala: expansión y contracción al recibir impacto (tanto escudos aliados como enemigos).
 	# Se mata el punch anterior y se parte siempre de la base: los golpes seguidos no pueden acumular tamaño.
-	if _escala_base == Vector3.ZERO:
-		_escala_base = scale
+	# La base se re-adoptar de la escala actual si no hay punch en vuelo: así la
+	# escala capturada es siempre la real colocada (evita escudos gigantes cuando
+	# la escala definitiva se aplicó después del _ready).
 	if _punch_tween and _punch_tween.is_valid():
 		_punch_tween.kill()
+	else:
+		_escala_base = scale
 	scale = _escala_base
 	_punch_tween = create_tween()
 	_punch_tween.tween_property(self, "scale", _escala_base * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
