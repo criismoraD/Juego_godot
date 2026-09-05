@@ -590,6 +590,15 @@ func _flash_impacto_escudo_rojo() -> void:
 		_flash_rojo_mat.emission = Color(1.0, 0.0, 0.0)
 		_flash_rojo_mat.emission_energy_multiplier = 3.0
 
+	var escudo: Node3D = find_child("EscudoPesado", true, false) as Node3D
+	if escudo and is_instance_valid(escudo):
+		if not has_meta("_escudo_orig_scale"):
+			set_meta("_escudo_orig_scale", escudo.scale)
+		var _orig_scale: Vector3 = get_meta("_escudo_orig_scale")
+		var _tw := create_tween()
+		_tw.tween_property(escudo, "scale", _orig_scale * 1.10, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_tw.tween_property(escudo, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
 	for mesh in _escudo_meshes:
 		if is_instance_valid(mesh):
 			mesh.material_overlay = _flash_rojo_mat

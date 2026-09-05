@@ -148,6 +148,7 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 	mesh_instance.position = Vector3.ZERO
 	mesh_instance.rotation = Vector3.ZERO
 	mesh_instance.scale = mesh_global_scale
+	mesh_instance.layers = 1
 
 	# Material: asignar por surface (no material_override) para respetar exterior e interior
 	if mesh_instance.mesh:

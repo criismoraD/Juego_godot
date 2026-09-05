@@ -1,19 +1,18 @@
 [gd_scene format=3 uid="uid://rhbtx5qh81qq"]
 
 [ext_resource type="Script" uid="uid://dyh5fxvq44xnr" path="res://Entities/Jugador_Perrena/Perrena.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://bt02acngkrbhl" path="res://Entities/Jugador_Perrena/Perrena.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://spumkq1f6k2x" path="res://Entities/Jugador_Perrena/Perrena.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_perrena"]
 radius = 0.4
 height = 1.9814942
 
 [node name="Perrena" type="CharacterBody3D" unique_id=1099400103]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
 script = ExtResource("1_script")
 vida_maxima = 3
 
 [node name="PerrenaModel" parent="." unique_id=211543578 instance=ExtResource("2_model")]
-transform = Transform3D(4.86, 0, 0, 0, 4.86, 0, 0, 0, 4.86, 0, 0, 0)
+transform = Transform3D(-2.22914e-07, 0, 5.1, 0, 5.1, 0, -5.1, 0, -2.22914e-07, 0, -0.065, 0)
 
 [node name="AnimationTree" type="AnimationTree" parent="." unique_id=911179179]
 root_node = NodePath("../PerrenaModel")

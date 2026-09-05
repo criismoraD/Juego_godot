@@ -11,6 +11,9 @@ enum TipoDisparoAliada { NORMAL, EXPLOSIVO, MULTIPLE }
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos vivos para empezar a disparar
 @export var es_aliada_inicial: bool = true  ## Si es una de las 2 defensoras iniciales que reviven al inicio de cada oleada posterior
+@export var es_movil: bool = false  ## Defensora móvil que corre y escala plataformas
+var en_despliegue: bool = false
+var plataforma_asignada: int = 0
 @export_category("Disparo")
 @export var punto_disparo_proyectil: Node3D = null  ## Nodo Marker3D/Node3D manual para definir el nacimiento del proyectil
 @export var potencia_minima: float = 5.0
@@ -142,7 +145,8 @@ func _ready():
 	var _sombra := SombraPersonaje.new()
 	add_child(_sombra)
 
-	global_position.z = plano_profundidad_z
+	if is_zero_approx(global_position.z):
+		global_position.z = plano_profundidad_z
 	_aplicar_prioridad_renderizado(-2.0)
 
 	call_deferred("_iniciar")
@@ -459,6 +463,10 @@ func _process(delta):
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
 
+	if en_despliegue:
+		_restaurar_torso()
+		return
+
 	if current_state == State.DYING or current_state == State.DEAD:
 		_restaurar_torso()
 		_ocultar_icono_aturdimiento()
@@ -762,6 +770,9 @@ func _cambiar_estado(nuevo: State):
 				model_root.rotation.y = _original_model_y_rot
 
 	current_state = nuevo
+	if en_despliegue and (nuevo == State.IDLE or nuevo == State.AIMING or nuevo == State.RELOADING or nuevo == State.SHOOTING):
+		return
+
 	match nuevo:
 		State.IDLE:
 			var hay_enemigos: bool = (_contar_enemigos_en_pantalla() >= enemigos_minimos)
@@ -856,6 +867,9 @@ func _conectar_eventos_oleada() -> void:
 
 
 func _on_oleada_iniciada(numero_oleada: int) -> void:
+	if es_movil or en_despliegue:
+		return
+
 	# En la oleada 1 no debe levantarse bajo ningún concepto (inicia en IDLE normal).
 	if numero_oleada <= 1:
 		if current_state != State.DYING and current_state != State.DEAD and health > 0:
@@ -1761,6 +1775,179 @@ func _log_debug(parts: Array) -> void:
 	for part in parts:
 		message += str(part)
 	print(message)
+
+
+## Despliega a la arquera móvil caminando, subiendo escaleras y ubicándose en su piso asignado.
+func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> void:
+	es_movil = true
+	en_despliegue = true
+	plataforma_asignada = indice_plataforma
+	vida_maxima = 2
+	health = 2
+	scale = Vector3(0.3, 0.3, 0.3)
+	_setup_animation_player()
+	_restaurar_torso()
+
+	var walk_speed: float = 2.4
+	var climb_speed: float = 1.4
+
+	# Alturas reales de piso y plataformas en el mundo
+	var floor_y: float = 0.185
+	var p1_top_y: float = 1.585
+	var p2_top_y: float = 3.143
+	var p3_top_y: float = 4.60
+
+	var p1_ladder_x: float = -7.58
+	var p1_shoot_x: float = -7.25 if is_nan(destino_x) else destino_x
+
+	var p2_ladder_x: float = -8.33
+	var p2_shoot_x: float = -8.05 if is_nan(destino_x) else destino_x
+
+	var p3_ladder_x: float = -9.11
+	var p3_shoot_x: float = -8.85 if is_nan(destino_x) else destino_x
+
+	var p0_shoot_x: float = -6.0 if is_nan(destino_x) else destino_x
+
+	global_position.y = floor_y
+	if is_zero_approx(global_position.z):
+		global_position.z = plano_profundidad_z
+
+	# 0. Si el destino es Piso 0 (Suelo):
+	if indice_plataforma <= 0:
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CORRER", 0.15, 1.0)
+		var tw0 := create_tween()
+		var dist0: float = absf(p0_shoot_x - global_position.x)
+		tw0.tween_property(self, "global_position:x", p0_shoot_x, dist0 / walk_speed)
+		await tw0.finished
+		if is_instance_valid(self):
+			_finalizar_despliegue_plataforma()
+		return
+
+	# 1. Caminar por el suelo hacia la Escalera 1
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot
+	_play_anim("CORRER", 0.15, 1.0)
+
+	var dist1: float = absf(p1_ladder_x - global_position.x)
+	var tw1 := create_tween()
+	tw1.tween_property(self, "global_position:x", p1_ladder_x, dist1 / walk_speed)
+	await tw1.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 2. Subir Escalera 1 (espalda visible a la cámara)
+	if model_root:
+		model_root.rotation.y = 0.0
+	_play_anim(["SUBIR_ESCALERAS", "SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+	var climb_dist1: float = absf(p1_top_y - global_position.y)
+	var tw_climb1 := create_tween()
+	tw_climb1.tween_property(self, "global_position:y", p1_top_y, climb_dist1 / climb_speed)
+	await tw_climb1.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	_play_anim(["ATERRIZAJE_POST_SALTO_O_CAIDA", "IDLE"], 0.2, 1.0)
+	await get_tree().create_timer(0.18).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	if indice_plataforma == 1:
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CORRER", 0.15, 1.0)
+		var tw_pos := create_tween()
+		tw_pos.tween_property(self, "global_position:x", p1_shoot_x, absf(p1_shoot_x - global_position.x) / walk_speed)
+		await tw_pos.finished
+		if is_instance_valid(self):
+			_finalizar_despliegue_plataforma()
+		return
+
+	# 3. Caminar por Plataforma 1 hacia Escalera 2 (hacia la izquierda)
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot + PI
+	_play_anim("CORRER", 0.15, 1.0)
+	var dist2: float = absf(p2_ladder_x - global_position.x)
+	var tw2 := create_tween()
+	tw2.tween_property(self, "global_position:x", p2_ladder_x, dist2 / walk_speed)
+	await tw2.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 4. Subir Escalera 2 hasta Plataforma 2
+	if model_root:
+		model_root.rotation.y = 0.0
+	_play_anim(["SUBIR_ESCALERAS", "SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+	var climb_dist2: float = absf(p2_top_y - global_position.y)
+	var tw_climb2 := create_tween()
+	tw_climb2.tween_property(self, "global_position:y", p2_top_y, climb_dist2 / climb_speed)
+	await tw_climb2.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	_play_anim(["ATERRIZAJE_POST_SALTO_O_CAIDA", "IDLE"], 0.2, 1.0)
+	await get_tree().create_timer(0.18).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	if indice_plataforma == 2:
+		if model_root:
+			model_root.rotation.y = _original_model_y_rot
+		_play_anim("CORRER", 0.15, 1.0)
+		var tw_pos := create_tween()
+		tw_pos.tween_property(self, "global_position:x", p2_shoot_x, absf(p2_shoot_x - global_position.x) / walk_speed)
+		await tw_pos.finished
+		if is_instance_valid(self):
+			_finalizar_despliegue_plataforma()
+		return
+
+	# 5. Caminar por Plataforma 2 hacia Escalera 3 (hacia la izquierda)
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot + PI
+	_play_anim("CORRER", 0.15, 1.0)
+	var dist3: float = absf(p3_ladder_x - global_position.x)
+	var tw3 := create_tween()
+	tw3.tween_property(self, "global_position:x", p3_ladder_x, dist3 / walk_speed)
+	await tw3.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 6. Subir Escalera 3 hasta Plataforma 3 (la más alta)
+	if model_root:
+		model_root.rotation.y = 0.0
+	_play_anim(["SUBIR_ESCALERAS", "SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
+	var climb_dist3: float = absf(p3_top_y - global_position.y)
+	var tw_climb3 := create_tween()
+	tw_climb3.tween_property(self, "global_position:y", p3_top_y, climb_dist3 / climb_speed)
+	await tw_climb3.finished
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	_play_anim(["ATERRIZAJE_POST_SALTO_O_CAIDA", "IDLE"], 0.2, 1.0)
+	await get_tree().create_timer(0.18).timeout
+	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
+		return
+
+	# 7. Posicionarse en Plataforma 3
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot
+	_play_anim("CORRER", 0.15, 1.0)
+	var tw_pos3 := create_tween()
+	tw_pos3.tween_property(self, "global_position:x", p3_shoot_x, absf(p3_shoot_x - global_position.x) / walk_speed)
+	await tw_pos3.finished
+	if is_instance_valid(self):
+		_finalizar_despliegue_plataforma()
+
+
+func _finalizar_despliegue_plataforma() -> void:
+	en_despliegue = false
+	_restaurar_torso()
+	if model_root:
+		model_root.rotation.y = _original_model_y_rot
+	_play_anim(["IDE", "IDLE", "IDLE_001"], 0.25, 1.0)
+	_play_bow_anim("ARCO_IDLE", 0.25, 1.0)
+	_cambiar_estado(State.IDLE)
 
 
 func _exit_tree():

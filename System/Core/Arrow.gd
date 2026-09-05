@@ -41,6 +41,8 @@ var _destello_punta_creado: bool = false
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
 var _desvaneciendose: bool = false  ## True durante la transición de transparencia clavada
+static var _cached_tip_material: StandardMaterial3D = null
+static var _cached_tip_mesh: SphereMesh = null
 
 
 func _ready():
@@ -721,22 +723,26 @@ func _crear_destello_punta() -> void:
 	red_light.omni_range = 1.0
 	add_child(red_light)
 
-	# Esfera incandescente roja en la punta
+	# Esfera incandescente roja en la punta (material y malla cacheados)
 	var tip_mesh := MeshInstance3D.new()
 	tip_mesh.name = "RedTipMesh"
 	tip_mesh.position = Vector3(0.42, 0.0, 0.0)
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.06
-	sphere.height = 0.12
-	tip_mesh.mesh = sphere
 
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.2, 0.1)
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.1, 0.05)
-	mat.emission_energy_multiplier = 6.0
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	tip_mesh.material_override = mat
+	if not _cached_tip_mesh:
+		_cached_tip_mesh = SphereMesh.new()
+		_cached_tip_mesh.radius = 0.06
+		_cached_tip_mesh.height = 0.12
+
+	if not _cached_tip_material:
+		_cached_tip_material = StandardMaterial3D.new()
+		_cached_tip_material.albedo_color = Color(1.0, 0.2, 0.1)
+		_cached_tip_material.emission_enabled = true
+		_cached_tip_material.emission = Color(1.0, 0.1, 0.05)
+		_cached_tip_material.emission_energy_multiplier = 6.0
+		_cached_tip_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+
+	tip_mesh.mesh = _cached_tip_mesh
+	tip_mesh.material_override = _cached_tip_material
 	add_child(tip_mesh)
 
 

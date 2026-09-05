@@ -55,6 +55,7 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 @export var pilar_lonko_scene: PackedScene = preload("res://Entities/Enemigo_Lonko/PilarLonko.tscn")  ## Escena configurable del pilar
 @export var altura_pilar_offset: float = 3.2  ## Altura final de Lonko sobre el pilar (ajustable manualmente en Inspector)
 @export var escala_pilar: float = 3.0         ## Escala del pilar (3.0x por defecto)
+@export var offset_z_pilar: float = 0.45      ## Desplazamiento Z hacia la cámara para emerger visiblemente en primer plano
 @export var vida_pilar_max: float = 15.0      ## Vida del pilar (15 HP de resistencia)
 @export var textura_rocas_pilar: Texture2D = null  ## Textura opcional para partículas de rocas en el suelo
 
@@ -640,6 +641,7 @@ func _iniciar_secuencia_pilar() -> void:
 	_is_invulnerable = true  ## Invulnerable a ataques y flechas atraviesan durante la subida
 	velocity = Vector3.ZERO
 	_base_pos_pilar = global_position
+	_base_pos_pilar.z += offset_z_pilar
 	# Ocultar arco y flecha durante baile PILAR_SUBIDA
 	_set_arco_visible(false)
 	_ocultar_flecha_mano()
@@ -660,7 +662,6 @@ func _iniciar_secuencia_pilar() -> void:
 		_lonko_modelo.position = Vector3.ZERO
 
 	var duracion_base: float = 9.5
-	var velocidad_anim: float = 1.0
 	var duracion_real: float = duracion_base
 	_crear_humo_pilar(base_x, base_y, base_z, duracion_real)
 
@@ -670,7 +671,9 @@ func _iniciar_secuencia_pilar() -> void:
 	# 3. Instanciar PILAR_LONKO.glb vinculado a este Lonko (sin colisión con enemigos)
 	if pilar_lonko_scene:
 		_instancia_pilar = pilar_lonko_scene.instantiate() as Node3D
-		var root := get_tree().current_scene
+		var root: Node = get_tree().current_scene if get_tree() else null
+		if not root and get_tree():
+			root = get_tree().root
 		if root and _instancia_pilar:
 			root.add_child(_instancia_pilar)
 			_instancia_pilar.scale = Vector3(escala_pilar, escala_pilar, escala_pilar)
@@ -689,7 +692,7 @@ func _iniciar_secuencia_pilar() -> void:
 				var col_shape := CollisionShape3D.new()
 				var cylinder := CylinderShape3D.new()
 				cylinder.height = altura_pilar
-				cylinder.radius = 0.65
+				cylinder.radius = 0.85
 				col_shape.shape = cylinder
 				col_shape.position = Vector3(0, altura_pilar * 0.5, 0)
 				pilar_body.add_child(col_shape)
@@ -697,12 +700,14 @@ func _iniciar_secuencia_pilar() -> void:
 
 			pilar_body.inicializar(self, vida_pilar_max)
 
-			# Animar la emergencia del pilar Y la elevación de Lonko a la par
+			# Animar la emergencia del pilar Y la elevación de Lonko a la par hacia primer plano
 			_tween_subida = create_tween()
 			_tween_subida.set_parallel(true)
 			_tween_subida.tween_property(_instancia_pilar, "global_position:y", base_y, duracion_real) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			_tween_subida.tween_property(self, "global_position:y", base_y + altura_pilar, duracion_real) \
+				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			_tween_subida.tween_property(self, "global_position:z", base_z, min(1.0, duracion_real * 0.2)) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 	# 4. Bamboleo sutil estilo terremoto (duración reducida 2 segundos menos)
@@ -815,7 +820,9 @@ func _crear_particulas_rocas_pilar(bx: float, by: float, bz: float) -> void:
 	quad.material = mat
 	_particulas_pilar.draw_pass_1 = quad
 
-	var root := get_tree().current_scene
+	var root: Node = get_tree().current_scene if get_tree() else null
+	if not root and get_tree():
+		root = get_tree().root
 	if root:
 		root.add_child(_particulas_pilar)
 		# Nacer en la base del suelo donde emerge el pilar
@@ -914,7 +921,9 @@ func _crear_humo_pilar(bx: float, by: float, bz: float, duracion: float, es_dest
 	_particulas_humo_pilar.draw_pass_1 = quad
 
 	var humo: GPUParticles3D = _particulas_humo_pilar  # Ref local: la limpieza NO depende de la Lonko
-	var root := get_tree().current_scene
+	var root: Node = get_tree().current_scene if get_tree() else null
+	if not root and get_tree():
+		root = get_tree().root
 	if root:
 		root.add_child(humo)
 		humo.global_position = Vector3(bx, by + 0.05, bz)

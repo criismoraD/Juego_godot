@@ -49,7 +49,7 @@ _subresources={
 },
 "nodes": {
 "PATH:Escudonivel3": {
-"mesh_instance/layers": 4
+"mesh_instance/layers": 1
 }
 }
 }

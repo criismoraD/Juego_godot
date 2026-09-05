@@ -1074,6 +1074,7 @@ func _cambiar_personaje_controlable() -> void:
 			root.add_child(_perrena_instanciada)
 		else:
 			return
+	_perrena_instanciada.scale = actual.scale
 	_perrena_instanciada.global_position = actual.global_position
 
 	_protagonista_reservada = actual

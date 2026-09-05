@@ -21,7 +21,16 @@ var puede_moverse: bool = true
 func _ready() -> void:
 	add_to_group("player_interior")
 
+	# Configuración de física para prevenir tiritado/vibración contra paredes
+	floor_snap_length = 0.08
+	floor_constant_speed = true
+	floor_stop_on_slope = true
+	floor_block_on_wall = true
+	floor_max_angle = deg_to_rad(45.0)
+	safe_margin = 0.005
+
 	_ajustar_linea_negra_minima()
+
 
 	_arquera_modelo = find_child("ArqueraModel", true, false) as Node3D
 	if _arquera_modelo:
@@ -77,7 +86,9 @@ func _ajustar_linea_negra_minima() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor():
+	if is_on_floor():
+		velocity.y = 0.0
+	else:
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
 
 	if not puede_moverse:
@@ -99,11 +110,15 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+	# Prevenir que colisiones contra la base de las paredes impulsen al personaje hacia arriba
+	if is_on_floor() and velocity.y > 0.0:
+		velocity.y = 0.0
+
 	_esta_caminando = dir_mundo.length_squared() > 0.01
 
 	if _esta_caminando:
-		var delta_yaw := _calcular_delta_yaw_cardinal(dir_mundo)
-		_yaw_objetivo = _yaw_base + delta_yaw
+		# Rotación continua y fluida hacia la dirección de avance (elimina oscilaciones en diagonales y paredes)
+		_yaw_objetivo = atan2(dir_mundo.x, dir_mundo.z)
 
 	if _arquera_modelo:
 		var actual := _arquera_modelo.rotation.y
@@ -111,6 +126,7 @@ func _physics_process(delta: float) -> void:
 		_arquera_modelo.rotation.y = lerp_angle(actual, _yaw_objetivo, factor)
 
 	_actualizar_animacion()
+
 
 
 func _calcular_delta_yaw_cardinal(d: Vector3) -> float:

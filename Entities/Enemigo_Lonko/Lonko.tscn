@@ -7,9 +7,8 @@
 [ext_resource type="PackedScene" uid="uid://bbrua2kwcecpu" path="res://assets/BinbunVFX/magic_projectiles/effects/mprojectile_javelin/mprojectile_javelin_vfx_02.tscn" id="5_vfx_manual"]
 [ext_resource type="Texture2D" uid="uid://co802i012y46f" path="res://Entities/Enemigo_Lonko/humo pisada.png" id="6_polvo"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lonko"]
-radius = 0.35
-height = 1.0251954
+[sub_resource type="BoxShape3D" id="BoxShape3D_lonko"]
+size = Vector3(0.7, 1.0251954, 2.2)
 
 [sub_resource type="Gradient" id="Grad_polvo"]
 offsets = PackedFloat32Array(0, 0.5, 1)
@@ -67,7 +66,7 @@ altura_spawn_flecha = 0.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1943347810]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5125977, 0)
-shape = SubResource("CapsuleShape3D_lonko")
+shape = SubResource("BoxShape3D_lonko")
 
 [node name="LONKO" parent="." unique_id=1820795103 instance=ExtResource("2_glb")]
 transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)

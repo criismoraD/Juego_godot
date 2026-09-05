@@ -125,6 +125,7 @@ static func _asegurar_cache_barreras(tree: SceneTree) -> void:
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
 var _red_flash_material: StandardMaterial3D = null
+var sombra_nodo: Node3D = null  ## Sombra circular procedural (desactivable para spawns de torre)
 # === SEÑALES ===
 var game_feel: Node = null
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -166,6 +167,15 @@ func _ready():
 	_sombra.suavizado = sombra_suavizado
 	_sombra.altura_max_desvanecimiento = sombra_altura_max
 	add_child(_sombra)
+	sombra_nodo = _sombra
+
+
+## Desactiva la sombra circular falsa a los pies (ej: enemigos que spawnean desde la torre)
+func desactivar_sombra() -> void:
+	if is_instance_valid(sombra_nodo):
+		sombra_nodo.visible = false
+		sombra_nodo.set_process(false)
+		sombra_nodo.set_physics_process(false)
 
 
 func _desactivar_bones_fisicos():

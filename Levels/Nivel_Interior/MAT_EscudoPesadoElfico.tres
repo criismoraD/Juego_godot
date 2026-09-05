@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dlxfoijx8hj27"]
+
+[ext_resource type="Texture2D" uid="uid://chqqgsm7wtq85" path="res://TEST_/Escudo pesado elfico/Escudo pesado elfico_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Escudo pesado elfico_M"
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")
+metallic = 0.2
+roughness = 0.5

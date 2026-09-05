@@ -21,14 +21,15 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos cuerno)
 @export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 GoblinGirl + 1 Arquera Rosa, 9 Goblin + 10 cuerno)
 @export var total_enemigos_oleada_6: int = 40  ## Enemigos totales en la Oleada 6 Asalto final (12 arqueras, 15 ballesteros, 5 globos, 6 goblinas de escudo)
+@export_range(0.0, 1.0, 0.05) var mascara_oleada6_alfa: float = 0.85  ## Oscurecido lateral derecho durante la Oleada 6
 
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
 @export_range(1.0, 1.4, 0.01) var escala_cobertura_fondo_animado: float = 1.18
-@export var limitar_fps_subviewport_fondo_3d: bool = false
+@export var limitar_fps_subviewport_fondo_3d: bool = true
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
-@export var pausar_video_fondo_en_combate: bool = false
+@export var pausar_video_fondo_en_combate: bool = true
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === MODO TUTORIAL ===
@@ -58,6 +59,9 @@ var imp_estandarte: Node3D = null  ## Referencia al imp que lleva el estandarte
 var oleada_debug_pendiente: int = 0  ## Oleada solicitada por debug: se aplica tras el intro y el evento del embajador
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
+var _mascara_oleada6_layer: CanvasLayer = null
+var _mascara_oleada6_rect: Control = null
+var _mascara_oleada6_tween: Tween = null
 var _aliadas_activas: bool = true  ## Estado de aliadas para modo debug
 # Diálogos defensoras — 6 solicitados (eliminar previos, duraciones según spec)
 var _dialogo_cambio_arma_mostrado: bool = false  # arriba PARA CAMBIAR 15s
@@ -77,6 +81,8 @@ const ESCENA_TRIDENTE_IMP: PackedScene = preload("res://Entities/Proyectil_Tride
 const ESCENA_FLECHA_GOBLIN: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
 const ESCENA_PROYECTIL_GARGOLA: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
 const ESCENA_GOBLIN_BALLESTA: PackedScene = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
+const TEX_MASCARA_OLEADA6: Texture2D = preload("res://Levels/NIVEL_TUTORIAL/sombra_mascara_oleada6.png")
+const SHADER_SOMBRA_FALSA: Shader = preload("res://System/Shaders/sombra_falsa.gdshader")
 const ESCALA_PRECALENTA: float = 0.05  ## Escala mini de las instancias de warm-up (caben dentro del HUD)
 var _viewport_precarga: SubViewport = null  ## Viewport invisible para compilar shaders sin mostrar nada
 @onready
@@ -1216,6 +1222,9 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		else:
 			torre_asedio_ref.desactivar_torre()
 
+	# Máscara de sombra lateral en la Oleada 6 (oscurece la zona derecha)
+	_actualizar_mascara_oleada6(numero_oleada)
+
 
 
 	# Conectar señal de oleada completada
@@ -1232,6 +1241,55 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	wave_spawner.goblins_spawned_in_wave = wave_spawner.active_goblins.size()
 	wave_spawner.is_wave_active = false
 	wave_spawner.wave_cooldown = 1.0
+
+
+## Muestra (oleada 6) u oculta la máscara de sombra lateral derecha (oscurece esa zona)
+func _actualizar_mascara_oleada6(numero_oleada: int) -> void:
+	if numero_oleada == 6:
+		_mostrar_mascara_oleada6()
+	else:
+		_ocultar_mascara_oleada6()
+
+
+func _mostrar_mascara_oleada6() -> void:
+	if not _mascara_oleada6_layer or not is_instance_valid(_mascara_oleada6_layer):
+		_mascara_oleada6_layer = CanvasLayer.new()
+		_mascara_oleada6_layer.name = "MascaraOleada6"
+		_mascara_oleada6_layer.layer = 21  # Sobre Compositor3D (layer 20), debajo de GameUI (layer 100)
+		add_child(_mascara_oleada6_layer)
+
+		_mascara_oleada6_rect = ColorRect.new()
+		_mascara_oleada6_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_mascara_oleada6_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_mascara_oleada6_rect.modulate = Color(1, 1, 1, 0)
+
+		var mat := ShaderMaterial.new()
+		mat.shader = SHADER_SOMBRA_FALSA
+		mat.set_shader_parameter("shadow_mask", TEX_MASCARA_OLEADA6)
+		mat.set_shader_parameter("shadow_color", Color(0.02, 0.02, 0.04, 1.0))
+		mat.set_shader_parameter("shadow_opacity", 1.0)
+		_mascara_oleada6_rect.material = mat
+
+		_mascara_oleada6_layer.add_child(_mascara_oleada6_rect)
+
+	if _mascara_oleada6_tween and _mascara_oleada6_tween.is_valid():
+		_mascara_oleada6_tween.kill()
+	_mascara_oleada6_rect.visible = true
+	_mascara_oleada6_tween = create_tween()
+	_mascara_oleada6_tween.tween_property(_mascara_oleada6_rect, "modulate:a", mascara_oleada6_alfa, 0.6)
+
+
+func _ocultar_mascara_oleada6() -> void:
+	if not _mascara_oleada6_rect or not is_instance_valid(_mascara_oleada6_rect):
+		return
+	if _mascara_oleada6_tween and _mascara_oleada6_tween.is_valid():
+		_mascara_oleada6_tween.kill()
+	_mascara_oleada6_tween = create_tween()
+	_mascara_oleada6_tween.tween_property(_mascara_oleada6_rect, "modulate:a", 0.0, 0.4)
+	_mascara_oleada6_tween.tween_callback(func():
+		if is_instance_valid(_mascara_oleada6_rect):
+			_mascara_oleada6_rect.visible = false
+	)
 
 
 func _monitorear_nivel_1():
@@ -1333,6 +1391,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
 	_log_debug("[NIVEL01] ¡Oleada 6 completada! Mostrando victoria con botón continuar...")
+	_ocultar_mascara_oleada6()
 
 	_mostrar_victoria_con_continuar(
 		(
@@ -1531,7 +1590,12 @@ func _precalentar_instancia_breve(escena: PackedScene) -> void:
 	if _viewport_precarga == null or not is_instance_valid(_viewport_precarga):
 		_crear_viewport_precarga()
 
+	GargolaProjectile.suprimir_sonido_prewarm = true
+	ExplosionFlechaExplosiva.suprimir_sonido_prewarm = true
 	var instancia = escena.instantiate()
+	GargolaProjectile.suprimir_sonido_prewarm = false
+	ExplosionFlechaExplosiva.suprimir_sonido_prewarm = false
+
 	_viewport_precarga.add_child(instancia)
 	instancia.position = Vector3(randf_range(-0.4, 0.4), randf_range(-0.2, 0.2), randf_range(-0.3, 0.3))
 	instancia.scale = Vector3.ONE * ESCALA_PRECALENTA
@@ -2614,7 +2678,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 	ballestera._play_anim("CORRER", 0.15, 1.0)
 	var tween_in: Tween = create_tween()
 	var dist_in: float = absf(entrega_pos.x - start_pos.x)
-	tween_in.tween_property(ballestera, "global_position:x", entrega_pos.x, dist_in / 1.0)
+	tween_in.tween_property(ballestera, "global_position:x", entrega_pos.x, dist_in / 1.7)
 	await tween_in.finished
 	if not is_instance_valid(ballestera):
 		return
@@ -2710,7 +2774,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 
 	var tween_out: Tween = create_tween()
 	var dist_out: float = absf(start_pos.x - entrega_pos.x)
-	tween_out.tween_property(ballestera, "global_position:x", start_pos.x, dist_out / 1.0)
+	tween_out.tween_property(ballestera, "global_position:x", start_pos.x, dist_out / 1.7)
 	await tween_out.finished
 	if is_instance_valid(ballestera):
 		ballestera.queue_free()

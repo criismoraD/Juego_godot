@@ -435,7 +435,7 @@ displacement_scale_xz = 0.166
 bevel_radius = 0.15
 
 [node name="EscudoDestruible3" parent="." unique_id=831090704 instance=ExtResource("10_j54d2")]
-transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -8.159778, 4.582726, -0.10453305)
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -8.159778, 4.582726, -0.38)
 golpes_para_destruir = 4
 intensidad_flash = 2.5
 fuerza_explosion = 1.0
@@ -446,7 +446,7 @@ torque_max = 0.5
 tiempo_congelar = 4.0
 
 [node name="EscudoDestruible4" parent="." unique_id=343112744 instance=ExtResource("10_j54d2")]
-transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -7.381792, 3.0993502, -0.104533106)
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -7.381792, 3.0993502, -0.38)
 golpes_para_destruir = 4
 intensidad_flash = 2.5
 fuerza_explosion = 1.0
@@ -457,7 +457,7 @@ torque_max = 0.5
 tiempo_congelar = 4.0
 
 [node name="EscudoDestruible5" parent="." unique_id=354870652 instance=ExtResource("10_j54d2")]
-transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -6.6350684, 1.5966773, -0.10453305)
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -6.6350684, 1.5966773, -0.38)
 golpes_para_destruir = 4
 intensidad_flash = 2.5
 fuerza_explosion = 1.0
@@ -468,7 +468,7 @@ torque_max = 0.5
 tiempo_congelar = 4.0
 
 [node name="EscudoDestruible6" parent="." unique_id=134499812 instance=ExtResource("10_j54d2")]
-transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -6.516018, 0.18503836, -0.104533106)
+transform = Transform3D(0.59307826, -0.04734667, -0.07756606, 0.048285678, 0.5980395, 0.0041514295, 0.07698502, -0.010345753, 0.5949506, -6.516018, 0.18503836, -0.38)
 golpes_para_destruir = 4
 intensidad_flash = 2.5
 fuerza_explosion = 1.0

@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://Levels/Nivel_Interior/SombraInteriorOverlay.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://Levels/Nivel_Interior/MascaraOscurecerInterior.png" id="2_mask"]
+
+[resource]
+shader = ExtResource("1_shader")
+shader_parameter/shadow_intensity = 1.0
+shader_parameter/shadow_tint = Color(0.92, 0.88, 1, 1)
+shader_parameter/mask_texture = ExtResource("2_mask")

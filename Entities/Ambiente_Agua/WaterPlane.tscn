@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cxqcex5ugbppo"]
 
-[ext_resource type="Material" uid="uid://water_back_mat_uid" path="res://Entities/Ambiente_Agua/Water_Back.tres" id="1_back_mat"]
-[ext_resource type="Material" uid="uid://water_front_mat_uid" path="res://Entities/Ambiente_Agua/Water_Front.tres" id="2_front_mat"]
+[ext_resource type="Material" uid="uid://cifxoxbexc8a0" path="res://Entities/Ambiente_Agua/Water_Back.tres" id="1_back_mat"]
+[ext_resource type="Material" uid="uid://dw02p8v0orn6c" path="res://Entities/Ambiente_Agua/Water_Front.tres" id="2_front_mat"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_Atras"]
 size = Vector2(30, 33.333333)

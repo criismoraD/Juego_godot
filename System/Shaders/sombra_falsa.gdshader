@@ -9,5 +9,5 @@ void fragment() {
 	// En la máscara: negro (0.0) = sombra total, blanco (1.0) = luz
 	float shadow_strength = 1.0 - mask_val;
 
-	COLOR = vec4(shadow_color.rgb, shadow_strength * shadow_opacity);
+	COLOR = vec4(shadow_color.rgb * COLOR.rgb, shadow_strength * shadow_opacity * COLOR.a);
 }

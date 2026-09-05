@@ -18,6 +18,8 @@ const VOLUMEN_FUEGO_REDUCIDO_DB: float = 1.5
 @export var volumen_disparo_db: float = VOLUMEN_FUEGO_REDUCIDO_DB
 @export var volumen_impacto_db: float = VOLUMEN_FUEGO_REDUCIDO_DB
 
+static var suprimir_sonido_prewarm: bool = false  ## El precalentador de shaders lo activa para instanciar mudo
+
 var _vfx_fireball: Node3D = null
 var _vfx_nodos_preparados: bool = false
 
@@ -201,6 +203,8 @@ func _detener_particulas_vfx() -> void:
 
 
 func _reproducir_sonido_disparo() -> void:
+	if suprimir_sonido_prewarm:
+		return
 	AudioManager.play_sfx(String(SFX_FUEGO), volumen_disparo_db)
 
 
@@ -289,4 +293,6 @@ func _crear_quemadura_escudo(escudo: Node3D, pos_global: Vector3) -> void:
 
 
 func _reproducir_sonido_impacto() -> void:
+	if suprimir_sonido_prewarm:
+		return
 	AudioManager.play_sfx(String(SFX_IMPACTO), volumen_impacto_db)

@@ -24,6 +24,10 @@
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="27_50kgx"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Luciernagas/LuciernagasPlane.tscn" id="28_luciernagas"]
 [ext_resource type="Texture2D" uid="uid://c0seb337nvcqk" path="res://TEST_/Fondo nivel 2.png" id="29_fondonivel2"]
+[ext_resource type="PackedScene" uid="uid://v8ci5ta3tkkr" path="res://Entities/Ambiente_Plataforma_Oneway/PlataformaOneway.tscn" id="30_plataforma"]
+[ext_resource type="PackedScene" uid="uid://cr61kgfu7qhp0" path="res://Entities/Ambiente_Escalera/ESCALERA.tscn" id="31_escalera"]
+[ext_resource type="PackedScene" path="res://Entities/Spawner_Aliadas/AllySpawner.tscn" id="32_spawner"]
+
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
 dof_blur_far_distance = 45.0
@@ -130,20 +134,7 @@ bones/55/rotation = Quaternion(0.09216472, -9.534215e-08, -1.282547e-07, 0.99574
 bones/59/rotation = Quaternion(-0.0421584, 0.0031653713, -0.07480207, 0.99630183)
 bones/60/rotation = Quaternion(0.07334288, -4.3374817e-07, -1.6983543e-07, 0.99730676)
 bones/61/rotation = Quaternion(0.014149186, 6.797559e-08, -5.238197e-08, 0.99989986)
-bones/65/rotation = Quaternion(-0.05747355, -0.0029612232, 0.051369727, 0.9970202)
-bones/66/rotation = Quaternion(0.089709796, -2.3030488e-07, -1.9268327e-07, 0.995968)
-bones/67/rotation = Quaternion(0.13453335, 1.9692362e-07, 1.1326327e-07, 0.9909091)
-bones/71/rotation = Quaternion(-0.008238363, -0.0016768659, 0.1994669, 0.9798685)
-bones/72/rotation = Quaternion(0.12436842, 2.5106954e-07, 3.4042242e-07, 0.9922361)
-bones/73/rotation = Quaternion(0.07164645, -5.4248875e-07, -3.4938319e-07, 0.9974301)
-bones/77/rotation = Quaternion(-0.000114148694, -0.00957034, 0.9998838, -0.011868258)
-bones/78/rotation = Quaternion(-0.058542818, 0.0009706282, -0.016542234, 0.99814737)
-bones/79/rotation = Quaternion(0.55242866, -0.010337352, 0.0068516736, 0.8334679)
-bones/80/rotation = Quaternion(0.25234112, 0.067223445, -0.017575951, 0.9651404)
-bones/84/rotation = Quaternion(5.6047833e-05, -0.004705328, 0.99991846, 0.011870324)
-bones/85/rotation = Quaternion(-0.07090171, -0.0011755719, 0.016535468, 0.99734557)
-bones/86/rotation = Quaternion(0.5592251, 0.010226039, -0.0068988795, 0.82892406)
-bones/87/rotation = Quaternion(0.251852, -0.06658933, 0.017373264, 0.9653158)
+
 
 [node name="BoneAttach_Arco" parent="Player/ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
 transform = Transform3D(0.7939709, 0.58018094, 0.18165906, 0.37088796, -0.22548074, -0.9008886, -0.48171797, 0.78265435, -0.39420742, 0.08868073, 0.25188085, 0.22538188)
@@ -166,6 +157,9 @@ escena_imp_escudo = ExtResource("9_rpwsg")
 
 [node name="SpawnMarker" type="Marker3D" parent="WaveSpawner" unique_id=1697843293]
 gizmo_extents = 0.5
+
+[node name="SpawnBallesterasAliadas" parent="." unique_id=811001007 instance=ExtResource("32_spawner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 0.185, 3)
 
 [node name="LIMITZONE" parent="." unique_id=2108357977 instance=ExtResource("10_d2j4l")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4137244, 0.157, 3)
@@ -357,6 +351,26 @@ transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0.16897866, 0.20699978,
 transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -3.0, 3.0, -38.0)
 layers = 2
 texture = ExtResource("29_fondonivel2")
+
+[node name="PlataformaOneway1" parent="." unique_id=811001001 instance=ExtResource("30_plataforma")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -7.617247, 1.7013383, 2.623308)
+
+[node name="Ladder1" parent="PlataformaOneway1" unique_id=811001002 instance=ExtResource("31_escalera")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -2.9612694, 0.1503278)
+
+[node name="PlataformaOneway2" parent="." unique_id=811001003 instance=ExtResource("30_plataforma")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -8.364106, 3.248637, 2.623308)
+
+[node name="Ladder2" parent="PlataformaOneway2" unique_id=811001004 instance=ExtResource("31_escalera")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
+
+[node name="PlataformaOneway3" parent="." unique_id=811001005 instance=ExtResource("30_plataforma")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -9.14372, 4.721031, 2.623308)
+
+[node name="Ladder3" parent="PlataformaOneway3" unique_id=811001006 instance=ExtResource("31_escalera")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
+
+
 
 [editable path="Player"]
 [editable path="Player/ArqueraModel"]

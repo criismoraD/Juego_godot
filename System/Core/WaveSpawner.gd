@@ -93,46 +93,8 @@ func _ready():
 	if not escena_imp_escudo:
 		escena_imp_escudo = preload("res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.tscn")
 
-	# Precalentar pipelines gráficos de enemigos de forma asíncrona al inicio
-	call_deferred("_precalentar_enemigos")
-
 	# Iniciar primera oleada después de un delay
 	wave_cooldown = 2.0
-
-
-func _precalentar_enemigos() -> void:
-	var escenas_prewarm: Array[PackedScene] = [
-		escena_goblin,
-		escena_goblin_girl,
-		escena_imp,
-		escena_canonero,
-		escena_gargola,
-		escena_lonko,
-		escena_arquera_rosa,
-		escena_imp_escudo,
-		escena_globo_aerostatico,
-		escena_limo,
-		escena_goblina_escudo
-	]
-
-	var holder := Node3D.new()
-	holder.name = "EnemyPrewarmHolder"
-	holder.position = Vector3(0.0, -300.0, 0.0)
-	add_child(holder)
-
-	for sc in escenas_prewarm:
-		if not sc:
-			continue
-		var enemy = sc.instantiate()
-		if enemy:
-			enemy.process_mode = Node.PROCESS_MODE_DISABLED
-			holder.add_child(enemy)
-
-	await get_tree().process_frame
-	await get_tree().process_frame
-
-	if is_instance_valid(holder):
-		holder.queue_free()
 
 
 func _process(delta):

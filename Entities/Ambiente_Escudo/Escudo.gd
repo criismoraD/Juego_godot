@@ -13,6 +13,9 @@ signal destruido
 @export var intervalo_parpadeo: float = 0.09  ## Segundos de cada fase del parpadeo
 @export_category("Bando")
 @export var es_escudo_enemigo: bool = false
+@export_category("Profundidad 2.5D")
+@export var auto_profundidad_aliado: bool = true  ## Mantiene el escudo en su plano Z detrás de defensores y protagonista
+@export var plano_profundidad_aliado_z: float = -0.38  ## Plano Z seguro detrás de la protagonista (Z=0.05) y aliadas
 @export_category("Colisión")
 @export var bloquear_jugador: bool = false
 @export var bloquear_flechas_jugador: bool = false
@@ -55,12 +58,20 @@ var golpes_recibidos: int = 0
 var mesh_instance: MeshInstance3D
 var sombra_nodo: Node = null  ## Sombra falsa (excluida del parpadeo)
 var _flash_gen: int = 0  ## Generación del flash: golpes seguidos no se pisan entre sí
+var _escala_base: Vector3 = Vector3.ZERO
 var material_original: Material
 var material_dano: StandardMaterial3D
 
 
 func _ready():
 	add_to_group("escudos")
+	_escala_base = scale
+
+	# En perspectiva 2.5D, los escudos aliados deben permanecer detrás de la protagonista y defensoras
+	# para evitar que la malla 3D atraviese o corte al personaje que se mueva por la plataforma
+	if not es_escudo_enemigo and auto_profundidad_aliado:
+		if global_position.z > plano_profundidad_aliado_z:
+			global_position.z = plano_profundidad_aliado_z
 
 	# Configurar colisiones
 	# Layer 2: escudo (los goblins pueden detectarlo)
@@ -69,6 +80,9 @@ func _ready():
 		collision_layer = 2  # Layer del escudo
 		collision_mask = 0  # No detecta nada activamente
 
+	# Asegurar que todas las mallas del escudo estén en la Capa 1 (renderizado frontal junto a personajes y entorno)
+	for mi in _recolectar_mallas():
+		mi.layers = 1
 
 	# Buscar el MeshInstance3D
 	_find_mesh_instance(self)
@@ -128,6 +142,8 @@ func _agregar_mallas(nodo: Node, lista: Array[MeshInstance3D]) -> void:
 	for child in nodo.get_children():
 		if child == sombra_nodo:
 			continue  # La sombra falsa no parpadea
+		if child.is_in_group("flechas") or child.is_in_group("projectiles") or child.name.begins_with("Arrow") or child.name.begins_with("FLECHA"):
+			continue  # Las flechas clavadas en el escudo no parpadean
 		if child is MeshInstance3D:
 			lista.append(child)
 		_agregar_mallas(child, lista)
@@ -319,7 +335,7 @@ func _actualizar_visual_dano():
 	mesh_instance.set_surface_override_material(0, material_dano)
 
 
-func _flash_dano():
+func _flash_dano() -> void:
 	var mallas := _recolectar_mallas()
 	if mallas.is_empty():
 		return
@@ -327,24 +343,18 @@ func _flash_dano():
 	_flash_gen += 1
 	var gen_actual: int = _flash_gen
 
-	# Defensor: un destello blanco único + punch de escala
-	if not es_escudo_enemigo:
-		var flash_mat := _crear_material_flash(Color(1.0, 1.0, 1.0), maxf(intensidad_flash, 4.0))
-		var previos := _aplicar_flash(mallas, flash_mat)
-		var _orig_scale: Vector3 = scale
-		var _tw := create_tween()
-		_tw.tween_property(self, "scale", _orig_scale * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		_tw.tween_property(self, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		await get_tree().create_timer(duracion_flash).timeout
-		if gen_actual != _flash_gen:
-			return
-		_restaurar_flash(previos)
-		return
+	# Punch de escala: expansión y contracción al recibir impacto (tanto escudos aliados como enemigos)
+	if _escala_base == Vector3.ZERO:
+		_escala_base = scale
+	var _tw := create_tween()
+	_tw.tween_property(self, "scale", _escala_base * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tw.tween_property(self, "scale", _escala_base, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
-	# Enemigo: parpadeo rojo múltiple bien visible
-	var flash_rojo := _crear_material_flash(Color(1.0, 0.15, 0.15), intensidad_flash)
+	# Parpadeo rojo vívido visible e inconfundible en todos los escudos
+	var flash_rojo := _crear_material_flash(Color(1.0, 0.08, 0.08, 1.0), intensidad_flash)
 	var previos_rojo := _tomar_previos(mallas)
-	for _rep in range(maxi(parpadeos_rojo_enemigo, 1)):
+	var repeticiones: int = maxi(parpadeos_rojo_enemigo, 2)
+	for _rep in range(repeticiones):
 		if gen_actual != _flash_gen or not is_inside_tree():
 			return
 		_aplicar_material(previos_rojo, flash_rojo)
@@ -357,6 +367,8 @@ func _flash_dano():
 
 func _crear_material_flash(color: Color, intensidad: float) -> StandardMaterial3D:
 	var flash_mat := StandardMaterial3D.new()
+	flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	flash_mat.albedo_color = color
 	flash_mat.emission_enabled = true
 	flash_mat.emission = color
 	flash_mat.emission_energy_multiplier = intensidad

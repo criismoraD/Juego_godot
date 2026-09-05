@@ -153,7 +153,8 @@ func _ready():
 	var _sombra := SombraPersonaje.new()
 	add_child(_sombra)
 
-	global_position.z = plano_profundidad_z
+	if is_zero_approx(global_position.z):
+		global_position.z = plano_profundidad_z
 	_aplicar_prioridad_renderizado(2.0)
 
 	call_deferred("_vincular_escudo_piso")
@@ -565,6 +566,7 @@ func _process(delta: float):
 			_play_anim(["IDLE", "IDLE_001"], 0.25)
 		else:
 			_paralisis_vfx_timer += delta
+			_mantener_anim_electrocutada()
 
 	match current_state:
 		State.IDLE:
@@ -599,6 +601,7 @@ func aplicar_paralisis(duracion: float = 4.0) -> void:
 	# Cambiar a IDLE PRIMERO para que su handler no pise la electrocución
 	if current_state != State.IDLE and current_state != State.GETTING_UP and current_state != State.CELEBRATING:
 		_cambiar_estado(State.IDLE)
+	_configurar_electrocutada_loop()
 	_play_anim(["ELECTROCUTAR", "ELECTROCUTADA"], 0.15, 1.0)
 	_mostrar_icono_aturdimiento()
 
@@ -658,6 +661,29 @@ func _ocultar_icono_aturdimiento() -> void:
 
 func esta_paralizada() -> bool:
 	return paralisis_timer > 0.0
+
+
+## Pone el clip ELECTROCUTADA en LOOP para que el aturdimiento (4s) se vea
+## continuo y no se congele al terminar el clip
+func _configurar_electrocutada_loop() -> void:
+	if not anim_player:
+		return
+	for a in anim_player.get_animation_list():
+		if "electrocut" in String(a).to_lower():
+			var anim := anim_player.get_animation(a)
+			if anim:
+				anim.loop_mode = Animation.LOOP_LINEAR
+			return
+
+
+## Reanuda suave la electrocución si otro estado la pisó (impacto, celebración):
+## solo re-dispara si el clip actual no es de electrocución.
+func _mantener_anim_electrocutada() -> void:
+	if not anim_player:
+		return
+	var actual: String = str(anim_player.current_animation).to_lower()
+	if "electrocut" not in actual:
+		_play_anim(["ELECTROCUTAR", "ELECTROCUTADA"], 0.25, 1.0)
 
 
 func _actualizar_rotacion_modelo(delta: float) -> void:
@@ -1492,7 +1518,7 @@ func _importar_animaciones_jugador() -> void:
 
 ## Despliega a la ballestera móvil caminando y subiendo escaleras con la velocidad
 ## y forma natural de la protagonista (CAMINAR_01 para andar, SUBIR_ESCALERA para trepar).
-func desplegar_a_plataforma(indice_plataforma: int) -> void:
+func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> void:
 	es_movil = true
 	en_despliegue = true
 	plataforma_asignada = indice_plataforma
@@ -1503,8 +1529,8 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 	_importar_animaciones_jugador()
 	_restaurar_torso()
 
-	var walk_speed: float = 1.0
-	var climb_speed: float = 0.70
+	var walk_speed: float = 1.7  ## Punto medio: igual que la mensajera (antes 2.4)
+	var climb_speed: float = 1.1  ## Subida de llegada un poco más lenta
 
 	# Alturas reales de piso y plataformas en el mundo (en el mismo plano Z = 0.0 que la protagonista)
 	var floor_y: float = 0.185
@@ -1513,16 +1539,17 @@ func desplegar_a_plataforma(indice_plataforma: int) -> void:
 	var p3_top_y: float = 4.60
 
 	var p1_ladder_x: float = -7.58
-	var p1_shoot_x: float = -7.25
+	var p1_shoot_x: float = -7.25 if is_nan(destino_x) else destino_x
 
 	var p2_ladder_x: float = -8.33
-	var p2_shoot_x: float = -8.05
+	var p2_shoot_x: float = -8.05 if is_nan(destino_x) else destino_x
 
 	var p3_ladder_x: float = -9.11
-	var p3_shoot_x: float = -8.85
+	var p3_shoot_x: float = -8.85 if is_nan(destino_x) else destino_x
 
 	global_position.y = floor_y
-	global_position.z = plano_profundidad_z
+	if is_zero_approx(global_position.z):
+		global_position.z = plano_profundidad_z
 
 	# 1. Caminar por el suelo hacia la Escalera 1
 	if model_root:
@@ -1686,8 +1713,8 @@ func retirarse_y_bajar_escaleras() -> void:
 	_restaurar_torso()
 	_importar_animaciones_jugador()
 
-	var walk_speed: float = 1.0
-	var climb_speed: float = 0.70
+	var walk_speed: float = 1.7  ## Igual que la llegada (punto medio unificado)
+	var climb_speed: float = 1.4
 
 	var floor_y: float = 0.185
 	var p1_top_y: float = 1.585

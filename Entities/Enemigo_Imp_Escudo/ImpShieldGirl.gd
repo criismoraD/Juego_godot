@@ -132,9 +132,10 @@ func _ready():
 	spawn_position = global_position
 
 	_flash_mat = StandardMaterial3D.new()
-	_flash_mat.albedo_color = Color(1, 1, 1)
+	_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_flash_mat.albedo_color = Color(1.0, 0.08, 0.08, 1.0)
 	_flash_mat.emission_enabled = true
-	_flash_mat.emission = Color(1.0, 0.15, 0.15)
+	_flash_mat.emission = Color(1.0, 0.0, 0.0)
 	_flash_mat.emission_energy_multiplier = 3.0
 
 	_setup_animation_player()
@@ -676,10 +677,18 @@ func recibir_dano(amount: int):
 
 
 
-func _flash_escudo():
-	## Flash blanco rápido en el escudo al recibir impacto
+func _flash_escudo() -> void:
+	## Parpadeo rojo y animación de impacto en el escudo al recibir daño
 	if not escudo_node or not is_instance_valid(escudo_node):
 		return
+
+	# Punch de escala: expansión y contracción al recibir impacto
+	if not has_meta("_escudo_orig_scale"):
+		set_meta("_escudo_orig_scale", escudo_node.scale)
+	var _orig_scale: Vector3 = get_meta("_escudo_orig_scale")
+	var _tw := create_tween()
+	_tw.tween_property(escudo_node, "scale", _orig_scale * 1.15, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tw.tween_property(escudo_node, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	var originals: Array = []
 	for mesh in _escudo_meshes:
@@ -687,11 +696,23 @@ func _flash_escudo():
 			originals.append({"mesh": mesh, "mat": mesh.material_override})
 			mesh.material_override = _flash_mat
 
-	get_tree().create_timer(0.08).timeout.connect(
+	get_tree().create_timer(0.08, false).timeout.connect(
 		func():
 			for item in originals:
 				if is_instance_valid(item["mesh"]):
 					item["mesh"].material_override = item["mat"]
+			get_tree().create_timer(0.06, false).timeout.connect(
+				func():
+					for mesh in _escudo_meshes:
+						if is_instance_valid(mesh):
+							mesh.material_override = _flash_mat
+					get_tree().create_timer(0.08, false).timeout.connect(
+						func():
+							for item in originals:
+								if is_instance_valid(item["mesh"]):
+									item["mesh"].material_override = item["mat"]
+					)
+			)
 	)
 
 

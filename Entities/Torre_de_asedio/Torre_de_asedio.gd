@@ -194,14 +194,27 @@ func _spawnear_enemigo_en_rampa() -> void:
 	var parent_destino = get_parent() if get_parent() else self
 	parent_destino.add_child(nuevo_enemigo)
 
-	# Ubicación en el punto de spawn exactamente en el plano Z de gameplay (2.5D)
-	var player = get_tree().get_first_node_in_group("player")
-	var z_juego: float = player.global_position.z if player else 0.05
-	nuevo_enemigo.global_position = Vector3(punto_spawn.global_position.x, punto_spawn.global_position.y + 0.05, z_juego)
+	# Ubicación en el punto de spawn dentro de la sala interior de la torre
+	nuevo_enemigo.global_position = Vector3(punto_spawn.global_position.x, punto_spawn.global_position.y + 0.05, punto_spawn.global_position.z)
+
+	# Añadir colisionador de profundidad en Z (Hitbox 2.5D) para que las flechas de la protagonista
+	# (que viajan en el plano Z de juego) impacten a la unidad con precisión sin alterar su movimiento en la rampa
+	var hitbox_25d := CollisionShape3D.new()
+	hitbox_25d.name = "Hitbox25D_Torre"
+	var box_shape := BoxShape3D.new()
+	box_shape.size = Vector3(0.5, 0.7, 3.5)
+	hitbox_25d.shape = box_shape
+	hitbox_25d.position = Vector3(0.0, 0.35, 1.25)
+	nuevo_enemigo.add_child(hitbox_25d)
 
 	# Asignar configuración especial para que sepa que está asignado a la rampa
 	nuevo_enemigo.set_meta("es_enemigo_torre_asedio", true)
 	nuevo_enemigo.set_meta("torre_origen", self)
+
+	# Los enemigos que salen del spawn de la torre van sin sombra falsa activada
+	# (la sombra real proyectada se mantiene)
+	if nuevo_enemigo.has_method("desactivar_sombra"):
+		nuevo_enemigo.desactivar_sombra()
 
 	# Asignar una ranura (slot) de posición a lo largo del puente de madera
 	var slot: int = _obtener_siguiente_slot_libre()
@@ -260,19 +273,18 @@ func _filtrar_enemigos_vivos() -> void:
 
 
 ## Garantiza que los enemigos en la rampa avancen hasta su estación asignada sin salir del puente,
-## y permanezcan alineados en Z para que las flechas los impacten directamente.
+## y permanezcan alineados en el carril Z de la rampa.
 func _restringir_enemigos_a_la_rampa() -> void:
 	var limite_izq_x: float = _obtener_borde_frontal_rampa_x()
 	var limite_der_x: float = _obtener_borde_trasero_rampa_x()
-	var player = get_tree().get_first_node_in_group("player")
-	var z_juego: float = player.global_position.z if player else 0.05
+	var z_rampa: float = punto_spawn.global_position.z if punto_spawn else global_position.z
 
 	for e in _enemigos_en_rampa:
 		if not is_instance_valid(e) or not e.is_inside_tree():
 			continue
 
-		# Forzar que se mantengan en el mismo carril Z de la flecha
-		e.global_position.z = z_juego
+		# Forzar que se mantengan en el carril Z de la rampa/puente
+		e.global_position.z = z_rampa
 
 		# Destino específico de este enemigo en el puente
 		var destino_x: float = e.get_meta("destino_rampa_x", limite_izq_x)
@@ -296,26 +308,38 @@ func _restringir_enemigos_a_la_rampa() -> void:
 				e.velocity.x = 0.0
 
 
+func _calcular_bounds_mundo_rampa_x(forma: BoxShape3D) -> Vector2:
+	var xf := colision_rampa.global_transform
+	var ext := forma.size * 0.5
+	var min_x := INF
+	var max_x := -INF
+	for cx in [-ext.x, ext.x]:
+		for cy in [-ext.y, ext.y]:
+			for cz in [-ext.z, ext.z]:
+				var px: float = (xf * Vector3(cx, cy, cz)).x
+				min_x = min(min_x, px)
+				max_x = max(max_x, px)
+	return Vector2(min_x, max_x)
+
+
 func _obtener_borde_frontal_rampa_x() -> float:
 	if colision_rampa and is_instance_valid(colision_rampa):
-		var forma = colision_rampa.shape as BoxShape3D
+		var forma := colision_rampa.shape as BoxShape3D
 		if forma:
-			# Multiplicar por la escala global para considerar escalamientos del editor
-			var escala_mundo_x: float = colision_rampa.global_transform.basis.get_scale().x
-			var mitad_ancho: float = (forma.size.x * 0.5) * escala_mundo_x
-			return colision_rampa.global_position.x - mitad_ancho + margen_limite_rampa_x
+			var bounds := _calcular_bounds_mundo_rampa_x(forma)
+			# En el modelo 3D, el puente de madera transitable comienza en bounds.x + 0.95
+			return max(bounds.x + 0.95, bounds.x + margen_limite_rampa_x)
 	if punto_spawn:
-		return punto_spawn.global_position.x - 2.5
-	return global_position.x - 2.5
+		return punto_spawn.global_position.x - 2.0
+	return global_position.x - 2.0
 
 
 func _obtener_borde_trasero_rampa_x() -> float:
 	if colision_rampa and is_instance_valid(colision_rampa):
-		var forma = colision_rampa.shape as BoxShape3D
+		var forma := colision_rampa.shape as BoxShape3D
 		if forma:
-			var escala_mundo_x: float = colision_rampa.global_transform.basis.get_scale().x
-			var mitad_ancho: float = (forma.size.x * 0.5) * escala_mundo_x
-			return colision_rampa.global_position.x + mitad_ancho - margen_limite_rampa_x
+			var bounds := _calcular_bounds_mundo_rampa_x(forma)
+			return bounds.y - margen_limite_rampa_x
 	if punto_spawn:
 		return punto_spawn.global_position.x + 0.8
 	return global_position.x + 0.8

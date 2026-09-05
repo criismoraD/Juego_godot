@@ -197,15 +197,20 @@ func _iniciar_secuencia_entrada() -> void:
 	if "velocity" in _jugador_ref:
 		_jugador_ref.velocity = Vector3.ZERO
 
-	# 2. Girar modelo de la arquera hacia el fondo (hacia la puerta / -Z)
-	var model = _jugador_ref.find_child("ArqueraModel", true, false)
-	if not model:
-		model = _jugador_ref.find_child("Armature", true, false)
-	if not model:
-		model = _jugador_ref
+	# 2. Girar modelo de la arquera hacia el fondo (espalda siempre a la cámara / hacia la puerta / -Z)
+	var armature_node: Node3D = _jugador_ref.find_child("Armature", true, false) as Node3D
+	var arquera_model: Node3D = _jugador_ref.find_child("ArqueraModel", true, false) as Node3D
 
 	var tween := create_tween().set_parallel(true)
-	tween.tween_property(model, "rotation:y", 0.0, 0.3).set_trans(Tween.TRANS_SINE)
+	if arquera_model:
+		arquera_model.rotation.y = deg_to_rad(90.0)
+	if armature_node:
+		# Armature en 90 deg (PI/2) orienta el frente de la arquera hacia -Z (de espaldas a la cámara)
+		tween.tween_property(armature_node, "rotation:y", deg_to_rad(90.0), 0.25).set_trans(Tween.TRANS_SINE)
+	elif arquera_model:
+		tween.tween_property(arquera_model, "rotation:y", PI, 0.25).set_trans(Tween.TRANS_SINE)
+	else:
+		tween.tween_property(_jugador_ref, "rotation:y", PI, 0.25).set_trans(Tween.TRANS_SINE)
 
 	# 3. Centrar al jugador con la puerta en X y caminar hacia el fondo (-Z)
 	tween.tween_property(_jugador_ref, "global_position:x", global_position.x, 0.3).set_trans(Tween.TRANS_SINE)
@@ -214,10 +219,22 @@ func _iniciar_secuencia_entrada() -> void:
 
 	# 4. Activar animación de caminar hacia adelante
 	var anim_tree = _jugador_ref.find_child("AnimationTree", true, false) as AnimationTree
-	var anim_player = _jugador_ref.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if anim_tree:
+		anim_tree.set("parameters/MotionState/transition_request", "ground")
+		anim_tree.set("parameters/Locomotion/transition_request", "walk_fwd")
 		anim_tree.set("parameters/Locomocion/transition_request", "caminar")
-	elif anim_player:
+		anim_tree.set("parameters/UpperBody/transition_request", "none")
+		anim_tree.set("parameters/AimBlend/blend_amount", 0.0)
+
+	var anim_player: AnimationPlayer = null
+	if anim_tree and anim_tree.anim_player and anim_tree.has_node(anim_tree.anim_player):
+		anim_player = anim_tree.get_node(anim_tree.anim_player) as AnimationPlayer
+	if not anim_player and arquera_model:
+		anim_player = arquera_model.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	if not anim_player:
+		anim_player = _jugador_ref.find_child("AnimationPlayer", true, false) as AnimationPlayer
+
+	if anim_player:
 		for a in ["Armature|Armature|CAMINAR_ADELANTE", "Armature|CAMINAR_ADELANTE", "CAMINAR_ADELANTE", "Armature|CORRER", "CORRER"]:
 			if anim_player.has_animation(a):
 				anim_player.play(a)

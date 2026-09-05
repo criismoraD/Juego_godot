@@ -21,21 +21,23 @@ const MAPEO_ANIMS: Dictionary = {
 	"Idle": "Armature|Armature|IDLE",
 	"Caminar": "Armature|Armature|CAMINAR_ADELANTE",
 	"Correr": "Armature|Armature|CORRER_ADELANTE",
-	"Disparo arco": "Armature|Armature|DISPARAR",
-	"arrojar": "Armature|Armature|TOMAR_FLECHA",
+	"arrojar": "Armature|Armature|DISPARAR",
 	"Aterrizar": "Armature|Armature|ATERRIZAJE",
 	"Saltar": "Armature|Armature|CAER_SALTAR",
 	"agacharse": "Armature|Armature|CAER_SALTAR",
 	"pararse": "Armature|Armature|IDLE",
+	"impacto": "Armature|Armature|HIT",
 	"Muerte 1": "Armature|Armature|MUERTE",
 	# Equivalentes aproximados para los estados restantes del árbol del Player
 	"@caminar_atras": "Armature|Armature|CAMINAR_ATRAS",
 	"@apuntar": "Armature|Armature|APUNTAR_IDLE",
+	"@tomar_flecha": "Armature|Armature|TOMAR_FLECHA",
 	"@escalar": "Armature|Armature|SUBIR_ESCALERA",
 }
 const SUBSTITUCIONES_ANIMS: Dictionary = {
 	"@caminar_atras": "Caminar",
 	"@apuntar": "Idle",
+	"@tomar_flecha": "Idle",
 	"@escalar": "Caminar",
 }
 
@@ -68,6 +70,7 @@ func _ready():
 
 	# 4. Ahora sí: inicialización completa del Player (árbol, hitbox, sombra, etc.)
 	super._ready()
+	_ocultar_flecha_visual()
 
 
 ## El AnimationTree dinámico del Player usa nombres "Armature|Armature|XXX" del
@@ -93,6 +96,7 @@ func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
 func _init() -> void:
 	# Defensora: 3 corazones de vida (los movimientos/HUD se heredan del Player)
 	vida_maxima = 3
+	duracion_maxima_disparo = 0.55
 
 
 ## Ataque principal: jabalina parabólica del Imp en lugar de la flecha recta.
@@ -124,6 +128,8 @@ func spawn_arrow_projectile():
 	if not jabalina:
 		return
 	jabalina.scale = Vector3.ONE
+	jabalina.disparado_por_jugador = true
+	jabalina.tirador = self
 
 	# Arco parabólico: sumar altura al cálculo de dirección (mismo patrón del Imp)
 	var arco: float = randf_range(arco_altura_min, arco_altura_max)
@@ -134,6 +140,8 @@ func spawn_arrow_projectile():
 	jabalina.gravedad = gravedad_jabalina
 
 	POOL_REF.activate(jabalina, get_tree().root, data["origin"])
+
+	_ocultar_flecha_visual()
 
 	# Game feel: screen shake como al disparar la protagonista
 	if has_node("/root/GameFeel"):

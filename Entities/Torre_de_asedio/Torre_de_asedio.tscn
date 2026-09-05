@@ -41,5 +41,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9810787, 0.11990118, -1.04
 shape = SubResource("BoxShape3D_barrera_lateral")
 
 [node name="Aparicion" type="Marker3D" parent="." unique_id=1117755323]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.49791342, 2.8409257, -0.2971695)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.45, 0.65)
 gizmo_extents = 0.6

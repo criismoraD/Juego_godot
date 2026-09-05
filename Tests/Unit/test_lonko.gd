@@ -69,30 +69,15 @@ func test_lonko_yaw_objetivo_segun_estado() -> void:
 	# Assert: estado base mira a la izquierda
 	assert_eq(lonko._obtener_yaw_objetivo_grados(), -90.0, "Yaw base debe ser -90 (izquierda)")
 
-	# Act: activar la corrección de la pausa IDLE
-	lonko._correccion_idle_activa = true
-
-	# Assert: debe sumar la corrección configurable sobre la base
-	assert_eq(
-		lonko._obtener_yaw_objetivo_grados(),
-		-90.0 + lonko.correccion_yaw_idle,
-		"En pausa IDLE debe sumar correccion_yaw_idle al yaw base"
-	)
-
 	# Act: activar la secuencia del pilar (mayor prioridad)
 	lonko._girando_hacia_fondo = true
 
-	# Assert: el pilar gana aunque la corrección siga activa
+	# Assert: durante el pilar debe mirar al fondo
 	assert_eq(
 		lonko._obtener_yaw_objetivo_grados(),
 		180.0,
-		"Durante el pilar debe mirar al fondo aunque haya corrección idle activa"
+		"Durante el pilar debe mirar al fondo"
 	)
-
-	# Boundary: corrección personalizada distinta de 180
-	lonko._girando_hacia_fondo = false
-	lonko.correccion_yaw_idle = -90.0
-	assert_eq(lonko._obtener_yaw_objetivo_grados(), -180.0, "Corrección personalizada debe respetarse")
 
 	lonko.queue_free()
 	await get_tree().process_frame
@@ -103,55 +88,36 @@ func test_lonko_flags_yaw_se_apagan_al_morir() -> void:
 	var lonko := LONKO_SCENE.instantiate() as Lonko
 	scene_root.add_child(lonko)
 	await get_tree().process_frame
-	lonko._correccion_idle_activa = true
 	lonko._girando_hacia_fondo = true
 
 	# Act: daño letal durante la secuencia del pilar
 	lonko.take_damage(999.0)
 
-	# Assert: muerte limpia ambos flags para no morir mirando al fondo
+	# Assert: muerte limpia el flag para no morir mirando al fondo
 	assert_eq(lonko.current_state, Lonko.State.DYING, "Daño letal debe dejar el estado en DYING")
-	assert_false(lonko._correccion_idle_activa, "La corrección idle debe apagarse al morir")
 	assert_false(lonko._girando_hacia_fondo, "El giro hacia el fondo debe apagarse al morir")
 
 	lonko.queue_free()
 	await get_tree().process_frame
 
 
-func test_lonko_espejo_idle_invierte_scale_x() -> void:
+func test_lonko_modelo_mantiene_escala_positiva() -> void:
 	# Arrange
 	var lonko := LONKO_SCENE.instantiate() as Lonko
 	scene_root.add_child(lonko)
 	await get_tree().process_frame
 	var escala_original_x: float = lonko._escala_original_modelo.x
 
-	# Act & Assert: sin corrección activa, escala positiva original
-	lonko._correccion_idle_activa = false
+	# Act: aplicar comprobación de espejo idle
 	lonko._aplicar_espejo_idle()
-	await get_tree().create_timer(lonko.DURACION_ESPEJO_SG + 0.1).timeout
-	assert_gt(lonko._lonko_modelo.scale.x, 0.0, "Sin corrección idle la escala X debe ser positiva")
 
-	# Act: corrección activa + espejo habilitado
-	lonko.espejar_modelo_idle = true
-	lonko._correccion_idle_activa = true
-	lonko._aplicar_espejo_idle()
-	await get_tree().create_timer(lonko.DURACION_ESPEJO_SG + 0.1).timeout
+	# Assert: escala X siempre positiva y sin alteración
+	assert_gt(lonko._lonko_modelo.scale.x, 0.0, "La escala X debe mantenerse positiva")
+	assert_eq(lonko._lonko_modelo.scale.x, escala_original_x, "La magnitud de escala X original se conserva")
 
-	# Assert: escala X negativa (mirada invertida), magnitud original preservada
-	assert_lt(lonko._lonko_modelo.scale.x, 0.0, "Con corrección idle y espejo la escala X debe ser negativa")
-	assert_eq(abs(lonko._lonko_modelo.scale.x), escala_original_x, "La magnitud de la escala X debe conservarse")
-
-	# Boundary: espejo deshabilitado restaura escala positiva aunque haya corrección
-	lonko.espejar_modelo_idle = false
-	lonko._aplicar_espejo_idle()
-	await get_tree().create_timer(lonko.DURACION_ESPEJO_SG + 0.1).timeout
-	assert_gt(lonko._lonko_modelo.scale.x, 0.0, "Con espejo deshabilitado la escala X debe volver a positiva")
-
-	# Cleanup: apagar corrección y restaurar estado visual
-	lonko._correccion_idle_activa = false
-	lonko._aplicar_espejo_idle()
 	lonko.queue_free()
 	await get_tree().process_frame
+
 
 
 func test_lonko_debe_rastrear_jugador_gate() -> void:
@@ -248,3 +214,68 @@ func test_humo_pisadas_usa_spritesheet_smokefx() -> void:
 
 	lonko.queue_free()
 	await get_tree().process_frame
+
+
+func test_lonko_offset_z_pilar_posiciona_en_primer_plano() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	lonko.global_position = Vector3(2.0, 0.2, 0.0)
+	await get_tree().process_frame
+
+	# Assert: valor por defecto de offset_z_pilar
+	assert_eq(lonko.offset_z_pilar, 0.45, "offset_z_pilar por defecto debe ser 0.45 para emerger en primer plano")
+
+	# Act: Iniciar secuencia del pilar
+	lonko._iniciar_secuencia_pilar()
+	await get_tree().process_frame
+
+	# Assert: _base_pos_pilar.z debe estar desplazada en Z frontal
+	assert_almost_eq(lonko._base_pos_pilar.z, 0.45, 0.01, "La posición base Z debe incorporar offset_z_pilar")
+	assert_not_null(lonko._instancia_pilar, "El pilar debe haberse instanciado")
+	if lonko._instancia_pilar:
+		assert_almost_eq(
+			lonko._instancia_pilar.global_position.z,
+			0.45,
+			0.01,
+			"La instancia del pilar debe situarse en Z = 0.45 (primer plano)"
+		)
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_y_pilar_colisiones_profundidad_2_5d() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+
+	# Assert 1: Lonko tiene BoxShape3D con profundidad amplia en Z
+	var col_lonko := lonko.find_child("CollisionShape3D", true, false) as CollisionShape3D
+	assert_not_null(col_lonko, "Lonko debe poseer CollisionShape3D")
+	if col_lonko and col_lonko.shape is BoxShape3D:
+		var box := col_lonko.shape as BoxShape3D
+		assert_gt(box.size.z, 1.5, "La profundidad Z del colisionador de Lonko debe ser >= 1.5m para garantizar impactos en 2.5D")
+
+	# Assert 2: PilarLonko tiene colisionador que abarca holgadamente el plano Z = 0.05
+	var pilar_scene := load("res://Entities/Enemigo_Lonko/PilarLonko.tscn").instantiate() as Node3D
+	scene_root.add_child(pilar_scene)
+	pilar_scene.scale = Vector3(3.0, 3.0, 3.0)
+	pilar_scene.global_position = Vector3(0.0, 0.0, 0.45)
+	await get_tree().process_frame
+
+	var pilar_body := pilar_scene.find_child("PilarBody", true, false) as StaticBody3D
+	assert_not_null(pilar_body, "PilarLonko debe contener PilarBody")
+	if pilar_body:
+		var pcol := pilar_body.find_child("CollisionShape3D", true, false) as CollisionShape3D
+		assert_not_null(pcol, "PilarBody debe contener CollisionShape3D")
+		if pcol and pcol.shape is BoxShape3D:
+			var pbox := pcol.shape as BoxShape3D
+			var global_depth_z: float = pbox.size.z * pilar_scene.scale.z
+			assert_gt(global_depth_z, 2.0, "La profundidad Z escalada del pilar debe ser >= 2.0m")
+
+	pilar_scene.queue_free()
+	lonko.queue_free()
+	await get_tree().process_frame
+

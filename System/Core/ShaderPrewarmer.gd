@@ -13,6 +13,19 @@ const ESCENAS_CRITICAS: Array[String] = [
 	"res://Entities/Proyectil_Flecha_Aliada/AllyArrow.tscn",
 	"res://Entities/Proyectil_Virote_Aliado/AllyBolt.tscn",
 	"res://Entities/Flecha_Explosiva/ExplosionFlechaExplosiva.tscn",
+	"res://Entities/Enemigo_Goblin/Goblin.tscn",
+	"res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn",
+	"res://Entities/Enemigo_Imp/ImpEnemy.tscn",
+	"res://Entities/Enemigo_Imp_Escudo/ImpShieldGirl.tscn",
+	"res://Entities/Enemigo_Canonero/Canonero.tscn",
+	"res://Entities/Enemigo_Gargola/Gargola.tscn",
+	"res://Entities/Enemigo_Lonko/Lonko.tscn",
+	"res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.tscn",
+	"res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.tscn",
+	"res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.tscn",
+	"res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn",
+	"res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn",
+	"res://Entities/Proyectil_Gargola/GargolaProjectile.tscn",
 	"res://assets/BinbunVFX_Vol2/ExplosionFX/effects/ground/vfx_ground_explosion_01.tscn",
 	"res://assets/BinbunVFX_Vol2/ExplosionFX/effects/air/vfx_air_explosion_01.tscn",
 	"res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn",
@@ -53,6 +66,7 @@ static func prewarm(tree: SceneTree, on_progress: Callable = Callable()) -> void
 
 	# 2. Instanciar y renderizar escenas críticas
 	ExplosionFlechaExplosiva.suprimir_sonido_prewarm = true
+	GargolaProjectile.suprimir_sonido_prewarm = true
 	for path in ESCENAS_CRITICAS:
 		if ResourceLoader.exists(path):
 			var packed := load(path) as PackedScene
@@ -62,6 +76,7 @@ static func prewarm(tree: SceneTree, on_progress: Callable = Callable()) -> void
 					# Silenciar audio del prewarm: las escenas de VFX traen
 					# AudioStreamPlayer con autoplay y sonaban al cargar
 					_silenciar_audio(instance)
+					instance.process_mode = Node.PROCESS_MODE_DISABLED
 					contenedor.add_child(instance)
 					if instance is Node3D:
 						instance.position = Vector3(0.0, 0.0, 0.0)
@@ -72,6 +87,7 @@ static func prewarm(tree: SceneTree, on_progress: Callable = Callable()) -> void
 			on_progress.call(float(processed_items) / float(total_items))
 
 	ExplosionFlechaExplosiva.suprimir_sonido_prewarm = false
+	GargolaProjectile.suprimir_sonido_prewarm = false
 
 	# 3. Renderizar mallas con materiales/shaders sueltos
 	for mat_path in MATERIALES_CRITICOS:

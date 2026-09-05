@@ -4,15 +4,15 @@ extends Node3D
 
 # === CONFIGURACIÓN - TEMPORIZADOR Y RUTA ===
 @export_category("Ciclo de Aparición")
-@export var tiempo_entre_apariciones: float = 30.0  ## Tiempo de espera (en segundos) entre cada cruce de pez
+@export var tiempo_entre_apariciones: float = 8.0  ## Tiempo de espera (en segundos) entre cada cruce de pez
 @export var aparecer_al_iniciar: bool = true  ## Si true, realiza el primer cruce inmediatamente al iniciar
 @export var direccion_inicial_derecha: bool = false  ## Si false, el primer pez va de derecha a izquierda
 
 # === CONFIGURACIÓN - MOVIMIENTO ===
 @export_category("Movimiento en Río")
-@export var velocidad_nado: float = 0.8  ## Velocidad base de traslación horizontal
-@export var limite_x_min: float = -16.0  ## Límite izquierdo del recorrido
-@export var limite_x_max: float = 14.0  ## Límite derecho del recorrido
+@export var velocidad_nado: float = 1.0  ## Velocidad base de traslación horizontal
+@export var limite_x_min: float = -11.0  ## Límite izquierdo del recorrido visible
+@export var limite_x_max: float = 5.0  ## Límite derecho del recorrido visible
 
 # === CONFIGURACIÓN - PROFUNDIDAD Y DERIVA ===
 @export_category("Profundidad y Oscilación")
@@ -53,7 +53,8 @@ func _ready() -> void:
 		_pos_inicial.y = profundidad_base_y
 
 	if aparecer_al_iniciar:
-		_iniciar_cruce()
+		var pos_en_rango: bool = position.x >= limite_x_min and position.x <= limite_x_max
+		_iniciar_cruce(pos_en_rango)
 	else:
 		_activo = false
 		visible = false
@@ -99,7 +100,7 @@ func _process(delta: float) -> void:
 		_finalizar_cruce()
 
 
-func _iniciar_cruce() -> void:
+func _iniciar_cruce(desde_posicion_actual: bool = false) -> void:
 	_buscar_mesh()
 	# Alternar dirección en cada aparición
 	_nadando_hacia_derecha = !_nadando_hacia_derecha
@@ -109,16 +110,19 @@ func _iniciar_cruce() -> void:
 	if _mesh:
 		_mesh.scale.x = 1.0 if _nadando_hacia_derecha else -1.0
 
-	# Colocar en el punto de inicio correspondiente
-	if _nadando_hacia_derecha:
-		position.x = limite_x_min - randf_range(0.0, 1.5)
+	if desde_posicion_actual and position.x >= limite_x_min and position.x <= limite_x_max:
+		_pos_inicial = position
 	else:
-		position.x = limite_x_max + randf_range(0.0, 1.5)
+		# Colocar en el punto de inicio correspondiente
+		if _nadando_hacia_derecha:
+			position.x = limite_x_min - randf_range(0.0, 0.8)
+		else:
+			position.x = limite_x_max + randf_range(0.0, 0.8)
 
-	_pos_inicial.y = randf_range(profundidad_base_y - 0.06, profundidad_base_y + 0.04)
-	_pos_inicial.z = randf_range(2.3, 3.8)
-	position.y = _pos_inicial.y
-	position.z = _pos_inicial.z
+		_pos_inicial.y = randf_range(profundidad_base_y - 0.06, profundidad_base_y + 0.04)
+		_pos_inicial.z = randf_range(2.3, 3.8)
+		position.y = _pos_inicial.y
+		position.z = _pos_inicial.z
 
 	_fase_y = randf() * TAU
 	_fase_z = randf() * TAU

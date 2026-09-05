@@ -38,6 +38,7 @@ const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-
 @export_category("Disparo")
 @export var multiplicador_velocidad_disparo: float = 1.0  # Velocidad de animaciones de disparo
 @export var cadencia_disparo: float = 0.2  # Tiempo mínimo de cooldown entre disparos (0.2s)
+@export var duracion_maxima_disparo: float = 0.20  ## Duración máxima de la animación de disparo (0.20s para arco, ampliable para jabalina/otras armas)
 @export var tiempo_tensar: float = 0.2  # Tiempo para tensar el arco (0.2s)
 @export var duracion_carga: float = 0.7  # Tiempo para cargar al 100% de potencia y largo alcance (0.7s)
 @export var velocidad_recarga: float = 2.0  # Multiplicador de velocidad de recarga (draw→aim→shoot)
@@ -1407,7 +1408,7 @@ func control_visual_state(delta):
 
 			state_timer += delta
 
-			var current_shoot_dur = min(0.20, shoot_anim_duration / (multiplicador_velocidad_disparo * velocidad_recarga))
+			var current_shoot_dur = min(duracion_maxima_disparo, shoot_anim_duration / (multiplicador_velocidad_disparo * velocidad_recarga))
 
 			if state_timer >= current_shoot_dur:
 				current_aim_state = AimState.NONE
