@@ -15,19 +15,20 @@ var _anim_player: AnimationPlayer
 var _yaw_base: float = 0.0
 var _yaw_objetivo: float = 0.0
 var _esta_caminando: bool = false
+var _ultimo_estado_anim: String = ""
 var puede_moverse: bool = true
 
 
 func _ready() -> void:
 	add_to_group("player_interior")
 
-	# Configuración de física para prevenir tiritado/vibración contra paredes
-	floor_snap_length = 0.08
+	# Configuración de física para evitar hundimiento al caminar y tiritado contra paredes
+	floor_snap_length = 0.002
 	floor_constant_speed = true
 	floor_stop_on_slope = true
 	floor_block_on_wall = true
 	floor_max_angle = deg_to_rad(45.0)
-	safe_margin = 0.005
+	safe_margin = 0.001
 
 	_ajustar_linea_negra_minima()
 
@@ -139,7 +140,9 @@ func _actualizar_animacion() -> void:
 	if not _anim_tree:
 		return
 	var estado := "caminar" if _esta_caminando else "idle"
-	_anim_tree.set("parameters/Locomocion/transition_request", estado)
+	if estado != _ultimo_estado_anim:
+		_ultimo_estado_anim = estado
+		_anim_tree.set("parameters/Locomocion/transition_request", estado)
 
 
 func _obtener_anim_nombre(preferido: String) -> String:

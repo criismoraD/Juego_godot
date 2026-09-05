@@ -115,6 +115,7 @@ var objetivo_actual: Node3D = null
 var _escudo_piso_ref: Node = null
 var _escudo_piso_transform: Transform3D
 var _escudo_piso_parent: Node = null
+var _marco_escudo_es_real: bool = false  ## true si el marco viene de un escudo real (no del fallback identidad)
 var _tiene_escudo_frente: bool = false
 
 static var _cached_wave_spawner: Node = null
@@ -358,10 +359,12 @@ func _vincular_escudo_piso() -> void:
 		_escudo_piso_transform = mejor_escudo.global_transform
 		_escudo_piso_parent = mejor_escudo.get_parent()
 		_tiene_escudo_frente = true
+		_marco_escudo_es_real = true
 	else:
 		_escudo_piso_transform = Transform3D(Basis.IDENTITY, global_position + Vector3(0.55, 0.0, 0.0))
 		_escudo_piso_parent = get_parent()
 		_tiene_escudo_frente = true
+		_marco_escudo_es_real = false
 
 
 func _find_bone_fuzzy(skel: Skeleton3D, names: Array) -> int:
@@ -1022,11 +1025,25 @@ func _regenerar_escudo_piso(forzar_enemigo: bool = false):
 	if "golpes_para_destruir" in nuevo_escudo:
 		nuevo_escudo.golpes_para_destruir = 1
 
+	# Marco correcto: si el vinculado murió y solo hay fallback identidad,
+	# copiar rotación/escala de otro escudo aliado vivo (si no, el regenerado
+	# sale a escala 1.0 gigante frente a los de 0.6 del nivel)
+	var marco: Transform3D = _escudo_piso_transform
+	if not _marco_escudo_es_real:
+		var ref := _buscar_escudo_aliado_referencia()
+		if ref:
+			marco = Transform3D(ref.global_transform.basis, marco.origin)
+
 	var parent = _escudo_piso_parent if is_instance_valid(_escudo_piso_parent) else get_parent()
 	if parent:
 		parent.add_child(nuevo_escudo)
-		nuevo_escudo.global_transform = _escudo_piso_transform
+		nuevo_escudo.global_transform = marco
 		_escudo_piso_ref = nuevo_escudo
+		_marco_escudo_es_real = true
+		# Sincronizar base de escala post-colocación (el _ready la capturó en 1.0
+		# del prefab y el punch volvería a agrandar)
+		if "_escala_base" in nuevo_escudo:
+			nuevo_escudo._escala_base = nuevo_escudo.scale
 
 		if nuevo_escudo.has_method("_flash_dano"):
 			nuevo_escudo._flash_dano()
@@ -1035,6 +1052,24 @@ func _regenerar_escudo_piso(forzar_enemigo: bool = false):
 ## API explícita para regenerar un escudo enemigo en su nivel correspondiente (usar solo cuando el diseño lo indique)
 func regenerar_escudo_enemigo_explicito() -> void:
 	_regenerar_escudo_piso(true)
+
+
+## Busca otro escudo aliado vivo cualquiera para copiar su rotación/escala
+func _buscar_escudo_aliado_referencia() -> Node3D:
+	var mejor: Node3D = null
+	var menor_dist: float = INF
+	for esc in get_tree().get_nodes_in_group("escudos"):
+		if not is_instance_valid(esc) or not (esc is Node3D):
+			continue
+		if "es_escudo_enemigo" in esc and esc.es_escudo_enemigo:
+			continue
+		if esc == _escudo_piso_ref:
+			continue
+		var d: float = global_position.distance_to((esc as Node3D).global_position)
+		if d < menor_dist:
+			menor_dist = d
+			mejor = esc
+	return mejor
 
 
 func _reproducir_sonido_recarga() -> void:

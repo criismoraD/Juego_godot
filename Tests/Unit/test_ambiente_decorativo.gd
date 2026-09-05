@@ -80,6 +80,40 @@ func test_pez_visibilidad_y_prioridad_render() -> void:
 	nivel.queue_free()
 
 
+func test_piso_optimizacion_y_materiales() -> void:
+	# Arrange
+	var scn: PackedScene = load("res://Entities/Ambiente_Piso/PISO.glb") as PackedScene
+	assert_not_null(scn, "PISO.glb debe existir y poder cargarse")
+	var instancia: Node3D = scn.instantiate() as Node3D
+	add_child(instancia)
+
+	# Act
+	var mesh_instance: MeshInstance3D = instancia.find_child("*", true, false) as MeshInstance3D
+	assert_not_null(mesh_instance, "PISO debe contener un MeshInstance3D")
+	var mesh: Mesh = mesh_instance.mesh if mesh_instance else null
+	assert_not_null(mesh, "MeshInstance3D debe contener una Mesh valida")
+
+	# Assert
+	if mesh:
+		var arrays: Array = mesh.surface_get_arrays(0)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		var tris: int = indices.size() / 3 if indices.size() > 0 else vertices.size() / 3
+
+		assert_lt(tris, 20000, "El piso debe estar optimizado a menos de 20,000 triangulos (actual: %d)" % tris)
+		assert_gt(tris, 1000, "El piso debe tener suficiente detalle geometrico")
+
+		var mat: Material = mesh.surface_get_material(0)
+		assert_not_null(mat, "El piso debe tener material asignado")
+		if mat is StandardMaterial3D:
+			var std_mat: StandardMaterial3D = mat as StandardMaterial3D
+			assert_not_null(std_mat.albedo_texture, "El material del piso debe tener textura de albedo")
+			assert_true(std_mat.normal_enabled, "El material del piso debe tener normal map activo")
+			assert_not_null(std_mat.normal_texture, "El material del piso debe tener textura de normal asignada")
+
+	instancia.queue_free()
+
+
 func _recolectar_mallas(nodo: Node, lista: Array[MeshInstance3D]) -> void:
 	if nodo is MeshInstance3D:
 		lista.append(nodo as MeshInstance3D)

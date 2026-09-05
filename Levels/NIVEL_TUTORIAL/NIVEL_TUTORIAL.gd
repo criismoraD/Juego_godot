@@ -453,17 +453,16 @@ func _mostrar_instrucciones_mouse() -> void:
 	_mostrar_texto_paso_medea()
 
 
-## Mensaje central "PASO DE MEDEA": texto negro grueso con resplandor verde sutil que se desvanece.
+## Mensaje central "PASO DE MEDEA": texto negro que permanece visible, emite un brillo suave y se desvanece.
 func _mostrar_texto_paso_medea() -> void:
 	const COLOR_TEXTO_NEGRO := Color.BLACK
-	const COLOR_RESPLANDOR_VERDE := Color("#9fe2a0")
-	const COLOR_VERDE_CLARO := Color("#d4f5d0")
+	const COLOR_BRILLO_SUAVE := Color(1.0, 0.96, 0.88, 0.9)  ## Resplandor cálido suave previo al desvanecido
 	const TAMANO_FUENTE := 120
-	const GROSOR_CONTORNO := 6
-	const GROSOR_RESPLANDOR := 32
-	const DURACION_VISIBLE := 30.0
+	const GROSOR_RESPLANDOR := 36
 	const DURACION_APARICION := 2.0
-	const DURACION_DESVANECIDO := 4.0
+	const DURACION_VISIBLE := 16.0
+	const DURACION_BRILLO := 1.0
+	const DURACION_DESVANECIDO := 3.0
 	# Franja superior de la pantalla: el texto queda centrado alrededor del 25% de la altura.
 	const BANDA_SUPERIOR_INICIO := 0.0
 	const BANDA_SUPERIOR_FIN := 0.5
@@ -479,13 +478,13 @@ func _mostrar_texto_paso_medea() -> void:
 	etiqueta.add_theme_font_override("font", fuente_papyrus)
 	etiqueta.add_theme_font_size_override("font_size", TAMANO_FUENTE)
 	etiqueta.add_theme_color_override("font_color", COLOR_TEXTO_NEGRO)
-	etiqueta.add_theme_color_override("font_outline_color", COLOR_RESPLANDOR_VERDE)
-	etiqueta.add_theme_constant_override("outline_size", GROSOR_CONTORNO)
-	# Resplandor difuminado: la sombra sin desplazamiento y con radio amplio actúa de glow verde.
-	etiqueta.add_theme_color_override("font_shadow_color", COLOR_RESPLANDOR_VERDE)
+
+	# Inicialmente sin resplandor visible (alfa 0.0)
+	etiqueta.add_theme_color_override("font_shadow_color", Color(COLOR_BRILLO_SUAVE.r, COLOR_BRILLO_SUAVE.g, COLOR_BRILLO_SUAVE.b, 0.0))
 	etiqueta.add_theme_constant_override("shadow_outline_size", GROSOR_RESPLANDOR)
 	etiqueta.add_theme_constant_override("shadow_offset_x", 0)
 	etiqueta.add_theme_constant_override("shadow_offset_y", 0)
+
 	etiqueta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	etiqueta.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	etiqueta.anchor_left = BANDA_SUPERIOR_INICIO
@@ -500,24 +499,30 @@ func _mostrar_texto_paso_medea() -> void:
 	capa.add_child(etiqueta)
 	add_child(capa)
 
-	# Aparición gradual de 0 a opacidad completa.
 	var animacion := create_tween()
+	# 1. Aparición gradual del texto negro limpio
 	animacion.tween_property(
 		etiqueta, "modulate:a", 1.0, DURACION_APARICION
 	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	# Permanece 15 segundos con opacidad completa.
+
+	# 2. Permanece visible de forma nítida
 	animacion.tween_interval(DURACION_VISIBLE)
-	# Desvanecido lento: el contorno verde migra a un tono más claro mientras todo pierde opacidad.
+
+	# 3. Brillo suave: se enciende suavemente el resplandor cálido alrededor del texto
+	animacion.tween_property(
+		etiqueta, "theme_override_colors/font_shadow_color", COLOR_BRILLO_SUAVE, DURACION_BRILLO
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	# 4. Desvanecido suave hacia la transparencia total
 	animacion.set_parallel(true)
 	animacion.tween_property(
 		etiqueta, "modulate:a", 0.0, DURACION_DESVANECIDO
 	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	animacion.tween_property(
-		etiqueta, "theme_override_colors/font_outline_color", COLOR_VERDE_CLARO, DURACION_DESVANECIDO
+		etiqueta, "theme_override_colors/font_shadow_color:a", 0.0, DURACION_DESVANECIDO
 	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	animacion.tween_property(
-		etiqueta, "theme_override_colors/font_shadow_color", COLOR_VERDE_CLARO, DURACION_DESVANECIDO
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+	# 5. Liberar la capa al terminar
 	animacion.chain().tween_callback(capa.queue_free)
 
 

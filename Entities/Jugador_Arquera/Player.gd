@@ -28,8 +28,8 @@ const DROP_CHANCE_MITIGADO: float = 0.05
 const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-ups (explosivas y múltiples)
 
 @export_category("Movimiento")
-@export var velocidad_caminar: float = 0.5  # Velocidad al caminar
-@export var velocidad_correr: float = 1.0  # Velocidad al correr
+@export var velocidad_caminar: float = 0.6  # Velocidad al caminar
+@export var velocidad_correr: float = 1.2  # Velocidad al correr
 @export var fuerza_salto: float = 2.35  # Fuerza del salto
 @export var umbral_aterrizaje: float = -3.0  # Umbral para aterrizaje fuerte
 @export var velocidad_giro_suave: float = 12.0  ## Velocidad de interpolación de giro al cambiar de dirección

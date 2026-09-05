@@ -35,7 +35,7 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 const TRIDENTE_SCENE: PackedScene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
-const MEDIKIT_SCENE: PackedScene = preload("res://Entities/Item_Medikit/Medikit.tscn")
+const POCION_SCENE: PackedScene = preload("res://Entities/Item_Pocion/Posion.tscn")
 const SANGRE_SCENE: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
 const SANGRE_NO_LETAL_SCENE: PackedScene = preload("res://VFX/Scenes/BloodSplashNoLetal.tscn")
 const TEXTURA_SANGRE_EXPLOSION: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Sangre_explosion.png")
@@ -93,6 +93,7 @@ var _dissolve_materials: Array[Dictionary] = []
 var _dissolve_particles: GPUParticles3D = null
 var _flash_mat: StandardMaterial3D = null
 var _flash_rojo_mat: StandardMaterial3D = null
+var _escudo_punch_tween: Tween = null  ## Punch de escala del escudo (se mata al soltarlo para que no lo agigante)
 var _audio_correr_descalzo: AudioStreamPlayer3D = null
 var _sombra: SombraPersonaje = null
 
@@ -525,10 +526,11 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 
 	var dano_total: float = amount
 
-	# VULNERABILIDAD TÁCTICA: +5 de daño y sonido de daño si es golpeada en plena animación de ataque
+	# VULNERABILIDAD TÁCTICA: +6 de daño, texto CRÍTICO y sonido de daño si es golpeada en plena animación de ataque
 	if current_state == State.ATTACKING:
 		dano_total += VULNERABILIDAD_ATAQUE_DANO_EXTRA
 		_spawn_sangre()
+		_mostrar_texto_critico()
 		AudioManager.play_sfx("goblina_dano")
 
 	health -= int(dano_total)
@@ -595,9 +597,11 @@ func _flash_impacto_escudo_rojo() -> void:
 		if not has_meta("_escudo_orig_scale"):
 			set_meta("_escudo_orig_scale", escudo.scale)
 		var _orig_scale: Vector3 = get_meta("_escudo_orig_scale")
-		var _tw := create_tween()
-		_tw.tween_property(escudo, "scale", _orig_scale * 1.10, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		_tw.tween_property(escudo, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		if _escudo_punch_tween and _escudo_punch_tween.is_valid():
+			_escudo_punch_tween.kill()
+		_escudo_punch_tween = create_tween()
+		_escudo_punch_tween.tween_property(escudo, "scale", _orig_scale * 1.10, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_escudo_punch_tween.tween_property(escudo, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	for mesh in _escudo_meshes:
 		if is_instance_valid(mesh):
@@ -620,6 +624,30 @@ func _spawn_sangre() -> void:
 			sangre.global_position = pos_sangre
 
 
+func _mostrar_texto_critico() -> void:
+	# Texto flotante rojo CRITICO (traducible, sin globo): sube y se desvanece
+	var lbl := Label3D.new()
+	lbl.text = tr("CRITICO")
+	lbl.font_size = 48
+	lbl.pixel_size = 0.003
+	lbl.modulate = Color(1.0, 0.1, 0.1, 1.0)
+	lbl.outline_size = 0
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	var root := get_tree().current_scene
+	if not root:
+		root = get_tree().root
+	root.add_child(lbl)
+	lbl.global_position = global_position + Vector3(0.0, 2.0, 0.0)
+	var tw := lbl.create_tween().set_parallel(true)
+	tw.tween_property(lbl, "position:y", lbl.position.y + 0.6, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, 1.0).set_trans(Tween.TRANS_LINEAR)
+	tw.chain().tween_callback(func():
+		if is_instance_valid(lbl):
+			lbl.queue_free()
+	)
+
+
 func _spawn_sangre_no_letal() -> void:
 	if SANGRE_NO_LETAL_SCENE:
 		var sangre: Node3D = SANGRE_NO_LETAL_SCENE.instantiate() as Node3D
@@ -639,7 +667,7 @@ func _soltar_recompensas_muerte() -> void:
 	var roll: float = randf()
 	var item_scene: PackedScene = null
 	if roll < 0.05:
-		item_scene = MEDIKIT_SCENE
+		item_scene = POCION_SCENE  ## Poción curativa en vez de medikit
 
 	if item_scene:
 		var item: Node3D = item_scene.instantiate() as Node3D
@@ -656,6 +684,12 @@ func _soltar_escudo_pesado(por_explosion: bool = false) -> void:
 	if not escudo:
 		return
 
+	# Matar el punch de escala en vuelo: reaplicaría la escala local x100
+	# bajo el contenedor normalizado y agigantaría el escudo caído
+	if _escudo_punch_tween and _escudo_punch_tween.is_valid():
+		_escudo_punch_tween.kill()
+		_escudo_punch_tween = null
+
 	# Asegurar que el escudo mantenga su color original y no permanezca rojo al caer
 	for m in escudo.find_children("*", "MeshInstance3D", true, false):
 		var mesh := m as MeshInstance3D
@@ -667,11 +701,8 @@ func _soltar_escudo_pesado(por_explosion: bool = false) -> void:
 	if not root_scene:
 		root_scene = get_tree().root
 
-	# Obtener posición, rotación y escala real en el mundo ANTES de desparentar
+	# Obtener el marco global EXACTO antes de desparentar
 	var tr_escudo: Transform3D = escudo.global_transform
-	var pos_global: Vector3 = tr_escudo.origin
-	var escala_global: Vector3 = tr_escudo.basis.get_scale()
-	var rot_global: Basis = tr_escudo.basis.orthonormalized()
 
 	escudo.get_parent().remove_child(escudo)
 
@@ -681,15 +712,12 @@ func _soltar_escudo_pesado(por_explosion: bool = false) -> void:
 	contenedor.humo_al_aterrizar = true  # Humo a ambos lados al tocar el suelo (como el escudo roto de la Imp)
 	root_scene.add_child(contenedor)
 
-	# El contenedor asume la posición y rotación del escudo
-	contenedor.global_position = pos_global
-	contenedor.global_basis = rot_global
-
-	# IMPORTANTE: El escudo adentro debe tener su escala_global real para que NO se agrande 100x
-	# (evitando que el scale 100 de mixamo se conserve en el root de la escena)
-	escudo.position = Vector3.ZERO
-	escudo.rotation = Vector3.ZERO
-	escudo.scale = escala_global
+	# El contenedor adopta el marco global exacto del escudo y el escudo queda
+	# en identidad local: conserva tamaño y orientación sin descomponer la base
+	# (el get_scale() manual heredaba el x100 de mixamo y lo agigantaba).
+	contenedor.global_transform = tr_escudo
+	contenedor.add_child(escudo)
+	escudo.transform = Transform3D.IDENTITY
 	escudo.visible = true
 
 	# Eliminar el área de daño/bloqueo para que no interfiera en combate

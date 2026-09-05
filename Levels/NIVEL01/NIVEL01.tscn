@@ -27,7 +27,6 @@
 [ext_resource type="PackedScene" uid="uid://c58e1g5wgh0iy" path="res://Entities/Ambiente_Pinchos/PINCHO.glb" id="25_qcvbp"]
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="26_cx8r4"]
 [ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Entities/Ambiente_Piso/PISO.glb" id="26_koe3n"]
-[ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Entities/Ambiente_Piso/PISO ALIADO.glb" id="28_072lj"]
 [ext_resource type="PackedScene" uid="uid://bmei2xlho4of8" path="res://Entities/Ambiente_Muro_Plataforma/Muro_Plataforma.tscn" id="29_ecyc1"]
 [ext_resource type="PackedScene" uid="uid://boae4yg408kxa" path="res://Entities/Ambiente_Rampa_Subida/Escena_rampa_nivel3.tscn" id="30_qlcu2"]
 [ext_resource type="PackedScene" uid="uid://bjn66i0gdcsyf" path="res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn" id="31_lhtjo"]
@@ -57,6 +56,10 @@
 [ext_resource type="PackedScene" uid="uid://dqh1kb0rvuddm" path="res://Entities/Torre_de_asedio/Torre_de_asedio.tscn" id="62_torre_asedio"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Polvo/PolvoPlane.tscn" id="63_polvoplane"]
 [ext_resource type="PackedScene" uid="uid://d04pju2k1sfe4" path="res://TEST_/Casco oxidado/Casco oxidadp.glb" id="64_casco"]
+[ext_resource type="PackedScene" uid="uid://cgskofh0hi2ky" path="res://TEST_/pechera metalica/pechera metalica.glb" id="65_pechera"]
+[ext_resource type="Texture2D" uid="uid://kygps2rw2s41" path="res://TEST_/Espada oxidada.png" id="66_espada"]
+[ext_resource type="Texture2D" uid="uid://dabgoeh5m5d7n" path="res://TEST_/puerta 2d.png" id="67_puerta"]
+[ext_resource type="Texture2D" uid="uid://byf5br88xbovy" path="res://TEST_/puerta recortada.png" id="68_puerta_rec"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -375,9 +378,6 @@ current = true
 fov = 5.0
 size = 0.01
 
-[node name="PISO ALIADO2" parent="SubViewportFondo3D" unique_id=130398847 instance=ExtResource("28_072lj")]
-transform = Transform3D(6.3260694, 0, 0, 0, 4.8803015, 0, 0, 0, 8.319976, -9.266188, -0.65164727, -1.4656932)
-
 [node name="SubViewportMedio3D" type="SubViewport" parent="." unique_id=164925320]
 transparent_bg = true
 msaa_3d = 2
@@ -488,6 +488,20 @@ roughness = 1.0
 bevel_radius = 0.15
 
 [node name="TestCube2-BASE_ENEMIGA" parent="." unique_id=1680604205 instance=ExtResource("19_mbwsw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.94, -0.843, -0.888)
+mesh_size = Vector3(17, 2, 3.855)
+subdivide_width = 10
+subdivide_height = 10
+subdivide_depth = 10
+uv_scale_sides = Vector2(0.2, 0.4)
+uv_scale_top = Vector2(0.2, 0.5)
+blend_sharpness = 4.0
+normal_intensity = 0.2
+displacement_scale_y = 0.0
+displacement_scale_xz = 0.166
+bevel_radius = 0.15
+
+[node name="TestCube2-BASE_ENEMIGA2" parent="." unique_id=298691095 instance=ExtResource("19_mbwsw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.94, -0.843, -0.888)
 mesh_size = Vector3(17, 2, 3.855)
 subdivide_width = 10
@@ -697,6 +711,9 @@ texture = ExtResource("26_cx8r4")
 [node name="PISO2" parent="." unique_id=835517437 instance=ExtResource("26_koe3n")]
 transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, -2.7538373, -0.8408709, -0.8788506)
 
+[node name="PISO5" parent="." unique_id=106762060 instance=ExtResource("26_koe3n")]
+transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 8.45198, -9.051979, -0.8408709, -1.4438539)
+
 [node name="PISO3" parent="." unique_id=227306970 instance=ExtResource("26_koe3n")]
 transform = Transform3D(5.94, 0, 0, 0, 5.94, 0, 0, 0, 5.94, 2.5800648, -0.8408709, -0.8788506)
 
@@ -824,13 +841,19 @@ material_override = SubResource("ShaderMaterial_pastoB")
 texture = ExtResource("56_pastoB")
 
 [node name="PastoB3" type="Sprite3D" parent="." unique_id=608061898]
-transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.443401, 0.12844586, -3.05835)
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.443401, 0.12844586, -2.9336817)
 layers = 2
 material_override = SubResource("ShaderMaterial_pastoB")
 texture = ExtResource("56_pastoB")
 
 [node name="PastoB4" type="Sprite3D" parent="." unique_id=1596594272]
-transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.093467, 0.12844586, -2.9913955)
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, -2.093467, 0.12844586, -2.9135568)
+layers = 2
+material_override = SubResource("ShaderMaterial_pastoB")
+texture = ExtResource("56_pastoB")
+
+[node name="PastoB10" type="Sprite3D" parent="." unique_id=1376444101]
+transform = Transform3D(0.058633257, 0, 0, 0, 0.04878455, 0, 0, 0, 0.7, 1.5466089, 0.2494781, -2.429115)
 layers = 2
 material_override = SubResource("ShaderMaterial_pastoB")
 texture = ExtResource("56_pastoB")
@@ -922,6 +945,34 @@ transform = Transform3D(0.030259425, 0, -1.777069, 0, 1.8436748, 0, 1.3535084, 0
 
 [node name="CascoOxidado2" parent="." unique_id=996348724 instance=ExtResource("64_casco")]
 transform = Transform3D(0.176191, 0.06539871, -0.16184175, -0.053394802, 0.22050126, 0.046766996, 0.16913226, 0.0014837682, 0.1833605, -4.676608, 0.17896314, 1.0030396)
+
+[node name="PecheraMetalica" parent="." unique_id=192837468 instance=ExtResource("65_pechera")]
+transform = Transform3D(0.41612652, 0.11858257, -0.15494941, -0.0008256695, 0.23145613, 0.74674, 0.14392701, -0.34152204, 0.45227906, -2.7501125, 0.022549553, 0.76418537)
+
+[node name="PecheraMetalica2" parent="." unique_id=1097147467 instance=ExtResource("65_pechera")]
+transform = Transform3D(0.019182421, 0.41844162, 0.19407268, -0.083507776, -0.08887251, 0.8510053, 0.43189746, -0.035768367, 0.15592317, 1.3204075, 0.23249432, -3.065955)
+
+[node name="EspadaOxidada" type="Sprite3D" parent="." unique_id=192837469]
+transform = Transform3D(0.19731472, 0, 0, 0, 0.15843463, 0, 0, 0, 0.5, 1.8232383, 0.44584894, -2.459808)
+visible = false
+layers = 3
+texture = ExtResource("66_espada")
+
+[node name="EspadaOxidada2" type="Sprite3D" parent="." unique_id=342922576]
+transform = Transform3D(0.19651978, -0.01420749, 0, 0.017694026, 0.15779634, 0, 0, 0, 0.5, -1.752853, 0.21417016, 0.9185895)
+layers = 3
+flip_h = true
+texture = ExtResource("66_espada")
+
+[node name="Puerta2D" type="Sprite3D" parent="." unique_id=192837470]
+transform = Transform3D(0.27643856, 0, 0, 0, 0.24013045, 0, 0, 0, 0.5, -12.710002, 1.0337489, -1.9982874)
+layers = 7
+texture = ExtResource("67_puerta")
+
+[node name="PuertaRecortada" type="Sprite3D" parent="." unique_id=192837471]
+transform = Transform3D(0.29232046, -0.006872914, 0, 0.008298216, 0.24211144, 0, 0, 0, 0.3688833, -14.21644, 0.9160869, -2.1584177)
+layers = 2
+texture = ExtResource("68_puerta_rec")
 
 [editable path="SubViewportFondo3D/BUSTO_BRONCE2"]
 [editable path="SubViewportFondo3D/BUSTO_BRONCE3"]

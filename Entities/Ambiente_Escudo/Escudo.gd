@@ -58,6 +58,7 @@ var golpes_recibidos: int = 0
 var mesh_instance: MeshInstance3D
 var sombra_nodo: Node = null  ## Sombra falsa (excluida del parpadeo)
 var _flash_gen: int = 0  ## Generación del flash: golpes seguidos no se pisan entre sí
+var _punch_tween: Tween = null  ## Punch de escala del defensor (se mata para no acumular tamaño)
 var _escala_base: Vector3 = Vector3.ZERO
 var material_original: Material
 var material_dano: StandardMaterial3D
@@ -151,6 +152,8 @@ func _agregar_mallas(nodo: Node, lista: Array[MeshInstance3D]) -> void:
 
 # Estado Gris Metálico (Reflejante)
 const TEXTURA_ICONO_ESCUDO: Texture2D = preload("res://Entities/Ambiente_Escudo/Icono_escudo_gis.png")
+@export_category("Icono Potenciado")
+@export var altura_icono_potenciado: float = 2.05  ## Altura Y del icono flotante sobre el escudo para no tapar el borde superior
 var es_metalico: bool = false
 var aguante_metalico: int = 0
 var material_metalico: StandardMaterial3D = null
@@ -161,7 +164,7 @@ var _icono_tween: Tween = null
 func _process(_delta: float) -> void:
 	if es_metalico and _icono_potenciado and _icono_potenciado.visible:
 		var t := Time.get_ticks_msec() / 1000.0
-		_icono_potenciado.position.y = 1.45 + sin(t * 3.5) * 0.06
+		_icono_potenciado.position.y = altura_icono_potenciado + sin(t * 3.5) * 0.06
 
 
 ## Activa el modo metálico gris: refleja flechas y absorbe hasta 2 golpes (no acumulable)
@@ -197,7 +200,7 @@ func _setup_icono_potenciado() -> void:
 	_icono_potenciado.shaded = false
 	_icono_potenciado.no_depth_test = false
 	_icono_potenciado.render_priority = 6
-	_icono_potenciado.position = Vector3(0.0, 1.25, 0.0)  # Flotando sobre la parte superior del escudo
+	_icono_potenciado.position = Vector3(0.0, altura_icono_potenciado, 0.0)  # Flotando sobre la parte superior del escudo
 	_icono_potenciado.modulate = Color(1.2, 1.2, 1.3, 0.0)
 	_icono_potenciado.visible = false
 	add_child(_icono_potenciado)
@@ -343,12 +346,16 @@ func _flash_dano() -> void:
 	_flash_gen += 1
 	var gen_actual: int = _flash_gen
 
-	# Punch de escala: expansión y contracción al recibir impacto (tanto escudos aliados como enemigos)
+	# Punch de escala: expansión y contracción al recibir impacto (tanto escudos aliados como enemigos).
+	# Se mata el punch anterior y se parte siempre de la base: los golpes seguidos no pueden acumular tamaño.
 	if _escala_base == Vector3.ZERO:
 		_escala_base = scale
-	var _tw := create_tween()
-	_tw.tween_property(self, "scale", _escala_base * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_tw.tween_property(self, "scale", _escala_base, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	if _punch_tween and _punch_tween.is_valid():
+		_punch_tween.kill()
+	scale = _escala_base
+	_punch_tween = create_tween()
+	_punch_tween.tween_property(self, "scale", _escala_base * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_punch_tween.tween_property(self, "scale", _escala_base, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	# Parpadeo rojo vívido visible e inconfundible en todos los escudos
 	var flash_rojo := _crear_material_flash(Color(1.0, 0.08, 0.08, 1.0), intensidad_flash)
