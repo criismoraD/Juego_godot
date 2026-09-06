@@ -73,6 +73,8 @@ var _cached_target: Node3D = null
 var _particulas_pisada: GPUParticles3D = null
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer
+var _sfx_escalera: AudioStreamPlayer = null  ## Loop de pasos mientras trepa (SUBIR_ESCALERA)
+var _fade_escalera_tween: Tween = null  ## Fade out del sonido de escalera (evita corte en seco)
 var skeleton: Skeleton3D
 var arrow_node: Node3D
 var explosive_arrow_node: Node3D
@@ -456,10 +458,52 @@ func _crear_hitbox():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _process(delta):
+## Loop de pasos de escalera: suena solo mientras la animación actual es de
+## escalada (SUBIR_ESCALERA/ESCALAR), así los pasos calcan con el trepe y se
+## cortan al caminar, desplegarse o morir.
+func _actualizar_sonido_escalera() -> void:
+	var anim_actual: String = anim_player.current_animation.to_upper() if anim_player else ""
+	var escalando: bool = (anim_actual.contains("ESCALERA") or anim_actual.contains("ESCALAR")) \
+		and current_state != State.DYING and current_state != State.DEAD
+	if not escalando:
+		_detener_sonido_escalera()
+		return
+
+	if not _sfx_escalera:
+		var stream: AudioStream = AudioManager.obtener_stream_sfx("subir_escaleras")
+		if stream == null:
+			return
+		_sfx_escalera = AudioStreamPlayer.new()
+		_sfx_escalera.stream = stream
+		_sfx_escalera.bus = "Master"
+		add_child(_sfx_escalera)
+		# Loop por re-encadenado: fiable con WAV importado sin loop
+		_sfx_escalera.finished.connect(_sfx_escalera.play)
+	# Cancelar fade en curso y recuperar volumen base
+	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
+		_fade_escalera_tween.kill()
+		_fade_escalera_tween = null
+	_sfx_escalera.volume_db = 6.0
+	if not _sfx_escalera.playing:
+		_sfx_escalera.play()
+
+
+## Corte con fade out corto (se pide cada frame mientras no se trepa)
+func _detener_sonido_escalera() -> void:
+	if not _sfx_escalera or not _sfx_escalera.playing:
+		return
+	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
+		return
+	_fade_escalera_tween = create_tween()
+	_fade_escalera_tween.tween_property(_sfx_escalera, "volume_db", -40.0, 0.15)
+	_fade_escalera_tween.tween_callback(_sfx_escalera.stop)
+
+
+func _process(delta: float) -> void:
 	if _target_update_timer > 0.0:
 		_target_update_timer -= delta
 	_actualizar_rotacion_modelo(delta)
+	_actualizar_sonido_escalera()
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
 

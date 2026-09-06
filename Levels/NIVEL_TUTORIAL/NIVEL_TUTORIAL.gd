@@ -72,6 +72,8 @@ var _dialogo_abajo_15_mostrado: bool = false  # 15 kills 7s
 var _dialogo_arriba_contar_mostrado: bool = false  # 2s después de 15 -> 5s
 var _dialogo_arriba_pesada_mostrado: bool = false  # globo aplasta 7s
 var _dialogo_abajo_esperando_mostrado: bool = false  # refuerzos nivel5 7s
+var _dialogo_arriba_goblin_legendaria_mostrado: bool = false  # oleada 3 primera goblin rosada 7s
+var _goblin_rosa_pendiente_pantalla: Node = null  ## Referencia para monitoreo de aparición en pantalla
 var _muertes_combate_contador: int = 0  # global UI
 # === REFERENCIAS ===
 # Preloads para forzar inclusión en export (PCK) aunque el filtro falle - garantiza Lonko en exe
@@ -201,6 +203,8 @@ func _ready():
 
 	if wave_spawner and not wave_spawner.enemigo_eliminado.is_connected(_on_enemigo_eliminado_nivel):
 		wave_spawner.enemigo_eliminado.connect(_on_enemigo_eliminado_nivel)
+	if wave_spawner and not wave_spawner.goblin_spawneado.is_connected(_on_goblin_spawneado_nivel):
+		wave_spawner.goblin_spawneado.connect(_on_goblin_spawneado_nivel)
 
 	# Reposicionar jugador si regresa de la habitación interior (puerta)
 	if has_node("/root/SceneManager") and get_node("/root/SceneManager").posicion_retorno_puerta != Vector3.ZERO:
@@ -811,6 +815,7 @@ func _mostrar_dialogo_escena(
 
 func _process(delta):
 	_actualizar_render_subviewport_fondo(delta)
+	_monitorear_goblin_rosa_pantalla()
 
 	# OPT: Monitoreo de oleadas con timer en vez de cada frame
 	_monitor_timer += delta
@@ -1025,6 +1030,71 @@ func _on_enemigo_eliminado_nivel(_enemigo: Node, _total_muertos: int) -> void:
 	# Contador propio de la de arriba (simetría y futuros diálogos)
 	if is_instance_valid(arquera_arriba) and is_instance_valid(autora) and autora == arquera_arriba:
 		_kills_arriba += 1
+
+
+func _on_goblin_spawneado_nivel(goblin: Node) -> void:
+	if not goblin or not is_instance_valid(goblin):
+		return
+	if goblin is ArqueraRosa or "rosa" in goblin.name.to_lower():
+		if goblin.has_signal("aparicion_en_pantalla") and not goblin.aparicion_en_pantalla.is_connected(_on_goblin_rosada_en_pantalla):
+			goblin.aparicion_en_pantalla.connect(_on_goblin_rosada_en_pantalla)
+		# Se registra como pendiente; NUNCA disparar directamente al instante del spawn
+		_goblin_rosa_pendiente_pantalla = goblin
+
+
+func _esta_nodo_en_pantalla(nodo: Node3D) -> bool:
+	if not nodo or not is_instance_valid(nodo):
+		return false
+	if nodo.has_method("esta_en_pantalla"):
+		return nodo.esta_en_pantalla()
+	if not nodo.is_inside_tree():
+		return false
+	# Ignorar si está en origen o no ha sido posicionada en el mundo por el spawner
+	if nodo.global_position == Vector3.ZERO or (absf(nodo.global_position.x) < 0.01 and absf(nodo.global_position.z) < 0.01):
+		return false
+	# El spawner en NIVEL_TUTORIAL se ubica en X >= 4.7. Si X > 4.15, sigue fuera de pantalla
+	if nodo.global_position.x > 4.15:
+		return false
+	var cam := CameraUtils.obtener_camara_juego(self)
+	if not cam or not is_instance_valid(cam):
+		return nodo.global_position.x <= 3.8
+	var pos_3d := nodo.global_position + Vector3(0.0, 0.8, 0.0)
+	if cam.is_position_behind(pos_3d):
+		return false
+	var screen_pos := cam.unproject_position(pos_3d)
+	var vp := cam.get_viewport() if is_instance_valid(cam) else get_viewport()
+	var vp_rect := vp.get_visible_rect() if vp else Rect2(0, 0, 1920, 1080)
+	var rect_seguro := vp_rect.grow(-60.0)
+	return rect_seguro.has_point(screen_pos)
+
+
+func _monitorear_goblin_rosa_pantalla() -> void:
+	if _dialogo_arriba_goblin_legendaria_mostrado or GameUI.dialogo_defensora_ya_dicho("DIALOGO_ARQUERA_ARRIBA_GOBLIN_LEGENDARIA"):
+		_goblin_rosa_pendiente_pantalla = null
+		return
+	if is_instance_valid(_goblin_rosa_pendiente_pantalla):
+		if _esta_nodo_en_pantalla(_goblin_rosa_pendiente_pantalla as Node3D):
+			var goblin: Node = _goblin_rosa_pendiente_pantalla
+			_goblin_rosa_pendiente_pantalla = null
+			_on_goblin_rosada_en_pantalla(goblin)
+	else:
+		_goblin_rosa_pendiente_pantalla = null
+
+
+func _on_goblin_rosada_en_pantalla(_goblin: Node = null) -> void:
+	var es_nivel_3: bool = (oleada_combate_actual == 3) or (is_instance_valid(wave_spawner) and wave_spawner.oleada_combate == 3)
+	if not es_nivel_3:
+		return
+	if _dialogo_arriba_goblin_legendaria_mostrado or GameUI.dialogo_defensora_ya_dicho("DIALOGO_ARQUERA_ARRIBA_GOBLIN_LEGENDARIA"):
+		return
+	_dialogo_arriba_goblin_legendaria_mostrado = true
+	var arquera_arriba := get_node_or_null("AllyArcher") as Node
+	if arquera_arriba and is_instance_valid(arquera_arriba) and arquera_arriba.has_method("decir"):
+		arquera_arriba.decir("DIALOGO_ARQUERA_ARRIBA_GOBLIN_LEGENDARIA", 7.0)
+
+
+func _on_goblin_rosada_aparecida(goblin: Node = null) -> void:
+	_on_goblin_rosada_en_pantalla(goblin)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

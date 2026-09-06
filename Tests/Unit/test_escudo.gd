@@ -99,22 +99,53 @@ func test_flash_rojo_enemigo_cubre_todas_las_mallas() -> void:
 	var mallas: Array[MeshInstance3D] = escudo._recolectar_mallas()
 	assert_gt(mallas.size(), 0, "El escudo enemigo debe tener al menos una malla")
 	for mi in mallas:
+		assert_not_null(mi.material_override, "La malla debe tener material_override activo durante el flash")
+		var mat_override := mi.material_override as StandardMaterial3D
+		if mat_override:
+			assert_true(mat_override.emission_enabled, "El flash debe usar emisión")
+			assert_eq(mat_override.emission, Color(1.0, 0.0, 0.0), "El flash enemigo debe ser rojo puro")
 		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
 		for si in range(num_sups):
 			var mat = mi.get_surface_override_material(si) as StandardMaterial3D
 			assert_not_null(mat, "Cada superficie debe tener material de flash durante el impacto")
 			if mat:
 				assert_true(mat.emission_enabled, "El flash debe usar emisión")
-				assert_eq(mat.emission, Color(1.0, 0.08, 0.08), "El flash enemigo debe ser rojo")
+				assert_eq(mat.emission, Color(1.0, 0.0, 0.0), "El flash enemigo debe ser rojo puro")
 
-	# Assert: tras el parpadeo (3 pulsos x 2 x 0.09s) se restauran los materiales previos
+	# Assert: tras el parpadeo se restauran los materiales previos y se limpia material_override
 	await wait_seconds(0.9)
 	var primera: MeshInstance3D = escudo.mesh_instance
 	if primera:
+		assert_null(primera.material_override, "Tras el flash, material_override debe volver a null")
 		assert_eq(
 			primera.get_surface_override_material(0), escudo.material_dano,
 			"Tras el flash debe volver el material de daño"
 		)
+
+
+func test_flash_aliado_es_blanco_y_limpia_material_override() -> void:
+	# Arrange
+	var escudo = ESCUDO_SCENE.instantiate()
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+	escudo.golpes_para_destruir = 5
+
+	# Act
+	escudo.recibir_golpe(1)
+
+	# Assert: flash blanco de aliado con material_override
+	var mallas: Array[MeshInstance3D] = escudo._recolectar_mallas()
+	assert_gt(mallas.size(), 0, "El escudo aliado debe tener mallas")
+	for mi in mallas:
+		assert_not_null(mi.material_override, "El escudo aliado debe activar material_override en flash")
+		var mat_override := mi.material_override as StandardMaterial3D
+		if mat_override:
+			assert_eq(mat_override.emission, Color(1.0, 1.0, 1.0), "El flash del escudo aliado debe ser blanco")
+
+	# Tras el flash, material_override queda limpio
+	await wait_seconds(0.3)
+	for mi in mallas:
+		assert_null(mi.material_override, "Tras el flash aliado, material_override debe ser null")
 
 
 func test_fisica_trozos_escudo_realista() -> void:
@@ -202,5 +233,3 @@ func test_punch_impacto_pico_acotado() -> void:
 	assert_lt(escudo.scale.x, 0.5 * 1.2, "El punch no debe expandir más del ~8-20% la escala")
 	await wait_seconds(0.3)
 	assert_almost_eq(escudo.scale.x, 0.5, 0.001, "El punch debe volver exactamente a la escala base")
-
-

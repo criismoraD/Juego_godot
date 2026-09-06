@@ -614,3 +614,38 @@ func test_modelo_moradit_guardiana_y_animaciones() -> void:
 	for anim in ["Correr", "Ataque arrojar", "Idle escudo", "Impacto escudo", "Voltearse", "Muerte 1", "Muerte 2"]:
 		scene._play_anim(anim)
 		assert_true(scene.anim_player.is_playing(), "La animación '%s' debe reproducirse correctamente" % anim)
+
+
+func test_sistema_golpe_critico_momento_vulnerable() -> void:
+	# Arrange: la Moradita participa del Sistema Golpe Crítico
+	assert_not_null(_goblina)
+	assert_true(_goblina.has_method("es_momento_golpe_critico"), "Debe exponer es_momento_golpe_critico")
+
+	# Act / Assert: fuera de su ataque NO hay momento crítico
+	_goblina._cambiar_estado(GoblinaScript.State.DEFENDING)
+	assert_false(_goblina.es_momento_golpe_critico(), "En defensa NO debe ser momento crítico")
+
+	# Act / Assert: en plena animación de ataque SÍ es momento crítico
+	_goblina._cambiar_estado(GoblinaScript.State.ATTACKING)
+	assert_true(_goblina.es_momento_golpe_critico(), "En ataque debe ser momento crítico")
+
+	# Act: golpe crítico letal (sobrecarga al 100% en su momento vulnerable)
+	_goblina.take_damage(99999.0)
+
+	# Assert: muerte inmediata por crítico
+	assert_eq(_goblina.health, 0, "El golpe crítico debe matarla")
+	assert_eq(_goblina.current_state, GoblinaScript.State.DYING, "Debe pasar a DYING")
+	assert_true(_goblina.murio_por_critico, "La muerte debe marcarse como crítica (sonido muerte_critica)")
+
+
+func test_sistema_golpe_critico_fuera_de_momento_no_mata() -> void:
+	# Arrange: fuera del ataque, la sobrecarga al 100% solo hace daño x2
+	assert_not_null(_goblina)
+	_goblina._cambiar_estado(GoblinaScript.State.DEFENDING)
+
+	# Act: sobrecarga al 100% (x2 = 2 de daño) fuera del momento crítico
+	_goblina.take_damage(2.0)
+
+	# Assert: sigue viva
+	assert_gt(_goblina.health, 0, "Fuera del momento vulnerable NO debe morir de un golpe cargado")
+	assert_false(_goblina.murio_por_critico, "No debe marcarse muerte crítica")

@@ -265,6 +265,17 @@ func _load_all_sounds():
 		sfx_streams["correr_descalzo"] = [_sfx_correr]
 		sfx_streams["sonido_correr_descalzo"] = [_sfx_correr]
 
+	# Sonido de escalera (pasos al subir/bajar; loop gestionado por el llamador)
+	# NOTA: el archivo original venía como .mp3 pero era un WAV renombrado y
+	# Godot no podía importarlo; ahora es un .wav real.
+	var _sfx_escalera: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/Subir escaleras.wav"):
+		_sfx_escalera = load("res://System/Audio/SFX/Subir escaleras.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/Subir escaleras.wav"):
+		_sfx_escalera = load("res://TEST_/Subir escaleras.wav") as AudioStream
+	if _sfx_escalera:
+		sfx_streams["subir_escaleras"] = [_sfx_escalera]
+
 	# Sonidos Goblina Escudo Pesado
 	var _sfx_jabalina: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/Goblina jabalina.wav"):
@@ -318,6 +329,16 @@ func _load_all_sounds():
 	if _sfx_goblina_muerte:
 		sfx_streams["goblina_muerte"] = [_sfx_goblina_muerte]
 		sfx_streams["goblina muerte"] = [_sfx_goblina_muerte]
+
+	# Sonido de muerte por daño crítico (remata con golpe vulnerable en pleno ataque)
+	# NOTA: el archivo original venía como .mp3 pero era un WAV renombrado.
+	var _sfx_muerte_critica: AudioStream = null
+	if ResourceLoader.exists("res://System/Audio/SFX/Critico.wav"):
+		_sfx_muerte_critica = load("res://System/Audio/SFX/Critico.wav") as AudioStream
+	elif ResourceLoader.exists("res://TEST_/Critico.wav"):
+		_sfx_muerte_critica = load("res://TEST_/Critico.wav") as AudioStream
+	if _sfx_muerte_critica:
+		sfx_streams["muerte_critica"] = [_sfx_muerte_critica]
 
 	var _sfx_impacto_escudo: AudioStream = null
 	if sfx_streams.has("shield_hit"):
@@ -384,6 +405,18 @@ func _get_available_sfx_3d_player() -> AudioStreamPlayer3D:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+## Devuelve el stream de un SFX registrado, para loops gestionados por el
+## llamador (ej.: sonido de escalera sincronizado con la animación de trepar).
+## Retorna null si el sonido no existe.
+func obtener_stream_sfx(sound_name: String) -> AudioStream:
+	if not sfx_streams.has(sound_name):
+		return null
+	var sounds: Array = sfx_streams[sound_name]
+	if sounds.is_empty():
+		return null
+	return sounds[0] as AudioStream
+
+
 ## Reproduce un efecto de sonido (selección aleatoria si hay variantes)
 ## Usa reproductores temporales para permitir sonidos simultáneos
 ## pitch_override > 0 fuerza esa velocidad de reproducción (1.0 = normal)
@@ -437,6 +470,9 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: 
 		elif sound_name == "sangre_splash":
 			# Splash de sangre balanceado para evitar volumen excesivo o duplicado
 			volume_to_use = sfx_volume_db - 6.0
+		elif sound_name == "muerte_critica":
+			# Muerte por golpe crítico: fuente TEST_ a ~-36 dBFS RMS, necesita realce fuerte
+			volume_to_use = sfx_volume_db + 12.0
 		elif sound_name in ["escudo_metal_cayendo", "Escudo metal callendo", "escudo_cayendo"]:
 			# Volumen reducido a pedido: contundente pero sin saturar
 			volume_to_use = sfx_volume_db - 1.0

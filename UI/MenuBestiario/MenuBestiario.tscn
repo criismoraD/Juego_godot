@@ -1,0 +1,403 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://UI/MenuBestiario/MenuBestiario.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.04, 0.04, 0.06, 0.95)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_side"]
+bg_color = Color(0.06, 0.07, 0.1, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.45, 0.6, 0.7)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.7)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.07, 0.08, 0.13, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.32, 0.46, 0.75)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+bg_color = Color(0.12, 0.13, 0.18, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.6, 0.65, 0.8, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.2, 0.22, 0.32, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.9, 0.92, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="MenuBestiario" type="CanvasLayer"]
+layer = 60
+visible = false
+script = ExtResource("1_script")
+
+[node name="PanelRaiz" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Fondo" type="Panel" parent="PanelRaiz"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelRaiz"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 25
+
+[node name="VBoxPrincipal" type="VBoxContainer" parent="PanelRaiz/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Titulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 26
+text = "BESTIARIO"
+horizontal_alignment = 1
+
+[node name="Subtitulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 15
+text = "Usa W / S o las flechas para seleccionar enemigo • Clic para ver ficha completa"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+layout_mode = 2
+
+[node name="Contenido" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+
+[node name="PanelLista" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido"]
+custom_minimum_size = Vector2(440, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_side")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLista"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 22
+
+[node name="VBoxLista" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLista/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LblTituloLista" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLista/Margin/VBoxLista"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 15
+text = "LISTADO DE ENEMIGOS"
+
+[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLista/Margin/VBoxLista"]
+layout_mode = 2
+
+[node name="ScrollLista" type="ScrollContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLista/Margin/VBoxLista"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ListaContenedor" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLista/Margin/VBoxLista/ScrollLista"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="PanelDetalle" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_side")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 26
+
+[node name="VBoxInfo" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="HeaderFicha" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo"]
+layout_mode = 2
+
+[node name="LblNombreEnemigo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HeaderFicha"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.84, 0.45, 1)
+theme_override_font_sizes/font_size = 24
+text = "IMP EMBAJADOR"
+
+[node name="LblValNumero" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HeaderFicha"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.72, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "N° 1"
+horizontal_alignment = 2
+
+[node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo"]
+layout_mode = 2
+
+[node name="HBoxMedio" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo"]
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="VBoxStats" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CardHP" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardHP"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardHP/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="LblKeyHP" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardHP/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.72, 0.25, 1)
+theme_override_font_sizes/font_size = 12
+text = "PUNTOS DE SALUD (HP)"
+
+[node name="LblValHP" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardHP/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "6"
+
+[node name="CardATT" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardATT"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardATT/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="LblKeyATT" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardATT/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.72, 0.25, 1)
+theme_override_font_sizes/font_size = 12
+text = "PODER DE ATAQUE (ATT)"
+
+[node name="LblValATT" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardATT/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "1"
+autowrap_mode = 2
+
+[node name="CardITEM" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardITEM"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardITEM/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="LblKeyITEM" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardITEM/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.72, 0.25, 1)
+theme_override_font_sizes/font_size = 12
+text = "OBJETO / BOTÍN (ITEM)"
+
+[node name="LblValItem" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardITEM/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.75, 1)
+theme_override_font_sizes/font_size = 16
+text = "Disparo múltiple"
+autowrap_mode = 2
+
+[node name="AspectRetrato" type="AspectRatioContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio"]
+custom_minimum_size = Vector2(280, 280)
+layout_mode = 2
+size_flags_horizontal = 3
+ratio = 1.0
+alignment_horizontal = 1
+alignment_vertical = 1
+
+[node name="MarcoRetratoContainer" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/AspectRetrato"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/AspectRetrato/MarcoRetratoContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="TexRetratoEnemigo" type="TextureRect" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/AspectRetrato/MarcoRetratoContainer/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlaceholderRetrato" type="CenterContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/AspectRetrato/MarcoRetratoContainer/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LblPlaceholder" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/AspectRetrato/MarcoRetratoContainer/Margin/PlaceholderRetrato"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.62, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+text = "[ Retrato del Enemigo ]
+
+(Coloca la imagen PNG en:
+res://UI/MenuBestiario/Portraits/imp_embajador.png)"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo"]
+layout_mode = 2
+
+[node name="VBoxDescripcion" type="VBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="LblTituloDesc" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/VBoxDescripcion"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 14
+text = "DESCRIPCIÓN Y REGISTRO DE COMBATE"
+
+[node name="ScrollDesc" type="ScrollContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/VBoxDescripcion"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="LblDescripcion" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/VBoxDescripcion/ScrollDesc"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.9, 0.92, 0.98, 1)
+theme_override_constants/line_spacing = 6
+theme_override_font_sizes/font_size = 16
+text = "Un imp con el máximo rango militar, carga con el estandarte de Vesara, atacarlo es como declarar la guerra"
+autowrap_mode = 2
+
+[node name="HBoxFooter" type="HBoxContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PanelControles" type="PanelContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxFooter"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_btn")
+
+[node name="Margin" type="MarginContainer" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxFooter/PanelControles"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="LblControles" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxFooter/PanelControles/Margin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_constants/line_spacing = 4
+theme_override_font_sizes/font_size = 14
+text = "W / S: Seleccionar Enemigo  •  Clic: Ver Ficha  •  E / ESC: Volver"
+
+[node name="BtnVolver" type="Button" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxFooter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 46)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_hover")
+text = "CONFIRMAR Y SALIR"

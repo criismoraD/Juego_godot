@@ -8,9 +8,9 @@ signal destruido
 @export var color_dano: Color = Color(1.0, 0.2, 0.2)
 @export var intensidad_tinte_dano: float = 0.5
 @export var duracion_flash: float = 0.1
-@export var intensidad_flash: float = 3.0
-@export var parpadeos_rojo_enemigo: int = 1  ## Pulsos rojos por impacto en escudo enemigo (1 = un parpadeo)
-@export var intervalo_parpadeo: float = 0.09  ## Segundos de cada fase del parpadeo
+@export var intensidad_flash: float = 1.2
+@export var parpadeos_rojo_enemigo: int = 2  ## Pulsos rojos por impacto en escudo enemigo
+@export var intervalo_parpadeo: float = 0.13  ## Segundos de cada fase del parpadeo enemigo
 @export_category("Bando")
 @export var es_escudo_enemigo: bool = false
 @export_category("Profundidad 2.5D")
@@ -254,11 +254,11 @@ func recibir_golpe_reflejo(_flecha: Node = null) -> void:
 	aguante_metalico -= 1
 	AudioManager.play_sfx("parry")
 
-	# Destello plateado de bloqueo
-	_flash_metalico()
-
 	if aguante_metalico <= 0:
 		desactivar_modo_metalico()
+
+	# Destello plateado de bloqueo
+	_flash_metalico()
 
 
 func _crear_material_metalico() -> void:
@@ -268,13 +268,11 @@ func _crear_material_metalico() -> void:
 	if material_original is StandardMaterial3D:
 		material_metalico.shading_mode = material_original.shading_mode
 		material_metalico.next_pass = material_original.next_pass
-	# Color gris metálico acerado visible e inconfundible (sin textura de madera)
-	material_metalico.albedo_color = Color(0.70, 0.72, 0.76, 1.0)
+	# Color gris metálico acerado visible e inconfundible sin saturar a blanco
+	material_metalico.albedo_color = Color(0.62, 0.65, 0.70, 1.0)
 	material_metalico.metallic = 0.85
-	material_metalico.roughness = 0.25
-	material_metalico.emission_enabled = true
-	material_metalico.emission = Color(0.35, 0.38, 0.45)
-	material_metalico.emission_energy_multiplier = 0.35
+	material_metalico.roughness = 0.3
+	material_metalico.emission_enabled = false
 
 
 func _aplicar_visual_metalico() -> void:
@@ -282,32 +280,26 @@ func _aplicar_visual_metalico() -> void:
 	if not material_metalico:
 		return
 	var mallas: Array[MeshInstance3D] = _recolectar_mallas()
-	for mi in mallas:
-		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
-		for si in range(num_sups):
-			mi.set_surface_override_material(si, material_metalico)
+	_aplicar_material_mallas(mallas, material_metalico)
 
 
 func _flash_metalico() -> void:
 	var mallas: Array[MeshInstance3D] = _recolectar_mallas()
 	if mallas.is_empty():
 		return
-	var flash_mat := StandardMaterial3D.new()
-	flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	flash_mat.emission_enabled = true
-	flash_mat.emission = Color(0.8, 0.95, 1.0)
-	flash_mat.emission_energy_multiplier = 4.0
-	for mi in mallas:
-		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
-		for si in range(num_sups):
-			mi.set_surface_override_material(si, flash_mat)
+
+	_flash_gen += 1
+	var gen_actual: int = _flash_gen
+
+	var flash_mat := _crear_material_flash(Color(0.9, 0.95, 1.0), 2.0)
+	_aplicar_flash_mallas(mallas, flash_mat)
 
 	await get_tree().create_timer(duracion_flash).timeout
-	if is_instance_valid(self):
-		if es_metalico and aguante_metalico > 0:
-			_aplicar_visual_metalico()
-		else:
-			_actualizar_visual_dano()
+	if gen_actual != _flash_gen or not is_inside_tree():
+		_limpiar_flash_mallas(mallas)
+		return
+
+	_restaurar_material_estado()
 
 
 func recibir_golpe(amount: int = 1):
@@ -351,11 +343,46 @@ func _actualizar_visual_dano():
 	else:
 		material_dano.albedo_color = Color.WHITE.lerp(color_dano, progreso * intensidad_tinte_dano)
 
-	var mat_aplicar: Material = material_dano if progreso > 0.001 else material_original
+	var mat_aplicar: Material = material_dano if (progreso > 0.001 and material_dano) else material_original
+	_aplicar_material_mallas(mallas, mat_aplicar)
+
+
+## Restaura el material canónico según el estado actual (metálico o daño/base)
+func _restaurar_material_estado() -> void:
+	if not is_inside_tree():
+		return
+	var mallas := _recolectar_mallas()
+	_limpiar_flash_mallas(mallas)
+	if es_metalico and aguante_metalico > 0:
+		_aplicar_visual_metalico()
+	else:
+		_actualizar_visual_dano()
+
+
+## Aplica un material a todas las superficies de una lista de mallas
+func _aplicar_material_mallas(mallas: Array[MeshInstance3D], mat: Material) -> void:
 	for mi in mallas:
-		var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
-		for si in range(num_sups):
-			mi.set_surface_override_material(si, mat_aplicar)
+		if is_instance_valid(mi):
+			var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
+			for si in range(num_sups):
+				mi.set_surface_override_material(si, mat)
+
+
+## Aplica el flash tanto vía material_override (prioridad absoluta del render) como por superficie
+func _aplicar_flash_mallas(mallas: Array[MeshInstance3D], flash_mat: Material) -> void:
+	for mi in mallas:
+		if is_instance_valid(mi):
+			mi.material_override = flash_mat
+			var num_sups: int = mi.mesh.get_surface_count() if mi.mesh else 1
+			for si in range(num_sups):
+				mi.set_surface_override_material(si, flash_mat)
+
+
+## Remueve el material_override para regresar a la renderización normal
+func _limpiar_flash_mallas(mallas: Array[MeshInstance3D]) -> void:
+	for mi in mallas:
+		if is_instance_valid(mi):
+			mi.material_override = null
 
 
 func _flash_dano() -> void:
@@ -380,19 +407,40 @@ func _flash_dano() -> void:
 	_punch_tween.tween_property(self, "scale", _escala_base * 1.08, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_punch_tween.tween_property(self, "scale", _escala_base, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
-	# Parpadeo rojo vívido visible e inconfundible en todos los escudos
-	var flash_rojo := _crear_material_flash(Color(1.0, 0.08, 0.08, 1.0), intensidad_flash)
-	var previos_rojo := _tomar_previos(mallas)
-	var repeticiones: int = maxi(parpadeos_rojo_enemigo, 2)
+	var flash_mat: StandardMaterial3D
+	var repeticiones: int
+	var tiempo_on: float
+	var tiempo_off: float
+
+	if es_escudo_enemigo:
+		# Rojo puro intenso y sin desaturación a blanco bajo tonemapper ACES
+		flash_mat = _crear_material_flash(Color(1.0, 0.0, 0.0, 1.0), 1.2)
+		repeticiones = maxi(parpadeos_rojo_enemigo, 2)
+		tiempo_on = maxf(intervalo_parpadeo, 0.13)
+		tiempo_off = 0.08
+	else:
+		# Escudo aliado: destello blanco limpio de 1 pulso
+		flash_mat = _crear_material_flash(Color(1.0, 1.0, 1.0, 1.0), 1.5)
+		repeticiones = 1
+		tiempo_on = duracion_flash
+		tiempo_off = 0.05
+
 	for _rep in range(repeticiones):
 		if gen_actual != _flash_gen or not is_inside_tree():
+			_limpiar_flash_mallas(mallas)
 			return
-		_aplicar_material(previos_rojo, flash_rojo)
-		await get_tree().create_timer(intervalo_parpadeo).timeout
+		_aplicar_flash_mallas(mallas, flash_mat)
+		await get_tree().create_timer(tiempo_on).timeout
 		if gen_actual != _flash_gen or not is_inside_tree():
+			_limpiar_flash_mallas(mallas)
 			return
-		_restaurar_flash(previos_rojo)
-		await get_tree().create_timer(intervalo_parpadeo).timeout
+		_limpiar_flash_mallas(mallas)
+		_restaurar_material_estado()
+		await get_tree().create_timer(tiempo_off).timeout
+
+	if gen_actual == _flash_gen and is_inside_tree():
+		_limpiar_flash_mallas(mallas)
+		_restaurar_material_estado()
 
 
 func _crear_material_flash(color: Color, intensidad: float) -> StandardMaterial3D:
@@ -518,12 +566,14 @@ func _destruir():
 
 	# Limpiar materiales antes de queue_free para evitar
 	# "Parameter 'material' is null" en el RenderingServer
-	if mesh_instance:
-		mesh_instance.material_override = null
-		if mesh_instance.mesh:
-			for si in range(mesh_instance.mesh.get_surface_count()):
-				mesh_instance.set_surface_override_material(si, null)
-		mesh_instance.visible = false
+	var mallas_destruir := _recolectar_mallas()
+	_limpiar_flash_mallas(mallas_destruir)
+	for mi in mallas_destruir:
+		if is_instance_valid(mi):
+			if mi.mesh:
+				for si in range(mi.mesh.get_surface_count()):
+					mi.set_surface_override_material(si, null)
+			mi.visible = false
 
 	# Ocultar visualmente este escudo
 	visible = false

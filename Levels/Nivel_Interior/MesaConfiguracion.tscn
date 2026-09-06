@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://Levels/Nivel_Interior/MesaConfiguracion.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://04m0axdhp4op" path="res://TEST_/MESA_CONFIGURACION/MESA_CONFIG_CUARTO.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://c6lvdv381tkyv" path="res://UI/MenuDefensoras/MenuDefensoras.tscn" id="3_defensoras"]
+[ext_resource type="PackedScene" path="res://UI/MenuBestiario/MenuBestiario.tscn" id="4_bestiario"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_mesa"]
 size = Vector3(0.26, 0.22, 0.18)
@@ -101,6 +102,9 @@ pixel_size = 0.0011
 outline_size = 4
 
 [node name="MenuDefensoras" parent="." instance=ExtResource("3_defensoras")]
+unique_name_in_owner = true
+
+[node name="MenuBestiario" parent="." instance=ExtResource("4_bestiario")]
 unique_name_in_owner = true
 
 [node name="CanvasMenu" type="CanvasLayer" parent="."]

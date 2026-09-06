@@ -121,4 +121,25 @@ func _recolectar_mallas(nodo: Node, lista: Array[MeshInstance3D]) -> void:
 		_recolectar_mallas(hijo, lista)
 
 
+func test_mandoble_2d_configuracion_en_nivel01() -> void:
+	# Arrange
+	var escena: PackedScene = load("res://Levels/NIVEL01/NIVEL01.tscn")
+	var nivel: Node = escena.instantiate()
+	add_child(nivel)
 
+	# Act
+	var mandoble: Sprite3D = nivel.get_node_or_null("Mandoble2D") as Sprite3D
+	var camara_frente: Camera3D = nivel.find_child("CamaraFrente", true, false) as Camera3D
+
+	# Assert
+	assert_not_null(mandoble, "El nodo Mandoble2D debe existir como hijo en NIVEL01")
+	assert_not_null(camara_frente, "CamaraFrente debe existir en NIVEL01")
+	if mandoble:
+		assert_not_null(mandoble.texture, "Mandoble2D debe tener una textura asignada")
+		if mandoble.texture:
+			assert_true(mandoble.texture.resource_path.contains("Mandoble 2D.png"), "La textura de Mandoble2D debe ser Mandoble 2D.png")
+		var mascara_frente: int = camara_frente.cull_mask if camara_frente else 1
+		assert_true((mandoble.layers & mascara_frente) != 0, "Mandoble2D debe ser visible para CamaraFrente")
+		assert_true(mandoble.visible, "Mandoble2D debe estar visible en la escena")
+
+	nivel.queue_free()

@@ -110,6 +110,15 @@ func _actualizar_excepciones_raycasts(padre: Node3D) -> void:
 				_ray_der.add_exception(nodo)
 		nodo = nodo.get_parent()
 
+	for col_child in padre.find_children("*", "CollisionObject3D", true, false):
+		if col_child is CollisionObject3D:
+			if _ray:
+				_ray.add_exception(col_child)
+			if _ray_izq:
+				_ray_izq.add_exception(col_child)
+			if _ray_der:
+				_ray_der.add_exception(col_child)
+
 
 func _process(_delta: float) -> void:
 	if not _mesh or not _ray or not _ray_izq or not _ray_der:
@@ -139,7 +148,7 @@ func _process(_delta: float) -> void:
 		return
 
 	var collider = _ray.get_collider()
-	if collider == padre or (collider and collider.get_parent() == padre):
+	if collider == padre or (collider and (collider.get_parent() == padre or padre.is_ancestor_of(collider))):
 		_ray.add_exception(collider)
 		_ray.force_raycast_update()
 		if not _ray.is_colliding():
@@ -174,7 +183,7 @@ func _process(_delta: float) -> void:
 	_ray_izq.force_raycast_update()
 
 	var col_izq = _ray_izq.get_collider()
-	if col_izq == padre or (col_izq and col_izq.get_parent() == padre):
+	if col_izq == padre or (col_izq and (col_izq.get_parent() == padre or padre.is_ancestor_of(col_izq))):
 		_ray_izq.add_exception(col_izq)
 		_ray_izq.force_raycast_update()
 
@@ -183,7 +192,7 @@ func _process(_delta: float) -> void:
 	_ray_der.force_raycast_update()
 
 	var col_der = _ray_der.get_collider()
-	if col_der == padre or (col_der and col_der.get_parent() == padre):
+	if col_der == padre or (col_der and (col_der.get_parent() == padre or padre.is_ancestor_of(col_der))):
 		_ray_der.add_exception(col_der)
 		_ray_der.force_raycast_update()
 

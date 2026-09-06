@@ -18,6 +18,13 @@ func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("escudos")
 	vida_pilar = vida_maxima
+	var parent_node := get_parent()
+	if parent_node:
+		var meshes := parent_node.find_children("*", "MeshInstance3D", true, false)
+		for m in meshes:
+			var mi := m as MeshInstance3D
+			if mi:
+				mi.layers = 1
 
 
 func inicializar(lonko: Node, vida_max_override: float = -1.0) -> void:
@@ -35,6 +42,7 @@ func inicializar(lonko: Node, vida_max_override: float = -1.0) -> void:
 		for m in meshes:
 			var mi := m as MeshInstance3D
 			if mi:
+				mi.layers = 1
 				_mesh_instances.append(mi)
 				_original_materials.append(mi.material_override)
 

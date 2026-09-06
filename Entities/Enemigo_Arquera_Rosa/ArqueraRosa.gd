@@ -1,6 +1,8 @@
 class_name ArqueraRosa
 extends "res://System/Core/EnemyBase.gd"
 
+signal aparicion_en_pantalla(goblin: Node)
+
 ## Arquera Rosa: Variante élite de la goblin arquera con textura rosada y rango medio-largo.
 ## Habilidades:
 ## 1. Aura Rosada (BasicAreaVFX_04) con sonido continuo de Aura mientras esté activo.
@@ -65,6 +67,8 @@ var goblin_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_A
 var bow_anim_player: AnimationPlayer = null
 var flecha_visual_mano: Node3D = null
 var _pose_base_flecha_mano: Transform3D = Transform3D.IDENTITY
+var _aparecio_en_pantalla: bool = false
+var _tiempo_desde_spawn: float = 0.0
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INICIALIZACIÓN
@@ -115,6 +119,62 @@ func _on_enemy_ready() -> void:
 
 	_play_animation("GIRL_GOB_CAMINA")
 	_play_bow_animation("ARCO_IDLE")
+
+	_aparecio_en_pantalla = false
+	_tiempo_desde_spawn = 0.0
+
+
+## Retorna true si la goblin rosada está visible dentro de la pantalla
+func esta_en_pantalla(margen_seguro_px: float = 60.0) -> bool:
+	if not is_inside_tree():
+		return false
+
+	# Ignorar si está en origen o no ha sido posicionada en el mundo por el spawner
+	if global_position == Vector3.ZERO or (absf(global_position.x) < 0.01 and absf(global_position.z) < 0.01):
+		return false
+
+	# El spawner en NIVEL01 y NIVEL_TUTORIAL se ubica en X >= 4.7.
+	# El borde de pantalla derecho está en X ~4.22. Si X > 4.15, sigue fuera del campo visual.
+	if global_position.x > 4.15:
+		return false
+
+	var cam := CameraUtils.obtener_camara_juego(self)
+	if not cam or not is_instance_valid(cam):
+		return global_position.x <= 3.8
+
+	var pos_cuerpo := global_position + Vector3(0.0, 0.8, 0.0)
+	if cam.is_position_behind(pos_cuerpo):
+		return false
+
+	var screen_pos := cam.unproject_position(pos_cuerpo)
+	var vp := cam.get_viewport() if is_instance_valid(cam) else get_viewport()
+	var vp_rect := vp.get_visible_rect() if vp else Rect2(0, 0, 1920, 1080)
+	var rect_seguro := vp_rect.grow(-margen_seguro_px)
+
+	return rect_seguro.has_point(screen_pos)
+
+
+func _notificar_aparicion_en_pantalla() -> void:
+	if _aparecio_en_pantalla:
+		return
+	_aparecio_en_pantalla = true
+	aparicion_en_pantalla.emit(self)
+	if is_inside_tree() and get_tree():
+		var scene := get_tree().current_scene
+		if scene and scene.has_method("_on_goblin_rosada_en_pantalla"):
+			scene._on_goblin_rosada_en_pantalla(self)
+		elif scene and scene.has_method("_on_goblin_rosada_aparecida"):
+			scene._on_goblin_rosada_aparecida(self)
+
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	_tiempo_desde_spawn += delta
+	# Esperar al menos 0.2s tras spawnear para asegurar que fue posicionada por el spawner
+	if _tiempo_desde_spawn < 0.2:
+		return
+	if not _aparecio_en_pantalla and esta_en_pantalla():
+		_notificar_aparicion_en_pantalla()
 
 
 func _setup_aura_vfx() -> void:

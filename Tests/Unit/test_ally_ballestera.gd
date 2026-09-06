@@ -55,6 +55,8 @@ func _agregar_animacion_minima(ballestera: AllyBallestera) -> void:
 	lib.add_animation("Recargar", Animation.new())
 	lib.add_animation("Impacto", Animation.new())
 	lib.add_animation("VICTORIA", Animation.new())
+	lib.add_animation("CORRER", Animation.new())
+	lib.add_animation("SUBIR_ESCALERA", Animation.new())
 
 	anim_player.add_animation_library("", lib)
 	ballestera.add_child(anim_player)
@@ -273,3 +275,55 @@ func test_prioridad_profundidad_personajes():
 	assert_almost_eq(player.global_position.z, 0.05, 0.01, "Player Z debe estar en 0.05")
 	assert_almost_eq(_ballestera.global_position.z, 0.02, 0.01, "Ballestera Z debe estar en 0.02")
 	assert_almost_eq(archer.global_position.z, -0.02, 0.01, "Archer Z debe estar en -0.02")
+
+
+func test_particulas_pisada_direccion_correr_derecha_e_izquierda():
+	# Arrange
+	var ap: AnimationPlayer = _ballestera.find_child("AnimationPlayer", true, false)
+	_ballestera.anim_player = ap
+	ap.play("CORRER")
+
+	# Act 1: Corriendo hacia la derecha (+X)
+	_ballestera._prev_pos_x = 0.0
+	_ballestera.global_position.x = 1.0
+	_ballestera._particulas_pisada_emitir()
+
+	# Assert 1: Emite humo despedido hacia atrás a la izquierda (-X)
+	assert_true(_ballestera._particulas_pisada.emitting, "Debe emitir partículas al correr")
+	var pm: ParticleProcessMaterial = _ballestera._particulas_pisada.process_material as ParticleProcessMaterial
+	assert_lt(pm.direction.x, 0.0, "La dirección del humo al correr a la derecha debe apuntar hacia atrás en -X")
+	assert_lt(_ballestera._particulas_pisada.position.x, 0.0, "El emisor debe ubicarse detrás en X negativo")
+
+	# Act 2: Corriendo hacia la izquierda (-X)
+	_ballestera._prev_pos_x = 1.0
+	_ballestera.global_position.x = 0.0
+	_ballestera._particulas_pisada_emitir()
+
+	# Assert 2: Emite humo despedido hacia atrás a la derecha (+X)
+	assert_true(_ballestera._particulas_pisada.emitting, "Debe emitir partículas al correr")
+	assert_gt(pm.direction.x, 0.0, "La dirección del humo al correr a la izquierda debe apuntar hacia atrás en +X")
+	assert_gt(_ballestera._particulas_pisada.position.x, 0.0, "El emisor debe ubicarse detrás en X positivo")
+
+
+func test_particulas_pisada_apagadas_en_escalera_y_otras_animaciones():
+	# Arrange
+	var ap: AnimationPlayer = _ballestera.find_child("AnimationPlayer", true, false)
+	_ballestera.anim_player = ap
+
+	# Caso 1: En escalera con flag en_escalera = true
+	ap.play("CORRER")
+	_ballestera.en_escalera = true
+	_ballestera._particulas_pisada_emitir()
+	assert_false(_ballestera._particulas_pisada.emitting, "No debe emitir si en_escalera es true")
+
+	# Caso 2: Con animación SUBIR_ESCALERA
+	_ballestera.en_escalera = false
+	ap.play("SUBIR_ESCALERA")
+	_ballestera._particulas_pisada_emitir()
+	assert_false(_ballestera._particulas_pisada.emitting, "No debe emitir si la animación es SUBIR_ESCALERA")
+
+	# Caso 3: Con animación IDLE
+	ap.play("IDLE")
+	_ballestera._particulas_pisada_emitir()
+	assert_false(_ballestera._particulas_pisada.emitting, "No debe emitir en IDLE")
+

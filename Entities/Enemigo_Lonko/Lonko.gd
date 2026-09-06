@@ -105,6 +105,9 @@ var _particulas_pilar: GPUParticles3D = null
 var _particulas_humo_pilar: GPUParticles3D = null  ## Humo SmokeFX 1A-8 durante elevación
 var _particulas_pisada: GPUParticles3D = null  ## Polvo de las pisadas al correr
 var _audio_correr_descalzo: AudioStreamPlayer3D = null
+const VOLUMEN_CORRER_DB: float = 2.0
+const DURACION_FADE_CORRER: float = 0.15
+var _fade_correr_tween: Tween = null  ## Fade out del sonido de correr (evita corte en seco)
 var _instancia_pilar: Node3D = null
 var _base_pos_pilar: Vector3 = Vector3.ZERO
 var _tiros_realizados: int = 0  ## Contador de tiros lanzados (para el ataque eléctrico periódico)
@@ -129,6 +132,10 @@ var _girando_hacia_fondo: bool = false  ## True durante la invocación del pilar
 var _correccion_idle_activa: bool = false  ## True durante la pausa IDLE entre disparos (corrige el yaw del clip)
 var _tween_espejo: Tween = null  ## Volteo suave de escala X al entrar/salir del IDLE
 var _pitch_suavizado_rad: float = 0.0  ## Para suavizar deformación ult
+var _en_recuperacion_ult: bool = false  ## True durante el retorno suave post-ult a IDLE
+var _pitch_recuperacion_rad: float = 0.0
+var _peso_override_recuperacion: float = 1.0
+var _tween_recuperacion_ult: Tween = null
 var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: suelta el arco volando al morir por explosión
 var _cayendo_por_destruccion_pilar: bool = false  ## Caída física dinámica al romperse el pilar
 var _ha_tocado_suelo_muerte: bool = false
@@ -220,6 +227,29 @@ func _configurar_particulas_pisada() -> void:
 	_particulas_pisada.lifetime = 1.15  # Estela suave duradera
 
 
+## Reanuda el loop de pisadas cancelando cualquier fade y restaurando el volumen
+func _reanudar_sonido_correr() -> void:
+	if not _audio_correr_descalzo:
+		return
+	if _fade_correr_tween and _fade_correr_tween.is_valid():
+		_fade_correr_tween.kill()
+		_fade_correr_tween = null
+	_audio_correr_descalzo.volume_db = VOLUMEN_CORRER_DB
+	if not _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.play()
+
+
+## Corte con fade out corto (se pide desde varios estados de la máquina)
+func _detener_sonido_correr() -> void:
+	if not _audio_correr_descalzo or not _audio_correr_descalzo.playing:
+		return
+	if _fade_correr_tween and _fade_correr_tween.is_valid():
+		return
+	_fade_correr_tween = create_tween()
+	_fade_correr_tween.tween_property(_audio_correr_descalzo, "volume_db", -40.0, DURACION_FADE_CORRER)
+	_fade_correr_tween.tween_callback(_audio_correr_descalzo.stop)
+
+
 func _setup_audio_correr_descalzo() -> void:
 	var stream: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):
@@ -235,17 +265,18 @@ func _setup_audio_correr_descalzo() -> void:
 		var stream_mp3 = stream as AudioStreamMP3
 		if stream_mp3:
 			stream_mp3.loop = true
-		var stream_wav = stream as AudioStreamWAV
-		if stream_wav:
-			stream_wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		# NOTA: el WAV importado trae loop_mode=0 y loop_end sin inicializar;
+		# forzar LOOP_FORWARD en runtime loopea sobre rango vacío = silencio.
+		# El encadenado se hace con finished -> play (ver más abajo).
 		_audio_correr_descalzo = AudioStreamPlayer3D.new()
 		_audio_correr_descalzo.name = "AudioCorrerDescalzo"
 		_audio_correr_descalzo.stream = stream
 		_audio_correr_descalzo.bus = "Master"
-		_audio_correr_descalzo.volume_db = 6.0
+		_audio_correr_descalzo.volume_db = 2.0
 		_audio_correr_descalzo.unit_size = 30.0
 		_audio_correr_descalzo.max_db = 6.0
 		add_child(_audio_correr_descalzo)
+		_audio_correr_descalzo.finished.connect(_audio_correr_descalzo.play)
 
 
 func _configurar_flecha_mano() -> void:
@@ -415,7 +446,9 @@ func _process(delta: float) -> void:
 			global_position.x = _base_pos_pilar.x
 		global_position.z = _base_pos_pilar.z
 
-	if _debe_rastrear_jugador():
+	if _en_recuperacion_ult:
+		_aplicar_spine_recuperacion()
+	elif _debe_rastrear_jugador():
 		_lonko_track_player()
 	else:
 		_reset_spine_rotation()
@@ -522,6 +555,24 @@ func _lonko_track_player() -> void:
 	)
 
 
+## Aplica la pose interpolada del torso durante la fase de reacomodo suave post-ult
+func _aplicar_spine_recuperacion() -> void:
+	if not skeleton or spine_bone_idx == -1:
+		_buscar_skeleton()
+	if not skeleton or spine_bone_idx == -1:
+		return
+
+	skeleton.set_bone_global_pose_override(spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
+	var bone_pose: Transform3D = skeleton.get_bone_global_pose(spine_bone_idx)
+
+	var pitch_rotation := Quaternion(Vector3.RIGHT, _pitch_recuperacion_rad)
+	var new_basis: Basis = Basis(pitch_rotation) * bone_pose.basis
+
+	skeleton.set_bone_global_pose_override(
+		spine_bone_idx, Transform3D(new_basis, bone_pose.origin), _peso_override_recuperacion, false
+	)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ESTADOS Y NAVEGACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -542,31 +593,27 @@ func _on_state_walking() -> void:
 func _process_walking(delta: float) -> void:
 	if _pilar_desplegado or _reached_position:
 		velocity.x = 0
-		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-			_audio_correr_descalzo.stop()
+		_detener_sonido_correr()
 		_change_state(State.SHOOTING)
 		return
 
 	if _is_taking_damage or _is_invulnerable:
 		velocity.x = 0
-		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-			_audio_correr_descalzo.stop()
+		_detener_sonido_correr()
 		return
 
 	velocity.x = -velocidad_caminar
 	walked_distance += velocidad_caminar * delta
 
 	# Audio de pisadas descalzas mientras corre
-	if _audio_correr_descalzo and not _audio_correr_descalzo.playing:
-		_audio_correr_descalzo.play()
+	_reanudar_sonido_correr()
 
 	if modo_pacifico:
 		velocity.x = -velocidad_caminar
 		walked_distance += velocidad_caminar * delta
 		if global_position.x <= limite_pacifico_x:
 			velocity.x = 0
-			if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-				_audio_correr_descalzo.stop()
+			_detener_sonido_correr()
 			if not pacifico_detenido:
 				pacifico_detenido = true
 				_on_pacifico_detenido()
@@ -578,8 +625,7 @@ func _process_walking(delta: float) -> void:
 		global_position.x = max(global_position.x, limite_izq)
 		_reached_position = true
 		_base_pos_pilar = global_position
-		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-			_audio_correr_descalzo.stop()
+		_detener_sonido_correr()
 		_change_state(State.SHOOTING)
 		return
 
@@ -587,8 +633,7 @@ func _process_walking(delta: float) -> void:
 	walked_distance += velocidad_caminar * delta
 
 	if walked_distance >= target_walk_distance:
-		if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-			_audio_correr_descalzo.stop()
+		_detener_sonido_correr()
 		if _check_spacing():
 			_reached_position = true
 			_base_pos_pilar = global_position
@@ -603,8 +648,7 @@ func _process_walking(delta: float) -> void:
 
 
 func _on_state_shooting() -> void:
-	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-		_audio_correr_descalzo.stop()
+	_detener_sonido_correr()
 	if _is_shooting or _is_taking_damage:
 		return
 	if not _pilar_invocado and not _pilar_desplegado:
@@ -615,8 +659,7 @@ func _on_state_shooting() -> void:
 
 func _process_shooting(_delta: float) -> void:
 	velocity.x = 0
-	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-		_audio_correr_descalzo.stop()
+	_detener_sonido_correr()
 	if _pilar_desplegado or _is_invulnerable or _pilar_invocado:
 		velocity.y = 0
 
@@ -624,8 +667,7 @@ func _process_shooting(_delta: float) -> void:
 func _play_random_run_animation() -> void:
 	var rand_run: String = "CORRER_01" if randf() < 0.5 else "CORRE_02"
 	_play_animation(rand_run)
-	if _audio_correr_descalzo and not _audio_correr_descalzo.playing:
-		_audio_correr_descalzo.play()
+	_reanudar_sonido_correr()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -633,8 +675,7 @@ func _play_random_run_animation() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _iniciar_secuencia_pilar() -> void:
-	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-		_audio_correr_descalzo.stop()
+	_detener_sonido_correr()
 	if _pilar_invocado or (_instancia_pilar and is_instance_valid(_instancia_pilar)):
 		return
 	_pilar_invocado = true
@@ -677,6 +718,10 @@ func _iniciar_secuencia_pilar() -> void:
 		if root and _instancia_pilar:
 			root.add_child(_instancia_pilar)
 			_instancia_pilar.scale = Vector3(escala_pilar, escala_pilar, escala_pilar)
+			for m in _instancia_pilar.find_children("*", "MeshInstance3D", true, false):
+				var mi := m as MeshInstance3D
+				if mi:
+					mi.layers = 1
 
 			var pilar_start_y: float = base_y - altura_pilar
 			_instancia_pilar.global_position = Vector3(base_x, pilar_start_y, base_z)
@@ -1050,22 +1095,80 @@ func _iniciar_secuencia_disparo() -> void:
 			_is_invulnerable = false
 		return
 
+	var era_ult: bool = _apuntar_arriba
 	_is_shooting = false
 	if _apuntar_arriba:
 		_is_invulnerable = false
 	_apuntar_arriba = false
-	_reset_spine_rotation()
 
 	# Pausa entre disparos, luego volver a disparar
 	if not _is_taking_damage:
 		_correccion_idle_activa = false
-		_play_animation("IDLE", 0.25, 1.0)
-		_play_bow_animation("ARCO_IDLE")
-		await get_tree().create_timer(pausa_entre_disparos, false).timeout
+		if era_ult:
+			await _ejecutar_recuperacion_suave_ult()
+		else:
+			_reset_spine_rotation()
+			_play_animation("IDLE", 0.25, 1.0)
+			_play_bow_animation("ARCO_IDLE")
+
+		if not is_instance_valid(self) or current_state != State.SHOOTING:
+			return
+
+		var tiempo_pausa: float = pausa_entre_disparos
+		if era_ult:
+			tiempo_pausa = maxf(0.35, pausa_entre_disparos - 0.55)
+
+		await get_tree().create_timer(tiempo_pausa, false).timeout
 		if not is_instance_valid(self) or current_state != State.SHOOTING:
 			return
 		if not _is_taking_damage:
 			_iniciar_secuencia_disparo()
+
+
+## Transición suave y orgánica de retorno a IDLE tras disparar el ult especial al cielo.
+## En lugar de un corte brusco y robótico, genera frames intermedios interpolando la
+## columna y cabeza desde -65° hasta 0° mientras mezcla suavemente hacia la animación IDLE.
+func _ejecutar_recuperacion_suave_ult() -> void:
+	if _tween_recuperacion_ult and _tween_recuperacion_ult.is_valid():
+		_tween_recuperacion_ult.kill()
+		_tween_recuperacion_ult = null
+
+	_en_recuperacion_ult = true
+	# Iniciar desde el ángulo de tiro al cielo (-65°)
+	_pitch_recuperacion_rad = deg_to_rad(-65.0)
+	_peso_override_recuperacion = 1.0
+
+	# Transición suave hacia IDLE en el modelo y el arco con blend amplio
+	_play_animation("IDLE", 0.55, 1.0)
+	_play_bow_animation("ARCO_IDLE", 0.45)
+
+	var duracion_recuperacion: float = 0.55
+	_tween_recuperacion_ult = create_tween().set_parallel(true)
+	_tween_recuperacion_ult.tween_property(self, "_pitch_recuperacion_rad", 0.0, duracion_recuperacion).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	_tween_recuperacion_ult.tween_property(self, "_peso_override_recuperacion", 0.0, duracion_recuperacion).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+	await get_tree().create_timer(duracion_recuperacion, false).timeout
+
+	if not is_instance_valid(self):
+		return
+
+	if _tween_recuperacion_ult and _tween_recuperacion_ult.is_valid():
+		_tween_recuperacion_ult.kill()
+		_tween_recuperacion_ult = null
+
+	_en_recuperacion_ult = false
+	_pitch_suavizado_rad = 0.0
+	_reset_spine_rotation()
+
+
+func _cancelar_recuperacion_ult() -> void:
+	if _tween_recuperacion_ult and _tween_recuperacion_ult.is_valid():
+		_tween_recuperacion_ult.kill()
+		_tween_recuperacion_ult = null
+	_en_recuperacion_ult = false
+	_pitch_recuperacion_rad = 0.0
+	_peso_override_recuperacion = 0.0
+	_reset_spine_rotation()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1648,7 +1751,7 @@ func take_damage(amount: float) -> void:
 		_correccion_idle_activa = false
 		velocity = Vector3.ZERO
 		_ocultar_flecha_mano()
-		_reset_spine_rotation()
+		_cancelar_recuperacion_ult()
 		_reproducir_sonido_dano()
 
 		var rand_impact: String = "HIT_01" if randf() < 0.5 else "HIT_02"
@@ -1682,8 +1785,7 @@ func take_damage(amount: float) -> void:
 
 
 func _on_state_dying() -> void:
-	if _audio_correr_descalzo and _audio_correr_descalzo.playing:
-		_audio_correr_descalzo.stop()
+	_detener_sonido_correr()
 	_is_taking_damage = true
 	_is_shooting = false
 	_apuntar_arriba = false
@@ -1708,7 +1810,7 @@ func _on_state_dying() -> void:
 
 	_ocultar_flecha_mano()
 	_play_bow_animation("ARCO_IDLE")
-	_reset_spine_rotation()
+	_cancelar_recuperacion_ult()
 	_reproducir_sonido_muerte()
 	_hundir_y_disolver_pilar()
 	_drop_power_up()
@@ -1902,6 +2004,7 @@ func _on_pilar_destruido() -> void:
 
 	_pilar_fue_destruido_primero = true
 	_is_invulnerable = false
+	_cancelar_recuperacion_ult()
 	_detener_temblor_pilar_ult(true)
 
 	# Detener inmediatamente la subida si fue destruido en pleno ascenso
@@ -1922,6 +2025,10 @@ func _on_pilar_destruido() -> void:
 		if dest_mesh:
 			dest_mesh.name = "PILAR_DESTRUIDO"
 			_instancia_pilar.add_child(dest_mesh)
+			for m in dest_mesh.find_children("*", "MeshInstance3D", true, false):
+				var mi := m as MeshInstance3D
+				if mi:
+					mi.layers = 1
 
 	# Al ser destruido el pilar, matar a Lonko inmediatamente
 	health = 0

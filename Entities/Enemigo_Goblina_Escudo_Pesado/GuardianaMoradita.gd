@@ -65,6 +65,7 @@ var es_estructura: bool = true  ## Bono de daño contra estructuras (flecha expl
 var es_pilar_enemigo: bool = true  ## Reconocimiento por ExplosionFlechaExplosiva
 var es_escudo_enemigo: bool = true  ## Reconocimiento por Arrow.gd
 var murio_por_explosion: bool = false
+var murio_por_critico: bool = false  ## Último golpe fue crítico (vulnerable en ataque): reproduce sonido crítico al morir
 var last_hit_position: Vector3 = Vector3.ZERO
 var last_hit_direction: Vector3 = Vector3.ZERO
 var ultimo_atacante: Node = null  ## Quién dio el último golpe: conteo de muertes por defensora
@@ -95,6 +96,9 @@ var _flash_mat: StandardMaterial3D = null
 var _flash_rojo_mat: StandardMaterial3D = null
 var _escudo_punch_tween: Tween = null  ## Punch de escala del escudo (se mata al soltarlo para que no lo agigante)
 var _audio_correr_descalzo: AudioStreamPlayer3D = null
+const VOLUMEN_CORRER_DB: float = 2.0
+const DURACION_FADE_CORRER: float = 0.15
+var _fade_correr_tween: Tween = null  ## Fade out del sonido de correr (evita corte en seco)
 var _sombra: SombraPersonaje = null
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -162,10 +166,10 @@ func _physics_process(delta: float) -> void:
 	# Control de audio de pasos descalzos durante la corrida
 	if _audio_correr_descalzo:
 		var corriendo: bool = (current_state == State.RUNNING and abs(velocity.x) > 0.1)
-		if corriendo and not _audio_correr_descalzo.playing:
-			_audio_correr_descalzo.play()
-		elif not corriendo and _audio_correr_descalzo.playing:
-			_audio_correr_descalzo.stop()
+		if corriendo:
+			_reanudar_sonido_correr()
+		else:
+			_detener_sonido_correr()
 
 	move_and_slide()
 
@@ -187,8 +191,8 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 
 	current_state = nuevo_estado
 
-	if nuevo_estado != State.RUNNING and _audio_correr_descalzo and _audio_correr_descalzo.playing:
-		_audio_correr_descalzo.stop()
+	if nuevo_estado != State.RUNNING:
+		_detener_sonido_correr()
 
 	match nuevo_estado:
 		State.RUNNING:
@@ -250,6 +254,10 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 					mesh.material_overlay = null
 
 			AudioManager.play_sfx("goblina_muerte")
+			# Muerte por daño crítico: sonido crítico encima de la muerte normal
+			if murio_por_critico:
+				AudioManager.play_sfx("muerte_critica")
+				murio_por_critico = false
 
 			# Efecto de sangre animada del goblin ballestero al morir
 			_spawn_sangre_animada(global_position)
@@ -520,6 +528,14 @@ func _buscar_otro_enemigo_cercano() -> Node3D:
 # ═══════════════════════════════════════════════════════════════════════════════
 # DAÑO, VULNERABILIDAD Y MUERTE
 # ═══════════════════════════════════════════════════════════════════════════════
+
+## SISTEMA GOLPE CRÍTICO: su momento vulnerable es la animación de ataque.
+## Un disparo cargado al máximo (barra morada) solo la mata de un golpe si la
+## impactan mientras ataca; fuera de ese momento recibe el daño x2 normal.
+func es_momento_golpe_critico() -> bool:
+	return current_state == State.ATTACKING
+
+
 func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
@@ -527,7 +543,8 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 	var dano_total: float = amount
 
 	# VULNERABILIDAD TÁCTICA: +6 de daño, texto CRÍTICO y sonido de daño si es golpeada en plena animación de ataque
-	if current_state == State.ATTACKING:
+	var golpe_critico: bool = current_state == State.ATTACKING
+	if golpe_critico:
 		dano_total += VULNERABILIDAD_ATAQUE_DANO_EXTRA
 		_spawn_sangre()
 		_mostrar_texto_critico()
@@ -548,6 +565,8 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 
 	if health <= 0:
 		health = 0
+		# Muerte causada por daño crítico: el sonido crítico se reproduce en State.DYING
+		murio_por_critico = golpe_critico
 		_cambiar_estado(State.DYING)
 	else:
 		if not golpe_en_escudo:
@@ -998,6 +1017,29 @@ func _configurar_particulas_pisada() -> void:
 	particulas_pisada.lifetime = 1.15
 
 
+## Reanuda el loop de pisadas cancelando cualquier fade y restaurando el volumen
+func _reanudar_sonido_correr() -> void:
+	if not _audio_correr_descalzo:
+		return
+	if _fade_correr_tween and _fade_correr_tween.is_valid():
+		_fade_correr_tween.kill()
+		_fade_correr_tween = null
+	_audio_correr_descalzo.volume_db = VOLUMEN_CORRER_DB
+	if not _audio_correr_descalzo.playing:
+		_audio_correr_descalzo.play()
+
+
+## Corte con fade out corto (se pide cada frame mientras no corre)
+func _detener_sonido_correr() -> void:
+	if not _audio_correr_descalzo or not _audio_correr_descalzo.playing:
+		return
+	if _fade_correr_tween and _fade_correr_tween.is_valid():
+		return
+	_fade_correr_tween = create_tween()
+	_fade_correr_tween.tween_property(_audio_correr_descalzo, "volume_db", -40.0, DURACION_FADE_CORRER)
+	_fade_correr_tween.tween_callback(_audio_correr_descalzo.stop)
+
+
 func _setup_audio_correr_descalzo() -> void:
 	var stream: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):
@@ -1013,17 +1055,18 @@ func _setup_audio_correr_descalzo() -> void:
 		var stream_mp3 = stream as AudioStreamMP3
 		if stream_mp3:
 			stream_mp3.loop = true
-		var stream_wav = stream as AudioStreamWAV
-		if stream_wav:
-			stream_wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		# NOTA: el WAV importado trae loop_mode=0 y loop_end sin inicializar;
+		# forzar LOOP_FORWARD en runtime loopea sobre rango vacío = silencio.
+		# El encadenado se hace con finished -> play (ver más abajo).
 		_audio_correr_descalzo = AudioStreamPlayer3D.new()
 		_audio_correr_descalzo.name = "AudioCorrerDescalzo"
 		_audio_correr_descalzo.stream = stream
 		_audio_correr_descalzo.bus = "Master"
-		_audio_correr_descalzo.volume_db = 6.0
+		_audio_correr_descalzo.volume_db = 2.0
 		_audio_correr_descalzo.unit_size = 30.0
 		_audio_correr_descalzo.max_db = 6.0
 		add_child(_audio_correr_descalzo)
+		_audio_correr_descalzo.finished.connect(_audio_correr_descalzo.play)
 
 
 func _setup_sombra() -> void:

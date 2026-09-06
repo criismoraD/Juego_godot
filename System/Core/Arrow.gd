@@ -14,6 +14,10 @@ enum TipoFlecha { JUGADOR, ENEMIGO }
 @export var tipo_dueño: TipoFlecha = TipoFlecha.JUGADOR
 @export var multiplicador_dano_sobrecarga: float = 2.0  ## Daño x2 solo con flecha de sobrecarga morada al 100% (meta "sobrecarga_max")
 
+## SISTEMA GOLPE CRÍTICO: daño letal instantáneo cuando la sobrecarga al 100%
+## impacta a un enemigo en su momento vulnerable (es_momento_golpe_critico).
+const GOLPE_CRITICO_DANO: float = 99999.0
+
 # === FLECHA EXPLOSIVA ===
 @export_category("Flecha Explosiva")
 @export var es_explosiva: bool = false:
@@ -252,8 +256,19 @@ func _on_body_entered(body):
 		elif tipo_dueño == TipoFlecha.JUGADOR:
 			if es_enemigo:
 				var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
+				# SISTEMA GOLPE CRÍTICO: enemigos con momento vulnerable definido
+				# (ej.: GuardianaMoradita) se dañan por take_damage, no como escudo.
+				# Con sobrecarga al 100% solo mueren de un golpe si están en ese momento.
+				if es_sobrecarga and body.has_method("es_momento_golpe_critico"):
+					var dano_critico: float = GOLPE_CRITICO_DANO if body.es_momento_golpe_critico() else multiplicador_dano_sobrecarga
+					body.take_damage(dano_critico)
+					_safe_destroy()
+					return
 				var dano_escudo: float = 1.0
-				if es_sobrecarga:
+				# La sobrecarga al máximo solo destruye de un golpe defensas
+				# destruibles por contador de golpes (escudos). Las estructuras
+				# con vida propia (pilar de Lonko) NO entran en esta regla.
+				if es_sobrecarga and not _es_estructura_con_vida(body):
 					dano_escudo = 999.0
 				body.recibir_golpe(dano_escudo)
 				if es_sobrecarga:
@@ -301,8 +316,12 @@ func _on_body_entered(body):
 			var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
 			if es_sobrecarga:
 				dano_final *= multiplicador_dano_sobrecarga
-				if body is GuardianaMoradita or body.is_in_group("guardians") or body.name.begins_with("Guardiana"):
-					dano_final = maxf(dano_final, float(body.health if "health" in body else 999.0))
+				# SISTEMA GOLPE CRÍTICO: la sobrecarga morada al 100% solo mata de
+				# un golpe si el enemigo está en SU momento vulnerable (definido por
+				# cada enemigo en es_momento_golpe_critico, ej.: Moradita en plena
+				# animación de ataque). Fuera de ese momento recibe el daño x2 normal.
+				if body.has_method("es_momento_golpe_critico") and body.es_momento_golpe_critico():
+					dano_final = GOLPE_CRITICO_DANO
 			body.take_damage(dano_final)
 			_safe_destroy()
 	elif tipo_dueño == TipoFlecha.ENEMIGO:
@@ -367,6 +386,14 @@ func _on_area_entered(area: Area3D):
 		else:
 			_stick_to_shield(area)
 		return
+
+
+## Estructuras defensivas con vida propia (pilar de Lonko): no mueren de un
+## golpe con la sobrecarga; reciben el daño normal de flecha por recibir_golpe.
+func _es_estructura_con_vida(body: Object) -> bool:
+	if body is PilarLonkoBody:
+		return true
+	return "es_pilar_enemigo" in body and bool(body.get("es_pilar_enemigo"))
 
 
 func _stick_to_surface():

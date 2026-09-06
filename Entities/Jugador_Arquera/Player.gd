@@ -482,6 +482,10 @@ var _nearby_ladders: Array[Area3D] = []
 @export var velocidad_escalar_subir: float = 0.65  ## Velocidad al subir escaleras (+30% sobre 0.5)
 @export var velocidad_escalar_bajar: float = 0.65  ## Velocidad al bajar escaleras
 @export_range(-360, 360, 1.0) var rotacion_personaje_escalera: float = 180.0  # Giro del modelo al escalar
+@export var volumen_sonido_escalera_db: float = 6.0  ## Volumen del loop de pasos en escalera (fuente TEST_ a ~-36 dBFS RMS)
+@export var duracion_fade_escalera: float = 0.15  ## Fade out al soltar la escalera o detenerse (evita corte en seco)
+var _audio_escalera: AudioStreamPlayer = null  ## Loop de pasos sincronizado con la animación de trepar
+var _fade_escalera_tween: Tween = null
 
 # Referencia al Armature para rotarlo
 var armature_node: Node3D = null
@@ -549,6 +553,53 @@ func stop_climbing():
 
 	# Restaurar rotación suavemente
 	_reset_armature_rotation(false)
+	_detener_sonido_escalera()
+
+
+## Sonido de escalera en loop (subir y bajar). El pitch sigue la magnitud del
+## TimeScale de la animación de escalada: a más velocidad de trepe, pasos más
+## rápidos; al detenerse (escala 0) el loop se corta. Así los pasos calcan
+## siempre con los ciclos de SUBIR_ESCALERA.
+func _actualizar_sonido_escalera(escala_anim: float) -> void:
+	if is_zero_approx(escala_anim):
+		_detener_sonido_escalera()
+		return
+
+	# Cancelar cualquier fade en curso y recuperar el volumen base
+	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
+		_fade_escalera_tween.kill()
+		_fade_escalera_tween = null
+
+	if not _audio_escalera:
+		var stream: AudioStream = AudioManager.obtener_stream_sfx("subir_escaleras")
+		if stream == null:
+			push_warning("[Player] Sonido 'subir_escaleras' no registrado en AudioManager")
+			return
+		_audio_escalera = AudioStreamPlayer.new()
+		_audio_escalera.stream = stream
+		_audio_escalera.bus = "Master"
+		add_child(_audio_escalera)
+		# Loop por re-encadenado: funciona igual con WAV importado sin loop
+		# (forzar loop_mode en runtime sobre WAV puede producir silencio)
+		_audio_escalera.finished.connect(_audio_escalera.play)
+
+	_audio_escalera.volume_db = volumen_sonido_escalera_db
+	if not _audio_escalera.playing:
+		_audio_escalera.play()
+	_audio_escalera.pitch_scale = clampf(absf(escala_anim), 0.5, 2.0)
+
+
+## Corte con fade out corto: el loop de pasos no se corta en seco
+func _detener_sonido_escalera() -> void:
+	if not _audio_escalera or not _audio_escalera.playing:
+		return
+	# El corte puede pedirse cada frame (p. ej. quieta en la escalera):
+	# si el fade ya está en curso, dejarlo terminar.
+	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
+		return
+	_fade_escalera_tween = create_tween()
+	_fade_escalera_tween.tween_property(_audio_escalera, "volume_db", -40.0, duracion_fade_escalera)
+	_fade_escalera_tween.tween_callback(_audio_escalera.stop)
 
 
 ## Salida suave por la parte superior de la escalera hacia la plataforma
@@ -560,6 +611,7 @@ func dismount_ladder_top(direction_x: float = 0.0) -> void:
 	velocity.y = 0.0
 	_mirando_derecha = true
 	_reset_armature_rotation(false)
+	_detener_sonido_escalera()
 	if not is_zero_approx(direction_x):
 		velocity.x = direction_x
 	else:
@@ -881,6 +933,7 @@ func _physics_process(delta):
 				# Detener animación de escalada completamente
 				if anim_tree:
 					anim_tree.set("parameters/Climb/scale", 0.0)
+				_detener_sonido_escalera()
 			else:
 				# Movimiento libre vertical, sin gravedad
 				var climb_speed = velocidad_escalar_subir
@@ -908,6 +961,10 @@ func _physics_process(delta):
 
 					# El nombre del parámetro es "Climb" porque así nombramos al nodo TimeScale
 					anim_tree.set("parameters/Climb/scale", scale_val)
+
+					# Pasos de escalera en loop, sincronizados con la velocidad
+					# de la animación (el pitch sigue al TimeScale del trepe)
+					_actualizar_sonido_escalera(scale_val)
 
 			set_motion_anim("climb")
 
@@ -2473,6 +2530,7 @@ func _caer_de_escalera():
 	# NO desconectamos is_near_ladder porque físicamente seguimos ahí
 	# Solo impedimos reconectar inmediatamente con cooldown
 	ladder_cooldown = 0.5
+	_detener_sonido_escalera()
 
 	current_ladder = null
 	current_move_state = MoveState.AIR

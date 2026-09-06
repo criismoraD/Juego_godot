@@ -19,7 +19,8 @@ func test_flecha_sobrecarga_max_mata_guardiana_un_golpe_cuerpo() -> void:
 	arrow.tipo_dueño = arrow.TipoFlecha.JUGADOR
 	arrow.set_meta("sobrecarga_max", true)
 
-	# Act: Impacto directo en el cuerpo
+	# Act: Poner en momento vulnerable (ataque) e impacto directo en el cuerpo
+	guardiana.current_state = GuardianaMoradita.State.ATTACKING
 	arrow._on_body_entered(guardiana)
 
 	# Assert
@@ -137,3 +138,55 @@ func test_ballestera_refuerzo_aplica_modo_metalico_a_escudo() -> void:
 	var mallas: Array[MeshInstance3D] = escudo._recolectar_mallas()
 	for mi in mallas:
 		assert_eq(mi.get_surface_override_material(0), escudo.material_metalico, "Debe tener material gris metálico")
+
+
+func test_escudo_metalico_impactos_no_dejan_material_blanco_flash() -> void:
+	# Arrange
+	var escudo = ESCUDO_SCENE.instantiate() as EscudoDestruible
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+
+	escudo.activar_modo_metalico(2)
+	assert_true(escudo.es_metalico)
+	assert_eq(escudo.aguante_metalico, 2)
+
+	# Act: primer impacto reflejo (aguante 2 -> 1)
+	escudo.recibir_golpe_reflejo(null)
+	# Esperar a que termine la duración del flash
+	await wait_seconds(escudo.duracion_flash + 0.05)
+
+	# Assert: no debe quedar en flash_mat blanco (debe restaurar material_metalico)
+	var mallas: Array[MeshInstance3D] = escudo._recolectar_mallas()
+	for mi in mallas:
+		var mat = mi.get_surface_override_material(0)
+		assert_eq(mat, escudo.material_metalico, "Tras el destello del impacto 1 debe restaurarse el material metálico")
+		if mat is StandardMaterial3D:
+			assert_false(mat.emission_enabled, "El material metálico restaurado no debe tener emisión brillante de flash")
+
+	# Act: segundo impacto reflejo que agota el modo metálico (aguante 1 -> 0)
+	escudo.recibir_golpe_reflejo(null)
+	assert_false(escudo.es_metalico, "El modo metálico debe quedar desactivado")
+	await wait_seconds(escudo.duracion_flash + 0.05)
+
+	# Assert: tras agotarse el aguante, vuelve al material base/daño sin quedarse blanco
+	for mi in mallas:
+		var mat2 = mi.get_surface_override_material(0)
+		assert_ne(mat2, escudo.material_metalico, "Tras agotarse el aguante no debe conservar el material metálico")
+		assert_eq(mat2, escudo.material_original, "Debe volver al material original de madera")
+		if mat2 is StandardMaterial3D:
+			assert_false((mat2 as StandardMaterial3D).emission_enabled, "El material original no tiene emisión habilitada")
+
+
+func test_ballestera_particulas_humo_correr_aumentadas() -> void:
+	# Arrange
+	var ballestera = BALLESTERA_SCENE.instantiate() as AllyBallestera
+	add_child_autofree(ballestera)
+	await get_tree().process_frame
+
+	# Assert: densidad y tamaño del humo de pisadas al correr
+	assert_not_null(ballestera._particulas_pisada, "Debe tener nodo de partículas de pisada")
+	assert_gte(ballestera._particulas_pisada.amount, 20, "La cantidad de partículas debe ser al menos 20 para humo denso")
+	if ballestera._particulas_pisada.draw_pass_1 is QuadMesh:
+		var qm := ballestera._particulas_pisada.draw_pass_1 as QuadMesh
+		assert_gte(qm.size.x, 0.8, "El tamaño del quad debe ser al menos 0.8 para verse bien en escala 0.3")
+

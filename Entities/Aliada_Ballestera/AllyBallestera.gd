@@ -79,7 +79,11 @@ const PUEDE_ATACAR_INTERVAL: float = 0.1
 var _puede_atacar_timer: float = 0.0
 var _puede_atacar_cached: bool = false
 var _particulas_pisada: GPUParticles3D = null
+var en_escalera: bool = false
+var _prev_pos_x: float = 0.0
 var _sfx_correr: AudioStreamPlayer = null  ## Loop de armadura mientras corre
+var _sfx_escalera: AudioStreamPlayer = null  ## Loop de pasos mientras trepa (SUBIR_ESCALERA)
+var _fade_escalera_tween: Tween = null  ## Fade out del sonido de escalera (evita corte en seco)
 const SONIDO_CORRER_ARMADURA: String = "res://TEST_/sonido_correr_armadura.wav"
 const VOLUMEN_CORRER_DB: float = 8.0  ## Fuente muy silenciosa (RMS 0.7%): +8 dB audible sin saturar
 
@@ -138,6 +142,7 @@ func _ready():
 		model_root = find_child("BALLESTERA_ALIADA", true, false)
 	if model_root:
 		_original_model_y_rot = model_root.rotation.y
+	_prev_pos_x = global_position.x
 
 	skeleton = find_child("Skeleton3D", true, false)
 	if skeleton:
@@ -175,11 +180,11 @@ func _configurar_particulas_pisada() -> void:
 	_particulas_pisada = GPUParticles3D.new()
 	_particulas_pisada.name = "Particulas_Pisada"
 	_particulas_pisada.emitting = false
-	_particulas_pisada.amount = 8
-	_particulas_pisada.lifetime = 0.8
-	_particulas_pisada.visibility_aabb = AABB(Vector3(-1, -0.2, -1), Vector3(2, 1.5, 2))
+	_particulas_pisada.amount = 22  # Mayor densidad de humo de pisadas al correr
+	_particulas_pisada.lifetime = 0.7
+	_particulas_pisada.visibility_aabb = AABB(Vector3(-2, -0.5, -2), Vector3(4, 3, 4))
 	add_child(_particulas_pisada)
-	_particulas_pisada.position = Vector3(0, 0.05, 0)
+	_particulas_pisada.position = Vector3(-0.15, 0.05, 0)
 
 	var mat := StandardMaterial3D.new()
 	if TEXTURA_HUMO_PISADAS:
@@ -197,35 +202,35 @@ func _configurar_particulas_pisada() -> void:
 
 	var mesh := QuadMesh.new()
 	mesh.material = mat
-	mesh.size = Vector2(0.3276, 0.3276)
+	mesh.size = Vector2(0.85, 0.85)  # Tamaño aumentado para presencia visual clara en escala 0.3
 	_particulas_pisada.draw_pass_1 = mesh
 
 	var pm := ParticleProcessMaterial.new()
-	pm.direction = Vector3(0.0, 1.0, 0.0)
-	pm.spread = 50.0
-	pm.initial_velocity_min = 0.1
-	pm.initial_velocity_max = 0.25
-	pm.gravity = Vector3(0.0, 0.1, 0.0)
-	pm.scale_min = 0.4
-	pm.scale_max = 0.657
+	pm.direction = Vector3(-1.0, 0.45, 0.0).normalized()
+	pm.spread = 55.0
+	pm.initial_velocity_min = 0.4
+	pm.initial_velocity_max = 0.95
+	pm.gravity = Vector3(0.0, 0.35, 0.0)
+	pm.scale_min = 0.8
+	pm.scale_max = 1.5
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(0.08, 0.01, 0.08)
+	pm.emission_box_extents = Vector3(0.12, 0.02, 0.12)
 	pm.anim_speed_min = 1.0
 	pm.anim_speed_max = 1.0
 	pm.anim_offset_min = 0.0
 	pm.anim_offset_max = 1.0
 
 	var grad := Gradient.new()
-	grad.set_color(0, Color(0.5, 0.5, 0.5, 0.6))
-	grad.set_color(1, Color(0.5, 0.5, 0.5, 0.0))
+	grad.set_color(0, Color(0.72, 0.72, 0.72, 0.85))
+	grad.set_color(1, Color(0.72, 0.72, 0.72, 0.0))
 	var grad_tex := GradientTexture1D.new()
 	grad_tex.gradient = grad
 	pm.color_ramp = grad_tex
 
 	var curve := Curve.new()
-	curve.add_point(Vector2(0.0, 0.25), 0.0, 1.2)
-	curve.add_point(Vector2(0.3, 1.0), 0.2, -0.4)
-	curve.add_point(Vector2(0.65, 0.6), -0.6, -0.8)
+	curve.add_point(Vector2(0.0, 0.3), 0.0, 1.5)
+	curve.add_point(Vector2(0.35, 1.0), 0.2, -0.3)
+	curve.add_point(Vector2(0.7, 0.7), -0.5, -0.8)
 	curve.add_point(Vector2(1.0, 0.0), -1.2, 0.0)
 	var curve_tex := CurveTexture.new()
 	curve_tex.curve = curve
@@ -237,8 +242,43 @@ func _configurar_particulas_pisada() -> void:
 func _particulas_pisada_emitir() -> void:
 	if not _particulas_pisada or not is_instance_valid(_particulas_pisada):
 		return
-	var corriendo := en_despliegue or (anim_player and anim_player.current_animation.contains("CORRER"))
-	_particulas_pisada.emitting = corriendo and current_state != State.DYING and current_state != State.DEAD and paralisis_timer <= 0.0
+
+	var delta_x: float = global_position.x - _prev_pos_x
+	_prev_pos_x = global_position.x
+
+	var anim_actual: String = anim_player.current_animation.to_upper() if anim_player else ""
+	var es_escalera: bool = en_escalera or anim_actual.contains("ESCALERA") or anim_actual.contains("ESCALAR")
+	var anim_correr: bool = anim_actual.contains("CORRER") and not es_escalera and not anim_actual.contains("AIRE")
+
+	var corriendo: bool = anim_correr and not es_escalera and not fase_agachada
+	var viva_y_activa: bool = (
+		current_state != State.DYING
+		and current_state != State.DEAD
+		and paralisis_timer <= 0.0
+		and current_state != State.CELEBRATING
+	)
+
+	var debe_emitir: bool = corriendo and viva_y_activa
+	_particulas_pisada.emitting = debe_emitir
+
+	if debe_emitir:
+		var mirando_derecha: bool = true
+		if absf(delta_x) > 0.0005:
+			mirando_derecha = delta_x > 0.0
+		elif model_root:
+			var diff_rot: float = absf(wrapf(model_root.rotation.y - _original_model_y_rot, -PI, PI))
+			mirando_derecha = diff_rot < 1.5
+
+		var pm: ParticleProcessMaterial = _particulas_pisada.process_material as ParticleProcessMaterial
+		if pm:
+			if mirando_derecha:
+				# Al correr hacia la derecha (+X), el humo sale despedido hacia atrás a la izquierda (-X)
+				pm.direction = Vector3(-1.0, 0.45, 0.0).normalized()
+				_particulas_pisada.position = Vector3(-0.15, 0.05, 0.0)
+			else:
+				# Al correr/retirarse hacia la izquierda (-X), el humo sale despedido hacia atrás a la derecha (+X)
+				pm.direction = Vector3(1.0, 0.45, 0.0).normalized()
+				_particulas_pisada.position = Vector3(0.15, 0.05, 0.0)
 
 
 ## Loop de sonido de armadura mientras la ballestera corre (entrada y retirada).
@@ -257,19 +297,65 @@ func _configurar_sonido_correr() -> void:
 	add_child(_sfx_correr)
 
 
-## Enciende o apaga el loop según si está corriendo (anim CORRER).
+## Enciende o apaga el loop según si está corriendo (anim CORRER y no en escaleras).
 func _actualizar_sonido_correr() -> void:
 	if not _sfx_correr or not is_instance_valid(_sfx_correr):
 		return
+	var anim_actual: String = anim_player.current_animation.to_upper() if anim_player else ""
+	var es_escalera: bool = en_escalera or anim_actual.contains("ESCALERA") or anim_actual.contains("ESCALAR")
 	var corriendo: bool = (
-		(anim_player and anim_player.current_animation.contains("CORRER"))
+		anim_actual.contains("CORRER")
+		and not es_escalera
+		and not fase_agachada
 		and current_state != State.DYING
 		and current_state != State.DEAD
+		and current_state != State.CELEBRATING
 	)
 	if corriendo and not _sfx_correr.playing:
 		_sfx_correr.play()
 	elif not corriendo and _sfx_correr.playing:
 		_sfx_correr.stop()
+
+
+## Loop de pasos de escalera: suena solo mientras la animación actual es de
+## escalada (SUBIR_ESCALERA/ESCALAR), así los pasos calcan con el trepe y se
+## cortan al caminar, desplegarse o morir.
+func _actualizar_sonido_escalera() -> void:
+	var anim_actual: String = anim_player.current_animation.to_upper() if anim_player else ""
+	var escalando: bool = (en_escalera or anim_actual.contains("ESCALERA") or anim_actual.contains("ESCALAR")) \
+		and current_state != State.DYING and current_state != State.DEAD
+	if not escalando:
+		_detener_sonido_escalera()
+		return
+
+	if not _sfx_escalera:
+		var stream: AudioStream = AudioManager.obtener_stream_sfx("subir_escaleras")
+		if stream == null:
+			return
+		_sfx_escalera = AudioStreamPlayer.new()
+		_sfx_escalera.stream = stream
+		_sfx_escalera.bus = "Master"
+		add_child(_sfx_escalera)
+		# Loop por re-encadenado: fiable con WAV importado sin loop
+		_sfx_escalera.finished.connect(_sfx_escalera.play)
+	# Cancelar fade en curso y recuperar volumen base
+	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
+		_fade_escalera_tween.kill()
+		_fade_escalera_tween = null
+	_sfx_escalera.volume_db = 6.0
+	if not _sfx_escalera.playing:
+		_sfx_escalera.play()
+
+
+## Corte con fade out corto (se pide cada frame mientras no se trepa)
+func _detener_sonido_escalera() -> void:
+	if not _sfx_escalera or not _sfx_escalera.playing:
+		return
+	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
+		return
+	_fade_escalera_tween = create_tween()
+	_fade_escalera_tween.tween_property(_sfx_escalera, "volume_db", -40.0, 0.15)
+	_fade_escalera_tween.tween_callback(_sfx_escalera.stop)
 
 
 func _exit_tree():
@@ -296,6 +382,7 @@ func _on_oleada_completada(_numero_oleada: int) -> void:
 	if not _puede_celebrar():
 		return
 	if es_movil:
+		en_despliegue = true
 		# Las defensoras moviles festejan y luego se retiran
 		if current_state != State.DYING and current_state != State.DEAD:
 			_loops_victoria_restantes = randi_range(repeticiones_victoria_min, repeticiones_victoria_max)
@@ -537,6 +624,7 @@ func _process(delta: float):
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
 	_actualizar_sonido_correr()
+	_actualizar_sonido_escalera()
 	if current_state == State.DYING or current_state == State.DEAD:
 		_restaurar_torso()
 		_ocultar_icono_aturdimiento()
@@ -1601,6 +1689,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 		return
 
 	# 2. Subir Escalera 1 (espalda visible a la cámara con rotation.y = 0.0)
+	en_escalera = true
 	if model_root:
 		model_root.rotation.y = 0.0
 	_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
@@ -1609,6 +1698,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	var tw_climb1 := create_tween()
 	tw_climb1.tween_property(self, "global_position:y", p1_top_y, climb_dist1 / climb_speed)
 	await tw_climb1.finished
+	en_escalera = false
 	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 		return
 
@@ -1642,6 +1732,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 		return
 
 	# 4. Subir Escalera 2 hasta Plataforma 2 (espalda visible a la cámara)
+	en_escalera = true
 	if model_root:
 		model_root.rotation.y = 0.0
 	_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
@@ -1649,6 +1740,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	var tw_climb2 := create_tween()
 	tw_climb2.tween_property(self, "global_position:y", p2_top_y, climb_dist2 / climb_speed)
 	await tw_climb2.finished
+	en_escalera = false
 	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 		return
 
@@ -1682,6 +1774,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 		return
 
 	# 6. Subir Escalera 3 hasta Plataforma 3 (la más alta, espalda visible a la cámara)
+	en_escalera = true
 	if model_root:
 		model_root.rotation.y = 0.0
 	_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
@@ -1689,6 +1782,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	var tw_climb3 := create_tween()
 	tw_climb3.tween_property(self, "global_position:y", p3_top_y, climb_dist3 / climb_speed)
 	await tw_climb3.finished
+	en_escalera = false
 	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 		return
 
@@ -1775,12 +1869,14 @@ func retirarse_y_bajar_escaleras() -> void:
 			return
 
 		# 2. Bajar Escalera 3 de espaldas (rotation.y = 0.0)
+		en_escalera = true
 		if model_root:
 			model_root.rotation.y = 0.0
 		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
 		var tw_down3 := create_tween()
 		tw_down3.tween_property(self, "global_position:y", p2_top_y, absf(p3_top_y - p2_top_y) / climb_speed)
 		await tw_down3.finished
+		en_escalera = false
 		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 			return
 
@@ -1801,12 +1897,14 @@ func retirarse_y_bajar_escaleras() -> void:
 			return
 
 		# 4. Bajar Escalera 2 de espaldas (rotation.y = 0.0)
+		en_escalera = true
 		if model_root:
 			model_root.rotation.y = 0.0
 		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
 		var tw_down2 := create_tween()
 		tw_down2.tween_property(self, "global_position:y", p1_top_y, absf(p2_top_y - p1_top_y) / climb_speed)
 		await tw_down2.finished
+		en_escalera = false
 		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 			return
 
@@ -1827,19 +1925,21 @@ func retirarse_y_bajar_escaleras() -> void:
 			return
 
 		# 6. Bajar Escalera 1 de espaldas (rotation.y = 0.0)
+		en_escalera = true
 		if model_root:
 			model_root.rotation.y = 0.0
 		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
 		var tw_down1 := create_tween()
 		tw_down1.tween_property(self, "global_position:y", floor_y, absf(p1_top_y - floor_y) / climb_speed)
 		await tw_down1.finished
+		en_escalera = false
 		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 			return
 
 	elif plataforma_asignada == 2:
-		# En Plataforma 2: caminar a Escalera 2
+		# En Plataforma 2: caminar a Escalera 2 (hacia la izquierda)
 		if model_root:
-			model_root.rotation.y = _original_model_y_rot
+			model_root.rotation.y = _original_model_y_rot + PI
 		_play_anim("CORRER", 0.15, 1.0)
 		var tw_to_l2 := create_tween()
 		tw_to_l2.tween_property(self, "global_position:x", p2_ladder_x, absf(p2_ladder_x - global_position.x) / walk_speed)
@@ -1848,12 +1948,14 @@ func retirarse_y_bajar_escaleras() -> void:
 			return
 
 		# Bajar Escalera 2 de espaldas
+		en_escalera = true
 		if model_root:
 			model_root.rotation.y = 0.0
 		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
 		var tw_down2 := create_tween()
 		tw_down2.tween_property(self, "global_position:y", p1_top_y, absf(p2_top_y - p1_top_y) / climb_speed)
 		await tw_down2.finished
+		en_escalera = false
 		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 			return
 
@@ -1862,7 +1964,7 @@ func retirarse_y_bajar_escaleras() -> void:
 		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 			return
 
-		# En Plataforma 1: caminar a Escalera 1
+		# En Plataforma 1: caminar a Escalera 1 (hacia la derecha)
 		if model_root:
 			model_root.rotation.y = _original_model_y_rot
 		_play_anim("CORRER", 0.15, 1.0)
@@ -1873,12 +1975,14 @@ func retirarse_y_bajar_escaleras() -> void:
 			return
 
 		# Bajar Escalera 1 de espaldas
+		en_escalera = true
 		if model_root:
 			model_root.rotation.y = 0.0
 		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
 		var tw_down1 := create_tween()
 		tw_down1.tween_property(self, "global_position:y", floor_y, absf(p1_top_y - floor_y) / climb_speed)
 		await tw_down1.finished
+		en_escalera = false
 		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 			return
 
@@ -1894,12 +1998,14 @@ func retirarse_y_bajar_escaleras() -> void:
 			return
 
 		# Bajar Escalera 1 de espaldas
+		en_escalera = true
 		if model_root:
 			model_root.rotation.y = 0.0
 		_play_anim(["SUbIR_ESCALERA", "SUBIR_ESCALERA", "Armature|Armature|SUBIR_ESCALERA", "ESCALAR"], 0.15, 1.0)
 		var tw_down1 := create_tween()
 		tw_down1.tween_property(self, "global_position:y", floor_y, absf(p1_top_y - floor_y) / climb_speed)
 		await tw_down1.finished
+		en_escalera = false
 		if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
 			return
 

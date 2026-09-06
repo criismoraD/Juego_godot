@@ -376,6 +376,10 @@ func _reproducir_hit_aleatorio():
 	var anim_hit: String = hits[randi() % hits.size()]
 	# Suavizado: blend 0.20 y velocidad 1.5 → no pop al entrar en HIT tras daño y al volver a DISPARO
 	_play_animation(anim_hit, 0.20, velocidad_animacion_hit)
+	# El arco NO tensa durante el hit: vuelve a su postura neutra. El tensado
+	# (ARCO_TENSAR) solo debe verse al atacar, cuando el ciclo de disparo se
+	# reanuda en _on_hit_timer_timeout -> _iniciar_ciclo_disparo().
+	_play_bow_animation("ARCO_IDLE")
 
 	var dur_hit = _get_animation_duration(anim_hit) / velocidad_animacion_hit
 	get_tree().create_timer(max(0.15, dur_hit)).timeout.connect(_on_hit_timer_timeout)

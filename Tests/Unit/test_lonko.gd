@@ -279,3 +279,94 @@ func test_lonko_y_pilar_colisiones_profundidad_2_5d() -> void:
 	lonko.queue_free()
 	await get_tree().process_frame
 
+
+func test_pilar_mesh_layers_en_primer_plano() -> void:
+	# Arrange & Act: Instanciar el pilar y verificar sus capas de renderizado
+	var pilar_scene := load("res://Entities/Enemigo_Lonko/PilarLonko.tscn").instantiate() as Node3D
+	scene_root.add_child(pilar_scene)
+	await get_tree().process_frame
+
+	# Assert: Las mallas del pilar deben tener layers = 1 (primer plano / SubViewportFrente3D)
+	# para no ser enviadas a layer 2 (fondo / SubViewportFondo3D) y renderizarse con prioridad sobre el suelo
+	var meshes := pilar_scene.find_children("*", "MeshInstance3D", true, false)
+	assert_gt(meshes.size(), 0, "PilarLonko debe contener al menos una MeshInstance3D")
+	for m in meshes:
+		var mi := m as MeshInstance3D
+		assert_eq(mi.layers, 1, "La malla del pilar debe pertenecer a la capa 1 (primer plano)")
+
+	pilar_scene.queue_free()
+
+	# Arrange & Act: Instanciar Lonko y forzar secuencia de pilar destruido
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	lonko._iniciar_secuencia_pilar()
+	await get_tree().process_frame
+
+	lonko._on_pilar_destruido()
+	await get_tree().process_frame
+
+	# Assert: Las mallas del pilar destruido también deben estar en layer 1
+	if lonko._instancia_pilar and is_instance_valid(lonko._instancia_pilar):
+		var dest_meshes := lonko._instancia_pilar.find_children("*", "MeshInstance3D", true, false)
+		assert_gt(dest_meshes.size(), 0, "Debe existir malla de pilar destruido")
+		for dm in dest_meshes:
+			var mi := dm as MeshInstance3D
+			assert_eq(mi.layers, 1, "La malla de pilar destruido debe pertenecer a la capa 1 (primer plano)")
+		lonko._instancia_pilar.queue_free()
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_recuperacion_suave_ult_interpola_columna_e_idle() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+
+	lonko.current_state = Lonko.State.SHOOTING
+	lonko._apuntar_arriba = true
+	lonko._lonko_track_player()
+	await get_tree().process_frame
+
+	# Act: Iniciar la recuperación suave
+	lonko._ejecutar_recuperacion_suave_ult()
+	assert_true(lonko._en_recuperacion_ult, "Debe estar en estado _en_recuperacion_ult")
+	assert_almost_eq(lonko._pitch_recuperacion_rad, deg_to_rad(-65.0), 0.05, "Debe iniciar cerca de -65°")
+
+	# Assert: En un frame intermedio (ej. 0.25 s) la columna debe estar en un ángulo intermedio (no 0° ni -65°)
+	await wait_seconds(0.25)
+	assert_true(lonko._en_recuperacion_ult, "Aún debe continuar en recuperación a los 0.25s")
+	assert_gt(lonko._pitch_recuperacion_rad, deg_to_rad(-64.0), "La columna debe haber empezado a bajar")
+	assert_lt(lonko._pitch_recuperacion_rad, deg_to_rad(-5.0), "La columna aún no debe haber terminado de bajar")
+	assert_gt(lonko._peso_override_recuperacion, 0.05, "El peso del override aún debe ser activo")
+
+	# Assert: Al finalizar la recuperación (~0.6s), debe haber terminado suavemente
+	await wait_seconds(0.4)
+	assert_false(lonko._en_recuperacion_ult, "La recuperación debe haber terminado tras 0.6s")
+	assert_almost_eq(lonko._pitch_recuperacion_rad, 0.0, 0.01, "El ángulo de pitch debe volver a 0")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_cancelar_recuperacion_ult_en_dano() -> void:
+	# Arrange
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+
+	lonko.current_state = Lonko.State.SHOOTING
+	lonko._ejecutar_recuperacion_suave_ult()
+	assert_true(lonko._en_recuperacion_ult, "Recuperación debe estar activa")
+
+	# Act: Daño mientras se recupera
+	lonko.take_damage(1.0)
+
+	# Assert: Daño debe cancelar la recuperación inmediatamente para reproducir HIT
+	assert_false(lonko._en_recuperacion_ult, "Recuperación debe cancelarse al recibir daño")
+	assert_true(lonko._is_taking_damage, "Debe entrar en estado de daño")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+

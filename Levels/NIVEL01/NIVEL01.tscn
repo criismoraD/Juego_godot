@@ -60,6 +60,7 @@
 [ext_resource type="Texture2D" uid="uid://kygps2rw2s41" path="res://TEST_/Espada oxidada.png" id="66_espada"]
 [ext_resource type="Texture2D" uid="uid://dabgoeh5m5d7n" path="res://TEST_/puerta 2d.png" id="67_puerta"]
 [ext_resource type="Texture2D" uid="uid://byf5br88xbovy" path="res://TEST_/puerta recortada.png" id="68_puerta_rec"]
+[ext_resource type="Texture2D" path="res://TEST_/Mandoble 2D.png" id="69_mandoble"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -942,6 +943,7 @@ shape = SubResource("BoxShape3D_3xd07")
 
 [node name="Torre_de_asedio" parent="." unique_id=987123456 instance=ExtResource("62_torre_asedio")]
 transform = Transform3D(0.030259425, 0, -1.777069, 0, 1.8436748, 0, 1.3535084, 0, 0.039728634, 3.1228988, 0.05779445, -2.500832)
+visible = false
 
 [node name="CascoOxidado2" parent="." unique_id=996348724 instance=ExtResource("64_casco")]
 transform = Transform3D(0.176191, 0.06539871, -0.16184175, -0.053394802, 0.22050126, 0.046766996, 0.16913226, 0.0014837682, 0.1833605, -4.676608, 0.17896314, 1.0030396)
@@ -949,7 +951,10 @@ transform = Transform3D(0.176191, 0.06539871, -0.16184175, -0.053394802, 0.22050
 [node name="PecheraMetalica" parent="." unique_id=192837468 instance=ExtResource("65_pechera")]
 transform = Transform3D(0.41612652, 0.11858257, -0.15494941, -0.0008256695, 0.23145613, 0.74674, 0.14392701, -0.34152204, 0.45227906, -2.7501125, 0.022549553, 0.76418537)
 
-[node name="PecheraMetalica2" parent="." unique_id=1097147467 instance=ExtResource("65_pechera")]
+[node name="PecheraMetalica3" parent="." unique_id=1097147467 instance=ExtResource("65_pechera")]
+transform = Transform3D(0.44010028, -0.0108233765, 0.016286373, -0.0008256757, 0.23145613, 0.74674, -0.013710603, -0.3613613, 0.47780797, 2.1457205, -0.003531292, -1.405829)
+
+[node name="PecheraMetalica2" parent="." unique_id=1347712106 instance=ExtResource("65_pechera")]
 transform = Transform3D(0.019182421, 0.41844162, 0.19407268, -0.083507776, -0.08887251, 0.8510053, 0.43189746, -0.035768367, 0.15592317, 1.3204075, 0.23249432, -3.065955)
 
 [node name="EspadaOxidada" type="Sprite3D" parent="." unique_id=192837469]
@@ -973,6 +978,16 @@ texture = ExtResource("67_puerta")
 transform = Transform3D(0.29232046, -0.006872914, 0, 0.008298216, 0.24211144, 0, 0, 0, 0.3688833, -14.21644, 0.9160869, -2.1584177)
 layers = 2
 texture = ExtResource("68_puerta_rec")
+
+[node name="w" type="Sprite3D" parent="." unique_id=192837472]
+transform = Transform3D(0.15694574, -0.010511226, 0.05814442, 0.011700892, 0.14905114, -3.612724e-11, -0.037531257, 0.0025136056, 0.24314445, 2.5901747, 0.53552616, -1.5363076)
+layers = 3
+texture = ExtResource("69_mandoble")
+
+[node name="w2" type="Sprite3D" parent="." unique_id=634224444]
+transform = Transform3D(0.15855998, 0.029269531, 0.008745375, -0.03165304, 0.14654759, -0.0024153478, -0.0058563254, 0.0003922202, 0.2498353, 3.319518, 0.30696344, -2.9113975)
+layers = 2
+texture = ExtResource("69_mandoble")
 
 [editable path="SubViewportFondo3D/BUSTO_BRONCE2"]
 [editable path="SubViewportFondo3D/BUSTO_BRONCE3"]

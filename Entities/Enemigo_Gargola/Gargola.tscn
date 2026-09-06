@@ -505,6 +505,9 @@ velocidad_caminar = 0.8
 distancia_minima_caminar = 4.5
 distancia_maxima_caminar = 9.5
 particulas_offset_y = 0.0
+sombra_opacidad = 0.9
+sombra_tamano = Vector2(1.1, 1.1)
+sombra_altura_max = 25.0
 
 [node name="Model" parent="." unique_id=659909452 instance=ExtResource("2_model")]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0, 0)

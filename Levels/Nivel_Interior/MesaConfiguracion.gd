@@ -10,6 +10,8 @@ signal defensoras_presionado
 signal bestiario_presionado
 signal salir_presionado
 
+const MenuBestiarioClass = preload("res://UI/MenuBestiario/MenuBestiario.gd")
+
 @onready var area_interaccion: Area3D = $AreaInteraccion
 @onready var menu_canvas: CanvasLayer = $CanvasMenu
 @onready var panel_menu: Control = %PanelMenu
@@ -18,6 +20,7 @@ signal salir_presionado
 @onready var btn_salir: Button = %BtnSalir
 @onready var prompt_e: Label3D = %PromptE
 @onready var menu_defensoras: MenuDefensoras = %MenuDefensoras
+@onready var menu_bestiario: MenuBestiarioClass = %MenuBestiario
 
 var _jugador_cerca: bool = false
 var _tint_mat: StandardMaterial3D = null
@@ -51,6 +54,9 @@ func _ready() -> void:
 
 	if menu_defensoras:
 		menu_defensoras.cerrado.connect(_on_menu_defensoras_cerrado)
+
+	if menu_bestiario:
+		menu_bestiario.cerrado.connect(_on_menu_bestiario_cerrado)
 
 	_cerrar_menu(false)
 
@@ -94,6 +100,8 @@ func _on_body_exited(body: Node3D) -> void:
 		_cerrar_menu(true)
 		if menu_defensoras and menu_defensoras.visible:
 			menu_defensoras.cerrar()
+		if menu_bestiario and menu_bestiario.visible:
+			menu_bestiario.cerrar()
 		_set_player_movimiento(true)
 
 
@@ -132,7 +140,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	# Si algún menú está visible, dejar que los menús consuman el input
-	if (menu_canvas and menu_canvas.visible) or (menu_defensoras and menu_defensoras.visible):
+	if (menu_canvas and menu_canvas.visible) or (menu_defensoras and menu_defensoras.visible) or (menu_bestiario and menu_bestiario.visible):
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -173,19 +181,20 @@ func _reproducir_sfx_interaccion() -> void:
 func _cerrar_menu(animado: bool = true) -> void:
 	if not menu_canvas:
 		return
+	var otro_menu_abierto: bool = (menu_defensoras and menu_defensoras.visible) or (menu_bestiario and menu_bestiario.visible)
 	if animado and panel_menu:
 		var tween := create_tween()
 		tween.tween_property(panel_menu, "modulate:a", 0.0, 0.15).set_trans(Tween.TRANS_SINE)
 		await tween.finished
-		if not _jugador_cerca or (menu_defensoras and menu_defensoras.visible):
+		if not _jugador_cerca or otro_menu_abierto:
 			menu_canvas.visible = false
 	else:
 		menu_canvas.visible = false
 
-	if not (menu_defensoras and menu_defensoras.visible):
+	if not otro_menu_abierto:
 		_set_player_movimiento(true)
 
-	if _jugador_cerca and not (menu_defensoras and menu_defensoras.visible) and prompt_e:
+	if _jugador_cerca and not otro_menu_abierto and prompt_e:
 		prompt_e.visible = true
 
 
@@ -205,6 +214,16 @@ func _on_menu_defensoras_cerrado() -> void:
 
 func _on_btn_bestiario_pressed() -> void:
 	bestiario_presionado.emit()
+	_cerrar_menu(false)
+	if menu_bestiario:
+		menu_bestiario.abrir()
+
+
+func _on_menu_bestiario_cerrado() -> void:
+	if _jugador_cerca:
+		_abrir_menu()
+	else:
+		_set_player_movimiento(true)
 
 
 func _on_btn_salir_pressed() -> void:

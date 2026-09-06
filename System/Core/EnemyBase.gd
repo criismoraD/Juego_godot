@@ -587,6 +587,15 @@ func _get_animation_duration(anim_name: String) -> float:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+## SISTEMA GOLPE CRÍTICO: la flecha de sobrecarga morada al 100% mata de un
+## golpe SOLO si el enemigo está en su momento vulnerable. Cada enemigo que
+## participe del sistema sobrescribe este método indicando ese momento
+## (ej.: GuardianaMoradita → en plena animación de ataque).
+## Por defecto ningún enemigo tiene momento crítico.
+func es_momento_golpe_critico() -> bool:
+	return false
+
+
 func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return

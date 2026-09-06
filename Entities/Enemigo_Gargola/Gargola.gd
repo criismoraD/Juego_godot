@@ -85,7 +85,23 @@ var vfx_hit_01_scene: PackedScene = preload("res://HitFXFree/assets/BinbunVFX_Vo
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+func _init() -> void:
+	sombra_opacidad = 0.9
+	sombra_tamano = Vector2(1.1, 1.1)
+	sombra_suavizado = 0.8
+	sombra_altura_max = 25.0
+
+
 func _on_enemy_ready():
+	# Configurar sombra circular para enemigo volador (similar a GloboAerostatico)
+	if sombra_altura_max <= 0.2:
+		sombra_altura_max = 25.0
+	if sombra_tamano == Vector2(0.6, 0.6):
+		sombra_tamano = Vector2(1.1, 1.1)
+	if is_instance_valid(sombra_nodo):
+		sombra_nodo.set_tamano(sombra_tamano)
+		sombra_nodo.set_opacidad(sombra_opacidad)
+		sombra_nodo.altura_max_desvanecimiento = sombra_altura_max
 	# Desactivar colisiones de los huesos físicos en vida para que no choquen contra el escenario
 	# y empujen la gárgola fuera del eje Z.
 	if skeleton:
