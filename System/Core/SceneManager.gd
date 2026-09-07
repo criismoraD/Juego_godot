@@ -62,7 +62,7 @@ func _monitorear_carga_async(target_path: String) -> void:
 
 		if is_instance_valid(_current_loading_screen):
 			_current_loading_screen.set_progress(progress * 0.95)
-			_current_loading_screen.set_status_text("Cargando escenario y dependencias...")
+			_current_loading_screen.set_status_text(tr("CARGANDO_ESCENARIO"))
 
 		scene_load_progress.emit(progress * 0.95)
 		await get_tree().process_frame
@@ -84,7 +84,7 @@ func _monitorear_carga_async(target_path: String) -> void:
 
 	# 4. Precalentar Shaders y Efectos de Vulkan para evitar tirones en combate
 	if is_instance_valid(_current_loading_screen):
-		_current_loading_screen.set_status_text("Optimizando shaders y efectos...")
+		_current_loading_screen.set_status_text(tr("OPTIMIZANDO_SHADERS"))
 		_current_loading_screen.set_progress(0.96)
 
 	await ShaderPrewarmer.prewarm(get_tree(), func(p: float):

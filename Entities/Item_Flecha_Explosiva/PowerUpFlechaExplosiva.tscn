@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://7bxrreweenov" path="res://Entities/Item_Flecha_Explosiva/FLECHA_EXPLOCIVA_ICONO_POWE_UP.glb" id="2_glb"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_powerup"]
-radius = 0.4
+radius = 0.85
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_fire"]
 emission_shape = 1

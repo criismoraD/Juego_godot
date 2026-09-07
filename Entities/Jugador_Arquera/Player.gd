@@ -482,7 +482,7 @@ var _nearby_ladders: Array[Area3D] = []
 @export var velocidad_escalar_subir: float = 0.65  ## Velocidad al subir escaleras (+30% sobre 0.5)
 @export var velocidad_escalar_bajar: float = 0.65  ## Velocidad al bajar escaleras
 @export_range(-360, 360, 1.0) var rotacion_personaje_escalera: float = 180.0  # Giro del modelo al escalar
-@export var volumen_sonido_escalera_db: float = 6.0  ## Volumen del loop de pasos en escalera (fuente TEST_ a ~-36 dBFS RMS)
+@export var volumen_sonido_escalera_db: float = 0.5  ## Volumen del loop de pasos en escalera (ajustado más suave)
 @export var duracion_fade_escalera: float = 0.15  ## Fade out al soltar la escalera o detenerse (evita corte en seco)
 var _audio_escalera: AudioStreamPlayer = null  ## Loop de pasos sincronizado con la animación de trepar
 var _fade_escalera_tween: Tween = null
@@ -1041,6 +1041,8 @@ func start_landing():
 		overcharge_bar.visible = false
 		overcharge_bar.value = 0.0
 	AudioManager.reset_bow_hold()
+	_update_charge_vfx(false)
+	_update_sobrecarga_vfx(false)
 	if anim_tree:
 		anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
 		anim_tree.set("parameters/UpperBody/transition_request", "none")
@@ -1464,12 +1466,14 @@ func control_visual_state(delta):
 				if sobrecarga_time >= adjusted_over_dur * 0.99 and not _sonido_morada_max_reproducido:
 					_sonido_morada_max_reproducido = true
 					AudioManager.play_sfx("sonido_100_carga")
+				_update_sobrecarga_vfx(true)
 			else:
 				sobrecarga_time = 0.0
 				_sonido_morada_max_reproducido = false
 				if overcharge_bar:
 					overcharge_bar.visible = false
 					overcharge_bar.value = 0.0
+				_update_sobrecarga_vfx(false)
 
 			# Sonido de mantener arco al máximo (con delay configurable)
 			if charge_percent >= 100:
@@ -1538,6 +1542,7 @@ var shoot_anim_duration = 1.0  # Valor por defecto
 
 func start_shooting():
 	_update_charge_vfx(false)
+	_update_sobrecarga_vfx(false)
 	_ocultar_trayectoria_explosiva()
 	# Detener el sonido de tensar cuerda
 	AudioManager.stop_bow_tension()
@@ -1977,6 +1982,7 @@ func take_damage(amount: float):
 
 func _cancel_current_shot():
 	_update_charge_vfx(false)
+	_update_sobrecarga_vfx(false)
 	# Cancelar cualquier estado de disparo actual
 	if current_aim_state != AimState.NONE:
 		# Marcar que el disparo fue cancelado (evita disparar al soltar clic)
@@ -2658,6 +2664,7 @@ func revive():
 # JUICE & VFX COMPLEMENTS
 # ═══════════════════════════════════════════════════════════════════════════════
 var _charge_vfx: CPUParticles3D = null
+var _sobrecarga_vfx: GPUParticles3D = null
 var _soft_particle_material: StandardMaterial3D = null
 
 
@@ -2723,7 +2730,107 @@ func _update_charge_vfx(active: bool):
 		if arrow_node:
 			arrow_node.add_child(_charge_vfx)
 			_charge_vfx.position = Vector3(0, 0, 0.2)
+		else:
+			add_child(_charge_vfx)
 	else:
 		if is_instance_valid(_charge_vfx):
 			_charge_vfx.queue_free()
 			_charge_vfx = null
+
+
+## Obtiene la posición global exacta del centro del arco / punto de lanzamiento
+func _get_bow_center_position() -> Vector3:
+	var marker: Marker3D = spawn_flecha_explosiva
+	if not marker:
+		marker = find_child("SpawnPosition_FlechaExplosiva", true, false) as Marker3D
+	if marker and is_instance_valid(marker) and marker.is_inside_tree():
+		if marker.get_parent() == self:
+			var x_dir: float = 1.0 if _mirando_derecha else -1.0
+			return global_position + Vector3(marker.position.x * x_dir, marker.position.y, marker.position.z)
+		return marker.global_position
+	if arrow_node and is_instance_valid(arrow_node) and arrow_node.is_inside_tree():
+		return arrow_node.global_position
+	return global_position + Vector3(0.45 if _mirando_derecha else -0.45, 1.25, 0.0)
+
+
+## Crea el sistema de partículas celestes de sobrecarga que son atraídas hacia el arco,
+## utilizando la misma técnica visual que las partículas de disolución de los enemigos.
+func _create_sobrecarga_particles() -> GPUParticles3D:
+	var particles := GPUParticles3D.new()
+	particles.name = "SobrecargaArcoParticles"
+	particles.amount = 10
+	particles.lifetime = 0.45
+	particles.one_shot = false
+	particles.explosiveness = 0.0
+	particles.randomness = 0.3
+	particles.local_coords = true
+	particles.top_level = true
+
+	var process_mat := ParticleProcessMaterial.new()
+	process_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process_mat.emission_sphere_radius = 0.50
+	process_mat.gravity = Vector3.ZERO
+	# Atracción hacia el arco (aceleración radial negativa para concentrar energía en el centro)
+	process_mat.radial_accel_min = -6.0
+	process_mat.radial_accel_max = -4.0
+	# Leve componente tangencial para generar vórtice/espiral de energía
+	process_mat.tangential_accel_min = 1.0
+	process_mat.tangential_accel_max = 2.5
+	process_mat.scale_min = 0.6
+	process_mat.scale_max = 1.3
+
+	# Rampa de color celeste con brillo intenso
+	var color_celeste := Color(0.35, 0.85, 1.0)
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(color_celeste.r, color_celeste.g, color_celeste.b, 0.0))
+	gradient.add_point(0.2, Color(color_celeste.r, color_celeste.g, color_celeste.b, 0.85))
+	gradient.add_point(0.75, Color(0.75, 0.95, 1.0, 1.0))
+	gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var gradient_tex := GradientTexture1D.new()
+	gradient_tex.gradient = gradient
+	process_mat.color_ramp = gradient_tex
+
+	# Curva de escala: nace en la periferia, crece y se absorbe al llegar al arco
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0.0, 0.2))
+	scale_curve.add_point(Vector2(0.35, 1.0))
+	scale_curve.add_point(Vector2(0.85, 0.6))
+	scale_curve.add_point(Vector2(1.0, 0.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	process_mat.scale_curve = scale_tex
+
+	particles.process_material = process_mat
+
+	# SphereMesh con material unshaded billboard y emisión brillante (estilo disolución de enemigos)
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.0125
+	sphere.height = 0.025
+
+	var part_mat := StandardMaterial3D.new()
+	part_mat.albedo_color = color_celeste
+	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	part_mat.emission_enabled = true
+	part_mat.emission = Color(0.4, 0.9, 1.0)
+	part_mat.emission_energy_multiplier = 6.0
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material = part_mat
+
+	particles.draw_pass_1 = sphere
+	return particles
+
+
+## Controla la emisión y posición del efecto de sobrecarga celeste hacia el arco
+func _update_sobrecarga_vfx(active: bool) -> void:
+	if active:
+		if not is_instance_valid(_sobrecarga_vfx):
+			_sobrecarga_vfx = _create_sobrecarga_particles()
+			add_child(_sobrecarga_vfx)
+		_sobrecarga_vfx.global_position = _get_bow_center_position()
+		if not _sobrecarga_vfx.emitting:
+			_sobrecarga_vfx.emitting = true
+	else:
+		if is_instance_valid(_sobrecarga_vfx) and _sobrecarga_vfx.emitting:
+			_sobrecarga_vfx.emitting = false
+

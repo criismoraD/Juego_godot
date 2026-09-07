@@ -2773,12 +2773,14 @@ func _iniciar_mensajera_oleada_5() -> void:
 			power_up.municion_a_otorgar_jugador = 10
 		if "municion_a_otorgar_aliadas" in power_up:
 			power_up.municion_a_otorgar_aliadas = 5
+		var spawn_pos: Vector3 = ballestera.global_position + Vector3(0.8, 0.05, 0.0)
+		power_up.global_position = spawn_pos
 		add_child(power_up)
-		power_up.global_position = ballestera.global_position + Vector3(0.7, 0.3, 0.0)
-		var base_y: float = power_up.global_position.y
-		var tw: Tween = create_tween()
-		tw.tween_property(power_up, "global_position:y", base_y + 0.35, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tw.chain().tween_property(power_up, "global_position:y", base_y, 0.22).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		power_up.global_position = spawn_pos
+		var base_y: float = spawn_pos.y
+		var tw: Tween = power_up.create_tween()
+		tw.tween_property(power_up, "global_position:y", base_y + 0.3, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.chain().tween_property(power_up, "global_position:y", base_y, 0.2).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 	# Iniciar el despliegue de las 2 defensoras móviles en paralelo
 	_desplegar_defensoras_moviles_plataformas()

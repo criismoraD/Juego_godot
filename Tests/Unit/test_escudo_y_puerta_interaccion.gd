@@ -58,6 +58,7 @@ func test_puerta_arquera_orientacion_espalda_camara() -> void:
 	var puerta_script: GDScript = load("res://Levels/NIVEL01/PuertaTrigger.gd") as GDScript
 	var puerta: Area3D = Area3D.new()
 	puerta.set_script(puerta_script)
+	puerta.escena_destino = "test_no_load"
 	add_child_autofree(puerta)
 
 	var player_scene: PackedScene = load("res://Entities/Jugador_Arquera/Player.tscn")
@@ -74,8 +75,8 @@ func test_puerta_arquera_orientacion_espalda_camara() -> void:
 	puerta._jugador_ref = player
 	puerta._iniciar_secuencia_entrada()
 
-	# Esperar un momento a que el tween comience/aplique la rotación
-	await wait_seconds(0.26)
+	# Esperar a que el tween y el timer de transición completen
+	await wait_seconds(0.4)
 
 	# Assert
 	# Armature.rotation.y = 90 deg (PI/2) orienta el frente del personaje hacia -Z (de espaldas a la cámara)
@@ -85,6 +86,11 @@ func test_puerta_arquera_orientacion_espalda_camara() -> void:
 	# Verificar que el eje hacia adelante en espacio de mundo apunte hacia -Z (de espaldas a la cámara)
 	var forward_world: Vector3 = armature.global_transform.basis.y
 	assert_lt(forward_world.z, -0.01, "El eje frontal del personaje debe apuntar hacia -Z (hacia el fondo / torre / espalda a cámara)")
+
+	# Limpiar tweens activos en ejecución antes de que autofree libere los nodos
+	for tw in get_tree().get_processed_tweens():
+		if tw.is_valid():
+			tw.kill()
 
 
 func test_escudo_aliado_profundidad_z_detras_de_protagonista() -> void:
@@ -118,6 +124,7 @@ func test_escudo_enemigo_animacion_impacto_y_flash_rojo() -> void:
 
 	# Assert
 	assert_true(escudo.es_escudo_enemigo, "Debe ser escudo enemigo")
+	assert_eq(escudo.parpadeos_rojo_enemigo, 1, "El escudo enemigo debe parpadear exactamente 1 vez por impacto")
 	assert_gt(mat_flash.albedo_color.r, 0.8, "El parpadeo debe ser rojo")
 	assert_lt(mat_flash.albedo_color.g, 0.2, "El componente verde debe ser bajo")
 	assert_not_null(escudo._escala_base, "La escala base debe ser registrada para el punch de impacto")
@@ -139,6 +146,12 @@ func test_imp_escudo_animacion_impacto_y_flash_rojo() -> void:
 	assert_lt(imp._flash_mat.albedo_color.g, 0.2, "El componente verde debe ser bajo")
 	assert_true(imp.has_meta("_escudo_orig_scale"), "Debe guardar la escala original del escudo para la animación de expansión y contracción")
 
+	# Esperar a que concluya el único parpadeo (0.12s + margen)
+	await wait_seconds(0.2)
+	for mesh in imp._escudo_meshes:
+		if is_instance_valid(mesh):
+			assert_ne(mesh.material_override, imp._flash_mat, "Tras el único parpadeo, el escudo del Imp no debe volver a parpadear")
+
 
 func test_guardiana_moradita_escudo_animacion_impacto_y_flash_rojo() -> void:
 	# Arrange
@@ -154,3 +167,24 @@ func test_guardiana_moradita_escudo_animacion_impacto_y_flash_rojo() -> void:
 	assert_gt(goblina._flash_rojo_mat.albedo_color.r, 0.8, "El flash debe ser rojo")
 	assert_lt(goblina._flash_rojo_mat.albedo_color.g, 0.2, "El componente verde debe ser bajo")
 	assert_true(goblina.has_meta("_escudo_orig_scale"), "Debe guardar la escala original del escudo pesado para la animación de expansión y contracción")
+
+
+func test_escudo_enemigo_un_solo_parpadeo_ciclo_completo() -> void:
+	# Arrange
+	var escudo_enemigo_scene: PackedScene = load("res://Entities/Ambiente_Escudo/Escudo_enemigo.tscn")
+	var escudo: EscudoDestruible = escudo_enemigo_scene.instantiate() as EscudoDestruible
+	escudo.golpes_para_destruir = 5
+	add_child_autofree(escudo)
+	await get_tree().process_frame
+
+	# Act: recibir golpe
+	escudo.recibir_golpe(1)
+
+	# Assert: configurado para 1 solo parpadeo
+	assert_eq(escudo.parpadeos_rojo_enemigo, 1, "Debe tener configurado 1 parpadeo")
+
+	# Tras 0.35s (tiempo_on 0.13s + tiempo_off 0.08s + margen), el único parpadeo ya terminó
+	await wait_seconds(0.35)
+	for mi in escudo._recolectar_mallas():
+		if is_instance_valid(mi):
+			assert_null(mi.material_override, "Tras el único parpadeo, material_override debe ser null (no hay segundo parpadeo)")

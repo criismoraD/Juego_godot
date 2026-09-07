@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cr61kgfu7qhp0"]
+[gd_scene format=3 uid="uid://cr61kgfu7qhp0"]
 
 [ext_resource type="Script" uid="uid://1k454om2fo3" path="res://Entities/Ambiente_Escalera/ESCALERA.gd" id="1_ladder"]
 [ext_resource type="PackedScene" uid="uid://c3a82usvqjtvx" path="res://Entities/Ambiente_Escalera/GEO_ESCALERA.fbx" id="2_bsldu"]
@@ -6,37 +6,38 @@
 [ext_resource type="Script" uid="uid://csd8576k2v1a0" path="res://Entities/Ambiente_Escalera/BarreraEscalera_SUPERIOR.gd" id="4_barrera_sup_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ladder"]
-size = Vector3(0.65, 1.5808716, 0.82373047)
+size = Vector3(0.26990968, 1.5808716, 0.82373047)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
 size = Vector3(1, 0.3, 1)
 
-[node name="Ladder" type="Area3D"]
+[node name="Ladder" type="Area3D" unique_id=1279369989]
 collision_layer = 8
 script = ExtResource("1_ladder")
 
-[node name="ESCALERA" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.048494935, 1.0108337, -0.088134766)
+[node name="ESCALERA" type="CollisionShape3D" parent="." unique_id=1189098231]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.054763258, 1.0108337, -0.088134766)
 shape = SubResource("BoxShape3D_ladder")
 
-[node name="GEO_ESCALERA" parent="." instance=ExtResource("2_bsldu")]
+[node name="GEO_ESCALERA" parent="." unique_id=1143209210 instance=ExtResource("2_bsldu")]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.04387015, 0, 0.06429005)
 
-[node name="Barrera" type="Area3D" parent="."]
+[node name="Barrera" type="Area3D" parent="." unique_id=801443102]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.805, 1.565, 0.35)
 collision_layer = 0
 script = ExtResource("3_barrera_script")
 cooldown_escalera = 0.5
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Barrera"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barrera" unique_id=1640074595]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5662444, -3.0491776, 0)
 shape = SubResource("BoxShape3D_barrier")
 
-[node name="BarreraSuperior" type="Area3D" parent="."]
+[node name="BarreraSuperior" type="Area3D" parent="." unique_id=214862725]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -0.805, 1.3, 0.35)
 collision_layer = 0
 script = ExtResource("4_barrera_sup_script")
+cooldown_escalera = 0.5
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BarreraSuperior"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BarreraSuperior" unique_id=1705455610]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.566, 1.3205681, 0)
 shape = SubResource("BoxShape3D_barrier")

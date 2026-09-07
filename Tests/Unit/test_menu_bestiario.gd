@@ -168,3 +168,35 @@ func test_integracion_con_mesa_configuracion() -> void:
 
 	# Assert
 	assert_true(mesa.menu_bestiario.visible, "Presionar botón Bestiario debe abrir el MenuBestiario")
+
+
+func test_menu_bestiario_traduccion_e_interfaz() -> void:
+	# Arrange
+	var menu = MENU_BESTIARIO_SCENE.instantiate()
+	add_child_autofree(menu)
+	await get_tree().process_frame
+
+	# 1. Verificar tamaño de fuente del título y ausencia del subtítulo redundante
+	assert_true(menu.titulo.get_theme_font_size("font_size") >= 36, "El título BESTIARIO debe tener un tamaño de fuente mayor (>= 36)")
+	assert_null(menu.get_node_or_null("PanelRaiz/MarginContainer/VBoxPrincipal/Header/Subtitulo"), "El subtítulo redundante debe haber sido eliminado")
+
+	# 2. Verificar traducción al inglés
+	var locale_original := TranslationServer.get_locale()
+	TranslationServer.set_locale("en")
+
+	menu.abrir()
+	menu.seleccionar_enemigo(0)
+
+	assert_eq(menu.titulo.text, "BESTIARY", "El título debe traducirse a BESTIARY en inglés")
+	assert_eq(menu.lbl_titulo_lista.text, "ENEMY LIST", "El encabezado de la lista debe traducirse en inglés")
+	assert_eq(menu.lbl_key_hp.text, "HEALTH POINTS (HP)", "La clave de HP debe traducirse en inglés")
+	assert_eq(menu.lbl_key_att.text, "ATTACK POWER (ATT)", "La clave de ATT debe traducirse en inglés")
+	assert_eq(menu.lbl_key_item.text, "ITEM / LOOT (ITEM)", "La clave de ITEM debe traducirse en inglés")
+	assert_eq(menu.lbl_titulo_desc.text, "DESCRIPTION & COMBAT LOG", "El título de descripción debe traducirse en inglés")
+	assert_eq(menu.btn_volver.text, "CONFIRM AND EXIT", "El botón volver debe traducirse en inglés")
+	assert_eq(menu.lbl_nombre_enemigo.text, "IMP EMISSARY", "El nombre del enemigo debe traducirse en inglés")
+	assert_eq(menu.lbl_val_item.text, "Spread Shot", "El item arrojable debe traducirse en inglés")
+
+	# Restaurar idioma original
+	TranslationServer.set_locale(locale_original)
+

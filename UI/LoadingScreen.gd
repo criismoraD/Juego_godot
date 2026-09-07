@@ -18,7 +18,7 @@ func _ready() -> void:
 	progress_bar.value = 0.0
 	percent_label.text = "0%"
 	if is_instance_valid(tip_label):
-		tip_label.text = "Cargando..."
+		tip_label.text = tr("CARGANDO")
 
 
 func _process(delta: float) -> void:

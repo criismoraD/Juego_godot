@@ -326,7 +326,7 @@ func _drop_power_up() -> void:
 		target_parent.add_child(item)
 	elif get_parent():
 		get_parent().add_child(item)
-	item.global_position = global_position + Vector3(0.0, 0.5, 0.0)
+	item.global_position = global_position + Vector3(0.0, 0.3, 0.0)
 
 
 func _get_effective_drop_chance(base_chance: float) -> float:

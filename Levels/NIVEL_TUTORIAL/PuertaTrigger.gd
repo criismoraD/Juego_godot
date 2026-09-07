@@ -241,5 +241,9 @@ func _iniciar_secuencia_entrada() -> void:
 				break
 
 	# 5. Transición con cortinilla circular
+	if dest == "test_no_load":
+		return
 	await get_tree().create_timer(0.35).timeout
+	if not is_inside_tree():
+		return
 	SceneManager.cambiar_escena_cortinilla_circular(dest)

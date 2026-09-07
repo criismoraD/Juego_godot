@@ -483,7 +483,7 @@ func _actualizar_sonido_escalera() -> void:
 	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
 		_fade_escalera_tween.kill()
 		_fade_escalera_tween = null
-	_sfx_escalera.volume_db = 6.0
+	_sfx_escalera.volume_db = 0.5
 	if not _sfx_escalera.playing:
 		_sfx_escalera.play()
 

@@ -50,7 +50,14 @@ var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 var _initial_model_y: float = 0.0
 var _nodes_checked: bool = false
 var _is_falling: bool = false
+var _suelo_alcanzado: bool = false
+var _tiempo_para_check_suelo: float = 0.0
 var _model_centered: bool = false
+var _tiempo_vivo: float = 0.0
+var _desintegracion_iniciada: bool = false  ## Evita reiniciar la disolución (doble pickup, reintentos)
+const RADIO_PICKUP_JUGADOR: float = 2.0  ## Pickup por proximidad amplio en plano 2.5D horizontal
+const RADIO_PICKUP_Y: float = 2.5  ## Margen vertical amplio para detectar al jugador incluso en plataformas/saltos
+const DURACION_DESINTEGRACION: float = 0.6  ## Segundos de la disolución por shader al consumirse
 
 var model_root: Node3D = null
 var magic_light: OmniLight3D = null
@@ -81,8 +88,9 @@ func _ready() -> void:
 		# Escalado orgánico de 0 a 1 al aparecer
 		scale = Vector3(0.001, 0.001, 0.001)
 		var spawn_tween := create_tween()
-		spawn_tween.tween_property(self, "scale", Vector3.ONE, tiempo_escala_spawn) \
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		if spawn_tween:
+			spawn_tween.tween_property(self, "scale", Vector3.ONE, tiempo_escala_spawn) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 		var sombra := SombraPersonaje.new()
 		sombra.tamano = Vector2(0.25, 0.25)
@@ -98,6 +106,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if not _nodes_checked:
 		_obtener_nodos_directos()
 		_centrar_modelo()
@@ -109,6 +119,24 @@ func _process(delta: float) -> void:
 		_bucle_rotacion_360(delta)
 		if not _is_falling:
 			_bucle_flotacion()
+
+		# Reintento rápido de comprobación de suelo tras spawn si el drop fue en el aire
+		if not _suelo_alcanzado and not _is_falling:
+			_tiempo_para_check_suelo += delta
+			if _tiempo_para_check_suelo >= 0.1:
+				_tiempo_para_check_suelo = 0.0
+				_comprobar_caida_al_suelo()
+
+		# Pickup por proximidad: respaldo si la colisión física body_entered no llega
+		_verificar_proximidad_jugador()
+
+		# Respaldo: si el SceneTreeTimer no disparó, auto-consumir tras el tiempo configurado
+		_tiempo_vivo += delta
+		if _tiempo_vivo >= tiempo_en_pantalla + 0.8:
+			_auto_consumir()
+
+		if _tiempo_vivo >= tiempo_escala_spawn + 0.5 and scale.x < 0.9:
+			scale = Vector3.ONE
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -172,7 +200,7 @@ func _centrar_modelo() -> void:
 
 
 func _comprobar_caida_al_suelo() -> void:
-	if Engine.is_editor_hint():
+	if Engine.is_editor_hint() or current_state != State.IDLE or _is_falling:
 		return
 
 	var space_state := get_world_3d().direct_space_state
@@ -182,19 +210,29 @@ func _comprobar_caida_al_suelo() -> void:
 	var query := PhysicsRayQueryParameters3D.create(
 		global_position + Vector3(0, 0.2, 0),
 		global_position + Vector3(0, -25, 0))
-	query.collision_mask = 1 | 64
+	query.collision_mask = 1 | 2 | 64 | 512
 	var result := space_state.intersect_ray(query)
 
 	if result and result.has("position"):
 		var suelo_y: float = result.position.y
-		if global_position.y > suelo_y + 0.4:
+		if global_position.y > suelo_y + 0.35:
 			_is_falling = true
 			var tween := create_tween()
 			var dist: float = global_position.y - suelo_y
-			var duracion: float = clamp(dist * 0.25, 0.5, 1.2)
-			tween.tween_property(self, "global_position:y", suelo_y + 0.1, duracion) \
-				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-			tween.finished.connect(func() -> void: _is_falling = false)
+			var duracion: float = clamp(dist * 0.25, 0.3, 0.8)
+			if tween:
+				tween.tween_property(self, "global_position:y", suelo_y + 0.15, duracion) \
+					.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+				tween.finished.connect(func() -> void:
+					_is_falling = false
+					_suelo_alcanzado = true
+				)
+			else:
+				global_position.y = suelo_y + 0.15
+				_is_falling = false
+				_suelo_alcanzado = true
+		else:
+			_suelo_alcanzado = true
 
 
 func _bucle_rotacion_360(delta: float) -> void:
@@ -227,30 +265,64 @@ func _bucle_flotacion() -> void:
 func _on_body_entered(body: Node3D) -> void:
 	if current_state == State.DISSOLVING:
 		return
-	if body.is_in_group("player"):
-		_auto_consumir()
+	if body.is_in_group("player") or body.name == "Player" or body.has_method("agregar_flechas_multiples"):
+		_auto_consumir(body)
 
 
-func _auto_consumir() -> void:
+## Respaldo de contacto: consume si el jugador está próximo en 2.5D
+func _verificar_proximidad_jugador() -> void:
+	if current_state != State.IDLE:
+		return
+	var player: Node = _buscar_jugador()
+	if not is_instance_valid(player) or not (player is Node3D):
+		return
+	var player_3d := player as Node3D
+	var diff_x: float = absf(global_position.x - player_3d.global_position.x)
+	var diff_y: float = absf(global_position.y - player_3d.global_position.y)
+	if diff_x <= RADIO_PICKUP_JUGADOR and diff_y <= RADIO_PICKUP_Y:
+		_auto_consumir(player_3d)
+
+
+func _auto_consumir(collector: Node = null) -> void:
 	if current_state == State.DISSOLVING:
 		return
 	current_state = State.DISSOLVING
 
-	var player: Node3D = _buscar_jugador()
-	if is_instance_valid(player):
-		if player.has_method("agregar_flechas_multiples"):
-			player.agregar_flechas_multiples(municion_a_otorgar_jugador)
-		elif "flechas_multiples" in player:
-			player.flechas_multiples += municion_a_otorgar_jugador
-			if player.has_signal("flechas_multiples_changed"):
-				player.flechas_multiples_changed.emit(player.flechas_multiples)
-		picked_up.emit(player)
-		_play_pickup_sound()
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
 
-	# También otorgar a las arqueras aliadas
+	# 1. Otorgar munición al jugador INMEDIATAMENTE
+	_otorgar_municion_al_jugador(collector)
+
+	# 2. Otorgar a las arqueras aliadas
 	_otorgar_municion_a_aliadas()
 
-	_iniciar_desintegracion(0.8)
+	# 3. Disolución visual y liberación garantizada
+	_iniciar_desintegracion(DURACION_DESINTEGRACION)
+
+
+func _otorgar_municion_al_jugador(collector: Node = null) -> void:
+	var player: Node = collector if is_instance_valid(collector) else _buscar_jugador()
+	if not is_instance_valid(player):
+		push_warning("[PowerUpFlechaMultiple] Sin jugador válido al consumirse; no se otorgó munición")
+		return
+
+	if player.has_method("agregar_flechas_multiples"):
+		player.agregar_flechas_multiples(municion_a_otorgar_jugador)
+	elif "flechas_multiples" in player:
+		var max_municion: int = 20
+		if "MUNICION_POWER_UP_MAX" in player:
+			max_municion = int(player.MUNICION_POWER_UP_MAX)
+		player.flechas_multiples = mini(int(player.flechas_multiples) + municion_a_otorgar_jugador, max_municion)
+		if "municion_activa" in player:
+			player.municion_activa = 2  # TipoMunicion.MULTIPLE
+		if player.has_signal("flechas_multiples_changed"):
+			player.flechas_multiples_changed.emit(player.flechas_multiples)
+		if player.has_signal("tipo_municion_changed"):
+			player.tipo_municion_changed.emit(player.municion_activa)
+
+	picked_up.emit(player)
+	_play_pickup_sound()
 
 
 func _otorgar_municion_a_aliadas() -> void:
@@ -278,16 +350,37 @@ func _otorgar_municion_a_aliadas() -> void:
 			aliada.set("flechas_multiples", int(aliada.get("flechas_multiples")) + municion_a_otorgar_aliadas)
 
 
-func _buscar_jugador() -> Node3D:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.size() > 0:
-		return players[0] as Node3D
+func _buscar_jugador() -> Node:
+	var players: Array[Node] = get_tree().get_nodes_in_group("player")
+	for p in players:
+		if is_instance_valid(p) and p.has_method("agregar_flechas_multiples"):
+			return p
+
+	var root: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	if root:
+		var prota: Node = root.find_child("Player", true, false)
+		if is_instance_valid(prota) and prota.has_method("agregar_flechas_multiples"):
+			return prota
+
+	for p in players:
+		if is_instance_valid(p):
+			return p
+
+	if root:
+		var prota_fallback: Node = root.find_child("Player", true, false)
+		if is_instance_valid(prota_fallback):
+			return prota_fallback
+
 	return null
 
 
 func _iniciar_desintegracion(duracion: float) -> void:
+	if _desintegracion_iniciada:
+		return
+	_desintegracion_iniciada = true
+
 	if magic_particles:
-		magic_particles.emitting = true
+		magic_particles.emitting = false
 
 	var meshes: Array[Node] = []
 	if model_root:
@@ -320,16 +413,27 @@ func _iniciar_desintegracion(duracion: float) -> void:
 		dissolve_mats.append(mat)
 
 	var tween := create_tween()
-	var update_dissolve := func(val: float) -> void:
-		for m in dissolve_mats:
-			if is_instance_valid(m):
-				m.set_shader_parameter("dissolve_amount", val)
-	tween.tween_method(update_dissolve, 0.0, 1.0, duracion)
+	if tween:
+		var update_dissolve := func(val: float) -> void:
+			for m in dissolve_mats:
+				if is_instance_valid(m):
+					m.set_shader_parameter("dissolve_amount", val)
+		tween.tween_method(update_dissolve, 0.0, 1.0, duracion)
+		# Reducir escala a cero en paralelo para garantizar desaparición total
+		tween.parallel().tween_property(self, "scale", Vector3.ZERO, duracion) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		if magic_light:
+			tween.parallel().tween_property(magic_light, "light_energy", 0.0, duracion)
+		tween.finished.connect(queue_free)
+	else:
+		queue_free()
 
-	if magic_light:
-		tween.parallel().tween_property(magic_light, "light_energy", 0.0, duracion)
+	# Failsafe incondicional: garantizar la liberación aunque el tween se congele
+	get_tree().create_timer(duracion + 0.3, true, false, true).timeout.connect(func() -> void:
+		if is_instance_valid(self):
+			queue_free()
+	)
 
-	tween.finished.connect(queue_free)
 
 
 func _play_pickup_sound() -> void:

@@ -21,7 +21,7 @@ func test_power_up_initialization():
 	# Assert
 	assert_not_null(_power_up, "El power-up de flecha explosiva debe instanciarse correctamente")
 	assert_eq(_power_up.municion_a_otorgar_jugador, 10, "Por defecto debe otorgar 10 flechas al jugador")
-	assert_eq(_power_up.municion_a_otorgar_aliadas, 5, "Debe otorgar 5 flechas a cada aliada")
+	assert_eq(_power_up.municion_a_otorgar_aliadas, 3, "Debe otorgar 3 flechas a cada aliada")
 	assert_eq(_power_up.tiempo_en_pantalla, 3.0, "El tiempo de auto-consumo debe ser de 3.0 segundos")
 	assert_eq(_power_up.velocidad_rotacion_y, 3.0, "La velocidad de rotación continua debe ser de 3.0 rad/s")
 
@@ -39,6 +39,69 @@ func test_power_up_consumo_jugador():
 	_power_up.current_state = PowerUpFlechaExplosiva.State.IDLE
 	_power_up._auto_consumir()
 	assert_eq(_player.flechas_explosivas, 20, "Las flechas explosivas deben acumularse (+10 -> 20)")
+
+
+func test_power_up_se_consume_con_municion_maxima_20():
+	# Arrange: Jugador ya tiene la munición tope (20)
+	_player.flechas_explosivas = 20
+	assert_eq(_power_up.current_state, PowerUpFlechaExplosiva.State.IDLE, "Inicialmente debe estar en IDLE")
+
+	# Act: Consumir el power-up
+	_power_up._auto_consumir()
+
+	# Assert: Se consume y pasa a DISSOLVING, la munición se mantiene en 20
+	assert_eq(_power_up.current_state, PowerUpFlechaExplosiva.State.DISSOLVING, "El power-up debe pasar a DISSOLVING aunque el jugador tenga 20 flechas")
+	assert_eq(_player.flechas_explosivas, 20, "Las flechas no deben superar el límite de 20")
+
+
+func test_power_up_escena_real_consumo():
+	var escena: PackedScene = load("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
+	var pu = escena.instantiate()
+	add_child_autofree(pu)
+	_player.flechas_explosivas = 0
+	pu._auto_consumir()
+	assert_gt(_player.flechas_explosivas, 0, "Debe otorgar flechas al jugador con escena real")
+	assert_eq(pu.current_state, PowerUpFlechaExplosiva.State.DISSOLVING)
+	await wait_seconds(1.5)
+	assert_true(not is_instance_valid(pu) or pu.is_queued_for_deletion(), "El power up debe haberse destruido")
+
+
+func test_power_up_auto_consumo_sin_jugador_se_disuelve():
+	# Arrange: Power-up aislado sin jugador
+	var pu_solitario = PowerUpFlechaExplosivaScript.new()
+	add_child_autofree(pu_solitario)
+	assert_eq(pu_solitario.current_state, PowerUpFlechaExplosiva.State.IDLE)
+
+	# Quitar temporalmente al jugador del grupo para simular ausencia
+	_player.remove_from_group("player")
+
+	# Act: Auto-consumir
+	pu_solitario._auto_consumir()
+
+	# Assert: Debe pasar a DISSOLVING en vez de quedarse en IDLE
+	assert_eq(pu_solitario.current_state, PowerUpFlechaExplosiva.State.DISSOLVING, "Debe disolverse incluso sin jugador presente")
+	assert_true(pu_solitario._desintegracion_iniciada, "La desintegración debe iniciarse aunque no haya jugador")
+
+	# Restaurar grupo para los siguientes tests
+	_player.add_to_group("player")
+
+
+func test_desintegracion_es_idempotente():
+	# Arrange
+	_player.flechas_explosivas = 0
+
+	# Act: Consumir y volver a intentar consumir (doble pickup en el mismo frame)
+	_power_up._auto_consumir()
+	_power_up._auto_consumir()
+
+	# Assert: La munición se otorga una sola vez y la disolución no se reinicia
+	assert_eq(_player.flechas_explosivas, 10, "El consumo doble no debe otorgar munición dos veces")
+	assert_eq(_power_up.current_state, PowerUpFlechaExplosiva.State.DISSOLVING, "El estado debe seguir en DISSOLVING")
+
+
+func test_radio_proximidad_ampliado():
+	# Assert: El radio de pickup debe ser al menos 1.8m para evitar bloqueos con obstáculos
+	assert_gte(PowerUpFlechaExplosiva.RADIO_PICKUP_JUGADOR, 1.8, "El radio de pickup debe ser de al menos 1.8m")
 
 
 func test_drop_de_goblin_otorga_solo_5_al_jugador():
@@ -123,8 +186,8 @@ func test_power_up_distribucion_aliadas():
 	_power_up._auto_consumir()
 
 	# Assert
-	assert_eq(aliada_1.flechas_explosivas, 5, "La aliada 1 debe recibir 5 flechas explosivas")
-	assert_eq(aliada_2.flechas_explosivas, 5, "La aliada 2 debe recibir 5 flechas explosivas")
+	assert_eq(aliada_1.flechas_explosivas, 3, "La aliada 1 debe recibir 3 flechas explosivas")
+	assert_eq(aliada_2.flechas_explosivas, 3, "La aliada 2 debe recibir 3 flechas explosivas")
 
 func test_probabilidades_drop_lonko_y_goblin():
 	# Arrange
@@ -137,3 +200,21 @@ func test_probabilidades_drop_lonko_y_goblin():
 	assert_eq(lonko.drop_chance_flecha_explosiva, 0.30, "La Arquera Lonko debe tener 30% de probabilidad de drop")
 	assert_eq(goblin.drop_chance_flecha_explosiva, 0.05, "El Goblin Ballestero debe tener 5% de probabilidad de drop")
 	assert_not_null(lonko.power_up_explosivo_scene, "Lonko debe tener asignada la escena del power-up")
+
+func test_consumo_con_colector_directo():
+	var escena: PackedScene = load("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
+	var pu: PowerUpFlechaExplosiva = escena.instantiate() as PowerUpFlechaExplosiva
+	add_child_autofree(pu)
+	_player.flechas_explosivas = 0
+	pu._auto_consumir(_player)
+	assert_eq(_player.flechas_explosivas, 10, "Debe otorgar flechas inmediatamente pasando el colector")
+	assert_eq(pu.current_state, PowerUpFlechaExplosiva.State.DISSOLVING)
+
+func test_body_entered_activa_auto_consumo():
+	var escena: PackedScene = load("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
+	var pu: PowerUpFlechaExplosiva = escena.instantiate() as PowerUpFlechaExplosiva
+	add_child_autofree(pu)
+	_player.flechas_explosivas = 0
+	pu._on_body_entered(_player)
+	assert_gt(_player.flechas_explosivas, 0, "El body_entered del jugador debe auto-consumir y sumar munición")
+	assert_eq(pu.current_state, PowerUpFlechaExplosiva.State.DISSOLVING)

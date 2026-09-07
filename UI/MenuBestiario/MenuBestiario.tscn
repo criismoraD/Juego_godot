@@ -101,17 +101,11 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="Titulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 38
 text = "BESTIARIO"
-horizontal_alignment = 1
-
-[node name="Subtitulo" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Header"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
-theme_override_font_sizes/font_size = 15
-text = "Usa W / S o las flechas para seleccionar enemigo • Clic para ver ficha completa"
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="PanelRaiz/MarginContainer/VBoxPrincipal"]
@@ -139,6 +133,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="LblTituloLista" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelLista/Margin/VBoxLista"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 15
@@ -223,6 +218,7 @@ layout_mode = 2
 theme_override_constants/separation = 2
 
 [node name="LblKeyHP" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardHP/Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.72, 0.25, 1)
 theme_override_font_sizes/font_size = 12
@@ -251,6 +247,7 @@ layout_mode = 2
 theme_override_constants/separation = 2
 
 [node name="LblKeyATT" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardATT/Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.72, 0.25, 1)
 theme_override_font_sizes/font_size = 12
@@ -280,6 +277,7 @@ layout_mode = 2
 theme_override_constants/separation = 2
 
 [node name="LblKeyITEM" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxMedio/VBoxStats/CardITEM/Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.72, 0.25, 1)
 theme_override_font_sizes/font_size = 12
@@ -344,6 +342,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 8
 
 [node name="LblTituloDesc" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/VBoxDescripcion"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 14
@@ -382,6 +381,7 @@ theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 10
 
 [node name="LblControles" type="Label" parent="PanelRaiz/MarginContainer/VBoxPrincipal/Contenido/PanelDetalle/Margin/VBoxInfo/HBoxFooter/PanelControles/Margin"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
 theme_override_constants/line_spacing = 4

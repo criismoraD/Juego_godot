@@ -678,7 +678,7 @@ func recibir_dano(amount: int):
 
 
 func _flash_escudo() -> void:
-	## Parpadeo rojo y animación de impacto en el escudo al recibir daño
+	## Parpadeo rojo y animación de impacto en el escudo al recibir daño (1 solo parpadeo)
 	if not escudo_node or not is_instance_valid(escudo_node):
 		return
 
@@ -696,23 +696,11 @@ func _flash_escudo() -> void:
 			originals.append({"mesh": mesh, "mat": mesh.material_override})
 			mesh.material_override = _flash_mat
 
-	get_tree().create_timer(0.08, false).timeout.connect(
+	get_tree().create_timer(0.12, false).timeout.connect(
 		func():
 			for item in originals:
 				if is_instance_valid(item["mesh"]):
 					item["mesh"].material_override = item["mat"]
-			get_tree().create_timer(0.06, false).timeout.connect(
-				func():
-					for mesh in _escudo_meshes:
-						if is_instance_valid(mesh):
-							mesh.material_override = _flash_mat
-					get_tree().create_timer(0.08, false).timeout.connect(
-						func():
-							for item in originals:
-								if is_instance_valid(item["mesh"]):
-									item["mesh"].material_override = item["mat"]
-					)
-			)
 	)
 
 

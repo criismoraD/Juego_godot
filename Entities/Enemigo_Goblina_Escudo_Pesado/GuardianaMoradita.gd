@@ -96,7 +96,7 @@ var _flash_mat: StandardMaterial3D = null
 var _flash_rojo_mat: StandardMaterial3D = null
 var _escudo_punch_tween: Tween = null  ## Punch de escala del escudo (se mata al soltarlo para que no lo agigante)
 var _audio_correr_descalzo: AudioStreamPlayer3D = null
-const VOLUMEN_CORRER_DB: float = 2.0
+const VOLUMEN_CORRER_DB: float = -3.5
 const DURACION_FADE_CORRER: float = 0.15
 var _fade_correr_tween: Tween = null  ## Fade out del sonido de correr (evita corte en seco)
 var _sombra: SombraPersonaje = null
@@ -1062,9 +1062,9 @@ func _setup_audio_correr_descalzo() -> void:
 		_audio_correr_descalzo.name = "AudioCorrerDescalzo"
 		_audio_correr_descalzo.stream = stream
 		_audio_correr_descalzo.bus = "Master"
-		_audio_correr_descalzo.volume_db = 2.0
-		_audio_correr_descalzo.unit_size = 30.0
-		_audio_correr_descalzo.max_db = 6.0
+		_audio_correr_descalzo.volume_db = VOLUMEN_CORRER_DB
+		_audio_correr_descalzo.unit_size = 25.0
+		_audio_correr_descalzo.max_db = 0.0
 		add_child(_audio_correr_descalzo)
 		_audio_correr_descalzo.finished.connect(_audio_correr_descalzo.play)
 

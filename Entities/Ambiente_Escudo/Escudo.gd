@@ -9,7 +9,7 @@ signal destruido
 @export var intensidad_tinte_dano: float = 0.5
 @export var duracion_flash: float = 0.1
 @export var intensidad_flash: float = 1.2
-@export var parpadeos_rojo_enemigo: int = 2  ## Pulsos rojos por impacto en escudo enemigo
+@export var parpadeos_rojo_enemigo: int = 1  ## Pulsos rojos por impacto en escudo enemigo (1 solo parpadeo)
 @export var intervalo_parpadeo: float = 0.13  ## Segundos de cada fase del parpadeo enemigo
 @export_category("Bando")
 @export var es_escudo_enemigo: bool = false
@@ -415,7 +415,7 @@ func _flash_dano() -> void:
 	if es_escudo_enemigo:
 		# Rojo puro intenso y sin desaturación a blanco bajo tonemapper ACES
 		flash_mat = _crear_material_flash(Color(1.0, 0.0, 0.0, 1.0), 1.2)
-		repeticiones = maxi(parpadeos_rojo_enemigo, 2)
+		repeticiones = maxi(parpadeos_rojo_enemigo, 1)
 		tiempo_on = maxf(intervalo_parpadeo, 0.13)
 		tiempo_off = 0.08
 	else:

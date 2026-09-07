@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://e57160ycusxt"]
 
-[ext_resource type="Script" path="res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.gd" id="1_powerup"]
+[ext_resource type="Script" uid="uid://5j5twba3hb8l" path="res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.gd" id="1_powerup"]
 [ext_resource type="PackedScene" uid="uid://c6vv883x573xa" path="res://Entities/Item_Flecha_Multiple/Flecha_Multiple.glb" id="2_glb"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_powerup"]
-radius = 0.4
+radius = 0.85
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_magic"]
 emission_shape = 1
@@ -29,7 +29,7 @@ height = 0.14
 
 [node name="PowerUpFlechaMultiple" type="Area3D"]
 collision_layer = 0
-collision_mask = 2
+collision_mask = 3
 script = ExtResource("1_powerup")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
