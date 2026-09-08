@@ -378,15 +378,30 @@ func _on_area_entered(area: Area3D):
 
 		var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
 		var dano_escudo: float = 1.0
+		var perfora_escudo: bool = false
 		if es_sobrecarga:
-			dano_escudo = 999.0
+			# El escudo de la GuardianaMoradita (EscudoPesadoArea, con vida
+			# compartida de 10 HP) y las estructuras con vida propia (pilar de
+			# Lonko) NO se perforan con la sobrecarga morada al 100%.
+			if _es_estructura_con_vida(area):
+				# Guardiana (sistema de golpe crítico): solo daño x2, nunca
+				# letal por el escudo; la muerte de un golpe solo ocurre por
+				# impacto directo al cuerpo en su momento vulnerable
+				# (ver _on_body_entered). Pilar de Lonko: daño normal.
+				if _area_pertenece_a_golpe_critico(area):
+					dano_escudo = multiplicador_dano_sobrecarga
+				else:
+					dano_escudo = 1.0
+			else:
+				dano_escudo = 999.0
+				perfora_escudo = true
 
 		if area.has_method("recibir_golpe"):
 			area.recibir_golpe(dano_escudo)
 		elif area.has_method("take_damage"):
 			area.take_damage(dano_escudo)
 
-		if es_sobrecarga:
+		if perfora_escudo:
 			_safe_destroy()
 		else:
 			_stick_to_shield(area)
@@ -399,6 +414,31 @@ func _es_estructura_con_vida(body: Object) -> bool:
 	if body is PilarLonkoBody:
 		return true
 	return "es_pilar_enemigo" in body and bool(body.get("es_pilar_enemigo"))
+
+
+## True si el Area3D pertenece a un enemigo del sistema de golpe crítico
+## (ej.: EscudoPesadoArea de GuardianaMoradita). Se resuelve por el dueño
+## (obtener_dueno_guardiana) o subiendo por padres/owner buscando el método
+## es_momento_golpe_critico.
+func _area_pertenece_a_golpe_critico(area: Object) -> bool:
+	if area == null:
+		return false
+	if area.has_method("es_momento_golpe_critico"):
+		return true
+	if area.has_method("obtener_dueno_guardiana"):
+		var dueno = area.obtener_dueno_guardiana()
+		if dueno != null and dueno.has_method("es_momento_golpe_critico"):
+			return true
+	if area is Node and (area as Node).owner != null:
+		var dueno_nodo: Node = (area as Node).owner
+		if is_instance_valid(dueno_nodo) and dueno_nodo.has_method("es_momento_golpe_critico"):
+			return true
+	var p: Node = (area as Node).get_parent() if area is Node else null
+	while p != null:
+		if p.has_method("es_momento_golpe_critico"):
+			return true
+		p = p.get_parent()
+	return false
 
 
 func _stick_to_surface():

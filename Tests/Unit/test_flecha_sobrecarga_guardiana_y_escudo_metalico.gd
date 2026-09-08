@@ -28,11 +28,12 @@ func test_flecha_sobrecarga_max_mata_guardiana_un_golpe_cuerpo() -> void:
 	assert_eq(guardiana.current_state, GuardianaMoradita.State.DYING, "La guardiana debe pasar a estado DYING")
 
 
-func test_flecha_sobrecarga_max_mata_guardiana_un_golpe_escudo() -> void:
+func test_flecha_sobrecarga_max_no_perfora_escudo_guardiana() -> void:
 	# Arrange
 	var guardiana = GUARDIANA_SCENE.instantiate() as GuardianaMoradita
 	add_child_autofree(guardiana)
 	await get_tree().process_frame
+	var hp_inicial: int = guardiana.health
 
 	var escudo_area: Area3D = guardiana.find_child("EscudoArea", true, false) as Area3D
 	assert_not_null(escudo_area, "El nodo EscudoArea debe existir en la GuardianaMoradita")
@@ -42,12 +43,39 @@ func test_flecha_sobrecarga_max_mata_guardiana_un_golpe_escudo() -> void:
 	arrow.tipo_dueño = arrow.TipoFlecha.JUGADOR
 	arrow.set_meta("sobrecarga_max", true)
 
-	# Act: Impacto en el área del escudo pesado
+	# Act: Impacto en el área del escudo pesado (defendiendo)
+	guardiana.current_state = GuardianaMoradita.State.DEFENDING
 	arrow._on_area_entered(escudo_area)
 
-	# Assert
-	assert_eq(guardiana.health, 0, "Impactar el escudo con flecha morada al 100% debe matar a la guardiana de un solo golpe")
-	assert_eq(guardiana.current_state, GuardianaMoradita.State.DYING, "La guardiana debe pasar a estado DYING")
+	# Assert: el escudo NO se perfora: daño x2, sigue viva y la flecha queda clavada
+	assert_eq(guardiana.health, hp_inicial - 2, "El escudo debe resistir la sobrecarga: solo daño x2, sin muerte de un golpe")
+	assert_ne(guardiana.current_state, GuardianaMoradita.State.DYING, "La guardiana NO debe morir por impacto al escudo")
+	assert_true(arrow.is_stuck, "La flecha cargada debe quedar clavada en el escudo, no perforarlo ni destruirse")
+
+
+func test_flecha_sobrecarga_max_no_mata_guardiana_escudo_en_ataque() -> void:
+	# Arrange: incluso en su momento vulnerable (atacando), el escudo protege
+	var guardiana = GUARDIANA_SCENE.instantiate() as GuardianaMoradita
+	add_child_autofree(guardiana)
+	await get_tree().process_frame
+	var hp_inicial: int = guardiana.health
+
+	var escudo_area: Area3D = guardiana.find_child("EscudoArea", true, false) as Area3D
+	assert_not_null(escudo_area, "El nodo EscudoArea debe existir en la GuardianaMoradita")
+
+	var arrow = ARROW_SCENE.instantiate()
+	add_child_autofree(arrow)
+	arrow.tipo_dueño = arrow.TipoFlecha.JUGADOR
+	arrow.set_meta("sobrecarga_max", true)
+
+	# Act: impacto al escudo mientras ataca (x2 + 5 vulnerabilidad = 7 < 10 HP)
+	guardiana.current_state = GuardianaMoradita.State.ATTACKING
+	arrow._on_area_entered(escudo_area)
+
+	# Assert: sobrevive; la muerte de un golpe solo ocurre por impacto directo al cuerpo
+	assert_gt(guardiana.health, 0, "El escudo debe proteger incluso en ataque: sin muerte de un golpe")
+	assert_ne(guardiana.current_state, GuardianaMoradita.State.DYING, "La guardiana NO debe morir por impacto al escudo")
+	assert_true(arrow.is_stuck, "La flecha cargada debe quedar clavada en el escudo")
 
 
 func test_flecha_normal_no_mata_guardiana_un_golpe() -> void:
