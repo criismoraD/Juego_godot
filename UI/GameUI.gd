@@ -1946,7 +1946,11 @@ func _alternar_tipo_defensoras() -> void:
 		nueva_aliada.name = nombre_orig
 		parent.add_child(nueva_aliada)
 		nueva_aliada.global_transform = t_global
-		if "health" in nueva_aliada:
+		if "vida_maxima" in nueva_aliada and "health" in nueva_aliada:
+			# La unidad nueva entra con la vida completa DE SU TIPO (arquera 2, ballestera 4).
+			# Copiar la vida cruda dejaba a la ballestera con 2 (moría de 2 golpes).
+			nueva_aliada.health = nueva_aliada.vida_maxima
+		elif "health" in nueva_aliada:
 			nueva_aliada.health = vida_act
 		if "flechas_explosivas" in nueva_aliada:
 			nueva_aliada.flechas_explosivas = f_exp
