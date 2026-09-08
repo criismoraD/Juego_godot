@@ -53,12 +53,16 @@ signal destruido
 @export var sombra_opacidad: float = 1.0
 @export var sombra_suavizado: float = 0.8
 @export var sombra_offset_y: float = -0.01  ## Offset vertical (negativo = más pegada al suelo, bajo el modelo)
+@export_category("Reaparición")
+@export var duracion_reaparicion: float = 1.2  ## Segundos de la materialización con dissolve al reconstruir el escudo
+@export var color_reaparicion: Color = Color(0.2, 0.8, 1.0)  ## Tinte del borde de disolución al reaparecer
 # Estado interno
 var golpes_recibidos: int = 0
 var mesh_instance: MeshInstance3D
 var sombra_nodo: Node = null  ## Sombra falsa (excluida del parpadeo)
 var _flash_gen: int = 0  ## Generación del flash: golpes seguidos no se pisan entre sí
 var _punch_tween: Tween = null  ## Punch de escala del defensor (se mata para no acumular tamaño)
+var _reaparicion_tween: Tween = null  ## Animación de reaparición (se mata si se relanza)
 var _escala_base: Vector3 = Vector3.ZERO
 var material_original: Material
 var material_dano: StandardMaterial3D
@@ -157,6 +161,7 @@ func _agregar_mallas(nodo: Node, lista: Array[MeshInstance3D]) -> void:
 
 # Estado Gris Metálico (Reflejante)
 const TEXTURA_ICONO_ESCUDO: Texture2D = preload("res://Entities/Ambiente_Escudo/Icono_escudo_gis.png")
+const TEXTURA_ESCUDO_METALICO: Texture2D = preload("res://Entities/Ambiente_Escudo/Escudo_metalico_refuerzo.jpg")  ## Textura metálica aplicada al escudo al reforzarlo
 @export_category("Icono Potenciado")
 @export var altura_icono_potenciado: float = 2.05  ## Altura Y del icono flotante sobre el escudo para no tapar el borde superior
 var es_metalico: bool = false
@@ -268,11 +273,13 @@ func _crear_material_metalico() -> void:
 	if material_original is StandardMaterial3D:
 		material_metalico.shading_mode = material_original.shading_mode
 		material_metalico.next_pass = material_original.next_pass
-	# Color gris metálico acerado visible e inconfundible sin saturar a blanco
-	material_metalico.albedo_color = Color(0.62, 0.65, 0.70, 1.0)
-	material_metalico.metallic = 0.85
-	material_metalico.roughness = 0.3
-	material_metalico.emission_enabled = false
+	# Textura metálica real (piezas de metalplate brillante sobre el escudo).
+	# Sin reflexiones ambientales el metal puro se vería negro; la textura aporta
+	# el patrón visual metálico que se lee claramente en cualquier iluminación.
+	material_metalico.albedo_texture = TEXTURA_ESCUDO_METALICO
+	# Brillo leve para que el metal destaque frente al tono apagado de la madera
+	material_metalico.albedo_color = Color(1.15, 1.18, 1.25, 1.0)
+	material_metalico.metallic = 0.15
 
 
 func _aplicar_visual_metalico() -> void:
@@ -300,6 +307,100 @@ func _flash_metalico() -> void:
 		return
 
 	_restaurar_material_estado()
+
+
+## Animación de reaparición mística (dissolve + crecimiento vertical desde la base).
+## La usa la ballestera aliada al reconstruir su escudo de piso destruido con refuerzo.
+## Al terminar restaura el material según el estado (metálico si se reforzó durante la animación).
+func animar_reaparicion() -> void:
+	var mallas: Array[MeshInstance3D] = _recolectar_mallas()
+	if mallas.is_empty():
+		return
+	var shader_disolver: Shader = load("res://System/Shaders/dissolve.gdshader")
+	if not shader_disolver:
+		return
+
+	var items: Array = []
+	for mi in mallas:
+		if not is_instance_valid(mi):
+			continue
+		var mat := ShaderMaterial.new()
+		mat.shader = shader_disolver
+		mat.set_shader_parameter("dissolve_amount", 1.0)
+		mat.set_shader_parameter("glow_color", color_reaparicion)
+		mat.set_shader_parameter("glow_intensity", 8.0)
+		mat.set_shader_parameter("edge_thickness", 0.08)
+		mat.set_shader_parameter("noise_scale", 20.0)
+
+		var orig: Material = mi.material_override
+		if orig == null and mi.mesh and mi.mesh.get_surface_count() > 0:
+			orig = mi.mesh.surface_get_material(0)
+		if orig and orig is StandardMaterial3D:
+			var std := orig as StandardMaterial3D
+			if std.albedo_texture:
+				mat.set_shader_parameter("albedo_texture", std.albedo_texture)
+			var col := std.albedo_color
+			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+
+		mi.material_override = mat
+		items.append({"mesh": mi, "material": mat, "original": orig})
+
+	# Encontrar el nodo visual 3D (para no deformar la colisión del StaticBody3D)
+	var nodo_visual: Node3D = null
+	for child in get_children():
+		if child is Node3D and not (child is CollisionShape3D) and not (child is SombraPersonaje):
+			nodo_visual = child
+			break
+
+	var escala_visual := Vector3.ONE
+	if nodo_visual:
+		escala_visual = nodo_visual.scale
+		if escala_visual.is_zero_approx():
+			escala_visual = Vector3.ONE
+		nodo_visual.scale = Vector3(escala_visual.x * 0.4, 0.01, escala_visual.z * 0.4)
+
+	# Desactivar colisiones mientras se materializa
+	var colisiones: Array[CollisionShape3D] = []
+	for child in get_children():
+		if child is CollisionShape3D:
+			colisiones.append(child)
+			child.set_deferred("disabled", true)
+
+	if _reaparicion_tween and _reaparicion_tween.is_valid():
+		_reaparicion_tween.kill()
+	_reaparicion_tween = create_tween().set_parallel(true)
+
+	# 1. Materialización con shader dissolve
+	_reaparicion_tween.tween_method(
+		func(val: float) -> void:
+			for item in items:
+				if is_instance_valid(item["mesh"]):
+					var mo: Material = (item["mesh"] as MeshInstance3D).material_override
+					if mo is ShaderMaterial:
+						(mo as ShaderMaterial).set_shader_parameter("dissolve_amount", val),
+		1.0, 0.0, duracion_reaparicion
+	)
+
+	# 2. Crecimiento vertical desde la base en el nodo visual
+	if nodo_visual:
+		_reaparicion_tween.tween_property(nodo_visual, "scale", escala_visual, duracion_reaparicion) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+	_reaparicion_tween.finished.connect(
+		func() -> void:
+			for item in items:
+				if is_instance_valid(item["mesh"]):
+					var mi_fin := item["mesh"] as MeshInstance3D
+					# Solo restaurar si nadie más (flash de daño, metalizado) tomó el override
+					if mi_fin.material_override == item["material"]:
+						mi_fin.material_override = item["original"]
+			if is_instance_valid(nodo_visual):
+				(nodo_visual as Node3D).scale = escala_visual
+			for col in colisiones:
+				if is_instance_valid(col):
+					(col as CollisionShape3D).set_deferred("disabled", false)
+			_restaurar_material_estado()
+	)
 
 
 func recibir_golpe(amount: int = 1):

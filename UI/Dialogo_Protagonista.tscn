@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://drxcxng0eisja" path="res://UI/DialogoComic.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dk74spg47cqta" path="res://UI/Protagonista/Eryn_beta.png" id="2_tex_eryn"]
 [ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
+[ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://UI/Protagonista/PROTA_NORMAL.png" id="4_qyvsk"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]
 content_margin_left = 14.0
@@ -45,13 +46,14 @@ anchor_left = 0.16
 anchor_top = 0.08
 anchor_right = 0.84
 anchor_bottom = 0.42
-offset_left = 10.800018
-offset_top = 171.6
-offset_right = 10.800049
-offset_bottom = 171.59998
+offset_left = 15.800018
+offset_top = 262.6
+offset_right = 114.20007
+offset_bottom = 428.59998
 theme_override_styles/panel = SubResource("StyleBoxFlat_dialogo")
 
 [node name="Icono" type="TextureRect" parent="." unique_id=1020486934]
+visible = false
 z_index = 1
 custom_minimum_size = Vector2(400, 430)
 anchors_preset = -1
@@ -59,10 +61,10 @@ anchor_left = 0.16
 anchor_top = 0.08
 anchor_right = 0.16
 anchor_bottom = 0.08
-offset_left = -105.19998
-offset_top = -33.4
-offset_right = 425.80002
-offset_bottom = 537.425
+offset_left = -504.19998
+offset_top = 13.599998
+offset_right = 26.800018
+offset_bottom = 584.425
 mouse_filter = 2
 texture = ExtResource("2_tex_eryn")
 expand_mode = 1
@@ -75,10 +77,10 @@ anchor_left = 0.16
 anchor_top = 0.08
 anchor_right = 0.16
 anchor_bottom = 0.08
-offset_left = 476.80002
-offset_top = 181.6
-offset_right = 898.80005
-offset_bottom = 228.6
+offset_left = 401.80002
+offset_top = 278.6
+offset_right = 823.80005
+offset_bottom = 325.6
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_font_sizes/font_size = 34
 text = "PROTAGONISTA_NOMBRE"
@@ -90,10 +92,10 @@ anchor_left = 0.16
 anchor_top = 0.08
 anchor_right = 0.16
 anchor_bottom = 0.08
-offset_left = 466.80002
-offset_top = 255.6
-offset_right = 1096.8
-offset_bottom = 371.6
+offset_left = 406.80002
+offset_top = 342.6
+offset_right = 1137.8
+offset_bottom = 502.6
 theme_override_colors/default_color = Color(0.9, 0.88, 0.82, 1)
 theme_override_font_sizes/normal_font_size = 26
 bbcode_enabled = true
@@ -112,10 +114,10 @@ anchor_left = 0.16
 anchor_top = 0.08
 anchor_right = 0.16
 anchor_bottom = 0.08
-offset_left = 1060.8
-offset_top = 478.6
-offset_right = 1240.8
-offset_bottom = 518.6
+offset_left = 410.80002
+offset_top = 744.6
+offset_right = 590.80005
+offset_bottom = 784.6
 size_flags_horizontal = 0
 text = "Continuar"
 
@@ -125,8 +127,13 @@ custom_minimum_size = Vector2(180, 40)
 anchors_preset = -1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -710.0
-offset_top = 565.0
-offset_right = -530.0
-offset_bottom = 605.0
+offset_left = -893.0
+offset_top = 831.0
+offset_right = -713.0
+offset_bottom = 871.0
 text = "Saltar Diálogo"
+
+[node name="ProtaNormal" type="Sprite2D" parent="." unique_id=1396290819]
+position = Vector2(488, 526)
+scale = Vector2(0.5853904, 0.5853905)
+texture = ExtResource("4_qyvsk")

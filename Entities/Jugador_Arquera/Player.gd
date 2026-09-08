@@ -139,6 +139,8 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _flash_material: StandardMaterial3D = null
 # === VIDA ===
 var health: int = 5
+var last_hit_position: Vector3 = Vector3.ZERO  ## Posición del último impacto recibido (sangre no letal)
+var last_hit_direction: Vector3 = Vector3.LEFT  ## Dirección del proyectil del último impacto
 var is_invulnerable: bool = false
 var invulnerability_timer: float = 0.0
 var shot_cancelled: bool = false  # Flag para cancelar disparo cuando nos dañan
@@ -2420,6 +2422,10 @@ func recibir_dano(cantidad: int = 1):
 
 	# Flash visual
 	_flash_damage()
+
+	# Sangre no letal en el punto de impacto (solo si el golpe no mata)
+	if health > 0:
+		SangreNoLetal.spawn(self, last_hit_position, last_hit_direction)
 
 	# Animación de hit
 	_play_hit_animation()

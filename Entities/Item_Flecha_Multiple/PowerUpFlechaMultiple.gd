@@ -19,6 +19,7 @@ enum State { IDLE, DISSOLVING }
 # CONSTANTES
 # ═══════════════════════════════════════════════════════════════════════════════
 const ESCALA_BASE: float = 0.63  ## Escala base (+40% idéntica a Flecha Explosiva)
+const ESCALA_SPAWN_MINIMA: float = 0.05  ## Escala inicial segura: Jolt rechaza transforms singulares (escala ~0)
 const SONIDO_PICKUP: String = "res://TEST_/Obtener arma.wav"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -50,6 +51,7 @@ var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 var _initial_model_y: float = 0.0
 var _nodes_checked: bool = false
 var _is_falling: bool = false
+var _tween_caida: Tween = null  ## Watchdog: si el tween de caída se congela, se recupera en _process
 var _suelo_alcanzado: bool = false
 var _tiempo_para_check_suelo: float = 0.0
 var _model_centered: bool = false
@@ -85,8 +87,8 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
 	if not Engine.is_editor_hint():
-		# Escalado orgánico de 0 a 1 al aparecer
-		scale = Vector3(0.001, 0.001, 0.001)
+		# Escalado orgánico al aparecer (mínimo seguro: escala 0 rompe el transform de Jolt)
+		scale = Vector3(ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA)
 		var spawn_tween := create_tween()
 		if spawn_tween:
 			spawn_tween.tween_property(self, "scale", Vector3.ONE, tiempo_escala_spawn) \
@@ -100,7 +102,8 @@ func _ready() -> void:
 
 		call_deferred("_comprobar_caida_al_suelo")
 
-		# Timer de auto-consumo a los 3 segundos
+		# Timer de auto-consumo a los 3 segundos (pausable: avanza solo con el juego;
+		# el respaldo _tiempo_vivo de _process cubre si este timer falla)
 		var timer := get_tree().create_timer(tiempo_en_pantalla)
 		timer.timeout.connect(_auto_consumir)
 
@@ -120,6 +123,11 @@ func _process(delta: float) -> void:
 		if not _is_falling:
 			_bucle_flotacion()
 
+		# Watchdog de caída: si el tween murió o se invalidó en pleno vuelo,
+		# recalcular el suelo (el reintento de abajo vuelve a lanzar la caída)
+		if _is_falling and (_tween_caida == null or not _tween_caida.is_valid()):
+			_is_falling = false
+
 		# Reintento rápido de comprobación de suelo tras spawn si el drop fue en el aire
 		if not _suelo_alcanzado and not _is_falling:
 			_tiempo_para_check_suelo += delta
@@ -131,7 +139,9 @@ func _process(delta: float) -> void:
 		_verificar_proximidad_jugador()
 
 		# Respaldo: si el SceneTreeTimer no disparó, auto-consumir tras el tiempo configurado
-		_tiempo_vivo += delta
+		# (ignorar tiempo mientras el árbol está pausado: el juego congelado no debe consumirlo)
+		if not get_tree().paused:
+			_tiempo_vivo += delta
 		if _tiempo_vivo >= tiempo_en_pantalla + 0.8:
 			_auto_consumir()
 
@@ -217,15 +227,16 @@ func _comprobar_caida_al_suelo() -> void:
 		var suelo_y: float = result.position.y
 		if global_position.y > suelo_y + 0.35:
 			_is_falling = true
-			var tween := create_tween()
 			var dist: float = global_position.y - suelo_y
 			var duracion: float = clamp(dist * 0.25, 0.3, 0.8)
-			if tween:
-				tween.tween_property(self, "global_position:y", suelo_y + 0.15, duracion) \
+			_tween_caida = create_tween()
+			if _tween_caida:
+				_tween_caida.tween_property(self, "global_position:y", suelo_y + 0.15, duracion) \
 					.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-				tween.finished.connect(func() -> void:
+				_tween_caida.finished.connect(func() -> void:
 					_is_falling = false
 					_suelo_alcanzado = true
+					_tween_caida = null
 				)
 			else:
 				global_position.y = suelo_y + 0.15
@@ -419,8 +430,9 @@ func _iniciar_desintegracion(duracion: float) -> void:
 				if is_instance_valid(m):
 					m.set_shader_parameter("dissolve_amount", val)
 		tween.tween_method(update_dissolve, 0.0, 1.0, duracion)
-		# Reducir escala a cero en paralelo para garantizar desaparición total
-		tween.parallel().tween_property(self, "scale", Vector3.ZERO, duracion) \
+		# Reducir escala en paralelo para garantizar desaparición total
+		# (mínimo seguro: escala 0 genera transform singular rechazado por Jolt)
+		tween.parallel().tween_property(self, "scale", Vector3(ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA), duracion) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		if magic_light:
 			tween.parallel().tween_property(magic_light, "light_energy", 0.0, duracion)

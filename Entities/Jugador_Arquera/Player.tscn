@@ -31,7 +31,7 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="ArqueraModel" parent="." unique_id=1511312856 instance=ExtResource("2_fbx")]
 transform = Transform3D(-1.355e-07, 0, 3.1, 0, 3.1, 0, -3.1, 0, -1.355e-07, 0, -0.065, 0)
 
-[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 884864775) index="0" unique_id=202610825]
+[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 1893158315) index="0" unique_id=2089585991]
 bones/0/position = Vector3(1.7202649, -1.0863965, -37.87592)
 bones/0/rotation = Quaternion(0.69919634, 0.7145761, -0.011846885, -0.019107163)
 bones/1/rotation = Quaternion(-0.06394092, 0.51371694, -0.74897087, 0.413581)
@@ -138,6 +138,9 @@ bones/63/position = Vector3(-0.020513177, 1.8437066, 3.5755813e-05)
 bones/63/rotation = Quaternion(0.056758706, 0.006098835, -0.11689723, 0.9915021)
 bones/64/position = Vector3(-0.19967273, 1.38601, -4.1721214e-06)
 
+[node name="PROTA" parent="ArqueraModel/Armature/Skeleton3D" index="0" unique_id=326566048]
+transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 0, 0, 0)
+
 [node name="BoneAttach_Arco" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
 transform = Transform3D(0.31401584, -0.2492659, -0.9161123, 0.13944186, 0.9665643, -0.21519724, 0.9391217, -0.06016879, 0.33827436, -2.1668096, 23.389515, -51.581448)
 bone_name = "mixamorig_LeftHand"
@@ -159,7 +162,7 @@ transform = Transform3D(8.05503, -36.252083, -9.907173, -24.329357, 2.6922657, -
 visible = false
 
 [node name="FLECHA" parent="ArqueraModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=1873166664 instance=ExtResource("4_7pt4t")]
-transform = Transform3D(-8.403967, 30.81243, -1.99194, -23.576058, -7.736585, -20.206808, -19.938494, -3.839222, 24.732906, -0.49650955, 3.162592, -0.08917618)
+transform = Transform3D(-8.403967, 30.81243, -1.99194, -23.576057, -7.736585, -20.206808, -19.938494, -3.839222, 24.732906, -0.49650955, 3.162592, -0.08917618)
 visible = false
 
 [node name="AnimationTree" type="AnimationTree" parent="ArqueraModel" unique_id=1879798461]

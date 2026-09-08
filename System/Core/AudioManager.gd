@@ -476,6 +476,10 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: 
 		elif sound_name in ["escudo_metal_cayendo", "Escudo metal callendo", "escudo_cayendo"]:
 			# Volumen reducido a pedido: contundente pero sin saturar
 			volume_to_use = sfx_volume_db - 1.0
+		elif sound_name == "refuerzo_escudo":
+			# Habilidad de la ballestera: clip corto (~0.5s) que debe percibirse
+			# claramente sobre el combate (disparos, impactos de escudo)
+			volume_to_use = sfx_volume_db + 6.0
 
 
 		temp_player.volume_db = volume_to_use + volume_boost_db

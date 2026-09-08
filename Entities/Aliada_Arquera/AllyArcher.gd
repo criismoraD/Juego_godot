@@ -1546,6 +1546,7 @@ func take_damage(amount: float):
 		var dano_anim = ["DAÑO_01", "DAÑO_02"][randi() % 2]
 		_play_anim([dano_anim, "DAÑO_01", "DAÑO_02", "DAÑO_HIT", "DAÑO"], 0.05)
 		AudioManager.play_sfx("player_hurt")
+		SangreNoLetal.spawn(self, last_hit_position, last_hit_direction)
 		# Volver al estado anterior tras la animación de daño
 		var dur = _get_anim_length(dano_anim)
 		get_tree().create_timer(dur).timeout.connect(

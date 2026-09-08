@@ -47,6 +47,11 @@ var plataforma_asignada: int = 1  ## Plataforma a la que fue asignada la defenso
 @export var balanceo_apuntado_grados: float = 1.5  ## Variación/balanceo natural de 1 a 2 grados al apuntar
 @export var velocidad_balanceo: float = 2.2  ## Velocidad de la oscilación de balanceo
 
+@export_category("Refuerzo de Escudo")
+@export var radio_vinculo_escudo: float = 3.5  ## Distancia máxima al escudo de piso propio
+@export var tolerancia_piso_y: float = 0.8  ## Desnivel máximo en Y para considerar mismo piso (pisos separados ~1.56)
+@export var margen_frente_x: float = 0.05  ## El escudo debe estar por delante (+X) de la defensora
+
 @export_category("Celebración de Victoria")
 @export var repeticiones_victoria_min: int = 3  ## Mínimo de loops de la animación de victoria tras oleada
 @export var repeticiones_victoria_max: int = 4  ## Máximo de loops de la animación de victoria tras oleada
@@ -111,14 +116,20 @@ var _impacto_timer: float = 0.0
 var is_dissolving: bool = false
 
 # Ciclo: 5 disparos de pie -> 5 disparos agachada -> repite
+# La habilidad de refuerzo se aplica UNA vez por ciclo (primer tiro agachado),
+# no es acumulable: el escudo queda como máximo en +2 de aguante metálico.
 var fase_agachada: bool = false
 var disparos_en_fase: int = 0
+var refuerzos_aplicados: int = 0  ## Contador de refuerzos aplicados (diagnóstico/tests)
 var objetivo_actual: Node3D = null
+var last_hit_position: Vector3 = Vector3.ZERO  ## Posición del último impacto recibido (sangre no letal)
+var last_hit_direction: Vector3 = Vector3.LEFT  ## Dirección del proyectil del último impacto
 
 # Referencia y anclaje al escudo de piso asignado
 var _escudo_piso_ref: Node = null
 var _escudo_piso_transform: Transform3D
 var _escudo_piso_parent: Node = null
+var _escudo_piso_golpes: int = 0  ## Vida (golpes) del escudo vinculado original; 0 = nunca vinculó uno real
 var _marco_escudo_es_real: bool = false  ## true si el marco viene de un escudo real (no del fallback identidad)
 var _tiene_escudo_frente: bool = false
 
@@ -430,11 +441,13 @@ func _vincular_escudo_piso() -> void:
 		return
 
 	var mejor_escudo: Node = null
-	var menor_dist: float = 3.5
+	var menor_dist: float = radio_vinculo_escudo
 	for esc in get_tree().get_nodes_in_group("escudos"):
 		if not is_instance_valid(esc) or not (esc is Node3D):
 			continue
 		if "es_escudo_enemigo" in esc and esc.es_escudo_enemigo:
+			continue
+		if not _es_escudo_de_mi_piso_frente(esc):
 			continue
 		var dist = global_position.distance_to(esc.global_position)
 		if dist < menor_dist:
@@ -447,11 +460,35 @@ func _vincular_escudo_piso() -> void:
 		_escudo_piso_parent = mejor_escudo.get_parent()
 		_tiene_escudo_frente = true
 		_marco_escudo_es_real = true
+		if "golpes_para_destruir" in mejor_escudo:
+			_escudo_piso_golpes = int(mejor_escudo.golpes_para_destruir)
 	else:
-		_escudo_piso_transform = Transform3D(Basis.IDENTITY, global_position + Vector3(0.55, 0.0, 0.0))
-		_escudo_piso_parent = get_parent()
-		_tiene_escudo_frente = true
-		_marco_escudo_es_real = false
+		# Sin escudo propio al frente en este piso: no hay objetivo válido de refuerzo.
+		# Se conserva el último marco real capturado para poder regenerar el escudo
+		# propio destruido en su posición exacta; si nunca se vinculó uno real,
+		# no se marca escudo al frente (las fijas solo refuerzan su piso).
+		_escudo_piso_ref = null
+		if not _marco_escudo_es_real:
+			_escudo_piso_transform = Transform3D(Basis.IDENTITY, global_position + Vector3(0.55, 0.0, 0.0))
+			_escudo_piso_parent = get_parent()
+		_tiene_escudo_frente = false
+
+
+## REGLA de refuerzo: solo escudos propios al frente (+X) y del mismo piso (|dy|).
+## Las ballesteras fijas nunca refuerzan escudos detrás ni de otro piso.
+func _es_escudo_de_mi_piso_frente(esc: Node) -> bool:
+	if not is_instance_valid(esc) or not (esc is Node3D):
+		return false
+	if "es_escudo_enemigo" in esc and bool(esc.es_escudo_enemigo):
+		return false
+	var delta: Vector3 = (esc as Node3D).global_position - global_position
+	if delta.x < margen_frente_x:
+		return false
+	if absf(delta.y) > tolerancia_piso_y:
+		return false
+	if global_position.distance_to((esc as Node3D).global_position) > radio_vinculo_escudo:
+		return false
+	return true
 
 
 func _find_bone_fuzzy(skel: Skeleton3D, names: Array) -> int:
@@ -1050,8 +1087,10 @@ func _disparar():
 
 	_spawnear_virote(spawn_pos, dir, velocidad_virote)
 
-	# Si está en fase agachada, aplica/refuerza el efecto de escudo
-	if fase_agachada:
+	# La habilidad de refuerzo se aplica UNA sola vez cada 5 disparos: en el
+	# primer tiro de la fase agachada (disparos_en_fase == 0 antes de contar).
+	# No es acumulable: el escudo queda como máximo en +2 (ver _aplicar_efecto_escudo_piso).
+	if fase_agachada and disparos_en_fase == 0:
 		_aplicar_efecto_escudo_piso()
 
 	# Gestión del ciclo: 5 disparos de pie -> 5 disparos agachada -> repite
@@ -1089,14 +1128,35 @@ func _spawnear_virote(spawn_pos: Vector3, dir: Vector3, speed: float):
 func _aplicar_efecto_escudo_piso():
 	if es_movil or es_mensajera:
 		return
-	AudioManager.play_sfx("refuerzo_escudo")
-	if _escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and _escudo_piso_ref.is_inside_tree():
+	# REGLA: las fijas solo refuerzan su escudo propio al frente y de su piso.
+	# Si la referencia actual ya no cumple (murió, fue reconstruida, quedó detrás
+	# o pertenece a otro piso), se descarta y se re-vincula solo dentro del piso.
+	if _escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and (_escudo_piso_ref as Node).is_inside_tree():
+		if not _es_escudo_de_mi_piso_frente(_escudo_piso_ref):
+			_escudo_piso_ref = null
+	if not (_escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and (_escudo_piso_ref as Node).is_inside_tree()):
+		_vincular_escudo_piso()
+	if _escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and (_escudo_piso_ref as Node).is_inside_tree():
+		# No acumulable: si el escudo ya está al máximo (+2), no re-aplicar
+		if "es_metalico" in _escudo_piso_ref and "aguante_metalico" in _escudo_piso_ref:
+			if bool(_escudo_piso_ref.es_metalico) and int(_escudo_piso_ref.aguante_metalico) >= 2:
+				return
 		if _escudo_piso_ref.has_method("activar_modo_metalico"):
 			_escudo_piso_ref.activar_modo_metalico(2)
+			AudioManager.play_sfx("refuerzo_escudo")
+			refuerzos_aplicados += 1
 	else:
+		# Sin escudo propio al frente: solo regenerar si hubo uno real de este piso
+		# (fue destruido en combate). Si nunca hubo escudo propio, no crear ninguno.
+		# Compensación de diseño: el reconstruido vuelve con 1 de vida y refuerzo a 1
+		# (no a 2), porque la habilidad ya lo reparó por completo al reaparecerlo.
+		if not _marco_escudo_es_real:
+			return
 		_regenerar_escudo_piso()
 		if _escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and _escudo_piso_ref.has_method("activar_modo_metalico"):
-			_escudo_piso_ref.activar_modo_metalico(2)
+			_escudo_piso_ref.activar_modo_metalico(1)
+			AudioManager.play_sfx("refuerzo_escudo")
+			refuerzos_aplicados += 1
 
 
 func _regenerar_escudo_piso(forzar_enemigo: bool = false):
@@ -1113,7 +1173,13 @@ func _regenerar_escudo_piso(forzar_enemigo: bool = false):
 		elif forzar_enemigo:
 			nuevo_escudo.es_escudo_enemigo = true
 	if "golpes_para_destruir" in nuevo_escudo:
-		nuevo_escudo.golpes_para_destruir = 1
+		if forzar_enemigo:
+			nuevo_escudo.golpes_para_destruir = 1
+		# Compensación de diseño: el escudo reconstruido por refuerzo vuelve
+		# con 1 sola vida (no con la original del nivel), porque la habilidad
+		# ya lo reparó por completo al reaparecerlo.
+		else:
+			nuevo_escudo.golpes_para_destruir = 1
 
 	# Marco correcto: si el vinculado murió y solo hay fallback identidad,
 	# copiar rotación/escala de otro escudo aliado vivo (si no, el regenerado
@@ -1135,8 +1201,8 @@ func _regenerar_escudo_piso(forzar_enemigo: bool = false):
 		if "_escala_base" in nuevo_escudo:
 			nuevo_escudo._escala_base = nuevo_escudo.scale
 
-		if nuevo_escudo.has_method("_flash_dano"):
-			nuevo_escudo._flash_dano()
+		if nuevo_escudo.has_method("animar_reaparicion"):
+			nuevo_escudo.animar_reaparicion()
 
 
 ## API explícita para regenerar un escudo enemigo en su nivel correspondiente (usar solo cuando el diseño lo indique)
@@ -1144,7 +1210,9 @@ func regenerar_escudo_enemigo_explicito() -> void:
 	_regenerar_escudo_piso(true)
 
 
-## Busca otro escudo aliado vivo cualquiera para copiar su rotación/escala
+## Busca otro escudo aliado vivo del MISMO piso al frente para copiar su
+## rotación/escala/vida. REGLA de refuerzo: nunca usa escudos de otro piso
+## ni ubicados detrás; si no hay referencia propia, retorna null.
 func _buscar_escudo_aliado_referencia() -> Node3D:
 	var mejor: Node3D = null
 	var menor_dist: float = INF
@@ -1154,6 +1222,8 @@ func _buscar_escudo_aliado_referencia() -> Node3D:
 		if "es_escudo_enemigo" in esc and esc.es_escudo_enemigo:
 			continue
 		if esc == _escudo_piso_ref:
+			continue
+		if not _es_escudo_de_mi_piso_frente(esc):
 			continue
 		var d: float = global_position.distance_to((esc as Node3D).global_position)
 		if d < menor_dist:
@@ -1387,6 +1457,7 @@ func recibir_dano(cantidad: int = 1):
 		_cambiar_estado(State.DYING)
 	else:
 		_blink_timer = 0.0
+		SangreNoLetal.spawn(self, last_hit_position, last_hit_direction)
 		var dur: float = _get_anim_length("Impacto")
 		_impacto_timer = dur if dur > 0.05 else 0.5
 		_restaurar_torso()
@@ -1407,7 +1478,29 @@ func take_damage(amount: int = 1):
 	recibir_dano(amount)
 
 
+## Splash de sangre letal idéntico al de la arquera aliada (BloodSplashNormal).
+func _crear_splash_sangre() -> void:
+	var blood_scene: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+	if not blood_scene:
+		return
+	var splash = blood_scene.instantiate() as BloodSplash2D
+	if not splash:
+		return
+
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(splash)
+	elif get_parent():
+		get_parent().add_child(splash)
+
+	var spawn_pos := last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0.0, 0.8, 0.0))
+	# Invertir dirección: el proyectil impacta viniendo de la derecha hacia la izquierda (-X)
+	var dir := last_hit_direction if not last_hit_direction.is_zero_approx() else Vector3.LEFT
+	splash.setup(spawn_pos, dir, Color.WHITE)
+
+
 func _on_dying():
+	_crear_splash_sangre()
 	var muertes := ["MUERTE_01", "MUERTE02"]
 	ultima_muerte_anim = muertes[randi() % muertes.size()]
 	_play_anim(ultima_muerte_anim, 0.1)

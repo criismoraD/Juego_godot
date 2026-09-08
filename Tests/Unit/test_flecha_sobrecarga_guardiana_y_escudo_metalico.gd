@@ -86,11 +86,9 @@ func test_escudo_modo_metalico_color_gris_y_sin_textura_madera() -> void:
 	assert_not_null(escudo.material_metalico, "Debe haber generado material_metalico")
 
 	var mat: StandardMaterial3D = escudo.material_metalico
-	assert_null(mat.albedo_texture, "El material metálico no debe tener textura de madera marrón")
-	assert_gt(mat.metallic, 0.7, "El material debe tener propiedad metálica alta")
-	assert_gt(mat.albedo_color.r, 0.6, "El canal R debe ser gris brillante")
-	assert_gt(mat.albedo_color.g, 0.6, "El canal G debe ser gris brillante")
-	assert_gt(mat.albedo_color.b, 0.6, "El canal B debe ser gris brillante")
+	assert_not_null(mat.albedo_texture, "El material metálico debe usar la textura Escudo_metalico_refuerzo")
+	assert_gt(mat.metallic, 0.0, "El material mantiene algo de propiedad metálica para el brillo")
+	assert_gt(mat.albedo_color.r, 1.0, "El canal R del brillo metálico es > 1 para que el metal destaque")
 
 	var mallas: Array[MeshInstance3D] = escudo._recolectar_mallas()
 	for mi in mallas:
@@ -127,6 +125,10 @@ func test_ballestera_refuerzo_aplica_modo_metalico_a_escudo() -> void:
 	add_child_autofree(escudo)
 	await get_tree().process_frame
 
+	# REGLA de refuerzo: la fija solo refuerza su escudo propio al frente (+X)
+	# y de su mismo piso (|dy| <= tolerancia). Se coloca en esa posición válida.
+	ballestera.global_position = Vector3(0.0, 1.6, 0.0)
+	escudo.global_position = ballestera.global_position + Vector3(0.55, 0.0, 0.0)
 	ballestera._escudo_piso_ref = escudo
 
 	# Act
@@ -161,7 +163,7 @@ func test_escudo_metalico_impactos_no_dejan_material_blanco_flash() -> void:
 		var mat = mi.get_surface_override_material(0)
 		assert_eq(mat, escudo.material_metalico, "Tras el destello del impacto 1 debe restaurarse el material metálico")
 		if mat is StandardMaterial3D:
-			assert_false(mat.emission_enabled, "El material metálico restaurado no debe tener emisión brillante de flash")
+			assert_false(mat.emission_enabled, "Tras el flash no debe quedar emisión brillante del flash")
 
 	# Act: segundo impacto reflejo que agota el modo metálico (aguante 1 -> 0)
 	escudo.recibir_golpe_reflejo(null)

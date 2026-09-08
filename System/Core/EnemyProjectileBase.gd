@@ -266,6 +266,12 @@ func _on_body_entered(body: Node) -> void:
 
 func _aplicar_dano_a_objetivo(body: Node) -> void:
 	var target := _obtener_objetivo_dano(body)
+	# Posición/dirección del impacto para el efecto de sangre no letal de
+	# protagonistas y defensoras aliadas (misma convención que Arrow.gd)
+	if "last_hit_position" in target:
+		target.last_hit_position = global_position
+	if "last_hit_direction" in target:
+		target.last_hit_direction = direction
 	if target.has_method("take_damage"):
 		target.take_damage(1.0)
 		return

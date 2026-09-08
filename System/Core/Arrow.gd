@@ -327,6 +327,11 @@ func _on_body_entered(body):
 	elif tipo_dueño == TipoFlecha.ENEMIGO:
 		# Las flechas del enemigo dañan al jugador
 		if body.has_method("take_damage") and body.is_in_group("player"):
+			# Guardar posición del impacto para la sangre no letal de la protagonista
+			if "last_hit_position" in body:
+				body.last_hit_position = global_position
+			if "last_hit_direction" in body:
+				body.last_hit_direction = velocity.normalized()
 			body.take_damage(1.0)
 			_safe_destroy()
 

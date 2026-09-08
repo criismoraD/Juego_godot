@@ -31,6 +31,11 @@ func _aplicar_dano(body: Node) -> void:
 
 	if body.is_in_group("allies") or body.is_in_group("player"):
 		_cuerpos_danados[body] = true
+		# Posición del impacto para el efecto de sangre no letal
+		if "last_hit_position" in body:
+			body.last_hit_position = global_position
+		if "last_hit_direction" in body:
+			body.last_hit_direction = Vector3.DOWN
 		if body.has_method("take_damage"):
 			body.take_damage(dano)
 		elif body.has_method("recibir_dano"):

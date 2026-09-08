@@ -257,6 +257,10 @@ func _on_body_entered(body: Node) -> void:
 			_cuerpos_danados_caida[body] = true
 			if body.is_in_group("player"):
 				# La protagonista recibe daño y aturdimiento
+				if "last_hit_position" in body:
+					body.last_hit_position = global_position
+				if "last_hit_direction" in body:
+					body.last_hit_direction = Vector3.DOWN
 				if body.has_method("take_damage"):
 					body.take_damage(dano)
 				elif body.has_method("recibir_dano"):
