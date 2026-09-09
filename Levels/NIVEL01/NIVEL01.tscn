@@ -594,10 +594,10 @@ idle_max = 2.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.092516, -0.20376292, 3.083572)
 
 [node name="Pez" parent="." unique_id=741029831 instance=ExtResource("25_pez01")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, -0.76200986, 2.5)
+transform = Transform3D(0.8114411, 0, 0, 0, 0.8114411, 0, 0, 0, 1, 2.5, -0.6677978, 2.5)
 
 [node name="Pez2" parent="." unique_id=1187899457 instance=ExtResource("25_pez01")]
-transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -2.6435776, -0.5587452, 2.8)
+transform = Transform3D(0.72689563, 0, 0, 0, 0.72689563, 0, 0, 0, 0.85, -2.6435776, -0.5587452, 2.8)
 tiempo_entre_apariciones = 10.0
 direccion_inicial_derecha = true
 
@@ -615,6 +615,9 @@ transform = Transform3D(0.5865819, 0.12402413, -0.023229882, -0.110541105, 0.451
 
 [node name="PINCHO5" parent="." unique_id=975363423 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.38889393, 0.3764421, 0.03367601, -0.16841969, 0.7789061, -0.17040402, -0.07277604, 0.20903748, 0.5743069, -6.480166, 0.006891027, 0.51001906)
+
+[node name="PINCHO10" parent="." unique_id=990766162 instance=ExtResource("25_qcvbp")]
+transform = Transform3D(0.28340974, 0.65401834, -0.095981024, -0.26394388, 0.35843238, -0.4073939, -0.18684898, 0.48568135, 0.42990443, -9.748371, 2.6810513, -2.8079684)
 
 [node name="PINCHO2" parent="." unique_id=1487982446 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.44602785, 0.54782546, -0.019494671, -0.38826168, 0.57895917, -0.17260231, -0.10154799, 0.19259633, 0.57430685, -6.268942, 0.1362295, 0.46189582)
