@@ -29,13 +29,12 @@ const MAPEO_ANIMS: Dictionary = {
 	"@caminar_atras": "Armature|Armature|CAMINAR_ATRAS",
 	"@apuntar": "Armature|Armature|APUNTAR_IDLE",
 	"@tomar_flecha": "Armature|Armature|TOMAR_FLECHA",
-	"@escalar": "Armature|Armature|SUBIR_ESCALERA",
+	"Escaleras": "Armature|Armature|SUBIR_ESCALERA",
 }
 const SUBSTITUCIONES_ANIMS: Dictionary = {
 	"@caminar_atras": "Caminar",
 	"@apuntar": "Disparo arco",
 	"@tomar_flecha": "Disparo arco",
-	"@escalar": "Caminar",
 }
 
 
@@ -45,9 +44,14 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	# 1. Conectar el AnimationTree al AnimationPlayer del GLB de Perrena
+	# 1. Conectar el AnimationTree al AnimationPlayer CORPORAL del GLB.
+	# OJO: find_child("AnimationPlayer") a ciegas devuelve el primero en
+	# orden del árbol, que es el del ARCO (el fbx del arco trae su propio
+	# player con ARCO_DISPARO/IDLE/TENSAR) o el de la FLECHA. Con ese player
+	# el árbol no resolvía ninguna animación corporal y Perrena quedaba
+	# estática. Siempre se resuelve el player determinista de abajo.
 	var tree := find_child("AnimationTree", true, false) as AnimationTree
-	var anim_p := find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var anim_p := _player_corporal()
 	if tree and anim_p:
 		tree.anim_player = tree.get_path_to(anim_p)
 
@@ -128,10 +132,11 @@ func _setup_equipamiento_arco() -> void:
 
 		var flecha: Node3D = FLECHA_SCENE.instantiate() as Node3D
 		flecha.name = "FLECHA"
+		# Misma colocación que Eryn (mismo asset FLECHA.fbx y misma mano).
 		flecha.transform = Transform3D(
-			Vector3(-8.404, -23.576, -19.938),
-			Vector3(30.812, -7.737, -3.839),
-			Vector3(-1.992, -20.207, 24.733),
+			Vector3(-8.404, 30.812, -1.992),
+			Vector3(-23.576, -7.737, -20.207),
+			Vector3(-19.938, -3.839, 24.733),
 			Vector3(-0.497, 3.163, -0.089)
 		)
 		flecha.visible = false
@@ -161,31 +166,72 @@ func _resolver_attachment_existente(skel: Skeleton3D, nombre: String) -> void:
 		att.bone_idx = idx
 
 
+## Devuelve el AnimationPlayer CORPORAL de Perrena (el importado con su GLB,
+## hijo directo de PerrenaModel, con Idle/Caminar/Escaleras/...).
+## Hay 3 players bajo Perrena: el del arco (ARCO_DISPARO...), el de la flecha
+## (el fbx de la flecha también trae player) y el corporal. El orden de
+## find_child() devuelve primero el del arco, así que NUNCA se usa a ciegas.
+static func _player_corporal_en(nodo: Node) -> AnimationPlayer:
+	var modelo := nodo.find_child("PerrenaModel", true, false) as Node3D
+	if modelo:
+		var directo := modelo.get_node_or_null("AnimationPlayer") as AnimationPlayer
+		if directo:
+			return directo
+	# Fallback: primer player cuya librería tenga clips corporales.
+	for n in nodo.find_children("*", "AnimationPlayer", true, false):
+		var ap := n as AnimationPlayer
+		if ap and (ap.has_animation("Idle") or ap.has_animation("Escaleras")):
+			return ap
+	return nodo.find_child("AnimationPlayer", true, false) as AnimationPlayer
+
+
+## Versión de instancia del lookup determinista.
+func _player_corporal() -> AnimationPlayer:
+	return _player_corporal_en(self)
+
+
 ## El AnimationTree resuelve los tracks de los clips desde su root_node,
-## pero los clips importados están escritos para la base del AnimationPlayer
-## (en este GLB el player cuelga del Skeleton3D, no de la raíz del modelo).
-## Si ambas bases no coinciden, el árbol no mueve ningún hueso: Perrena se
-## desplaza estática aunque los clips se vean bien en el editor (ahí
-## reproduce el player directo, con su propia base). Se igualan en runtime.
+## que debe ser la misma base que usa el AnimationPlayer (la raíz del modelo,
+## PerrenaModel: ahí cuelga el AnimationPlayer importado del GLB).
+## También los filtros del árbol dinámico ("Armature/Skeleton3D:...") están
+## escritos desde la raíz del modelo, igual que en Eryn. Si la base no
+## coincide, el árbol no mueve ningún hueso: Perrena se desplaza estática
+## aunque los clips se vean bien en el editor (ahí reproduce el player
+## directo, con su propia base). Se igualan en runtime como red de seguridad.
 func _alinear_base_tracks_arbol() -> void:
 	var tree := find_child("AnimationTree", true, false) as AnimationTree
-	var anim_p := find_child("AnimationPlayer", true, false) as AnimationPlayer
+	# El MISMO player corporal del paso 1: con el del arco la base salía
+	# el nodo del arco y se rompía el root del árbol.
+	var anim_p := _player_corporal()
 	if tree == null or anim_p == null:
 		return
 	var base_jugador := anim_p.get_node_or_null(anim_p.root_node) as Node
 	if base_jugador == null:
 		return
-	var base_arbol := get_node_or_null(tree.root_node) as Node
+	# OJO: tree.root_node es relativo al nodo AnimationTree (igual que
+	# anim_player), NO al CharacterBody. Resolver y escribir siempre desde
+	# el propio tree; hacerlo desde self rompía la ruta y dejaba a Perrena
+	# estática aunque los clips existieran.
+	var base_arbol := tree.get_node_or_null(tree.root_node) as Node
 	if base_arbol == base_jugador:
 		return
-	tree.root_node = get_path_to(base_jugador)
+	# Cambiar la base con el árbol desactivado y reactivarlo: si no, el
+	# cambio en caliente puede no re-resolver los tracks y sigue estática.
+	var estaba_activo: bool = tree.active
+	tree.active = false
+	tree.root_node = tree.get_path_to(base_jugador)
+	if estaba_activo:
+		tree.active = true
 
 
 ## Registra alias de animación para que el AnimationTree dinámico (que pide
-## nombres estilo Eryn "Armature|Armature|X", o sea librería "Armature") los
-## reconozca. Busca el clip nativo del GLB ("Idle", "Caminar", ...) en TODAS
-## las librerías y registra el alias en la librería que el destino indica.
-## Sin esto el árbol no resuelve ninguna animación y Perrena queda estática.
+## nombres estilo Eryn "Armature|Armature|X") los reconozca. Esos nombres con
+## "|" son el NOMBRE COMPLETO del clip en la librería por defecto (""),
+## NO "librería Armature" (el separador librería/anim en Godot 4 es "/").
+## Por eso el alias se registra en la librería por defecto con el nombre
+## completo de destino. Registrarlo en una librería "Armature" creaba
+## "Armature/Armature|IDLE" y has_animation("Armature|Armature|IDLE") seguía
+## dando false: el árbol no resolvía nada y Perrena quedaba estática.
 func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
 	for clip_origen in MAPEO_ANIMS.keys():
 		var clip_destino: String = MAPEO_ANIMS[clip_origen]
@@ -196,33 +242,76 @@ func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
 		if fuente == null:
 			push_warning("[Perrena] Sin clip nativo para '%s' (buscaba '*%s')" % [clip_destino, buscar])
 			continue
+		if clip_destino.ends_with("SUBIR_ESCALERA"):
+			fuente = _enderezar_escaleras_de_espaldas(fuente)
 		_registrar_alias(anim_p, clip_destino, fuente)
 
 
 ## Busca en todas las librerías del AnimationPlayer un clip cuyo nombre
 ## termine con el fragmento buscado (p. ej. "Disparo arco", "Caminar").
+## Comparación insensible a mayúsculas: el GLB trae "Aterrizar"/"Idle" y el
+## árbol pide "ATERRIZAJE"/"IDLE".
 func _buscar_animacion_nativa(anim_p: AnimationPlayer, buscar: String) -> Animation:
+	var buscar_bajo: String = buscar.to_lower()
 	for lib_nombre in anim_p.get_animation_library_list():
 		var lib := anim_p.get_animation_library(lib_nombre)
 		if lib == null:
 			continue
 		for anim_nombre in lib.get_animation_list():
-			if String(anim_nombre).ends_with(buscar):
+			if String(anim_nombre).to_lower().ends_with(buscar_bajo):
 				return lib.get_animation(anim_nombre)
 	return null
 
 
-## Registra el alias en la librería que el nombre destino indica
-## ("Armature|Armature|IDLE" -> librería "Armature", clip "Armature|IDLE"),
-## creándola si no existe. Así has_animation()/play() del árbol lo resuelven.
+## Registra el alias en la librería por defecto ("") con el nombre completo
+## de destino ("Armature|Armature|IDLE"). Si el destino trajera "/" se
+## respeta como separador librería/anim; si no, va a la librería por defecto.
+## Así has_animation()/play() del árbol lo resuelven.
 func _registrar_alias(anim_p: AnimationPlayer, destino: String, fuente: Animation) -> void:
-	var partes := destino.split("|")
-	if partes.size() < 2:
-		return
-	var lib_nombre: String = partes[0]
-	var anim_nombre: String = "|".join(partes.slice(1))
+	var lib_nombre: String = ""
+	var anim_nombre: String = destino
+	if destino.contains("/"):
+		var partes := destino.split("/", true, 1)
+		lib_nombre = partes[0]
+		anim_nombre = partes[1]
 	if not anim_p.has_animation_library(lib_nombre):
 		anim_p.add_animation_library(lib_nombre, AnimationLibrary.new())
 	var lib := anim_p.get_animation_library(lib_nombre)
 	if lib and not lib.has_animation(anim_nombre):
 		lib.add_animation(anim_nombre, fuente)
+
+
+## El clip "Escaleras" de Perrena viene orientado de perfil (en mundo mira a
+## +X) mientras que el SUBIR_ESCALERA de Eryn mira a la pared (-Z, de
+## espaldas a cámara). Medido en runtime con el mismo yaw de Armature en
+## ambas: cabeza Eryn ~(0.1, 0.1, -0.98), cabeza Perrena ~(0.88, 0.43, 0.19).
+## Se devuelve una COPIA girada +90° sobre Y de mundo para que trepe de
+## espaldas igual que Eryn y las defensoras.
+## Matemáticas: premultiplicar las pistas del Hips (único hueso hijo directo
+## del Armature; el resto cuelga de él) por D = R_arm^-1 * Ry(90°) * R_arm
+## equivale EXACTAMENTE a un giro Ry(90°) en mundo, gire como gire el
+## Armature. R_arm es la rotación de trepar (la que el Player aplica en
+## escalera: misma X importada + yaw de rotacion_personaje_escalera).
+func _enderezar_escaleras_de_espaldas(fuente: Animation) -> Animation:
+	var clip := fuente.duplicate() as Animation
+	var skel := find_child("Skeleton3D", true, false) as Skeleton3D
+	var arm_rot := Vector3(1.5707963, 0.0, 0.0)
+	if skel and skel.get_parent_node_3d():
+		arm_rot = (skel.get_parent_node_3d() as Node3D).rotation
+	var r_arm := Basis.from_euler(Vector3(arm_rot.x, arm_rot.y + deg_to_rad(rotacion_personaje_escalera - 0.5), arm_rot.z))
+	var d: Basis = r_arm.inverse() * Basis(Vector3.UP, deg_to_rad(90.0)) * r_arm
+	var d_q := Quaternion(d)
+	for i in range(clip.get_track_count()):
+		if not String(clip.track_get_path(i)).ends_with(":mixamorig_Hips"):
+			continue
+		if clip.track_get_key_count(i) == 0:
+			continue
+		# Se distingue posicion/rotacion por el tipo del valor (sin enum TrackType).
+		var muestra = clip.track_get_key_value(i, 0)
+		if muestra is Vector3:
+			for k in range(clip.track_get_key_count(i)):
+				clip.track_set_key_value(i, k, d * (clip.track_get_key_value(i, k) as Vector3))
+		elif muestra is Quaternion:
+			for k in range(clip.track_get_key_count(i)):
+				clip.track_set_key_value(i, k, (d_q * (clip.track_get_key_value(i, k) as Quaternion)).normalized())
+	return clip

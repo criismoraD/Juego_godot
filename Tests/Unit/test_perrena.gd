@@ -24,15 +24,15 @@ func test_perrena_paridad_escala_vida_y_agachado_con_eryn():
 	assert_eq(per.get("vida_maxima"), eryn.get("vida_maxima"), "Perrena debe tener la misma vida maxima que Eryn")
 	assert_eq(per.get("vida_maxima"), 4, "Ambas tienen 4 de vida")
 
-	# Assert: mismo tamano de modelo y capsula (el arco queda del mismo tamano)
+	# Paridad de TAMANO VISUAL con Eryn (no del numero de escala): el GLB de Perrena viene ~2x mas pequeno y necesita 6.0 (Eryn usa 3.1). Medido en headless, altura mundo ~= 1.09x. Bajarla a 3.1 la deja diminuta: no tocar.
 	var eryn_model: Node3D = eryn.find_child("ArqueraModel", true, false)
 	var per_model: Node3D = per.find_child("PerrenaModel", true, false)
 	assert_not_null(eryn_model, "Eryn debe tener ArqueraModel")
 	assert_not_null(per_model, "Perrena debe tener PerrenaModel")
-	assert_almost_eq(per_model.scale.x, eryn_model.scale.x, 0.01, "Perrena debe tener la misma escala de modelo que Eryn")
+	assert_almost_eq(per_model.scale.x, 6.0, 0.01, "PerrenaModel debe mantener escala 6.0 (tamano visual correcto, verificado en juego)")
 
 	# Assert: la via visual del agachado (ATERRIZAJE congelado) existe mapeada
-	var anim_p: AnimationPlayer = per.find_child("AnimationPlayer", true, false)
+	var anim_p: AnimationPlayer = Perrena._player_corporal_en(per)
 	assert_not_null(anim_p, "Perrena debe tener AnimationPlayer")
 	assert_true(anim_p.has_animation("Armature|Armature|ATERRIZAJE"), "Debe tener mapeada la animacion de agachado/aterrizaje")
 
@@ -75,6 +75,11 @@ func test_perrena_bow_and_arrow_equipped():
 
 	var flecha = per.find_child("FLECHA", true, false)
 	assert_not_null(flecha, "Perrena debe tener FLECHA instanciada en mano derecha")
+	# Regresion: FLECHA debe ser la flecha (FLECHA.fbx: una malla), no un
+	# personaje (PROTA.glb trae Skeleton3D y AnimationPlayer propios).
+	assert_null(flecha.find_child("Skeleton3D", true, false), "FLECHA no debe contener un esqueleto de personaje")
+	assert_null(flecha.find_child("AnimationPlayer", true, false), "FLECHA no debe contener animaciones de personaje")
+	assert_not_null(flecha.find_child("Arrow 32 inch", true, false), "FLECHA debe contener la malla de la flecha")
 
 	var spawn_exp = per.find_child("SpawnPosition_FlechaExplosiva", true, false)
 	assert_not_null(spawn_exp, "Perrena debe tener Marker3D SpawnPosition_FlechaExplosiva")
@@ -88,7 +93,7 @@ func test_perrena_disparo_anim_mapping():
 
 	# Act
 	per._ready()
-	var anim_p: AnimationPlayer = per.find_child("AnimationPlayer", true, false)
+	var anim_p: AnimationPlayer = Perrena._player_corporal_en(per)
 	assert_not_null(anim_p, "Perrena debe tener AnimationPlayer")
 
 	# Assert: El clip 'Armature|Armature|DISPARAR' debe existir y coincidir con 'Disparo arco'
@@ -206,7 +211,7 @@ func test_perrena_arco_en_escena_sigue_manos():
 	# Assert: attachments bajo el esqueleto, sin duplicados del código de runtime
 	var skel: Skeleton3D = per.find_child("Skeleton3D", true, false)
 	assert_not_null(skel, "Perrena debe tener Skeleton3D")
-	var arcos = skel.find_children("BoneAttach_Arco", false, false)
+	var arcos = skel.find_children("BoneAttach_Arco", "", false, false)
 	assert_eq(arcos.size(), 1, "Debe haber un solo BoneAttach_Arco (sin duplicados)")
 	var att := skel.get_node_or_null("BoneAttach_Arco") as BoneAttachment3D
 	assert_not_null(att, "BoneAttach_Arco debe existir bajo el Skeleton3D")
@@ -239,7 +244,7 @@ func test_perrena_resuelve_todas_las_anims_del_arbol():
 	await get_tree().process_frame
 
 	# Assert: cada nombre resuelve (nativo o alias en su librería); si falta, queda estática
-	var anim_p: AnimationPlayer = per.find_child("AnimationPlayer", true, false)
+	var anim_p: AnimationPlayer = Perrena._player_corporal_en(per)
 	assert_not_null(anim_p, "Perrena debe tener AnimationPlayer")
 	for nombre in requeridas:
 		assert_true(anim_p.has_animation(nombre), "Debe resolver '%s' (sin esto el árbol no anima)" % nombre)
@@ -255,10 +260,62 @@ func test_perrena_arbol_usa_base_del_animation_player():
 
 	# Assert
 	var tree: AnimationTree = per.find_child("AnimationTree", true, false)
-	var anim_p: AnimationPlayer = per.find_child("AnimationPlayer", true, false)
+	var anim_p: AnimationPlayer = Perrena._player_corporal_en(per)
 	assert_not_null(tree, "Perrena debe tener AnimationTree")
 	assert_not_null(anim_p, "Perrena debe tener AnimationPlayer")
 	var base_jugador: Node = anim_p.get_node_or_null(anim_p.root_node)
 	assert_not_null(base_jugador, "La base del player debe resolverse")
-	var base_arbol: Node = per.get_node_or_null(tree.root_node)
+	# root_node del AnimationTree es relativo al propio tree (igual que
+	# anim_player), no al CharacterBody: resolver desde tree.
+	var base_arbol: Node = tree.get_node_or_null(tree.root_node)
 	assert_eq(base_arbol, base_jugador, "El árbol debe usar la base del player (si no, Perrena se mueve estática)")
+
+
+func test_perrena_arbol_usa_player_corporal_no_arco():
+	# Regresión: bajo Perrena hay 3 AnimationPlayers (arco, flecha y corporal).
+	# find_child() a ciegas devolvía el del arco y el árbol no resolvía ninguna
+	# animación corporal: Perrena quedaba estática en el juego.
+	var per_scene = load("res://Entities/Jugador_Perrena/Perrena.tscn")
+	var per = per_scene.instantiate()
+	add_child_autofree(per)
+	await get_tree().process_frame
+
+	var tree: AnimationTree = per.find_child("AnimationTree", true, false)
+	assert_not_null(tree, "Perrena debe tener AnimationTree")
+	var tree_player: AnimationPlayer = tree.get_node_or_null(tree.anim_player) as AnimationPlayer
+	assert_not_null(tree_player, "El anim_player del árbol debe resolverse")
+	assert_eq(tree_player, Perrena._player_corporal_en(per), "El árbol debe usar el player corporal")
+	assert_false("BoneAttach" in String(tree_player.get_path()), "El player del árbol no debe ser el del arco/flecha")
+	assert_true(tree_player.has_animation("Idle"), "El player del árbol debe tener los clips corporales")
+	assert_true(tree_player.has_animation("Armature|Armature|SUBIR_ESCALERA"), "Debe resolver SUBIR_ESCALERA (escalera)")
+
+
+func test_perrena_escaleras_muestra_espaldas_como_eryn():
+	# La Escaleras nativa del GLB mira de perfil (+X); el alias hornea un
+	# giro +90 Y de mundo para trepar de espaldas (-Z) como la protagonista.
+	var per_scene = load("res://Entities/Jugador_Perrena/Perrena.tscn")
+	var per = per_scene.instantiate()
+	add_child_autofree(per)
+	await get_tree().process_frame
+
+	var tree: AnimationTree = per.find_child("AnimationTree", true, false)
+	var anim_p: AnimationPlayer = Perrena._player_corporal_en(per)
+	assert_not_null(tree, "Perrena debe tener AnimationTree")
+	assert_not_null(anim_p, "Perrena debe tener AnimationPlayer")
+	# Condiciones reales de trepe: el yaw del Armature en escalera forma parte
+	# de la orientacion final (sin esto mediria con yaw de suelo y saldria girado 180).
+	per.current_move_state = Perrena.MoveState.CLIMBING
+	per.current_aim_state = Perrena.AimState.NONE
+	per._mirando_derecha = true
+	per._apply_character_rotation(0.1, true)
+	var estaba: bool = tree.active
+	tree.active = false
+	anim_p.play("Armature|Armature|SUBIR_ESCALERA")
+	anim_p.seek(0.3, true)
+	var skel: Skeleton3D = per.find_child("Skeleton3D", true, false)
+	var idx: int = skel.find_bone("mixamorig_Head")
+	assert_ne(idx, -1, "Debe existir el hueso de la cabeza")
+	var frente: Vector3 = (skel.global_transform.basis * skel.get_bone_global_pose(idx).basis).z.normalized()
+	tree.active = estaba
+	assert_lt(frente.z, -0.6, "Trepar debe mostrar la espalda (-Z como Eryn), fue %s" % frente)
+	assert_lt(absf(frente.x), 0.5, "No debe trepar de perfil, fue %s" % frente)

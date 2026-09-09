@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dyh5fxvq44xnr" path="res://Entities/Jugador_Perrena/Perrena.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://spumkq1f6k2x" path="res://Entities/Jugador_Perrena/Perrena.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx" id="3_arco"]
-[ext_resource type="PackedScene" uid="uid://uqh6g6f3e2n4" path="res://Entities/Jugador_Arquera/PROTA.glb" id="4_flecha"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="4_flecha"]
 [ext_resource type="PackedScene" uid="uid://c463x5x6uwew4" path="res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb" id="4_flechaexp"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_preview"]
@@ -81,7 +81,7 @@ bone_name = "mixamorig_RightHand"
 bone_idx = 32
 
 [node name="FLECHA" parent="PerrenaModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=1873166665 instance=ExtResource("4_flecha")]
-transform = Transform3D(-8.404, -23.576, -19.938, 30.812, -7.737, -3.839, -1.992, -20.207, 24.733, -0.497, 3.163, -0.089)
+transform = Transform3D(-8.403967, 30.81243, -1.99194, -23.576057, -7.736585, -20.206808, -19.938494, -3.839222, 24.732906, -0.49650955, 3.162592, -0.08917618)
 visible = false
 
 [node name="FlechaExplosiva" parent="PerrenaModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=466263061 instance=ExtResource("4_flechaexp")]
@@ -89,9 +89,9 @@ transform = Transform3D(8.055, -24.329, 28.643, -36.252, 2.692, 12.481, -9.907, 
 visible = false
 
 [node name="AnimationTree" type="AnimationTree" parent="." unique_id=911179179]
-root_node = NodePath("../PerrenaModel/Armature")
+root_node = NodePath("../PerrenaModel")
 tree_root = SubResource("AnimationNodeBlendTree_preview")
-anim_player = NodePath("PerrenaModel/Armature/AnimationPlayer")
+anim_player = NodePath("../PerrenaModel/AnimationPlayer")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1585098876]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0)
