@@ -15,6 +15,8 @@ class NivelFalso extends Node:
 	var wave_spawner = null
 	var dialogo_mostrado := false
 	var _aliadas_activas := true
+	# Como el nivel real: el fondo (SubViewportFondo3D) limitado a 30 FPS.
+	var limitar_fps_subviewport_fondo_3d := true
 
 	func _set_movimiento_jugador_bloqueado(bloqueado: bool) -> void:
 		bloqueos.append(bloqueado)
@@ -114,11 +116,12 @@ func _crear_camaras(nivel: Node) -> Array[Camera3D]:
 		var partes: PackedStringArray = ruta.split("/")
 		var padre := nivel.get_node_or_null(partes[0])
 		if padre == null:
-			# SubViewport real con FXAA como en juego (también sirve al
-			# test de parpadeo de bordes PNG).
+			# SubViewport real con FXAA + MSAA como en juego (también sirve
+			# al test de parpadeo de bordes PNG y contorno perforado).
 			padre = SubViewport.new()
 			padre.name = partes[0]
 			(padre as SubViewport).screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+			(padre as SubViewport).msaa_3d = Viewport.MSAA_2X
 			nivel.add_child(padre)
 		var cam := Camera3D.new()
 		cam.name = partes[1]
@@ -165,8 +168,8 @@ func test_cinematica_oleada5_secuencia_completa() -> void:
 
 	var nivel := NivelFalso.new()
 	add_child_autofree(nivel)
-	# Suelo real bajo la isla (x -6..12, techo y=0): Eryn cae fuera de él
-	# (x=-8.35) y usa su fallback; Perrena pisa suelo de verdad.
+	# Suelo real bajo la isla (x -6..12, techo y=0): Perrena pisa suelo de
+	# verdad. Eryn (x=-7.62) no está sobre él.
 	var suelo := StaticBody3D.new()
 	var col := CollisionShape3D.new()
 	var caja := BoxShape3D.new()
@@ -175,6 +178,14 @@ func test_cinematica_oleada5_secuencia_completa() -> void:
 	suelo.add_child(col)
 	suelo.position = Vector3(3, -0.5, 0.05)
 	nivel.add_child(suelo)
+	# Plataforma real bajo Eryn, como el segundo piso del nivel: su layer 1
+	# se apaga con el jugador debajo (Eryn flota con el rayo viejo); el
+	# DebrisCatcher (layer 6, siempre sólido) la sostiene.
+	var plataforma := load("res://Entities/Ambiente_Plataforma_Oneway/PlataformaOneway.tscn").instantiate()
+	plataforma.scale = Vector3(0.5, 0.5, 0.5)
+	plataforma.position = Vector3(-8.364106, 3.248637, -0.37669206)
+	nivel.add_child(plataforma)
+	var tope_plataforma: float = plataforma.position.y - 0.3390875 * 0.5 + 0.18833008 * 0.5 * 0.5
 	var cams := _crear_camaras(nivel)
 	nivel.wave_spawner = SpawnerFalso.new()
 	var marca := {"lista": false}
@@ -203,7 +214,7 @@ func test_cinematica_oleada5_secuencia_completa() -> void:
 	assert_true(GameUI.regreso_conversacion_nivel5, "Marca el interludio conversado")
 	var sm = get_tree().root.get_node_or_null("SceneManager")
 	if sm:
-		assert_almost_eq((sm.get("posicion_retorno_puerta") as Vector3).x, -8.35, 0.4, "Retorno en el segundo piso")
+		assert_almost_eq((sm.get("posicion_retorno_puerta") as Vector3).x, -7.62, 0.4, "Retorno delante del escudo")
 	_limpiar_regreso()
 
 	# Assert: UNA sola Perrena, con el tamaño de la controlable, al límite.
@@ -220,10 +231,10 @@ func test_cinematica_oleada5_secuencia_completa() -> void:
 	assert_true(nivel.wave_spawner.detenido, "El spawner se detiene en la cinemática")
 	assert_eq(nivel.combate, ["pacifico"], "Defensoras en pacífico")
 
-	# Assert: Eryn queda en el segundo piso tras el escudo.
-	assert_almost_eq(eryn.global_position.x, -8.35, 0.35, "Eryn queda en el segundo piso")
-	assert_almost_eq(eryn.global_position.y, 3.3, 0.6, "Eryn a altura del segundo piso")
-	assert_almost_eq(_pies_min(eryn), 3.32, 0.2, "Pies de Eryn sobre la plataforma")
+	# Assert: Eryn queda en el segundo piso delante del escudo (no sobre la
+	# escalera) y PLANTADA sobre la plataforma (sin flotar).
+	assert_almost_eq(eryn.global_position.x, -7.62, 0.35, "Eryn delante del escudo del segundo piso")
+	assert_almost_eq(_pies_min(eryn), tope_plataforma + 0.02, 0.12, "Pies de Eryn sobre la plataforma, sin flotar")
 
 	# Assert: la cámara queda en el seguimiento final (sin restaurar: hay
 	# cambio de escena).
@@ -354,7 +365,7 @@ func test_cinematica_bloquea_boton_swap() -> void:
 	assert_almost_eq(capa.scale.x, 1.066, 0.08, "La capa cubre el encuadre")
 
 	# Assert: contorno delgado pero visible durante la escena.
-	assert_almost_eq(_ancho_contorno_perrena(cine._perrena), 3.0, 0.01, "Contorno delgado en cinemática")
+	assert_almost_eq(_ancho_contorno_perrena(cine._perrena), 8.0, 0.01, "Contorno mínimo sólido en cinemática")
 
 	# Assert: sin arco en la escena.
 	var arco = cine._perrena.find_child("ARCO_ANIMADO", true, false)
@@ -660,10 +671,13 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 	sol.name = "SolPrueba"
 	sol.shadow_enabled = true
 	nivel.add_child(sol)
-	# Los viewports los crea _crear_camaras (con FXAA como en juego).
+	# Los viewports los crea _crear_camaras (con FXAA como en juego):
+	# incluye SubViewportFondo3D, que en juego va limitado a 30 FPS.
 	var vps: Array[SubViewport] = []
 	for ruta_vp in ["SubViewportMedio3D", "SubViewportFrente3D"]:
 		vps.append(nivel.get_node(ruta_vp) as SubViewport)
+	var fondo_vp := nivel.get_node("SubViewportFondo3D") as SubViewport
+	fondo_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	var capa := Sprite3D.new()
 	capa.name = "CAPA001"
 	capa.texture = ImageTexture.create_from_image(Image.create(200, 100, false, Image.FORMAT_RGBA8))
@@ -679,9 +693,16 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 	# Assert: sombras fijas durante el travelling.
 	assert_eq(sol.directional_shadow_mode, DirectionalLight3D.SHADOW_ORTHOGONAL, "Sombras fijas en cinemática")
 
-	# Assert: FXAA apagado durante el travelling (bordes PNG estables).
+	# Assert: FXAA y MSAA apagados durante el travelling (bordes PNG
+	# estables; sin resolve de MSAA que perfore el contorno fino).
 	for vp in vps:
 		assert_eq(vp.screen_space_aa, Viewport.SCREEN_SPACE_AA_DISABLED, "FXAA apagado en cinemática")
+		assert_eq(vp.msaa_3d, Viewport.MSAA_DISABLED, "MSAA apagado en cinemática")
+
+	# Assert: fondo a máximos FPS durante el travelling (sin parpadeo de
+	# torre/bustos/arbustos desfasados del frente/medio).
+	assert_eq(fondo_vp.render_target_update_mode, SubViewport.UPDATE_ALWAYS, "Fondo en UPDATE_ALWAYS durante la cinemática")
+	assert_false(nivel.limitar_fps_subviewport_fondo_3d, "Limitador del fondo apagado en la cinemática")
 
 	# Act: fallo a mitad (sigue la ruta de fallo, no la torre).
 	cine._abortar()
@@ -706,6 +727,9 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 	assert_eq(sol.directional_shadow_mode, DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS, "Sombras restauradas")
 	for vp in vps:
 		assert_eq(vp.screen_space_aa, Viewport.SCREEN_SPACE_AA_FXAA, "FXAA restaurado")
+		assert_eq(vp.msaa_3d, Viewport.MSAA_2X, "MSAA restaurado")
+	assert_eq(fondo_vp.render_target_update_mode, SubViewport.UPDATE_ONCE, "Fondo vuelve a UPDATE_ONCE al abortar")
+	assert_true(nivel.limitar_fps_subviewport_fondo_3d, "Limitador del fondo restaurado al abortar")
 	for s in nivel.find_children("*", "SombraPersonaje", true, false):
 		assert_true((s as Node3D).visible, "Sombra falsa restaurada")
 	assert_eq(nivel.bloqueos, [true, false], "Desbloquea al abortar")

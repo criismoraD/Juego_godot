@@ -9,7 +9,8 @@ extends Node
 ##    defensoras ballesteras) y se detiene a mitad de isla.
 ## 3. Sigue caminando (animación Caminar) hasta el límite de la isla, el punto
 ##    donde se detiene el imp embajador (x = FINAL_X).
-## 4. La protagonista queda situada en el segundo piso, detrás del escudo.
+## 4. La protagonista queda situada en el segundo piso, delante del escudo
+##    (no sobre la escalera).
 ## Sin input: el jugador y el botón de cambio de personaje se bloquean al
 ## empezar y se liberan al terminar, cuando se invoca la continuación (flujo
 ## normal a oleada 6).
@@ -28,8 +29,11 @@ const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_P
 const ESCENA_DIALOGO: PackedScene = preload("res://UI/DialogoConversacionNivel5.tscn")
 const RUTA_JINGLE: String = "res://TEST_/Perrena Jingle.mp3"
 const RUTA_SHADER_CONTORNO: String = "res://System/Shaders/TOON_LINEANEGRA.gdshader"
-## Contorno mínimo durante la escena (todos los personajes).
-const CONTORNO_MINIMO: float = 3.0
+## Contorno mínimo durante la escena (todos los personajes). No baja de
+## 8 px: con menos, el resolve de MSAA en viewports de fondo transparente
+## perfora la línea y asoman píxeles claros en la silueta (el ancho es en
+## píxeles de pantalla: 8 ya se ve delgado con la cámara cercana).
+const CONTORNO_MINIMO: float = 8.0
 
 const RUTAS_CAMARAS: Array[String] = [
 	"SubViewportFrente3D/CamaraFrente",
@@ -64,7 +68,9 @@ const SUELO_ISLA_Y: float = 0.2
 const PIES_EPS: float = 0.02
 const PIES_SUAVIZADO: float = 14.0
 
-const ERYN_POS: Vector3 = Vector3(-8.35, 3.3, 0.05)
+## Eryn delante del escudo del segundo piso (EscudoDestruible4 en x=-7.38),
+## no sobre la escalera (Ladder2 desemboca en x≈-8.3).
+const ERYN_POS: Vector3 = Vector3(-7.62, 3.3, 0.05)
 const ERYN_RAYO_Z: float = -0.38
 
 ## Sonido durante la escena: solo ambiente del bosque (3, con loop), sin
@@ -115,16 +121,23 @@ var _contornos_vistos := {}
 ## Sombra falsa circular (SombraPersonaje): se apaga en la escena y queda
 ## solo la sombra real de las luces. Por nodo (muere con la escena).
 var _sombras_falsas_prev: Array = []
-## FXAA + bordes alfa de PNGs (torre, arbustos, pasto) + cámara en
-## movimiento = shimmer. En juego la cámara nunca se mueve y no se nota;
-## en la escena se apaga y se restaura al salir.
+## FXAA + MSAA de los viewports de personajes: con cámara en movimiento el
+## FXAA hace shimmer en los bordes alfa de PNGs (torre, arbustos, pasto) y
+## el resolve de MSAA sobre fondo transparente perfora el contorno fino
+## (píxeles claros en la silueta). En juego la cámara nunca se mueve y no
+## se nota; en la escena se apagan y se restauran al salir.
 const RUTAS_VIEWPORTS_FXAA: Array[String] = [
 	"SubViewportMedio3D",
 	"SubViewportFrente3D",
 ]
 var _fxaa_prev: Array = []
-## Sombras direccionales (PSSM): sus splits siguen a la cámara y al moverse
-## tiemblan sobre torre/arbustos/pasto. En ortogonal quedan fijas.
+## Fondo (SubViewportFondo3D): el nivel lo limita a 30 FPS (UPDATE_ONCE por
+## timer) para ahorrar; con la cámara quieta no se nota, pero al viajar en
+## la escena el fondo va desfasado del frente/medio (60 FPS) y sus objetos
+## (torre, bustos, arbustos) parpadean. Durante la escena se fuerza a
+## UPDATE_ALWAYS y el timer del nivel se detiene; se restaura al salir.
+const RUTA_VIEWPORT_FONDO: String = "SubViewportFondo3D"
+var _fondo_prev: Dictionary = {}
 var _sombras_prev: Array = []
 ## CAPA001 (filtro de tono morado): Sprite3D fijo entre cámara y escena. Al
 ## mover la cámara se sale de campo (franja de cielo) o se pierde el tono;
@@ -171,6 +184,7 @@ func iniciar(nivel, al_terminar: Callable) -> void:
 	_aplicar_pausa_combate(true)
 	_fijar_sombras(true)
 	_ajustar_fxaa(true)
+	_ajustar_fondo_fps(true)
 	_ocultar_icono_refuerzo()
 	_mostrar_niebla(true)
 	_ajustar_contornos(true)
@@ -494,7 +508,7 @@ func _restaurar_mascaras() -> void:
 	_mascaras_base.clear()
 
 
-## FXAA apagado mientras la cámara se mueve (ver miembros).
+## FXAA y MSAA apagados mientras la cámara se mueve (ver miembros).
 func _ajustar_fxaa(apagar: bool) -> void:
 	if apagar:
 		_fxaa_prev.clear()
@@ -502,14 +516,44 @@ func _ajustar_fxaa(apagar: bool) -> void:
 			var vp := (_nivel as Node).get_node_or_null(ruta) as SubViewport
 			if vp == null:
 				continue
-			_fxaa_prev.append({"vp": vp, "modo": vp.screen_space_aa})
+			_fxaa_prev.append({
+				"vp": vp, "modo": vp.screen_space_aa, "msaa": vp.msaa_3d,
+			})
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+			vp.msaa_3d = Viewport.MSAA_DISABLED
 	else:
 		for d in _fxaa_prev:
 			var vp := d["vp"] as SubViewport
 			if is_instance_valid(vp):
 				vp.screen_space_aa = int(d["modo"])
+				vp.msaa_3d = int(d["msaa"])
 		_fxaa_prev.clear()
+
+
+## Fondo a máximos FPS durante la escena (ver miembro _fondo_prev): se
+## apaga el limitador del nivel (timer UPDATE_ONCE a 30 FPS) y el viewport
+## pasa a UPDATE_ALWAYS para que su cámara viaje síncrona con las demás.
+## Sin nivel con limitador o sin viewport, no-op.
+func _ajustar_fondo_fps(maximo: bool) -> void:
+	var vp := (_nivel as Node).get_node_or_null(RUTA_VIEWPORT_FONDO) as SubViewport
+	if vp == null:
+		return
+	if maximo:
+		if not _fondo_prev.is_empty():
+			return
+		var limitaba := bool((_nivel as Node).get("limitar_fps_subviewport_fondo_3d"))
+		_fondo_prev = {"vp": vp, "modo": vp.render_target_update_mode, "limitaba": limitaba}
+		if limitaba:
+			(_nivel as Node).set("limitar_fps_subviewport_fondo_3d", false)
+		vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	else:
+		if _fondo_prev.is_empty():
+			return
+		if is_instance_valid(vp):
+			vp.render_target_update_mode = int(_fondo_prev["modo"])
+		if bool(_fondo_prev["limitaba"]) and _nivel:
+			(_nivel as Node).set("limitar_fps_subviewport_fondo_3d", true)
+		_fondo_prev = {}
 
 
 ## Sombras direccionales fijas durante el travelling (ver miembros).
@@ -714,7 +758,7 @@ func _empezar_carrera() -> void:
 	_fase = Fase.CORRER
 
 
-## Protagonista al segundo piso, detrás del escudo (fuera de campo en el plano).
+## Protagonista al segundo piso, delante del escudo (fuera de campo en el plano).
 func _poner_en_escena_eryn() -> void:
 	if not is_instance_valid(_eryn):
 		return
@@ -833,14 +877,25 @@ func _liberar_humo() -> void:
 ## Altura del suelo por rayo corto bajo los pies (cuerpos estáticos); si no
 ## hay impacto, el valor previo. El rayo nace sobre los pies para no tocar
 ## el arco/flecha y excluye a los personajes.
+## Máscara 33: layer 1 (suelos) + layer 6 (DebrisCatcher de las plataformas
+## oneway, siempre sólido: la plataforma apaga su layer 1 cuando el jugador
+## está debajo y el rayo del suelo fallaría, dejando a Eryn flotando).
+## Ancla: la corredora si ya existe; si no, la propia Eryn (su posición se
+## calcula antes de instanciar a Perrena y el mundo es el mismo).
+const MASCARA_RAYO_SUELO: int = 33
+
+
 func _suelo_y(x: float, ref_y: float, z_rayo: float, defecto: float) -> float:
-	if _perrena == null or not is_inside_tree():
+	var ancla: Node3D = _perrena if is_instance_valid(_perrena) else _eryn
+	if ancla == null or not ancla.is_inside_tree():
 		return defecto
-	var espacio := _perrena.get_world_3d().direct_space_state
+	var espacio := ancla.get_world_3d().direct_space_state
 	var consulta := PhysicsRayQueryParameters3D.create(
-		Vector3(x, ref_y + 0.6, z_rayo), Vector3(x, ref_y - 2.5, z_rayo), 1
+		Vector3(x, ref_y + 0.6, z_rayo), Vector3(x, ref_y - 2.5, z_rayo), MASCARA_RAYO_SUELO
 	)
-	var excluir: Array[RID] = [_perrena.get_rid()]
+	var excluir: Array[RID] = []
+	if is_instance_valid(_perrena) and _perrena is CollisionObject3D:
+		excluir.append((_perrena as CollisionObject3D).get_rid())
 	if is_instance_valid(_eryn) and _eryn is CollisionObject3D:
 		excluir.append((_eryn as CollisionObject3D).get_rid())
 	consulta.exclude = excluir
@@ -926,6 +981,7 @@ func _abortar() -> void:
 	_ajustar_sombra_falsa(false)
 	_fijar_sombras(false)
 	_ajustar_fxaa(false)
+	_ajustar_fondo_fps(false)
 	_restaurar_mascaras()
 	_bloquear_boton_swap(false)
 	terminada = true
