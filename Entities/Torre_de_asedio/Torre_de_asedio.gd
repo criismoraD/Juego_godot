@@ -192,10 +192,16 @@ func _spawnear_enemigo_en_rampa() -> void:
 
 	# Añadir al nivel
 	var parent_destino = get_parent() if get_parent() else self
-	parent_destino.add_child(nuevo_enemigo)
 
-	# Ubicación en el punto de spawn dentro de la sala interior de la torre
-	nuevo_enemigo.global_position = Vector3(punto_spawn.global_position.x, punto_spawn.global_position.y + 0.05, punto_spawn.global_position.z)
+	# Ubicación en el punto de spawn dentro de la sala interior de la torre.
+	# Los pies se ajustan a la superficie de la rampa ANTES de añadir al enemigo
+	# (si no, el raycast chocaría con su propio cuerpo). Sin caída visible desde
+	# el aire: así parece que salen caminando del interior en vez de caer del cielo.
+	var pos_spawn := Vector3(punto_spawn.global_position.x, punto_spawn.global_position.y + 0.05, punto_spawn.global_position.z)
+	pos_spawn.y = _ajustar_y_a_rampa(pos_spawn)
+
+	parent_destino.add_child(nuevo_enemigo)
+	nuevo_enemigo.global_position = pos_spawn
 
 	# Añadir colisionador de profundidad en Z (Hitbox 2.5D) para que las flechas de la protagonista
 	# (que viajan en el plano Z de juego) impacten a la unidad con precisión sin alterar su movimiento en la rampa
@@ -234,6 +240,21 @@ func _spawnear_enemigo_en_rampa() -> void:
 		nuevo_enemigo.distancia_minima_entre_enemigos = 0.2
 
 	_enemigos_en_rampa.append(nuevo_enemigo)
+
+
+## Baja el punto de spawn hasta la superficie de la rampa (raycast vertical).
+## Si no hay superficie debajo, devuelve la altura original sin cambios.
+func _ajustar_y_a_rampa(pos: Vector3) -> float:
+	if not is_inside_tree():
+		return pos.y
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return pos.y
+	var query := PhysicsRayQueryParameters3D.create(pos + Vector3(0, 0.5, 0), pos + Vector3(0, -4.0, 0))
+	var hit := space.intersect_ray(query)
+	if not hit.is_empty() and hit.has("position"):
+		return (hit["position"] as Vector3).y + 0.02
+	return pos.y
 
 
 func _obtener_siguiente_slot_libre() -> int:

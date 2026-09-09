@@ -54,6 +54,7 @@ func _agregar_animacion_minima(ballestera: AllyBallestera) -> void:
 	lib.add_animation("IDLE", Animation.new())
 	lib.add_animation("DISPARO_01", Animation.new())
 	lib.add_animation("DISPARO_AGACHADO", Animation.new())
+	lib.add_animation("CORRER", Animation.new())
 	lib.add_animation("CAMINAR_01", Animation.new())
 	lib.add_animation("CAMINAR_ESP", Animation.new())
 	lib.add_animation("MUERTE_01", Animation.new())
@@ -221,6 +222,51 @@ func test_retirada_ballestera_movil_fin_oleada():
 	# Assert
 	assert_true(_ballestera.en_despliegue, "Debe activar en_despliegue durante la retirada")
 	assert_almost_eq(_ballestera.global_position.z, 0.02, 0.01, "Debe estar en el plano prioritario Z = 0.02 frente a las arqueras")
+
+
+func test_retirada_sale_de_celebracion_y_activa_humo_al_correr():
+	# Arrange: móvil que terminó de festejar y empieza a retirarse
+	# (el estado quedaba atascado en CELEBRATING y apagaba el humo al irse)
+	_ballestera = AllyBallesteraScript.new()
+	_agregar_animacion_minima(_ballestera)
+	_ballestera.es_movil = true
+	_ballestera.en_despliegue = true
+	_ballestera.current_state = _ballestera.State.CELEBRATING
+	_ballestera.fase_agachada = true
+	_ballestera.plataforma_asignada = 1
+	get_tree().root.add_child(_ballestera)
+	_ballestera.global_position = Vector3(-7.25, 1.585, 0.0)
+	_ballestera.anim_player = _ballestera.get_node("AnimationPlayer") as AnimationPlayer
+	await get_tree().process_frame
+
+	# Act: iniciar retirada (el resto de la secuencia sigue en background)
+	_ballestera.retirarse_y_bajar_escaleras()
+
+	# Assert: sale del festejo y se yergue para caminar
+	assert_eq(_ballestera.current_state, _ballestera.State.IDLE, "La retirada debe salir del estado CELEBRATING")
+	assert_false(_ballestera.fase_agachada, "La retirada camina erguida, sin fase agachada")
+
+	# Act: con la animación CORRER el humo de pisadas debe emitir al irse
+	_ballestera._play_anim("CORRER", 0.05, 1.0)
+	await get_tree().process_frame
+	_ballestera._particulas_pisada_emitir()
+
+	# Assert
+	assert_true(_ballestera._particulas_pisada.emitting, "El humo debe estar activo con CORRER en la retirada")
+
+	# Act: simular carrera hacia la izquierda y hacia la derecha
+	_ballestera._prev_pos_x = _ballestera.global_position.x + 1.0
+	_ballestera._particulas_pisada_emitir()
+
+	# Assert: el humo se voltea al correr a la izquierda
+	assert_eq(_ballestera._particulas_pisada.draw_pass_1, _ballestera._malla_humo_izq, "El humo debe usar la malla volteada al correr a la izquierda")
+
+	# Act: carrera hacia la derecha
+	_ballestera._prev_pos_x = _ballestera.global_position.x - 1.0
+	_ballestera._particulas_pisada_emitir()
+
+	# Assert
+	assert_eq(_ballestera._particulas_pisada.draw_pass_1, _ballestera._malla_humo_der, "El humo debe usar la malla normal al correr a la derecha")
 
 
 func test_item_refuerzo_cura_completamente_jugador():

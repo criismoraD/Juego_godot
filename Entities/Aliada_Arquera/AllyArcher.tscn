@@ -14,7 +14,7 @@ idle_max = 3.0
 [node name="ArqueraModel" parent="." unique_id=163697560 instance=ExtResource("2_fbx")]
 transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
 
-[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(163697560, 1954645199) index="0" unique_id=1207711538]
+[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(163697560, 1634575801) index="0" unique_id=544374745]
 bones/0/position = Vector3(2.6929784, -3.9307122, -5.717888)
 bones/0/rotation = Quaternion(0.7269428, 0.008302755, 0.01823672, -0.68640566)
 bones/1/position = Vector3(6.6697793, 0.23012432, -2.5271997)
@@ -126,6 +126,9 @@ bones/62/rotation = Quaternion(0.01570842, 0.006944458, 0.14499438, 0.98928344)
 bones/63/position = Vector3(-0.18214458, 1.9507942, -5.662355e-06)
 bones/63/rotation = Quaternion(-0.0179918, -0.0029065968, 0.06487025, 0.99772733)
 bones/64/position = Vector3(-0.038502157, 1.6365072, 9.537087e-06)
+
+[node name="ALLY_ARCHER" parent="ArqueraModel/Armature/Skeleton3D" index="0" unique_id=1244401802]
+transform = Transform3D(1.01, 0, 0, 0, 1.01, 0, 0, 0, 1.01, 0, 0, 0)
 
 [node name="BoneAttachment3D" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" index="1" unique_id=2067083609]
 transform = Transform3D(0.96131134, 0.23054887, 0.1507568, -0.18784235, 0.9489454, -0.2534122, -0.20148416, 0.21528956, 0.95553875, 18.02771, 24.09282, -3.4777155)

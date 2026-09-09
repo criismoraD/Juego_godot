@@ -383,7 +383,8 @@ func _shoot_arrow():
 	AudioManager.play_sfx("goblin_shoot")
 
 	var spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
-	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
+	# En la torre de asedio apuntan a la defensora aliada viva más cercana
+	var target_pos = _obtener_punto_mira_disparo(0.5)
 	var direction = (target_pos - spawn_pos).normalized()
 
 	# Calcular power para que la velocidad sea la configurada (velocidad_flecha)

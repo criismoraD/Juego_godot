@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://csd8576k2v1a0" path="res://Entities/Ambiente_Escalera/BarreraEscalera_SUPERIOR.gd" id="4_barrera_sup_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ladder"]
-size = Vector3(0.26990968, 1.5808716, 0.82373047)
+size = Vector3(0.23569031, 1.5808716, 0.82373047)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
 size = Vector3(1, 0.3, 1)
@@ -16,7 +16,7 @@ collision_layer = 8
 script = ExtResource("1_ladder")
 
 [node name="ESCALERA" type="CollisionShape3D" parent="." unique_id=1189098231]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.054763258, 1.0108337, -0.088134766)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04482826, 1.0108337, -0.088134766)
 shape = SubResource("BoxShape3D_ladder")
 
 [node name="GEO_ESCALERA" parent="." unique_id=1143209210 instance=ExtResource("2_bsldu")]

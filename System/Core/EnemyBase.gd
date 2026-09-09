@@ -723,6 +723,46 @@ func _reset_spine_rotation():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# PUNTO DE MIRA PARA DISPAROS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+## Punto de mira para disparos: los enemigos de la torre de asedio apuntan a una
+## defensora aliada viva (fija o móvil, al azar entre las vivas para repartir el
+## fuego); el resto, a la protagonista.
+func _obtener_punto_mira_disparo(altura: float = 0.5) -> Vector3:
+	var defensora := _elegir_defensora_aliada_objetivo()
+	if defensora and is_instance_valid(defensora):
+		return (defensora as Node3D).global_position + Vector3(0, altura, 0)
+	if player_ref and is_instance_valid(player_ref):
+		return player_ref.global_position + Vector3(0, altura, 0)
+	return global_position + Vector3(-1.0, altura, 0.0)
+
+
+## Elige al azar una defensora aliada viva como objetivo. Solo aplica a enemigos
+## de la torre de asedio (meta "es_enemigo_torre_asedio"); el resto retorna null
+## (protagonista). El reparto aleatorio evita que las móviles absorban todo el
+## fuego y deja a las estáticas de piso expuestas a ser dañadas.
+func _elegir_defensora_aliada_objetivo() -> Node:
+	if not has_meta("es_enemigo_torre_asedio"):
+		return null
+	var candidatas: Array[Node] = []
+	for ally in get_tree().get_nodes_in_group("allies"):
+		if not is_instance_valid(ally) or not (ally is Node3D):
+			continue
+		if ally is StaticBody3D or ally is Area3D or ally is CollisionShape3D:
+			continue  # Solo defensoras, no sus hitboxes
+		if "es_mensajera" in ally and bool(ally.get("es_mensajera")):
+			continue
+		if "health" in ally and int(ally.get("health")) <= 0:
+			continue
+		candidatas.append(ally)
+	if candidatas.is_empty():
+		return null
+	return candidatas[randi() % candidatas.size()]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DISOLUCIÓN Y MUERTE
 # ═══════════════════════════════════════════════════════════════════════════════
 

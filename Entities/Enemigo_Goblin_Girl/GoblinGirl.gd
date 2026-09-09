@@ -388,7 +388,7 @@ func _shoot_arrow():
 		spawn_pos = flecha_visual_mano.global_position
 	else:
 		spawn_pos = global_position + Vector3(-0.3, altura_spawn_flecha, 0)
-	var target_pos = player_ref.global_position + Vector3(0, 0.5, 0)
+	var target_pos = _obtener_punto_mira_disparo(0.5)
 	var diff = target_pos - spawn_pos
 	var base_direction = diff.normalized()
 

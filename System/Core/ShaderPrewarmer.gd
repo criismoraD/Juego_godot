@@ -25,16 +25,32 @@ const ESCENAS_CRITICAS: Array[String] = [
 	"res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.tscn",
 	"res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn",
 	"res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn",
+	"res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn",
 	"res://Entities/Proyectil_Gargola/GargolaProjectile.tscn",
+	"res://Entities/Enemigo_Limo/LimoCuadrado.tscn",
+	"res://Entities/Enemigo_Bracero/Bracero.tscn",
+	"res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn",
+	"res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.tscn",
+	"res://Entities/Enemigo_Lonko/Explocion_Pilar.tscn",
+	"res://Entities/Aliada_Arquera/AllyArcher.tscn",
+	"res://Entities/Aliada_Ballestera/AllyBallestera.tscn",
+	"res://Entities/Ambiente_Escudo/EscudoRoto.tscn",
+	"res://Entities/Item_Mensajera/IconoMensajeraFX.tscn",
+	"res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn",
+	"res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn",
 	"res://assets/BinbunVFX_Vol2/ExplosionFX/effects/ground/vfx_ground_explosion_01.tscn",
 	"res://assets/BinbunVFX_Vol2/ExplosionFX/effects/air/vfx_air_explosion_01.tscn",
 	"res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn",
 	"res://VFX/Scenes/BloodSplashNormal.tscn",
+	"res://VFX/Scenes/BloodSplashNoLetal.tscn",
 	"res://VFX/Scenes/BloodSplashEmbajador.tscn"
 ]
 
 const MATERIALES_CRITICOS: Array[String] = [
 	"res://VFX/Shaders/s_Disolver_advanced.tres",
+	"res://System/Shaders/dissolve.gdshader",
+	"res://System/Shaders/TOON_LINEANEGRA.gdshader",
+	"res://System/Shaders/sombra_falsa.gdshader",
 	"res://System/Shaders/cortinilla_circular.gdshader",
 	"res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader"
 ]

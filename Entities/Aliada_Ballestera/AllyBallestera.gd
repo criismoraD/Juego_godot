@@ -84,6 +84,8 @@ const PUEDE_ATACAR_INTERVAL: float = 0.1
 var _puede_atacar_timer: float = 0.0
 var _puede_atacar_cached: bool = false
 var _particulas_pisada: GPUParticles3D = null
+var _malla_humo_der: QuadMesh = null  ## Humo orientado al correr hacia la derecha
+var _malla_humo_izq: QuadMesh = null  ## Humo volteado al correr hacia la izquierda
 var en_escalera: bool = false
 var _prev_pos_x: float = 0.0
 var _sfx_correr: AudioStreamPlayer = null  ## Loop de armadura mientras corre
@@ -209,12 +211,17 @@ func _configurar_particulas_pisada() -> void:
 	mat.vertex_color_use_as_albedo = true
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.billboard_keep_scale = true
+	# Sin culling: la malla volteada (ancho negativo) muestra su cara frontal igual
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.render_priority = 2
 
-	var mesh := QuadMesh.new()
-	mesh.material = mat
-	mesh.size = Vector2(0.85, 0.85)  # Tamaño aumentado para presencia visual clara en escala 0.3
-	_particulas_pisada.draw_pass_1 = mesh
+	_malla_humo_der = QuadMesh.new()
+	_malla_humo_der.material = mat
+	_malla_humo_der.size = Vector2(0.85, 0.85)  # Tamaño aumentado para presencia visual clara en escala 0.3
+	_malla_humo_izq = QuadMesh.new()
+	_malla_humo_izq.material = mat
+	_malla_humo_izq.size = Vector2(-0.85, 0.85)  # Volteada: calza al correr a la izquierda
+	_particulas_pisada.draw_pass_1 = _malla_humo_der
 
 	var pm := ParticleProcessMaterial.new()
 	pm.direction = Vector3(-1.0, 0.45, 0.0).normalized()
@@ -279,6 +286,11 @@ func _particulas_pisada_emitir() -> void:
 		elif model_root:
 			var diff_rot: float = absf(wrapf(model_root.rotation.y - _original_model_y_rot, -PI, PI))
 			mirando_derecha = diff_rot < 1.5
+
+		# Voltear el humo según el lado: la malla espejada calza al correr a la izquierda
+		var malla_humo: QuadMesh = _malla_humo_der if mirando_derecha else _malla_humo_izq
+		if malla_humo and _particulas_pisada.draw_pass_1 != malla_humo:
+			_particulas_pisada.draw_pass_1 = malla_humo
 
 		var pm: ParticleProcessMaterial = _particulas_pisada.process_material as ParticleProcessMaterial
 		if pm:
@@ -1933,6 +1945,12 @@ func retirarse_y_bajar_escaleras() -> void:
 	if not es_movil or current_state == State.DYING or current_state == State.DEAD:
 		return
 
+	# Salir del festejo: con en_despliegue el _process no avanza la FSM y el estado
+	# quedaba en CELEBRATING, lo que apagaba el humo y el sonido de carrera.
+	_cambiar_estado(State.IDLE)
+	# Caminar erguida: resetear la fase agachada del combate o el humo no emite.
+	fase_agachada = false
+	disparos_en_fase = 0
 	en_despliegue = true
 	_restaurar_torso()
 	_importar_animaciones_jugador()

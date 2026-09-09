@@ -71,6 +71,9 @@ var _hay_enemigos_cache: bool = false
 var _target_update_timer: float = 0.0
 var _cached_target: Node3D = null
 var _particulas_pisada: GPUParticles3D = null
+var _malla_humo_der: QuadMesh = null  ## Humo orientado al correr hacia la derecha
+var _malla_humo_izq: QuadMesh = null  ## Humo volteado al correr hacia la izquierda
+var _prev_pos_x: float = 0.0  ## Para detectar hacia dónde corre (volteo del humo)
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer
 var _sfx_escalera: AudioStreamPlayer = null  ## Loop de pasos mientras trepa (SUBIR_ESCALERA)
@@ -126,6 +129,7 @@ func _ready():
 	model_root = find_child("ArqueraModel", false, false)
 	if model_root:
 		_original_model_y_rot = model_root.rotation.y
+	_prev_pos_x = global_position.x
 
 	# Hueso del torso para el apuntado visual (mismo rig que la protagonista)
 	skeleton = find_child("Skeleton3D", true, false)
@@ -164,14 +168,15 @@ func _aplicar_prioridad_renderizado(offset: float) -> void:
 func _configurar_particulas_pisada() -> void:
 	if _particulas_pisada and is_instance_valid(_particulas_pisada):
 		return
+	# Humo de pisadas idéntico al de la ballestera aliada (misma textura y presencia)
 	_particulas_pisada = GPUParticles3D.new()
 	_particulas_pisada.name = "Particulas_Pisada"
 	_particulas_pisada.emitting = false
-	_particulas_pisada.amount = 8
-	_particulas_pisada.lifetime = 0.8
-	_particulas_pisada.visibility_aabb = AABB(Vector3(-1, -0.2, -1), Vector3(2, 1.5, 2))
+	_particulas_pisada.amount = 22  # Mayor densidad de humo de pisadas al correr
+	_particulas_pisada.lifetime = 0.7
+	_particulas_pisada.visibility_aabb = AABB(Vector3(-2, -0.5, -2), Vector3(4, 3, 4))
 	add_child(_particulas_pisada)
-	_particulas_pisada.position = Vector3(0, 0.05, 0)
+	_particulas_pisada.position = Vector3(-0.15, 0.05, 0)
 
 	var mat := StandardMaterial3D.new()
 	if TEXTURA_HUMO_PISADAS:
@@ -185,39 +190,44 @@ func _configurar_particulas_pisada() -> void:
 	mat.vertex_color_use_as_albedo = true
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.billboard_keep_scale = true
+	# Sin culling: la malla volteada (ancho negativo) muestra su cara frontal igual
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.render_priority = 2
 
-	var mesh := QuadMesh.new()
-	mesh.material = mat
-	mesh.size = Vector2(0.3276, 0.3276)
-	_particulas_pisada.draw_pass_1 = mesh
+	_malla_humo_der = QuadMesh.new()
+	_malla_humo_der.material = mat
+	_malla_humo_der.size = Vector2(0.85, 0.85)
+	_malla_humo_izq = QuadMesh.new()
+	_malla_humo_izq.material = mat
+	_malla_humo_izq.size = Vector2(-0.85, 0.85)  # Volteada: calza al correr a la izquierda
+	_particulas_pisada.draw_pass_1 = _malla_humo_der
 
 	var pm := ParticleProcessMaterial.new()
-	pm.direction = Vector3(0.0, 1.0, 0.0)
-	pm.spread = 50.0
-	pm.initial_velocity_min = 0.1
-	pm.initial_velocity_max = 0.25
-	pm.gravity = Vector3(0.0, 0.1, 0.0)
-	pm.scale_min = 0.4
-	pm.scale_max = 0.657
+	pm.direction = Vector3(-1.0, 0.45, 0.0).normalized()
+	pm.spread = 55.0
+	pm.initial_velocity_min = 0.4
+	pm.initial_velocity_max = 0.95
+	pm.gravity = Vector3(0.0, 0.35, 0.0)
+	pm.scale_min = 0.8
+	pm.scale_max = 1.5
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(0.08, 0.01, 0.08)
+	pm.emission_box_extents = Vector3(0.12, 0.02, 0.12)
 	pm.anim_speed_min = 1.0
 	pm.anim_speed_max = 1.0
 	pm.anim_offset_min = 0.0
 	pm.anim_offset_max = 1.0
 
 	var grad := Gradient.new()
-	grad.set_color(0, Color(0.5, 0.5, 0.5, 0.6))
-	grad.set_color(1, Color(0.5, 0.5, 0.5, 0.0))
+	grad.set_color(0, Color(0.72, 0.72, 0.72, 0.85))
+	grad.set_color(1, Color(0.72, 0.72, 0.72, 0.0))
 	var grad_tex := GradientTexture1D.new()
 	grad_tex.gradient = grad
 	pm.color_ramp = grad_tex
 
 	var curve := Curve.new()
-	curve.add_point(Vector2(0.0, 0.25), 0.0, 1.2)
-	curve.add_point(Vector2(0.3, 1.0), 0.2, -0.4)
-	curve.add_point(Vector2(0.65, 0.6), -0.6, -0.8)
+	curve.add_point(Vector2(0.0, 0.3), 0.0, 1.5)
+	curve.add_point(Vector2(0.35, 1.0), 0.2, -0.3)
+	curve.add_point(Vector2(0.7, 0.7), -0.5, -0.8)
 	curve.add_point(Vector2(1.0, 0.0), -1.2, 0.0)
 	var curve_tex := CurveTexture.new()
 	curve_tex.curve = curve
@@ -229,8 +239,48 @@ func _configurar_particulas_pisada() -> void:
 func _particulas_pisada_emitir() -> void:
 	if not _particulas_pisada or not is_instance_valid(_particulas_pisada):
 		return
-	var corriendo := anim_player and anim_player.current_animation.contains("CORRER")
-	_particulas_pisada.emitting = corriendo and current_state != State.DYING and current_state != State.DEAD and paralisis_timer <= 0.0
+
+	var delta_x: float = global_position.x - _prev_pos_x
+	_prev_pos_x = global_position.x
+
+	var anim_actual: String = anim_player.current_animation.to_upper() if anim_player else ""
+	var es_escalera: bool = anim_actual.contains("ESCALERA") or anim_actual.contains("ESCALAR")
+	var anim_correr: bool = anim_actual.contains("CORRER") and not es_escalera and not anim_actual.contains("AIRE")
+
+	var corriendo: bool = anim_correr and not es_escalera
+	var viva_y_activa: bool = (
+		current_state != State.DYING
+		and current_state != State.DEAD
+		and paralisis_timer <= 0.0
+		and current_state != State.CELEBRATING
+	)
+
+	var debe_emitir: bool = corriendo and viva_y_activa
+	_particulas_pisada.emitting = debe_emitir
+
+	if debe_emitir:
+		var mirando_derecha: bool = true
+		if absf(delta_x) > 0.0005:
+			mirando_derecha = delta_x > 0.0
+		elif model_root:
+			var diff_rot: float = absf(wrapf(model_root.rotation.y - _original_model_y_rot, -PI, PI))
+			mirando_derecha = diff_rot < 1.5
+
+		# Voltear el humo según el lado: la malla espejada calza al correr a la izquierda
+		var malla_humo: QuadMesh = _malla_humo_der if mirando_derecha else _malla_humo_izq
+		if malla_humo and _particulas_pisada.draw_pass_1 != malla_humo:
+			_particulas_pisada.draw_pass_1 = malla_humo
+
+		var pm: ParticleProcessMaterial = _particulas_pisada.process_material as ParticleProcessMaterial
+		if pm:
+			if mirando_derecha:
+				# Al correr hacia la derecha (+X), el humo sale despedido hacia atrás a la izquierda (-X)
+				pm.direction = Vector3(-1.0, 0.45, 0.0).normalized()
+				_particulas_pisada.position = Vector3(-0.15, 0.05, 0.0)
+			else:
+				# Al correr hacia la izquierda (-X), el humo sale despedido hacia atrás a la derecha (+X)
+				pm.direction = Vector3(1.0, 0.45, 0.0).normalized()
+				_particulas_pisada.position = Vector3(0.15, 0.05, 0.0)
 
 
 func _iniciar():
@@ -245,9 +295,11 @@ func _iniciar():
 	if bow_anim_player:
 		bow_anim_player.active = true
 		_log_debug(["[AllyArcher] Anims arco: ", bow_anim_player.get_animation_list()])
-	_cambiar_estado(State.IDLE)
-	_play_anim(["IDE", "IDLE_001", "IDLE"], 0.0)
-	_play_bow_anim("ARCO_IDLE", 0.0)
+	# Si entró en despliegue el mismo frame (móvil), no pisar su CORRER con IDLE
+	if not en_despliegue:
+		_cambiar_estado(State.IDLE)
+		_play_anim(["IDE", "IDLE_001", "IDLE"], 0.0)
+		_play_bow_anim("ARCO_IDLE", 0.0)
 	set_process(true)
 
 
@@ -988,6 +1040,10 @@ func probar_animacion_victoria() -> void:
 func _actualizar_rotacion_modelo(delta: float) -> void:
 	if not model_root:
 		return
+	# En despliegue/retirada los tweens mandan (espalda a cámara en escaleras):
+	# no pisar su rotación como hace la ballestera aliada.
+	if en_despliegue:
+		return
 	var target_y_rot: float = _original_model_y_rot
 	if current_state == State.CELEBRATING:
 		target_y_rot = _original_model_y_rot + deg_to_rad(rotacion_victoria_grados)
@@ -1633,6 +1689,12 @@ func _on_dying():
 	_ocultar_flecha()
 	_crear_splash_sangre()
 
+	# Móviles (refuerzos de oleada 6): desaparecen con desintegración celeste,
+	# igual que las ballesteras móviles del item de refuerzo (sin cadáver)
+	if es_movil:
+		_iniciar_desintegracion_celeste()
+		return
+
 	# Desactivar hitbox
 	if hitbox_body:
 		hitbox_body.collision_layer = 0
@@ -1708,6 +1770,127 @@ func _finish_dissolve():
 	dissolve_materials.clear()
 	current_state = State.DEAD
 	queue_free()
+
+
+## Desintegración celeste idéntica a la de la ballestera móvil (refuerzos):
+## disolución con shader + partículas celestes y queue_free (sin cadáver).
+func _iniciar_desintegracion_celeste() -> void:
+	var color_celeste := Color(0.25, 0.85, 1.0, 1.0)
+	var duracion: float = 1.0
+
+	var meshes: Array[Node] = []
+	if model_root:
+		meshes = model_root.find_children("*", "MeshInstance3D", true, false)
+	else:
+		meshes = find_children("*", "MeshInstance3D", true, false)
+
+	var dissolve_mats: Array = []
+	for node in meshes:
+		if not is_instance_valid(node):
+			continue
+		var mi := node as MeshInstance3D
+		var mat := ShaderMaterial.new()
+		mat.shader = dissolve_shader
+		mat.set_shader_parameter("dissolve_amount", 0.0)
+		mat.set_shader_parameter("glow_color", color_celeste)
+		mat.set_shader_parameter("glow_intensity", 4.0)
+		mat.set_shader_parameter("edge_thickness", 0.05)
+		mat.set_shader_parameter("noise_scale", 20.0)
+
+		var orig: Material = mi.material_override
+		if orig == null and mi.mesh and mi.mesh.get_surface_count() > 0:
+			orig = mi.mesh.surface_get_material(0)
+		if orig and orig is StandardMaterial3D:
+			var std := orig as StandardMaterial3D
+			if std.albedo_texture:
+				mat.set_shader_parameter("albedo_texture", std.albedo_texture)
+			var col := std.albedo_color
+			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+
+		mi.material_override = mat
+		dissolve_mats.append(mat)
+
+	var p := GPUParticles3D.new()
+	p.name = "ParticulasMuerteCeleste"
+	p.amount = 180
+	p.lifetime = 2.0
+	p.one_shot = false
+	p.explosiveness = 0.0
+	p.randomness = 0.3
+
+	var p_mat := ParticleProcessMaterial.new()
+	p_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	p_mat.emission_box_extents = Vector3(0.2, 0.5, 0.1)
+	p_mat.direction = Vector3(0, 1, 0)
+	p_mat.spread = 20.0
+	p_mat.initial_velocity_min = 0.1
+	p_mat.initial_velocity_max = 1.0
+	p_mat.gravity = Vector3(0, 0.1, 0)
+	p_mat.scale_min = 0.5
+	p_mat.scale_max = 1.5
+
+	var gradient := Gradient.new()
+	gradient.set_color(0, color_celeste)
+	gradient.set_color(1, Color(color_celeste.r, color_celeste.g, color_celeste.b, 0.0))
+	var gradient_tex := GradientTexture1D.new()
+	gradient_tex.gradient = gradient
+	p_mat.color_ramp = gradient_tex
+
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0, 0.2))
+	scale_curve.add_point(Vector2(0.3, 1.0))
+	scale_curve.add_point(Vector2(1.0, 0.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	p_mat.scale_curve = scale_tex
+
+	p.process_material = p_mat
+
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.0125
+	sphere.height = 0.025
+
+	var part_mat := StandardMaterial3D.new()
+	part_mat.albedo_color = color_celeste
+	part_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	part_mat.emission_enabled = true
+	part_mat.emission = color_celeste
+	part_mat.emission_energy_multiplier = 4.0
+	part_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	part_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material = part_mat
+
+	p.draw_pass_1 = sphere
+
+	var scene_root: Node = get_tree().current_scene if get_tree() else get_parent()
+	if scene_root:
+		scene_root.add_child(p)
+		p.global_position = global_position + Vector3(0, 0.4, 0)
+		p.emitting = true
+	else:
+		add_child(p)
+		p.position = Vector3(0, 0.4, 0)
+		p.emitting = true
+
+	var tw := create_tween()
+	tw.tween_method(
+		func(val: float) -> void:
+			for m in dissolve_mats:
+				if is_instance_valid(m):
+					m.set_shader_parameter("dissolve_amount", val),
+		0.0, 1.0, duracion)
+
+	if get_tree():
+		get_tree().create_timer(duracion * 0.7).timeout.connect(func():
+			if is_instance_valid(p):
+				p.emitting = false
+		)
+		get_tree().create_timer(duracion + 2.0).timeout.connect(func():
+			if is_instance_valid(p):
+				p.queue_free()
+		)
+
+	tw.finished.connect(queue_free)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1823,7 +2006,7 @@ func _log_debug(parts: Array) -> void:
 
 
 ## Despliega a la arquera móvil caminando, subiendo escaleras y ubicándose en su piso asignado.
-func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> void:
+func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN, velocidad_paso: float = -1.0) -> void:
 	es_movil = true
 	en_despliegue = true
 	plataforma_asignada = indice_plataforma
@@ -1833,7 +2016,8 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	_setup_animation_player()
 	_restaurar_torso()
 
-	var walk_speed: float = 2.4
+	# Velocidad de marcha: por defecto 2.4; el evento de oleada 6 pide 1.7 (igual que las ballesteras)
+	var walk_speed: float = 2.4 if velocidad_paso <= 0.0 else velocidad_paso
 	var climb_speed: float = 1.4
 
 	# Alturas reales de piso y plataformas en el mundo

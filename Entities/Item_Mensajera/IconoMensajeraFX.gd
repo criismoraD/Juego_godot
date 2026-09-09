@@ -7,6 +7,8 @@ extends Area3D
 signal activada
 
 const SFX_REFUERZO_MENSAJERA: AudioStream = preload("res://System/Audio/SFX/Sonido_refuerzo_mensajera.mp3")
+## Llamado de refuerzos aliadas (defensoras), distinto del cuerno de guerra (enemigos)
+const SFX_REFUERZOS_ALIADAS: AudioStream = preload("res://TEST_/refuerzos.mp3")
 
 @export_category("Flotación")
 @export var altura_flotacion: float = 0.75  ## Altura del icono sobre la base del VFX
@@ -80,6 +82,7 @@ func _on_body_entered(body: Node3D) -> void:
 
 	_crear_particulas_disolucion_moradas()
 	_reproducir_sonido_refuerzo()
+	_reproducir_sonido_refuerzos_aliadas()
 	activada.emit()
 	_desaparecer()
 
@@ -157,6 +160,25 @@ func _reproducir_sonido_refuerzo() -> void:
 		return
 	var sfx_player := AudioStreamPlayer.new()
 	sfx_player.stream = SFX_REFUERZO_MENSAJERA
+	sfx_player.volume_db = 2.0
+	sfx_player.bus = "Master"
+	var root := get_tree().current_scene
+	if not root:
+		root = get_tree().root
+	if root:
+		root.add_child(sfx_player)
+		sfx_player.play()
+		sfx_player.finished.connect(sfx_player.queue_free)
+	else:
+		sfx_player.queue_free()
+
+
+## Llamado de refuerzos aliadas al tocar el icono (cuerno NO: ese es el evento enemigo)
+func _reproducir_sonido_refuerzos_aliadas() -> void:
+	if not SFX_REFUERZOS_ALIADAS:
+		return
+	var sfx_player := AudioStreamPlayer.new()
+	sfx_player.stream = SFX_REFUERZOS_ALIADAS
 	sfx_player.volume_db = 2.0
 	sfx_player.bus = "Master"
 	var root := get_tree().current_scene

@@ -66,6 +66,25 @@ var _dialogo_abajo_15_mostrado: bool = false  # 15 kills 7s
 var _dialogo_arriba_contar_mostrado: bool = false  # 2s después de 15 -> 5s
 var _dialogo_arriba_pesada_mostrado: bool = false  # globo aplasta 7s
 var _dialogo_abajo_esperando_mostrado: bool = false  # refuerzos nivel5 7s
+# Refuerzo de arqueras móviles — Oleada 6: 10 en grupos de 2 cada 10s, máx 5 vivas
+const ARQUERAS_OLEADA6_TOTAL: int = 10
+const ARQUERAS_OLEADA6_GRUPO: int = 2
+const ARQUERAS_OLEADA6_INTERVALO: float = 10.0
+const ARQUERAS_OLEADA6_MAX_VIVAS: int = 5
+const ARQUERAS_OLEADA6_VELOCIDAD: float = 1.7  ## Marcha igual que las ballesteras aliadas
+const ARQUERAS_OLEADA6_RETRASO_PAREJA: float = 1.2  ## La 2da de cada par entra con retraso (no se sobreponen)
+const ARQUERAS_OLEADA6_X_MAX: float = -5.5  ## Límite jugable derecho de la isla aliada (dentro de limite_fin_mapa_x)
+## Puestos por orden de llegada: las 2 primeras a nivel de suelo detrás del
+## primer escudo, el resto repartidas en los demás pisos
+const ARQUERAS_OLEADA6_PUESTOS: Array = [
+	{"piso": 0, "x": -7.0}, {"piso": 0, "x": -7.5},
+	{"piso": 1, "x": -6.9}, {"piso": 1, "x": -7.4},
+	{"piso": 2, "x": -7.7}, {"piso": 2, "x": -8.2},
+	{"piso": 3, "x": -8.85}, {"piso": 3, "x": -9.3},
+]
+var _arqueras_o6_restantes: int = 0
+var _arqueras_o6_indice: int = 0
+var _arqueras_o6_gen: int = 0  ## Generación del evento (cancela cadenas viejas en saltos debug)
 var _dialogo_arriba_goblin_legendaria_mostrado: bool = false  # oleada 3 primera goblin rosada 7s
 var _goblin_rosa_pendiente_pantalla: Node = null  ## Referencia para monitoreo de aparición en pantalla
 var _muertes_combate_contador: int = 0  # global UI
@@ -1207,7 +1226,8 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
 		wave_spawner.intervalo_aparicion = 2.0
-		# REGLA: En el nivel 6 no va el item de refuerzo, ni tampoco defensas estáticas ni plataformas
+		# REGLA: En la oleada 6 no van defensas estáticas ni plataformas enemigas.
+		# El evento de refuerzo SÍ va pero SIN icono: parte activo solo (ver _programar_refuerzo_arqueras_oleada_6).
 		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
 		_set_elemento_nivel3_activo(muro_plataforma, false)
 		_set_elemento_nivel3_activo(muro_plataforma2, false)
@@ -1217,13 +1237,19 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 			_set_elemento_nivel3_activo(escudo_enemigo2, false)
 		if is_instance_valid(escudo_enemigo3):
 			_set_elemento_nivel3_activo(escudo_enemigo3, false)
-		# Limpiar cualquier medikit o item de refuerzo
+		# Limpiar cualquier medikit o item de refuerzo previo
 		for m in get_tree().get_nodes_in_group("medikits"):
 			if is_instance_valid(m):
 				m.queue_free()
 		for n in get_tree().get_nodes_in_group("icono_mensajera"):
 			if is_instance_valid(n):
 				n.queue_free()
+		# Reiniciar el evento de refuerzo: la oleada 6 parte SIN icono,
+		# el evento arranca activo solo con 4s de demora.
+		_arqueras_o6_restantes = 0
+		_arqueras_o6_indice = 0
+		_arqueras_o6_gen += 1
+		_programar_refuerzo_arqueras_oleada_6(_arqueras_o6_gen)
 
 	# Música según la oleada: Oleada 5 usa "Noche Aplastante" (índice 5), anteriores y oleada 6 usan música de batalla (índice 2)
 	if numero_oleada == 5:
@@ -2842,3 +2868,100 @@ func _desplegar_defensoras_moviles_plataformas() -> void:
 		_reproducir_defensoras_entrada_sfx()
 		defensora.desplegar_a_plataforma(idx_plat)
 		await get_tree().create_timer(2.2).timeout
+
+
+## Oleada 6: evento de refuerzo SIN icono — parte activo solo, 4s tras iniciar la oleada.
+## Al arrancar aparecen 10 arqueras aliadas móviles en grupos de 2 cada 10 segundos.
+func _programar_refuerzo_arqueras_oleada_6(gen: int) -> void:
+	await get_tree().create_timer(4.0).timeout
+	if gen != _arqueras_o6_gen or not is_inside_tree():
+		return
+	_iniciar_refuerzo_arqueras_oleada_6()
+
+
+func _iniciar_refuerzo_arqueras_oleada_6() -> void:
+	if _arqueras_o6_restantes > 0:
+		return
+	if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 6:
+		return
+	_arqueras_o6_restantes = ARQUERAS_OLEADA6_TOTAL
+	_arqueras_o6_indice = 0
+	_arqueras_o6_gen += 1
+	_reproducir_defensoras_entrada_sfx()
+	_tick_refuerzo_arqueras_oleada_6(_arqueras_o6_gen)
+
+
+## Cadena de oleadas: cada 10s llega un grupo de 2 (si hay hueco bajo el tope de 5 vivas).
+## Si el tope está lleno, el cupo se conserva y se reintenta en el siguiente tick.
+func _tick_refuerzo_arqueras_oleada_6(gen: int) -> void:
+	if gen != _arqueras_o6_gen:
+		return
+	if not is_inside_tree():
+		return
+	if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 6:
+		_arqueras_o6_restantes = 0
+		return
+	if _arqueras_o6_restantes <= 0:
+		return
+	var hueco: int = ARQUERAS_OLEADA6_MAX_VIVAS - _contar_arqueras_moviles_vivas()
+	var a_crear: int = mini(ARQUERAS_OLEADA6_GRUPO, mini(maxi(hueco, 0), _arqueras_o6_restantes))
+	if a_crear >= 1:
+		_desplegar_arquera_movil_oleada_6()
+		_arqueras_o6_restantes -= 1
+	if a_crear >= 2:
+		# La 2da entra con retraso para no sobreponerse a la 1ra (parecían 1 sola).
+		# El cupo solo se descuenta si logra salir (si no, se reintenta el próximo tick).
+		await get_tree().create_timer(ARQUERAS_OLEADA6_RETRASO_PAREJA).timeout
+		if gen != _arqueras_o6_gen or not is_inside_tree():
+			return
+		if not is_instance_valid(wave_spawner) or wave_spawner.oleada_combate != 6:
+			_arqueras_o6_restantes = 0
+			return
+		if _arqueras_o6_restantes > 0 and _contar_arqueras_moviles_vivas() < ARQUERAS_OLEADA6_MAX_VIVAS:
+			_desplegar_arquera_movil_oleada_6()
+			_arqueras_o6_restantes -= 1
+	if _arqueras_o6_restantes <= 0:
+		return
+	await get_tree().create_timer(ARQUERAS_OLEADA6_INTERVALO).timeout
+	_tick_refuerzo_arqueras_oleada_6(gen)
+
+
+## Cuenta las arqueras aliadas móviles vivas en pantalla (tope: 5).
+func _contar_arqueras_moviles_vivas() -> int:
+	var vivas: int = 0
+	for ally in AllyArcher.active_allies_cache:
+		if not is_instance_valid(ally) or not (ally is AllyArcher):
+			continue
+		if not ally.es_movil:
+			continue
+		if ally.current_state == ally.State.DYING or ally.current_state == ally.State.DEAD:
+			continue
+		if ally.health <= 0:
+			continue
+		vivas += 1
+	return vivas
+
+
+## Despliega 1 arquera móvil del evento de refuerzo de oleada 6.
+## Entra corriendo desde la izquierda, sube escaleras y toma su puesto sin
+## traspasar el límite jugable de la isla aliada.
+func _desplegar_arquera_movil_oleada_6() -> void:
+	var arquera_scene: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+	if not arquera_scene:
+		return
+	var arquera := arquera_scene.instantiate() as AllyArcher
+	if not arquera:
+		return
+	add_child(arquera)
+	arquera.scale = Vector3(0.3, 0.3, 0.3)
+	arquera.global_position = Vector3(-12.8, 0.185, 0.0)
+	# Dañables con 2 de vida como las defensoras regulares de piso
+	arquera.vida_maxima = 2
+	arquera.health = 2
+	if _aliadas_activas and arquera.hitbox_body and is_instance_valid(arquera.hitbox_body):
+		arquera.hitbox_body.collision_layer = 2
+	var puesto: Dictionary = ARQUERAS_OLEADA6_PUESTOS[_arqueras_o6_indice % ARQUERAS_OLEADA6_PUESTOS.size()]
+	_arqueras_o6_indice += 1
+	var piso: int = int(puesto.get("piso", 1))
+	var destino_x: float = minf(float(puesto.get("x", -6.9)), ARQUERAS_OLEADA6_X_MAX)
+	arquera.desplegar_a_plataforma(piso, destino_x, ARQUERAS_OLEADA6_VELOCIDAD)

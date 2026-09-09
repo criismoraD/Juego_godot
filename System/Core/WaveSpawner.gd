@@ -335,13 +335,19 @@ func _generar_cola_spawn() -> void:
 
 
 func _preparar_enemigos_en_espera() -> void:
-	# Pre-instanciar hasta 4 enemigos por tipo presente en la cola para no bloquear frames de combate
+	# Pre-instanciar hasta 4 enemigos por tipo presente en la cola para no bloquear frames de combate.
+	# REPARTO: 2 instanciados por frame (un pico de ~30 en un solo frame causaba tirones al iniciar cada oleada).
+	var oleada_al_inicio: int = oleada_combate
 	var conteo_por_escena: Dictionary = {}
 	for sc in cola_spawn:
 		if sc:
 			conteo_por_escena[sc] = conteo_por_escena.get(sc, 0) + 1
 
 	for sc in conteo_por_escena.keys():
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+		if oleada_combate != oleada_al_inicio:
+			return  # Cambió la oleada a mitad del reparto: abortar
 		if not _standby_pool.has(sc):
 			_standby_pool[sc] = []
 		var faltantes: int = min(conteo_por_escena[sc], 4) - _standby_pool[sc].size()
@@ -353,6 +359,12 @@ func _preparar_enemigos_en_espera() -> void:
 				_obtener_nodo_padre_spawn().add_child(enemy)
 				enemy.position = Vector3(0.0, -400.0, 0.0)
 				_standby_pool[sc].append(enemy)
+			if i % 2 == 1:
+				await get_tree().process_frame
+				if not is_instance_valid(self) or not is_inside_tree():
+					return
+				if oleada_combate != oleada_al_inicio:
+					return
 
 
 func _es_valida_cola(pool: Array[PackedScene]) -> bool:
