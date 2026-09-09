@@ -127,10 +127,18 @@ var _fxaa_prev: Array = []
 ## Sombras direccionales (PSSM): sus splits siguen a la cámara y al hacer
 ## travelling tiemblan sobre torre/arbustos/pasto. En ortogonal quedan fijas.
 var _sombras_prev: Array = []
-## CAPA001 (filtro de tono morado): desactivada durante la escena.
+## CAPA001 (filtro de tono morado): Sprite3D fijo entre cámara y escena. Al
+## mover la cámara se sale de campo (franja de cielo) o se pierde el tono;
+## sigue a la cámara a distancia fija con el tamaño justo para cubrir el
+## encuadre. A la torre muere con la escena.
 const RUTA_CAPA_TONO: String = "CAPA001"
+const CAPA_DIST: float = 5.0
+const CAPA_MARGEN: float = 1.2
+const CAPA_ANCHO_FACTOR: float = 0.3554
 var _capa_nodo: Sprite3D = null
-var _capa_visible_prev: bool = true
+var _capa_pos_base := Vector3.ZERO
+var _capa_esc_base := Vector3.ONE
+var _capa_lista: bool = false
 ## Perrena corre sin arco en la escena (se oculta al empezar).
 var _arco_nodo: Node3D = null
 var _arco_visible_prev: bool = true
@@ -167,7 +175,7 @@ func iniciar(nivel, al_terminar: Callable) -> void:
 	_reunir_mascaras()
 	_bloquear_boton_swap(true)
 	_reunir_camaras()
-	_ocultar_capa_tono(true)
+	_preparar_capa_tono()
 	_fx = _foco_clamp(SPAWN_X + SEGUIR_DX)
 	if _camaras.is_empty():
 		_empezar_carrera()
@@ -179,6 +187,7 @@ func iniciar(nivel, al_terminar: Callable) -> void:
 func _process(delta: float) -> void:
 	if terminada:
 		return
+	_seguir_capa_tono()
 	_seguir_mascaras()
 	match _fase:
 		Fase.ZOOM:
@@ -301,17 +310,47 @@ func _seguir_corredora(delta: float) -> void:
 			cam.position = _foco_pos()
 
 
-## CAPA001 desactivada durante la escena (a la torre muere con ella).
-func _ocultar_capa_tono(ocultar: bool) -> void:
-	if ocultar:
-		_capa_nodo = (_nivel as Node).get_node_or_null(RUTA_CAPA_TONO) as Sprite3D
-		if _capa_nodo == null:
-			return
-		_capa_visible_prev = _capa_nodo.visible
-		_capa_nodo.visible = false
-	elif is_instance_valid(_capa_nodo):
-		_capa_nodo.visible = _capa_visible_prev
-		_capa_nodo = null
+## CAPA001 sigue a la cámara a distancia fija con el tamaño justo para
+## cubrir el encuadre (ancho visible a esa profundidad + margen): el tono
+## morado se mantiene en todo el travelling. Sin cámaras o sin capa, no-op.
+func _preparar_capa_tono() -> void:
+	_capa_nodo = (_nivel as Node).get_node_or_null(RUTA_CAPA_TONO) as Sprite3D
+	_capa_lista = _capa_nodo != null and not _camaras.is_empty()
+	if _capa_lista:
+		_capa_pos_base = _capa_nodo.position
+		_capa_esc_base = _capa_nodo.scale
+
+
+func _seguir_capa_tono() -> void:
+	if not _capa_lista:
+		return
+	var cam: Camera3D = _camaras[0]["cam"] as Camera3D
+	if not is_instance_valid(cam) or not is_instance_valid(_capa_nodo):
+		return
+	_capa_nodo.global_position = Vector3(
+		cam.global_position.x, cam.global_position.y, cam.global_position.z - CAPA_DIST
+	)
+	var tex := _capa_nodo.texture as Texture2D
+	if tex == null or tex.get_width() <= 0:
+		return
+	var vp: Viewport = cam.get_viewport()
+	var aspecto: float = 9.0 / 16.0
+	if vp:
+		var tam: Vector2 = vp.get_visible_rect().size
+		if tam.x > 0.0:
+			aspecto = tam.y / tam.x
+	var ancho_necesario: float = CAPA_ANCHO_FACTOR * CAPA_DIST * CAPA_MARGEN
+	var tam_tex := Vector2(tex.get_width(), tex.get_height()) * 0.01
+	_capa_nodo.scale = Vector3(
+		ancho_necesario / tam_tex.x, ancho_necesario * aspecto / tam_tex.y, _capa_esc_base.z
+	)
+
+
+func _restaurar_capa_tono() -> void:
+	if not is_instance_valid(_capa_nodo):
+		return
+	_capa_nodo.position = _capa_pos_base
+	_capa_nodo.scale = _capa_esc_base
 
 
 ## Origen del travelling de vuelta (posición de seguimiento al llegar).
@@ -861,7 +900,7 @@ func _abortar() -> void:
 	push_warning("[CinematicaOleada5] Secuencia abortada; se continúa a oleada 6.")
 	_fijar_origen_rest()
 	_restaurar_camara(1.0)
-	_ocultar_capa_tono(false)
+	_restaurar_capa_tono()
 	_ocultar_arco(false)
 	_liberar_humo()
 	if _era_activa and is_instance_valid(_perrena):

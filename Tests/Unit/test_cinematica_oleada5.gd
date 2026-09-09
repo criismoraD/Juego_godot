@@ -300,8 +300,11 @@ func test_cinematica_bloquea_boton_swap() -> void:
 	# Assert: botón bloqueado durante la escena.
 	assert_true(btn.disabled, "El cambio de personaje se bloquea en la cinemática")
 
-	# Assert: la capa de tono desactivada (sin franja de cielo).
-	assert_false(capa.visible, "CAPA001 desactivada en cinemática")
+	# Assert: la capa de tono sigue a la cámara (morado sin franja de cielo).
+	assert_true(capa.visible, "CAPA001 visible en cinemática")
+	assert_almost_eq(capa.position.x, cams[0].position.x, 0.3, "La capa sigue a la cámara")
+	assert_almost_eq(capa.position.z, cams[0].position.z - 5.0, 0.3, "La capa va delante")
+	assert_almost_eq(capa.scale.x, 1.066, 0.08, "La capa cubre el encuadre")
 
 	# Assert: contorno delgado pero visible durante la escena.
 	assert_almost_eq(_ancho_contorno_perrena(cine._perrena), 3.0, 0.01, "Contorno delgado en cinemática")
@@ -639,7 +642,7 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 	assert_not_null(arco_abort, "Existe el nodo del arco")
 	assert_true(arco_abort.visible, "Arco restaurado al abortar")
 	assert_eq(capa.position, Vector3(1, 2, 30), "Capa de tono en su sitio")
-	assert_true(capa.visible, "Capa de tono restaurada")
+	assert_eq(capa.scale, Vector3.ONE, "Tamaño de capa restaurado")
 	assert_eq(sombra_ab.pivot_offset, Vector2.ZERO, "Máscara pivote restaurado")
 	assert_eq(sombra_ab.scale, Vector2.ONE, "Máscara escala restaurada")
 	assert_eq(sombra_ab.position, Vector2.ZERO, "Máscara posición restaurada")
