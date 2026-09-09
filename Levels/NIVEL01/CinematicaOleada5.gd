@@ -3,7 +3,8 @@ extends Node
 
 ## Cinemática al completar la oleada 5 de NIVEL01 (isla "Paso de Medea").
 ## Sustituye la cortinilla negra de continuar:
-## 1. Zoom de cámara hacia la isla enemiga (derecha).
+## 1. La cámara arranca directamente en el plano cercano de la isla (sin
+##    travelling de entrada): Perrena aparece ya grande en pantalla.
 ## 2. Perrena aparece corriendo desde la derecha (humo de pisadas estilo
 ##    defensoras ballesteras) y se detiene a mitad de isla.
 ## 3. Sigue caminando (animación Caminar) hasta el límite de la isla, el punto
@@ -17,9 +18,9 @@ extends Node
 ## control intacto. Con el mismo tamaño que la controlable (copia su escala).
 ## A prueba de fallos: cualquier referencia ausente aborta a la continuación
 ## sin colgar el juego. Sin temporizadores: todo avanza en _process (pausa
-## segura) con posiciones y fov relativos a los valores base (sin absolutos).
+## segura) con posiciones relativas a los valores base (sin absolutos).
 
-enum Fase { ZOOM, CORRER, PAUSA, CAMINAR, DIALOGO, RESTAURAR, FIN }
+enum Fase { CORRER, PAUSA, CAMINAR, DIALOGO, FIN }
 
 const ESCENA_PERRENA: PackedScene = preload("res://Entities/Jugador_Perrena/Perrena.tscn")
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
@@ -37,9 +38,9 @@ const RUTAS_CAMARAS: Array[String] = [
 ]
 ## Encuadre de la escena (medido en runtime): el fov NO mueve estas cámaras
 ## (proyección frustum) y cambiar a ortogonal rompía el DOF/niebla/contornos
-## (personajes emborronados en manchas negras). El zoom es un travelling con
-## seguimiento y la misma proyección (render idéntico al juego): la cámara se
-## acerca para ver grandes a los personajes y sigue a Perrena en su carrera.
+## (personajes emborronados en manchas negras). La cámara se coloca de una
+## vez en el plano cercano (render idéntico al juego) y sigue a Perrena en
+## su carrera: personajes grandes desde el primer frame.
 const FOCO_Y: float = 2.2
 const FOCO_Z: float = 23.05
 ## La corredora va a la derecha del centro mientras avanza a la izquierda.
@@ -49,8 +50,6 @@ const SEGUIR_DX: float = -1.2
 const SEGUIR_X_MIN: float = -7.5
 const SEGUIR_X_MAX: float = 3.0
 const SEGUIR_SUAVIZADO: float = 5.0
-const T_ZOOM: float = 1.4
-const T_RESTAURAR: float = 1.0
 
 const SPAWN_X: float = 6.2
 const PAUSA_X: float = 0.3
@@ -77,7 +76,7 @@ const HUMO_NOMBRE: String = "HumoPisadasCine"
 
 var terminada: bool = false
 
-var _fase: int = Fase.ZOOM
+var _fase: int = Fase.CORRER
 var _t: float = 0.0
 var _nivel = null
 var _al_terminar: Callable = Callable()
@@ -124,8 +123,8 @@ const RUTAS_VIEWPORTS_FXAA: Array[String] = [
 	"SubViewportFrente3D",
 ]
 var _fxaa_prev: Array = []
-## Sombras direccionales (PSSM): sus splits siguen a la cámara y al hacer
-## travelling tiemblan sobre torre/arbustos/pasto. En ortogonal quedan fijas.
+## Sombras direccionales (PSSM): sus splits siguen a la cámara y al moverse
+## tiemblan sobre torre/arbustos/pasto. En ortogonal quedan fijas.
 var _sombras_prev: Array = []
 ## CAPA001 (filtro de tono morado): Sprite3D fijo entre cámara y escena. Al
 ## mover la cámara se sale de campo (franja de cielo) o se pierde el tono;
@@ -137,6 +136,9 @@ const CAPA_MARGEN: float = 1.2
 const CAPA_ANCHO_FACTOR: float = 0.3554
 var _capa_nodo: Sprite3D = null
 var _capa_pos_base := Vector3.ZERO
+## Nieblas de guerra: solo visibles durante la cinemática (a la torre muere).
+const RUTAS_NIEBLA: Array[String] = ["NieblaGuerra", "NieblaGuerra3"]
+var _niebla_nodos: Array = []
 var _capa_esc_base := Vector3.ONE
 var _capa_lista: bool = false
 ## Perrena corre sin arco en la escena (se oculta al empezar).
@@ -170,6 +172,7 @@ func iniciar(nivel, al_terminar: Callable) -> void:
 	_fijar_sombras(true)
 	_ajustar_fxaa(true)
 	_ocultar_icono_refuerzo()
+	_mostrar_niebla(true)
 	_ajustar_contornos(true)
 	_ajustar_sombra_falsa(true)
 	_reunir_mascaras()
@@ -177,11 +180,15 @@ func iniciar(nivel, al_terminar: Callable) -> void:
 	_reunir_camaras()
 	_preparar_capa_tono()
 	_fx = _foco_clamp(SPAWN_X + SEGUIR_DX)
-	if _camaras.is_empty():
-		_empezar_carrera()
-	else:
-		_fase = Fase.ZOOM
-		_t = 0.0
+	# Sin travelling de entrada: la cámara parte directamente en el plano
+	# cercano donde aparece Perrena (misma proyección, solo posición; la
+	# base queda guardada para poder abortar/restaurar). Capa de tono y
+	# máscaras se sincronizan ya con el nuevo encuadre (sin destello).
+	if not _camaras.is_empty():
+		_snap_camara_foco()
+		_seguir_capa_tono()
+		_seguir_mascaras()
+	_empezar_carrera()
 
 
 func _process(delta: float) -> void:
@@ -190,11 +197,6 @@ func _process(delta: float) -> void:
 	_seguir_capa_tono()
 	_seguir_mascaras()
 	match _fase:
-		Fase.ZOOM:
-			_t += delta
-			_aplicar_camara(_suavizado(clampf(_t / T_ZOOM, 0.0, 1.0)))
-			if _t >= T_ZOOM:
-				_empezar_carrera()
 		Fase.CORRER:
 			if not is_instance_valid(_perrena):
 				_abortar()
@@ -299,7 +301,7 @@ func _foco_clamp(x: float) -> float:
 	return clampf(x, SEGUIR_X_MIN, SEGUIR_X_MAX)
 
 
-## Seguimiento suave de la corredora (solo encuadre X; Y/Z fijos del zoom).
+## Seguimiento suave de la corredora (solo encuadre X; Y/Z fijos del plano).
 func _seguir_corredora(delta: float) -> void:
 	if not is_instance_valid(_perrena):
 		return
@@ -312,7 +314,8 @@ func _seguir_corredora(delta: float) -> void:
 
 ## CAPA001 sigue a la cámara a distancia fija con el tamaño justo para
 ## cubrir el encuadre (ancho visible a esa profundidad + margen): el tono
-## morado se mantiene en todo el travelling. Sin cámaras o sin capa, no-op.
+## morado se mantiene durante todo el seguimiento. Sin cámaras o sin capa,
+## no-op.
 func _preparar_capa_tono() -> void:
 	_capa_nodo = (_nivel as Node).get_node_or_null(RUTA_CAPA_TONO) as Sprite3D
 	_capa_lista = _capa_nodo != null and not _camaras.is_empty()
@@ -353,12 +356,22 @@ func _restaurar_capa_tono() -> void:
 	_capa_nodo.scale = _capa_esc_base
 
 
-## Origen del travelling de vuelta (posición de seguimiento al llegar).
-func _fijar_origen_rest() -> void:
+## Coloca la cámara de golpe en el plano cercano del foco (arranque sin
+## travelling): mismas posiciones que el seguimiento, proyección intacta.
+func _snap_camara_foco() -> void:
 	for d in _camaras:
 		var cam: Camera3D = d["cam"]
 		if is_instance_valid(cam):
-			d["rest"] = cam.position
+			cam.position = _foco_pos()
+
+
+## Devuelve la cámara a su encuadre base (sin travelling de vuelta).
+func _restaurar_camara() -> void:
+	for d in _camaras:
+		var cam: Camera3D = d["cam"]
+		if not is_instance_valid(cam):
+			continue
+		cam.position = d["pos"]
 
 
 ## Diálogo "Conversación nivel 5" al llegar al límite: mismo sistema del
@@ -412,32 +425,6 @@ func _entrar_torre() -> void:
 	queue_free()
 
 
-func _aplicar_camara(k: float) -> void:
-	for d in _camaras:
-		var cam: Camera3D = d["cam"]
-		if not is_instance_valid(cam):
-			continue
-		var base: Vector3 = d["pos"]
-		cam.position = base.lerp(_foco_pos(), k)
-
-
-func _restaurar_camara(k: float) -> void:
-	for d in _camaras:
-		var cam: Camera3D = d["cam"]
-		if not is_instance_valid(cam):
-			continue
-		var base: Vector3 = d["pos"]
-		var origen: Vector3 = d.get("rest", cam.position)
-		cam.position = origen.lerp(base, k)
-
-
-func _suavizado(k: float) -> float:
-	return k * k * (3.0 - 2.0 * k)
-
-
-## Durante la escena no aparecen enemigos ni atacan las defensoras: se
-## detiene el spawner y las aliadas quedan visibles pero quietas (modo
-## pacífico). Se respeta el ajuste previo (modo debug las deja apagadas).
 func _aplicar_pausa_combate(pausar: bool) -> void:
 	var nodo := _nivel as Node
 	if pausar:
@@ -507,7 +494,7 @@ func _restaurar_mascaras() -> void:
 	_mascaras_base.clear()
 
 
-## FXAA apagado durante el travelling (ver miembros).
+## FXAA apagado mientras la cámara se mueve (ver miembros).
 func _ajustar_fxaa(apagar: bool) -> void:
 	if apagar:
 		_fxaa_prev.clear()
@@ -582,6 +569,24 @@ func _ocultar_arco(ocultar: bool) -> void:
 		_arco_nodo = null
 
 
+## Nieblas de guerra visibles solo en la escena (a la torre mueren con ella).
+func _mostrar_niebla(mostrar: bool) -> void:
+	if mostrar:
+		_niebla_nodos.clear()
+		for ruta in RUTAS_NIEBLA:
+			var nodo := (_nivel as Node).get_node_or_null(ruta) as Node3D
+			if nodo == null:
+				continue
+			_niebla_nodos.append({"nodo": nodo, "visible": nodo.visible})
+			nodo.visible = true
+	else:
+		for d in _niebla_nodos:
+			var nodo := d["nodo"] as Node3D
+			if is_instance_valid(nodo):
+				nodo.visible = bool(d["visible"])
+		_niebla_nodos.clear()
+
+
 ## Icono de refuerzo (mensajera, oleada 5): no debe verse en la escena.
 ## Se oculta sin restaurar: la configuración de oleada 6 lo elimina.
 func _ocultar_icono_refuerzo() -> void:
@@ -607,10 +612,10 @@ func _sonar_jingle() -> void:
 	rep.play()
 
 
-## Contorno al mínimo en todos los personajes durante la escena (el zoom los
-## agranda y la línea base se ve gruesa). Recorre el nivel buscando pases
-## TOON_LINEANEGRA (en el propio material o en su next_pass) y restaura al
-## terminar.
+## Contorno al mínimo en todos los personajes durante la escena (el plano
+## cercano los agranda y la línea base se ve gruesa). Recorre el nivel
+## buscando pases TOON_LINEANEGRA (en el propio material o en su next_pass)
+## y restaura al terminar.
 func _ajustar_contornos(minimo: bool) -> void:
 	if minimo:
 		if not ResourceLoader.exists(RUTA_SHADER_CONTORNO):
@@ -670,8 +675,8 @@ func _bloquear_boton_swap(bloquear: bool) -> void:
 		_btn_swap = null
 
 
-## Al terminar el zoom (la vista ya está en la isla): se sitúa a Eryn fuera
-## de campo y Perrena entra corriendo.
+## Al arrancar la escena (la vista ya está en el plano de la isla): se sitúa
+## a Eryn fuera de campo y Perrena entra corriendo.
 func _empezar_carrera() -> void:
 	_poner_en_escena_eryn()
 	_perrena = _obtener_perrena()
@@ -709,7 +714,7 @@ func _empezar_carrera() -> void:
 	_fase = Fase.CORRER
 
 
-## Protagonista al segundo piso, detrás del escudo (fuera de campo en el zoom).
+## Protagonista al segundo piso, detrás del escudo (fuera de campo en el plano).
 func _poner_en_escena_eryn() -> void:
 	if not is_instance_valid(_eryn):
 		return
@@ -898,8 +903,7 @@ func _restaurar_eryn_aparcada() -> void:
 ## posible y se sigue el flujo normal a oleada 6 sin pasar por la torre.
 func _abortar() -> void:
 	push_warning("[CinematicaOleada5] Secuencia abortada; se continúa a oleada 6.")
-	_fijar_origen_rest()
-	_restaurar_camara(1.0)
+	_restaurar_camara()
 	_restaurar_capa_tono()
 	_ocultar_arco(false)
 	_liberar_humo()
@@ -918,6 +922,7 @@ func _abortar() -> void:
 		_bloqueo_aplicado = false
 	_aplicar_pausa_combate(false)
 	_ajustar_contornos(false)
+	_mostrar_niebla(false)
 	_ajustar_sombra_falsa(false)
 	_fijar_sombras(false)
 	_ajustar_fxaa(false)

@@ -1594,9 +1594,10 @@ func _mostrar_inter_nivel_continuar():
 		transicion_carteles_en_progreso = false
 
 
-## Cinemática fin oleada 5 (sustituye a la cortinilla): zoom a la isla enemiga,
-## Perrena corre hasta mitad de isla, camina hasta el límite y Eryn queda en
-## el segundo piso tras el escudo. Sin input hasta que termina.
+## Cinemática fin oleada 5 (sustituye a la cortinilla): cámara parte en el
+## plano de la isla enemiga, Perrena corre hasta mitad de isla, camina hasta
+## el límite y Eryn queda en el segundo piso tras el escudo. Sin input hasta
+## que termina.
 func _iniciar_cinematica_oleada5() -> void:
 	# Sin ":=": GDScript.new() devuelve Variant y el proyecto trata el
 	# inferido-inseguro como error; con "=" la llamada es dinámica.

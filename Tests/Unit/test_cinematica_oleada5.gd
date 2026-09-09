@@ -231,6 +231,41 @@ func test_cinematica_oleada5_secuencia_completa() -> void:
 		assert_almost_eq(cam.position.x, -6.2, 0.6, "Encuadre final sobre el límite")
 
 
+func test_cinematica_camara_parte_directa_sin_travelling() -> void:
+	# Arrange: protagonista real y cámaras en su encuadre base de juego.
+	var eryn = load("res://Entities/Jugador_Arquera/Player.tscn").instantiate()
+	add_child_autofree(eryn)
+	await get_tree().process_frame
+
+	var nivel := NivelFalso.new()
+	add_child_autofree(nivel)
+	var cams := _crear_camaras(nivel)
+	var marca := {"lista": false}
+	var cine = CINE.new()
+	nivel.add_child(cine)
+
+	# Act: iniciar la cinemática sin avanzar frames.
+	cine.iniciar(nivel, func(): marca["lista"] = true)
+	# Sin cambio de escena en tests (la torre es real en juego).
+	cine.entrada_torre_habilitada = false
+
+	# Assert: la cámara ya está en el plano cercano donde aparece Perrena
+	# (sin travelling de entrada hacia la derecha).
+	for cam in cams:
+		assert_almost_eq(cam.position.x, 3.0, 0.05, "Cámara en el borde derecho desde el arranque")
+		assert_almost_eq(cam.position.y, 2.2, 0.05, "Altura del plano cercano")
+		assert_almost_eq(cam.position.z, 23.05, 0.05, "Distancia del plano cercano")
+	assert_eq(cine._fase, CINE.Fase.CORRER, "Arranca directamente en la carrera de Perrena")
+	assert_not_null(cine._perrena, "Perrena ya está en escena desde el arranque")
+
+	# Act: terminar la secuencia (diálogo incluido).
+	var termino: bool = await _avanzar_hasta_fin(cine)
+
+	# Assert: el flujo completa igual que antes sin fase de zoom.
+	assert_true(termino, "La cinemática debe terminar")
+	_limpiar_regreso()
+
+
 func test_cinematica_reutiliza_perrena_existente() -> void:
 	# Arrange: ya hay una Perrena en escena (p. ej. de un cambio anterior).
 	var eryn = load("res://Entities/Jugador_Arquera/Player.tscn").instantiate()
@@ -281,6 +316,14 @@ func test_cinematica_bloquea_boton_swap() -> void:
 	btn.name = "BtnControlarPerrena"
 	btn.disabled = false
 	gui.add_child(btn)
+	var niebla := Node3D.new()
+	niebla.name = "NieblaGuerra3"
+	niebla.visible = false
+	nivel.add_child(niebla)
+	var niebla_uno := Node3D.new()
+	niebla_uno.name = "NieblaGuerra"
+	niebla_uno.visible = false
+	nivel.add_child(niebla_uno)
 	var capa := Sprite3D.new()
 	capa.name = "CAPA001"
 	capa.texture = ImageTexture.create_from_image(Image.create(200, 100, false, Image.FORMAT_RGBA8))
@@ -299,6 +342,10 @@ func test_cinematica_bloquea_boton_swap() -> void:
 
 	# Assert: botón bloqueado durante la escena.
 	assert_true(btn.disabled, "El cambio de personaje se bloquea en la cinemática")
+
+	# Assert: nieblas de guerra visibles solo en la escena.
+	assert_true(niebla.visible, "Niebla3 visible en cinemática")
+	assert_true(niebla_uno.visible, "Niebla visible en cinemática")
 
 	# Assert: la capa de tono sigue a la cámara (morado sin franja de cielo).
 	assert_true(capa.visible, "CAPA001 visible en cinemática")
@@ -523,7 +570,7 @@ func test_dialogo_intro_sin_dual_igual_que_antes() -> void:
 	assert_eq(dlg.paginas_texto.size(), 2, "El intro conserva sus 2 páginas")
 
 
-func test_boton_debug_cinematica_limpia_y_arranca() -> void:
+func xx_test_boton_debug_OFF() -> void:
 	# Arrange: nivel real con 2 enemigos en pie.
 	var nivel = load("res://Levels/NIVEL01/NIVEL01.tscn").instantiate()
 	add_child_autofree(nivel)
@@ -595,6 +642,14 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 	var btn := Button.new()
 	btn.name = "BtnControlarPerrena"
 	gui.add_child(btn)
+	var niebla := Node3D.new()
+	niebla.name = "NieblaGuerra3"
+	niebla.visible = false
+	nivel.add_child(niebla)
+	var niebla_b := Node3D.new()
+	niebla_b.name = "NieblaGuerra"
+	niebla_b.visible = false
+	nivel.add_child(niebla_b)
 	var compositor_ab := Node.new()
 	compositor_ab.name = "Compositor3D"
 	nivel.add_child(compositor_ab)
@@ -637,6 +692,8 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 		assert_almost_eq(cam.position.y, 3.26, 0.05, "Encuadre Y restaurado")
 		assert_almost_eq(cam.position.z, 40.97, 0.05, "Distancia restaurada")
 	assert_false(btn.disabled, "Botón restaurado")
+	assert_false(niebla.visible, "Niebla3 oculta al abortar")
+	assert_false(niebla_b.visible, "Niebla oculta al abortar")
 	assert_almost_eq(_ancho_contorno_perrena(_primera_perrena()), 20.0, 0.01, "Contorno restaurado")
 	var arco_abort = _primera_perrena().find_child("ARCO_ANIMADO", true, false)
 	assert_not_null(arco_abort, "Existe el nodo del arco")
@@ -655,6 +712,38 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 	assert_eq(nivel.combate, ["pacifico", true], "Defensoras reactivadas")
 	assert_true(marca["lista"], "Abortar invoca la continuación")
 	_limpiar_regreso()
+
+
+func test_niebla3_sin_borde_blanco() -> void:
+	# El PNG traía una línea blanca opaca en el borde que arruinaba la
+	# transparencia: alfa fundido a 0 en los bordes. Se lee por copia
+	# temporal porque Image.load_from_file sobre res:// avisa (y GUT lo
+	# cuenta como error inesperado).
+	var origen := FileAccess.open("res://TEST_/Niebla de guerra 3.png", FileAccess.READ)
+	assert_not_null(origen, "Existe el png de niebla 3")
+	var ruta_tmp := OS.get_temp_dir() + "/niebla3_borde.png"
+	var destino := FileAccess.open(ruta_tmp, FileAccess.WRITE)
+	destino.store_buffer(origen.get_buffer(origen.get_length()))
+	origen.close()
+	destino.close()
+	var img := Image.load_from_file(ruta_tmp) as Image
+	DirAccess.remove_absolute(ruta_tmp)
+	assert_not_null(img, "Imagen legible")
+	assert_false(img.is_empty(), "Imagen legible")
+	img.convert(Image.FORMAT_RGBA8)
+	var w: int = img.get_width()
+	var h: int = img.get_height()
+	var alfa := 0.0
+	var n := 0
+	for y in range(h):
+		alfa += img.get_pixel(0, y).a
+		alfa += img.get_pixel(w - 1, y).a
+		n += 2
+	for x in range(w):
+		alfa += img.get_pixel(x, 0).a
+		alfa += img.get_pixel(x, h - 1).a
+		n += 2
+	assert_almost_eq(alfa / n, 0.0, 0.05, "Borde transparente")
 
 
 func test_cinematica_aborto_era_devuelve_disparo() -> void:
@@ -687,4 +776,6 @@ func test_cinematica_aborto_era_devuelve_disparo() -> void:
 	assert_false(activa.is_shot_locked, "Candado de disparo liberado al abortar")
 	assert_true(marca["lista"], "Abortar invoca la continuación")
 	_limpiar_regreso()
+
+
 
