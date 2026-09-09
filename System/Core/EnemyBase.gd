@@ -236,7 +236,14 @@ func _buscar_skeleton():
 
 func _buscar_jugador():
 	await get_tree().process_frame
-	player_ref = get_tree().get_first_node_in_group("player")
+	# El enemigo puede haberse liberado en ese frame (limpieza de oleada,
+	# botón debug, transiciones): fuera del árbol no hay get_tree().
+	if not is_inside_tree():
+		return
+	var arbol := get_tree()
+	if arbol == null:
+		return
+	player_ref = arbol.get_first_node_in_group("player")
 
 
 func _process(_delta):

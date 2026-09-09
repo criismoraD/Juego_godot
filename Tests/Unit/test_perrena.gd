@@ -319,3 +319,17 @@ func test_perrena_escaleras_muestra_espaldas_como_eryn():
 	tree.active = estaba
 	assert_lt(frente.z, -0.6, "Trepar debe mostrar la espalda (-Z como Eryn), fue %s" % frente)
 	assert_lt(absf(frente.x), 0.5, "No debe trepar de perfil, fue %s" % frente)
+
+
+func test_perrena_outline_igual_que_eryn() -> void:
+	# La línea negra sale del next_pass TOON_LINEANEGRA: Perrena la traía a
+	# 5.0 frente a 20.0 de Eryn y se veía sin contorno.
+	var mat_per := load("res://Entities/Jugador_Perrena/PERRENA_MAT.tres") as StandardMaterial3D
+	var mat_eryn := load("res://Entities/Jugador_Arquera/ARQUERA_MATERIAL.tres") as StandardMaterial3D
+	assert_not_null(mat_per, "Debe existir el material de Perrena")
+	assert_not_null(mat_eryn, "Debe existir el material de Eryn")
+	var out_per := mat_per.next_pass as ShaderMaterial
+	var out_eryn := mat_eryn.next_pass as ShaderMaterial
+	assert_not_null(out_per, "Perrena debe tener passe de contorno")
+	assert_not_null(out_eryn, "Eryn debe tener passe de contorno")
+	assert_eq(out_per.get_shader_parameter("outline_width"), out_eryn.get_shader_parameter("outline_width"), "Mismo grosor de contorno que Eryn")

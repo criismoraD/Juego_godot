@@ -103,6 +103,7 @@ var _viewport_precarga: SubViewport = null  ## Viewport invisible para compilar 
 @onready
 var busto_bronce_fondo: Node3D = _buscar_nodo_fondo_multiple(["BUSTO_BRONCE", "BUSTO_BRONCE2"])
 var escena_imp_estandarte: PackedScene = preload("res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn")
+const ESCENA_CINEMATICA_OLEADA5: GDScript = preload("res://Levels/NIVEL01/CinematicaOleada5.gd")
 var escena_dialogo_inicio_protagonista: PackedScene = preload(
 	"res://UI/Dialogo_Protagonista.tscn"
 )
@@ -291,6 +292,12 @@ func _ready():
 		GameUI.regreso_flechas_explosivas = 0
 		GameUI.regreso_flechas_multiples = 0
 		GameUI.regreso_municion_activa = 0
+		# Regreso tras la conversación del nivel 5 (interludio en la torre):
+		# en vez de cortinilla, empieza la oleada 6 directamente.
+		if GameUI.regreso_conversacion_nivel5:
+			GameUI.regreso_conversacion_nivel5 = false
+			_continuar_oleada5()
+			return
 		if oleada_retorno == 5:
 			_mostrar_victoria_con_continuar(
 				tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleadas completadas!"
@@ -1525,6 +1532,12 @@ func _mostrar_inter_nivel_continuar():
 	else:
 		msg = "¡Oleada 5 completada!"
 
+	# Oleada 5: en lugar de la cortinilla negra, cinemática de Perrena. Al
+	# terminar sigue el flujo normal a oleada 6 (ver _continuar_oleada5).
+	if oleada_combate_actual == 5:
+		_iniciar_cinematica_oleada5()
+		return
+
 	if game_ui:
 		game_ui.mostrar_pantalla_victoria(msg, func():
 			# Revivir aliadas al pasar de nivel
@@ -1579,6 +1592,52 @@ func _mostrar_inter_nivel_continuar():
 			oleada_combate_actual = 6
 			_configurar_oleada_combate(total_enemigos_oleada_6, 6)
 		transicion_carteles_en_progreso = false
+
+
+## Cinemática fin oleada 5 (sustituye a la cortinilla): zoom a la isla enemiga,
+## Perrena corre hasta mitad de isla, camina hasta el límite y Eryn queda en
+## el segundo piso tras el escudo. Sin input hasta que termina.
+func _iniciar_cinematica_oleada5() -> void:
+	# Sin ":=": GDScript.new() devuelve Variant y el proyecto trata el
+	# inferido-inseguro como error; con "=" la llamada es dinámica.
+	var cine = ESCENA_CINEMATICA_OLEADA5.new()
+	cine.name = "CinematicaOleada5"
+	add_child(cine)
+	cine.iniciar(self, _continuar_oleada5)
+
+
+## Debug ("Test Cinemática" del panel): deja la escena limpia y lanza la
+## cinemática de fin de oleada 5 sin pasar por muertes masivas (el +Oleada
+## mata a todo y llena la pantalla de enemigos y cadáveres). Los enemigos
+## se retiran sin efectos ni rastros; al terminar sigue el flujo a oleada 6.
+func _probar_cinematica_oleada5_debug() -> void:
+	if transicion_carteles_en_progreso:
+		return
+	oleada_combate_actual = 5
+	if is_instance_valid(wave_spawner):
+		wave_spawner.detener_spawning()
+		wave_spawner.cola_spawn.clear()
+		wave_spawner.goblins_spawned_in_wave = wave_spawner.enemigos_por_oleada
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(enemy):
+			enemy.queue_free()
+	if is_instance_valid(wave_spawner):
+		wave_spawner.active_goblins.clear()
+		wave_spawner.shield_imps_activos.clear()
+	transicion_carteles_en_progreso = true
+	_iniciar_cinematica_oleada5()
+
+
+## Continuación tras la cinemática: idéntica al "Continuar" de la cortinilla
+## para la oleada 5 (revivir aliadas, cartel nivel 6 y configurar oleada 6).
+func _continuar_oleada5() -> void:
+	for ally in AllyArcher.active_allies_cache:
+		if is_instance_valid(ally) and (ally is AllyArcher or ally is AllyBallestera) and (ally.current_state == ally.State.DEAD or ally.current_state == ally.State.DYING):
+			ally.revivir()
+	_mostrar_cartel_nivel_6()
+	oleada_combate_actual = 6
+	_configurar_oleada_combate(total_enemigos_oleada_6, 6)
+	transicion_carteles_en_progreso = false
 
 
 ## Precalienta en segundo plano los enemigos NUEVOS de la oleada que viene,
@@ -2467,6 +2526,14 @@ func _crear_panel_controles_spawn() -> void:
 			game_ui._completar_oleada_actual_debug()
 	)
 	grid_items.add_child(btn_saltar_oleada)
+	var btn_test_cine := Button.new()
+	btn_test_cine.text = "🎬 Test Cinemática"
+	btn_test_cine.custom_minimum_size = Vector2(84, 26)
+	btn_test_cine.add_theme_font_size_override("font_size", 11)
+	btn_test_cine.pressed.connect(func():
+		_probar_cinematica_oleada5_debug()
+	)
+	grid_items.add_child(btn_test_cine)
 	vbox_main.add_child(HSeparator.new())
 	var hbox_sistema := HBoxContainer.new()
 	hbox_sistema.add_theme_constant_override("separation", 6)

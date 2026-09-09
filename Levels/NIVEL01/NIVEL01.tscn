@@ -294,7 +294,7 @@ transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.150
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -9.14372, 4.721031, -0.37669206)
 
 [node name="Ladder3" parent="PlataformaOneway3" unique_id=238257157 instance=ExtResource("7_ladder")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.3265772, 0.1503278)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.06970596, -3.308568, 0.1503278)
 
 [node name="CaidaPiedrasTorre" type="Node3D" parent="." unique_id=1948201999]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 4.2, 0)
@@ -632,7 +632,11 @@ transform = Transform3D(0.38059038, 0.41478068, 0.025668446, -0.1864259, 0.76471
 transform = Transform3D(1.2852708, 0, 0, 0, 1.1745448, 0, 0, 0, 1, -8.618146, 0.17520651, 0.22708756)
 
 [node name="Pilar3" parent="." unique_id=1621849628 instance=ExtResource("25_koe3n")]
-transform = Transform3D(0.40953207, 1.1470709, 0.04482469, 0, 0.15306571, -1.0523095, -0.28043136, 1.6751416, 0.065460384, -8.953327, 2.9028888, -2.589658)
+transform = Transform3D(0.32624453, 1.4170254, 0.117442556, -0.05963481, 0.4582368, -0.99213076, -0.38355932, 1.1340351, 0.25414717, -9.480933, 2.5809605, -2.3697925)
+
+[node name="Pilar4" parent="." unique_id=767204228 instance=ExtResource("25_koe3n")]
+transform = Transform3D(0.4854092, 0.17744541, -0.122372195, -0.055784363, 0.4491206, -1.1337563, -0.021033177, 2.9039595, 0.18282196, -9.480933, 2.427037, -2.8913455)
+visible = false
 
 [node name="Pilar2" parent="." unique_id=1450324726 instance=ExtResource("25_koe3n")]
 transform = Transform3D(1.1655468, 0, 0, 0, 1.25827, 0, 0, 0, 1, -7.039701, 0.13212493, -1.0751619)
@@ -740,10 +744,14 @@ transform = Transform3D(0.022335617, -0.021603156, 1.2669097, -8.3541457e-17, 1.
 transform = Transform3D(0.022335617, -0.021603156, 1.2669097, -8.3541457e-17, 1.5926845, 0.017188132, -1.504783, -0.00032065882, 0.01880484, -8.1339245, 4.4382005, -0.23471218)
 
 [node name="Woodmetal_piso2" parent="." unique_id=771904683 instance=ExtResource("50_woodmetal")]
-transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -8.4338, 2.9675593, 0.33921558)
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -8.4338, 2.9321177, 0.33921558)
 
 [node name="Woodmetal_piso7" parent="." unique_id=1559076540 instance=ExtResource("50_woodmetal")]
-transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -8.4338, 2.9929326, -1.1128731)
+transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -8.4338, 3.0447693, -1.1128731)
+visible = false
+
+[node name="Woodmetal_piso11" parent="." unique_id=1364185402 instance=ExtResource("50_woodmetal")]
+transform = Transform3D(2.14817, 0, 0, 0, 0.89911366, 0.017010996, 0, -0.0121969115, 1.2539911, -8.4338, 3.0603664, -1.1128731)
 
 [node name="Woodmetal_piso3" parent="." unique_id=188427445 instance=ExtResource("50_woodmetal")]
 transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -9.207453, 4.430393, 0.4604961)
@@ -905,6 +913,11 @@ transform = Transform3D(0.26288572, 0, 0, 0, 0.22413635, 0, 0, 0, 1.0579704, -8.
 layers = 2
 texture = ExtResource("61_carretaA")
 
+[node name="CarretaA4" type="Sprite3D" parent="." unique_id=1567999704]
+transform = Transform3D(0.16692497, 0, 0, 0, 0.15846042, 0, 0, 0, 1.0579704, -13.5545635, 2.5983927, -2.2302876)
+layers = 2
+texture = ExtResource("61_carretaA")
+
 [node name="CarretaA3" type="Sprite3D" parent="." unique_id=89542506]
 transform = Transform3D(0.26288572, 0, 0, 0, 0.22413635, 0, 0, 0, 1.0579704, 3.2046359, -0.3732767, -5.9144607)
 layers = 2
@@ -918,6 +931,11 @@ texture = ExtResource("59_barricadaC")
 
 [node name="BarricadaC2" type="Sprite3D" parent="." unique_id=1006604226]
 transform = Transform3D(0.4124206, 0, -0.21692717, 0, 0.3270525, 0, 0.2103053, 0, 0.42540646, -6.9622574, 0.19363472, -4.6025023)
+layers = 2
+texture = ExtResource("59_barricadaC")
+
+[node name="BarricadaC4" type="Sprite3D" parent="." unique_id=198504116]
+transform = Transform3D(0.15243205, 0, 0.037909955, 0, 0.1302377, 0, 0.07772955, 0, -0.07434356, -13.6586485, 2.5343757, -2.328309)
 layers = 2
 texture = ExtResource("59_barricadaC")
 

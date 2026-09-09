@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://vf0xb7t5572j"
+path="res://.godot/imported/Perrena Jingle.mp3-67dcd87a2c3c2359e91dfd2d970713aa.mp3str"
+
+[deps]
+
+source_file="res://TEST_/Perrena Jingle.mp3"
+dest_files=["res://.godot/imported/Perrena Jingle.mp3-67dcd87a2c3c2359e91dfd2d970713aa.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

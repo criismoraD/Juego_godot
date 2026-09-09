@@ -9,6 +9,23 @@ signal continuado
 @export var audio_pitch_scale: float = 1.0
 @export var paginas_texto: PackedStringArray = PackedStringArray()
 @export var paginas_imagenes: Array[Texture2D] = []
+## Hablante por página ("eryn"/"perrena", en minúsculas; vacío = eryn).
+## Solo tiene efecto con dos retratos (RetratoEryn + RetratoPerrena).
+@export var paginas_hablante: PackedStringArray = PackedStringArray()
+@export var nombre_perrena: String = "Perrena"
+var retrato_eryn: Node = null
+var retrato_perrena: Node = null
+var _modo_dual: bool = false
+var _escala_eryn_base := Vector2.ONE
+var _escala_perrena_base := Vector2.ONE
+var _pos_eryn_base := Vector2.ZERO
+var _pos_perrena_base := Vector2.ZERO
+var _alto_eryn_px: float = 0.0
+var _alto_perrena_px: float = 0.0
+var _nombre_eryn: String = ""
+var _nombre_perrena: String = ""
+const COLOR_RETRATO_APAGADO := Color(0.45, 0.45, 0.45)
+const ESCALA_RETRATO_APAGADO: float = 0.85
 var _revelando: bool = false
 var _indice_pagina: int = 0
 var _audio_player: AudioStreamPlayer
@@ -81,6 +98,7 @@ func _ready():
 
 	_preparar_dialogo_label()
 	_actualizar_texto_boton()
+	_inicializar_dual()
 
 	var boton_saltar = find_child("BotonSaltar", true, false)
 	if boton_saltar and boton_saltar is Button:
@@ -189,6 +207,97 @@ func _aplicar_pagina_actual() -> void:
 		and paginas_imagenes[_indice_pagina]
 	):
 		icono_retrato.texture = paginas_imagenes[_indice_pagina]
+
+	if _modo_dual:
+		_actualizar_hablante()
+
+
+## Duelo de retratos: el que no habla se encoge y oscurece. Solo si la
+## escena trae RetratoEryn + RetratoPerrena (el intro no los tiene y queda
+## exactamente igual que antes).
+func _inicializar_dual() -> void:
+	retrato_eryn = find_child("RetratoEryn", true, false)
+	retrato_perrena = find_child("RetratoPerrena", true, false)
+	_modo_dual = retrato_eryn != null and retrato_perrena != null
+	if not _modo_dual:
+		return
+	_escala_eryn_base = _escala_nodo(retrato_eryn)
+	_escala_perrena_base = _escala_nodo(retrato_perrena)
+	_pos_eryn_base = _pos_nodo(retrato_eryn)
+	_pos_perrena_base = _pos_nodo(retrato_perrena)
+	_alto_eryn_px = _alto_retrato(retrato_eryn)
+	_alto_perrena_px = _alto_retrato(retrato_perrena)
+	var nodo_nombre = find_child("Nombre", true, false)
+	if nodo_nombre and nodo_nombre is Label:
+		_nombre_eryn = (nodo_nombre as Label).text
+	_nombre_perrena = tr(nombre_perrena)
+	_actualizar_hablante()
+
+
+func _escala_nodo(nodo: Node) -> Vector2:
+	if nodo is Node2D:
+		return (nodo as Node2D).scale
+	if nodo is Control:
+		return (nodo as Control).scale
+	return Vector2.ONE
+
+
+func _pos_nodo(nodo: Node) -> Vector2:
+	if nodo is Node2D:
+		return (nodo as Node2D).position
+	if nodo is Control:
+		return (nodo as Control).position
+	return Vector2.ZERO
+
+
+## Alto en píxeles de la textura (para anclar el borde inferior al encoger).
+func _alto_retrato(nodo: Node) -> float:
+	if nodo is Sprite2D:
+		var tex := (nodo as Sprite2D).texture as Texture2D
+		if tex:
+			return float(tex.get_height())
+	if nodo is TextureRect:
+		var tex2 := (nodo as TextureRect).texture as Texture2D
+		if tex2:
+			return float(tex2.get_height())
+	return 0.0
+
+
+func _hablante_actual() -> String:
+	if _indice_pagina < paginas_hablante.size():
+		var hab := String(paginas_hablante[_indice_pagina]).strip_edges().to_lower()
+		if not hab.is_empty():
+			return hab
+	return "eryn"
+
+
+func _actualizar_hablante() -> void:
+	if not _modo_dual:
+		return
+	var es_eryn := _hablante_actual() != "perrena"
+	_aplicar_foco(retrato_eryn, es_eryn, _escala_eryn_base, _pos_eryn_base, _alto_eryn_px)
+	_aplicar_foco(retrato_perrena, not es_eryn, _escala_perrena_base, _pos_perrena_base, _alto_perrena_px)
+	var nodo_nombre = find_child("Nombre", true, false)
+	if nodo_nombre and nodo_nombre is Label:
+		(nodo_nombre as Label).text = _nombre_eryn if es_eryn else _nombre_perrena
+
+
+## El inactivo se encoge y oscurece, pero su borde inferior queda anclado
+## al marco (se baja la mitad de lo que pierde de alto) para que no flote
+## ni parezca recortado.
+func _aplicar_foco(nodo: Node, activo: bool, base_esc: Vector2, base_pos: Vector2, alto_px: float) -> void:
+	if nodo == null:
+		return
+	if nodo is CanvasItem:
+		(nodo as CanvasItem).modulate = Color.WHITE if activo else COLOR_RETRATO_APAGADO
+	var nueva_esc: Vector2 = base_esc if activo else base_esc * ESCALA_RETRATO_APAGADO
+	if nodo is Node2D:
+		(nodo as Node2D).scale = nueva_esc
+		(nodo as Node2D).position = Vector2(
+			base_pos.x, base_pos.y + alto_px * (base_esc.y - nueva_esc.y) * 0.5
+		)
+	elif nodo is Control:
+		(nodo as Control).scale = nueva_esc
 
 
 func _revelar_texto():
