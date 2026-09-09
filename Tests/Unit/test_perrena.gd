@@ -243,3 +243,22 @@ func test_perrena_resuelve_todas_las_anims_del_arbol():
 	assert_not_null(anim_p, "Perrena debe tener AnimationPlayer")
 	for nombre in requeridas:
 		assert_true(anim_p.has_animation(nombre), "Debe resolver '%s' (sin esto el árbol no anima)" % nombre)
+
+
+func test_perrena_arbol_usa_base_del_animation_player():
+	# Arrange: el árbol resuelve tracks desde su root_node; si no coincide con
+	# la base del player, no mueve ningún hueso y Perrena se desplaza estática
+	var per_scene = load("res://Entities/Jugador_Perrena/Perrena.tscn")
+	var per = per_scene.instantiate()
+	add_child_autofree(per)
+	await get_tree().process_frame
+
+	# Assert
+	var tree: AnimationTree = per.find_child("AnimationTree", true, false)
+	var anim_p: AnimationPlayer = per.find_child("AnimationPlayer", true, false)
+	assert_not_null(tree, "Perrena debe tener AnimationTree")
+	assert_not_null(anim_p, "Perrena debe tener AnimationPlayer")
+	var base_jugador: Node = anim_p.get_node_or_null(anim_p.root_node)
+	assert_not_null(base_jugador, "La base del player debe resolverse")
+	var base_arbol: Node = per.get_node_or_null(tree.root_node)
+	assert_eq(base_arbol, base_jugador, "El árbol debe usar la base del player (si no, Perrena se mueve estática)")

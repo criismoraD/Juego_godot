@@ -73,6 +73,9 @@ func _ready() -> void:
 	# Perrena pase por el costado de las defensoras sin chocar (capa 2 excluida).
 	_aplicar_colision_jugador()
 
+	# 7. Alinear la base de tracks del árbol con la del AnimationPlayer.
+	_alinear_base_tracks_arbol()
+
 
 ## Instancia los attachments de huesos para el arco animado y las flechas en las manos de Perrena.
 ## Si ya existen en el .tscn (colocados a mano en el editor), se reutilizan y
@@ -156,6 +159,26 @@ func _resolver_attachment_existente(skel: Skeleton3D, nombre: String) -> void:
 	var idx: int = skel.find_bone(String(att.bone_name))
 	if idx != -1:
 		att.bone_idx = idx
+
+
+## El AnimationTree resuelve los tracks de los clips desde su root_node,
+## pero los clips importados están escritos para la base del AnimationPlayer
+## (en este GLB el player cuelga del Skeleton3D, no de la raíz del modelo).
+## Si ambas bases no coinciden, el árbol no mueve ningún hueso: Perrena se
+## desplaza estática aunque los clips se vean bien en el editor (ahí
+## reproduce el player directo, con su propia base). Se igualan en runtime.
+func _alinear_base_tracks_arbol() -> void:
+	var tree := find_child("AnimationTree", true, false) as AnimationTree
+	var anim_p := find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if tree == null or anim_p == null:
+		return
+	var base_jugador := anim_p.get_node_or_null(anim_p.root_node) as Node
+	if base_jugador == null:
+		return
+	var base_arbol := get_node_or_null(tree.root_node) as Node
+	if base_arbol == base_jugador:
+		return
+	tree.root_node = get_path_to(base_jugador)
 
 
 ## Registra alias de animación para que el AnimationTree dinámico (que pide
