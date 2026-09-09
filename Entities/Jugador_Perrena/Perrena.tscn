@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://c463x5x6uwew4" path="res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb" id="4_flechaexp"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_preview"]
-animation = &"Armature|Armature|IDLE"
+animation = &"Idle"
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_preview"]
 nodes/output/position = Vector2(300, 160)
@@ -91,7 +91,7 @@ visible = false
 [node name="AnimationTree" type="AnimationTree" parent="." unique_id=911179179]
 root_node = NodePath("../PerrenaModel")
 tree_root = SubResource("AnimationNodeBlendTree_preview")
-anim_player = NodePath("PerrenaModel/AnimationPlayer")
+anim_player = NodePath("PerrenaModel/Armature/AnimationPlayer")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1585098876]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0)
