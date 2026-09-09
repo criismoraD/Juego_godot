@@ -99,6 +99,8 @@ var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer  # AnimationPlayer del arco
 var arrow_node: Node3D  # Nodo de la flecha para visibilidad
 var explosive_arrow_node: Node3D  # Nodo de la flecha explosiva visual
+## Clip del nodo "Land": aterrizaje y pose de agachado congelada (Perrena usa su "agacharse")
+var anim_aterrizaje_id: String = "Armature|Armature|ATERRIZAJE"
 var _arrow_base_scale: Vector3 = Vector3(40.0, 40.0, 40.0)
 var _explosive_arrow_base_scale: Vector3 = Vector3(40.0, 40.0, 40.0)
 # --- ESTADO ---
@@ -189,7 +191,7 @@ func _ready():
 
 	# Añadir layer 10 al collision_mask para colisionar con BarreraLimite (bit 9)
 	# y remover layer 4 (Enemy Projectiles, bit 3) para no colisionar físicamente con proyectiles enemigos
-	collision_mask = (collision_mask | (1 << 9)) & ~(1 << 3)
+	_aplicar_colision_jugador()
 
 	if anim_tree:
 		# CONSTRUIR ÁRBOL DINÁMICAMENTE (Para evitar corrupciones del editor)
@@ -273,6 +275,35 @@ func _aplicar_prioridad_renderizado(offset: float) -> void:
 	for node in find_children("*", "VisualInstance3D", true, false):
 		if node is VisualInstance3D:
 			node.sorting_offset = offset
+
+
+## Configuración física del jugador: capa 1 y máscara con mundo (1) +
+## BarreraLimite (10), sin proyectiles enemigos (4) y sin capa 2
+## (defensoras aliadas y sus escudos: el jugador pasa por el costado).
+## Idempotente: Perrena la re-aplica tras super._ready() para garantizar
+## paridad total con la protagonista.
+func _aplicar_colision_jugador() -> void:
+	collision_layer = 1
+	collision_mask = (collision_mask | (1 << 9)) & ~(1 << 3)
+
+
+## Aparcado (personaje sin control tras cambiar a Perrena/Eryn): su cuerpo
+## no debe quedar como muro invisible. Con aparcado=true pasa a capa 0 y
+## desactiva su CollisionShape; con false restaura la capa original.
+static func configurar_colision_aparcado(personaje: Node, aparcado: bool) -> void:
+	if personaje == null or not (personaje is CollisionObject3D):
+		return
+	var cuerpo := personaje as CollisionObject3D
+	if aparcado:
+		if not cuerpo.has_meta("_capa_original"):
+			cuerpo.set_meta("_capa_original", cuerpo.collision_layer)
+		cuerpo.collision_layer = 0
+	else:
+		var capa: int = int(cuerpo.get_meta("_capa_original")) if cuerpo.has_meta("_capa_original") else 1
+		cuerpo.collision_layer = capa
+	var forma := personaje.find_child("CollisionShape3D", true, false) as CollisionShape3D
+	if forma:
+		forma.set_deferred("disabled", aparcado)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -541,6 +572,24 @@ func _get_best_ladder() -> Area3D:
 				min_dist = dist
 				best = lad
 	return best
+
+
+## True si la protagonista está en la mitad inferior de la escalera activa
+## (al pie, tocando el piso inferior). Ahí S agacha en vez de trepar.
+func _esta_al_pie_de_escalera() -> bool:
+	if not is_instance_valid(current_ladder):
+		return false
+	var centro_y: float = current_ladder.global_position.y
+	var col: CollisionShape3D = null
+	for candidato in current_ladder.find_children("*", "CollisionShape3D", true, false):
+		var col_cand := candidato as CollisionShape3D
+		if col_cand and col_cand.shape is BoxShape3D:
+			col = col_cand
+			break
+	if col:
+		# Mitad inferior del área = pie de la escalera
+		return global_position.y <= col.global_position.y
+	return global_position.y <= centro_y
 
 
 func stop_climbing():
@@ -820,11 +869,15 @@ func _physics_process(delta):
 	if ladder_cooldown > 0:
 		ladder_cooldown -= delta
 
-	# Detectar inicio de escalada
+	# Detectar inicio de escalada (S al pie, tocando el piso inferior = agacharse, no trepar)
+	var agacharse_al_pie: bool = input_vert > 0.5 and is_on_floor() and _esta_al_pie_de_escalera()
 	if is_near_ladder and ladder_cooldown <= 0 and current_move_state != MoveState.CLIMBING:
-		if abs(input_vert) > 0.5:
+		if abs(input_vert) > 0.5 and not agacharse_al_pie:
 			current_move_state = MoveState.CLIMBING
 			velocity.x = 0
+			_ajustar_hitbox_agachado(false)
+			if anim_tree:
+				anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
 
 			# Centrar en la escalera (Solo eje X)
 			if current_ladder:
@@ -843,7 +896,17 @@ func _physics_process(delta):
 	# 3. DETECCIÓN DE ATERRIZAJE (Post-movimiento)
 	if is_on_floor():
 		if current_move_state == MoveState.CLIMBING:
-			if input_vert > 0 or absf(input_dir) > 0.1:
+			if input_vert > 0.5 and _esta_al_pie_de_escalera():
+				# Bajó hasta el piso inferior y sigue presionando S: se agacha
+				current_move_state = MoveState.CROUCHING
+				crouch_timer = 0.0
+				_ajustar_hitbox_agachado(true)
+				_reset_armature_rotation()
+				_detener_sonido_escalera()
+				if anim_tree:
+					anim_tree.set("parameters/CrouchTimeScale/scale", 1.0)
+					set_motion_anim("land")
+			elif input_vert > 0 or absf(input_dir) > 0.1:
 				current_move_state = MoveState.GROUND
 				set_motion_anim("ground")
 				_reset_armature_rotation()
@@ -887,8 +950,8 @@ func _physics_process(delta):
 
 			if Input.is_action_just_pressed("ui_accept"):
 				_perform_jump()
-			elif input_vert > 0.5 and not is_near_ladder:
-				# Agacharse al presionar S / Abajo en el suelo
+			elif input_vert > 0.5:
+				# Agacharse al presionar S / Abajo en el suelo (incluso al pie de la escalera)
 				current_move_state = MoveState.CROUCHING
 				crouch_timer = 0.0
 				_ajustar_hitbox_agachado(true)
@@ -2839,4 +2902,3 @@ func _update_sobrecarga_vfx(active: bool) -> void:
 	else:
 		if is_instance_valid(_sobrecarga_vfx) and _sobrecarga_vfx.emitting:
 			_sobrecarga_vfx.emitting = false
-

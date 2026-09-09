@@ -2,21 +2,99 @@
 
 [ext_resource type="Script" uid="uid://dyh5fxvq44xnr" path="res://Entities/Jugador_Perrena/Perrena.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://spumkq1f6k2x" path="res://Entities/Jugador_Perrena/Perrena.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx" id="3_arco"]
+[ext_resource type="PackedScene" uid="uid://uqh6g6f3e2n4" path="res://Entities/Jugador_Arquera/PROTA.glb" id="4_flecha"]
+[ext_resource type="PackedScene" uid="uid://c463x5x6uwew4" path="res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb" id="4_flechaexp"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_preview"]
+animation = &"Armature|Armature|IDLE"
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_preview"]
+nodes/output/position = Vector2(300, 160)
+nodes/Preview/node = SubResource("AnimationNodeAnimation_preview")
+nodes/Preview/position = Vector2(0, 0)
+node_connections = [&"output", 0, &"Preview"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_perrena"]
-radius = 0.5
-height = 2.8
+radius = 0.4
+height = 1.9814942
 
 [node name="Perrena" type="CharacterBody3D" unique_id=1099400103]
 script = ExtResource("1_script")
-vida_maxima = 3
+vida_maxima = 4
 
 [node name="PerrenaModel" parent="." unique_id=211543578 instance=ExtResource("2_model")]
-transform = Transform3D(-3.27838e-07, 0, 7.5, 0, 7.5, 0, -7.5, 0, -3.27838e-07, 0, -0.065, 0)
+transform = Transform3D(-2.6226832e-07, 0, 6, 0, 6, 0, -6, 0, -2.6226832e-07, 0, 0.07101923, 0)
+
+[node name="Skeleton3D" parent="PerrenaModel/Armature" parent_id_path=PackedInt32Array(211543578, 905819920) index="0" unique_id=1399713427]
+bones/0/position = Vector3(9.536743e-06, 2.0901175, -19.56701)
+bones/0/rotation = Quaternion(-0.5871327, -0.3403936, 0.38740307, 0.62396014)
+bones/1/rotation = Quaternion(0.15635586, 0.27608496, 0.9384286, -0.13668188)
+bones/2/rotation = Quaternion(-0.3513664, 0.0619383, 0.047367077, 0.9329854)
+bones/3/rotation = Quaternion(0.54765314, -0.014924854, -0.07081956, 0.83356935)
+bones/4/rotation = Quaternion(0.30768317, -0.12031138, 0.037695576, 0.9430988)
+bones/6/rotation = Quaternion(-0.23092689, 0.1954131, 0.9326241, 0.19672014)
+bones/7/rotation = Quaternion(-0.34140053, -0.04192034, -0.08015884, 0.9355549)
+bones/8/rotation = Quaternion(0.5822788, 0.04570929, 0.12151568, 0.80255604)
+bones/9/rotation = Quaternion(0.29718047, 0.117659606, -0.036930572, 0.94682425)
+bones/11/rotation = Quaternion(0.10247196, 0.0030731051, -0.037347063, 0.9940299)
+bones/12/rotation = Quaternion(0.051088125, 0.0075449147, -0.02373671, 0.9983835)
+bones/13/rotation = Quaternion(0.051034104, 0.008333481, -0.024194263, 0.99836904)
+bones/14/rotation = Quaternion(-0.61790675, -0.37551427, 0.5864046, -0.36511648)
+bones/15/rotation = Quaternion(0.23498154, -0.38521224, -0.07218477, 0.8894856)
+bones/16/rotation = Quaternion(0.020795552, -0.0013488345, 0.39668196, 0.91771954)
+bones/17/rotation = Quaternion(-0.0033213892, 0.061698627, 0.0005512889, 0.9980892)
+bones/18/rotation = Quaternion(0.50369555, 0.041008357, 0.066850886, 0.860314)
+bones/19/rotation = Quaternion(0.7027656, -0.019661764, 0.097399525, 0.7044483)
+bones/20/rotation = Quaternion(0.36204368, -0.008263917, -0.051191635, 0.93071777)
+bones/22/rotation = Quaternion(0.24026409, 0.39743096, 0.31836104, 0.8264189)
+bones/23/rotation = Quaternion(0.005119629, -0.006871851, -0.262703, 0.9648387)
+bones/24/position = Vector3(-0.05758089, 0.94887143, 4.19559e-08)
+bones/24/rotation = Quaternion(-0.03679828, -0.006084506, -0.26571995, 0.96332854)
+bones/26/rotation = Quaternion(-0.0024496596, 0.012627984, 0.032658704, 0.99938387)
+bones/27/rotation = Quaternion(-0.1446271, 0.45662364, -0.06160474, 0.8756613)
+bones/29/rotation = Quaternion(0.62316424, -0.3716226, 0.5578207, 0.40298787)
+bones/30/rotation = Quaternion(0.32000202, -0.013132835, 0.12622716, 0.9388786)
+bones/31/rotation = Quaternion(0.103617355, 0.1419894, -0.32466605, 0.9293517)
+bones/32/rotation = Quaternion(-0.17539369, 0.08619458, -0.03282843, 0.9801683)
+bones/33/rotation = Quaternion(0.0049761576, 0.00032709297, -0.0032437027, 0.99998236)
+bones/34/rotation = Quaternion(0.04291097, 0.0009263753, -0.02783373, 0.99869066)
+bones/35/rotation = Quaternion(-0.019204024, -0.00062920403, 0.04881674, 0.99862295)
+bones/37/rotation = Quaternion(0.24050514, 0.0015687922, -0.26469773, 0.93385756)
+bones/38/rotation = Quaternion(0.005833369, 0.033485744, 0.24196762, 0.96968883)
+bones/39/rotation = Quaternion(-0.011895769, -0.006437838, -0.27331486, 0.96182954)
+
+[node name="BoneAttach_Arco" type="BoneAttachment3D" parent="PerrenaModel/Armature/Skeleton3D" index="1" unique_id=829651798]
+transform = Transform3D(0.7554398, 0.062297974, -0.65224916, -0.42989883, 0.7983676, -0.42165846, 0.4944661, 0.5989391, 0.62990063, 3.3995578, 12.634787, -18.906345)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
+
+[node name="ARCO_ANIMADO" parent="PerrenaModel/Armature/Skeleton3D/BoneAttach_Arco" unique_id=470890659 instance=ExtResource("3_arco")]
+transform = Transform3D(-6.517733, -22.008913, 9.905899, -24.121386, 6.2900124, -1.8958755, -0.82328176, -10.052032, -22.87529, -1.2457314, 2.8541641, 0.4075203)
+
+[node name="SpawnPosition_FlechaExplosiva" type="Marker3D" parent="PerrenaModel/Armature/Skeleton3D/BoneAttach_Arco" unique_id=2083918275]
+transform = Transform3D(4.498, 31.18, -6.942, -30.294, 1.941, -10.912, -10.129, 8.041, 29.552, -10.05, -18.27, 7.743)
+
+[node name="BoneAttach_Flecha" type="BoneAttachment3D" parent="PerrenaModel/Armature/Skeleton3D" index="2" unique_id=1617127063]
+transform = Transform3D(-0.8995801, -0.4074309, 0.15733787, 0.39375013, -0.60067225, 0.6958115, -0.18898655, 0.6878902, 0.7007787, -4.5331125, -5.6647034, -19.085808)
+bone_name = "mixamorig_RightHand"
+bone_idx = 32
+
+[node name="FLECHA" parent="PerrenaModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=1873166665 instance=ExtResource("4_flecha")]
+transform = Transform3D(-8.404, -23.576, -19.938, 30.812, -7.737, -3.839, -1.992, -20.207, 24.733, -0.497, 3.163, -0.089)
+visible = false
+
+[node name="FlechaExplosiva" parent="PerrenaModel/Armature/Skeleton3D/BoneAttach_Flecha" unique_id=466263061 instance=ExtResource("4_flechaexp")]
+transform = Transform3D(8.055, -24.329, 28.643, -36.252, 2.692, 12.481, -9.907, -29.632, -22.383, 5.39, 15.488, 7.723)
+visible = false
 
 [node name="AnimationTree" type="AnimationTree" parent="." unique_id=911179179]
 root_node = NodePath("../PerrenaModel")
+tree_root = SubResource("AnimationNodeBlendTree_preview")
+anim_player = NodePath("PerrenaModel/AnimationPlayer")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1585098876]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0)
 shape = SubResource("CapsuleShape_perrena")
+
+[editable path="PerrenaModel"]

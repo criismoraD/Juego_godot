@@ -1087,16 +1087,21 @@ func _cambiar_personaje_controlable() -> void:
 
 func _activar_personaje(personaje: Node3D) -> void:
 	personaje.visible = true
+	Player.configurar_colision_aparcado(personaje, false)
 	personaje.set_physics_process(true)
 	personaje.set_process(true)
+	personaje.set_process_unhandled_input(true)
 	if not personaje.is_in_group("player"):
 		personaje.add_to_group("player")
 
 
 func _desactivar_personaje(personaje: Node3D) -> void:
 	personaje.visible = false
+	Player.configurar_colision_aparcado(personaje, true)
 	personaje.set_physics_process(false)
 	personaje.set_process(false)
+	# El aparcado no debe reaccionar al input (cambiaba su munición con R, etc.)
+	personaje.set_process_unhandled_input(false)
 	if personaje.is_in_group("player"):
 		personaje.remove_from_group("player")
 

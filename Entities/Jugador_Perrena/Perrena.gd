@@ -1,11 +1,11 @@
 class_name Perrena
 extends "res://Entities/Jugador_Arquera/Player.gd"
 
-## Perrena — defensora controlable (variante arquera de la protagonista):
-## - Movimientos completos de la protagonista (correr, saltar, agacharse, escaleras).
-## - Disparo con arco animado y mecánicas completas de proyectiles (normales, explosivas, múltiples).
+## Perrena — segundo player jugable, idéntica a la protagonista Eryn:
+## - Mismos movimientos (correr, saltar, agacharse, escaleras), animaciones y vida (4).
+## - Disparo con arco animado de 1 proyectil y mecánicas completas (normales, explosivas, múltiples).
 ## - Mantiene el HUD y sistema de corazones de la protagonista.
-## - Como defensora controlable tiene 3 de vida (vida_maxima).
+## - Misma escala de modelo (3.1) y cápsula que Eryn: el arco queda del mismo tamaño.
 
 const MAT_PERRENA: Material = preload("res://Entities/Jugador_Perrena/PERRENA_MAT.tres")
 const ARCO_SCENE: PackedScene = preload("res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx")
@@ -40,7 +40,7 @@ const SUBSTITUCIONES_ANIMS: Dictionary = {
 
 
 func _init() -> void:
-	vida_maxima = 3
+	vida_maxima = 4
 	duracion_maxima_disparo = 0.20
 
 
@@ -69,12 +69,21 @@ func _ready() -> void:
 	# 5. Inicialización completa heredada del Player (árbol dinámico, hitbox, sombra, etc.)
 	super._ready()
 
+	# 6. Paridad física con la protagonista: misma capa/máscara para que
+	# Perrena pase por el costado de las defensoras sin chocar (capa 2 excluida).
+	_aplicar_colision_jugador()
 
-## Instancia los attachments de huesos para el arco animado y las flechas en las manos de Perrena
+
+## Instancia los attachments de huesos para el arco animado y las flechas en las manos de Perrena.
+## Si ya existen en el .tscn (colocados a mano en el editor), se reutilizan y
+## solo se asegura que apunten al hueso correcto: la edición manual se respeta en juego.
 func _setup_equipamiento_arco() -> void:
 	var skel: Skeleton3D = find_child("Skeleton3D", true, false) as Skeleton3D
 	if not skel:
 		return
+
+	_resolver_attachment_existente(skel, "BoneAttach_Arco")
+	_resolver_attachment_existente(skel, "BoneAttach_Flecha")
 
 	# Mano Izquierda: Arco animado y punto de spawn de flechas explosivas
 	var idx_mano_izq: int = skel.find_bone("mixamorig_LeftHand")
@@ -137,17 +146,60 @@ func _setup_equipamiento_arco() -> void:
 		attach_flecha.add_child(flecha_exp)
 
 
-## Registra alias de animación en la librería para que el AnimationTree dinámico los reconozca
-func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
-	var lib := anim_p.get_animation_library("")
-	if not lib:
+## Si el attachment ya viene en la escena (edición manual en el .tscn),
+## resuelve su índice desde el nombre para que siga al hueso correcto.
+## No toca su transform: la colocación manual del editor se respeta en juego.
+func _resolver_attachment_existente(skel: Skeleton3D, nombre: String) -> void:
+	var att := skel.get_node_or_null(nombre) as BoneAttachment3D
+	if att == null or String(att.bone_name).is_empty():
 		return
+	var idx: int = skel.find_bone(String(att.bone_name))
+	if idx != -1:
+		att.bone_idx = idx
+
+
+## Registra alias de animación para que el AnimationTree dinámico (que pide
+## nombres estilo Eryn "Armature|Armature|X", o sea librería "Armature") los
+## reconozca. Busca el clip nativo del GLB ("Idle", "Caminar", ...) en TODAS
+## las librerías y registra el alias en la librería que el destino indica.
+## Sin esto el árbol no resuelve ninguna animación y Perrena queda estática.
+func _remapear_animaciones_perrena(anim_p: AnimationPlayer) -> void:
 	for clip_origen in MAPEO_ANIMS.keys():
 		var clip_destino: String = MAPEO_ANIMS[clip_origen]
 		if anim_p.has_animation(clip_destino):
 			continue
 		var buscar: String = SUBSTITUCIONES_ANIMS.get(clip_origen, clip_origen)
-		for candidato in anim_p.get_animation_list():
-			if candidato.ends_with(buscar) and not lib.has_animation(clip_destino):
-				lib.add_animation(clip_destino, anim_p.get_animation(candidato))
-				break
+		var fuente := _buscar_animacion_nativa(anim_p, buscar)
+		if fuente == null:
+			push_warning("[Perrena] Sin clip nativo para '%s' (buscaba '*%s')" % [clip_destino, buscar])
+			continue
+		_registrar_alias(anim_p, clip_destino, fuente)
+
+
+## Busca en todas las librerías del AnimationPlayer un clip cuyo nombre
+## termine con el fragmento buscado (p. ej. "Disparo arco", "Caminar").
+func _buscar_animacion_nativa(anim_p: AnimationPlayer, buscar: String) -> Animation:
+	for lib_nombre in anim_p.get_animation_library_list():
+		var lib := anim_p.get_animation_library(lib_nombre)
+		if lib == null:
+			continue
+		for anim_nombre in lib.get_animation_list():
+			if String(anim_nombre).ends_with(buscar):
+				return lib.get_animation(anim_nombre)
+	return null
+
+
+## Registra el alias en la librería que el nombre destino indica
+## ("Armature|Armature|IDLE" -> librería "Armature", clip "Armature|IDLE"),
+## creándola si no existe. Así has_animation()/play() del árbol lo resuelven.
+func _registrar_alias(anim_p: AnimationPlayer, destino: String, fuente: Animation) -> void:
+	var partes := destino.split("|")
+	if partes.size() < 2:
+		return
+	var lib_nombre: String = partes[0]
+	var anim_nombre: String = "|".join(partes.slice(1))
+	if not anim_p.has_animation_library(lib_nombre):
+		anim_p.add_animation_library(lib_nombre, AnimationLibrary.new())
+	var lib := anim_p.get_animation_library(lib_nombre)
+	if lib and not lib.has_animation(anim_nombre):
+		lib.add_animation(anim_nombre, fuente)
