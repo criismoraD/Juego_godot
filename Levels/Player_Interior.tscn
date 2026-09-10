@@ -107,7 +107,7 @@ visible = false
 shape = SubResource("BoxShape3D_estruc4")
 
 [node name="Colision perrena" type="CollisionShape3D" parent="Esctrucutra2" unique_id=274661166]
-transform = Transform3D(0.7878716, 0, 0, 0, 0.1926598, 0, 0, 0, 0.11389353, 0.32431564, 0.11044547, 0.07354902)
+transform = Transform3D(0.7878716, 0, 0, 0, 0.1926598, 0, 0, 0, 0.11389353, 0.408422, 0.11044547, 0.07354902)
 shape = SubResource("BoxShape3D_estruc4")
 
 [node name="bloque" type="CollisionShape3D" parent="Esctrucutra2" unique_id=1963899297]
