@@ -11,6 +11,8 @@
 [ext_resource type="PackedScene" uid="uid://wpuqogeun272" path="res://Levels/Nivel_Interior/PolvoInterior.tscn" id="9_polvo"]
 [ext_resource type="Material" path="res://Levels/Nivel_Interior/MAT_sombra_interior_overlay.tres" id="10_mat_sombra"]
 [ext_resource type="Material" path="res://Levels/Nivel_Interior/MAT_DesaturacionBordes.tres" id="15_mat_desat"]
+[ext_resource type="Script" uid="uid://c3skmqp66wy10" path="res://Entities/Jugador_Perrena/PerrenaNPCInterior.gd" id="16_perrena_npc"]
+[ext_resource type="PackedScene" uid="uid://spumkq1f6k2x" path="res://Entities/Jugador_Perrena/Perrena.glb" id="17_perrena_glb"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_estruc"]
 size = Vector3(2, 1.0500488, 2)
@@ -102,6 +104,18 @@ shape = SubResource("BoxShape3D_yjf3s")
 [node name="CollisionShape3D4" type="CollisionShape3D" parent="Esctrucutra2" unique_id=1279893963]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.50306064, 0, 0)
 visible = false
+shape = SubResource("BoxShape3D_estruc4")
+
+[node name="Colision perrena" type="CollisionShape3D" parent="Esctrucutra2" unique_id=274661166]
+transform = Transform3D(0.7878716, 0, 0, 0, 0.1926598, 0, 0, 0, 0.11389353, 0.32431564, 0.11044547, 0.07354902)
+shape = SubResource("BoxShape3D_estruc4")
+
+[node name="bloque" type="CollisionShape3D" parent="Esctrucutra2" unique_id=1963899297]
+transform = Transform3D(0.7878716, 0, 0, 0, 0.1926598, 0, 0, 0, 0.11389353, -0.37549102, 0.11044547, 0.09180464)
+shape = SubResource("BoxShape3D_estruc4")
+
+[node name="bloque2" type="CollisionShape3D" parent="Esctrucutra2" unique_id=1123676903]
+transform = Transform3D(0.598274, 0, -0.074107885, 0, 0.1926598, 0, 0.51264983, 0, 0.08648558, 0.24670553, 0.11044547, -0.34722084)
 shape = SubResource("BoxShape3D_estruc4")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=303092174]
@@ -300,6 +314,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2242768, 0.05599332, -0.01
 
 [node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_k4oaa")]
 transform = Transform3D(0.09, 0, 0, 0, 0.09, 0, 0, 0, 0.09, -0.0052376688, 0.07106604, 0.09736249)
+
+[node name="PerrenaNPC" parent="." unique_id=2136313388 instance=ExtResource("17_perrena_glb")]
+transform = Transform3D(0.2647127, 0, -0.36964044, 0, 0.46, 0, 0.40996486, 0, 0.23867539, 0.32270983, 0.045297086, 0.089337245)
+script = ExtResource("16_perrena_npc")
 
 [node name="MesaConfiguracion" parent="." unique_id=1482910382 instance=ExtResource("6_mesa")]
 transform = Transform3D(0.9923861, 0, -0.1231656, 0, 1, 0, 0.1231656, 0, 0.9923861, 0.04901872, 0.050048828, -0.23174888)

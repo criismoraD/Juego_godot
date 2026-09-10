@@ -152,6 +152,12 @@ var _capa_pos_base := Vector3.ZERO
 ## Nieblas de guerra: solo visibles durante la cinemática (a la torre muere).
 const RUTAS_NIEBLA: Array[String] = ["NieblaGuerra", "NieblaGuerra3"]
 var _niebla_nodos: Array = []
+## Cadáveres del goblin ballestero sobre la isla: decorado de la escena,
+## solo visibles durante la cinemática (congelados en el último frame de
+## su muerte por su propio script; aquí solo se muestran/ocultan como las
+## nieblas). A la torre mueren con la escena.
+const RUTAS_CADAVERES_GOBLIN: Array[String] = ["GoblinBallesteroCadaver", "GoblinBallesteroCadaver2"]
+var _cadaveres_nodos: Array = []
 var _capa_esc_base := Vector3.ONE
 var _capa_lista: bool = false
 ## Perrena corre sin arco en la escena (se oculta al empezar).
@@ -629,6 +635,28 @@ func _mostrar_niebla(mostrar: bool) -> void:
 			if is_instance_valid(nodo):
 				nodo.visible = bool(d["visible"])
 		_niebla_nodos.clear()
+	_mostrar_cadaver_goblin(mostrar)
+
+
+## Cadáveres del goblin ballestero: decorado de la escena (congelados en el
+## último frame de su muerte por su propio script). Visibles solo durante
+## la cinemática; al abortar vuelven a ocultarse, y a la torre mueren con
+## la escena (no hay que restaurarlos: el nivel los recoloca al recargar).
+## Cada uno se muestra tal cual lo dejó el editor (posición y rotación).
+func _mostrar_cadaver_goblin(mostrar: bool) -> void:
+	if mostrar:
+		if _cadaveres_nodos.is_empty():
+			for ruta in RUTAS_CADAVERES_GOBLIN:
+				var nodo := (_nivel as Node).get_node_or_null(ruta) as Node3D
+				if nodo:
+					_cadaveres_nodos.append(nodo)
+		for nodo in _cadaveres_nodos:
+			if is_instance_valid(nodo):
+				nodo.visible = true
+	else:
+		for nodo in _cadaveres_nodos:
+			if is_instance_valid(nodo):
+				nodo.visible = false
 
 
 ## Icono de refuerzo (mensajera, oleada 5): no debe verse en la escena.

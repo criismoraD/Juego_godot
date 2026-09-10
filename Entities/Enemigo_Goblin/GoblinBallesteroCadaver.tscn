@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/Enemigo_Goblin/GoblinBallesteroCadaver.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://k3nj0crucrl" path="res://Entities/Enemigo_Goblin/GOBLING_REMASTER_ANIMACIONES.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://bg41ujege14mr" path="res://Entities/Enemigo_Goblin/BALLES_GOBLING.glb" id="3_ballesta"]
+
+[node name="GoblinBallesteroCadaver" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="GOBLING_REMASTER_ANIMACIONES" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
+
+[node name="Armature" parent="GOBLING_REMASTER_ANIMACIONES" index="0"]
+transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D" index="1"]
+transform = Transform3D(0.27093259, -0.8265182, 0.49342018, 0.096749395, 0.53337723, 0.84032595, -0.9577236, -0.1799337, 0.22447465, -10.706138, 19.165617, -101.88661)
+bone_name = "mixamorig_RightHandIndex1"
+bone_idx = 19
+
+[node name="BALLES_GOBLING" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D/BoneAttachment3D" instance=ExtResource("3_ballesta")]
+transform = Transform3D(16.282375, 92.0973, -35.397396, 77.93626, 9.994986, 61.854893, 60.504646, -37.658, -70.149734, 3.5067368, 31.789375, 29.316803)

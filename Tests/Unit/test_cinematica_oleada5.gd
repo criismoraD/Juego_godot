@@ -525,16 +525,64 @@ func test_dialogo_conversacion_nivel5_contenido() -> void:
 	assert_true(dlg is DialogoComic, "Usa el sistema de diálogo del intro")
 	assert_eq(dlg.paginas_texto.size(), 6, "Seis parlamentos")
 	assert_eq(Array(dlg.paginas_hablante), ["eryn", "perrena", "perrena", "eryn", "perrena", "eryn"], "Orden de hablantes")
-	assert_true(String(dlg.paginas_texto[0]).contains("identifícate"), "Eryn pide identificarse")
-	assert_true(String(dlg.paginas_texto[1]).contains("Mi nombre es Perrena"), "Perrena se presenta")
-	assert_true(String(dlg.paginas_texto[3]).contains("guardiana del bosque"), "Eryn se presenta")
-	assert_true(String(dlg.paginas_texto[5]).contains("en la torre"), "Cierre hacia la torre")
+	# Sujetos a traducción (claves, no texto crudo): según locale sale es o en.
+	assert_ne(String(dlg.paginas_texto[0]), "NIVEL5_CONVERSACION_1", "La página 1 se traduce desde su clave")
+	assert_true(
+		String(dlg.paginas_texto[0]).contains("identifícate")
+			or String(dlg.paginas_texto[0]).contains("identify yourself"),
+		"Eryn pide identificarse"
+	)
+	assert_true(
+		String(dlg.paginas_texto[1]).contains("Mi nombre es Perrena")
+			or String(dlg.paginas_texto[1]).contains("My name is Perrena"),
+		"Perrena se presenta"
+	)
+	assert_true(
+		String(dlg.paginas_texto[3]).contains("guardiana del bosque")
+			or String(dlg.paginas_texto[3]).contains("guardian of the forest"),
+		"Eryn se presenta"
+	)
+	assert_true(
+		String(dlg.paginas_texto[5]).contains("en la torre")
+			or String(dlg.paginas_texto[5]).contains("in the tower"),
+		"Cierre hacia la torre"
+	)
 	assert_not_null(dlg.find_child("RetratoEryn", true, false), "Retrato de Eryn")
 	assert_not_null(dlg.find_child("RetratoPerrena", true, false), "Retrato de Perrena")
 
 
 func _borde_inferior_retrato(retrato: Sprite2D) -> float:
 	return retrato.position.y + float(retrato.texture.get_height()) * retrato.scale.y * 0.5
+
+
+func test_dialogo_conversacion_nivel5_sujeto_a_traduccion() -> void:
+	# Las 6 páginas del diálogo llegan por clave al sistema de traducción:
+	# en español devuelven el texto original y en inglés la variante propia.
+	# Si una clave faltara, tr() devolvería la clave tal cual (assert_ne).
+	var textos_es := [
+		"identifícate ahora mismo",
+		"Mi nombre es Perrena",
+		"mercenaria contratada por el gremio",
+		"guardiana del bosque",
+		"rio arriba cerca del pantano",
+		"conversación en la torre",
+	]
+	var textos_en := [
+		"identify yourself right now",
+		"My name is Perrena",
+		"merenary hired by the merchants guild".replace("merenary", "mercenary"),
+		"guardian of the forest",
+		"upstream near the swamp",
+		"conversation in the tower",
+	]
+	for i in range(6):
+		var clave := "NIVEL5_CONVERSACION_%d" % (i + 1)
+		var traduccion := tr(clave)
+		assert_ne(traduccion, clave, "La clave %s debe estar registrada" % clave)
+		assert_true(
+			traduccion.contains(textos_es[i]) or traduccion.contains(textos_en[i]),
+			"La página %d se traduce (es o en): %s" % [i + 1, traduccion]
+		)
 
 
 func test_dialogo_dual_resalta_hablante_y_apaga_otro() -> void:

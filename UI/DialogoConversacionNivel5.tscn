@@ -26,10 +26,11 @@ corner_radius_bottom_left = 8
 layer = 190
 script = ExtResource("1_script")
 chars_por_sonido = 7
+nombre_perrena = "NIVEL5_PERRENA_NOMBRE"
 audio_stream = ExtResource("3_audio")
 audio_volume_db = -16.0
 audio_pitch_scale = 1.1
-paginas_texto = PackedStringArray("Hey! Tu no pareces pertenecer a la horda, identifícate ahora mismo…", "En efecto no tengo nada que ver con esos vándalos\nMi nombre es Perrena", "Soy una mercenaria contratada por el gremio de comerciantes\nMe encargaron encontrar alguna ruta segura al oeste y vi esta torre derruida", "Yo soy Eryn la guardiana del bosque\nEste paso ya no es seguro, no sé cuánto podremos resistir a estos ataques constantes", "Quizás pueda ayudarte con algo de información, vi que el enemigo se estaba instalando rio arriba cerca del pantano, podríamos acertarles un golpe antes de que fortifiquen la zona y tomar sus pertrechos", "Suena interesante continuemos la conversación en la torre")
+paginas_texto = PackedStringArray("NIVEL5_CONVERSACION_1", "NIVEL5_CONVERSACION_2", "NIVEL5_CONVERSACION_3", "NIVEL5_CONVERSACION_4", "NIVEL5_CONVERSACION_5", "NIVEL5_CONVERSACION_6")
 paginas_imagenes = Array[Texture2D]([ExtResource("2_tex_eryn")])
 paginas_hablante = PackedStringArray("eryn", "perrena", "perrena", "eryn", "perrena", "eryn")
 metadata/_edit_vertical_guides_ = [774.0]
@@ -117,7 +118,7 @@ offset_bottom = 728.6
 theme_override_colors/default_color = Color(0.9, 0.88, 0.82, 1)
 theme_override_font_sizes/normal_font_size = 26
 bbcode_enabled = true
-text = "Hey! Tu no pareces pertenecer a la horda, identifícate ahora mismo…"
+text = "NIVEL5_CONVERSACION_1"
 fit_content = true
 scroll_active = false
 visible_characters = 0
@@ -136,7 +137,7 @@ offset_top = 744.6
 offset_right = 590.80005
 offset_bottom = 784.6
 size_flags_horizontal = 0
-text = "Continuar"
+text = "BOTON_CONTINUAR"
 
 [node name="BotonSaltar" type="Button" parent="." unique_id=1132705130]
 z_index = 2
@@ -148,7 +149,7 @@ offset_left = -893.0
 offset_top = 831.0
 offset_right = -713.0
 offset_bottom = 871.0
-text = "Saltar Diálogo"
+text = "BTN_SKIP"
 
 [node name="RetratoEryn" type="Sprite2D" parent="." unique_id=1396290819]
 position = Vector2(445, 526)

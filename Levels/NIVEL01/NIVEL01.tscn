@@ -61,6 +61,7 @@
 [ext_resource type="Texture2D" uid="uid://dabgoeh5m5d7n" path="res://TEST_/puerta 2d.png" id="67_puerta"]
 [ext_resource type="Texture2D" uid="uid://byf5br88xbovy" path="res://TEST_/puerta recortada.png" id="68_puerta_rec"]
 [ext_resource type="Texture2D" uid="uid://cso1gbk0o4lhn" path="res://TEST_/Mandoble 2D.png" id="69_mandoble"]
+[ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblin/GoblinBallesteroCadaver.tscn" id="70_cadaver_goblin"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -964,6 +965,7 @@ shape = SubResource("BoxShape3D_3xd07")
 
 [node name="Torre_de_asedio" parent="." unique_id=987123456 instance=ExtResource("62_torre_asedio")]
 transform = Transform3D(0.030259425, 0, -1.777069, 0, 1.8436748, 0, 1.3535084, 0, 0.039728634, 3.1228988, 0.05779445, -2.500832)
+visible = false
 
 [node name="CascoOxidado2" parent="." unique_id=996348724 instance=ExtResource("64_casco")]
 transform = Transform3D(0.176191, 0.06539871, -0.16184175, -0.053394802, 0.22050126, 0.046766996, 0.16913226, 0.0014837682, 0.1833605, -4.676608, 0.17896314, 1.0030396)
@@ -1008,6 +1010,12 @@ texture = ExtResource("69_mandoble")
 transform = Transform3D(0.15855998, 0.029269531, 0.008745375, -0.03165304, 0.14654759, -0.0024153478, -0.0058563254, 0.0003922202, 0.2498353, 3.319518, 0.30696344, -2.9113975)
 layers = 2
 texture = ExtResource("69_mandoble")
+
+[node name="GoblinBallesteroCadaver" parent="." unique_id=907253136 instance=ExtResource("70_cadaver_goblin")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.2, 0.4126004)
+
+[node name="GoblinBallesteroCadaver2" parent="." unique_id=433895711 instance=ExtResource("70_cadaver_goblin")]
+transform = Transform3D(0.091842264, 0, 0.99577355, 0, 1, 0, -0.99577355, 0, 0.091842264, 5.6517224, 0.24184366, -1.5195154)
 
 [editable path="SubViewportFondo3D/BUSTO_BRONCE2"]
 [editable path="SubViewportFondo3D/BUSTO_BRONCE3"]
