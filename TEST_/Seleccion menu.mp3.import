@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bdima7pams10i"
+path="res://.godot/imported/Seleccion menu.mp3-a7fc2b7261e69cdc8edbf16a75128498.mp3str"
+
+[deps]
+
+source_file="res://TEST_/Seleccion menu.mp3"
+dest_files=["res://.godot/imported/Seleccion menu.mp3-a7fc2b7261e69cdc8edbf16a75128498.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

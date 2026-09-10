@@ -25,6 +25,8 @@ const MenuBestiarioClass = preload("res://UI/MenuBestiario/MenuBestiario.gd")
 var _jugador_cerca: bool = false
 var _tint_mat: StandardMaterial3D = null
 var _tween_efecto: Tween = null
+var _opcion_foco: int = 0
+var _botones_menu: Array[Button] = []
 
 
 func _ready() -> void:
@@ -51,6 +53,22 @@ func _ready() -> void:
 	if btn_salir:
 		btn_salir.text = tr("MENU_SALIR")
 		btn_salir.pressed.connect(_on_btn_salir_pressed)
+
+	## Hover = normal y el foco es el único resaltado: el ratón no pinta
+	## su propia marca (toma el foco en mouse_entered), así nunca hay dos
+	## opciones marcadas; manda el último input usado.
+	for par in [
+		[btn_defensoras, 0],
+		[btn_bestiario, 1],
+		[btn_salir, 2],
+	]:
+		var boton := par[0] as Button
+		if boton == null:
+			continue
+		boton.add_theme_stylebox_override("hover", boton.get_theme_stylebox("normal"))
+		boton.mouse_entered.connect(_on_mouse_entra_opcion_menu.bind(boton))
+		boton.focus_entered.connect(_on_foco_opcion_menu.bind(par[1]))
+		_botones_menu.append(boton)
 
 	if menu_defensoras:
 		menu_defensoras.cerrado.connect(_on_menu_defensoras_cerrado)
@@ -139,14 +157,52 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _jugador_cerca:
 		return
 
-	# Si algún menú está visible, dejar que los menús consuman el input
-	if (menu_canvas and menu_canvas.visible) or (menu_defensoras and menu_defensoras.visible) or (menu_bestiario and menu_bestiario.visible):
-		return
-
 	if event is InputEventKey and event.pressed and not event.echo:
+		# Con el menú propio abierto: W/S navega, E activa, ESC sale
+		# (los submenús de defensoras/bestiario consumen su propio input).
+		if menu_canvas and menu_canvas.visible and not _otro_submenu_abierto():
+			match event.keycode:
+				KEY_W, KEY_UP:
+					_mover_foco(-1)
+					get_viewport().set_input_as_handled()
+				KEY_S, KEY_DOWN:
+					_mover_foco(1)
+					get_viewport().set_input_as_handled()
+				KEY_E, KEY_ENTER:
+					_activar_foco()
+					get_viewport().set_input_as_handled()
+				KEY_ESCAPE:
+					_cerrar_menu(true)
+					get_viewport().set_input_as_handled()
+			return
+		# Si algún submenú está visible, dejar que consuman su input
+		if _otro_submenu_abierto():
+			return
+
 		if event.keycode == KEY_E or event.keycode == KEY_ENTER:
 			_abrir_menu()
 			get_viewport().set_input_as_handled()
+
+
+## True si defensoras o bestiario están abiertos (ellos gestionan su
+## propio input).
+func _otro_submenu_abierto() -> bool:
+	return (menu_defensoras and menu_defensoras.visible) or (menu_bestiario and menu_bestiario.visible)
+
+
+## Navegación W/S con vuelta al llegar al extremo, como el menú de la torre.
+func _mover_foco(direccion: int) -> void:
+	if _botones_menu.is_empty():
+		return
+	_opcion_foco = wrapi(_opcion_foco + direccion, 0, _botones_menu.size())
+	_botones_menu[_opcion_foco].grab_focus()
+
+
+## Activa con E/ENTER la opción con foco (el ratón sigue igual).
+func _activar_foco() -> void:
+	if _botones_menu.is_empty():
+		return
+	_botones_menu[_opcion_foco].emit_signal("pressed")
 
 
 func _abrir_menu() -> void:
@@ -162,6 +218,7 @@ func _abrir_menu() -> void:
 		panel_menu.modulate.a = 0.0
 		var tween := create_tween()
 		tween.tween_property(panel_menu, "modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_SINE)
+	_opcion_foco = 0
 	if btn_defensoras:
 		btn_defensoras.grab_focus()
 
@@ -199,6 +256,7 @@ func _cerrar_menu(animado: bool = true) -> void:
 
 
 func _on_btn_defensoras_pressed() -> void:
+	AudioManager.play_sfx("seleccion_menu")
 	defensoras_presionado.emit()
 	_cerrar_menu(false)
 	if menu_defensoras:
@@ -213,6 +271,7 @@ func _on_menu_defensoras_cerrado() -> void:
 
 
 func _on_btn_bestiario_pressed() -> void:
+	AudioManager.play_sfx("seleccion_menu")
 	bestiario_presionado.emit()
 	_cerrar_menu(false)
 	if menu_bestiario:
@@ -227,9 +286,22 @@ func _on_menu_bestiario_cerrado() -> void:
 
 
 func _on_btn_salir_pressed() -> void:
+	AudioManager.play_sfx("seleccion_menu")
 	salir_presionado.emit()
 	_cerrar_menu(true)
 	_set_player_movimiento(true)
+
+
+## El ratón selecciona al entrar en una opción (le roba el foco al
+## teclado): una sola marca a la vez; manda el último input usado.
+func _on_mouse_entra_opcion_menu(boton: Button) -> void:
+	if not _jugador_cerca or not (menu_canvas and menu_canvas.visible):
+		return
+	boton.grab_focus()
+
+
+func _on_foco_opcion_menu(indice: int) -> void:
+	_opcion_foco = indice
 
 
 func _set_player_movimiento(permitir: bool) -> void:

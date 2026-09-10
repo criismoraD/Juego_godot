@@ -183,9 +183,9 @@ func _alternar_defensora(piso: int) -> void:
 	var nueva: String = "ballestera" if actual == "arquera" else "arquera"
 	config_local[piso] = nueva
 
-	# Sonido sutil si AudioManager está disponible
-	if Engine.has_singleton("AudioManager"):
-		AudioManager.play_sfx("res://Assets/Audio/SFX/click.wav")
+	# Sonido al cambiar entre ballestera y arquera (AudioManager es
+	# autoload y siempre está disponible, como en el resto del juego).
+	AudioManager.play_sfx("seleccion_defensoras")
 
 	_actualizar_vistas_defensoras()
 	_actualizar_panel_descripcion()

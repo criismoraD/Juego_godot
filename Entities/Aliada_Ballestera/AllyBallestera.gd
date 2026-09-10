@@ -14,6 +14,13 @@ extends Node3D
 # ═══════════════════════════════════════════════════════════════════════════════
 enum State { IDLE, AIMING, SHOOTING, RELOADING, DYING, DEAD, GETTING_UP, CELEBRATING }
 
+## Tiro de fogueo tras el despliegue (refuerzo oleada 5): el primer disparo
+## no marca enemigos y cae a un punto al azar del terreno por delante, con
+## depresión leve para que nunca se clave a sus pies. No consume ciclo.
+const TIROS_FOGUEO_DESPLIEGUE: int = 1
+const ELEV_FOGUEO_MIN_DEG: float = -12.0
+const ELEV_FOGUEO_MAX_DEG: float = -4.0
+
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos hostiles para empezar a disparar
 @export var es_movil: bool = false  ## Defensora móvil asignada a plataformas (no refuerza escudos, suelta ballesta al morir)
@@ -123,6 +130,7 @@ var is_dissolving: bool = false
 var fase_agachada: bool = false
 var disparos_en_fase: int = 0
 var refuerzos_aplicados: int = 0  ## Contador de refuerzos aplicados (diagnóstico/tests)
+var tiros_fogueo_pendientes: int = 0  ## Fogueos al terreno por delante (tras despliegue); no marcan ni consumen ciclo
 var objetivo_actual: Node3D = null
 var last_hit_position: Vector3 = Vector3.ZERO  ## Posición del último impacto recibido (sangre no letal)
 var last_hit_direction: Vector3 = Vector3.LEFT  ## Dirección del proyectil del último impacto
@@ -1087,6 +1095,13 @@ func _disparar():
 	if fase_agachada:
 		spawn_pos.y -= 0.35
 
+	# Tiro de fogueo del despliegue: sin marcar enemigos, al terreno por
+	# delante con caída leve; no consume ciclo ni aplica refuerzo.
+	if tiros_fogueo_pendientes > 0:
+		tiros_fogueo_pendientes -= 1
+		_spawnear_virote(spawn_pos, _direccion_fogueo(), velocidad_virote)
+		return
+
 	var dir: Vector3
 	# Si no hay objetivo terrestre estándar (solo hay voladores, Lonko, o se dispara al azar)
 	if objetivo == null or _es_objetivo_azar_ballestera(objetivo):
@@ -1110,6 +1125,19 @@ func _disparar():
 	if disparos_en_fase >= disparos_por_fase:
 		disparos_en_fase = 0
 		fase_agachada = not fase_agachada
+
+
+## Arma el tiro de fogueo del despliegue (lo llama NIVEL01 al entregar la
+## mensajera y _finalizar_despliegue_plataforma al tomar puesto).
+func programar_tiro_fogueo() -> void:
+	tiros_fogueo_pendientes = TIROS_FOGUEO_DESPLIEGUE
+
+
+## Dirección del fogueo: frente (+X, como el tiro al azar) con depresión
+## leve aleatoria para picar terreno a media distancia, nunca a los pies.
+func _direccion_fogueo() -> Vector3:
+	var elevacion := deg_to_rad(randf_range(ELEV_FOGUEO_MIN_DEG, ELEV_FOGUEO_MAX_DEG))
+	return Vector3(cos(elevacion), sin(elevacion), 0.0).normalized()
 
 
 func _spawnear_virote(spawn_pos: Vector3, dir: Vector3, speed: float):
@@ -1775,7 +1803,10 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	var p2_shoot_x: float = -8.05 if is_nan(destino_x) else destino_x
 
 	var p3_ladder_x: float = -9.11
-	var p3_shoot_x: float = -8.85 if is_nan(destino_x) else destino_x
+	## Puesto de tiro pegado al escudo del piso 3 (x=-8.16): con la boca
+	## por delante del labio de la plataforma los virotes no se clavan en
+	## el borde al tirar hacia abajo.
+	var p3_shoot_x: float = -8.55 if is_nan(destino_x) else destino_x
 
 	global_position.y = floor_y
 	if is_zero_approx(global_position.z):
@@ -1936,6 +1967,7 @@ func _finalizar_despliegue_plataforma() -> void:
 	# 3. Adoptar la postura fija de combate y habilitar el ciclo de ataque
 	_fijar_pose_combate(0.2)
 	en_despliegue = false
+	programar_tiro_fogueo()
 	_cambiar_estado(State.RELOADING)
 	state_timer = 0.3
 

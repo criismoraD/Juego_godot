@@ -53,8 +53,18 @@ var ha_disparado_este_ciclo: bool = false
 var ha_mostrado_anticipacion: bool = false
 var omni_light_ataque: OmniLight3D = null
 
+const DIST_IMPACTO_MIN: float = 0.9
+const DIST_IMPACTO_MAX: float = 6.0
+const VOL_IMPACTO_MIN_DB: float = -10.0
+const VOL_IMPACTO_MAX_DB: float = 0.0
+
 var tiempo_ragdoll_activo: float = 0.0
 var ragdoll_listo_para_disolucion: bool = false
+## Sonido único de impacto contra el suelo (rayo bajo la cadera).
+var _impacto_suelo_sonado: bool = false
+## Altura al morir: el impacto suena progresivo (fuerza completa en
+## caídas largas, como la protagonista).
+var _altura_muerte_y: float = 0.0
 
 # === PUNTO DE SPAWN (sin visual en CARGA_ATAQUE) ===
 var bone_attachment_spawn: BoneAttachment3D = null
@@ -190,6 +200,8 @@ func _on_state_dying():
 	# La Gárgola se convierte en ragdoll (trapo) al morir, sin textura de piedra.
 	_activar_ragdoll()
 	tiempo_ragdoll_activo = 0.0
+	_impacto_suelo_sonado = false
+	_altura_muerte_y = global_position.y
 	
 	# Reproducir sonido de muerte
 	AudioManager.play_sfx("gargola_death")
@@ -500,6 +512,8 @@ func _procesar_muerte(delta: float) -> void:
 		move_and_slide()
 
 	tiempo_ragdoll_activo += delta
+
+	_detectar_impacto_suelo_ragdoll()
 	
 	# Transición gradual de Animación a Ragdoll (Active Ragdoll Blend de 100% a 0%)
 	# Usamos una curva de atenuación cúbica a lo largo de 1.5 segundos.
@@ -536,6 +550,41 @@ func _procesar_muerte(delta: float) -> void:
 	if not ragdoll_listo_para_disolucion and tiempo_ragdoll_activo >= tiempo_espera_disolucion_trapo:
 		ragdoll_listo_para_disolucion = true
 		_iniciar_disolucion_final()
+
+
+## Sonido único cuando el trapo toca el suelo: rayo corto bajo la cadera
+## (los huesos propios se excluyen para no autodetectarse).
+func _detectar_impacto_suelo_ragdoll() -> void:
+	if _impacto_suelo_sonado or not is_inside_tree():
+		return
+	var cadera := _get_hips_global_position()
+	if cadera.is_zero_approx():
+		return
+	var espacio := get_world_3d().direct_space_state
+	if espacio == null:
+		return
+	var rayo := PhysicsRayQueryParameters3D.create(cadera + Vector3(0.0, 0.2, 0.0), cadera + Vector3(0.0, -0.4, 0.0))
+	rayo.collision_mask = 1
+	var excluidos: Array[RID] = []
+	if self is CollisionObject3D:
+		excluidos.append((self as CollisionObject3D).get_rid())
+	for pb in huesos_fisicos_creados:
+		if is_instance_valid(pb):
+			excluidos.append(pb.get_rid())
+	rayo.exclude = excluidos
+	var golpe := espacio.intersect_ray(rayo)
+	if golpe.is_empty():
+		return
+	_impacto_suelo_sonado = true
+	var dist := _altura_muerte_y - cadera.y
+	AudioManager.play_sfx("impacto_suelo", _volumen_impacto_por_caida(dist))
+
+
+## Volumen del impacto según lo largo de la caída (fuerza completa en el
+## punto más alto, como la protagonista).
+func _volumen_impacto_por_caida(dist: float) -> float:
+	var t := clampf((dist - DIST_IMPACTO_MIN) / (DIST_IMPACTO_MAX - DIST_IMPACTO_MIN), 0.0, 1.0)
+	return lerpf(VOL_IMPACTO_MIN_DB, VOL_IMPACTO_MAX_DB, t)
 
 
 func _iniciar_disolucion_final() -> void:

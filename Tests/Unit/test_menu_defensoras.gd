@@ -164,3 +164,23 @@ func test_color_titulo_ballestera_naranja():
 	assert_eq(font_color, MenuDefensoras.COLOR_BALLESTERA, "El color del texto debe ser naranja para coincidir con el icono")
 
 
+func test_alternar_defensora_suena_seleccion():
+	# Arrange
+	_menu.abrir()
+	var am = get_node_or_null("/root/AudioManager")
+	assert_not_null(am, "Precondición: AudioManager disponible")
+	var esperados: Array = am.sfx_streams["seleccion_defensoras"]
+	assert_false(esperados.is_empty(), "seleccion_defensoras registrado con audio")
+
+	# Act: cambiar entre arquera y ballestera en piso 1.
+	_menu._alternar_defensora(1)
+
+	# Assert: suena el audio de selección (y no otro).
+	var suena_seleccion := false
+	for p in am.sfx_pool:
+		if p.playing and p.stream != null and p.stream in esperados:
+			suena_seleccion = true
+			break
+	assert_true(suena_seleccion, "Cambiar de defensora reproduce seleccion_defensoras")
+
+

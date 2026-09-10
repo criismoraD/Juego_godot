@@ -41,17 +41,41 @@ func test_interior_crea_prompt_y_menu_hablar() -> void:
 	assert_not_null(npc, "El interior tiene el NPC Perrena")
 
 	# Act
-	var prompt := nivel.find_child("PromptHablar", true, false) as Label
+	var prompt := nivel.find_child("PromptHablar", true, false) as Label3D
 	var menu := nivel.find_child("MenuConversacionPerrena", true, false) as CanvasLayer
+	var prompt_mesa := nivel.find_child("PromptE", true, false) as Label3D
 
 	# Assert: existen, el prompt arranca oculto con "[E] " y el menú cerrado.
 	assert_not_null(prompt, "Existe el prompt sobre Perrena")
 	assert_not_null(menu, "Existe el menú de conversación")
-	assert_true(prompt.is_inside_tree(), "El prompt entra al árbol (add diferido)")
+	assert_true(prompt.is_inside_tree(), "El prompt está en el árbol")
 	assert_true(menu.is_inside_tree(), "El menú entra al árbol (add diferido)")
 	assert_false(menu.visible, "El menú arranca cerrado")
 	assert_false(prompt.visible, "El prompt arranca oculto")
 	assert_true(String(prompt.text).begins_with("[E] "), "El prompt es '[E] Hablar': %s" % prompt.text)
+
+	# Assert: clon exacto del PromptE del mueble (misma receta que sí se ve).
+	assert_not_null(prompt_mesa, "Existe el prompt del mueble para comparar")
+	assert_eq(prompt.font_size, prompt_mesa.font_size, "Misma fuente que el mueble")
+	assert_almost_eq(prompt.pixel_size, prompt_mesa.pixel_size, 0.00001, "Mismo pixel_size que el mueble")
+	assert_eq(prompt.outline_size, prompt_mesa.outline_size, "Mismo contorno que el mueble")
+	assert_eq(prompt.billboard, prompt_mesa.billboard, "Mismo billboard que el mueble")
+	assert_true(prompt.global_position.y > npc.global_position.y + 0.5, "El prompt está sobre su cabeza")
+	var plano := Vector2(prompt.global_position.x, prompt.global_position.z) - Vector2(npc.global_position.x, npc.global_position.z)
+	assert_true(plano.length() < 0.15, "El prompt está en su vertical")
+
+
+func test_prompt_sigue_la_cabeza_donde_este_el_npc() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+	npc.global_position = Vector3(1.0, 0.2, -0.5)
+
+	# Act
+	npc._seguir_cabeza_prompt()
+
+	# Assert: clavado sobre su cabeza aunque se mueva el nodo en el editor.
+	assert_eq(npc._prompt_hablar.global_position, Vector3(1.0, 0.2 + npc.ALTURA_PROMPT, -0.5), "El prompt sigue a Perrena")
 
 
 func test_radio_cubre_el_corral() -> void:
@@ -70,15 +94,11 @@ func test_cerca_activa_prompt() -> void:
 	# Arrange
 	var nivel := await _instanciar_nivel()
 	var npc := _obtener_npc(nivel)
-	var camara := nivel.find_child("Camera3D", true, false) as Camera3D
-	if camara:
-		camara.current = true
 	var jugador := _teletransportar_jugador(nivel, npc.global_position + Vector3(0.3, 0.0, 0.0))
 	assert_not_null(jugador, "El jugador interior existe")
 
-	# Act: a 0.3 m (pegado a ella, como en juego) se evalúa proximidad y pantalla.
+	# Act: a 0.3 m (pegado a ella, como en juego) se evalúa proximidad.
 	npc._actualizar_proximidad()
-	npc._actualizar_prompt_pantalla()
 
 	# Assert
 	assert_true(npc._jugador_cerca, "Pegado a Perrena hay proximidad")
@@ -94,13 +114,15 @@ func test_lejos_desactiva_y_cierra_menu() -> void:
 	assert_true(npc._menu_abierto, "Precondición: menú abierto")
 	_teletransportar_jugador(nivel, npc.global_position + Vector3(5.0, 0.0, 5.0))
 
-	# Act: a ~7 m se evalúa proximidad y pantalla.
+	# Act: a ~7 m se evalúa proximidad.
 	npc._actualizar_proximidad()
-	npc._actualizar_prompt_pantalla()
 
 	# Assert: se pierde proximidad y el menú se cierra con movimiento libre.
 	assert_false(npc._jugador_cerca, "Lejos no hay proximidad")
 	assert_false(npc._menu_abierto, "Al alejarse se cierra el menú")
+
+	# Act: esperar el fundido y comprobar que el prompt se oculta.
+	await get_tree().create_timer(0.5).timeout
 	assert_false(npc._prompt_hablar.visible, "Lejos se oculta el prompt")
 
 
@@ -181,6 +203,75 @@ func test_e_activa_la_opcion_seleccionada() -> void:
 	# Assert: se cerró sin abrir diálogo.
 	assert_false(npc._menu_abierto, "E en Salir cierra el menú")
 	assert_false(npc._dialogo_activo, "Salir no abre diálogo")
+
+
+func test_mouse_roba_foco_una_sola_marca() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+	npc._jugador_cerca = true
+	npc._abrir_menu_conversacion()
+	var botones: Array[Button] = npc._botones_opciones
+
+	# Act: teclado a la 2ª, luego el ratón entra en la 4ª (Salir).
+	npc._mover_foco(1)
+	assert_eq(nivel.get_viewport().gui_get_focus_owner(), botones[1], "Teclado marca la 2ª")
+	npc._on_mouse_entra_opcion(3)
+
+	# Assert: el foco (única marca) pasó al ratón: prioridad último input.
+	assert_eq(npc._opcion_foco, 3, "El ratón roba la selección")
+	assert_eq(nivel.get_viewport().gui_get_focus_owner(), botones[3], "Una sola opción marcada: la última")
+
+	# Act: el teclado vuelve a mandar (W/S re-roba el foco).
+	npc._mover_foco(-1)
+	assert_eq(nivel.get_viewport().gui_get_focus_owner(), botones[2], "El teclado recupera la marca")
+
+
+func test_menu_muestra_icono_perrena_en_vez_del_nombre() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+
+	# Act
+	var icono := nivel.find_child("IconoPerrena", true, false) as TextureRect
+
+	# Assert: icono centrado con textura, sin título de texto.
+	assert_not_null(icono, "El menú muestra el icono de Perrena")
+	assert_not_null(icono.texture, "El icono trae textura")
+	assert_eq(icono.size_flags_horizontal, Control.SIZE_SHRINK_CENTER, "Icono centrado")
+	assert_null(nivel.find_child("TituloMenu", true, false), "Ya no hay título de texto")
+
+	# Assert: el icono corona el menú y sobresale medio cuerpo del marco.
+	var caja := icono.get_parent() as VBoxContainer
+	assert_not_null(caja, "El icono vive en la caja del menú")
+	assert_eq(caja.get_child(0), icono, "El icono va primero, sobre las opciones")
+	var margen := caja.get_parent() as MarginContainer
+	assert_not_null(margen, "Existe el margen del panel")
+	assert_eq(margen.get_theme_constant("margin_top"), -int(npc.SUBIDA_ICONO), "El borde corta el tercio superior del icono")
+	assert_true(npc.TAMANO_ICONO_MENU >= 270.0, "Icono grande como el mockup: %s" % npc.TAMANO_ICONO_MENU)
+	assert_true(icono.custom_minimum_size.y < icono.custom_minimum_size.x, "Rectángulo al aspecto del png, sin bandas negras")
+
+
+func test_salir_iluminado_rebota_el_icono() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+	npc._jugador_cerca = true
+	npc._abrir_menu_conversacion()
+
+	# Act: foco en una opción normal (sin rebote).
+	npc._on_foco_opcion(0)
+
+	# Assert: sin tween de rebote en marcha.
+	var rebotando_antes := npc._tween_icono != null and npc._tween_icono.is_valid() and npc._tween_icono.is_running()
+	assert_false(rebotando_antes, "Sin rebote fuera de Salir")
+
+	# Act: iluminar SALIR (última opción, con W/S, ratón o foco).
+	npc._on_foco_opcion(npc.OPCIONES_CLAVES.size() - 1)
+
+	# Assert: el icono rebota con deformación elástica.
+	assert_true(npc._tween_icono != null and npc._tween_icono.is_valid(), "Arranca el rebote del icono")
+	assert_true(npc._tween_icono.is_running(), "El rebote está en marcha")
 
 
 func test_dialogo_asalto_cuatro_paginas_con_orden() -> void:
@@ -319,3 +410,54 @@ func test_menu_abre_y_cierra_bloqueando_movimiento() -> void:
 	assert_false(npc._menu_abierto, "El menú quedó cerrado")
 	assert_false(npc._menu_conversacion.visible, "El menú se oculta")
 	assert_true(jugador.puede_moverse, "El jugador recupera el movimiento")
+
+
+func test_jugadora_aparece_abajo_mirando_al_fondo() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var jugador := get_tree().get_first_node_in_group("player_interior") as PlayerInterior
+	assert_not_null(jugador, "El jugador interior existe")
+	if jugador == null:
+		return
+
+	# Act & Assert: aparece abajo-centro (entrada) a la altura del suelo.
+	assert_almost_eq(jugador.global_position.x, 0.0, 0.02, "Centrada en X")
+	assert_almost_eq(jugador.global_position.z, 0.3, 0.02, "Junto a la puerta sur")
+
+	# Act & Assert: mira al fondo (norte, -z): el giro vive en el modelo,
+	# el cuerpo queda sin rotar para no romper el giro por movimiento.
+	var modelo := jugador.find_child("ArqueraModel", true, false) as Node3D
+	assert_not_null(modelo, "Existe el modelo de la arquera")
+	assert_almost_eq(absf(wrapf(modelo.rotation.y, -PI, PI)), PI, 0.05, "Modelo mirando al fondo")
+	assert_almost_eq(absf(wrapf(jugador.rotation.y, -PI, PI)), 0.0, 0.05, "Cuerpo sin rotar")
+
+
+func test_opcion_dialogo_suena_seleccion_menu() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+	var am = get_tree().root.get_node_or_null("AudioManager")
+	assert_not_null(am, "Precondición: AudioManager disponible")
+	var esperados: Array = am.sfx_streams["seleccion_menu"]
+	assert_false(esperados.is_empty(), "seleccion_menu registrado con audio")
+	npc._jugador_cerca = true
+	npc._abrir_menu_conversacion()
+
+	# Act: pulsar la primera opción (abre diálogo).
+	npc._on_opcion_conversacion(0)
+
+	# Assert: suena selección (no el de salida).
+	var suena := false
+	for p in am.sfx_pool:
+		if p.playing and p.stream != null and p.stream in esperados:
+			suena = true
+			break
+	assert_true(suena, "Pulsar opción suena seleccion_menu")
+
+	# Cleanup: cerrar el diálogo para no dejar nodos colgados.
+	var dialogo := get_tree().current_scene.find_child("DialogoConversacionNivel5", true, false)
+	if dialogo:
+		dialogo.emit_signal("continuado")
+		await get_tree().process_frame
+		await get_tree().process_frame
+	assert_true(dialogo == null or not is_instance_valid(dialogo), "Diálogo liberado")

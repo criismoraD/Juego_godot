@@ -47,21 +47,28 @@ const MARGEN_ALTO: float = 0.02
 ## repetición que se rellena al agotarse: la lista se amplía en
 ## CONSEJOS_CLAVES.
 const ESCENA_DIALOGO_TORRE: PackedScene = preload("res://UI/DialogoConversacionNivel5.tscn")
+## Altura sobre sus pies a la que el prompt la sigue cada frame.
+const ALTURA_PROMPT: float = 0.9
+const RUTA_SFX_SALIR := "res://TEST_/Guaf perrena exit menu.wav"
+const ICONO_PERRENA: Texture2D = preload("res://TEST_/Perrena Icon.png")
 ## Radio amplio: Perrena está tras el corral de colisiones y el jugador no
 ## puede pegarse a ella; debe poder hablar desde fuera del corral.
 ## Solapa con la zona de la mesa (a 0.42 m): si su menú está abierto la
 ## mesa tiene prioridad (ver _mesa_menu_abierto).
 const RADIO_INTERACCION: float = 0.85
-## Ancla del prompt sobre la cabeza (se proyecta a pantalla cada frame).
-const ALTURA_PROMPT: float = 0.9
-const TAMANO_FUENTE_PROMPT: int = 24
-const CAPA_PROMPT: int = 55
+const DURACION_FUNDIDO: float = 0.3
 const CAPA_MENU: int = 60
-const ALTURA_BOTON_MENU: float = 48.0
+const ALTURA_BOTON_MENU: float = 44.0
 const TAMANO_FUENTE_MENU: int = 20
-const TAMANO_FUENTE_TITULO: int = 24
-const CLAVE_PROMPT_HABLAR := "PERRENA_PROMPT_HABLAR"
-const CLAVE_NOMBRE_PERRENA := "NIVEL5_PERRENA_NOMBRE"
+## Icono grande coronando el menú, mitad fuera del marco (como el mockup):
+## el margen superior negativo lo desborda por arriba del panel.
+const TAMANO_ICONO_MENU: float = 300.0
+## Alto ajustado al aspecto real del png (176x133): sin bandas
+## transparentes que dejaban hueco negro entre el icono y las opciones.
+const ALTO_ICONO_MENU: float = 227.0
+## Cuánto sube el icono sobre el borde del marco (el borde corta su
+## tercio superior, como el mockup); el resto baja hacia las opciones.
+const SUBIDA_ICONO: float = 75.0
 const HABLANTE_PERRENA := "perrena"
 const HABLANTE_ERYN := "eryn"
 const OPCIONES_CLAVES: Array[String] = [
@@ -104,10 +111,8 @@ const CONSEJOS_CLAVES: Array[String] = [
 var _anim_tree: AnimationTree
 var _en_pose: bool = true
 var _t_fase: float = 0.0
-var _prompt_hablar: Label
-var _capa_prompt: CanvasLayer
 var _menu_conversacion: CanvasLayer
-var _titulo_menu: Label
+var _icono_menu: TextureRect
 var _botones_opciones: Array[Button] = []
 var _jugador_cerca: bool = false
 var _jugador_nodo: Node3D
@@ -116,6 +121,9 @@ var _menu_abierto: bool = false
 var _dialogo_activo: bool = false
 var _consejos_cola: Array[int] = []
 var _rng := RandomNumberGenerator.new()
+var _tween_prompt: Tween
+var _tween_icono: Tween
+var _prompt_hablar: Label3D
 
 
 func _ready() -> void:
@@ -326,7 +334,7 @@ func _aislar_animaciones(anim_p: AnimationPlayer, permitidas: Array) -> bool:
 
 func _process(delta: float) -> void:
 	_actualizar_proximidad()
-	_actualizar_prompt_pantalla()
+	_seguir_cabeza_prompt()
 	if _anim_tree == null:
 		return
 	_t_fase += delta
@@ -337,68 +345,54 @@ func _process(delta: float) -> void:
 		_anim_tree.set("parameters/Alterna/transition_request", "idle" if not _en_pose else "pose")
 
 
-## Construye el prompt "[E] Hablar" y el menú de 4 opciones como
-## hermanos del NPC (en la raíz del nivel). La proximidad se mide por
-## distancia en _process, sin nodos de física de por medio.
-## El add_child es DIFERIDO: en _ready el padre aún está dando de alta
-## a sus hijos y el add directo falla ("Parent node is busy...").
+## Construye el menú de 4 opciones como hermano del NPC (en la raíz
+## del nivel) y traduce el prompt (nodo PromptHablar de la escena, clon
+## exacto del PromptE de la mesa: mismo Label3D, valores y fundido).
+## La proximidad se mide por distancia en _process, sin nodos de física.
+## El add_child del menú es DIFERIDO: en _ready el padre aún está dando
+## de alta a sus hijos y el add directo falla ("Parent node is busy...").
 func _construir_interaccion() -> void:
 	var raiz := get_parent()
 	if raiz == null:
 		push_warning("[PerrenaNPC] Sin padre para la interacción.")
 		return
-	_construir_prompt_hablar(raiz)
+	_prompt_hablar = raiz.find_child("PromptHablar", true, false) as Label3D
+	if _prompt_hablar:
+		_prompt_hablar.text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+		_prompt_hablar.visible = false
 	_construir_menu_conversacion(raiz)
 
 
-## Prompt 2D sobre su cabeza: un Label en CanvasLayer (la vía de UI,
-## que sí renderiza) reposicionado cada frame con la proyección de la
-## cámara en _actualizar_prompt_pantalla.
-func _construir_prompt_hablar(raiz: Node) -> void:
-	var capa := CanvasLayer.new()
-	capa.name = "CapaPromptHablar"
-	capa.layer = CAPA_PROMPT
-	raiz.call_deferred("add_child", capa)
-	_capa_prompt = capa
-	var etiqueta := Label.new()
-	etiqueta.name = "PromptHablar"
-	etiqueta.text = "[E] " + tr(CLAVE_PROMPT_HABLAR)
-	etiqueta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	etiqueta.add_theme_font_size_override("font_size", TAMANO_FUENTE_PROMPT)
-	etiqueta.add_theme_color_override("font_color", Color.WHITE)
-	etiqueta.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08))
-	etiqueta.add_theme_constant_override("outline_size", 6)
-	etiqueta.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	etiqueta.visible = false
-	capa.add_child(etiqueta)
-	_prompt_hablar = etiqueta
-
-
-## Coloca el prompt sobre la cabeza de Perrena en pantalla. Fuente única
-## de verdad para su visibilidad: solo se muestra cerca, sin menú ni
-## diálogo, con cámara válida y el ancla delante de ella.
-func _actualizar_prompt_pantalla() -> void:
+## El prompt va clavado sobre su cabeza cada frame: da igual dónde esté
+## el nodo en la escena o si se mueve a la NPC en el editor.
+func _seguir_cabeza_prompt() -> void:
 	if _prompt_hablar == null:
 		return
-	if not _jugador_cerca or _menu_abierto or _dialogo_activo:
-		_prompt_hablar.visible = false
+	_prompt_hablar.global_position = global_position + Vector3(0.0, ALTURA_PROMPT, 0.0)
+
+
+## Fundido del prompt idéntico a la mesa (modulate + outline en 0.3 s).
+func _animar_prompt(activo: bool) -> void:
+	if _prompt_hablar == null:
 		return
-	var vista := get_viewport()
-	if vista == null:
-		_prompt_hablar.visible = false
+	if _tween_prompt and _tween_prompt.is_valid():
+		_tween_prompt.kill()
+	if get_tree() == null:
+		_prompt_hablar.visible = activo
 		return
-	var camara := vista.get_camera_3d()
-	if camara == null:
+	_tween_prompt = create_tween().set_parallel(true)
+	var objetivo := 1.0 if activo else 0.0
+	if activo:
+		_prompt_hablar.visible = true
+	_tween_prompt.tween_property(_prompt_hablar, "modulate:a", objetivo, DURACION_FUNDIDO).set_trans(Tween.TRANS_SINE)
+	_tween_prompt.tween_property(_prompt_hablar, "outline_modulate:a", objetivo, DURACION_FUNDIDO).set_trans(Tween.TRANS_SINE)
+	if not activo:
+		_tween_prompt.chain().tween_callback(_ocultar_prompt_si_lejos)
+
+
+func _ocultar_prompt_si_lejos() -> void:
+	if not _jugador_cerca and _prompt_hablar:
 		_prompt_hablar.visible = false
-		return
-	var ancla_mundo := global_position + Vector3(0.0, ALTURA_PROMPT, 0.0)
-	if camara.is_position_behind(ancla_mundo):
-		_prompt_hablar.visible = false
-		return
-	var punto := camara.unproject_position(ancla_mundo)
-	_prompt_hablar.size = _prompt_hablar.get_combined_minimum_size()
-	_prompt_hablar.position = punto - _prompt_hablar.size * 0.5
-	_prompt_hablar.visible = true
 
 
 func _construir_menu_conversacion(raiz: Node) -> void:
@@ -414,38 +408,46 @@ func _construir_menu_conversacion(raiz: Node) -> void:
 	capa.add_child(centro)
 	var panel := PanelContainer.new()
 	panel.name = "PanelMenu"
-	panel.custom_minimum_size = Vector2(340.0, 0.0)
+	panel.custom_minimum_size = Vector2(300.0, 0.0)
 	panel.add_theme_stylebox_override("panel", _estilo_panel_menu())
 	centro.add_child(panel)
 	var margen := MarginContainer.new()
-	margen.add_theme_constant_override("margin_left", 25)
-	margen.add_theme_constant_override("margin_top", 25)
-	margen.add_theme_constant_override("margin_right", 25)
-	margen.add_theme_constant_override("margin_bottom", 25)
+	margen.name = "MargenMenu"
+	margen.add_theme_constant_override("margin_left", 16)
+	margen.add_theme_constant_override("margin_top", -int(SUBIDA_ICONO))
+	margen.add_theme_constant_override("margin_right", 16)
+	margen.add_theme_constant_override("margin_bottom", 16)
 	panel.add_child(margen)
 	var caja := VBoxContainer.new()
-	caja.add_theme_constant_override("separation", 14)
+	caja.add_theme_constant_override("separation", 10)
 	caja.alignment = BoxContainer.ALIGNMENT_CENTER
 	margen.add_child(caja)
-	var titulo := Label.new()
-	titulo.name = "TituloMenu"
-	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	titulo.add_theme_font_size_override("font_size", TAMANO_FUENTE_TITULO)
-	titulo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
-	caja.add_child(titulo)
-	_titulo_menu = titulo
+	var icono := TextureRect.new()
+	icono.name = "IconoPerrena"
+	icono.texture = ICONO_PERRENA
+	icono.custom_minimum_size = Vector2(TAMANO_ICONO_MENU, ALTO_ICONO_MENU)
+	icono.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icono.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icono.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icono.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caja.add_child(icono)
+	_icono_menu = icono
 	for i in OPCIONES_CLAVES.size():
 		var boton := Button.new()
 		boton.name = "Opcion%d" % i
 		boton.custom_minimum_size = Vector2(0.0, ALTURA_BOTON_MENU)
 		boton.add_theme_font_size_override("font_size", TAMANO_FUENTE_MENU)
 		boton.add_theme_color_override("font_color", Color.WHITE)
+		## Hover = normal y el foco es el único resaltado: el ratón no pinta
+		## su propia marca (toma el foco en mouse_entered), así nunca hay dos
+		## opciones marcadas; manda el último input usado.
 		boton.add_theme_stylebox_override("normal", _estilo_boton(Color(0.0, 0.0, 0.0, 1.0)))
-		boton.add_theme_stylebox_override("hover", _estilo_boton(Color(0.15, 0.15, 0.15, 1.0)))
+		boton.add_theme_stylebox_override("hover", _estilo_boton(Color(0.0, 0.0, 0.0, 1.0)))
 		boton.add_theme_stylebox_override("pressed", _estilo_boton(Color(0.3, 0.3, 0.3, 1.0)))
-		boton.add_theme_stylebox_override("focus", _estilo_boton(Color(0.12, 0.12, 0.12, 1.0)))
+		boton.add_theme_stylebox_override("focus", _estilo_boton(Color(0.2, 0.2, 0.2, 1.0)))
 		boton.pressed.connect(_on_opcion_conversacion.bind(i))
 		boton.focus_entered.connect(_on_foco_opcion.bind(i))
+		boton.mouse_entered.connect(_on_mouse_entra_opcion.bind(i))
 		caja.add_child(boton)
 		_botones_opciones.append(boton)
 	_menu_conversacion = capa
@@ -471,8 +473,6 @@ func _estilo_boton(color_fondo: Color) -> StyleBoxFlat:
 
 
 func _refrescar_textos_menu() -> void:
-	if _titulo_menu:
-		_titulo_menu.text = tr(CLAVE_NOMBRE_PERRENA)
 	for i in _botones_opciones.size():
 		if i < OPCIONES_CLAVES.size():
 			_botones_opciones[i].text = tr(OPCIONES_CLAVES[i])
@@ -488,6 +488,7 @@ func _actualizar_proximidad() -> void:
 	if cerca == _jugador_cerca:
 		return
 	_jugador_cerca = cerca
+	_animar_prompt(cerca)
 	if not cerca:
 		_cerrar_menu_conversacion()
 		_set_movimiento_jugador(true)
@@ -525,6 +526,7 @@ func _unhandled_input(evento: InputEvent) -> void:
 				_activar_foco()
 				get_viewport().set_input_as_handled()
 			KEY_ESCAPE:
+				_reproducir_sfx_salir()
 				_cerrar_menu_conversacion()
 				get_viewport().set_input_as_handled()
 		return
@@ -559,6 +561,8 @@ func _abrir_menu_conversacion() -> void:
 		return
 	_menu_abierto = true
 	_set_movimiento_jugador(false)
+	if _prompt_hablar:
+		_prompt_hablar.visible = false
 	_refrescar_textos_menu()
 	_menu_conversacion.visible = true
 	_opcion_foco = 0
@@ -575,6 +579,7 @@ func _cerrar_menu_conversacion() -> void:
 	if _dialogo_activo:
 		return
 	_set_movimiento_jugador(true)
+	_animar_prompt(_jugador_cerca)
 
 
 ## Mueve la selección con W/S (o flechas del teclado), con vuelta al
@@ -593,6 +598,32 @@ func _activar_foco() -> void:
 
 func _on_foco_opcion(indice: int) -> void:
 	_opcion_foco = indice
+	if indice == OPCIONES_CLAVES.size() - 1:
+		_rebotar_icono()
+
+
+## Rebote del icono al iluminar SALIR: aplastado + estirado con salida
+## elástica, pivote al centro para deformar sin desplazar.
+func _rebotar_icono() -> void:
+	if _icono_menu == null or get_tree() == null:
+		return
+	if _tween_icono and _tween_icono.is_valid():
+		_tween_icono.kill()
+	_icono_menu.pivot_offset = _icono_menu.size * 0.5
+	_icono_menu.scale = Vector2.ONE
+	_tween_icono = create_tween()
+	_tween_icono.tween_property(_icono_menu, "scale", Vector2(1.18, 0.78), 0.12).set_trans(Tween.TRANS_SINE)
+	_tween_icono.tween_property(_icono_menu, "scale", Vector2(0.92, 1.1), 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween_icono.tween_property(_icono_menu, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+
+
+## El ratón selecciona al entrar en una opción (le roba el foco al
+## teclado): una sola marca a la vez; manda el último input usado.
+func _on_mouse_entra_opcion(indice: int) -> void:
+	if not _menu_abierto or indice >= _botones_opciones.size():
+		return
+	_opcion_foco = indice
+	_botones_opciones[indice].grab_focus()
 
 
 func _on_opcion_conversacion(indice: int) -> void:
@@ -601,6 +632,9 @@ func _on_opcion_conversacion(indice: int) -> void:
 	if indice < 0 or indice >= OPCIONES_CLAVES.size():
 		push_warning("[PerrenaNPC] Opción de conversación inválida: %d." % indice)
 		return
+	# Salir tiene su propio sonido de salida; el resto suena selección.
+	if indice < OPCIONES_CLAVES.size() - 1:
+		AudioManager.play_sfx("seleccion_menu")
 	match indice:
 		0:
 			_mostrar_dialogo_torre(DIALOGO_ASALTO_PAGINAS, DIALOGO_ASALTO_HABLANTES)
@@ -609,6 +643,7 @@ func _on_opcion_conversacion(indice: int) -> void:
 		2:
 			_mostrar_consejo_perrena()
 		3:
+			_reproducir_sfx_salir()
 			_cerrar_menu_conversacion()
 
 
@@ -625,6 +660,8 @@ func _mostrar_dialogo_torre(paginas: Array[String], hablantes: Array[String]) ->
 	_dialogo_activo = true
 	if _menu_conversacion:
 		_menu_conversacion.visible = false
+	if _prompt_hablar:
+		_prompt_hablar.visible = false
 	_set_movimiento_jugador(false)
 	var dialogo := ESCENA_DIALOGO_TORRE.instantiate() as DialogoComic
 	if dialogo == null:
@@ -656,6 +693,7 @@ func _on_dialogo_torre_terminado(dialogo: DialogoComic) -> void:
 			_botones_opciones[0].grab_focus()
 	else:
 		_set_movimiento_jugador(true)
+		_animar_prompt(_jugador_cerca)
 
 
 ## Consejo sin repetición: cada llamada entrega una clave distinta hasta
@@ -682,6 +720,23 @@ func _mostrar_consejo_perrena() -> void:
 	var paginas: Array[String] = [clave]
 	var hablantes: Array[String] = [HABLANTE_PERRENA]
 	_mostrar_dialogo_torre(paginas, hablantes)
+
+
+## SFX de salida del menú (solo en salida explícita: opción Salir o ESC;
+## al alejarse no suena).
+func _reproducir_sfx_salir() -> void:
+	if not ResourceLoader.exists(RUTA_SFX_SALIR):
+		return
+	var flujo := load(RUTA_SFX_SALIR) as AudioStream
+	if flujo == null:
+		return
+	var reproductor := AudioStreamPlayer.new()
+	reproductor.stream = flujo
+	reproductor.volume_db = -6.0
+	reproductor.bus = "Master"
+	add_child(reproductor)
+	reproductor.play()
+	reproductor.finished.connect(reproductor.queue_free)
 
 
 func _set_movimiento_jugador(permitir: bool) -> void:

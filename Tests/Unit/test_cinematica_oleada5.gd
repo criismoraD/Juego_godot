@@ -181,7 +181,7 @@ func test_cinematica_oleada5_secuencia_completa() -> void:
 	# Plataforma real bajo Eryn, como el segundo piso del nivel: su layer 1
 	# se apaga con el jugador debajo (Eryn flota con el rayo viejo); el
 	# DebrisCatcher (layer 6, siempre sólido) la sostiene.
-	var plataforma := load("res://Entities/Ambiente_Plataforma_Oneway/PlataformaOneway.tscn").instantiate()
+	var plataforma: Node3D = (load("res://Entities/Ambiente_Plataforma_Oneway/PlataformaOneway.tscn") as PackedScene).instantiate()
 	plataforma.scale = Vector3(0.5, 0.5, 0.5)
 	plataforma.position = Vector3(-8.364106, 3.248637, -0.37669206)
 	nivel.add_child(plataforma)
@@ -848,6 +848,25 @@ func test_cinematica_aborto_era_devuelve_disparo() -> void:
 	assert_false(activa.is_shot_locked, "Candado de disparo liberado al abortar")
 	assert_true(marca["lista"], "Abortar invoca la continuación")
 	_limpiar_regreso()
+
+
+func test_entrar_torre_reproduce_puerta() -> void:
+	# Arrange: cinemática suelta (solo se usa su SFX de puerta).
+	var cine = CINE.new()
+	add_child_autofree(cine)
+	await get_tree().process_frame
+	var escena := get_tree().current_scene
+	var antes: int = escena.find_children("*", "AudioStreamPlayer", false, false).size()
+
+	# Act
+	cine._reproducir_sonido_puerta()
+
+	# Assert: aparece un reproductor con el abrir_puerta y se libera solo.
+	var players: Array = escena.find_children("*", "AudioStreamPlayer", false, false)
+	assert_eq(players.size(), antes + 1, "Se crea el reproductor de puerta")
+	var reproductor := players[players.size() - 1] as AudioStreamPlayer
+	assert_true(String(reproductor.stream.resource_path).ends_with("abrir_puerta.wav"), "Suena la puerta al entrar a la torre")
+	reproductor.queue_free()
 
 
 

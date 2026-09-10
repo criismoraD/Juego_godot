@@ -441,8 +441,28 @@ func _entrar_torre() -> void:
 	_ajustar_contornos(false)
 	terminada = true
 	if entrada_torre_habilitada and has_node("/root/SceneManager"):
+		_reproducir_sonido_puerta()
 		get_node("/root/SceneManager").cambiar_escena_cortinilla_circular("res://Levels/Player_Interior.tscn")
 	queue_free()
+
+
+## SFX de puerta al entrar a la torre (igual que la puerta del nivel).
+func _reproducir_sonido_puerta() -> void:
+	var stream: AudioStream = load("res://TEST_/abrir_puerta.wav")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.add_to_group("pausable_audio")
+	player.stream = stream
+	player.volume_db = 2.0
+	player.bus = "Master"
+	var root := get_tree().current_scene
+	if root:
+		root.add_child(player)
+		player.play()
+		player.finished.connect(player.queue_free)
+	else:
+		player.queue_free()
 
 
 func _aplicar_pausa_combate(pausar: bool) -> void:

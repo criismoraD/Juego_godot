@@ -115,6 +115,8 @@ func _load_all_sounds():
 
 	sfx_streams["obtencion_arma"] = [load("res://TEST_/Obtener arma.wav")]
 
+	sfx_streams["impacto_suelo"] = [load("res://TEST_/Impacto suelo.mp3")]
+
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
 	# ═══════════════════════════════════════════════════════════════════════════════
@@ -164,6 +166,14 @@ func _load_all_sounds():
 
 	sfx_streams["cuerno_guerra"] = [
 		load("res://System/Audio/SFX/Cuerno de guerra.mp3")
+	]
+
+	sfx_streams["seleccion_defensoras"] = [
+		load("res://TEST_/Seleccion defensoras.mp3")
+	]
+
+	sfx_streams["seleccion_menu"] = [
+		load("res://TEST_/Seleccion menu.mp3")
 	]
 
 	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]

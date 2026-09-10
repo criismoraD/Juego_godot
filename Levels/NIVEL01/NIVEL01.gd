@@ -2794,6 +2794,9 @@ func _iniciar_mensajera_oleada_5() -> void:
 		return
 
 	ballestera.en_despliegue = false
+	# El primer disparo tras la entrega es de fogueo al terreno (no se
+	# clava a sus pies aunque haya enemigos pegados a la mensajera).
+	ballestera.programar_tiro_fogueo()
 
 	# Animación de agacharse y dejar el ítem de flecha explosiva
 	ballestera.fase_agachada = true
@@ -2839,6 +2842,10 @@ func _iniciar_mensajera_oleada_5() -> void:
 		await get_tree().create_timer(tiempo_carga).timeout
 		if not is_instance_valid(ballestera):
 			break
+		if i == 0:
+			# Garantiza el fogueo en el primer tiro guionado aunque la FSM
+			# haya disparado antes por su cuenta.
+			ballestera.programar_tiro_fogueo()
 		ballestera._disparar()
 		ballestera._play_anim("DISPARO_01", 0.06, 1.0)
 		await get_tree().create_timer(0.45).timeout

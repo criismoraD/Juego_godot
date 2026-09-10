@@ -4,6 +4,10 @@ extends CharacterBody3D
 @export_category("Movimiento")
 @export var velocidad_caminar: float = 0.20  ## +10% de velocidad al caminar en el interior
 @export var velocidad_rotacion: float = 10.0
+## Yaw del modelo al aparecer (por defecto el del GLB; la torre lo pone a
+## PI: mirando al fondo. El cuerpo no rota para no romper el giro por
+## movimiento, que trabaja en yaw local == mundo).
+@export var yaw_inicial: float = -PI / 2.0
 
 const ANIM_IDLE := "IDLE_INTERIOR"
 const ANIM_CAMINAR := "CAMINAR_INTERIOR"
@@ -35,8 +39,9 @@ func _ready() -> void:
 
 	_arquera_modelo = find_child("ArqueraModel", true, false) as Node3D
 	if _arquera_modelo:
-		_yaw_base = _arquera_modelo.rotation.y
-		_yaw_objetivo = _yaw_base
+		_arquera_modelo.rotation.y = yaw_inicial
+		_yaw_base = yaw_inicial
+		_yaw_objetivo = yaw_inicial
 
 	_anim_tree = find_child("AnimationTree", true, false) as AnimationTree
 	if _anim_tree:

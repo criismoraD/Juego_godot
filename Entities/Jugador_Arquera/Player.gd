@@ -110,6 +110,12 @@ var state_timer = 0.0
 var current_move_state = MoveState.GROUND
 var landing_timer = 0.0
 var landing_anim_duration = 0.5  # Se auto-calcula
+## Volumen progresivo del impacto de caída: suave junto al umbral del humo
+## y fuerza completa en caídas largas (lo mismo usan las gárgolas).
+const DIST_IMPACTO_MIN: float = 0.9
+const DIST_IMPACTO_MAX: float = 6.0
+const VOL_IMPACTO_MIN_DB: float = -10.0
+const VOL_IMPACTO_MAX_DB: float = 0.0
 var crouch_timer: float = 0.0
 const TIEMPO_POSTURA_AGACHADO_APEX: float = 0.26  ## Punto más bajo y flexionado de la animación de agachado
 var is_dead: bool = false
@@ -917,8 +923,9 @@ func _physics_process(delta):
 			# Humo sincronizado exactamente al tocar la superficie tras caída
 			if _was_in_air_from_height:
 				var dist: float = _fall_start_y - global_position.y
-				if dist > 0.9:
+				if dist > DIST_IMPACTO_MIN:
 					_spawn_fall_smoke()
+					AudioManager.play_sfx("impacto_suelo", _volumen_impacto_por_caida(dist))
 				_was_in_air_from_height = false
 
 			# ATERRIZAJE CONDICIONAL
@@ -1163,6 +1170,13 @@ func _spawn_landing_vfx() -> void:
 # Humo sutil al caer desde altura (plataforma/escalera) - SmokeFX 2A-2, dos penachos a los pies
 var _fall_start_y: float = 0.0
 var _was_in_air_from_height: bool = false
+
+
+## Volumen del impacto según lo largo de la caída (0.9 m = suave, 6 m o
+## más = fuerza completa).
+func _volumen_impacto_por_caida(dist: float) -> float:
+	var t := clampf((dist - DIST_IMPACTO_MIN) / (DIST_IMPACTO_MAX - DIST_IMPACTO_MIN), 0.0, 1.0)
+	return lerpf(VOL_IMPACTO_MIN_DB, VOL_IMPACTO_MAX_DB, t)
 
 func _spawn_fall_smoke() -> void:
 	var tex: Texture2D = load("res://VFX/Textures/Smoke/Smoke_2A-2.png") as Texture2D
