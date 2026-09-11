@@ -166,12 +166,47 @@ func _procesar_desplazamiento(delta: float) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SPAWNER Y GESTIÓN DE LA RAMPA
 # ═══════════════════════════════════════════════════════════════════════════════
+func _obtener_wave_spawner() -> Node:
+	if not is_inside_tree():
+		return null
+	var spawner = get_tree().get_first_node_in_group("wave_spawners")
+	if spawner and is_instance_valid(spawner):
+		return spawner
+	var root = get_tree().current_scene
+	if root and is_instance_valid(root):
+		spawner = root.find_child("WaveSpawner", true, false)
+		if spawner:
+			return spawner
+	var parent_node = get_parent()
+	if parent_node and is_instance_valid(parent_node):
+		spawner = parent_node.find_child("WaveSpawner", true, false)
+		if spawner:
+			return spawner
+	return null
+
+
 func _procesar_spawner_rampa(delta: float) -> void:
 	# Filtrar enemigos que ya hayan muerto o sido liberados
 	_filtrar_enemigos_vivos()
 
 	if _enemigos_en_rampa.size() >= max_enemigos_rampa:
 		return
+
+	var wave_spawner = _obtener_wave_spawner()
+	if wave_spawner and is_instance_valid(wave_spawner):
+		# No spawnear si la oleada no está activa o si ya se cumplió la cuota de la oleada
+		if not wave_spawner.is_wave_active:
+			return
+		if wave_spawner.enemigos_muertos_en_oleada >= wave_spawner.enemigos_por_oleada:
+			return
+
+	# No spawnear sobre otro enemigo si la salida de la puerta aún está ocupada
+	if punto_spawn:
+		var spawn_pos: Vector3 = punto_spawn.global_position
+		for e in _enemigos_en_rampa:
+			if is_instance_valid(e) and e.is_inside_tree():
+				if abs(e.global_position.x - spawn_pos.x) < 0.75:
+					return
 
 	_timer_spawn -= delta
 	if _timer_spawn <= 0.0:
@@ -235,11 +270,16 @@ func _spawnear_enemigo_en_rampa() -> void:
 	if "distancia_maxima_caminar" in nuevo_enemigo:
 		nuevo_enemigo.distancia_maxima_caminar = dist_a_caminar + 0.4
 	if "target_walk_distance" in nuevo_enemigo:
-		nuevo_enemigo.target_walk_distance = dist_a_caminar
+		nuevo_enemigo.target_walk_distance = dist_a_caminar + 1.0
 	if "distancia_minima_entre_enemigos" in nuevo_enemigo:
 		nuevo_enemigo.distancia_minima_entre_enemigos = 0.2
 
 	_enemigos_en_rampa.append(nuevo_enemigo)
+
+	# Registrar en el WaveSpawner para que sus muertes sumen a la barra de progreso
+	var wave_spawner = _obtener_wave_spawner()
+	if wave_spawner and is_instance_valid(wave_spawner) and wave_spawner.has_method("registrar_enemigo_torre"):
+		wave_spawner.registrar_enemigo_torre(nuevo_enemigo)
 
 
 ## Baja el punto de spawn hasta la superficie de la rampa (raycast vertical).
@@ -276,7 +316,8 @@ func _obtener_x_para_enemigo(slot: int) -> float:
 	# Los siguientes slots se posicionan sucesivamente más atrás
 	var longitud_rampa: float = max(0.8, abs(spawn_x - borde_frontal))
 	var paso: float = (longitud_rampa * 0.8) / float(max(1, max_enemigos_rampa - 1))
-	return borde_frontal + 0.15 + (float(slot) * paso)
+	var destino: float = borde_frontal + 0.15 + (float(slot) * paso)
+	return min(spawn_x - 0.35, destino)
 
 
 func _filtrar_enemigos_vivos() -> void:
@@ -325,7 +366,7 @@ func _restringir_enemigos_a_la_rampa() -> void:
 		# Si retrocede más allá del origen de la rampa (+X)
 		elif e.global_position.x >= limite_der_x:
 			e.global_position.x = limite_der_x
-			if "velocity" in e:
+			if "velocity" in e and e.velocity.x > 0.0:
 				e.velocity.x = 0.0
 
 
@@ -368,8 +409,11 @@ func _obtener_borde_trasero_rampa_x() -> float:
 
 
 func _limpiar_enemigos_rampa() -> void:
+	var wave_spawner = _obtener_wave_spawner()
 	for e in _enemigos_en_rampa:
 		if is_instance_valid(e) and e.is_inside_tree():
+			if wave_spawner and "active_goblins" in wave_spawner:
+				wave_spawner.active_goblins.erase(e)
 			e.queue_free()
 	_enemigos_en_rampa.clear()
 

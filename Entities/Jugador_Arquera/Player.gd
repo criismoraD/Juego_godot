@@ -81,6 +81,18 @@ const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-
 @export var color_particulas_salto: Color = Color(0.7, 0.65, 0.5, 0.5)  # Color de las partículas
 @export_range(0.01, 0.5, 0.01) var escala_min_salto: float = 0.05  # Tamaño mínimo
 @export_range(0.01, 0.5, 0.01) var escala_max_salto: float = 0.15  # Tamaño máximo
+# === CONFIGURACIÓN - SQUASH AND STRETCH ===
+@export_category("Squash and Stretch")
+@export var habilitar_squash_stretch: bool = true  ## Activa deformación squash & stretch en caída libre y aterrizaje
+@export_range(0.0, 0.60, 0.01) var stretch_maximo_caida: float = 0.35  ## Estiramiento vertical acentuado al caer de altura (hasta 35%)
+@export_range(0.0, 0.60, 0.01) var squash_maximo_aterrizaje: float = 0.38  ## Compresión vertical acentuada al aterrizar tras caída (hasta 38%)
+@export var velocidad_stretch_aire: float = 16.0  ## Suavizado de transición al estirarse en caída libre
+# === CONFIGURACIÓN - TEMBLOR DE ARCO AL TENSAR ===
+@export_category("Temblor Arco")
+@export var habilitar_temblor_arco: bool = true  ## Activa el temblor/tiritar en el arco al tensar
+@export var amplitud_temblor_base: float = 0.012  ## Amplitud de vibración base al tensar al 100% en verde
+@export var multiplicador_temblor_morada: float = 3.2  ## Multiplicador de temblor con la barra morada cargada
+@export var frecuencia_temblor: float = 48.0  ## Rapidez/frecuencia de la vibración del arco
 # === CONFIGURACIÓN - SOMBRA ===
 @export_category("Sombra")
 @export var sombra_opacidad: float = 1.0
@@ -97,6 +109,12 @@ var anim_tree: AnimationTree
 var skeleton: Skeleton3D
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer  # AnimationPlayer del arco
+var bow_node: Node3D = null  ## Nodo del arco para temblor y transformaciones
+var _bow_base_position: Vector3 = Vector3.ZERO
+var _bow_base_rotation: Vector3 = Vector3.ZERO
+var _arrow_base_position: Vector3 = Vector3.ZERO
+var _explosive_arrow_base_position: Vector3 = Vector3.ZERO
+var _temblor_tiempo: float = 0.0
 var arrow_node: Node3D  # Nodo de la flecha para visibilidad
 var explosive_arrow_node: Node3D  # Nodo de la flecha explosiva visual
 ## Clip del nodo "Land": aterrizaje y pose de agachado congelada (Perrena usa su "agacharse")
@@ -143,6 +161,12 @@ var hitbox_pos_y_original: float = 0.9
 var hitbox_debug_mesh: MeshInstance3D
 var _cached_mesh_instances: Array[Node] = []
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
+# === SQUASH AND STRETCH ===
+var visual_model: Node3D = null
+var _original_model_scale: Vector3 = Vector3.ONE
+var _squash_stretch_current: Vector3 = Vector3.ONE
+var _squash_tween: Tween = null
+var _is_squash_tween_active: bool = false
 # === OPTIMIZACIÓN: Material de flash cacheado ===
 var _flash_material: StandardMaterial3D = null
 # === VIDA ===
@@ -228,14 +252,17 @@ func _ready():
 		var idx = skeleton.find_bone(bone_name)
 		self.set_meta("bone_idx", idx)
 
-	# Buscar AnimationPlayer del arco
-	var bow_node = find_child("ARCO_ANIMADO", true, false)
+	# Buscar AnimationPlayer y nodo del arco
+	bow_node = find_child("ARCO_ANIMADO", true, false) as Node3D
 	if bow_node:
+		_bow_base_position = bow_node.position
+		_bow_base_rotation = bow_node.rotation
 		bow_anim_player = bow_node.find_child("AnimationPlayer", true, false)
 
 	# Buscar nodo de la flecha
 	arrow_node = find_child("FLECHA", true, false)
 	if arrow_node:
+		_arrow_base_position = arrow_node.position
 		_arrow_base_scale = arrow_node.scale
 		arrow_node.visible = false
 	if not spawn_flecha_explosiva:
@@ -249,6 +276,8 @@ func _ready():
 		armature_node = find_child("ArqueraModel", true, false)
 	if armature_node:
 		armature_original_rotation = armature_node.rotation
+
+	_setup_squash_stretch()
 
 	create_charge_bar()
 
@@ -848,11 +877,15 @@ func _physics_process(delta):
 	# Guardar velocidad vertical PREVIA al movimiento (para detectar impacto)
 	var prev_vel_y = velocity.y
 
-	# Rastrear inicio de caída libre desde altura para humo al tocar superficie
+	# Rastrear inicio de caída libre desde altura para humo al tocar superficie y squash & stretch
 	if not is_on_floor():
 		if not _was_in_air_from_height:
 			_was_in_air_from_height = true
 			_fall_start_y = global_position.y
+		else:
+			# Rastrear el punto más alto (apex) alcanzado durante el salto o vuelo
+			if global_position.y > _fall_start_y:
+				_fall_start_y = global_position.y
 
 	# --- MÁQUINA DE ESTADOS DE MOVIMIENTO SIMPLE ---
 
@@ -925,13 +958,16 @@ func _physics_process(delta):
 
 		# Acabamos de tocar suelo viniendo del aire?
 		elif current_move_state == MoveState.AIR:
+			var caida_dist: float = _fall_start_y - global_position.y if _was_in_air_from_height else 0.0
 			# Humo sincronizado exactamente al tocar la superficie tras caída
 			if _was_in_air_from_height:
-				var dist: float = _fall_start_y - global_position.y
-				if dist > DIST_IMPACTO_MIN:
+				if caida_dist > DIST_IMPACTO_MIN:
 					_spawn_fall_smoke()
-					AudioManager.play_sfx("impacto_suelo", _volumen_impacto_por_caida(dist))
+					AudioManager.play_sfx("impacto_suelo", _volumen_impacto_por_caida(caida_dist))
 				_was_in_air_from_height = false
+
+			# GAME FEEL: Squash and stretch al aterrizar tras caída
+			_disparar_squash_aterrizaje(prev_vel_y, caida_dist)
 
 			# ATERRIZAJE CONDICIONAL
 			if prev_vel_y < umbral_aterrizaje:
@@ -1069,6 +1105,9 @@ func _physics_process(delta):
 
 			if anim_tree:
 				set_motion_anim("land")
+
+	# Actualizar deformación Squash & Stretch en aire o retorno suave
+	_actualizar_squash_stretch_aire(delta)
 
 
 func apply_movement(input_dir: float, delta: float = 0.016) -> void:
@@ -1241,6 +1280,183 @@ func _spawn_fall_smoke() -> void:
 		tw_puf.tween_callback(puf.queue_free)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SQUASH AND STRETCH - CAÍDA Y ATERRIZAJE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _setup_squash_stretch() -> void:
+	visual_model = find_child("ArqueraModel", false, false) as Node3D
+	if not visual_model:
+		visual_model = find_child("PerrenaModel", false, false) as Node3D
+	if not visual_model:
+		for child in get_children():
+			if child is Node3D and child != collision_shape_node and child.name.ends_with("Model"):
+				visual_model = child
+				break
+	if visual_model:
+		_original_model_scale = visual_model.scale
+		_squash_stretch_current = Vector3.ONE
+
+
+func _aplicar_escala_modelo(factor: Vector3) -> void:
+	_squash_stretch_current = factor
+	if visual_model and is_instance_valid(visual_model):
+		visual_model.scale = _original_model_scale * factor
+
+
+func _actualizar_squash_stretch_aire(delta: float) -> void:
+	if not habilitar_squash_stretch or not visual_model or not is_instance_valid(visual_model):
+		return
+
+	if _is_squash_tween_active:
+		return
+
+	var target_factor: Vector3 = Vector3.ONE
+
+	if current_move_state == MoveState.AIR:
+		# Deformación Stretch en caída: estiramiento vertical y adelgazamiento horizontal
+		if velocity.y < -1.0:
+			var caida_dist: float = maxf(0.0, _fall_start_y - global_position.y) if _was_in_air_from_height else 0.0
+			var velocidad_descenso: float = -velocity.y
+			# Combina velocidad y distancia de caída para una respuesta inmediata y elástica
+			var ratio_vel: float = clampf((velocidad_descenso - 1.0) / 6.0, 0.0, 1.0)
+			var ratio_dist: float = clampf(caida_dist / 2.5, 0.0, 1.0)
+			var ratio: float = maxf(ratio_vel, ratio_dist)
+			# Curva smoothstep para aceleración visual limpia y orgánica
+			var factor_suave: float = ratio * ratio * (3.0 - 2.0 * ratio)
+			var sy: float = 1.0 + factor_suave * stretch_maximo_caida
+			var sxz: float = 1.0 / sqrt(sy)
+			target_factor = Vector3(sxz, sy, sxz)
+
+	# Interpolar con alta reactividad hacia target_factor
+	_squash_stretch_current = _squash_stretch_current.lerp(target_factor, clampf(velocidad_stretch_aire * delta, 0.0, 1.0))
+	_aplicar_escala_modelo(_squash_stretch_current)
+
+
+func _disparar_squash_aterrizaje(vel_y_impacto: float, dist_caida: float) -> void:
+	if not habilitar_squash_stretch or not visual_model or not is_instance_valid(visual_model):
+		return
+
+	var velocidad_impacto: float = -vel_y_impacto
+	# Umbral mínimo para evitar micro-rebotes al caminar por el piso
+	if velocidad_impacto < 1.4 and dist_caida < 0.25:
+		return
+
+	if _squash_tween and _squash_tween.is_valid():
+		_squash_tween.kill()
+
+	_is_squash_tween_active = true
+
+	# Calcular compresión elástica según la fuerza y altura del impacto
+	var t_vel: float = clampf((velocidad_impacto - 1.5) / 5.5, 0.0, 1.0)
+	var t_dist: float = clampf(dist_caida / 2.5, 0.0, 1.0)
+	var t: float = maxf(t_vel, t_dist)
+	var t_suave: float = t * t * (3.0 - 2.0 * t)
+
+	# Squash vertical acentuado y visible (entre 15% y squash_maximo_aterrizaje)
+	var compresion: float = lerpf(0.15, squash_maximo_aterrizaje, t_suave)
+	var squash_y: float = 1.0 - compresion
+	var squash_xz: float = 1.0 / sqrt(squash_y)
+
+	# Rebote elástico vertical (overshoot visible de 8% a 18% hacia arriba)
+	var rebote_y: float = 1.0 + lerpf(0.08, 0.18, t_suave)
+	var rebote_xz: float = 1.0 / sqrt(rebote_y)
+
+	var squash_val: Vector3 = Vector3(squash_xz, squash_y, squash_xz)
+	var rebote_val: Vector3 = Vector3(rebote_xz, rebote_y, rebote_xz)
+
+	# En el instante exacto del impacto, aplicar compresión máxima
+	_aplicar_escala_modelo(squash_val)
+
+	_squash_tween = create_tween()
+	# 1. Retención breve para legibilidad del impacto (0.05s)
+	_squash_tween.tween_interval(0.05)
+	# 2. Rebote elástico enérgico hacia arriba con overshoot (0.13s)
+	_squash_tween.tween_method(_aplicar_escala_modelo, squash_val, rebote_val, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# 3. Asentamiento suave a la escala normal (0.14s)
+	_squash_tween.tween_method(_aplicar_escala_modelo, rebote_val, Vector3.ONE, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_squash_tween.tween_callback(func():
+		_is_squash_tween_active = false
+		_squash_stretch_current = Vector3.ONE
+		_aplicar_escala_modelo(Vector3.ONE)
+	)
+
+
+func _reset_squash_stretch() -> void:
+	if _squash_tween and _squash_tween.is_valid():
+		_squash_tween.kill()
+	_is_squash_tween_active = false
+	_squash_stretch_current = Vector3.ONE
+	_aplicar_escala_modelo(Vector3.ONE)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMBLOR Y TIRITAR DEL ARCO AL TENSAR
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _actualizar_temblor_arco(delta: float) -> void:
+	if not habilitar_temblor_arco or not bow_node or not is_instance_valid(bow_node):
+		return
+
+	# Calcular ratio de tensado
+	var ratio_verde: float = 0.0
+	if current_aim_state == AimState.DRAWING:
+		var adjusted_draw_time: float = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
+		if adjusted_draw_time > 0.0:
+			ratio_verde = clampf(state_timer / adjusted_draw_time, 0.0, 1.0) * 0.4
+	elif current_aim_state == AimState.AIMING:
+		var adjusted_charge_dur: float = duracion_carga / multiplicador_velocidad_disparo
+		if adjusted_charge_dur > 0.0:
+			var ratio_carga: float = clampf(charge_time / adjusted_charge_dur, 0.0, 1.0)
+			ratio_verde = 0.4 + 0.6 * ratio_carga
+
+	var ratio_morada: float = _potencia_sobrecarga_actual()
+
+	# Si apenas está empezando a tensar (menos de 0.05 de progreso), mantener quieto
+	if ratio_verde <= 0.05 and ratio_morada <= 0.0:
+		_detener_temblor_arco()
+		return
+
+	_temblor_tiempo += delta * frecuencia_temblor
+
+	# Amplitud compuesta: progresión no lineal para la verde, y fuerte amplificación con sobrecarga morada
+	var amp_verde: float = pow(ratio_verde, 1.3) * amplitud_temblor_base
+	var amp_morada: float = ratio_morada * multiplicador_temblor_morada * amplitud_temblor_base
+	var amp_total: float = amp_verde + amp_morada
+
+	# Superposición de armónicos no lineales para un estremecimiento orgánico de madera y cuerda bajo tensión extrema
+	var jitter_x: float = (sin(_temblor_tiempo) + 0.5 * sin(_temblor_tiempo * 2.11)) * amp_total
+	var jitter_y: float = (cos(_temblor_tiempo * 1.37) + 0.5 * sin(_temblor_tiempo * 3.14)) * (amp_total * 0.8)
+	var jitter_z: float = (sin(_temblor_tiempo * 1.73) + 0.5 * cos(_temblor_tiempo * 2.61)) * amp_total
+
+	# Rotación angular sutil (vibración en radianes)
+	var rot_pitch: float = sin(_temblor_tiempo * 1.47) * amp_total * 0.6
+	var rot_yaw: float = cos(_temblor_tiempo * 1.83) * amp_total * 0.6
+	var rot_roll: float = sin(_temblor_tiempo * 2.33) * amp_total * 0.8
+
+	var jitter_vec := Vector3(jitter_x, jitter_y, jitter_z)
+	bow_node.position = _bow_base_position + jitter_vec
+	bow_node.rotation = _bow_base_rotation + Vector3(rot_pitch, rot_yaw, rot_roll)
+
+	# Si hay una flecha sostenida en el arco, vibrar en sincronía exacta
+	if arrow_node and is_instance_valid(arrow_node) and arrow_node.visible:
+		arrow_node.position = _arrow_base_position + jitter_vec
+
+	if explosive_arrow_node and is_instance_valid(explosive_arrow_node) and explosive_arrow_node.visible:
+		explosive_arrow_node.position = _explosive_arrow_base_position + jitter_vec
+
+
+func _detener_temblor_arco() -> void:
+	_temblor_tiempo = 0.0
+	if bow_node and is_instance_valid(bow_node):
+		bow_node.position = _bow_base_position
+		bow_node.rotation = _bow_base_rotation
+	if arrow_node and is_instance_valid(arrow_node):
+		arrow_node.position = _arrow_base_position
+	if explosive_arrow_node and is_instance_valid(explosive_arrow_node):
+		explosive_arrow_node.position = _explosive_arrow_base_position
+
+
 func set_motion_anim(state_name: String) -> void:
 	if not anim_tree:
 		return
@@ -1374,6 +1590,7 @@ func _exit_tree():
 	if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Input.set_custom_mouse_cursor(null)
+	_detener_temblor_arco()
 
 
 func control_visual_state(delta):
@@ -1401,6 +1618,7 @@ func control_visual_state(delta):
 
 	match current_aim_state:
 		AimState.NONE:
+			_detener_temblor_arco()
 			var current_state = anim_tree.get("parameters/UpperBody/current_state")
 			# Verificar si existe la propiedad (al ser dinámico a veces da error si no se inicializa bien, pero setup() lo hace)
 			if current_state != null and current_state != "none":
@@ -1488,6 +1706,7 @@ func control_visual_state(delta):
 			state_timer += delta
 			_trajectory_fade_timer += delta
 			actualizar_rotacion_torso_pitch()
+			_actualizar_temblor_arco(delta)
 
 			if Input.is_action_just_released("click_izquierdo"):
 				# Si el disparo fue cancelado por daño, solo resetear el flag
@@ -1576,6 +1795,7 @@ func control_visual_state(delta):
 				charge_bar.tint_progress = Color.WHITE
 
 			actualizar_rotacion_torso_pitch()
+			_actualizar_temblor_arco(delta)
 			if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
 				_actualizar_trayectoria_explosiva()
 			else:
@@ -1590,6 +1810,7 @@ func control_visual_state(delta):
 				start_shooting()
 
 		AimState.SHOOTING:
+			_detener_temblor_arco()
 			var current_blend = float(anim_tree.get(blend_path))
 			if current_blend < 1.0:
 				anim_tree.set(blend_path, move_toward(current_blend, 1.0, 4.0 * delta))
@@ -1634,6 +1855,9 @@ func start_shooting():
 	current_aim_state = AimState.SHOOTING
 	state_timer = 0.0  # Reset timer para contar duración del disparo
 	_cooldown_disparo_timer = cadencia_disparo  # Cooldown antes de poder iniciar otro tensado
+
+	# Detener temblor del arco inmediatamente al disparar
+	_detener_temblor_arco()
 
 	if anim_tree:
 		anim_tree.set("parameters/UpperBody/transition_request", "shoot")
@@ -2098,6 +2322,7 @@ func _cancel_current_shot():
 
 		reset_torso_bone()
 		stop_bow_animation()
+		_detener_temblor_arco()
 
 
 func _setup_explosive_arrow_visual() -> void:
@@ -2132,6 +2357,7 @@ func _setup_explosive_arrow_visual() -> void:
 			explosive_arrow_node.add_child(tip_light)
 
 	if explosive_arrow_node:
+		_explosive_arrow_base_position = explosive_arrow_node.position
 		if explosive_arrow_node.scale.length_squared() > 0.001:
 			_explosive_arrow_base_scale = explosive_arrow_node.scale
 		elif arrow_node and arrow_node.scale.length_squared() > 0.001:
@@ -2679,6 +2905,7 @@ func _die():
 	# Cambiar a estado de muerte
 	current_move_state = MoveState.DEAD
 	velocity = Vector3.ZERO
+	_reset_squash_stretch()
 
 	# Reproducir animación de muerte
 	if anim_tree:

@@ -19,7 +19,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var total_enemigos_oleada_2: int = 26  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 30  ## Enemigos totales en la Oleada 3
 @export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos cuerno)
-@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 GoblinGirl + 1 Arquera Rosa, 9 Goblin + 10 cuerno)
+@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (12 Lonko, 0 Imp Escudo, 9 Gárgolas, 8 GoblinGirl + 2 Arquera Rosa, 9 Goblin + 10 cuerno)
 @export var total_enemigos_oleada_6: int = 40  ## Enemigos totales en la Oleada 6 Asalto final (12 arqueras, 15 ballesteros, 5 globos, 6 goblinas de escudo)
 @export_range(0.0, 1.0, 0.05) var mascara_oleada6_alfa: float = 0.85  ## Oscurecido lateral derecho durante la Oleada 6
 
@@ -1187,17 +1187,17 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		# Spawnear Medikit en la puerta de la torre al inicio de la oleada 4
 		_spawn_medikit_puerta_torre()
 	elif numero_oleada == 5:
-		# Oleada 5: 50 enemigos (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 9 GoblinGirl, 9 Goblin + 10 cuerno)
+		# Oleada 5: 50 enemigos (12 Lonko, 0 Imp Escudo, 9 Gárgolas, 8 GoblinGirl + 2 Arquera Rosa, 9 Goblin + 10 cuerno)
 		wave_spawner.probabilidad_imp = 0.0
 		wave_spawner.probabilidad_goblin_girl = 0.0
 		wave_spawner.probabilidad_canonero = 0.0
 		wave_spawner.escena_goblin = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 		wave_spawner.max_shield_imps_to_spawn_this_wave = 0
-		wave_spawner.max_imp_escudo_activos = 2
+		wave_spawner.max_imp_escudo_activos = 0
 		wave_spawner.intervalo_check_escudo = 999.0
 		# EXCEPCIÓN: Lonko siempre aparecen cuando se indica oleada 5 (bypass de filtros)
 		if wave_spawner.has_method("solicitar_excepcion_lonko"):
-			wave_spawner.solicitar_excepcion_lonko(11)
+			wave_spawner.solicitar_excepcion_lonko(12)
 		# En la Oleada 5 las defensas enemigas permanecen OCULTAS
 		_set_elemento_nivel3_activo(escena_rampa_nivel3, false)
 		_set_elemento_nivel3_activo(muro_plataforma, false)
@@ -1225,7 +1225,7 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 				if p == wave_spawner.escena_lonko:
 					pendientes_lonko += 1
 			if vivos_lonko == 0 and pendientes_lonko == 0 and wave_spawner.has_method("forzar_spawn_lonko_excepcion"):
-				wave_spawner.forzar_spawn_lonko_excepcion(11)
+				wave_spawner.forzar_spawn_lonko_excepcion(12)
 		)
 
 	elif numero_oleada == 6:
@@ -1441,6 +1441,8 @@ func _on_nivel1_completado(_numero_oleada: int):
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
 	_log_debug("[NIVEL01] ¡Oleada 6 completada! Mostrando victoria con botón continuar...")
 	_ocultar_mascara_oleada6()
+	if is_instance_valid(torre_de_asedio):
+		torre_de_asedio.desactivar_torre()
 
 	_mostrar_victoria_con_continuar(
 		(

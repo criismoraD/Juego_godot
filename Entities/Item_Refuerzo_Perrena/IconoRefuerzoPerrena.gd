@@ -140,8 +140,8 @@ func _invocar_perrena(player_ref: Node3D) -> void:
 	perrena.scale = Vector3(0.3, 0.3, 0.3)
 	root.add_child(perrena)
 
-	# Iniciar despliegue: llega corriendo mirando adelante, se posiciona tras el primer escudo y pinchos, y defiende hasta 6 impactos
-	perrena.desplegar_hacia_primer_escudo()
+	# Iniciar despliegue: corre desde la puerta, sube las escaleras y se posiciona detrás del escudo en el último piso
+	perrena.desplegar_hacia_ultimo_piso()
 
 
 func _crear_particulas_disolucion() -> void:

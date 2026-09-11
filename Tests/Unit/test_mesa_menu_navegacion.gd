@@ -105,3 +105,23 @@ func test_pulsar_opcion_suena_seleccion_menu() -> void:
 	assert_true(suena, "Pulsar opción del mueble suena seleccion_menu")
 	await get_tree().create_timer(0.3).timeout
 	assert_false(mesa.menu_canvas.visible, "El menú se cerró")
+
+
+func test_abrir_menu_suena_seleccion_menu() -> void:
+	# Arrange
+	var mesa := await _instanciar_mesa()
+	var am = get_tree().root.get_node_or_null("AudioManager")
+	assert_not_null(am, "Precondición: AudioManager disponible")
+	mesa._jugador_cerca = true
+
+	# Act: abrir el menú del mueble.
+	mesa._abrir_menu()
+
+	# Assert: suena selección al entrar (sin el ruido viejo de interacción).
+	var esperados: Array = am.sfx_streams["seleccion_menu"]
+	var suena := false
+	for p in am.sfx_pool:
+		if p.playing and p.stream != null and p.stream in esperados:
+			suena = true
+			break
+	assert_true(suena, "Abrir el mueble suena seleccion_menu")

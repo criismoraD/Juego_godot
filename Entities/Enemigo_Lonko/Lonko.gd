@@ -35,8 +35,8 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 @export var tiempo_recarga_min: float = 1.0
 @export var tiempo_recarga_max: float = 2.0
 @export var pausa_entre_disparos: float = 1.2
-@export var potencia_disparo_min: float = 2.0  ## Potencia mínima de disparo (x2)
-@export var potencia_disparo_max: float = 3.0  ## Potencia máxima de disparo (x3)
+@export var potencia_disparo_min: float = 6.0  ## Potencia mínima de disparo (x6)
+@export var potencia_disparo_max: float = 9.0  ## Potencia máxima de disparo (x9)
 @export var velocidad_proyectil: float = 12.0
 @export var color_proyectil_lonko: Color = Color(0.2, 1.0, 0.2, 1.0)  ## Verde lima
 

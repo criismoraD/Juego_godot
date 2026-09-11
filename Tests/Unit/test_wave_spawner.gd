@@ -431,4 +431,39 @@ func test_ajuste_inmediato_spawn_timer_al_morir_enemigo():
 	assert_almost_eq(_spawner.spawn_timer, 2.5, 0.01, "El spawn_timer debe acelerarse inmediatamente al morir enemigos")
 
 
+func test_predefined_wave_spawn_queue_wave_5_nueva_composicion():
+	# Arrange: dummies para las escenas de oleada 5 no cubiertas en before_each.
+	_spawner.escena_lonko = _create_dummy_scene("LonkoNode")
+	_spawner.escena_gargola = _create_dummy_scene("GargolaNode")
+	_spawner.escena_arquera_rosa = _create_dummy_scene("RosaNode")
+	_spawner.oleada_combate = 5
+
+	# Act
+	_spawner._start_wave()
+
+	# Assert: 12 Lonko, 0 Imp Escudo, 9 Gárgolas, 8 GoblinGirl, 2 Rosa, 9 Goblin = 40 base.
+	assert_eq(_spawner.cola_spawn.size(), 40, "Oleada 5: 40 enemigos base en cola")
+	assert_eq(_spawner.enemigos_por_oleada, 50, "Oleada 5: total 50 con el cuerno")
+	var conteo := {"lonko": 0, "imp_escudo": 0, "gargola": 0, "girl": 0, "rosa": 0, "goblin": 0}
+	for escena in _spawner.cola_spawn:
+		if escena == _spawner.escena_lonko:
+			conteo["lonko"] += 1
+		elif escena == _spawner.escena_imp_escudo:
+			conteo["imp_escudo"] += 1
+		elif escena == _spawner.escena_gargola:
+			conteo["gargola"] += 1
+		elif escena == _spawner.escena_goblin_girl:
+			conteo["girl"] += 1
+		elif escena == _spawner.escena_arquera_rosa:
+			conteo["rosa"] += 1
+		elif escena == _spawner.escena_goblin:
+			conteo["goblin"] += 1
+	assert_eq(conteo["lonko"], 12, "12 Lonko (11 + 1 por el imp escudo)")
+	assert_eq(conteo["imp_escudo"], 0, "Sin Imp Escudo")
+	assert_eq(conteo["gargola"], 9, "9 Gárgolas (7 + 2 por imp escudo)")
+	assert_eq(conteo["girl"], 8, "8 GoblinGirl")
+	assert_eq(conteo["rosa"], 2, "2 Arquera Rosa (1 + 1 por imp escudo)")
+	assert_eq(conteo["goblin"], 9, "9 Goblin ballesta")
+
+
 

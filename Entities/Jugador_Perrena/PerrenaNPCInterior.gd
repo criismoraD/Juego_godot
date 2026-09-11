@@ -601,6 +601,7 @@ func _abrir_menu_conversacion() -> void:
 		return
 	_menu_abierto = true
 	_set_movimiento_jugador(false)
+	AudioManager.play_sfx("seleccion_menu")
 	if _prompt_hablar:
 		_prompt_hablar.visible = false
 	_refrescar_textos_menu()

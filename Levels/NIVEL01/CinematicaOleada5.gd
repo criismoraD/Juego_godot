@@ -62,6 +62,17 @@ const POS_Z: float = 0.05
 const V_CORRER: float = 1.2
 const V_CAMINAR: float = 0.9
 const T_PAUSA: float = 0.9
+
+## Smear suave al correr y transiciones suaves de animación
+const DISTANCIA_FRENADO_SUAVE: float = 0.45
+const ACEL_CAMINAR: float = 3.2
+const DECEL_LLEGADA: float = 2.5
+const XFADE_LOCOMOCION_CINE: float = 0.28
+const SMEAR_CORRER_X: float = 0.12  ## Estiramiento longitudinal suave al correr (+12%)
+const SMEAR_CORRER_Y: float = 0.07  ## Compresión vertical sutil para conservar volumen (-7%)
+const SMEAR_CORRER_Z: float = 0.04  ## Compresión lateral sutil (-4%)
+const SMEAR_LERP_SPEED: float = 8.0  ## Rapidez con la que el smear acompaña la velocidad
+
 const SUELO_ISLA_Y: float = 0.2
 ## Los pies visuales van por encima del origen (medido: ~+0.28 Perrena);
 ## plantar por huesos, no por origen, evita que flote.
@@ -169,6 +180,16 @@ var _suelo_perrena: float = SUELO_ISLA_Y
 var _suelo_eryn: float = 3.3
 var _eryn_lista: bool = false
 
+# === ESTADO SMEAR SUAVE Y TRANSICIÓN ===
+var _perrena_model: Node3D = null
+var _perrena_model_scale_base: Vector3 = Vector3.ONE
+var _perrena_model_pos_base: Vector3 = Vector3.ZERO
+var _perrena_model_rot_base: Vector3 = Vector3.ZERO
+var _smear_scale_current: Vector3 = Vector3.ONE
+var _frenando: bool = false
+var _v_actual: float = V_CORRER
+var _v_caminar_actual: float = 0.0
+
 
 ## nivel: nodo del nivel (llamadas dinámicas: _set_movimiento_jugador_bloqueado).
 ## al_terminar: continuación (flujo a oleada 6).
@@ -221,19 +242,36 @@ func _process(delta: float) -> void:
 			if not is_instance_valid(_perrena):
 				_abortar()
 				return
-			_perrena.global_position.x -= V_CORRER * delta
+			# Transición suave a idle antes de PAUSA_X (sin parón seco ni corte de animación)
+			if not _frenando and _perrena.global_position.x <= PAUSA_X + DISTANCIA_FRENADO_SUAVE:
+				_frenando = true
+				if _perrena.anim_tree:
+					_perrena.anim_tree.set("parameters/Locomotion/transition_request", "idle")
+
+			if _frenando:
+				var t_freno: float = clampf((_perrena.global_position.x - PAUSA_X) / DISTANCIA_FRENADO_SUAVE, 0.0, 1.0)
+				_v_actual = lerpf(0.20, V_CORRER, t_freno)
+			else:
+				_v_actual = V_CORRER
+
+			_perrena.global_position.x -= _v_actual * delta
+			_actualizar_smear_correr(delta)
 			_seguir_corredora(delta)
 			_suelo_perrena = _suelo_y(_perrena.global_position.x, _perrena.global_position.y, POS_Z, _suelo_perrena)
 			_plantar_pies(_perrena, _skel_perrena, _suelo_perrena, delta)
 			_plantar_eryn(delta)
 			if _perrena.global_position.x <= PAUSA_X:
 				_perrena.global_position.x = PAUSA_X
+				_v_actual = 0.0
+				_actualizar_smear_correr(delta)
 				_poner_pose(_perrena, "idle", false)
 				_emitir_humo(false)
+				_frenando = false
 				_fase = Fase.PAUSA
 				_t = 0.0
 		Fase.PAUSA:
 			_t += delta
+			_actualizar_smear_correr(delta)
 			_seguir_corredora(delta)
 			_plantar_pies(_perrena, _skel_perrena, _suelo_perrena, delta)
 			_plantar_eryn(delta)
@@ -241,18 +279,32 @@ func _process(delta: float) -> void:
 				_poner_pose(_perrena, "walk_fwd", false)
 				_sonar_jingle()
 				_fase = Fase.CAMINAR
+				_v_caminar_actual = 0.0
 		Fase.CAMINAR:
 			if not is_instance_valid(_perrena):
 				_abortar()
 				return
-			_perrena.global_position.x -= V_CAMINAR * delta
+			# Aceleración suave al empezar a caminar (elimina la arrancada robótica)
+			if _perrena.global_position.x > FINAL_X + 0.5:
+				_v_caminar_actual = move_toward(_v_caminar_actual, V_CAMINAR, delta * ACEL_CAMINAR)
+			else:
+				# Desaceleración suave al aproximarse a la posición final
+				var t_llegada: float = clampf((_perrena.global_position.x - FINAL_X) / 0.5, 0.0, 1.0)
+				_v_caminar_actual = lerpf(0.15, V_CAMINAR, t_llegada)
+				if _perrena.anim_tree and _perrena.global_position.x <= FINAL_X + 0.25:
+					_perrena.anim_tree.set("parameters/Locomotion/transition_request", "idle")
+
+			_perrena.global_position.x -= _v_caminar_actual * delta
 			_seguir_corredora(delta)
 			_suelo_perrena = _suelo_y(_perrena.global_position.x, _perrena.global_position.y, POS_Z, _suelo_perrena)
 			_plantar_pies(_perrena, _skel_perrena, _suelo_perrena, delta)
 			_plantar_eryn(delta)
 			if _perrena.global_position.x <= FINAL_X:
 				_perrena.global_position.x = FINAL_X
+				_v_caminar_actual = 0.0
+				_reset_smear()
 				_poner_pose(_perrena, "idle", false)
+				_plantar_pies(_perrena, _skel_perrena, _suelo_perrena, 1.0)
 				_emitir_humo(false)
 				_fase = Fase.DIALOGO
 				_esperar_dialogo()
@@ -446,6 +498,7 @@ func _entrar_torre() -> void:
 	# Los materiales son recursos compartidos (sobreviven al cambio de
 	# escena): restaurar contornos aquí o quedarían finos para siempre.
 	_ajustar_contornos(false)
+	_reset_smear()
 	terminada = true
 	if entrada_torre_habilitada and has_node("/root/SceneManager"):
 		_reproducir_sonido_puerta()
@@ -464,6 +517,8 @@ func _reproducir_sonido_puerta() -> void:
 	player.volume_db = 2.0
 	player.bus = "Master"
 	var root := get_tree().current_scene
+	if not root:
+		root = get_tree().root
 	if root:
 		root.add_child(player)
 		player.play()
@@ -473,6 +528,8 @@ func _reproducir_sonido_puerta() -> void:
 
 
 func _aplicar_pausa_combate(pausar: bool) -> void:
+	if _nivel == null:
+		return
 	var nodo := _nivel as Node
 	if pausar:
 		_aliadas_prev = bool(nodo.get("_aliadas_activas"))
@@ -543,6 +600,8 @@ func _restaurar_mascaras() -> void:
 
 ## FXAA y MSAA apagados mientras la cámara se mueve (ver miembros).
 func _ajustar_fxaa(apagar: bool) -> void:
+	if _nivel == null:
+		return
 	if apagar:
 		_fxaa_prev.clear()
 		for ruta in RUTAS_VIEWPORTS_FXAA:
@@ -568,6 +627,8 @@ func _ajustar_fxaa(apagar: bool) -> void:
 ## pasa a UPDATE_ALWAYS para que su cámara viaje síncrona con las demás.
 ## Sin nivel con limitador o sin viewport, no-op.
 func _ajustar_fondo_fps(maximo: bool) -> void:
+	if _nivel == null:
+		return
 	var vp := (_nivel as Node).get_node_or_null(RUTA_VIEWPORT_FONDO) as SubViewport
 	if vp == null:
 		return
@@ -591,6 +652,8 @@ func _ajustar_fondo_fps(maximo: bool) -> void:
 
 ## Sombras direccionales fijas durante el travelling (ver miembros).
 func _fijar_sombras(fijar: bool) -> void:
+	if _nivel == null:
+		return
 	if fijar:
 		_sombras_prev.clear()
 		for l in (_nivel as Node).find_children("*", "DirectionalLight3D", true, false):
@@ -611,6 +674,8 @@ func _fijar_sombras(fijar: bool) -> void:
 ## Sin limpiar el registro: se llama al empezar y al aparecer la corredora;
 ## lo ya guardado conserva su valor original para restaurar.
 func _ajustar_sombra_falsa(ocultar: bool) -> void:
+	if _nivel == null:
+		return
 	if ocultar:
 		for s in (_nivel as Node).find_children("*", "SombraPersonaje", true, false):
 			var blob := s as Node3D
@@ -648,6 +713,8 @@ func _ocultar_arco(ocultar: bool) -> void:
 
 ## Nieblas de guerra visibles solo en la escena (a la torre mueren con ella).
 func _mostrar_niebla(mostrar: bool) -> void:
+	if _nivel == null:
+		return
 	if mostrar:
 		_niebla_nodos.clear()
 		for ruta in RUTAS_NIEBLA:
@@ -716,6 +783,8 @@ func _sonar_jingle() -> void:
 ## buscando pases TOON_LINEANEGRA (en el propio material o en su next_pass)
 ## y restaura al terminar.
 func _ajustar_contornos(minimo: bool) -> void:
+	if _nivel == null:
+		return
 	if minimo:
 		if not ResourceLoader.exists(RUTA_SHADER_CONTORNO):
 			return
@@ -800,6 +869,18 @@ func _empezar_carrera() -> void:
 	_suelo_perrena = _suelo_y(SPAWN_X, SUELO_ISLA_Y, POS_Z, SUELO_ISLA_Y)
 	_perrena.global_position = Vector3(SPAWN_X, _suelo_perrena, POS_Z)
 	_perrena.set_physics_process(false)
+	_perrena_model = _obtener_modelo_perrena()
+	if _perrena_model:
+		_perrena_model_scale_base = _perrena_model.scale
+		_perrena_model_pos_base = _perrena_model.position
+		_perrena_model_rot_base = _perrena_model.rotation
+	if _perrena.anim_tree and _perrena.anim_tree.tree_root and _perrena.anim_tree.tree_root.has_node("Locomotion"):
+		var trans_loco = _perrena.anim_tree.tree_root.get_node("Locomotion") as AnimationNodeTransition
+		if trans_loco:
+			trans_loco.xfade_time = XFADE_LOCOMOCION_CINE
+	_v_actual = V_CORRER
+	_v_caminar_actual = 0.0
+	_frenando = false
 	AudioManager.reset_bow_hold()
 	_construir_humo()
 	# La corredora aparece ahora: su contorno y sombra también se ajustan.
@@ -1039,7 +1120,59 @@ func _abortar() -> void:
 	_ajustar_fondo_fps(false)
 	_restaurar_mascaras()
 	_bloquear_boton_swap(false)
+	_reset_smear()
 	terminada = true
 	if _al_terminar.is_valid():
 		_al_terminar.call()
 	queue_free()
+
+
+func _exit_tree() -> void:
+	_reset_smear()
+
+
+# ==============================================================================
+# SMEAR SUAVE AL CORRER Y CONTROL VISUAL
+# ==============================================================================
+
+func _obtener_modelo_perrena() -> Node3D:
+	if not is_instance_valid(_perrena):
+		return null
+	var model: Node3D = _perrena.find_child("PerrenaModel", false, false) as Node3D
+	if not model and "visual_model" in _perrena and _perrena.visual_model:
+		model = _perrena.visual_model as Node3D
+	if not model:
+		for child in _perrena.get_children():
+			if child is Node3D and child.name.ends_with("Model"):
+				model = child as Node3D
+				break
+	return model
+
+
+func _actualizar_smear_correr(delta: float) -> void:
+	if not _perrena_model or not is_instance_valid(_perrena_model):
+		_perrena_model = _obtener_modelo_perrena()
+	if not _perrena_model or not is_instance_valid(_perrena_model):
+		return
+
+	var target_factor: Vector3 = Vector3.ONE
+	if _fase == Fase.CORRER and _v_actual > 0.01:
+		var ratio_vel: float = clampf(_v_actual / V_CORRER, 0.0, 1.0)
+		target_factor = Vector3(
+			1.0 + SMEAR_CORRER_X * ratio_vel,
+			1.0 - SMEAR_CORRER_Y * ratio_vel,
+			1.0 - SMEAR_CORRER_Z * ratio_vel
+		)
+
+	_smear_scale_current = _smear_scale_current.lerp(target_factor, clampf(delta * SMEAR_LERP_SPEED, 0.0, 1.0))
+	if _smear_scale_current.distance_to(target_factor) < 0.003:
+		_smear_scale_current = target_factor
+	_perrena_model.scale = _perrena_model_scale_base * _smear_scale_current
+
+
+func _reset_smear() -> void:
+	_smear_scale_current = Vector3.ONE
+	if _perrena_model and is_instance_valid(_perrena_model):
+		_perrena_model.scale = _perrena_model_scale_base
+		_perrena_model.position = _perrena_model_pos_base
+		_perrena_model.rotation = _perrena_model_rot_base

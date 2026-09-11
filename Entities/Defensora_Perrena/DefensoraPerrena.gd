@@ -30,6 +30,10 @@ const SFX_CELEBRACION: String = "res://TEST_/Guaf perrena exit menu.wav"
 const SFX_SWOOSH_HACHA: String = "res://TEST_/Tensado de flecha explosiva.wav"
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 const IMPACTOS_REQUERIDOS_PARA_SUBIR: int = 6
+const ATAQUES_PARA_ESPECIAL: int = 7  ## El ataque especial se ejecuta al 7mo ataque lanzado
+const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
+const HUMO_PISADAS_FRAMES_H: int = 9
+const HUMO_PISADAS_FRAMES_V: int = 1
 
 @export_category("Estadísticas")
 @export var vida_maxima: int = 3
@@ -38,10 +42,14 @@ const IMPACTOS_REQUERIDOS_PARA_SUBIR: int = 6
 
 @export_category("Despliegue y Movimiento")
 @export var auto_desplegar: bool = false
+@export var velocidad_caminar: float = 1.6  ## Velocidad reducida para trote natural
+@export var velocidad_escaleras: float = 0.85  ## Velocidad reducida para trepar escaleras
 var en_despliegue: bool = false
 var en_fase_escudo_suelo: bool = false
 var impactos_fase_suelo: int = 0
 var _iniciando_ascenso: bool = false
+var impactos_para_especial: int = 0
+var especial_cargado: bool = false
 
 @export_category("Cadencia de Ataque")
 @export var tiempo_espera_ataque_min: float = 1.4
@@ -58,6 +66,11 @@ var model_root: Node3D = null
 var armature_node: Node3D = null
 var armature_original_rotation: Vector3 = Vector3.ZERO
 var punto_spawn_hacha: Marker3D = null
+
+var _particulas_pisada: GPUParticles3D = null
+var _malla_humo_der: QuadMesh = null
+var _malla_humo_izq: QuadMesh = null
+var _prev_pos_x: float = 0.0
 
 var _tiempo_para_proximo_ataque: float = 1.0
 var _tiempo_en_estado: float = 0.0
@@ -77,6 +90,8 @@ func _ready() -> void:
 	_setup_hitbox()
 	_setup_aura()
 	_setup_hacha_mano()
+	_configurar_particulas_pisada()
+	_prev_pos_x = global_position.x
 
 	if auto_desplegar:
 		desplegar_hacia_primer_escudo()
@@ -210,7 +225,107 @@ func _orientar_modelo_izquierda() -> void:
 
 func _orientar_modelo_escalera() -> void:
 	if armature_node:
-		armature_node.rotation.y = armature_original_rotation.y + PI / 2.0
+		armature_node.rotation.y = armature_original_rotation.y - PI / 2.0
+
+
+func _configurar_particulas_pisada() -> void:
+	if _particulas_pisada and is_instance_valid(_particulas_pisada):
+		return
+	_particulas_pisada = GPUParticles3D.new()
+	_particulas_pisada.name = "Particulas_Pisada"
+	_particulas_pisada.emitting = false
+	_particulas_pisada.amount = 22
+	_particulas_pisada.lifetime = 0.7
+	_particulas_pisada.visibility_aabb = AABB(Vector3(-2, -0.5, -2), Vector3(4, 3, 4))
+	add_child(_particulas_pisada)
+	_particulas_pisada.position = Vector3(-0.15, 0.05, 0.0)
+
+	var mat := StandardMaterial3D.new()
+	if TEXTURA_HUMO_PISADAS:
+		mat.albedo_texture = TEXTURA_HUMO_PISADAS
+		mat.particles_anim_h_frames = HUMO_PISADAS_FRAMES_H
+		mat.particles_anim_v_frames = HUMO_PISADAS_FRAMES_V
+		mat.particles_anim_loop = false
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.billboard_keep_scale = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.render_priority = 2
+
+	_malla_humo_der = QuadMesh.new()
+	_malla_humo_der.material = mat
+	_malla_humo_der.size = Vector2(0.85, 0.85)
+	_malla_humo_izq = QuadMesh.new()
+	_malla_humo_izq.material = mat
+	_malla_humo_izq.size = Vector2(-0.85, 0.85)
+	_particulas_pisada.draw_pass_1 = _malla_humo_der
+
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(-1.0, 0.45, 0.0).normalized()
+	pm.spread = 55.0
+	pm.initial_velocity_min = 0.4
+	pm.initial_velocity_max = 0.95
+	pm.gravity = Vector3(0.0, 0.35, 0.0)
+	pm.scale_min = 0.8
+	pm.scale_max = 1.5
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(0.12, 0.02, 0.12)
+	pm.anim_speed_min = 1.0
+	pm.anim_speed_max = 1.0
+	pm.anim_offset_min = 0.0
+	pm.anim_offset_max = 1.0
+
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.72, 0.72, 0.72, 0.85))
+	grad.set_color(1, Color(0.72, 0.72, 0.72, 0.0))
+	var grad_tex := GradientTexture1D.new()
+	grad_tex.gradient = grad
+	pm.color_ramp = grad_tex
+
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.3), 0.0, 1.5)
+	curve.add_point(Vector2(0.35, 1.0), 0.2, -0.3)
+	curve.add_point(Vector2(0.7, 0.7), -0.5, -0.8)
+	curve.add_point(Vector2(1.0, 0.0), -1.2, 0.0)
+	var curve_tex := CurveTexture.new()
+	curve_tex.curve = curve
+	pm.scale_curve = curve_tex
+
+	_particulas_pisada.process_material = pm
+
+
+func _particulas_pisada_emitir() -> void:
+	if not _particulas_pisada or not is_instance_valid(_particulas_pisada):
+		return
+
+	var delta_x: float = global_position.x - _prev_pos_x
+	_prev_pos_x = global_position.x
+
+	var anim_actual: String = anim_player.current_animation.to_upper() if anim_player else ""
+	var es_escalera: bool = anim_actual.contains("ESCALERA") or anim_actual.contains("ESCALAR")
+	var corriendo: bool = (anim_actual.contains("CORRER") or absf(delta_x) > 0.005) and not es_escalera and en_despliegue
+	var viva_y_activa: bool = (current_state != State.DYING and current_state != State.DEAD and current_state != State.CELEBRATING)
+
+	var debe_emitir: bool = corriendo and viva_y_activa
+	_particulas_pisada.emitting = debe_emitir
+
+	if debe_emitir:
+		var mirando_derecha: bool = delta_x >= 0.0
+		var malla_humo: QuadMesh = _malla_humo_der if mirando_derecha else _malla_humo_izq
+		if malla_humo and _particulas_pisada.draw_pass_1 != malla_humo:
+			_particulas_pisada.draw_pass_1 = malla_humo
+
+		var pm: ParticleProcessMaterial = _particulas_pisada.process_material as ParticleProcessMaterial
+		if pm:
+			if mirando_derecha:
+				pm.direction = Vector3(-1.0, 0.45, 0.0).normalized()
+				_particulas_pisada.position = Vector3(-0.15, 0.05, 0.0)
+			else:
+				pm.direction = Vector3(1.0, 0.45, 0.0).normalized()
+				_particulas_pisada.position = Vector3(0.15, 0.05, 0.0)
 
 
 
@@ -311,14 +426,14 @@ func iniciar_ascenso_a_ultimo_piso() -> void:
 	var p2_top_y: float = 3.143
 	var p3_ladder_x: float = -9.11
 	var p3_top_y: float = 4.58
-	var p3_escudo_x: float = -8.45
+	var p3_escudo_x: float = -8.80
 
 	if get_tree():
 		for esc in get_tree().get_nodes_in_group("escudos"):
 			if is_instance_valid(esc) and esc is Node3D:
 				var e3d := esc as Node3D
 				if e3d.global_position.y > 4.0:
-					p3_escudo_x = e3d.global_position.x - 0.3
+					p3_escudo_x = e3d.global_position.x - 0.65
 					break
 
 	var walk_speed: float = 2.8
@@ -439,14 +554,14 @@ func desplegar_hacia_ultimo_piso(start_override_x: float = NAN) -> void:
 	var p1_ladder_x: float = -7.58
 	var p2_ladder_x: float = -8.33
 	var p3_ladder_x: float = -9.11
-	var p3_escudo_x: float = -8.45
+	var p3_escudo_x: float = -8.80
 
 	if get_tree():
 		for esc in get_tree().get_nodes_in_group("escudos"):
 			if is_instance_valid(esc) and esc is Node3D:
 				var e3d := esc as Node3D
 				if e3d.global_position.y > 4.0:
-					p3_escudo_x = e3d.global_position.x - 0.3
+					p3_escudo_x = e3d.global_position.x - 0.65
 					break
 
 	global_position = Vector3(start_x, floor_y, 0.0)
@@ -480,6 +595,7 @@ func _physics_process(delta: float) -> void:
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
+	_particulas_pisada_emitir()
 	_tiempo_en_estado += delta
 
 	match current_state:
@@ -500,18 +616,19 @@ func _proceso_idle(delta: float) -> void:
 
 
 func _intentar_iniciar_ataque() -> void:
+	# El ataque especial / ulti ocurre cada 7 ataques lanzados (independiente de impactos)
+	if especial_cargado or contador_ataques >= (ATAQUES_PARA_ESPECIAL - 1):
+		_iniciar_habilidad_especial()
+		return
+
 	# Buscar objetivo según prioridades requeridas
-	_objetivo_actual = _buscar_mejor_objetivo()
+	_objetivo_actual = _buscar_mejor_objetivo(false)
 	if not is_instance_valid(_objetivo_actual):
 		# Sin enemigos válidos en pantalla: permanece en IDLE esperando
 		_tiempo_para_proximo_ataque = 0.5
 		return
 
-	# Si ya realizó 5 ataques, el sexto ataque es su Habilidad Especial
-	if contador_ataques >= 5:
-		_iniciar_habilidad_especial()
-	else:
-		_iniciar_ataque_normal()
+	_iniciar_ataque_normal()
 
 
 func _iniciar_ataque_normal() -> void:
@@ -570,32 +687,44 @@ func _proceso_celebrando(_delta: float) -> void:
 		if aura_vfx:
 			aura_vfx.visible = false
 
-		# Ráfaga inmediata de 5 hachas al azar
-		_disparar_rafaga_5_hachas()
+		# Disparar 1 sola hacha de mayor tamaño, mayor velocidad/potencia y 100% de acierto
+		_lanzar_hacha_especial()
+		contador_ataques = 0
+		impactos_para_especial = 0
+		especial_cargado = false
 		habilidad_ejecutada.emit()
 		_cambiar_estado(State.IDLE)
 
 
-func _disparar_rafaga_5_hachas() -> void:
+## Ataque Especial de Perrena:
+## Arroja 1 sola hacha de mayor tamaño con 100% de acierto hacia el objetivo fijado,
+## a mayor velocidad y potencia, con prioridad 1 contra cualquier enemigo y daño/efecto de flecha explosiva.
+func _lanzar_hacha_especial() -> void:
+	var root := get_tree().current_scene if get_tree() else get_parent()
+	if not root:
+		return
+
+	# Prioridad 1 contra cualquier tipo de enemigo del juego
+	var target: Node = _buscar_mejor_objetivo(true)
 	var spawn_p: Vector3 = punto_spawn_hacha.global_position if punto_spawn_hacha else (global_position + Vector3(0.2, 1.2, 0.0))
-	var root := get_tree().current_scene if get_tree().current_scene else get_tree().root
 
-	# Disparar 5 hachas con ángulos y potencias variadas en abanico frontal
-	var angulos: Array[float] = [12.0, 22.0, 32.0, 42.0, 52.0]
-	angulos.shuffle()
+	var target_pos: Vector3 = spawn_p + Vector3(10.0, 0.0, 0.0)
+	if is_instance_valid(target) and target is Node3D:
+		target_pos = (target as Node3D).global_position + Vector3(0.0, 0.4, 0.0)
 
-	for i in range(5):
-		var ang_deg: float = angulos[i] + randf_range(-4.0, 4.0)
-		var rad: float = deg_to_rad(ang_deg)
-		var dir := Vector3(cos(rad), sin(rad), 0.0).normalized()
-		var pot: float = randf_range(0.85, 1.25)
+	var dir := (target_pos - spawn_p).normalized()
+	if dir.length_squared() < 0.01:
+		dir = Vector3.RIGHT
 
-		var hacha := HACHA_SCENE.instantiate() as HachaPerrenaProjectile
-		if hacha and root:
-			root.add_child(hacha)
-			hacha.global_position = spawn_p + Vector3(0.0, randf_range(-0.1, 0.1), 0.0)
-			hacha.impactado.connect(_on_hacha_impacto)
-			hacha.initialize(dir, pot, self)
+	var hacha := HACHA_SCENE.instantiate() as HachaPerrenaProjectile
+	if not hacha:
+		return
+
+	root.add_child(hacha)
+	hacha.global_position = spawn_p
+	hacha.impactado.connect(_on_hacha_impacto)
+	# Disparar hacha especial: escala 2.0x, velocidad 26.0 y 100% de acierto guiado hacia el objetivo
+	hacha.initialize(dir, 1.0, self, true, target)
 
 
 func _lanzar_hacha_hacia_objetivo(target: Node) -> void:
@@ -637,8 +766,6 @@ func _lanzar_hacha_hacia_objetivo(target: Node) -> void:
 
 
 func _on_hacha_impacto(target: Node) -> void:
-	if not en_fase_escudo_suelo:
-		return
 	if not is_instance_valid(target):
 		return
 
@@ -656,21 +783,27 @@ func _on_hacha_impacto(target: Node) -> void:
 	if not es_impacto_valido:
 		return
 
-	impactos_fase_suelo += 1
-	impacto_registrado.emit(impactos_fase_suelo)
+	# Registrar impacto válido
+	impactos_para_especial += 1
+	impacto_registrado.emit(impactos_para_especial)
 
-	# Al completar 6 impactos en suelo, iniciar el ascenso a las escaleras
-	if impactos_fase_suelo >= IMPACTOS_REQUERIDOS_PARA_SUBIR and not _iniciando_ascenso:
-		_iniciando_ascenso = true
-		call_deferred("iniciar_ascenso_a_ultimo_piso")
-
+	# Al completar impactos en suelo (si estuviese en fase de suelo)
+	if en_fase_escudo_suelo:
+		impactos_fase_suelo += 1
+		if impactos_fase_suelo >= IMPACTOS_REQUERIDOS_PARA_SUBIR and not _iniciando_ascenso:
+			_iniciando_ascenso = true
+			call_deferred("iniciar_ascenso_a_ultimo_piso")
 
 
 ## Sistema de Selección por Prioridades:
-## Prioridad 2: Escudos de escenario (es_escudo_enemigo) y Clase Guardián (ImpShieldGirl, GuardianaMoradita)
-## Prioridad 1: Enemigos de Élite (Lonko, ArqueraRosa)
-## Prioridad 0: Resto de enemigos
-func _buscar_mejor_objetivo() -> Node:
+## Ataque normal:
+##   * Prioridad 2: Escudos de escenario (es_escudo_enemigo) y Clase Guardián (ImpShieldGirl, GuardianaMoradita)
+##   * Prioridad 1: Enemigos de Élite (Lonko, ArqueraRosa)
+##   * Prioridad 0: Resto de enemigos
+## Ataque especial:
+##   * Prioridad 1: CUALQUIER tipo de enemigo del juego
+##   * Prioridad 0: Escudos y defensas del escenario si no hay enemigos
+func _buscar_mejor_objetivo(es_ataque_especial: bool = false) -> Node:
 	var objetivos_p2: Array[Node] = []
 	var objetivos_p1: Array[Node] = []
 	var objetivos_p0: Array[Node] = []
@@ -694,7 +827,10 @@ func _buscar_mejor_objetivo() -> Node:
 		if es_escudo_enem:
 			var ex: float = (escudo as Node3D).global_position.x
 			if ex > my_x and (ex - my_x) <= rango_deteccion_max_x:
-				objetivos_p2.append(escudo)
+				if es_ataque_especial:
+					objetivos_p0.append(escudo)
+				else:
+					objetivos_p2.append(escudo)
 
 	# 2. Enemigos en grupo "enemies"
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -707,21 +843,24 @@ func _buscar_mejor_objetivo() -> Node:
 		if ex <= my_x or (ex - my_x) > rango_deteccion_max_x:
 			continue
 
-		var n_lower: String = enemy.name.to_lower()
-
-		# Prioridad 2: Clase Guardián
-		if enemy is ImpShieldGirl or enemy is GuardianaMoradita:
-			objetivos_p2.append(enemy)
-		elif ("imp" in n_lower and "escudo" in n_lower) or ("guardiana" in n_lower and "moradita" in n_lower):
-			objetivos_p2.append(enemy)
-		# Prioridad 1: Élite (Lonko, Arquera Rosa)
-		elif enemy is Lonko or enemy is ArqueraRosa or enemy.get("es_elite") == true:
+		if es_ataque_especial:
+			# El ataque especial tiene Prioridad 1 contra CUALQUIER tipo de enemigo del juego
 			objetivos_p1.append(enemy)
-		elif "lonko" in n_lower or "rosa" in n_lower:
-			objetivos_p1.append(enemy)
-		# Prioridad 0: Resto
 		else:
-			objetivos_p0.append(enemy)
+			var n_lower: String = enemy.name.to_lower()
+			# Prioridad 2: Clase Guardián
+			if enemy is ImpShieldGirl or enemy is GuardianaMoradita:
+				objetivos_p2.append(enemy)
+			elif ("imp" in n_lower and "escudo" in n_lower) or ("guardiana" in n_lower and "moradita" in n_lower):
+				objetivos_p2.append(enemy)
+			# Prioridad 1: Élite (Lonko, Arquera Rosa)
+			elif enemy is Lonko or enemy is ArqueraRosa or enemy.get("es_elite") == true:
+				objetivos_p1.append(enemy)
+			elif "lonko" in n_lower or "rosa" in n_lower:
+				objetivos_p1.append(enemy)
+			# Prioridad 0: Resto
+			else:
+				objetivos_p0.append(enemy)
 
 	# Retornar el más cercano de la prioridad más alta disponible
 	if objetivos_p2.size() > 0:

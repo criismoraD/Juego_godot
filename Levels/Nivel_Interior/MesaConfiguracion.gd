@@ -209,7 +209,7 @@ func _abrir_menu() -> void:
 	if not menu_canvas:
 		return
 	_set_player_movimiento(false)
-	_reproducir_sfx_interaccion()
+	AudioManager.play_sfx("seleccion_menu")
 	if prompt_e:
 		prompt_e.visible = false
 
@@ -221,18 +221,6 @@ func _abrir_menu() -> void:
 	_opcion_foco = 0
 	if btn_defensoras:
 		btn_defensoras.grab_focus()
-
-
-func _reproducir_sfx_interaccion() -> void:
-	var stream: AudioStream = load("res://TEST_/Sonido interactuar mueble.wav")
-	if not stream:
-		return
-	var asp := AudioStreamPlayer.new()
-	asp.stream = stream
-	asp.bus = "Master"
-	add_child(asp)
-	asp.play()
-	asp.finished.connect(asp.queue_free)
 
 
 func _cerrar_menu(animado: bool = true) -> void:

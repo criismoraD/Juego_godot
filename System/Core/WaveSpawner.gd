@@ -218,16 +218,15 @@ func _generar_cola_spawn() -> void:
 
 	elif wave_num == 5:
 		# Oleada 5: 40 enemigos base + 10 cuerno (Total 50)
-		# 11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 Arqueras Goblin + 1 Arquera Rosa, 9 Goblins Ballesta. Total = 40.
-		for i in range(11):
+		# 12 Lonko, 0 Imp Escudo, 9 Gárgolas, 8 Arqueras Goblin + 2 Arqueras Rosa, 9 Goblins Ballesta. Total = 40.
+		for i in range(12):
 			pool.append(escena_lonko)
-		for i in range(4):
-			pool.append(escena_imp_escudo)
-		for i in range(7):
+		for i in range(9):
 			pool.append(escena_gargola)
 		for i in range(8):
 			pool.append(escena_goblin_girl)
-		pool.append(escena_arquera_rosa)
+		for i in range(2):
+			pool.append(escena_arquera_rosa)
 		for i in range(9):
 			pool.append(escena_goblin)
 
@@ -260,7 +259,7 @@ func _generar_cola_spawn() -> void:
 			pool.remove_at(idx_gargola)
 			pool.push_front(escena_gargola)
 
-	# En Oleada 5: distribuir los 11 Lonko uniformemente para garantizar que aparezcan 11 visibles (cada ~4 spawns)
+	# En Oleada 5: distribuir los 12 Lonko uniformemente para garantizar que aparezcan 12 visibles (cada ~3-4 spawns)
 	if wave_num == 5 and escena_lonko:
 		var lonkos: Array[PackedScene] = []
 		var otros: Array[PackedScene] = []
@@ -304,7 +303,7 @@ func _generar_cola_spawn() -> void:
 		pool.insert(mitad, escena_arquera_rosa)
 
 	cola_spawn = pool
-	# EXCEPCIÓN Lonko: si se indicó explícitamente que deben aparecer 11, garantizarlos aunque la cola haya sido manipulada
+	# EXCEPCIÓN Lonko: si se indicó explícitamente que deben aparecer 12, garantizarlos aunque la cola haya sido manipulada
 	if wave_num == 5 and lonko_excepcion_pendiente > 0 and escena_lonko:
 		var count_lonko: int = 0
 		for p in cola_spawn:
@@ -643,6 +642,41 @@ func detener_spawning():
 
 func forzar_spawn():
 	_spawn_goblin()
+
+
+## Registra un enemigo generado externamente (ej: Torre de Asedio)
+## para que se contabilice en active_goblins, su muerte incremente
+## enemigos_muertos_en_oleada y se refleje en la barra de progreso de la UI.
+func registrar_enemigo_torre(enemigo: Node3D) -> void:
+	if not is_instance_valid(enemigo):
+		return
+	if active_goblins.has(enemigo) or shield_imps_activos.has(enemigo):
+		return
+
+	active_goblins.append(enemigo)
+	goblins_spawned_in_wave = min(goblins_spawned_in_wave + 1, enemigos_por_oleada)
+
+	if enemigo.has_signal("died"):
+		if not enemigo.died.is_connected(_on_goblin_died.bind(enemigo)):
+			enemigo.died.connect(_on_goblin_died.bind(enemigo))
+
+	# Red de seguridad si el nodo sale del árbol
+	enemigo.tree_exited.connect(func():
+		if is_instance_valid(self):
+			if active_goblins.has(enemigo) or shield_imps_activos.has(enemigo):
+				active_goblins.erase(enemigo)
+				shield_imps_activos.erase(enemigo)
+				enemigos_muertos_en_oleada = min(enemigos_muertos_en_oleada + 1, enemigos_por_oleada)
+				emit_signal("enemigo_eliminado", enemigo, enemigos_muertos_en_oleada)
+			_check_wave_complete()
+	)
+
+	goblin_spawneado.emit(enemigo)
+
+
+func registrar_enemigo_externo(enemigo: Node3D) -> void:
+	registrar_enemigo_torre(enemigo)
+
 
 
 func obtener_goblins_activos() -> int:
@@ -1105,9 +1139,9 @@ func iniciar_oleada_custom(
 	is_wave_active = false
 
 
-## EXCEPCIÓN: fuerza que aparezcan 11 Lonkos en oleada 5 aunque la lógica normal falle.
+## EXCEPCIÓN: fuerza que aparezcan 12 Lonkos en oleada 5 aunque la lógica normal falle.
 ## Llamar cuando el nivel indique explícitamente que deben aparecer (bypass de filtros).
-func solicitar_excepcion_lonko(cantidad: int = 11) -> void:
+func solicitar_excepcion_lonko(cantidad: int = 12) -> void:
 	lonko_excepcion_pendiente = cantidad
 	# Si la oleada 5 ya está generada, inyectar inmediatamente al frente de la cola
 	if oleada_combate == 5 and is_inside_tree() and escena_lonko:

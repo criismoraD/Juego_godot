@@ -13,14 +13,32 @@ const SFX_IMPACTO_PESADO: AudioStream = preload("res://Entities/Enemigo_GloboAer
 const TEXTURA_SANGRE_DECAL: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png")
 const TEXTURA_HUMO_CANASTA: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_2A-2.png")
 
+# === CONFIGURACIÓN - SQUASH AND STRETCH ===
+@export_category("Squash and Stretch")
+@export var habilitar_squash_stretch: bool = true  ## Activa deformación squash & stretch en caída libre y al impactar
+@export_range(0.0, 1.0, 0.01) var stretch_maximo_caida: float = 0.55  ## Estiramiento vertical acentuado y visible al caer (hasta +55%)
+@export_range(0.0, 0.80, 0.01) var squash_maximo_impacto: float = 0.55  ## Compresión vertical extrema al golpear el suelo (hasta -55% de altura)
+@export var velocidad_stretch_aire: float = 14.0  ## Rapidez con la que se deforma durante la aceleración en el aire
+@export var offset_entierro_suelo: float = -0.05  ## Desplazamiento vertical al impactar para enterrarse en el suelo (evita flotar)
+
 var _area_dano: Area3D = null
 var _golpeados: Dictionary = {}
 var _danio_habilitado: bool = false
 var _impacto_efecto_hecho: bool = false
 
+# === ESTADO SQUASH AND STRETCH ===
+var _visual_node: Node3D = null
+var _original_visual_scale: Vector3 = Vector3.ONE
+var _squash_stretch_current: Vector3 = Vector3.ONE
+var _squash_tween: Tween = null
+var _is_squash_tween_active: bool = false
+var _fall_start_y: float = 0.0
+
 func _ready() -> void:
 	super._ready()
 	_tiempo_para_disolver = 4.0
+	_fall_start_y = global_position.y
+	_obtener_nodo_visual()
 	# Eliminar sombra de Canasta.glb (pedido: sin sombra)
 	for mi in find_children("*", "MeshInstance3D", true, false):
 		if mi is MeshInstance3D:
@@ -35,6 +53,15 @@ func _ready() -> void:
 		if is_instance_valid(self):
 			_danio_habilitado = true
 	)
+
+func _exit_tree() -> void:
+	if _squash_tween and _squash_tween.is_valid():
+		_squash_tween.kill()
+
+func iniciar_vuelo(initial_vel: Vector3, initial_rot_z: float) -> void:
+	super.iniciar_vuelo(initial_vel, initial_rot_z)
+	_fall_start_y = global_position.y
+	_obtener_nodo_visual()
 
 func _crear_area_dano() -> void:
 	_area_dano = Area3D.new()
@@ -61,6 +88,9 @@ func _physics_process(delta: float) -> void:
 	if not active or resting or es_piernas:
 		return
 
+	_actualizar_squash_stretch_caida(delta)
+
+	var prev_vel_y: float = velocity.y
 	velocity.y -= gravity * delta
 	velocity.z = 0.0
 	var move_step := velocity * delta
@@ -89,8 +119,8 @@ func _physics_process(delta: float) -> void:
 		es_suelo_valido = true
 	# Si es plataforma one-way, ignorar y caer libre en cualquier parte del escenario (no flotar)
 	if hit and hit.has("position") and not es_plataforma and es_suelo_valido:
-		# Apoyar sin rebote (pedido: no debe rebotar) +0.32 para no hundirse
-		global_position.y = hit.position.y + 0.32
+		# Enterrarse ligeramente en el suelo al impactar (sin flotar en el aire)
+		global_position.y = hit.position.y + offset_entierro_suelo
 		global_position.x = hit.position.x
 		if not resting:
 			impacto_este_frame = true
@@ -108,6 +138,9 @@ func _physics_process(delta: float) -> void:
 			resting = true
 			active = false
 	if not resting:
+		# Caer más recta y sin girar descontrolada (amortiguación suave de inclinación)
+		rot_speed_z = move_toward(rot_speed_z, 0.0, delta * 3.0)
+		rotation.z = move_toward(rotation.z, 0.0, delta * 2.0)
 		rotate_z(rot_speed_z * delta)
 	# Excepción: puede traspasar el límite de enemigos, pero al hacerlo pierde daño
 	if _danio_habilitado and global_position.x <= _obtener_limite_enemigos_x():
@@ -119,6 +152,8 @@ func _physics_process(delta: float) -> void:
 	# y solo si ya está habilitado (globos recién spawneados aún en Y~0 no deben morir)
 	if impacto_este_frame and not _impacto_efecto_hecho:
 		_impacto_efecto_hecho = true
+		var caida_dist: float = maxf(0.0, _fall_start_y - global_position.y) if _fall_start_y > global_position.y else 0.0
+		_disparar_squash_impacto(prev_vel_y, caida_dist)
 		_spawn_humo_y_piedras_impacto()
 		if _danio_habilitado:
 			_chequear_area_impacto_once()
@@ -376,3 +411,138 @@ func _obtener_limite_enemigos_x() -> float:
 		if b is Node3D:
 			limite = max(limite, (b as Node3D).global_position.x)
 	return limite
+
+
+# ==============================================================================
+# SQUASH AND STRETCH - CAÍDA Y ATERRIZAJE
+# ==============================================================================
+
+const VELOCIDAD_CAIDA_MAX_REF: float = 12.0
+const DISTANCIA_CAIDA_MAX_REF: float = 3.0
+const COMPRESION_MIN_IMPACTO: float = 0.30
+const DURACION_HOLD_SQUASH: float = 0.05
+const DURACION_REBOTE_SQUASH: float = 0.12
+const DURACION_AMORTIGUACION_SQUASH: float = 0.08
+const DURACION_ASENTAMIENTO_SQUASH: float = 0.10
+const DURACION_ENDEREZADO_ROT_Z: float = 0.12
+
+func set_visual_node(nodo: Node3D) -> void:
+	_visual_node = nodo
+	if _visual_node and is_instance_valid(_visual_node):
+		_original_visual_scale = _visual_node.scale
+		_squash_stretch_current = Vector3.ONE
+
+
+func _obtener_nodo_visual() -> Node3D:
+	if _visual_node and is_instance_valid(_visual_node):
+		return _visual_node
+	for child in get_children():
+		if child is Node3D and child != _area_dano and child != _static_body and not child is Area3D:
+			if not child.name.begins_with("Mancha") and not child.name.begins_with("Particulas"):
+				_visual_node = child as Node3D
+				_original_visual_scale = _visual_node.scale
+				_squash_stretch_current = Vector3.ONE
+				return _visual_node
+	return null
+
+
+func _aplicar_escala_modelo(factor: Vector3) -> void:
+	_squash_stretch_current = factor
+	var visual: Node3D = _obtener_nodo_visual()
+	if visual and is_instance_valid(visual):
+		visual.scale = _original_visual_scale * factor
+
+
+func _actualizar_squash_stretch_caida(delta: float) -> void:
+	if not habilitar_squash_stretch:
+		return
+	var visual: Node3D = _obtener_nodo_visual()
+	if not visual or not is_instance_valid(visual):
+		return
+	if _is_squash_tween_active:
+		return
+
+	var target_factor: Vector3 = Vector3.ONE
+
+	if active and not resting:
+		# Estiramiento vertical exagerado en caída libre (con adelgazamiento X/Z para conservar volumen)
+		if velocity.y < -0.5:
+			var vel_descenso: float = -velocity.y
+			var dist_caida: float = maxf(0.0, _fall_start_y - global_position.y) if _fall_start_y > global_position.y else 0.0
+			var ratio_vel: float = clampf((vel_descenso - 0.5) / VELOCIDAD_CAIDA_MAX_REF, 0.0, 1.0)
+			var ratio_dist: float = clampf(dist_caida / DISTANCIA_CAIDA_MAX_REF, 0.0, 1.0)
+			var ratio: float = maxf(ratio_vel, ratio_dist)
+			# Curva smoothstep para transición elástica orgánica
+			var factor_suave: float = ratio * ratio * (3.0 - 2.0 * ratio)
+			var sy: float = 1.0 + factor_suave * stretch_maximo_caida
+			var sxz: float = 1.0 / sqrt(sy)
+			target_factor = Vector3(sxz, sy, sxz)
+
+	_squash_stretch_current = _squash_stretch_current.lerp(target_factor, clampf(velocidad_stretch_aire * delta, 0.0, 1.0))
+	_aplicar_escala_modelo(_squash_stretch_current)
+
+
+func _disparar_squash_impacto(vel_y_impacto: float, dist_caida: float) -> void:
+	if not habilitar_squash_stretch:
+		return
+	var visual: Node3D = _obtener_nodo_visual()
+	if not visual or not is_instance_valid(visual):
+		return
+
+	if _squash_tween and _squash_tween.is_valid():
+		_squash_tween.kill()
+
+	_is_squash_tween_active = true
+
+	var velocidad_impacto: float = -vel_y_impacto
+	var t_vel: float = clampf((velocidad_impacto - 1.0) / VELOCIDAD_CAIDA_MAX_REF, 0.0, 1.0)
+	var t_dist: float = clampf(dist_caida / DISTANCIA_CAIDA_MAX_REF, 0.0, 1.0)
+	var t: float = maxf(t_vel, t_dist)
+	var t_suave: float = t * t * (3.0 - 2.0 * t)
+
+	# Compresión vertical exagerada al chocar contra el suelo
+	var compresion: float = lerpf(COMPRESION_MIN_IMPACTO, squash_maximo_impacto, t_suave)
+	var squash_y: float = 1.0 - compresion
+	var squash_xz: float = 1.0 / sqrt(squash_y)
+
+	# Rebote elástico enérgico hacia arriba (overshoot)
+	var rebote_y: float = 1.0 + lerpf(0.15, 0.28, t_suave)
+	var rebote_xz: float = 1.0 / sqrt(rebote_y)
+
+	# Micro amortiguación secundaria
+	var asentamiento_y: float = 1.0 - (compresion * 0.18)
+	var asentamiento_xz: float = 1.0 / sqrt(asentamiento_y)
+
+	var squash_val := Vector3(squash_xz, squash_y, squash_xz)
+	var rebote_val := Vector3(rebote_xz, rebote_y, rebote_xz)
+	var asentamiento_val := Vector3(asentamiento_xz, asentamiento_y, asentamiento_xz)
+
+	# En el impacto exacto, aplicar deformación máxima de squash
+	_aplicar_escala_modelo(squash_val)
+
+	# Enderezar la inclinación Z suavemente para que repose plana en el suelo
+	var tw_rot := create_tween()
+	tw_rot.tween_property(self, "rotation:z", 0.0, DURACION_ENDEREZADO_ROT_Z).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	_squash_tween = create_tween()
+	# 1. Congelar brevemente en squash para máxima legibilidad visual (0.05s)
+	_squash_tween.tween_interval(DURACION_HOLD_SQUASH)
+	# 2. Rebote elástico enérgico hacia arriba con overshoot (0.12s)
+	_squash_tween.tween_method(_aplicar_escala_modelo, squash_val, rebote_val, DURACION_REBOTE_SQUASH).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# 3. Micro amortiguación secundaria (0.08s)
+	_squash_tween.tween_method(_aplicar_escala_modelo, rebote_val, asentamiento_val, DURACION_AMORTIGUACION_SQUASH).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# 4. Asentamiento final a la escala normal (0.10s)
+	_squash_tween.tween_method(_aplicar_escala_modelo, asentamiento_val, Vector3.ONE, DURACION_ASENTAMIENTO_SQUASH).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_squash_tween.tween_callback(func():
+		_is_squash_tween_active = false
+		_squash_stretch_current = Vector3.ONE
+		_aplicar_escala_modelo(Vector3.ONE)
+	)
+
+
+func _reset_squash_stretch() -> void:
+	if _squash_tween and _squash_tween.is_valid():
+		_squash_tween.kill()
+	_is_squash_tween_active = false
+	_squash_stretch_current = Vector3.ONE
+	_aplicar_escala_modelo(Vector3.ONE)

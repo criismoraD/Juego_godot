@@ -1,25 +1,38 @@
-class_name HachaPerrenaProjectile
+﻿class_name HachaPerrenaProjectile
 extends Area3D
 
-## Proyectil Hacha de Perrena: vuela en trayectoria parabólica balística y
-## gira sobre su eje como el hueso.
-## Causa 2 de daño base, con un bono de +3 contra escudos (defensas del escenario)
+## Proyectil Hacha de Perrena: vuela en trayectoria parabolica balistica y
+## gira sobre su eje en el aire.
+## Causa 2 de daño base, con un bono de +3 contra escudos (defensas del escenario,
+## escudos de ImpShieldGirl y clase Guardian como Guardiana Moradita)
 ## y contra el pilar de la arquera Lonko (daño total = 5).
+## El ataque especial causa 3 de daño base y +6 contra escudos/estructuras (daño total = 9).
 
 signal impactado(target: Node)
 
 const DANO_BASE: float = 2.0
 const BONO_ESCUDOS_Y_PILAR: float = 3.0
+const DANO_BASE_ESPECIAL: float = 3.0  ## Mismo daño base que la flecha explosiva (3 HP)
+const BONO_ESTRUCTURAS_ESPECIAL: float = 6.0  ## Bono contra estructuras y escudos (3 + 6 = 9 HP total)
 const VELOCIDAD_GIRO: float = 16.0  ## rad/s de giro del hacha
+const VELOCIDAD_INICIAL_ESPECIAL: float = 26.0  ## Mayor velocidad y potencia para el ataque especial
 const MAT_HACHA: Material = preload("res://Entities/Proyectil_Hacha_Perrena/HACHA_PERRENA_MAT.tres")
 const SFX_IMPACTO: String = "res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3"
 
+## Offset angular del filo: en el modelo local el filo se situa a +73.35° respecto al origen.
+## Restar este angulo orienta el filo exactamente hacia la direccion de vuelo.
+const ANGULO_FILO_OFFSET_RAD: float = deg_to_rad(73.35)
 
-@export_category("Física")
+
+@export_category("Fisica")
 @export var velocidad_inicial: float = 12.0
 @export var gravedad_escala: float = 1.0
 @export var tiempo_vida_max: float = 6.0
 @export var tiempo_pegada: float = 3.0  ## Tiempo que permanece clavada tras impactar antes de desvanecerse
+
+@export_category("Ataque Especial")
+@export var es_hacha_especial: bool = false
+@export var objetivo_fijado: Node = null
 
 var velocity: Vector3 = Vector3.ZERO
 var tirador: Node = null
@@ -37,10 +50,10 @@ func _ready() -> void:
 	_modelo_hacha = find_child("HachaModel", true, false) as Node3D
 	_aplicar_material()
 
-	# Configuración de colisión: detecta enemigos (capa 3/4), escudos (capa 1/2) y entorno (capa 1).
-	# Excluida capa 7 (bit 64) para no colisionar con detectores de plataformas
+	# Configuracion de colision: detecta enemigos (capa 3/4), escudos (capa 1/2) y entorno (capa 1).
+	# Excluida capa 7 (bit 64) y capa 10 (bit 512, BarreraLimite) para no colisionar en el aire
 	collision_layer = 0
-	collision_mask = 1 | 2 | 4 | 8 | 16 | 32 | 512
+	collision_mask = 1 | 2 | 4 | 8 | 16 | 32
 
 	# Anti-tunneling con RayCast
 	_ray_ccd = RayCast3D.new()
@@ -56,40 +69,94 @@ func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 
 
-func initialize(direccion_disparo: Vector3, potencia: float = 1.0, p_tirador: Node = null) -> void:
+func initialize(
+	direccion_disparo: Vector3,
+	potencia: float = 1.0,
+	p_tirador: Node = null,
+	p_es_especial: bool = false,
+	p_objetivo: Node = null
+) -> void:
 	tirador = p_tirador
-	var dir_norm := direccion_disparo.normalized()
-	velocity = dir_norm * (velocidad_inicial * maxf(0.1, potencia))
+	es_hacha_especial = p_es_especial
+	objetivo_fijado = p_objetivo
 	_impacto_procesado = false
 	is_stuck = false
 
+	var dir_norm := direccion_disparo.normalized()
+	if es_hacha_especial:
+		# Hacha de mayor tamaño (escala 2.0x), sin brillos ni particulas doradas
+		scale = Vector3(2.0, 2.0, 2.0)
+		velocity = dir_norm * (VELOCIDAD_INICIAL_ESPECIAL * maxf(0.5, potencia))
+	else:
+		velocity = dir_norm * (velocidad_inicial * maxf(0.1, potencia))
 
-## Calcula el daño infligido por el hacha según el tipo de objetivo
-## Base: 2.0. Con bono contra escudos y el pilar de Lonko: +3.0 (Total: 5.0).
+
+## Resuelve la entidad principal dueña en caso de colisionar con hitboxes o areas hijas
+func _resolver_entidad_objetivo(node: Node) -> Node:
+	var curr: Node = node
+	while curr and curr != get_tree().root:
+		if curr is ImpShieldGirl or curr is GuardianaMoradita or curr is Lonko or curr is PilarLonkoBody:
+			return curr
+		if curr is EscudoPesadoArea:
+			return curr
+		if curr.is_in_group("enemies") or curr.is_in_group("escudos") or curr.is_in_group("guardians") or curr.is_in_group("guardianes") or curr.is_in_group("shield_imps"):
+			return curr
+		curr = curr.get_parent()
+	return node
+
+
+## Comprueba si el objetivo califica como escudo, pilar o clase Guardian para el bono de daño
+func _es_escudo_o_guardian(node: Node) -> bool:
+	if not node or not is_instance_valid(node):
+		return false
+
+	# 1. Clase Guardian explicita (Imp con escudo, Guardiana Moradita)
+	if node is ImpShieldGirl or node is GuardianaMoradita:
+		return true
+
+	# 2. Grupos de escudos o guardianes
+	if node.is_in_group("escudos") or node.is_in_group("shield_imps") or node.is_in_group("guardians") or node.is_in_group("guardianes"):
+		return true
+
+	# 3. Propiedades y metadatos de escudos / pilares enemigos
+	if ("es_escudo_enemigo" in node and node.es_escudo_enemigo) or (node.has_meta("es_escudo_enemigo") and node.get_meta("es_escudo_enemigo")):
+		return true
+	if node.get("es_escudo_enemigo") == true:
+		return true
+	if ("es_pilar_enemigo" in node and node.es_pilar_enemigo) or (node.has_meta("es_pilar_enemigo") and node.get_meta("es_pilar_enemigo")):
+		return true
+	if node.get("es_pilar_enemigo") == true:
+		return true
+	if node is PilarLonkoBody:
+		return true
+	if "escudo_vida_actual" in node:
+		return true
+
+	# 4. Comprobacion por nombre
+	var n_lower: String = node.name.to_lower()
+	if "pilar" in n_lower or "escudo" in n_lower or "guardiana" in n_lower or "moradita" in n_lower:
+		return true
+	if "imp" in n_lower and "shield" in n_lower:
+		return true
+
+	return false
+
+
+## Calcula el daño infligido por el hacha segun el tipo de objetivo
+## Hacha normal: Base 2.0. Con bono contra escudos (+3.0) para un total de 5.0 (imp de escudo, guardiana moradita, pilares).
+## Hacha especial: Base 3.0. Con bono contra estructuras/escudos (+6.0) para un total de 9.0.
 func calcular_dano_para(target: Node) -> float:
 	if not target or not is_instance_valid(target):
-		return DANO_BASE
+		return DANO_BASE_ESPECIAL if es_hacha_especial else DANO_BASE
 
-	var es_escudo_o_pilar: bool = false
-	if "es_escudo_enemigo" in target and target.es_escudo_enemigo:
-		es_escudo_o_pilar = true
-	elif target.has_meta("es_escudo_enemigo") and target.get_meta("es_escudo_enemigo"):
-		es_escudo_o_pilar = true
-	elif target.get("es_escudo_enemigo") == true:
-		es_escudo_o_pilar = true
-	elif "es_pilar_enemigo" in target and target.es_pilar_enemigo:
-		es_escudo_o_pilar = true
-	elif target.has_meta("es_pilar_enemigo") and target.get_meta("es_pilar_enemigo"):
-		es_escudo_o_pilar = true
-	elif target.get("es_pilar_enemigo") == true:
-		es_escudo_o_pilar = true
-	elif target is PilarLonkoBody:
-		es_escudo_o_pilar = true
-	elif target.is_in_group("escudos"):
-		es_escudo_o_pilar = true
+	var real_target: Node = _resolver_entidad_objetivo(target)
+	var es_escudo_o_guardian: bool = _es_escudo_o_guardian(real_target) or _es_escudo_o_guardian(target)
+
+	if es_hacha_especial:
+		return (DANO_BASE_ESPECIAL + BONO_ESTRUCTURAS_ESPECIAL) if es_escudo_o_guardian else DANO_BASE_ESPECIAL
 
 	var dano: float = DANO_BASE
-	if es_escudo_o_pilar:
+	if es_escudo_o_guardian:
 		dano += BONO_ESCUDOS_Y_PILAR
 	return dano
 
@@ -103,12 +170,30 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 
-	# Aplicar gravedad balística
-	velocity.y -= _gravity * delta
+	# Si es hacha especial y tiene objetivo fijado valido, corregir trayectoria para asegurar 100% de acierto
+	if es_hacha_especial and is_instance_valid(objetivo_fijado) and not objetivo_fijado.is_queued_for_deletion() and objetivo_fijado is Node3D:
+		var target_node := objetivo_fijado as Node3D
+		var target_pos := target_node.global_position + Vector3(0.0, 0.4, 0.0)
+		var to_target := target_pos - global_position
+		var dist := to_target.length()
+
+		if dist > 0.05:
+			var dir_deseada := to_target.normalized()
+			var current_speed: float = maxf(velocity.length(), VELOCIDAD_INICIAL_ESPECIAL)
+			# Guiado progresivo hacia el blanco
+			velocity = velocity.lerp(dir_deseada * current_speed, clampf(delta * 14.0, 0.0, 1.0)).normalized() * current_speed
+
+		# Si estamos a quemarropa del objetivo, impactar directamente
+		if dist <= 0.65:
+			_procesar_impacto(target_node, target_pos, -velocity.normalized())
+			return
+	else:
+		# Aplicar gravedad balistica estandar
+		velocity.y -= _gravity * delta
 
 	var paso: Vector3 = velocity * delta
 
-	# Comprobación CCD antes de mover
+	# Comprobacion CCD antes de mover
 	if _ray_ccd:
 		_ray_ccd.target_position = to_local(global_position + paso)
 		_ray_ccd.force_raycast_update()
@@ -118,25 +203,46 @@ func _physics_process(delta: float) -> void:
 			var col_normal: Vector3 = _ray_ccd.get_collision_normal()
 			if col_obj is Node:
 				_procesar_impacto(col_obj as Node, col_point, col_normal)
-				return
+				if _impacto_procesado:
+					return
 
 	global_position += paso
 
-	# Giro constante del hacha en el aire
+	# Giro del hacha en el aire
+	var vel_giro: float = VELOCIDAD_GIRO * (1.5 if es_hacha_especial else 1.0)
 	if _modelo_hacha and is_instance_valid(_modelo_hacha):
-		_modelo_hacha.rotate_z(-VELOCIDAD_GIRO * delta)
+		_modelo_hacha.rotate_z(-vel_giro * delta)
+
+
+func _es_entidad_a_ignorar(target: Node) -> bool:
+	if not target or not is_instance_valid(target):
+		return true
+	if target.is_in_group("player") or target.is_in_group("allies") or target == tirador:
+		return true
+	if target is BarreraLimite or target.is_in_group("barreras_limite") or target is BarreraDestruyeFlechas or target.is_in_group("barrera_destruye_flechas"):
+		return true
+	var n_lower: String = target.name.to_lower()
+	if "limitzone" in n_lower or "barrera" in n_lower:
+		return true
+	if "es_escudo_enemigo" in target and not target.es_escudo_enemigo:
+		return true
+	if _es_plataforma_aliada(target):
+		return true
+	return false
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if _impacto_procesado:
+	if _impacto_procesado or _es_entidad_a_ignorar(body):
 		return
 	_procesar_impacto(body, global_position, -velocity.normalized())
 
 
 func _on_area_entered(area: Area3D) -> void:
-	if _impacto_procesado:
+	if _impacto_procesado or _es_entidad_a_ignorar(area):
 		return
 	var target: Node = area.get_parent() if area.get_parent() else area
+	if _es_entidad_a_ignorar(target):
+		return
 	_procesar_impacto(target, global_position, -velocity.normalized())
 
 
@@ -165,23 +271,15 @@ func _procesar_impacto(target: Node, punto: Vector3, normal: Vector3) -> void:
 	if _impacto_procesado or not is_instance_valid(target):
 		return
 
-	# Ignorar al jugador o aliados
-	if target.is_in_group("player") or target.is_in_group("allies") or target == tirador:
+	if _es_entidad_a_ignorar(target):
 		if _ray_ccd and target is CollisionObject3D:
 			_ray_ccd.add_exception(target as CollisionObject3D)
 		return
 
-	# Ignorar defensas y escudos aliados
-	if "es_escudo_enemigo" in target and not target.es_escudo_enemigo:
-		if _ray_ccd and target is CollisionObject3D:
-			_ray_ccd.add_exception(target as CollisionObject3D)
-		return
-
-	# Ignorar plataformas aliadas del castillo / torre
-	if _es_plataforma_aliada(target):
-		if _ray_ccd and target is CollisionObject3D:
-			_ray_ccd.add_exception(target as CollisionObject3D)
-		return
+	# Capturar direccion de vuelo real antes de anular la velocidad
+	var dir_vuelo: Vector3 = velocity.normalized()
+	if dir_vuelo.length_squared() < 0.001:
+		dir_vuelo = Vector3.RIGHT
 
 	_impacto_procesado = true
 	is_stuck = true
@@ -191,25 +289,70 @@ func _procesar_impacto(target: Node, punto: Vector3, normal: Vector3) -> void:
 	if _ray_ccd:
 		_ray_ccd.enabled = false
 
+	# ═══════════════════════════════════════════════════════════════════════════
+	# ORIENTACION DE IMPACTO: EL FILO DEL HACHA (+X DEL MODELO) DEBE IMPACTAR
+	# Y CLAVARSE SIEMPRE DIRECTAMENTE EN EL BLANCO
+	# ═══════════════════════════════════════════════════════════════════════════
+	var ang_filo: float = atan2(dir_vuelo.y, dir_vuelo.x) - ANGULO_FILO_OFFSET_RAD
+	if _modelo_hacha and is_instance_valid(_modelo_hacha):
+		_modelo_hacha.rotation = Vector3(0.0, 0.0, ang_filo)
+
+	# Clavar ligeramente la hoja hacia el objetivo
+	global_position += dir_vuelo * 0.08
+
 	impactado.emit(target)
 
-	var dano: float = calcular_dano_para(target)
+	var real_target: Node = _resolver_entidad_objetivo(target)
+	var dano: float = calcular_dano_para(real_target)
 
-	# Interacción con aura repelente (ej: Arquera Rosa)
+	# Interaccion con aura repelente (ej: Arquera Rosa)
+	if real_target.has_method("manejar_impacto_aura") and real_target.manejar_impacto_aura(self):
+		_rebotar_y_destruir()
+		return
 	if target.has_method("manejar_impacto_aura") and target.manejar_impacto_aura(self):
 		_rebotar_y_destruir()
 		return
 
-	# Registrar metadatos de golpe para efectos de sangre / dirección
-	if "last_hit_position" in target:
+	# Registrar metadatos de golpe para efectos de sangre / direccion
+	if "last_hit_position" in real_target:
+		real_target.set("last_hit_position", punto)
+	elif "last_hit_position" in target:
 		target.set("last_hit_position", punto)
-	if "last_hit_direction" in target:
-		target.set("last_hit_direction", velocity.normalized())
-	if "ultimo_atacante" in target:
+
+	if "last_hit_direction" in real_target:
+		real_target.set("last_hit_direction", dir_vuelo)
+	elif "last_hit_direction" in target:
+		target.set("last_hit_direction", dir_vuelo)
+
+	if "ultimo_atacante" in real_target:
+		real_target.set("ultimo_atacante", tirador)
+	elif "ultimo_atacante" in target:
 		target.set("ultimo_atacante", tirador)
 
-	# Aplicar daño
-	if target.has_method("recibir_golpe"):
+	# Si es hacha especial, activa murio_por_explosion para que los enemigos
+	# reaccionen con su animacion/fisica especial de muerte explosiva
+	if es_hacha_especial:
+		if "murio_por_explosion" in real_target:
+			real_target.set("murio_por_explosion", true)
+		elif real_target.has_meta("murio_por_explosion"):
+			real_target.set_meta("murio_por_explosion", true)
+		elif "murio_por_explosion" in target:
+			target.set("murio_por_explosion", true)
+		elif target.has_meta("murio_por_explosion"):
+			target.set_meta("murio_por_explosion", true)
+
+		var game_feel = get_tree().root.get_node_or_null("GameFeel") if get_tree() else null
+		if game_feel and game_feel.has_method("on_player_shoot"):
+			game_feel.on_player_shoot()
+
+	# Aplicar daño al objetivo resuelto o al nodo directo
+	if real_target.has_method("recibir_golpe"):
+		real_target.call("recibir_golpe", dano)
+	elif real_target.has_method("take_damage"):
+		real_target.call("take_damage", dano)
+	elif real_target.has_method("recibir_dano"):
+		real_target.call("recibir_dano", int(dano))
+	elif target.has_method("recibir_golpe"):
 		target.call("recibir_golpe", dano)
 	elif target.has_method("take_damage"):
 		target.call("take_damage", dano)
@@ -218,13 +361,15 @@ func _procesar_impacto(target: Node, punto: Vector3, normal: Vector3) -> void:
 
 	_reproducir_sfx_impacto(punto)
 
-	# Pegarse al objetivo si es un nodo 3D válido
-	if target is Node3D and is_instance_valid(target) and not target.is_queued_for_deletion():
-		call_deferred("_pegar_a_nodo", target as Node3D)
+	# Pegarse al objetivo si es un nodo 3D valido
+	var target_pegar: Node = real_target if (real_target is Node3D) else target
+	if target_pegar is Node3D and is_instance_valid(target_pegar) and not target_pegar.is_queued_for_deletion():
+		call_deferred("_pegar_a_nodo", target_pegar as Node3D)
 
-	# Quedarse 3 segundos y luego desaparecer como el resto de proyectiles (flechas)
+	# Quedarse el tiempo configurado y luego desvanecerse suavemente
+	var dur_pegada: float = 2.0 if es_hacha_especial else tiempo_pegada
 	if get_tree():
-		get_tree().create_timer(tiempo_pegada).timeout.connect(
+		get_tree().create_timer(dur_pegada).timeout.connect(
 			func():
 				if is_instance_valid(self) and is_inside_tree():
 					_desvanecer_y_liberar()
@@ -249,7 +394,6 @@ func _desvanecer_y_liberar() -> void:
 	tw.tween_callback(queue_free)
 
 
-
 func _rebotar_y_destruir() -> void:
 	velocity = -velocity * 0.4 + Vector3(0, 3, 0)
 	var tw := create_tween()
@@ -268,7 +412,7 @@ func _reproducir_sfx_impacto(pos: Vector3) -> void:
 	audio.unit_size = 15.0
 	audio.volume_db = 1.0
 	audio.bus = "Master"
-	var root := get_tree().current_scene if get_tree().current_scene else get_tree().root
+	var root := get_tree().current_scene if get_tree() else get_tree().root
 	if root:
 		root.add_child(audio)
 		audio.global_position = pos

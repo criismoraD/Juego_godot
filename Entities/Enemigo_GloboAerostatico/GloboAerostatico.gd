@@ -600,8 +600,8 @@ func _eyectar_canasta() -> void:
 			continue
 		nuevos.append(mesh)
 	_cached_mesh_instances = nuevos
-	# Caída vertical en el lugar donde se destruyó el globo
-	contenedor.iniciar_vuelo(Vector3(randf_range(-0.3, 0.3), -0.8, 0.0), randf_range(-5.0, 5.0))
+	# Caída vertical recta en el lugar donde se destruyó el globo (sin girar descontrolada)
+	contenedor.iniciar_vuelo(Vector3(randf_range(-0.04, 0.04), -0.8, 0.0), randf_range(-0.15, 0.15))
 	_modelo_canasta_node = null
 
 

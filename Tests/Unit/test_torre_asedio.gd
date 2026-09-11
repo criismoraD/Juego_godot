@@ -164,3 +164,96 @@ func test_mascara_oleada6_texture_and_material():
 	
 	assert_eq(layer.layer, 21, "El CanvasLayer de la máscara debe estar en layer 21")
 	assert_not_null(rect.material, "ColorRect debe tener asignado el ShaderMaterial")
+
+
+func test_torre_enemigo_registra_en_wave_spawner_y_suma_progreso() -> void:
+	# Arrange: Spawner y Torre
+	var spawner := WaveSpawner.new()
+	add_child_autofree(spawner)
+	spawner.add_to_group("wave_spawners")
+	spawner.enemigos_por_oleada = 40
+	spawner.enemigos_muertos_en_oleada = 38
+	spawner.is_wave_active = true
+
+	var torre := ESCENA_TORRE.instantiate() as TorreDeAsedio
+	add_child_autofree(torre)
+	torre.transform = Transform3D(
+		Vector3(0.030259425, 0, -1.777069),
+		Vector3(0, 1.8436748, 0),
+		Vector3(1.3535084, 0, 0.039728634),
+		Vector3(3.1228988, 0.05779445, -2.500832)
+	)
+	await get_tree().process_frame
+
+	watch_signals(spawner)
+
+	# Act: Spawnear enemigo en rampa
+	torre._spawnear_enemigo_en_rampa()
+	await get_tree().process_frame
+
+	# Assert: El enemigo debe haberse registrado en active_goblins
+	assert_eq(torre._enemigos_en_rampa.size(), 1, "Debe haber 1 enemigo en la rampa")
+	var enemigo := torre._enemigos_en_rampa[0]
+	assert_true(spawner.active_goblins.has(enemigo), "El enemigo de la torre debe estar registrado en spawner.active_goblins")
+
+	# Act: Simular muerte del enemigo de la torre
+	enemigo.died.emit()
+
+	# Assert: Debe sumar a los muertos y emitir enemigo_eliminado
+	assert_eq(spawner.enemigos_muertos_en_oleada, 39, "La muerte del enemigo de la torre debe incrementar enemigos_muertos_en_oleada a 39")
+	assert_signal_emitted(spawner, "enemigo_eliminado", "Debe emitirse enemigo_eliminado tras la muerte del enemigo de la torre")
+
+	torre._limpiar_enemigos_rampa()
+
+
+func test_torre_enemigos_espaciado_salida_y_slots_adelantados() -> void:
+	# Arrange
+	var torre := ESCENA_TORRE.instantiate() as TorreDeAsedio
+	add_child_autofree(torre)
+	torre.transform = Transform3D(
+		Vector3(0.030259425, 0, -1.777069),
+		Vector3(0, 1.8436748, 0),
+		Vector3(1.3535084, 0, 0.039728634),
+		Vector3(3.1228988, 0.05779445, -2.500832)
+	)
+	await get_tree().process_frame
+
+	# Assert: Verificar que todos los slots están ubicados hacia adelante (-X) del punto de spawn
+	var spawn_x := torre.punto_spawn.global_position.x
+	for slot in range(torre.max_enemigos_rampa):
+		var dest_x := torre._obtener_x_para_enemigo(slot)
+		assert_lt(dest_x, spawn_x, "El destino del slot %d (%f) debe estar adelante del spawn (%f)" % [slot, dest_x, spawn_x])
+
+	# Act: Spawnear un enemigo
+	torre._spawnear_enemigo_en_rampa()
+	await get_tree().process_frame
+
+	# Assert: El spawner de rampa debe esperar si la salida está ocupada
+	var count_antes := torre._enemigos_en_rampa.size()
+	torre._timer_spawn = 0.0
+	torre._procesar_spawner_rampa(0.01)
+	assert_eq(torre._enemigos_en_rampa.size(), count_antes, "No debe spawnear otro enemigo mientras el primero siga ocupando el punto de salida")
+
+	torre._limpiar_enemigos_rampa()
+
+
+func test_torre_detiene_spawns_al_cumplir_cuota() -> void:
+	# Arrange
+	var spawner := WaveSpawner.new()
+	add_child_autofree(spawner)
+	spawner.add_to_group("wave_spawners")
+	spawner.enemigos_por_oleada = 40
+	spawner.enemigos_muertos_en_oleada = 40  # Cuota cumplida
+	spawner.is_wave_active = true
+
+	var torre := ESCENA_TORRE.instantiate() as TorreDeAsedio
+	add_child_autofree(torre)
+	await get_tree().process_frame
+
+	# Act
+	torre._timer_spawn = 0.0
+	torre._procesar_spawner_rampa(0.01)
+
+	# Assert: No debe haber spawneado nada porque la cuota se cumplió
+	assert_eq(torre._enemigos_en_rampa.size(), 0, "La torre no debe generar enemigos si la cuota de la oleada ya fue alcanzada")
+

@@ -370,3 +370,34 @@ func test_lonko_cancelar_recuperacion_ult_en_dano() -> void:
 	lonko.queue_free()
 	await get_tree().process_frame
 
+
+func test_disparo_normal_alcanza_al_jugador_a_distancia() -> void:
+	# Arrange: Lonko real y una flecha como la de su mano.
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+	var flecha := GoblinGirlArrowProjectile.new()
+	add_child_autofree(flecha)
+
+	# Act: velocidad efectiva del tiro normal (base flecha x potencia Lonko).
+	flecha.initialize(Vector3.RIGHT, lonko.potencia_disparo_min)
+	var vel_min: float = flecha.velocidad
+	flecha.initialize(Vector3.RIGHT, lonko.potencia_disparo_max)
+	var vel_max: float = flecha.velocidad
+
+	# Assert: potencia x6-x9 sobre base 10 (antes x2-x3: no llegaba).
+	assert_eq(lonko.potencia_disparo_min, 6.0, "Potencia mínima x6")
+	assert_eq(lonko.potencia_disparo_max, 9.0, "Potencia máxima x9")
+	assert_true(vel_min >= 60.0, "Velocidad mínima del tiro normal: %s" % vel_min)
+	assert_true(vel_max >= 90.0, "Velocidad máxima del tiro normal: %s" % vel_max)
+
+	# Assert: con caída lineal (g=1 del proyectil), a 12 m cae como mucho
+	# ~1.2 m y a 15 m ~1.9 m: alcanza al jugador en vez de clavarse antes.
+	var caida_12m: float = 12.0 * 12.0 / (2.0 * vel_min)
+	var caida_15m: float = 15.0 * 15.0 / (2.0 * vel_min)
+	assert_lt(caida_12m, 1.5, "A 12 m cae menos de 1.5 m: %s" % caida_12m)
+	assert_lt(caida_15m, 2.0, "A 15 m cae menos de 2.0 m: %s" % caida_15m)
+
+	lonko.queue_free()
+	await get_tree().process_frame
+

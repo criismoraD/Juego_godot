@@ -464,3 +464,24 @@ func test_opcion_dialogo_suena_seleccion_menu() -> void:
 		await get_tree().process_frame
 		await get_tree().process_frame
 	assert_true(dialogo == null or not is_instance_valid(dialogo), "Diálogo liberado")
+
+
+func test_abrir_menu_suena_seleccion_menu() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+	var am = get_tree().root.get_node_or_null("AudioManager")
+	assert_not_null(am, "Precondición: AudioManager disponible")
+	npc._jugador_cerca = true
+
+	# Act: abrir el menú de Perrena.
+	npc._abrir_menu_conversacion()
+
+	# Assert: suena selección al entrar.
+	var esperados: Array = am.sfx_streams["seleccion_menu"]
+	var suena := false
+	for p in am.sfx_pool:
+		if p.playing and p.stream != null and p.stream in esperados:
+			suena = true
+			break
+	assert_true(suena, "Abrir el menú suena seleccion_menu")
