@@ -105,6 +105,15 @@ func _ready() -> void:
 		var timer := get_tree().create_timer(tiempo_en_pantalla)
 		timer.timeout.connect(_auto_consumir)
 
+		# Failsafe incondicional de vida máxima: garantiza auto-consumo o liberación
+		get_tree().create_timer(tiempo_en_pantalla + 2.5, true, false, true).timeout.connect(func() -> void:
+			if is_instance_valid(self):
+				if current_state != State.DISSOLVING:
+					_auto_consumir()
+				else:
+					queue_free()
+		)
+
 
 func _obtener_nodos_directos() -> void:
 	if not model_root:
@@ -291,17 +300,20 @@ func _otorgar_municion_al_jugador(collector: Node = null) -> void:
 
 
 func _otorgar_municion_a_aliadas() -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
 	var processed: Dictionary = {}
-	for ally: Node in AllyArcher.active_allies_cache:
-		if not is_instance_valid(ally):
-			continue
-		if ally.has_meta("es_mensajera") and ally.get_meta("es_mensajera"):
-			continue
-		processed[ally] = true
-		if ally.has_method("agregar_flechas_explosivas"):
-			ally.agregar_flechas_explosivas(municion_a_otorgar_aliadas)
-		elif "flechas_explosivas" in ally:
-			ally.set("flechas_explosivas", int(ally.get("flechas_explosivas")) + municion_a_otorgar_aliadas)
+	if AllyArcher.active_allies_cache != null:
+		for ally: Node in AllyArcher.active_allies_cache:
+			if not is_instance_valid(ally):
+				continue
+			if ally.has_meta("es_mensajera") and ally.get_meta("es_mensajera"):
+				continue
+			processed[ally] = true
+			if ally.has_method("agregar_flechas_explosivas"):
+				ally.agregar_flechas_explosivas(municion_a_otorgar_aliadas)
+			elif "flechas_explosivas" in ally:
+				ally.set("flechas_explosivas", int(ally.get("flechas_explosivas")) + municion_a_otorgar_aliadas)
 
 	var aliadas: Array[Node] = get_tree().get_nodes_in_group("allies")
 	for aliada: Node in aliadas:
@@ -316,6 +328,8 @@ func _otorgar_municion_a_aliadas() -> void:
 
 
 func _buscar_jugador() -> Node:
+	if not is_inside_tree() or get_tree() == null:
+		return null
 	# 1. Priorizar un nodo del grupo "player" que reciba flechas explosivas
 	var players: Array[Node] = get_tree().get_nodes_in_group("player")
 	for p in players:

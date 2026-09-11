@@ -185,7 +185,7 @@ func _alternar_defensora(piso: int) -> void:
 
 	# Sonido al cambiar entre ballestera y arquera (AudioManager es
 	# autoload y siempre está disponible, como en el resto del juego).
-	AudioManager.play_sfx("seleccion_defensoras")
+	AudioManager.play_sfx("seleccion_defensoras", 6.0)
 
 	_actualizar_vistas_defensoras()
 	_actualizar_panel_descripcion()

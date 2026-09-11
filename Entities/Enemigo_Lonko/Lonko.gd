@@ -1984,12 +1984,12 @@ func _drop_power_up() -> void:
 	# Excepción Lonko: su drop suma 8 al contador del jugador (no el 10 por defecto)
 	if "municion_a_otorgar_jugador" in item:
 		item.municion_a_otorgar_jugador = municion_drop_jugador
-	var target_parent := get_tree().current_scene
+	var target_parent: Node = get_tree().current_scene if (get_tree() and get_tree().current_scene) else (get_tree().root if get_tree() else null)
+	if not target_parent and get_parent():
+		target_parent = get_parent()
 	if target_parent:
 		target_parent.add_child(item)
-	elif get_parent():
-		get_parent().add_child(item)
-	item.global_position = global_position + Vector3(0.0, 0.3, 0.0)
+		item.global_position = global_position + Vector3(0.0, 0.3, 0.0)
 
 
 func _get_effective_drop_chance(base_chance: float) -> float:
