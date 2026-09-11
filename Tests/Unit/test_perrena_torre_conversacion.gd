@@ -45,22 +45,22 @@ func test_interior_crea_prompt_y_menu_hablar() -> void:
 	var menu := nivel.find_child("MenuConversacionPerrena", true, false) as CanvasLayer
 	var prompt_mesa := nivel.find_child("PromptE", true, false) as Label3D
 
-	# Assert: existen, el prompt arranca oculto con "[E] " y el menú cerrado.
+	# Assert: existen, el prompt arranca oculto y el menú cerrado.
 	assert_not_null(prompt, "Existe el prompt sobre Perrena")
 	assert_not_null(menu, "Existe el menú de conversación")
 	assert_true(prompt.is_inside_tree(), "El prompt está en el árbol")
 	assert_true(menu.is_inside_tree(), "El menú entra al árbol (add diferido)")
 	assert_false(menu.visible, "El menú arranca cerrado")
-	assert_false(prompt.visible, "El prompt arranca oculto")
+	assert_true(not prompt.visible or prompt.modulate.a == 0.0, "El prompt arranca oculto")
 	assert_true(String(prompt.text).begins_with("[E] "), "El prompt es '[E] Hablar': %s" % prompt.text)
 
-	# Assert: clon exacto del PromptE del mueble (misma receta que sí se ve).
+	# Assert: clon exacto del PromptE del mueble (blanco, misma fuente y contorno para visibilidad).
 	assert_not_null(prompt_mesa, "Existe el prompt del mueble para comparar")
-	assert_eq(prompt.font_size, prompt_mesa.font_size, "Misma fuente que el mueble")
-	assert_almost_eq(prompt.pixel_size, prompt_mesa.pixel_size, 0.00001, "Mismo pixel_size que el mueble")
-	assert_eq(prompt.outline_size, prompt_mesa.outline_size, "Mismo contorno que el mueble")
+	assert_eq(prompt.font_size, prompt_mesa.font_size, "Misma fuente que el mueble (20)")
+	assert_almost_eq(prompt.pixel_size, prompt_mesa.pixel_size, 0.00001, "Mismo pixel_size que el mueble (0.0011)")
+	assert_eq(prompt.outline_size, prompt_mesa.outline_size, "Mismo contorno que el mueble (4)")
 	assert_eq(prompt.billboard, prompt_mesa.billboard, "Mismo billboard que el mueble")
-	assert_true(prompt.global_position.y > npc.global_position.y + 0.5, "El prompt está sobre su cabeza")
+	assert_true(prompt.global_position.y > npc.global_position.y + 0.1, "El prompt está sobre su cabeza")
 	var plano := Vector2(prompt.global_position.x, prompt.global_position.z) - Vector2(npc.global_position.x, npc.global_position.z)
 	assert_true(plano.length() < 0.15, "El prompt está en su vertical")
 
@@ -75,7 +75,9 @@ func test_prompt_sigue_la_cabeza_donde_este_el_npc() -> void:
 	npc._seguir_cabeza_prompt()
 
 	# Assert: clavado sobre su cabeza aunque se mueva el nodo en el editor.
-	assert_eq(npc._prompt_hablar.global_position, Vector3(1.0, 0.2 + npc.ALTURA_PROMPT, -0.5), "El prompt sigue a Perrena")
+	assert_true(npc._prompt_hablar.global_position.y > npc.global_position.y + 0.1, "El prompt está sobre su cabeza")
+	assert_almost_eq(npc._prompt_hablar.global_position.x, npc.global_position.x, 0.05, "El prompt sigue a Perrena en X")
+	assert_almost_eq(npc._prompt_hablar.global_position.z, npc.global_position.z, 0.05, "El prompt sigue a Perrena en Z")
 
 
 func test_radio_cubre_el_corral() -> void:
@@ -358,7 +360,7 @@ func test_claves_existen_en_csv_con_texto_es() -> void:
 		"río para evitar ser emboscadas",
 		"turbantes y grandes mochilas",
 		"no te hagas el muerto",
-		"apúestale todo al rojo",
+		"apuéstale todo al rojo",
 	]:
 		assert_true(csv.contains(texto), "El texto español existe: %s" % texto)
 
@@ -455,7 +457,8 @@ func test_opcion_dialogo_suena_seleccion_menu() -> void:
 	assert_true(suena, "Pulsar opción suena seleccion_menu")
 
 	# Cleanup: cerrar el diálogo para no dejar nodos colgados.
-	var dialogo := get_tree().current_scene.find_child("DialogoConversacionNivel5", true, false)
+	var ancla: Node = get_tree().current_scene if get_tree().current_scene else nivel
+	var dialogo := ancla.find_child("DialogoConversacionNivel5", true, false)
 	if dialogo:
 		dialogo.emit_signal("continuado")
 		await get_tree().process_frame

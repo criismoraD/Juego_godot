@@ -876,9 +876,11 @@ func _physics_process(delta):
 		ladder_cooldown -= delta
 
 	# Detectar inicio de escalada (S al pie, tocando el piso inferior = agacharse, no trepar)
+	# Si está en el suelo caminando activamente (A/D), no montar la escalera para evitar quedarse pegado al pasar
+	var caminando_en_suelo: bool = is_on_floor() and absf(input_dir) > 0.1
 	var agacharse_al_pie: bool = input_vert > 0.5 and is_on_floor() and _esta_al_pie_de_escalera()
 	if is_near_ladder and ladder_cooldown <= 0 and current_move_state != MoveState.CLIMBING:
-		if abs(input_vert) > 0.5 and not agacharse_al_pie:
+		if abs(input_vert) > 0.5 and not agacharse_al_pie and not caminando_en_suelo:
 			current_move_state = MoveState.CLIMBING
 			velocity.x = 0
 			_ajustar_hitbox_agachado(false)
@@ -916,6 +918,9 @@ func _physics_process(delta):
 				current_move_state = MoveState.GROUND
 				set_motion_anim("ground")
 				_reset_armature_rotation()
+				ladder_cooldown = 0.4
+				_detener_sonido_escalera()
+
 
 
 		# Acabamos de tocar suelo viniendo del aire?

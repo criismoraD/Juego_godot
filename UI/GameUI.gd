@@ -1125,8 +1125,8 @@ func _on_sfx_volume_changed(value: float):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+## Busca el WaveSpawner en la escena si aún no se tiene referencia
 func _find_wave_spawner() -> Node:
-	"""Busca el WaveSpawner en la escena si aún no se tiene referencia"""
 	if wave_spawner and is_instance_valid(wave_spawner):
 		return wave_spawner
 
@@ -1149,9 +1149,9 @@ func _find_wave_spawner() -> Node:
 	return wave_spawner
 
 
+## Retorna true solo si el escudo enemigo pertenece a la oleada indicada.
+## Escudo_enemigo -> oleadas 3 y 4 | NIVEL_2_Escudo_enemigo2/3 -> oleada 2 | 5+ nunca.
 func _es_escudo_enemigo_permitido_en_oleada(nombre_escudo: String, numero_oleada: int) -> bool:
-	"""Retorna true solo si el escudo enemigo pertenece a la oleada indicada.
-	Escudo_enemigo -> oleadas 3 y 4 | NIVEL_2_Escudo_enemigo2/3 -> oleada 2 | 5+ nunca."""
 	if numero_oleada >= 5:
 		return false
 	if nombre_escudo == "Escudo_enemigo":
@@ -1529,8 +1529,8 @@ func _input(event):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+## Obtiene todos los escudos válidos actualmente en la escena
 func _get_valid_escudos() -> Array[Node]:
-	"""Obtiene todos los escudos válidos actualmente en la escena"""
 	var escudos_vivas: Array[Node] = []
 	for nodo in get_tree().get_nodes_in_group("escudos"):
 		if is_instance_valid(nodo) and not nodo.is_queued_for_deletion():
@@ -1540,8 +1540,8 @@ func _get_valid_escudos() -> Array[Node]:
 	return _escudos_cache
 
 
+## Guarda las posiciones originales de todos los escudos al inicio
 func _guardar_posiciones_escudos():
-	"""Guarda las posiciones originales de todos los escudos al inicio"""
 	await get_tree().process_frame
 	_escudos_cache.clear()
 	escudos_originales.clear()
@@ -1566,8 +1566,8 @@ func _guardar_posiciones_escudos():
 			)
 
 
+## Destruye todos los escudos activos con efecto visual
 func _destruir_todos_escudos():
-	"""Destruye todos los escudos activos con efecto visual"""
 	var escudos = _get_valid_escudos()
 	for escudo in escudos:
 		if is_instance_valid(escudo) and escudo.has_method("recibir_golpe"):
@@ -1576,10 +1576,10 @@ func _destruir_todos_escudos():
 			escudo.recibir_golpe()
 
 
+## Re-instancia ÚNICAMENTE los escudos que han sido destruidos/rotos.
+## omitir_enemigos=true (oleada 5+): los escudos enemigos permanecen eliminados.
+## numero_oleada: si >=0, los escudos enemigos solo se reconstruyen si pertenecen a esa oleada.
 func _reconstruir_todos_escudos(omitir_enemigos: bool = false, numero_oleada: int = -1):
-	"""Re-instancia ÚNICAMENTE los escudos que han sido destruidos/rotos.
-	omitir_enemigos=true (oleada 5+): los escudos enemigos permanecen eliminados.
-	numero_oleada: si >=0, los escudos enemigos solo se reconstruyen si pertenecen a esa oleada."""
 	# Resolver oleada actual si no se pasó explícitamente
 	if numero_oleada < 0 and wave_spawner and is_instance_valid(wave_spawner) and "oleada_combate" in wave_spawner:
 		numero_oleada = wave_spawner.oleada_combate
@@ -1779,8 +1779,8 @@ func _animar_aparicion_escudo_disolucion(escudo: Node) -> void:
 	)
 
 
+## Toggle ON/OFF de todos los escudos
 func _toggle_escudos():
-	"""Toggle ON/OFF de todos los escudos"""
 	shields_enabled = not shields_enabled
 	var escudos = _get_valid_escudos()
 	for escudo in escudos:
@@ -1889,8 +1889,8 @@ func _on_fullscreen_toggled(toggled_on: bool):
 				DisplayServer.window_set_position(win_pos)
 
 
+## Toggle entre sangre roja y morada para los Imps
 func _toggle_imp_blood_color():
-	"""Toggle entre sangre roja y morada para los Imps"""
 	ImpEnemy.sangre_morada = not ImpEnemy.sangre_morada
 	var btn = find_child("BloodToggleBtn", true, false)
 	if btn:
@@ -1902,8 +1902,8 @@ func _toggle_imp_blood_color():
 			_style_button(btn, Color(0.6, 0.15, 0.15))
 
 
+## Toggle ON/OFF de todas las defensoras aliadas
 func _toggle_aliadas():
-	"""Toggle ON/OFF de todas las defensoras aliadas"""
 	allies_enabled = not allies_enabled
 	for ally in AllyArcher.active_allies_cache:
 		if is_instance_valid(ally):
@@ -1977,8 +1977,8 @@ func _actualizar_boton_tipo_defensoras() -> void:
 			_style_button(btn_tipo_defensoras, Color(0.7, 0.35, 0.15))
 
 
+## Guarda una plantilla de cada aliada inicial para poder revivirla por debug.
 func _guardar_plantillas_aliadas():
-	"""Guarda una plantilla de cada aliada inicial para poder revivirla por debug."""
 	plantillas_aliadas.clear()
 	for ally in AllyArcher.active_allies_cache:
 		if not is_instance_valid(ally):
@@ -2038,8 +2038,8 @@ func _aliada_esta_revivible(ally: AllyArcher) -> bool:
 	return false
 
 
+## Revive aliadas destruidas reinstanciandolas en su posicion original.
 func _revivir_aliadas():
-	"""Revive aliadas destruidas reinstanciandolas en su posicion original."""
 	if plantillas_aliadas.is_empty():
 		_guardar_plantillas_aliadas()
 

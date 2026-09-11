@@ -1,4 +1,3 @@
-@tool
 class_name PowerUpFlechaExplosiva
 extends Area3D
 
@@ -84,24 +83,24 @@ func _ready() -> void:
 
 	body_entered.connect(_on_body_entered)
 
-	if not Engine.is_editor_hint():
-		# Escalado orgánico al aparecer (mínimo seguro: escala 0 rompe el transform de Jolt)
-		scale = Vector3(ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA)
-		var spawn_tween := create_tween()
-		if spawn_tween:
-			spawn_tween.tween_property(self, "scale", Vector3.ONE, tiempo_escala_spawn) \
-				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Escalado orgánico al aparecer (mínimo seguro: escala 0 rompe el transform de Jolt)
+	scale = Vector3(ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA, ESCALA_SPAWN_MINIMA)
+	var spawn_tween := create_tween()
+	if spawn_tween:
+		spawn_tween.tween_property(self, "scale", Vector3.ONE, tiempo_escala_spawn) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-		var sombra := SombraPersonaje.new()
-		sombra.tamano = Vector2(0.25, 0.25)
-		sombra.opacidad = 0.6
-		sombra.altura_max_desvanecimiento = 5.0
-		add_child(sombra)
+	var sombra := SombraPersonaje.new()
+	sombra.tamano = Vector2(0.25, 0.25)
+	sombra.opacidad = 0.6
+	sombra.altura_max_desvanecimiento = 5.0
+	add_child(sombra)
 
-		call_deferred("_comprobar_caida_al_suelo")
+	call_deferred("_comprobar_caida_al_suelo")
 
-		# Timer de auto-consumo a los 3 segundos (pausable: avanza solo con el juego;
-		# el respaldo _tiempo_vivo de _process cubre si este timer falla)
+	# Timer de auto-consumo a los 3 segundos (pausable: avanza solo con el juego;
+	# el respaldo _tiempo_vivo de _process cubre si este timer falla)
+	if is_inside_tree() and get_tree():
 		var timer := get_tree().create_timer(tiempo_en_pantalla)
 		timer.timeout.connect(_auto_consumir)
 
@@ -125,7 +124,7 @@ func _obtener_nodos_directos() -> void:
 
 
 func _comprobar_caida_al_suelo() -> void:
-	if Engine.is_editor_hint() or current_state != State.IDLE or _is_falling:
+	if current_state != State.IDLE or _is_falling or not is_inside_tree() or get_world_3d() == null:
 		return
 
 	var space_state := get_world_3d().direct_space_state
@@ -164,7 +163,7 @@ func _comprobar_caida_al_suelo() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float) -> void:
-	if Engine.is_editor_hint():
+	if not is_inside_tree() or get_tree() == null:
 		return
 	if not _nodes_checked:
 		_obtener_nodos_directos()
@@ -194,7 +193,7 @@ func _process(delta: float) -> void:
 
 		# Respaldo: si el SceneTreeTimer no disparó, auto-consumir tras el tiempo configurado
 		# (ignorar tiempo mientras el árbol está pausado: el juego congelado no debe consumirlo)
-		if not get_tree().paused:
+		if get_tree() and not get_tree().paused:
 			_tiempo_vivo += delta
 		if _tiempo_vivo >= tiempo_en_pantalla + 0.8:
 			_auto_consumir()
@@ -241,7 +240,7 @@ func _on_body_entered(body: Node3D) -> void:
 
 ## Respaldo de contacto: consume si el jugador está próximo en 2.5D
 func _verificar_proximidad_jugador() -> void:
-	if current_state != State.IDLE:
+	if current_state != State.IDLE or not is_inside_tree() or get_tree() == null:
 		return
 	var player: Node = _buscar_jugador()
 	if not is_instance_valid(player) or not (player is Node3D):
@@ -289,11 +288,11 @@ func _otorgar_municion_al_jugador(collector: Node = null) -> void:
 			max_municion = int(player.MUNICION_POWER_UP_MAX)
 		player.flechas_explosivas = mini(int(player.flechas_explosivas) + municion_a_otorgar_jugador, max_municion)
 		if "municion_activa" in player:
-			player.municion_activa = 1  # TipoMunicion.EXPLOSIVA
+			player.set("municion_activa", 1)  # 1 = EXPLOSIVA
 		if player.has_signal("flechas_explosivas_changed"):
 			player.flechas_explosivas_changed.emit(player.flechas_explosivas)
 		if player.has_signal("tipo_municion_changed"):
-			player.tipo_municion_changed.emit(player.municion_activa)
+			player.tipo_municion_changed.emit(player.get("municion_activa"))
 
 	picked_up.emit(player)
 	_play_pickup_sound()
@@ -330,29 +329,32 @@ func _otorgar_municion_a_aliadas() -> void:
 func _buscar_jugador() -> Node:
 	if not is_inside_tree() or get_tree() == null:
 		return null
+
 	# 1. Priorizar un nodo del grupo "player" que reciba flechas explosivas
 	var players: Array[Node] = get_tree().get_nodes_in_group("player")
 	for p in players:
 		if is_instance_valid(p) and p.has_method("agregar_flechas_explosivas"):
 			return p
 
-	# 2. Si el personaje activo actual es alternativo, buscar la arquera Player en la escena
+	# 2. Si el personaje activo actual es alternativo, buscar en la escena activa
 	var root: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
 	if root:
-		var prota: Node = root.find_child("Player", true, false)
-		if is_instance_valid(prota) and prota.has_method("agregar_flechas_explosivas"):
-			return prota
+		for target_name in ["Player", "Perrena"]:
+			var prota: Node = root.find_child(target_name, true, false)
+			if is_instance_valid(prota) and prota.has_method("agregar_flechas_explosivas"):
+				return prota
 
 	# 3. Fallback a cualquier nodo en el grupo "player"
 	for p in players:
 		if is_instance_valid(p):
 			return p
 
-	# 4. Fallback directo al nodo Player en la escena
+	# 4. Fallback directo a nodos conocidos en la escena
 	if root:
-		var prota_fallback: Node = root.find_child("Player", true, false)
-		if is_instance_valid(prota_fallback):
-			return prota_fallback
+		for target_name in ["Player", "Perrena"]:
+			var prota_fallback: Node = root.find_child(target_name, true, false)
+			if is_instance_valid(prota_fallback):
+				return prota_fallback
 
 	return null
 
@@ -417,10 +419,8 @@ func _iniciar_desintegracion(duracion: float) -> void:
 		queue_free()
 
 	# Failsafe incondicional: garantizar la liberación aunque el tween se congele
-	get_tree().create_timer(duracion + 0.3, true, false, true).timeout.connect(func() -> void:
-		if is_instance_valid(self):
-			queue_free()
-	)
+	if is_inside_tree() and get_tree():
+		get_tree().create_timer(duracion + 0.3, true, false, true).timeout.connect(queue_free)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -428,6 +428,8 @@ func _iniciar_desintegracion(duracion: float) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _play_pickup_sound() -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
 	var stream := load(SONIDO_PICKUP) as AudioStream
 	if not stream:
 		return

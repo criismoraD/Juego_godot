@@ -575,11 +575,11 @@ draw_pass_1 = SubResource("QuadMesh_dust")
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=111091568]
+[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=1793990408]
 visible = false
 material_override = ExtResource("47_plano_mat")
 
-[node name="TORRE" parent="TORRE" index="1" unique_id=1575579749]
+[node name="TORRE" parent="TORRE" index="1" unique_id=187003219]
 transform = Transform3D(1.0111401, 0, 0, 0, 1.0001929, 0, 0, 0, 1.0001929, -0.002997756, 0, 0)
 layers = 2
 

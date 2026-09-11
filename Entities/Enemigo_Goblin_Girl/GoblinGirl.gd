@@ -531,8 +531,8 @@ func _setup_animation_tree():
 	girl_anim_tree.active = false  # Inactivo hasta que sea necesario
 
 
+## Busca el nombre real de la animación con posibles prefijos del FBX
 func _find_anim_name(base_name: String) -> StringName:
-	"""Busca el nombre real de la animación con posibles prefijos del FBX"""
 	if not anim_player:
 		return base_name
 	for anim_name in anim_player.get_animation_list():

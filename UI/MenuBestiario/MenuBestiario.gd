@@ -453,7 +453,7 @@ func _reproducir_sfx_click() -> void:
 		audio_mgr.call("play_sfx", "res://Assets/Audio/SFX/click.wav")
 		return
 
-	var stream: AudioStream = load("res://TEST_/Sonido interactuar mueble.mp3")
+	var stream: AudioStream = load("res://TEST_/Sonido interactuar mueble.wav")
 	if stream:
 		var asp := AudioStreamPlayer.new()
 		asp.stream = stream

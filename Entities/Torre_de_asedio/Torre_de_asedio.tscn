@@ -4,10 +4,10 @@
 [ext_resource type="PackedScene" uid="uid://dytg0a02u4hb0" path="res://TEST_/Torre de asedio/Torre asedio.glb" id="2_glb"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_rampa_piso"]
-size = Vector3(1.6795533, 0.12, 1.2973877)
+size = Vector3(2.2012267, 0.12, 1.2973877)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_barrera_lateral"]
-size = Vector3(1.3579102, 1.2, 0.15)
+size = Vector3(1.3579102, 2.3421874, 0.10869141)
 
 [node name="Torre_de_asedio" type="Node3D" unique_id=1692078532 node_paths=PackedStringArray("punto_spawn", "rampa_piso", "colision_rampa", "limites_rampa")]
 script = ExtResource("1_script")
@@ -24,7 +24,7 @@ transform = Transform3D(0.67163694, -0.009317568, 0, 0.0062392624, 1.0030068, 0,
 collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RampaPiso" unique_id=272113132]
-transform = Transform3D(3.7222502, -9.313226e-10, 0, -2.2351742e-08, 0.20619085, 0, 0, 0, 2.1309736, -0.094533935, 0.26876473, -0.550198)
+transform = Transform3D(3.7222657, -5.820766e-09, 0, -5.2154064e-08, 0.20619151, 0, 0, 0, 2.1309736, 0.8763658, 0.2687645, -0.550198)
 shape = SubResource("BoxShape3D_rampa_piso")
 
 [node name="LimitesRampa" type="StaticBody3D" parent="." unique_id=823684301]
@@ -33,13 +33,9 @@ collision_layer = 512
 collision_mask = 0
 
 [node name="BarreraLateralSur" type="CollisionShape3D" parent="LimitesRampa" unique_id=186065325]
-transform = Transform3D(1, 0, 0, 0, 0.49658942, 0, 0, 0, 1, 1.7235494, 0.42059946, 1.2055091)
-shape = SubResource("BoxShape3D_barrera_lateral")
-
-[node name="BarreraLateralNorte" type="CollisionShape3D" parent="LimitesRampa" unique_id=1130692807]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9810787, 0.11990118, -1.0493068)
+transform = Transform3D(1, 0, 0, 0, 0.49658942, 0, 0, 0, 1, 1.7235494, 0.7041986, 1.2261634)
 shape = SubResource("BoxShape3D_barrera_lateral")
 
 [node name="Aparicion" type="Marker3D" parent="." unique_id=1117755323]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.45, 0.65)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25493336, 2.8446195, -0.80232984)
 gizmo_extents = 0.6

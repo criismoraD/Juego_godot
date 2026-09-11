@@ -55,16 +55,18 @@ func _crear_suelo(y_top: float = 0.0) -> StaticBody3D:
 
 
 func _crear_jugadora_en_piso() -> Node:
+	_crear_suelo(0.0)
 	var player = PlayerScene.instantiate()
 	get_tree().root.add_child(player)
 	_nodes_to_clean.append(player)
-	player.global_position = Vector3(-7.58, 1.0, 0.05)
+	player.global_position = Vector3(-7.58, 0.5, 0.05)
 	# Dejarla reposar hasta tocar suelo
 	for i in range(40):
 		await get_tree().physics_frame
 		if player.is_on_floor():
 			break
 	return player
+
 
 
 func test_esta_al_pie_de_escalera() -> void:
@@ -92,8 +94,9 @@ func test_s_agacha_al_pie_en_vez_de_trepar() -> void:
 	get_tree().root.add_child(ladder)
 	_nodes_to_clean.append(ladder)
 	ladder.global_position = Vector3(-7.58, 0.22, -0.3)
-	player.global_position = Vector3(-7.58, 0.1, 0.05)
-	await get_tree().physics_frame
+	player.global_position = Vector3(-7.58, 0.0, 0.05)
+	for i in range(5):
+		await get_tree().physics_frame
 	ladder._on_body_entered(player)
 	assert_true(player.is_near_ladder, "Precondición: cerca de la escalera")
 	player.current_move_state = player.MoveState.GROUND
@@ -103,6 +106,7 @@ func test_s_agacha_al_pie_en_vez_de_trepar() -> void:
 	Input.action_press("move_back")
 	for i in range(10):
 		await get_tree().physics_frame
+
 
 	# Assert: se agacha, no trepa
 	assert_eq(player.current_move_state, player.MoveState.CROUCHING, "S al pie de la escalera debe agachar, no trepar")

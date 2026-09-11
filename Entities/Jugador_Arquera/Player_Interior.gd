@@ -68,22 +68,9 @@ func _ajustar_linea_negra_minima() -> void:
 		if not mesh_instance:
 			continue
 
-		var count: int = mesh_instance.get_surface_override_material_count()
-		if count == 0 and mesh_instance.mesh:
-			count = mesh_instance.mesh.get_surface_count()
-
-		for i in range(maxi(count, 1)):
-			var mat: Material = mesh_instance.get_active_material(i)
-			if mat and mat is StandardMaterial3D:
-				var dup_mat: StandardMaterial3D = mat.duplicate() as StandardMaterial3D
-				if dup_mat.next_pass and dup_mat.next_pass is ShaderMaterial:
-					var next_p: ShaderMaterial = dup_mat.next_pass.duplicate() as ShaderMaterial
-					next_p.set_shader_parameter("outline_width", 2.0)
-					dup_mat.next_pass = next_p
-				mesh_instance.set_surface_override_material(i, dup_mat)
-
-		if mesh_instance.material_override and mesh_instance.material_override is StandardMaterial3D:
-			var dup_mat: StandardMaterial3D = mesh_instance.material_override.duplicate() as StandardMaterial3D
+		var mat: Material = mesh_instance.material_override if mesh_instance.material_override else mesh_instance.get_active_material(0)
+		if mat and mat is StandardMaterial3D:
+			var dup_mat: StandardMaterial3D = mat.duplicate() as StandardMaterial3D
 			if dup_mat.next_pass and dup_mat.next_pass is ShaderMaterial:
 				var next_p: ShaderMaterial = dup_mat.next_pass.duplicate() as ShaderMaterial
 				next_p.set_shader_parameter("outline_width", 2.0)

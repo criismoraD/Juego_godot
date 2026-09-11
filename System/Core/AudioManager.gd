@@ -98,6 +98,7 @@ func _load_all_sounds():
 		load("res://Entities/Jugador_Arquera/DISPARO_FLECHA1.mp3"),
 		load("res://Entities/Jugador_Arquera/DISPARO_FLECHA2.mp3")
 	]
+	sfx_streams["disparo_flecha"] = sfx_streams["player_shoot"]
 
 	sfx_streams["disparo_cargado"] = [load("res://TEST_/Disparo cargado.wav")]
 	sfx_streams["sonido_100_carga"] = [load("res://TEST_/sonido 100% carga.mp3")]

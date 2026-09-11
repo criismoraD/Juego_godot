@@ -286,7 +286,7 @@ func _ready():
 				if _prota.has_signal("flechas_multiples_changed"):
 					_prota.flechas_multiples_changed.emit(GameUI.regreso_flechas_multiples)
 			if "municion_activa" in _prota:
-				_prota.municion_activa = GameUI.regreso_municion_activa
+				_prota.municion_activa = GameUI.regreso_municion_activa as Player.TipoMunicion
 				if _prota.has_signal("tipo_municion_changed"):
 					_prota.tipo_municion_changed.emit(GameUI.regreso_municion_activa)
 		GameUI.regreso_flechas_explosivas = 0
@@ -1603,8 +1603,10 @@ func _iniciar_cinematica_oleada5() -> void:
 	# inferido-inseguro como error; con "=" la llamada es dinámica.
 	var cine = ESCENA_CINEMATICA_OLEADA5.new()
 	cine.name = "CinematicaOleada5"
-	add_child(cine)
-	cine.iniciar(self, _continuar_oleada5)
+	cine.tree_entered.connect(func() -> void:
+		cine.iniciar(self, _continuar_oleada5)
+	, CONNECT_ONE_SHOT)
+	add_child.call_deferred(cine)
 
 
 ## Debug ("Test Cinemática" del panel): deja la escena limpia y lanza la
@@ -2818,7 +2820,6 @@ func _iniciar_mensajera_oleada_5() -> void:
 		if "municion_a_otorgar_aliadas" in power_up:
 			power_up.municion_a_otorgar_aliadas = 5
 		var spawn_pos: Vector3 = ballestera.global_position + Vector3(0.8, 0.05, 0.0)
-		power_up.global_position = spawn_pos
 		add_child(power_up)
 		power_up.global_position = spawn_pos
 		var base_y: float = spawn_pos.y

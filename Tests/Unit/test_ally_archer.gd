@@ -399,3 +399,24 @@ func test_recarga_escala_flecha_de_0_a_1():
 	assert_almost_eq(flecha_dummy.scale.x, 1.0, 0.05, "Al terminar la recarga debe estar completamente al 100%")
 
 
+func test_escena_contiene_hitbox_body_y_shape():
+	# Arrange
+	var escena_packed: PackedScene = load("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+	assert_not_null(escena_packed, "La escena AllyArcher.tscn debe cargar")
+	var instancia: Node = escena_packed.instantiate()
+	add_child_autofree(instancia)
+
+	# Assert
+	var hitbox: StaticBody3D = instancia.get_node_or_null("HitboxBody") as StaticBody3D
+	assert_not_null(hitbox, "HitboxBody debe existir estáticamente en la escena")
+	assert_eq(hitbox.collision_layer, 2, "La capa de colisión del hitbox debe ser 2")
+	assert_true(hitbox.is_in_group("allies"), "Debe pertenecer al grupo allies")
+
+	var col: CollisionShape3D = hitbox.get_node_or_null("CollisionShape3D") as CollisionShape3D
+	assert_not_null(col, "CollisionShape3D debe ser hijo de HitboxBody en la escena")
+	assert_not_null(col.shape, "Debe tener un recurso de forma asignado")
+	assert_true(col.shape is Shape3D, "La forma debe ser un recurso Shape3D editable")
+
+
+
+

@@ -1,5 +1,5 @@
 class_name PerrenaNPCInterior
-extends Node3D
+extends StaticBody3D
 
 ## Perrena NPC en el interior de la torre (Levels/Player_Interior.tscn).
 ## Exhibición + conversación: alterna suave entre la pose de
@@ -108,6 +108,10 @@ const CONSEJOS_CLAVES: Array[String] = [
 	"PERRENA_CONSEJO_8",
 ]
 
+@onready var area_interaccion: Area3D = %AreaInteraccion if has_node("%AreaInteraccion") else (find_child("AreaInteraccion", true, false) as Area3D)
+@onready var prompt_hablar_nodo: Node3D = %PromptHablar if has_node("%PromptHablar") else (find_child("PromptHablar", true, false) as Node3D)
+@onready var colision_shape: CollisionShape3D = %CollisionShape3D if has_node("%CollisionShape3D") else (find_child("CollisionShape3D", true, false) as CollisionShape3D)
+
 var _anim_tree: AnimationTree
 var _en_pose: bool = true
 var _t_fase: float = 0.0
@@ -123,7 +127,7 @@ var _consejos_cola: Array[int] = []
 var _rng := RandomNumberGenerator.new()
 var _tween_prompt: Tween
 var _tween_icono: Tween
-var _prompt_hablar: Label3D
+var _prompt_hablar: Node3D
 
 
 func _ready() -> void:
@@ -136,12 +140,22 @@ func _ready() -> void:
 	_construir_interaccion()
 
 
+func _exit_tree() -> void:
+	if is_instance_valid(_menu_conversacion):
+		_menu_conversacion.queue_free()
+
+
 ## Colisión sólida para el jugador: StaticBody3D en layer 1 (la misma de la
 ## estructura) con cápsula dimensionada al modelo, centrada. Se mide por
 ## HUESOS (el AABB de una malla skinneada es el de bind y sale diminuto) y
 ## el cuerpo vive bajo el esqueleto (hereda SOLO su escala uniforme del
 ## GLB, no la no-uniforme del nodo NPC: Jolt la rechaza).
 func _construir_colision() -> void:
+	# Si la escena ya posee un CollisionShape3D definido estáticamente (ej. PerrenaInterior.tscn),
+	# no se requiere inyectar un cuerpo dinámico en runtime.
+	if colision_shape != null or find_child("CollisionShape3D", false, false) != null or find_child("ColisionShape", true, false) != null:
+		return
+
 	var skel := find_child("Skeleton3D", true, false) as Skeleton3D
 	if skel == null:
 		push_warning("[PerrenaNPC] Sin esqueleto para la colisión.")
@@ -198,20 +212,9 @@ func _ajustar_linea_negra() -> void:
 		var mi := node as MeshInstance3D
 		if not mi:
 			continue
-		var count: int = mi.get_surface_override_material_count()
-		if count == 0 and mi.mesh:
-			count = mi.mesh.get_surface_count()
-		for i in range(maxi(count, 1)):
-			var mat: Material = mi.get_active_material(i)
-			if mat and mat is StandardMaterial3D:
-				var dup := mat.duplicate() as StandardMaterial3D
-				if dup.next_pass and dup.next_pass is ShaderMaterial:
-					var np := dup.next_pass.duplicate() as ShaderMaterial
-					np.set_shader_parameter("outline_width", 2.0)
-					dup.next_pass = np
-				mi.set_surface_override_material(i, dup)
-		if mi.material_override and mi.material_override is StandardMaterial3D:
-			var dup := mi.material_override.duplicate() as StandardMaterial3D
+		var mat: Material = mi.material_override if mi.material_override else mi.get_active_material(0)
+		if mat and mat is StandardMaterial3D:
+			var dup := mat.duplicate() as StandardMaterial3D
 			if dup.next_pass and dup.next_pass is ShaderMaterial:
 				var np := dup.next_pass.duplicate() as ShaderMaterial
 				np.set_shader_parameter("outline_width", 2.0)
@@ -333,7 +336,6 @@ func _aislar_animaciones(anim_p: AnimationPlayer, permitidas: Array) -> bool:
 
 
 func _process(delta: float) -> void:
-	_actualizar_proximidad()
 	_seguir_cabeza_prompt()
 	if _anim_tree == null:
 		return
@@ -352,26 +354,61 @@ func _process(delta: float) -> void:
 ## El add_child del menú es DIFERIDO: en _ready el padre aún está dando
 ## de alta a sus hijos y el add directo falla ("Parent node is busy...").
 func _construir_interaccion() -> void:
+	# Prioridad: PromptHablar como hijo directo en la escena (PerrenaInterior.tscn)
+	_prompt_hablar = prompt_hablar_nodo if prompt_hablar_nodo else find_child("PromptHablar", true, false) as Node3D
 	var raiz := get_parent()
-	if raiz == null:
-		push_warning("[PerrenaNPC] Sin padre para la interacción.")
-		return
-	_prompt_hablar = raiz.find_child("PromptHablar", true, false) as Label3D
+	if _prompt_hablar == null and raiz != null:
+		_prompt_hablar = raiz.find_child("PromptHablar", true, false) as Node3D
+
 	if _prompt_hablar:
-		_prompt_hablar.text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+		if _prompt_hablar is Label3D:
+			var lbl := _prompt_hablar as Label3D
+			lbl.text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+			lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
+			lbl.outline_modulate = Color(0.05, 0.05, 0.08, 0.0)
 		_prompt_hablar.visible = false
-	_construir_menu_conversacion(raiz)
+		if "modulate" in _prompt_hablar:
+			_prompt_hablar.modulate.a = 0.0
+
+	if raiz != null:
+		_construir_menu_conversacion(raiz)
+	_conectar_area_interaccion()
 
 
-## El prompt va clavado sobre su cabeza cada frame: da igual dónde esté
-## el nodo en la escena o si se mueve a la NPC en el editor.
+func _conectar_area_interaccion() -> void:
+	var area := area_interaccion if area_interaccion else find_child("AreaInteraccion", true, false) as Area3D
+	if area == null:
+		return
+	if not area.body_entered.is_connected(_on_body_entered):
+		area.body_entered.connect(_on_body_entered)
+	if not area.body_exited.is_connected(_on_body_exited):
+		area.body_exited.connect(_on_body_exited)
+
+
+func _on_body_entered(body: Node3D) -> void:
+	if body.is_in_group("player_interior") or body is CharacterBody3D:
+		_jugador_cerca = true
+		_animar_prompt(true)
+
+
+func _on_body_exited(body: Node3D) -> void:
+	if body.is_in_group("player_interior") or body is CharacterBody3D:
+		_jugador_cerca = false
+		_animar_prompt(false)
+		_cerrar_menu_conversacion()
+		_set_movimiento_jugador(true)
+
+
+## El prompt va clavado sobre su cabeza cada frame: si es un nodo externo en la raíz
+## del nivel se reposiciona; si ya es hijo de este nodo en PerrenaInterior.tscn no se toca.
 func _seguir_cabeza_prompt() -> void:
 	if _prompt_hablar == null:
 		return
-	_prompt_hablar.global_position = global_position + Vector3(0.0, ALTURA_PROMPT, 0.0)
+	if _prompt_hablar.get_parent() != self:
+		_prompt_hablar.global_position = global_position + Vector3(0.0, ALTURA_PROMPT, 0.0)
 
 
-## Fundido del prompt idéntico a la mesa (modulate + outline en 0.3 s).
+## Fundido del prompt suave (modulate en 0.3 s).
 func _animar_prompt(activo: bool) -> void:
 	if _prompt_hablar == null:
 		return
@@ -379,13 +416,16 @@ func _animar_prompt(activo: bool) -> void:
 		_tween_prompt.kill()
 	if get_tree() == null:
 		_prompt_hablar.visible = activo
+		if "modulate" in _prompt_hablar:
+			_prompt_hablar.modulate.a = 1.0 if activo else 0.0
 		return
 	_tween_prompt = create_tween().set_parallel(true)
 	var objetivo := 1.0 if activo else 0.0
 	if activo:
 		_prompt_hablar.visible = true
 	_tween_prompt.tween_property(_prompt_hablar, "modulate:a", objetivo, DURACION_FUNDIDO).set_trans(Tween.TRANS_SINE)
-	_tween_prompt.tween_property(_prompt_hablar, "outline_modulate:a", objetivo, DURACION_FUNDIDO).set_trans(Tween.TRANS_SINE)
+	if _prompt_hablar is Label3D:
+		_tween_prompt.tween_property(_prompt_hablar, "outline_modulate:a", objetivo, DURACION_FUNDIDO).set_trans(Tween.TRANS_SINE)
 	if not activo:
 		_tween_prompt.chain().tween_callback(_ocultar_prompt_si_lejos)
 
@@ -404,7 +444,7 @@ func _construir_menu_conversacion(raiz: Node) -> void:
 	var centro := CenterContainer.new()
 	centro.name = "CentroMenu"
 	centro.set_anchors_preset(Control.PRESET_FULL_RECT)
-	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE as Control.MouseFilter
 	capa.add_child(centro)
 	var panel := PanelContainer.new()
 	panel.name = "PanelMenu"
@@ -420,16 +460,16 @@ func _construir_menu_conversacion(raiz: Node) -> void:
 	panel.add_child(margen)
 	var caja := VBoxContainer.new()
 	caja.add_theme_constant_override("separation", 10)
-	caja.alignment = BoxContainer.ALIGNMENT_CENTER
+	caja.alignment = BoxContainer.ALIGNMENT_CENTER as BoxContainer.AlignmentMode
 	margen.add_child(caja)
 	var icono := TextureRect.new()
 	icono.name = "IconoPerrena"
 	icono.texture = ICONO_PERRENA
 	icono.custom_minimum_size = Vector2(TAMANO_ICONO_MENU, ALTO_ICONO_MENU)
-	icono.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icono.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icono.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	icono.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icono.expand_mode = TextureRect.EXPAND_IGNORE_SIZE as TextureRect.ExpandMode
+	icono.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED as TextureRect.StretchMode
+	icono.size_flags_horizontal = Control.SIZE_SHRINK_CENTER as Control.SizeFlags
+	icono.mouse_filter = Control.MOUSE_FILTER_IGNORE as Control.MouseFilter
 	caja.add_child(icono)
 	_icono_menu = icono
 	for i in OPCIONES_CLAVES.size():

@@ -79,8 +79,8 @@ func _ready():
 	player_ref = get_tree().get_first_node_in_group("player")
 
 
+## Crea un área que siempre detecta flechas, independiente del estado del collision_shape
 func _create_arrow_detector():
-	"""Crea un área que siempre detecta flechas, independiente del estado del collision_shape"""
 	arrow_detector = Area3D.new()
 	arrow_detector.name = "ArrowDetector"
 	# Detectar solo flechas (layer 3 = mask 4)
@@ -98,8 +98,8 @@ func _create_arrow_detector():
 	arrow_detector.area_entered.connect(_on_arrow_entered)
 
 
+## Cuando una flecha entra en contacto con la plataforma
 func _on_arrow_entered(area: Area3D):
-	"""Cuando una flecha entra en contacto con la plataforma"""
 	# Verificar si es una flecha del jugador
 	if area.is_in_group("player_arrows") or area.has_method("_stick_to_surface"):
 		# La flecha se encargará de pegarse sola al detectar el body

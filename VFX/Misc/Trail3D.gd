@@ -95,7 +95,7 @@ func _process(delta):
 			mesh.surface_set_uv(Vector2(t1, 1))
 			mesh.surface_add_vertex(to_local(points[i] - currWidth))
 		else:
-			var t0 = i / points.size()
+			var t0 = float(i) / float(points.size())
 			var t1 = t
 			
 			mesh.surface_set_uv(Vector2(t0, 0))

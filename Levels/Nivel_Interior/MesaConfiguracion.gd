@@ -224,7 +224,7 @@ func _abrir_menu() -> void:
 
 
 func _reproducir_sfx_interaccion() -> void:
-	var stream: AudioStream = load("res://TEST_/Sonido interactuar mueble.mp3")
+	var stream: AudioStream = load("res://TEST_/Sonido interactuar mueble.wav")
 	if not stream:
 		return
 	var asp := AudioStreamPlayer.new()

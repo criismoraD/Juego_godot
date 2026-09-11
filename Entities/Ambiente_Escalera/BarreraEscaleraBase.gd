@@ -106,6 +106,7 @@ func _soltar_solo_escalera(player: Node, impulso_x: float = 0.0) -> void:
 		player.velocity.x = impulso_x
 
 
+
 func _esta_en_escalera(player: Node) -> bool:
 	if "current_move_state" in player:
 		return player.current_move_state == player.MoveState.CLIMBING

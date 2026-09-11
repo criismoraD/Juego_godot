@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cxqj3a8dm482x"]
 
-[ext_resource type="Script" path="res://Levels/Nivel_Interior/MesaConfiguracion.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://di262r1u7y5af" path="res://Levels/Nivel_Interior/MesaConfiguracion.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://04m0axdhp4op" path="res://TEST_/MESA_CONFIGURACION/MESA_CONFIG_CUARTO.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://c6lvdv381tkyv" path="res://UI/MenuDefensoras/MenuDefensoras.tscn" id="3_defensoras"]
 [ext_resource type="PackedScene" path="res://UI/MenuBestiario/MenuBestiario.tscn" id="4_bestiario"]
@@ -9,7 +9,7 @@
 size = Vector3(0.26, 0.22, 0.18)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_interaccion"]
-size = Vector3(0.55, 0.35, 0.45)
+size = Vector3(0.36100465, 0.35, 0.4178711)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0, 0, 0, 0.95)
@@ -22,7 +22,6 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
-shadow_color = Color(0, 0, 0, 0.6)
 shadow_size = 10
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
@@ -37,8 +36,8 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
-bg_color = Color(0.15, 0.15, 0.15, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+bg_color = Color(0.3, 0.3, 0.3, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -49,8 +48,8 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
-bg_color = Color(0.3, 0.3, 0.3, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.15, 0.15, 0.15, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -73,45 +72,45 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[node name="MesaConfiguracion" type="StaticBody3D"]
+[node name="MesaConfiguracion" type="StaticBody3D" unique_id=1055158376]
 script = ExtResource("1_script")
 
-[node name="Model" parent="." instance=ExtResource("2_model")]
+[node name="Model" parent="." unique_id=1530701668 instance=ExtResource("2_model")]
 transform = Transform3D(0.305, 0, 0, 0, 0.305, 0, 0, 0, 0.305, 0, 0, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1492499133]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11, 0)
 shape = SubResource("BoxShape3D_mesa")
 
-[node name="AreaInteraccion" type="Area3D" parent="."]
+[node name="AreaInteraccion" type="Area3D" parent="." unique_id=1067662183]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion" unique_id=1107282361]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0017181635, 0, -0.01606445)
 shape = SubResource("BoxShape3D_interaccion")
 
-[node name="PromptE" type="Label3D" parent="."]
+[node name="PromptE" type="Label3D" parent="." unique_id=1983230366]
 unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17, 0.035)
+pixel_size = 0.0011
 billboard = 1
-no_depth_test = false
 modulate = Color(1, 1, 1, 0)
 outline_modulate = Color(0.05, 0.05, 0.08, 0)
 text = "[E] Interactuar"
 font_size = 20
-pixel_size = 0.0011
 outline_size = 4
 
-[node name="MenuDefensoras" parent="." instance=ExtResource("3_defensoras")]
+[node name="MenuDefensoras" parent="." unique_id=1230250020 instance=ExtResource("3_defensoras")]
 unique_name_in_owner = true
 
-[node name="MenuBestiario" parent="." instance=ExtResource("4_bestiario")]
+[node name="MenuBestiario" parent="." unique_id=1250392789 instance=ExtResource("4_bestiario")]
 unique_name_in_owner = true
 
-[node name="CanvasMenu" type="CanvasLayer" parent="."]
+[node name="CanvasMenu" type="CanvasLayer" parent="." unique_id=670544123]
 layer = 55
 visible = false
 
-[node name="CenterContainer" type="CenterContainer" parent="CanvasMenu"]
+[node name="CenterContainer" type="CenterContainer" parent="CanvasMenu" unique_id=1856354576]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -119,65 +118,65 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PanelMenu" type="PanelContainer" parent="CanvasMenu/CenterContainer"]
+[node name="PanelMenu" type="PanelContainer" parent="CanvasMenu/CenterContainer" unique_id=1713089701]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 240)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="MarginContainer" type="MarginContainer" parent="CanvasMenu/CenterContainer/PanelMenu"]
+[node name="MarginContainer" type="MarginContainer" parent="CanvasMenu/CenterContainer/PanelMenu" unique_id=1628624272]
 layout_mode = 2
 theme_override_constants/margin_left = 25
 theme_override_constants/margin_top = 25
 theme_override_constants/margin_right = 25
 theme_override_constants/margin_bottom = 25
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer" unique_id=1957666773]
 layout_mode = 2
 theme_override_constants/separation = 14
 alignment = 1
 
-[node name="BtnDefensoras" type="Button" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer/VBoxContainer"]
+[node name="BtnDefensoras" type="Button" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer/VBoxContainer" unique_id=663138569]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
 theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
 text = "DEFENSORAS"
 
-[node name="BtnBestiario" type="Button" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer/VBoxContainer"]
+[node name="BtnBestiario" type="Button" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer/VBoxContainer" unique_id=274474527]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
 theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
 text = "BESTIARIO"
 
-[node name="BtnSalir" type="Button" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer/VBoxContainer"]
+[node name="BtnSalir" type="Button" parent="CanvasMenu/CenterContainer/PanelMenu/MarginContainer/VBoxContainer" unique_id=227692599]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
 theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
 text = "SALIR"

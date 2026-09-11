@@ -139,7 +139,7 @@ func test_drop_por_defecto_lonko_y_otros_otorgan_10():
 	var item_lonko := _buscar_item_dropeado()
 	assert_not_null(item_lonko, "La Lonko debe dropear el power-up")
 	if item_lonko:
-		assert_eq(int(item_lonko.municion_a_otorgar_jugador), 10, "Los drops que no son del Goblin deben sumar 10")
+		assert_eq(int(item_lonko.municion_a_otorgar_jugador), 8, "El drop de la Lonko debe configurar 8 flechas")
 		item_lonko.free()
 
 

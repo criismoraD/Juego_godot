@@ -269,6 +269,8 @@ func _process(delta: float) -> void:
 ## Perrena), la Eryn aparcada que quede en escena. Se busca desde la raíz
 ## (current_scene no sirve: puede ser nula o no contener el nivel).
 func _buscar_protagonista() -> Player:
+	if not is_inside_tree() or get_tree() == null:
+		return null
 	for p in get_tree().get_nodes_in_group("player"):
 		if p is Player and not (p is Perrena):
 			return p as Player
@@ -294,7 +296,12 @@ func _obtener_perrena() -> Perrena:
 ## Barrido del árbol completo buscando un personaje: Perrena (perrena=true)
 ## o protagonista no-Perrena (perrena=false).
 func _buscar_en_escena(perrena: bool) -> Node:
-	var pila: Array[Node] = [get_tree().root]
+	if not is_inside_tree() or get_tree() == null:
+		return null
+	var root: Node = get_tree().root
+	if not root:
+		return null
+	var pila: Array[Node] = [root]
 	while not pila.is_empty():
 		var n: Node = pila.pop_back()
 		if perrena and n is Perrena:

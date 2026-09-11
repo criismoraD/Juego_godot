@@ -486,7 +486,16 @@ func _buscar_arrow_node():
 			explosive_arrow_node.visible = false
 
 
-func _crear_hitbox():
+func _crear_hitbox() -> void:
+	if has_node("%HitboxBody") or find_child("HitboxBody", true, false) != null:
+		hitbox_body = (%HitboxBody if has_node("%HitboxBody") else find_child("HitboxBody", true, false)) as StaticBody3D
+		if not hitbox_body.is_in_group("allies"):
+			hitbox_body.add_to_group("allies")
+		hitbox_body.set_meta("defensora_owner", self)
+		hitbox_body.collision_layer = 2
+		hitbox_body.collision_mask = 0
+		return
+
 	hitbox_body = StaticBody3D.new()
 	hitbox_body.name = "HitboxBody"
 	hitbox_body.add_to_group("allies")

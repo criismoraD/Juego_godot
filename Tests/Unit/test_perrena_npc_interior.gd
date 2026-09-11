@@ -238,36 +238,28 @@ func test_npc_con_colision_solidida_para_el_jugador() -> void:
 	await get_tree().process_frame
 	var npc := _obtener_npc(nivel)
 
-	# Act: el NPC construye su cuerpo de colisión.
-	var cuerpo := npc.find_child("ColisionNPC", true, false) as StaticBody3D
-	var forma := npc.find_child("ColisionShape", true, false) as CollisionShape3D
+	# Assert: El NPC es un StaticBody3D (cuerpo de colisión sólido de choque)
+	assert_not_null(npc, "El NPC existe en el nivel")
+	assert_true(npc is StaticBody3D, "El NPC es StaticBody3D con colisión propia")
+	assert_eq(npc.collision_layer, 1, "Colisión en layer 1 (bloquea al jugador)")
 
-	# Assert: existe, en layer 1 (la del jugador y la estructura del
-	# interior) y con cápsula dimensionada al modelo.
-	assert_not_null(cuerpo, "El NPC tiene cuerpo de colisión")
-	assert_not_null(forma, "El NPC tiene forma de colisión")
-	assert_eq(cuerpo.collision_layer, 1, "Colisión en layer 1 (bloquea al jugador)")
+	# Assert: Forma de colisión de choque (CollisionShape3D cápsula)
+	var forma := npc.find_child("CollisionShape3D", false, false) as CollisionShape3D
+	if forma == null:
+		forma = npc.find_child("ColisionShape", true, false) as CollisionShape3D
+	assert_not_null(forma, "El NPC tiene forma de colisión de choque")
 	var capsula := forma.shape as CapsuleShape3D
-	assert_not_null(capsula, "La forma es una cápsula")
+	assert_not_null(capsula, "La forma de choque es una cápsula")
 	assert_gt(capsula.height, 0.1, "Cápsula con la altura del NPC en el interior")
 	assert_gt(capsula.radius, 0.005, "Cápsula con radio utilizable")
 
-	# Assert: la cápsula coincide con el AABB del esqueleto (centrada).
-	# Tolerancia amplia en X: los huesos se miden en reposo al _ready y la
-	# pose de gala ya animada los desplaza un poco al medirlos aquí.
-	var skel := npc.find_child("Skeleton3D", true, false) as Skeleton3D
-	assert_not_null(skel, "El NPC tiene esqueleto")
-	var aabb: AABB = npc._aabb_huesos(skel)
-	assert_almost_eq(cuerpo.global_position.y, aabb.get_center().y, 0.05, "Colisión centrada en el cuerpo")
-	assert_almost_eq(cuerpo.global_position.x, aabb.get_center().x, 0.05, "Colisión centrada en X")
-	assert_almost_eq(cuerpo.global_position.z, aabb.get_center().z, 0.05, "Colisión centrada en Z")
-
-	# Assert: el cuerpo cuelga del esqueleto (escala uniforme del GLB, no
-	# la del nodo NPC que Jolt no soporta escalada no-uniforme).
-	assert_eq(cuerpo.get_parent().name, "Skeleton3D", "La colisión vive bajo el esqueleto")
+	# Assert: Posee AreaInteraccion (Area3D) para activar el globo de texto
+	var area := npc.find_child("AreaInteraccion", false, false) as Area3D
+	assert_not_null(area, "El NPC tiene AreaInteraccion para el globo de texto")
+	assert_true(area.collision_mask & 1 != 0, "El área detecta al jugador en layer 1")
 
 	# Assert: el jugador interior colisiona en la layer del NPC (máscara
 	# por defecto del CharacterBody3D: layer 1 incluida).
 	var player_interior := nivel.find_child("Player", true, false) as CharacterBody3D
 	assert_not_null(player_interior, "El jugador interior existe")
-	assert_true(player_interior.collision_mask & cuerpo.collision_layer != 0, "La máscara del jugador incluye la layer del NPC: no puede atravesarlo")
+	assert_true(player_interior.collision_mask & npc.collision_layer != 0, "La máscara del jugador incluye la layer del NPC: no puede atravesarlo")

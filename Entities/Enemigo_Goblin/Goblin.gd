@@ -297,16 +297,15 @@ func _spawn_sangre_animada(pos: Vector3) -> void:
 	root.add_child(sprite)
 	sprite.global_position = pos + Vector3(0.0, 0.40, 0.0)
 
-	var anim_task := func():
-		for f in range(14):
-			if not is_instance_valid(sprite) or not sprite.is_inside_tree():
-				return
-			sprite.frame = f
-			await sprite.get_tree().create_timer(0.04, false).timeout
-		if is_instance_valid(sprite):
-			sprite.queue_free()
-
-	anim_task.call()
+	var tw := sprite.create_tween()
+	if tw:
+		tw.tween_method(func(f: int):
+			if is_instance_valid(sprite):
+				sprite.frame = f
+		, 0, 13, 0.04 * 14)
+		tw.finished.connect(sprite.queue_free)
+	else:
+		sprite.queue_free()
 
 
 func _drop_power_up() -> void:
@@ -407,11 +406,12 @@ func _start_reload():
 	_play_animation("ENEMIGO_GOBLING_RECARGA", 0.2, velocidad_recarga)
 
 	var reload_duration = _get_animation_duration("ENEMIGO_GOBLING_RECARGA") / velocidad_recarga
-	get_tree().create_timer(reload_duration - 0.2).timeout.connect(
-		func():
-			if is_instance_valid(self) and is_inside_tree() and current_state == State.SHOOTING:
-				# Volver a disparo con blend largo para suavizar la transición
-				_play_animation("ENEMIGO_GOBLING_DISPARO", 0.3)
-				is_reloading = false
-				shoot_timer = intervalo_disparo
-	)
+	get_tree().create_timer(reload_duration - 0.2).timeout.connect(_on_reload_timer_timeout)
+
+
+func _on_reload_timer_timeout() -> void:
+	if is_instance_valid(self) and is_inside_tree() and current_state == State.SHOOTING:
+		# Volver a disparo con blend largo para suavizar la transición
+		_play_animation("ENEMIGO_GOBLING_DISPARO", 0.3)
+		is_reloading = false
+		shoot_timer = intervalo_disparo
