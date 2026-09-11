@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://c7defensoraperrena1"]
+
+[ext_resource type="Script" path="res://Entities/Defensora_Perrena/DefensoraPerrena.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://spumkq1f6k2x" path="res://Entities/Jugador_Perrena/Perrena.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cocrrn7wicpsd" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn" id="3_aura"]
+
+[node name="DefensoraPerrena" type="Node3D"]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
+script = ExtResource("1_script")
+
+[node name="PerrenaModel" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-2.62268e-07, 0, 6, 0, 6, 0, -6, 0, -2.62268e-07, 0, 0.07, 0)
+
+[node name="BasicAreaVFX_04" parent="." instance=ExtResource("3_aura")]
+transform = Transform3D(2.167, 0, 0, 0, 2.167, 0, 0, 0, 2.167, 0, 0.02, 0)
+visible = false
+primary_color = Color(1, 0.35, 0.8, 1)
+secondary_color = Color(0.9, 0.15, 0.65, 1)
+light_color = Color(1, 0.5, 0.85, 1)

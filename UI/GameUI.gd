@@ -91,6 +91,7 @@ var btn_spawn_posion: Button
 var btn_spawn_flecha_explosiva: Button
 var flecha_explosiva_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 var flecha_multiple_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
+var refuerzo_perrena_scene_debug: PackedScene = preload("res://Entities/Item_Refuerzo_Perrena/IconoRefuerzoPerrena.tscn")
 var vignette_rect: ColorRect = null
 var _vignette_tween: Tween = null
 const TEXTURA_ICONO_PUERTA: Texture2D = preload("res://UI/Icons/Flecha_Roja_Abajo.svg")
@@ -2375,6 +2376,43 @@ func _spawn_flecha_multiple_debug() -> void:
 	item.position = Vector3(target_x, target_y + 4.0, target_z)
 	scene_root.add_child(item)
 	item.global_position = Vector3(target_x, target_y + 4.0, target_z)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEBUG: SPAWN REFUERZO PERRENA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _spawn_refuerzo_perrena_debug() -> void:
+	if not refuerzo_perrena_scene_debug:
+		push_warning("[GameUI] refuerzo_perrena_scene_debug no está asignado.")
+		return
+
+	var scene_root := get_tree().current_scene if get_tree().current_scene else get_tree().root
+	if not scene_root:
+		push_warning("[GameUI] No hay escena activa para instanciar el refuerzo de Perrena.")
+		return
+
+	# Asegurar que solo exista 1 icono de refuerzo de perrena en todo el nivel
+	for n in get_tree().get_nodes_in_group("icono_refuerzo_perrena"):
+		if is_instance_valid(n):
+			n.queue_free()
+	for child in scene_root.find_children("*", "IconoRefuerzoPerrena", true, false):
+		if is_instance_valid(child):
+			child.queue_free()
+
+	var item := refuerzo_perrena_scene_debug.instantiate() as Node3D
+	if not item:
+		push_warning("[GameUI] No se pudo instanciar IconoRefuerzoPerrena.tscn.")
+		return
+
+	# Posicionar abajo cerca de la puerta (al nivel del suelo, igual que el ítem de refuerzo de la oleada 5)
+	var spawn_pos := Vector3(-9.2, 0.185, 0.0)
+	var puerta := scene_root.find_child("PUERTA_TRIGER", true, false)
+	if puerta and is_instance_valid(puerta) and puerta is Node3D:
+		spawn_pos = Vector3((puerta as Node3D).global_position.x + 0.4, 0.185, 0.0)
+
+	scene_root.add_child(item)
+	item.global_position = spawn_pos
 
 
 ## Activa el oscurecimiento con viñeteado morado oscuro durante el evento del cuerno con transición gradual

@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b40yxbap6wn1u"]
+
+[ext_resource type="Texture2D" uid="uid://q5g4g0lcchbc" path="res://TEST_/Hacha perrena/Hacha perrena_D.jpg" id="1_tex"]
+[ext_resource type="Shader" uid="uid://d85h1in3o0et" path="res://System/Shaders/outline_hueso.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 8.0
+
+[resource]
+next_pass = SubResource("ShaderMaterial_outline")
+albedo_texture = ExtResource("1_tex")

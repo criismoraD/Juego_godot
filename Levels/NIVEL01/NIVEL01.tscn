@@ -965,7 +965,6 @@ shape = SubResource("BoxShape3D_3xd07")
 
 [node name="Torre_de_asedio" parent="." unique_id=987123456 instance=ExtResource("62_torre_asedio")]
 transform = Transform3D(0.030259425, 0, -1.777069, 0, 1.8436748, 0, 1.3535084, 0, 0.039728634, 3.1228988, 0.05779445, -2.500832)
-visible = false
 
 [node name="CascoOxidado2" parent="." unique_id=996348724 instance=ExtResource("64_casco")]
 transform = Transform3D(0.176191, 0.06539871, -0.16184175, -0.053394802, 0.22050126, 0.046766996, 0.16913226, 0.0014837682, 0.1833605, -4.676608, 0.17896314, 1.0030396)
