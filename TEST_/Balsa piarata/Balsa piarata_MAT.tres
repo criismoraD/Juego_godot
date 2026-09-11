@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bdjhyvffyf6q2"]
+
+[ext_resource type="Texture2D" uid="uid://ccgx3gl57tkm8" path="res://TEST_/Balsa piarata/Balsa piarata_D.jpg" id="1_jhppu"]
+
+[resource]
+resource_name = "Balsa piarata_M"
+cull_mode = 2
+albedo_texture = ExtResource("1_jhppu")
+emission_enabled = true
+emission_texture = ExtResource("1_jhppu")

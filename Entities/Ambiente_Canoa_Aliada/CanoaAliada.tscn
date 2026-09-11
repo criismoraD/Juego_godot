@@ -1,9 +1,26 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bxpxudsr6788l"]
 
-[ext_resource type="Script" path="res://Entities/Ambiente_Canoa_Aliada/CanoaAliada.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dbfqbqyo5c2b6" path="res://Entities/Ambiente_Canoa_Aliada/CanoaAliada.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bduw0imvq6xeh" path="res://Entities/Ambiente_Canoa_Aliada/Canoa_aliada.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cx4pa18v52pqr" path="res://Entities/Ambiente_Canoa_Aliada/Tripulante_barco_fondo_ally_archer.tscn" id="3_tripulante"]
 
-[node name="CanoaAliada" type="Node3D"]
+[node name="CanoaAliada" type="Node3D" unique_id=2026993278]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 script = ExtResource("1_script")
 
-[node name="CanoaAliadaModel" parent="." instance=ExtResource("2_model")]
+[node name="CanoaAliadaModel" parent="." unique_id=1773413102 instance=ExtResource("2_model")]
+
+[node name="Tripulante1" parent="." unique_id=2026993301 instance=ExtResource("3_tripulante")]
+transform = Transform3D(0.12, 0, 0, 0, 0.12, 0, 0, 0, 0.12, -0.42, 0.08981145, 0)
+
+[node name="Tripulante2" parent="." unique_id=2026993302 instance=ExtResource("3_tripulante")]
+transform = Transform3D(0.12, 0, 0, 0, 0.12, 0, 0, 0, 0.12, -0.14, 0.08981145, 0)
+
+[node name="Tripulante3" parent="." unique_id=2026993303 instance=ExtResource("3_tripulante")]
+transform = Transform3D(0.12, 0, 0, 0, 0.12, 0, 0, 0, 0.12, 0.14, 0.08981145, 0)
+esta_sentada = true
+
+[node name="Tripulante4" parent="." unique_id=2026993304 instance=ExtResource("3_tripulante")]
+transform = Transform3D(0.12, 0, 0, 0, 0.12, 0, 0, 0, 0.12, 0.42, 0.08981145, 0)
+esta_sentada = true
+

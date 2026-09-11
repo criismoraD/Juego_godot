@@ -123,7 +123,7 @@ func _on_body_entered(body: Node3D) -> void:
 	_desaparecer()
 
 
-func _invocar_perrena(player_ref: Node3D) -> void:
+func _invocar_perrena(_player_ref: Node3D) -> void:
 	var root: Node = get_parent() if get_parent() else (get_tree().current_scene if get_tree().current_scene else get_tree().root)
 	var scene_to_instantiate: PackedScene = DEFENSORA_PERRENA_SCENE
 	if not scene_to_instantiate or not scene_to_instantiate.can_instantiate():

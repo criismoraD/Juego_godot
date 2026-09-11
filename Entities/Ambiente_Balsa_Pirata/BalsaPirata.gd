@@ -1,62 +1,64 @@
-class_name CanoaAliada
+class_name BalsaPirata
 extends Node3D
-## Canoa aliada de ambientación: flota sobre el agua con un vaivén suave y continuo.
+## Balsa pirata de ambientación: flota sobre el agua con vaivén continuo
+## y puede navegar a lo largo del eje X hacia un punto de parada.
 ##
-## El modelo GLB no trae animaciones horneadas, por lo que el movimiento se genera
-## por código combinando oscilaciones sinusoidales desfasadas:
-##   - Flotación (Y): sube y baja respecto a la línea de flotación.
-##   - Balanceo (Roll Z): se mece de costado.
+## Al igual que la Canoa Aliada, el modelo GLB no trae animaciones horneadas,
+## por lo que la flotación se genera por código mediante ondas sinusoidales:
+##   - Flotación (Y): oscilación vertical respecto a la línea de flotación.
+##   - Balanceo (Roll Z): mecida lateral.
 ##   - Cabeceo (Pitch X): proa y popa suben alternadamente.
-##   - Deriva (X/Z): se desplaza lentamente dentro del cauce.
-##   - Guinada (Yaw Y): gira muy despacio sobre la superficie.
+##   - Deriva (X/Z): leve oscilación por corrientes de agua.
+##   - Guinada (Yaw Y): giro suave sobre la superficie.
 ##
-## La lógica matemática vive en funciones puras (calcular_desplazamiento /
-## calcular_rotacion_grados) para poder testearse unitariamente sin árbol de nodos.
+## Permite desplazamiento guiado en X hacia un punto de parada mediante `navegar_hacia_x()`,
+## emitiendo la señal `destino_alcanzado` al llegar y manteniendo la flotación.
 
 # === SEÑALES ===
 signal destino_alcanzado
 
 # === CONSTANTES ===
 const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase aleatoria
+const UMBRAL_LLEGADA_X: float = 0.05  ## Tolerancia en metros para considerar destino alcanzado
 
 # === FLOTACIÓN VERTICAL (Y) ===
 @export_category("Flotación Vertical (Y)")
-@export var amplitud_flotacion: float = 0.05  ## Amplitud del sube y baja sobre el agua (metros)
-@export var frecuencia_flotacion: float = 0.35  ## Velocidad de la oscilación vertical (Hz)
+@export var amplitud_flotacion: float = 0.06  ## Amplitud del sube y baja sobre el agua (metros)
+@export var frecuencia_flotacion: float = 0.32  ## Velocidad de oscilación vertical (Hz)
 
 # === BALANCEO DE COSTADO (ROLL Z) ===
 @export_category("Balanceo Lateral (Roll Z)")
-@export var amplitud_balanceo: float = 2.5  ## Amplitud del balanceo lateral (grados)
-@export var frecuencia_balanceo: float = 0.28  ## Velocidad del balanceo (Hz)
+@export var amplitud_balanceo: float = 2.2  ## Amplitud del balanceo lateral (grados)
+@export var frecuencia_balanceo: float = 0.25  ## Velocidad del balanceo (Hz)
 
 # === CABECEO PROA-POPA (PITCH X) ===
 @export_category("Cabeceo Frontal (Pitch X)")
-@export var amplitud_cabeceo: float = 1.5  ## Amplitud del cabeceo proa-popa (grados)
-@export var frecuencia_cabeceo: float = 0.42  ## Velocidad del cabeceo (Hz)
+@export var amplitud_cabeceo: float = 1.8  ## Amplitud del cabeceo frontal (grados)
+@export var frecuencia_cabeceo: float = 0.38  ## Velocidad del cabeceo (Hz)
 
 # === DERIVA HORIZONTAL (X / Z) ===
 @export_category("Deriva Horizontal")
-@export var amplitud_deriva_x: float = 0.05  ## Amplitud de la deriva a lo largo del cauce (metros)
-@export var frecuencia_deriva_x: float = 0.12  ## Velocidad de la deriva en X (Hz)
-@export var amplitud_deriva_z: float = 0.04  ## Amplitud de la deriva transversal (metros)
-@export var frecuencia_deriva_z: float = 0.09  ## Velocidad de la deriva en Z (Hz)
+@export var amplitud_deriva_x: float = 0.04  ## Amplitud de la deriva por corriente (metros)
+@export var frecuencia_deriva_x: float = 0.10  ## Velocidad de la deriva en X (Hz)
+@export var amplitud_deriva_z: float = 0.05  ## Amplitud de la deriva transversal (metros)
+@export var frecuencia_deriva_z: float = 0.08  ## Velocidad de la deriva en Z (Hz)
 
 # === GUINADA (YAW Y) ===
 @export_category("Guinada (Yaw Y)")
-@export var amplitud_guinada: float = 2.0  ## Amplitud del giro lento sobre el agua (grados)
-@export var frecuencia_guinada: float = 0.15  ## Velocidad de la guinada (Hz)
+@export var amplitud_guinada: float = 1.6  ## Amplitud del giro lento sobre el agua (grados)
+@export var frecuencia_guinada: float = 0.12  ## Velocidad de la guinada (Hz)
 
-# === COMPORTAMIENTO ===
+# === COMPORTAMIENTO Y NAVEGACIÓN ===
 @export_category("Comportamiento")
 @export var capa_visual: int = 2  ## Capa de renderizado (Fondo = 2)
 @export var flotar_al_iniciar: bool = true  ## Si true, comienza a flotar desde el primer frame
 @export var escala_tiempo: float = 1.0  ## Multiplicador global de la velocidad de animación
-@export var fase_flotacion: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
-@export var fase_balanceo: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
-@export var fase_cabeceo: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
-@export var fase_deriva_x: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
-@export var fase_deriva_z: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
-@export var fase_guinada: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
+@export var fase_flotacion: float = FASE_ALEATORIA
+@export var fase_balanceo: float = FASE_ALEATORIA
+@export var fase_cabeceo: float = FASE_ALEATORIA
+@export var fase_deriva_x: float = FASE_ALEATORIA
+@export var fase_deriva_z: float = FASE_ALEATORIA
+@export var fase_guinada: float = FASE_ALEATORIA
 
 # === ESTADO PRIVADO ===
 var _tiempo: float = 0.0
@@ -76,10 +78,19 @@ var _velocidad_navegacion: float = 0.0
 var _direccion_navegacion: float = 1.0
 
 
+const MAT_BALSA: Material = preload("res://TEST_/Balsa piarata/Balsa piarata_MAT.tres")
+
+# === ROTACIÓN Y ORIENTACIÓN ===
+@export_category("Orientación")
+@export var rotacion_y_proa: float = 180.0  ## Grados Y para que la balsa apunte hacia la izquierda
+
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
+	if not is_zero_approx(rotacion_y_proa) and is_zero_approx(rotation_degrees.y):
+		rotation_degrees.y = rotacion_y_proa
 	_posicion_base = position
 	_rotacion_base = rotation_degrees
+	_asegurar_materiales()
 	_inicializar_fases()
 	_aplicar_capa_visual_recursiva(self)
 	_flotando = flotar_al_iniciar
@@ -103,7 +114,7 @@ func _process(delta: float) -> void:
 # === FUNCIONES PÚBLICAS ===
 ## Ordena a todos los tripulantes a bordo que comiencen el combate estético.
 func iniciar_combate_tripulacion() -> void:
-	for hijo in find_children("*", "TripulanteBarcoFondoAllyArcher", true, false):
+	for hijo in find_children("*", "TripulanteBarcoFondoGoblinGirl", true, false):
 		if hijo.has_method("iniciar_combate"):
 			hijo.iniciar_combate()
 
@@ -123,9 +134,35 @@ func detener_navegacion() -> void:
 	_navegando = false
 
 
-## Indica si la canoa está en movimiento horizontal hacia su destino.
+## Indica si la balsa está en movimiento horizontal hacia su destino.
 func esta_navegando() -> bool:
 	return _navegando
+
+
+## Inicia (o reanuda) el vaivén de la balsa.
+func flotar() -> void:
+	_flotando = true
+	set_process(true)
+
+
+## Detiene el vaivén y devuelve la balsa a su transformada base.
+func detener() -> void:
+	_flotando = false
+	_navegando = false
+	set_process(false)
+	_restaurar_transformada_base()
+
+
+## Indica si la balsa se está meciendo actualmente sobre el agua.
+func esta_flotando() -> bool:
+	return _flotando
+
+
+## Reinicia el ciclo de flotación desde cero, regenerando las fases aleatorias.
+func reiniciar() -> void:
+	_tiempo = 0.0
+	_inicializar_fases()
+	_restaurar_transformada_base()
 
 
 ## Fija la posición base (sin desfase sinusoidal).
@@ -137,31 +174,6 @@ func fijar_posicion_base(nueva_pos: Vector3) -> void:
 ## Retorna la posición base actual.
 func obtener_posicion_base() -> Vector3:
 	return _posicion_base
-
-
-## Inicia (o reanuda) el vaivén de la canoa.
-func flotar() -> void:
-	_flotando = true
-	set_process(true)
-
-
-## Detiene el vaivén y devuelve la canoa a su transformada base.
-func detener() -> void:
-	_flotando = false
-	set_process(false)
-	_restaurar_transformada_base()
-
-
-## Indica si la canoa se está moviendo actualmente.
-func esta_flotando() -> bool:
-	return _flotando
-
-
-## Reinicia el ciclo de flotación desde cero, regenerando las fases aleatorias.
-func reiniciar() -> void:
-	_tiempo = 0.0
-	_inicializar_fases()
-	_restaurar_transformada_base()
 
 
 ## Desplazamiento (en metros) respecto a la posición base para un instante dado.
@@ -177,7 +189,7 @@ func calcular_desplazamiento(tiempo: float) -> Vector3:
 	)
 
 
-## Rotación absoluta (en grados) de la canoa para un instante dado.
+## Rotación absoluta (en grados) de la balsa para un instante dado.
 func calcular_rotacion_grados(tiempo: float) -> Vector3:
 	var onda_cabeceo: float = sin(tiempo * frecuencia_cabeceo * TAU + _fase_cabeceo)
 	var onda_guinada: float = sin(tiempo * frecuencia_guinada * TAU + _fase_guinada)
@@ -234,9 +246,20 @@ func _restaurar_transformada_base() -> void:
 	rotation_degrees = _rotacion_base
 
 
+func _asegurar_materiales() -> void:
+	if not MAT_BALSA:
+		return
+	for m in find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		if is_instance_valid(mi) and mi.mesh:
+			for s in range(mi.mesh.get_surface_count()):
+				mi.set_surface_override_material(s, MAT_BALSA)
+
+
 func _aplicar_capa_visual_recursiva(nodo: Node) -> void:
 	if nodo is VisualInstance3D:
 		nodo.layers = capa_visual
 	for hijo in nodo.get_children():
 		_aplicar_capa_visual_recursiva(hijo)
+
 

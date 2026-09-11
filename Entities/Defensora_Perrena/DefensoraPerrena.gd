@@ -535,11 +535,7 @@ func desplegar_hacia_ultimo_piso(start_override_x: float = NAN) -> void:
 	en_fase_escudo_suelo = false
 	scale = Vector3(0.3, 0.3, 0.3)
 
-	# Coordenadas reales de pisos y escaleras de la torre
 	var floor_y: float = 0.185
-	var p1_top_y: float = 1.585
-	var p2_top_y: float = 3.143
-	var p3_top_y: float = 4.58
 
 	var start_x: float = -11.5
 	if not is_nan(start_override_x):
@@ -552,22 +548,9 @@ func desplegar_hacia_ultimo_piso(start_override_x: float = NAN) -> void:
 				start_x = puerta.global_position.x - 2.0
 
 	var p1_ladder_x: float = -7.58
-	var p2_ladder_x: float = -8.33
-	var p3_ladder_x: float = -9.11
-	var p3_escudo_x: float = -8.80
-
-	if get_tree():
-		for esc in get_tree().get_nodes_in_group("escudos"):
-			if is_instance_valid(esc) and esc is Node3D:
-				var e3d := esc as Node3D
-				if e3d.global_position.y > 4.0:
-					p3_escudo_x = e3d.global_position.x - 0.65
-					break
-
 	global_position = Vector3(start_x, floor_y, 0.0)
 
 	var walk_speed: float = 2.8
-	var climb_speed: float = 1.5
 
 	# 1. Correr por el suelo hacia la Escalera 1 (mirando a la derecha)
 	_orientar_modelo_derecha()

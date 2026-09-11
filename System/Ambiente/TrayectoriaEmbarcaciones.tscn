@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://cp4o213v54nyq"]
+
+[ext_resource type="Script" uid="uid://bq4rmn4q6ce3l" path="res://System/Ambiente/ControladorTrayectoriaEmbarcaciones.gd" id="1_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_cubo"]
+size = Vector3(0.5, 0.5, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_verde_fuerte"]
+shading_mode = 0
+albedo_color = Color(0, 0.85, 0.15, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_verde_suave"]
+shading_mode = 0
+albedo_color = Color(0.5, 0.95, 0.6, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rojo_suave"]
+shading_mode = 0
+albedo_color = Color(1, 0.45, 0.45, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rojo_fuerte"]
+shading_mode = 0
+albedo_color = Color(0.85, 0.05, 0.05, 1)
+
+[node name="TrayectoriaEmbarcaciones" type="Node3D" unique_id=2026995000 node_paths=PackedStringArray("punto_verde_fuerte", "punto_verde_suave", "punto_rojo_suave", "punto_rojo_fuerte")]
+script = ExtResource("1_script")
+punto_verde_fuerte = NodePath("PuntoVerdeFuerte")
+punto_verde_suave = NodePath("PuntoVerdeSuave")
+punto_rojo_suave = NodePath("PuntoRojoSuave")
+punto_rojo_fuerte = NodePath("PuntoRojoFuerte")
+
+[node name="PuntoVerdeFuerte" type="Node3D" parent="." unique_id=2026995001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, 0)
+
+[node name="VisualCubo" type="MeshInstance3D" parent="PuntoVerdeFuerte" unique_id=2026995002]
+mesh = SubResource("BoxMesh_cubo")
+surface_material_override/0 = SubResource("StandardMaterial3D_verde_fuerte")
+
+[node name="PuntoVerdeSuave" type="Node3D" parent="." unique_id=2026995003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0, 0)
+
+[node name="VisualCubo" type="MeshInstance3D" parent="PuntoVerdeSuave" unique_id=2026995004]
+mesh = SubResource("BoxMesh_cubo")
+surface_material_override/0 = SubResource("StandardMaterial3D_verde_suave")
+
+[node name="PuntoRojoSuave" type="Node3D" parent="." unique_id=2026995005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0, 0)
+
+[node name="VisualCubo" type="MeshInstance3D" parent="PuntoRojoSuave" unique_id=2026995006]
+mesh = SubResource("BoxMesh_cubo")
+surface_material_override/0 = SubResource("StandardMaterial3D_rojo_suave")
+
+[node name="PuntoRojoFuerte" type="Node3D" parent="." unique_id=2026995007]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 0)
+
+[node name="VisualCubo" type="MeshInstance3D" parent="PuntoRojoFuerte" unique_id=2026995008]
+mesh = SubResource("BoxMesh_cubo")
+surface_material_override/0 = SubResource("StandardMaterial3D_rojo_fuerte")

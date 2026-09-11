@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://cx6g324y2apqr"]
+
+[ext_resource type="Script" path="res://System/Ambiente/FlechaFondoEstetica.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="2_flecha_aliada"]
+[ext_resource type="PackedScene" uid="uid://dqp6bym8k0nbe" path="res://Recursos_Compartidos/FLECHA_ARQUERA_ENEMIGA.glb" id="3_flecha_enemiga"]
+
+[node name="FlechaFondoEstetica" type="Node3D" unique_id=2026996000]
+script = ExtResource("1_script")
+
+[node name="FlechaAliada" parent="." unique_id=2026996001 instance=ExtResource("2_flecha_aliada")]
+transform = Transform3D(0, 0, 0.32, 0, 0.32, 0, -0.32, 0, 0, 0, 0, 0)
+
+[node name="FlechaEnemiga" parent="." unique_id=2026996002 instance=ExtResource("3_flecha_enemiga")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+visible = false

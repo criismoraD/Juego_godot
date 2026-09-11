@@ -46,6 +46,11 @@ _subresources={
 "use_external/fallback_path": "res://Entities/Ambiente_Canoa_Aliada/Canoa_aliada_MAT.tres",
 "use_external/path": "uid://cxcanoamat8aa"
 }
+},
+"nodes": {
+"PATH:Canoa aliada": {
+"mesh_instance/layers": 2
+}
 }
 }
 gltf/naming_version=2

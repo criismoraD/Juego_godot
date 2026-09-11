@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://cx4pa18v52pqr"]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_Canoa_Aliada/TripulanteBarcoFondoAllyArcher.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://p2b8htrp2pqr" path="res://Entities/Aliada_Arquera/ALLY_ARCHER.glb" id="2_fbx"]
+[ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx" id="3_arco"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="4_flecha"]
+
+[node name="TripulanteBarcoFondoAllyArcher" type="Node3D" unique_id=2026997000]
+transform = Transform3D(0.26, 0, 0, 0, 0.26, 0, 0, 0, 0.26, 0, 0, 0)
+script = ExtResource("1_script")
+
+[node name="ArqueraModel" parent="." unique_id=2026997001 instance=ExtResource("2_fbx")]
+transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" index="1" unique_id=2026997002]
+transform = Transform3D(0.5443621, 0.11367677, -0.831112, -0.6149581, 0.72793114, -0.30322152, 0.57052284, 0.6761617, 0.4661642, 7.992484, 21.954773, -47.895996)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
+
+[node name="GEO_ARCO_ANIMADO" parent="ArqueraModel/Armature/Skeleton3D/BoneAttachment3D" unique_id=2026997003 instance=ExtResource("3_arco")]
+transform = Transform3D(-10.309121, 48.793415, 3.5950084, -48.054073, -10.788498, 8.62656, 9.194076, -1.6764345, 49.118793, 1.1440277, 9.669106, 1.8222737)
+
+[node name="BoneAttachment3D2" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" index="2" unique_id=2026997004]
+transform = Transform3D(-0.9522215, -0.28757027, -0.10284379, 0.095800936, -0.60099816, 0.793488, -0.28999245, 0.745724, 0.599833, -8.659384, -16.845058, -48.15678)
+bone_name = "mixamorig_RightHand"
+bone_idx = 44
+
+[node name="FLECHA" parent="ArqueraModel/Armature/Skeleton3D/BoneAttachment3D2" unique_id=2026997005 instance=ExtResource("4_flecha")]
+transform = Transform3D(-4.0137777, -6.6491346, -34.127335, -34.75741, 1.6578741, 3.764851, 0.9012904, 34.322567, -6.793233, -1.4755688, 7.0985928, -0.90393066)
+visible = false
+
+[node name="PuntoDisparo" type="Marker3D" parent="." unique_id=2026997006]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.35, 0)
+
+[editable path="ArqueraModel"]

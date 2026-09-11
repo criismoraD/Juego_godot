@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://cb5y72av34xqr"]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_Balsa_Pirata/TripulanteBarcoFondoGoblinGirl.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://d3fyi28xp1rlq" path="res://Entities/Enemigo_Goblin_Girl/GEO_GOBLIN_GIRL.fbx" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="3_arco"]
+[ext_resource type="PackedScene" uid="uid://dcri1fif5ky1b" path="res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn" id="4_flecha"]
+
+[node name="TripulanteBarcoFondoGoblinGirl" type="Node3D" unique_id=2026998000]
+transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 0, 0, 0)
+script = ExtResource("1_script")
+
+[node name="GOBLING_GIRL" parent="." unique_id=2026998001 instance=ExtResource("2_model")]
+transform = Transform3D(-2.8412401e-08, 0, -0.65, 0, 0.65, 0, 0.65, 0, -2.8412401e-08, 0, 0, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="GOBLING_GIRL/Armature/Skeleton3D" index="1" unique_id=2026998002]
+transform = Transform3D(0.58805263, -0.17591457, -0.7894615, -0.76240957, 0.20532814, -0.61365485, 0.27004942, 0.96275365, -0.013375133, -0.058742337, 0.6710198, 0.28443295)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 14
+
+[node name="ARCO_GOBLING_GIRL" parent="GOBLING_GIRL/Armature/Skeleton3D/BoneAttachment3D" unique_id=2026998003 instance=ExtResource("3_arco")]
+transform = Transform3D(-0.06903357, 0.43095386, -0.30941585, -0.53010255, -0.043545067, 0.057621278, 0.021231018, 0.3140185, 0.43262768, -0.011926025, 0.08673817, 0.028724045)
+
+[node name="BoneAttachment3D2" type="BoneAttachment3D" parent="GOBLING_GIRL/Armature/Skeleton3D" index="2" unique_id=2026998004]
+transform = Transform3D(0.58805263, -0.17591457, -0.7894615, -0.76240957, 0.20532814, -0.61365485, 0.27004942, 0.96275365, -0.013375133, -0.058742337, 0.6710198, 0.28443295)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 14
+
+[node name="FlechaMano" parent="GOBLING_GIRL/Armature/Skeleton3D/BoneAttachment3D2" unique_id=2026998005 instance=ExtResource("4_flecha")]
+transform = Transform3D(0.3250797, -0.94345254, -0.06497976, 0.9426408, 0.31775385, 0.10229192, -0.07586021, -0.0945057, 0.99263036, -0.17025515, -0.2789243, 0.07252851)
+visible = false
+
+[node name="PuntoDisparo" type="Marker3D" parent="." unique_id=2026998006]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.28, 0)
+
+[editable path="GOBLING_GIRL"]

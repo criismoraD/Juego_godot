@@ -245,3 +245,39 @@ func test_escena_canoa_tiene_script_y_modelo() -> void:
 	assert_true(canoa is CanoaAliada, "La raíz de la escena debe ser de tipo CanoaAliada")
 	assert_not_null(canoa.get_node_or_null("CanoaAliadaModel"), "Debe contener el modelo GLB como hijo")
 	assert_true(canoa.esta_flotando(), "Por defecto la canoa flota al iniciar")
+
+
+# === NAVEGACIÓN ===
+func test_navegar_hacia_x_desplaza_canoa_hacia_derecha() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	canoa.fijar_posicion_base(Vector3(-14.0, 0.0, 0.0))
+	canoa.navegar_hacia_x(-6.5, 2.0)
+
+	# Act: Simular un paso de 1 segundo a velocidad 2.0 hacia la derecha
+	canoa._actualizar_navegacion(1.0)
+
+	# Assert
+	assert_almost_eq(canoa.obtener_posicion_base().x, -12.0, MARGEN_FLOAT, "La canoa debe avanzar hacia la derecha (+X)")
+	assert_true(canoa.esta_navegando(), "Debe continuar navegando hacia -6.5")
+
+	canoa.free()
+
+
+func test_canoa_alcanza_destino_y_emite_senal() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	canoa.fijar_posicion_base(Vector3(-7.0, 0.0, 0.0))
+	canoa.navegar_hacia_x(-6.5, 2.0)
+	watch_signals(canoa)
+
+	# Act
+	canoa._actualizar_navegacion(1.0)
+
+	# Assert
+	assert_almost_eq(canoa.obtener_posicion_base().x, -6.5, MARGEN_FLOAT, "La posición debe clampearse a -6.5")
+	assert_false(canoa.esta_navegando(), "La canoa debe detenerse")
+	assert_signal_emitted(canoa, "destino_alcanzado", "Debe emitirse destino_alcanzado")
+
+	canoa.free()
+

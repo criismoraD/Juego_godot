@@ -1,4 +1,4 @@
-﻿class_name HachaPerrenaProjectile
+class_name HachaPerrenaProjectile
 extends Area3D
 
 ## Proyectil Hacha de Perrena: vuela en trayectoria parabolica balistica y
@@ -267,7 +267,7 @@ func _es_plataforma_aliada(target: Node) -> bool:
 	return false
 
 
-func _procesar_impacto(target: Node, punto: Vector3, normal: Vector3) -> void:
+func _procesar_impacto(target: Node, punto: Vector3, _normal: Vector3) -> void:
 	if _impacto_procesado or not is_instance_valid(target):
 		return
 
