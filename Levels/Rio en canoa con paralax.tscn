@@ -1,5 +1,134 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bo8yl1ewidg6a"]
 
-[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.tscn" id="1_rio"]
+[ext_resource type="Script" uid="uid://ch6ykigg7guqt" path="res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.gd" id="1_script"]
+[ext_resource type="Environment" uid="uid://dla06m2nrcawf" path="res://Recursos_Compartidos/new_environment.tres" id="2_env"]
+[ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Entities/Ambiente_Agua/WaterPlane.tscn" id="3_water"]
+[ext_resource type="PackedScene" uid="uid://cb5c03pe088q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="4_pez"]
+[ext_resource type="Script" uid="uid://b2nhjsebdynqx" path="res://Levels/Rio_En_Canoa_Con_Parallax/ParallaxFondoRio.gd" id="5_parallax"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn" id="6_canoa"]
+[ext_resource type="Texture2D" uid="uid://drg1ydjilaicb" path="res://TEST_/Fondo nivel 6 atardecer.png" id="7_atardecer"]
+[ext_resource type="Texture2D" uid="uid://2hxi2e56yy0f" path="res://TEST_/Fondo terroso nivel 6.png" id="8_terroso"]
 
-[node name="Rio en canoa con paralax" instance=ExtResource("1_rio")]
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
+dof_blur_far_distance = 55.0
+dof_blur_far_transition = 1.0
+
+[node name="Rio en canoa con paralax" type="Node3D" unique_id=2026999000]
+script = ExtResource("1_script")
+
+[node name="Lighting" type="Node3D" parent="." unique_id=2026999001]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Lighting" unique_id=2026999002]
+transform = Transform3D(0.8290376, 0.3294379, -0.4520935, 0, 0.809017, 0.5877852, 0.5591929, -0.4872958, 0.6707056, -5.7785883, 2.29496, 2.7377172)
+layers = 7
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 0.85
+light_cull_mask = 7
+shadow_enabled = true
+shadow_opacity = 0.8
+shadow_blur = 0.6
+directional_shadow_split_2 = 0.25
+directional_shadow_split_3 = 0.55
+directional_shadow_blend_splits = true
+directional_shadow_fade_start = 0.85
+directional_shadow_max_distance = 65.0
+
+[node name="DirectionalLight3D2" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=2026999003]
+transform = Transform3D(0.37613553, -0.35728383, 0.9424466, 0.18451758, 1.107951, 0.26640055, -0.8248061, 0.084928155, 0.48937958, 11.101227, 3.21533, -2.8423324)
+layers = 7
+light_color = Color(0.76, 0.86, 0.98, 1)
+light_energy = 0.35
+light_cull_mask = 7
+shadow_opacity = 0.0
+shadow_blur = 0.0
+
+[node name="LuzCentroPiso" type="SpotLight3D" parent="Lighting" unique_id=2026999004]
+transform = Transform3D(0.9659258, 0.1294095, -0.2241439, 0, 0.8660254, 0.5, 0.258819, -0.4829629, 0.8365163, 1.5, 4.5, 1.2)
+layers = 7
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.2
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzTorreDiagonal" type="SpotLight3D" parent="Lighting" unique_id=2026999005]
+transform = Transform3D(0.8660254, 0.25, -0.4330127, 0, 0.8660254, 0.5, 0.5, -0.4330127, 0.75, -4.5, 7.5, 3.5)
+layers = 7
+light_color = Color(1, 0.94, 0.82, 1)
+light_energy = 1.35
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 16.0
+spot_angle = 46.0
+spot_angle_attenuation = 1.5
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Lighting" unique_id=2026999006]
+environment = ExtResource("2_env")
+
+[node name="CamaraPrincipal" type="Camera3D" parent="Lighting" unique_id=2026999007]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0599065, 3.265016, 40.971046)
+attributes = SubResource("CameraAttributesPractical_rio")
+projection = 2
+current = true
+fov = 5.0
+size = 0.01
+
+[node name="WaterPlane" parent="." unique_id=2026999008 instance=ExtResource("3_water")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9324427, -0.17290789, -12.304441)
+
+[node name="WaterPlane2" parent="." unique_id=1903931376 instance=ExtResource("3_water")]
+transform = Transform3D(2.176133, 0, 0, 0, 0.964538, -0.29040247, 0, 0.26394403, 1.0612258, -5.9324427, -2.9302492, -73.22456)
+
+[node name="Pez" parent="." unique_id=2026999009 instance=ExtResource("4_pez")]
+transform = Transform3D(0.8114411, 0, 0, 0, 0.8114411, 0, 0, 0, 1, 2.5, -0.6677978, 2.5)
+
+[node name="Pez2" parent="." unique_id=2026999010 instance=ExtResource("4_pez")]
+transform = Transform3D(0.72689563, 0, 0, 0, 0.72689563, 0, 0, 0, 0.85, -2.6435776, -0.5587452, 2.8)
+tiempo_entre_apariciones = 10.0
+direccion_inicial_derecha = true
+
+[node name="ParallaxFondo" type="Node3D" parent="." unique_id=2026999011]
+script = ExtResource("5_parallax")
+
+[node name="CapaAtardecer" type="Node3D" parent="ParallaxFondo" unique_id=2026999020]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
+
+[node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
+transform = Transform3D(2.5, 0, 0, 0, 1.9389358, 0, 0, 0, 1, 0.38863945, 0, -43.294548)
+layers = 3
+pixel_size = 0.005
+texture = ExtResource("7_atardecer")
+
+[node name="Atardecer_1" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999022]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.89449, 0, 0)
+layers = 3
+pixel_size = 0.005
+texture = ExtResource("7_atardecer")
+
+[node name="CapaTerroso" type="Node3D" parent="ParallaxFondo" unique_id=2026999023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -20)
+
+[node name="Terroso_0" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999024]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -45.5904)
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("8_terroso")
+
+[node name="Terroso_1" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999025]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -45.04354)
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("8_terroso")
+
+[node name="Terroso_2" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999026]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -44.533867)
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("8_terroso")
+
+[node name="CanoaProtagonistaRio" parent="." unique_id=2026999012 instance=ExtResource("6_canoa")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -6, -0.28, -7.5)

@@ -1,3 +1,4 @@
+@tool
 class_name ParallaxFondoRio
 extends Node3D
 
@@ -5,6 +6,7 @@ extends Node3D
 ## Gestiona dos capas de profundidad:
 ##   - Fondo lejano: Atardecer (Fondo nivel 6 atardecer) a Z profunda con deriva suave.
 ##   - Fondo intermedio: Rocas y tierra (Fondo terroso nivel 6) en loop continuo horizontal.
+## Permite visualizar y editar los fondos directamente en el editor 3D de Godot.
 
 # === CONSTANTES ===
 const TEX_ATARDECER: Texture2D = preload("res://TEST_/Fondo nivel 6 atardecer.png")
@@ -30,7 +32,7 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 @export var altura_y_atardecer: float = 3.6  ## Cota Y del cielo
 
 @export_category("Renderizado")
-@export var capa_visual: int = 2  ## Capa de renderizado (Fondo = 2)
+@export var capa_visual: int = 3  ## Capa de renderizado (Fondo = 2, Editor = 1, Ambas = 3)
 
 # === VARIABLES PRIVADAS ===
 var _sprites_terroso: Array[Sprite3D] = []
@@ -41,11 +43,15 @@ var _nodo_capa_atardecer: Node3D = null
 
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
-	_construir_capas()
+	_inicializar_capas()
 	_aplicar_capa_visual_recursiva(self)
 
 
 func _process(delta: float) -> void:
+	# En el editor de Godot no desplazamos las capas para permitir al usuario ubicarlas y ajustarlas a gusto
+	if Engine.is_editor_hint():
+		return
+
 	if not activo or delta <= 0.0:
 		return
 
@@ -70,9 +76,34 @@ func set_desplazamiento_activo(nuevo_estado: bool) -> void:
 
 
 # === FUNCIONES PRIVADAS ===
-func _construir_capas() -> void:
-	_construir_capa_atardecer()
-	_construir_capa_terroso()
+func _inicializar_capas() -> void:
+	# 1. Capa Atardecer (cielo lejano)
+	_nodo_capa_atardecer = get_node_or_null("CapaAtardecer") as Node3D
+	if _nodo_capa_atardecer == null:
+		_construir_capa_atardecer()
+	else:
+		altura_y_atardecer = _nodo_capa_atardecer.position.y
+		_sprites_atardecer.clear()
+		for hijo in _nodo_capa_atardecer.get_children():
+			if hijo is Sprite3D:
+				_sprites_atardecer.append(hijo)
+		_sprites_atardecer.sort_custom(func(a: Sprite3D, b: Sprite3D) -> bool: return a.position.x < b.position.x)
+		if _sprites_atardecer.size() >= 2:
+			ancho_segmento_atardecer = abs(_sprites_atardecer[1].position.x - _sprites_atardecer[0].position.x)
+
+	# 2. Capa Terroso (rocas intermedias)
+	_nodo_capa_terroso = get_node_or_null("CapaTerroso") as Node3D
+	if _nodo_capa_terroso == null:
+		_construir_capa_terroso()
+	else:
+		altura_y_terroso = _nodo_capa_terroso.position.y
+		_sprites_terroso.clear()
+		for hijo in _nodo_capa_terroso.get_children():
+			if hijo is Sprite3D:
+				_sprites_terroso.append(hijo)
+		_sprites_terroso.sort_custom(func(a: Sprite3D, b: Sprite3D) -> bool: return a.position.x < b.position.x)
+		if _sprites_terroso.size() >= 2:
+			ancho_segmento_terroso = abs(_sprites_terroso[1].position.x - _sprites_terroso[0].position.x)
 
 
 func _construir_capa_atardecer() -> void:
@@ -178,6 +209,9 @@ func _actualizar_loop_atardecer(delta: float) -> void:
 
 func _aplicar_capa_visual_recursiva(nodo: Node) -> void:
 	if nodo is VisualInstance3D:
-		nodo.layers = capa_visual
+		if Engine.is_editor_hint():
+			nodo.layers = capa_visual | 1
+		else:
+			nodo.layers = capa_visual
 	for hijo in nodo.get_children():
 		_aplicar_capa_visual_recursiva(hijo)

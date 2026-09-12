@@ -124,3 +124,36 @@ func test_canoa_navegacion_hacia_la_derecha() -> void:
 	var pos_base: Vector3 = canoa.call("obtener_posicion_base")
 	assert_almost_eq(pos_base.x, -3.0, MARGEN_FLOAT, "La canoa debe avanzar hacia la derecha (+X)")
 	assert_true(bool(canoa.call("esta_flotando")), "La canoa debe mantener su estado de flotación")
+
+
+# === TESTS DE VISUALIZACIÓN EN EDITOR ===
+func test_parallax_visualizacion_en_editor_y_escena() -> void:
+	# Arrange & Act: Cargar la escena tal como se abre en el editor de Godot
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: Node3D = nivel.find_child("ParallaxFondo", true, false) as Node3D
+	assert_not_null(parallax, "ParallaxFondo debe existir en la escena")
+
+	# Assert: Capas presentes como nodos hijos para manipulación con gizmos en el editor
+	var capa_atardecer := parallax.get_node_or_null("CapaAtardecer") as Node3D
+	var capa_terroso := parallax.get_node_or_null("CapaTerroso") as Node3D
+	assert_not_null(capa_atardecer, "CapaAtardecer debe ser un nodo hijo en la escena para el editor")
+	assert_not_null(capa_terroso, "CapaTerroso debe ser un nodo hijo en la escena para el editor")
+
+	# Assert: Sprites con sus texturas en el árbol del editor
+	var sprites_terroso: Array = parallax.call("obtener_sprites_terroso")
+	var sprites_atardecer: Array = parallax.call("obtener_sprites_atardecer")
+	assert_eq(sprites_terroso.size(), 3, "Debe tener 3 sprites de rocas en la escena")
+	assert_eq(sprites_atardecer.size(), 2, "Debe tener 2 sprites de atardecer en la escena")
+
+	for s in sprites_terroso:
+		var sprite := s as Sprite3D
+		assert_not_null(sprite.texture, "El sprite del terreno debe tener textura asignada en la escena")
+		assert_true(bool(sprite.layers & 1), "El sprite debe ser visible en la capa 1 para el editor")
+
+	for s in sprites_atardecer:
+		var sprite := s as Sprite3D
+		assert_not_null(sprite.texture, "El sprite de atardecer debe tener textura asignada en la escena")
+		assert_true(bool(sprite.layers & 1), "El sprite debe ser visible en la capa 1 para el editor")

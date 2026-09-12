@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://cb5c03pe088q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="4_pez"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/ParallaxFondoRio.gd" id="5_parallax"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn" id="6_canoa"]
+[ext_resource type="Texture2D" uid="uid://drg1ydjilaicb" path="res://TEST_/Fondo nivel 6 atardecer.png" id="7_atardecer"]
+[ext_resource type="Texture2D" uid="uid://2hxi2e56yy0f" path="res://TEST_/Fondo terroso nivel 6.png" id="8_terroso"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
@@ -91,7 +93,57 @@ direccion_inicial_derecha = true
 script = ExtResource("5_parallax")
 velocidad_terroso = 1.0
 factor_atardecer = 0.12
-capa_visual = 2
+capa_visual = 3
+
+[node name="CapaAtardecer" type="Node3D" parent="ParallaxFondo" unique_id=2026999020]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
+
+[node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 0)
+layers = 3
+render_priority = -10
+pixel_size = 0.005
+double_sided = true
+shaded = false
+texture = ExtResource("7_atardecer")
+
+[node name="Atardecer_1" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999022]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 0)
+layers = 3
+render_priority = -10
+pixel_size = 0.005
+double_sided = true
+shaded = false
+texture = ExtResource("7_atardecer")
+
+[node name="CapaTerroso" type="Node3D" parent="ParallaxFondo" unique_id=2026999023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -20)
+
+[node name="Terroso_0" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999024]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 0)
+layers = 3
+render_priority = -5
+pixel_size = 0.0035
+double_sided = true
+shaded = false
+texture = ExtResource("8_terroso")
+
+[node name="Terroso_1" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999025]
+layers = 3
+render_priority = -5
+pixel_size = 0.0035
+double_sided = true
+shaded = false
+texture = ExtResource("8_terroso")
+
+[node name="Terroso_2" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999026]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 0)
+layers = 3
+render_priority = -5
+pixel_size = 0.0035
+double_sided = true
+shaded = false
+texture = ExtResource("8_terroso")
 
 [node name="CanoaProtagonistaRio" parent="." unique_id=2026999012 instance=ExtResource("6_canoa")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -6, -0.28, -7.5)
