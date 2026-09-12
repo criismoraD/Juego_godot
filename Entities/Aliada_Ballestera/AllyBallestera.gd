@@ -38,7 +38,7 @@ var plataforma_asignada: int = 1  ## Plataforma a la que fue asignada la defenso
 @export var tiempo_carga_max: float = 1.3
 @export var tiempo_recarga: float = 0.6
 @export var altura_spawn_flecha: float = 0.95
-@export var punto_pose_disparo: float = 0.35  ## Fracción (0-1) de DISPARO_01 congelada como postura de apuntado al fijarse en el puesto
+@export var punto_pose_disparo: float = 0.0  ## Fracción (0-1) de DISPARO_01 congelada como postura de apuntado (0.0 = pose de guardia inicial antes del retroceso)
 @export var disparos_por_fase: int = 5  ## 5 disparos de pie y luego 5 disparos agachada
 
 @export_category("Tiempos de Espera (Cadencia Lenta)")
@@ -99,6 +99,8 @@ var _sfx_correr: AudioStreamPlayer = null  ## Loop de armadura mientras corre
 var _sfx_escalera: AudioStreamPlayer = null  ## Loop de pasos mientras trepa (SUBIR_ESCALERA)
 var _fade_escalera_tween: Tween = null  ## Fade out del sonido de escalera (evita corte en seco)
 const SONIDO_CORRER_ARMADURA: String = "res://TEST_/sonido_correr_armadura.wav"
+const STREAM_CORRER_ARMADURA: AudioStream = preload("res://TEST_/sonido_correr_armadura.wav")
+const SHADER_TOON_OUTLINE: Shader = preload("res://System/Shaders/TOON_LINEANEGRA.gdshader")
 const VOLUMEN_CORRER_DB: float = 8.0  ## Fuente muy silenciosa (RMS 0.7%): +8 dB audible sin saturar
 
 var anim_player: AnimationPlayer
@@ -148,6 +150,7 @@ var _spine_bone_idx: int = -1
 var _spine1_bone_idx: int = -1
 var _spine2_bone_idx: int = -1
 var _current_pitch: float = 0.0
+var _aim_weight: float = 0.0  ## Ponderación suave del apuntado del torso (0.0 = pose base, 1.0 = apuntado)
 var _loops_victoria_restantes: int = 0
 
 
@@ -183,6 +186,7 @@ func _ready():
 	if is_zero_approx(global_position.z):
 		global_position.z = plano_profundidad_z
 	_aplicar_prioridad_renderizado(2.0)
+	asegurar_contorno_toon()
 
 	call_deferred("_vincular_escudo_piso")
 	call_deferred("_conectar_eventos_oleada")
@@ -193,6 +197,39 @@ func _aplicar_prioridad_renderizado(offset: float) -> void:
 	for node in find_children("*", "VisualInstance3D", true, false):
 		if node is VisualInstance3D:
 			node.sorting_offset = offset
+
+
+## Asegura que todas las mallas de la ballestera estén registradas en el grupo
+## "outline_meshes" y que sus materiales tengan el shader TOON_LINEANEGRA activo con ancho 20.0.
+func asegurar_contorno_toon() -> void:
+	var shader_outline: Shader = SHADER_TOON_OUTLINE
+	if not shader_outline:
+		return
+
+	for child in find_children("*", "MeshInstance3D", true, false):
+		var mi := child as MeshInstance3D
+		if not mi or mi.name == "SombraMesh":
+			continue
+		if not mi.is_in_group("outline_meshes"):
+			mi.add_to_group("outline_meshes")
+
+		if mi.mesh:
+			for i in range(mi.mesh.get_surface_count()):
+				var mat: Material = mi.get_active_material(i)
+				if mat is StandardMaterial3D:
+					var std_mat := mat as StandardMaterial3D
+					if std_mat.next_pass == null or not (std_mat.next_pass is ShaderMaterial):
+						var outline_mat := ShaderMaterial.new()
+						outline_mat.shader = shader_outline
+						outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+						outline_mat.set_shader_parameter("outline_width", 20.0)
+						std_mat.next_pass = outline_mat
+					elif std_mat.next_pass is ShaderMaterial:
+						var outline_mat := std_mat.next_pass as ShaderMaterial
+						if outline_mat.shader == null:
+							outline_mat.shader = shader_outline
+						outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+						outline_mat.set_shader_parameter("outline_width", 20.0)
 
 
 func _configurar_particulas_pisada() -> void:
@@ -316,7 +353,7 @@ func _particulas_pisada_emitir() -> void:
 func _configurar_sonido_correr() -> void:
 	if _sfx_correr and is_instance_valid(_sfx_correr):
 		return
-	var stream: AudioStream = load(SONIDO_CORRER_ARMADURA)
+	var stream: AudioStream = STREAM_CORRER_ARMADURA
 	if not stream:
 		return
 	_sfx_correr = AudioStreamPlayer.new()
@@ -598,6 +635,26 @@ func _generar_poses_apuntado() -> void:
 		return
 	_extraer_pose_estatica("DISPARO_01", "POSE_APUNTAR", punto_pose_disparo)
 	_extraer_pose_estatica("DISPARO_AGACHADO", "POSE_APUNTAR_AGACHADO", 0.0)
+	_configurar_tiempos_blend_animaciones()
+
+
+## Configura cross-fades suaves entre clips para transiciones fluidas sin tirones
+func _configurar_tiempos_blend_animaciones() -> void:
+	if not anim_player:
+		return
+	_safe_set_blend_time(&"Recargar", &"POSE_APUNTAR", 0.4)
+	_safe_set_blend_time(&"Recargar", &"DISPARO_01", 0.4)
+	_safe_set_blend_time(&"Recargar", &"POSE_APUNTAR_AGACHADO", 0.4)
+	_safe_set_blend_time(&"Recargar", &"DISPARO_AGACHADO", 0.4)
+	_safe_set_blend_time(&"DISPARO_01", &"Recargar", 0.3)
+	_safe_set_blend_time(&"DISPARO_AGACHADO", &"Recargar", 0.3)
+	_safe_set_blend_time(&"POSE_APUNTAR", &"DISPARO_01", 0.08)
+	_safe_set_blend_time(&"POSE_APUNTAR_AGACHADO", &"DISPARO_AGACHADO", 0.08)
+
+
+func _safe_set_blend_time(a1: StringName, a2: StringName, blend: float) -> void:
+	if anim_player and anim_player.has_animation(a1) and anim_player.has_animation(a2):
+		anim_player.set_blend_time(a1, a2, blend)
 
 
 func _extraer_pose_estatica(origen_nombre: String, destino_nombre: String, ratio_tiempo: float) -> void:
@@ -632,20 +689,33 @@ func _extraer_pose_estatica(origen_nombre: String, destino_nombre: String, ratio
 	for track_idx in range(anim_fuente.get_track_count()):
 		var path := anim_fuente.track_get_path(track_idx)
 		var type := anim_fuente.track_get_type(track_idx)
+		var count := anim_fuente.track_get_key_count(track_idx)
+		if count == 0:
+			continue
+
 		var new_track := pose.add_track(type)
 		pose.track_set_path(new_track, path)
 		pose.track_set_interpolation_type(new_track, Animation.INTERPOLATION_LINEAR)
 
-		var count := anim_fuente.track_get_key_count(track_idx)
-		if count == 0:
-			continue
-		var best_k := 0
-		for k in range(count):
-			if anim_fuente.track_get_key_time(track_idx, k) <= t_muestra:
-				best_k = k
-			else:
-				break
-		var val = anim_fuente.track_get_key_value(track_idx, best_k)
+		var val = null
+		match type:
+			Animation.TYPE_POSITION_3D:
+				val = anim_fuente.position_track_interpolate(track_idx, t_muestra)
+			Animation.TYPE_ROTATION_3D:
+				val = anim_fuente.rotation_track_interpolate(track_idx, t_muestra)
+			Animation.TYPE_SCALE_3D:
+				val = anim_fuente.scale_track_interpolate(track_idx, t_muestra)
+			Animation.TYPE_VALUE:
+				val = anim_fuente.value_track_interpolate(track_idx, t_muestra)
+			_:
+				var best_k := 0
+				for k in range(count):
+					if anim_fuente.track_get_key_time(track_idx, k) <= t_muestra:
+						best_k = k
+					else:
+						break
+				val = anim_fuente.track_get_key_value(track_idx, best_k)
+
 		pose.track_insert_key(new_track, 0.0, val)
 		pose.track_insert_key(new_track, 1.0, val)
 
@@ -856,10 +926,17 @@ func _actualizar_rotacion_modelo(delta: float) -> void:
 
 func _actualizar_apuntado_torso(delta: float) -> void:
 	if not skeleton or paralisis_timer > 0.0 or _impacto_timer > 0.0:
-		_restaurar_torso()
-		return
+		_aim_weight = move_toward(_aim_weight, 0.0, delta * 5.0)
+		if _aim_weight <= 0.001:
+			_restaurar_torso()
+			return
 
-	if current_state == State.DYING or current_state == State.DEAD or current_state == State.CELEBRATING or current_state == State.RELOADING:
+	var sin_apuntado: bool = (current_state == State.DYING or current_state == State.DEAD or current_state == State.CELEBRATING or current_state == State.RELOADING)
+	var target_weight: float = 0.0 if sin_apuntado else 1.0
+	_aim_weight = lerpf(_aim_weight, target_weight, 1.0 - exp(-7.5 * delta))
+
+	if _aim_weight <= 0.005 and sin_apuntado:
+		_aim_weight = 0.0
 		_restaurar_torso()
 		return
 
@@ -899,8 +976,8 @@ func _actualizar_apuntado_torso(delta: float) -> void:
 	var smooth_factor: float = 1.0 - exp(-velocidad_seguimiento * delta)
 	_current_pitch = lerpf(_current_pitch, target_pitch, smooth_factor)
 
-	if absf(_current_pitch) > 0.001:
-		# Distribuir la curvatura del torso naturalmente entre las vértebras
+	if absf(_current_pitch) > 0.001 and _aim_weight > 0.005:
+		# Distribuir la curvatura del torso naturalmente entre las vértebras con la ponderación de blend
 		var half_pitch: float = _current_pitch * 0.5
 		var pitch_basis := Basis(Quaternion(Vector3.FORWARD, half_pitch))
 
@@ -908,27 +985,27 @@ func _actualizar_apuntado_torso(delta: float) -> void:
 			skeleton.set_bone_global_pose_override(_spine1_bone_idx, Transform3D.IDENTITY, 0.0, false)
 			var pose1 := skeleton.get_bone_global_pose(_spine1_bone_idx)
 			skeleton.set_bone_global_pose_override(
-				_spine1_bone_idx, Transform3D(pose1.basis * pitch_basis, pose1.origin), 1.0, false
+				_spine1_bone_idx, Transform3D(pose1.basis * pitch_basis, pose1.origin), _aim_weight, false
 			)
 
 			skeleton.set_bone_global_pose_override(_spine2_bone_idx, Transform3D.IDENTITY, 0.0, false)
 			var pose2 := skeleton.get_bone_global_pose(_spine2_bone_idx)
 			skeleton.set_bone_global_pose_override(
-				_spine2_bone_idx, Transform3D(pose2.basis * pitch_basis, pose2.origin), 1.0, false
+				_spine2_bone_idx, Transform3D(pose2.basis * pitch_basis, pose2.origin), _aim_weight, false
 			)
 		elif _spine1_bone_idx != -1:
 			var full_basis := Basis(Quaternion(Vector3.FORWARD, _current_pitch))
 			skeleton.set_bone_global_pose_override(_spine1_bone_idx, Transform3D.IDENTITY, 0.0, false)
 			var pose1 := skeleton.get_bone_global_pose(_spine1_bone_idx)
 			skeleton.set_bone_global_pose_override(
-				_spine1_bone_idx, Transform3D(pose1.basis * full_basis, pose1.origin), 1.0, false
+				_spine1_bone_idx, Transform3D(pose1.basis * full_basis, pose1.origin), _aim_weight, false
 			)
 		elif _spine_bone_idx != -1:
 			var full_basis := Basis(Quaternion(Vector3.FORWARD, _current_pitch))
 			skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
 			var pose0 := skeleton.get_bone_global_pose(_spine_bone_idx)
 			skeleton.set_bone_global_pose_override(
-				_spine_bone_idx, Transform3D(pose0.basis * full_basis, pose0.origin), 1.0, false
+				_spine_bone_idx, Transform3D(pose0.basis * full_basis, pose0.origin), _aim_weight, false
 			)
 	else:
 		_restaurar_torso()
@@ -1047,14 +1124,13 @@ func _cambiar_estado(nuevo: State):
 		State.RELOADING:
 			objetivo_actual = _obtener_objetivo_prioritario()
 			_reproducir_sonido_recarga()
-			_restaurar_torso()
-			_play_anim(["Recargar", "RECARGAR"], 0.15, 1.0)
+			_play_anim(["Recargar", "RECARGAR"], 0.25, 1.0)
 			var dur_recarga: float = _get_anim_length("Recargar")
 			state_timer = dur_recarga if dur_recarga > 0.1 else tiempo_recarga
 		State.AIMING:
 			if not is_instance_valid(objetivo_actual):
 				objetivo_actual = _obtener_objetivo_prioritario()
-			_fijar_pose_combate(0.25)
+			_fijar_pose_combate(0.38)
 			charge_duration = randf_range(tiempo_carga_min, tiempo_carga_max)
 			state_timer = charge_duration
 		State.SHOOTING:
@@ -1082,7 +1158,7 @@ func _cambiar_estado(nuevo: State):
 			state_timer = maxf(_dur_clip, 0.3)
 
 
-func _fijar_pose_combate(blend_time: float = 0.25) -> void:
+func _fijar_pose_combate(blend_time: float = 0.35) -> void:
 	if not anim_player:
 		return
 	if fase_agachada:
@@ -1795,6 +1871,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	_setup_animation_player()
 	_importar_animaciones_jugador()
 	_restaurar_torso()
+	asegurar_contorno_toon()
 
 	var walk_speed: float = 1.7  ## Punto medio: igual que la mensajera (antes 2.4)
 	var climb_speed: float = 1.1  ## Subida de llegada un poco más lenta
@@ -2257,13 +2334,10 @@ func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
 	if not speech_bubble or not is_instance_valid(speech_bubble):
 		speech_bubble = get_node_or_null("SpeechBubbleComponent")
 	if not speech_bubble:
-		var sb_scene = load("res://Components/Dialogue/SpeechBubbleComponent.tscn")
-		if sb_scene:
-			speech_bubble = sb_scene.instantiate()
-			speech_bubble.name = "SpeechBubbleComponent"
-			add_child(speech_bubble)
-			if "offset_globo" in speech_bubble:
-				speech_bubble.offset_globo = Vector3(0.0, 2.2, 0.0)
+		speech_bubble = SpeechBubbleComponent.new()
+		speech_bubble.name = "SpeechBubbleComponent"
+		speech_bubble.offset_cabeza = Vector3(0.0, 2.2, 0.0)
+		add_child(speech_bubble)
 	if speech_bubble and is_instance_valid(speech_bubble):
 		if GameUI.es_dialogo_defensora_unico(clave_o_texto):
 			GameUI.marcar_dialogo_defensora_dicho(clave_o_texto)

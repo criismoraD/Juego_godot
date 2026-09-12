@@ -188,11 +188,19 @@ var disparo_bloqueado_por_ui: bool = false
 
 ## Cursor de mira personalizado durante la partida
 const TEXTURA_CURSOR_MIRA: String = "res://UI/Icons/Mira_mouse.png"
+const TEXTURA_CURSOR_MIRA_RES: Texture2D = preload("res://UI/Icons/Mira_mouse.png")
+const TEXTURA_SMOKE_FALL: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_2A-2.png")
+const ESCENA_FLECHA_EXPLOSIVA_GLB: PackedScene = preload("res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb")
+const SHADER_TRAYECTORIA_FLECHA: Shader = preload("res://System/Shaders/TRAYECTORIA_FLECHA_PUNTEADA.gdshader")
+const TEXTURA_ICONO_ATURDIMIENTO: Texture2D = preload("res://UI/Icons/Icono_aturdimiento.png")
+
 ## Los cursores de hardware no soportan imágenes grandes (512px): se reduce
 const TAMANO_CURSOR_PX: int = 75
 
 var _textura_cursor_mira: Texture2D = null
 var _cursor_sistema_activo: bool = false
+var _fall_smoke_left: GPUParticles3D = null
+var _fall_smoke_right: GPUParticles3D = null
 
 
 func _notification(what: int) -> void:
@@ -269,6 +277,7 @@ func _ready():
 		spawn_flecha_explosiva = find_child("SpawnPosition_FlechaExplosiva", true, false) as Marker3D
 	_setup_explosive_arrow_visual()
 	_setup_trayectoria_visual()
+	_setup_fall_smoke_particles()
 
 	# Buscar Armature para rotación de escalera
 	armature_node = find_child("Armature", true, false)
@@ -1222,18 +1231,46 @@ func _volumen_impacto_por_caida(dist: float) -> float:
 	var t := clampf((dist - DIST_IMPACTO_MIN) / (DIST_IMPACTO_MAX - DIST_IMPACTO_MIN), 0.0, 1.0)
 	return lerpf(VOL_IMPACTO_MIN_DB, VOL_IMPACTO_MAX_DB, t)
 
-func _spawn_fall_smoke() -> void:
-	var tex: Texture2D = load("res://VFX/Textures/Smoke/Smoke_2A-2.png") as Texture2D
+func _setup_fall_smoke_particles() -> void:
+	if _fall_smoke_left and _fall_smoke_right:
+		return
+
+	var tex: Texture2D = TEXTURA_SMOKE_FALL
 	if not tex:
 		return
+
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_texture = tex
+	mat.particles_anim_h_frames = 6
+	mat.particles_anim_v_frames = 1
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.billboard_keep_scale = true
+
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2(0.72, 0.72)
+	quad.material = mat
+
+	var grad: Gradient = Gradient.new()
+	grad.set_color(0, Color(0.96, 0.94, 0.88, 0.85))
+	grad.set_color(1, Color(0.96, 0.94, 0.88, 0.0))
+	var grad_tex: GradientTexture1D = GradientTexture1D.new()
+	grad_tex.gradient = grad
+
 	for side in [-1, 1]:
 		var puf: GPUParticles3D = GPUParticles3D.new()
+		puf.name = "FallSmoke_" + ("Left" if side < 0 else "Right")
+		puf.top_level = true
 		puf.amount = 3
 		puf.lifetime = 0.65
 		puf.one_shot = true
 		puf.explosiveness = 0.2
 		puf.randomness = 0.3
 		puf.visibility_aabb = AABB(Vector3(-1.5, -1.2, -1.5), Vector3(3, 3, 3))
+
 		var pmat: ParticleProcessMaterial = ParticleProcessMaterial.new()
 		pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
 		pmat.direction = Vector3(side * 0.7, 0.4, 0)
@@ -1247,37 +1284,35 @@ func _spawn_fall_smoke() -> void:
 		pmat.anim_speed_max = 1.1
 		pmat.anim_offset_min = 0.0
 		pmat.anim_offset_max = 0.2
-		var grad: Gradient = Gradient.new()
-		grad.set_color(0, Color(0.96, 0.94, 0.88, 0.85))
-		grad.set_color(1, Color(0.96, 0.94, 0.88, 0.0))
-		var grad_tex: GradientTexture1D = GradientTexture1D.new()
-		grad_tex.gradient = grad
 		pmat.color_ramp = grad_tex
 		pmat.turbulence_enabled = true
 		pmat.turbulence_noise_strength = 0.008
+
 		puf.process_material = pmat
-		var mat: StandardMaterial3D = StandardMaterial3D.new()
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		mat.vertex_color_use_as_albedo = true
-		mat.albedo_texture = tex
-		mat.particles_anim_h_frames = 6
-		mat.particles_anim_v_frames = 1
-		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-		mat.billboard_keep_scale = true
-		var quad: QuadMesh = QuadMesh.new()
-		quad.size = Vector2(0.72, 0.72)
-		quad.material = mat
 		puf.draw_pass_1 = quad
-		get_tree().root.add_child(puf)
-		puf.global_position = global_position + Vector3(side * 0.25, 0.04, 0)
-		puf.emitting = true
-		# Asegurar visibilidad en viewport del juego (capa Frente)
 		puf.layers = 1048575
-		var tw_puf := puf.create_tween()
-		tw_puf.tween_interval(1.2)
-		tw_puf.tween_callback(puf.queue_free)
+		puf.emitting = false
+		add_child(puf)
+
+		if side < 0:
+			_fall_smoke_left = puf
+		else:
+			_fall_smoke_right = puf
+
+
+func _spawn_fall_smoke() -> void:
+	if not _fall_smoke_left or not _fall_smoke_right:
+		_setup_fall_smoke_particles()
+	if not _fall_smoke_left or not _fall_smoke_right:
+		return
+
+	_fall_smoke_left.global_position = global_position + Vector3(-0.25, 0.04, 0)
+	_fall_smoke_left.restart()
+	_fall_smoke_left.emitting = true
+
+	_fall_smoke_right.global_position = global_position + Vector3(0.25, 0.04, 0)
+	_fall_smoke_right.restart()
+	_fall_smoke_right.emitting = true
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1557,7 +1592,7 @@ func _mouse_sobre_control_ui() -> bool:
 ## hardware no soportan 512px) y el hotspot queda en el centro de la mira.
 func _aplicar_cursor_mira() -> void:
 	if _textura_cursor_mira == null:
-		var tex := load(TEXTURA_CURSOR_MIRA) as Texture2D
+		var tex: Texture2D = TEXTURA_CURSOR_MIRA_RES
 		if tex == null:
 			return
 
@@ -2338,7 +2373,7 @@ func _setup_explosive_arrow_visual() -> void:
 	# 2. Si no existía en la escena, instanciarla dinámicamente como respaldo
 	if not explosive_arrow_node and arrow_node and arrow_node.get_parent():
 		var parent_attach = arrow_node.get_parent()
-		var glb_scene = load("res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb") as PackedScene
+		var glb_scene: PackedScene = ESCENA_FLECHA_EXPLOSIVA_GLB
 		if glb_scene:
 			explosive_arrow_node = glb_scene.instantiate() as Node3D
 			explosive_arrow_node.name = "Flecha_Explosiva2"
@@ -2434,7 +2469,7 @@ func _setup_trayectoria_visual() -> void:
 
 	_trajectory_immediate_mesh = ImmediateMesh.new()
 
-	var shader := load("res://System/Shaders/TRAYECTORIA_FLECHA_PUNTEADA.gdshader") as Shader
+	var shader: Shader = SHADER_TRAYECTORIA_FLECHA
 	if shader:
 		var mat := ShaderMaterial.new()
 		mat.shader = shader
@@ -2481,7 +2516,7 @@ func _setup_trayectoria_visual() -> void:
 	# 2. Puntero / Mira de la flecha regular (Sprite3D con Mira mouse.png)
 	var reticle_sprite := Sprite3D.new()
 	reticle_sprite.name = "ReticleSprite"
-	var tex := load(TEXTURA_CURSOR_MIRA) as Texture2D
+	var tex: Texture2D = TEXTURA_CURSOR_MIRA_RES
 	if tex:
 		reticle_sprite.texture = tex
 	reticle_sprite.pixel_size = 0.00075  # Tamaño proporcionado a la escala del mundo (~0.38m)
@@ -2788,13 +2823,7 @@ func _setup_icono_aturdimiento() -> void:
 
 	_icono_aturdimiento = Sprite3D.new()
 	_icono_aturdimiento.name = "IconoAturdimiento"
-	var tex: Texture2D = null
-	if not FileAccess.file_exists("res://UI/Icons/Icono_aturdimiento.png.import"):
-		var img := Image.new()
-		if img.load("res://UI/Icons/Icono_aturdimiento.png") == OK:
-			tex = ImageTexture.create_from_image(img)
-	if not tex:
-		tex = load("res://UI/Icons/Icono_aturdimiento.png") as Texture2D
+	var tex: Texture2D = TEXTURA_ICONO_ATURDIMIENTO
 	_icono_aturdimiento.texture = tex
 	_icono_aturdimiento.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_icono_aturdimiento.pixel_size = 0.0016

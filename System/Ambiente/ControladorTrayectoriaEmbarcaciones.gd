@@ -49,7 +49,7 @@ const ESCENA_BALSA: PackedScene = preload("res://Entities/Ambiente_Balsa_Pirata/
 
 # === SPAWN DE EMBARCACIONES ===
 @export_category("Spawn de Embarcaciones")
-@export var spawn_al_iniciar: bool = true  ## Si true, spawnea canoa y balsa al iniciar el nivel
+@export var spawn_al_iniciar: bool = false  ## Si true, spawnea canoa y balsa al iniciar el nivel (por defecto false, se activa en nivel 5)
 @export var velocidad_canoa: float = 0.8  ## m/s (reducido a la mitad)
 @export var velocidad_balsa: float = 0.7  ## m/s (reducido a la mitad)
 
@@ -85,9 +85,13 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not Engine.is_editor_hint():
+	if not Engine.is_editor_hint() and not _posiciones_iniciadas:
 		return
+	sincronizar_posiciones()
 
+
+## Sincroniza las posiciones Y y Z de todos los puntos de trayectoria.
+func sincronizar_posiciones() -> void:
 	if not sincronizar_y_z_en_editor:
 		return
 
@@ -135,6 +139,25 @@ func _process(_delta: float) -> void:
 
 
 # === FUNCIONES PÚBLICAS (SPAWN Y CONTROL) ===
+## Retorna si hay al menos una embarcación viva instanciada en el nivel.
+func esta_activo() -> bool:
+	return is_instance_valid(_instancia_canoa) or is_instance_valid(_instancia_balsa)
+
+
+## Despawnea y elimina ambas embarcaciones si existen y resetea el combate naval.
+func despawnear_ambas() -> void:
+	if is_instance_valid(_instancia_canoa):
+		_instancia_canoa.queue_free()
+		_instancia_canoa = null
+	if is_instance_valid(_instancia_balsa):
+		_instancia_balsa.queue_free()
+		_instancia_balsa = null
+	_canoa_en_destino = false
+	_balsa_en_destino = false
+	if is_inside_tree():
+		get_tree().call_group("flechas_fondo_esteticas", "queue_free")
+
+
 ## Spawnea ambas embarcaciones en sus puntos de spawn (cubos fuertes) y las despacha.
 func spawnear_ambas() -> void:
 	spawnear_canoa()
@@ -223,6 +246,30 @@ func obtener_canoa() -> CanoaAliada:
 ## Retorna la referencia viva a la Balsa Pirata instanciada.
 func obtener_balsa() -> BalsaPirata:
 	return _instancia_balsa
+
+
+## Ordena la destrucción con explosiones y hundimiento de la balsa pirata enemiga.
+func destruir_balsa_enemiga() -> void:
+	if is_instance_valid(_instancia_balsa) and _instancia_balsa.has_method("destruir_balsa"):
+		_instancia_balsa.destruir_balsa()
+
+
+## Oculta y despawnea inmediatamente la Canoa Aliada para que no aparezca en la cinemática de Perrena ni tras la oleada 5.
+func ocultar_o_despawnear_canoa() -> void:
+	if is_instance_valid(_instancia_canoa):
+		if _instancia_canoa.has_method("ocultar_y_desactivar"):
+			_instancia_canoa.ocultar_y_desactivar()
+		else:
+			_instancia_canoa.visible = false
+		_instancia_canoa.queue_free()
+		_instancia_canoa = null
+	_canoa_en_destino = false
+	if is_inside_tree():
+		get_tree().call_group("flechas_fondo_esteticas", "queue_free")
+
+
+func despawnear_canoa() -> void:
+	ocultar_o_despawnear_canoa()
 
 
 # === FUNCIONES PRIVADAS ===

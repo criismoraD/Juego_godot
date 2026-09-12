@@ -52,6 +52,13 @@ const ESCUDO_ROTO_SCENE: PackedScene = preload("res://Entities/Enemigo_Imp_Escud
 @export var color_borde_disolucion: Color = Color(0.8, 0.2, 0.8)  ## Efecto de disolución con brillo y partículas moradas
 @export var altura_spawn_tridente: float = 0.52
 
+@export_category("Smear Impacto")
+@export var habilitar_smear_impacto: bool = true  ## Activa deformación smear exagerada en el escudo y personaje
+@export var smear_escala_escudo: Vector3 = Vector3(1.75, 1.85, 0.60)  ## Factor de estiramiento y aplanado del escudo en el impacto
+@export var smear_escala_personaje: Vector3 = Vector3(1.45, 0.70, 1.30)  ## Deformación exagerada del cuerpo al absorber el golpe
+@export var smear_retroceso_x: float = 0.12  ## Retroceso instantáneo del modelo en el smear frame (hacia atrás)
+@export var duracion_smear_impacto: float = 0.28  ## Duración total del ciclo elástico de smear
+
 @export_category("Zona de Entrada (Zona Roja)")
 @export var zona_roja_min_x: float = -2.2  ## Límite izquierdo de la zona roja marcada
 @export var zona_roja_max_x: float = 0.2   ## Límite derecho de la zona roja (nunca ataca más a la derecha)
@@ -100,6 +107,12 @@ const VOLUMEN_CORRER_DB: float = -3.5
 const DURACION_FADE_CORRER: float = 0.15
 var _fade_correr_tween: Tween = null  ## Fade out del sonido de correr (evita corte en seco)
 var _sombra: SombraPersonaje = null
+var _orig_model_scale: Vector3 = Vector3.ONE
+var _orig_model_pos: Vector3 = Vector3.ZERO
+var _orig_escudo_scale: Vector3 = Vector3.ONE
+var _orig_escudo_pos: Vector3 = Vector3.ZERO
+var _smear_tween: Tween = null
+var _is_smear_active: bool = false
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS A NODOS
@@ -135,6 +148,7 @@ func _ready() -> void:
 	_setup_audio_correr_descalzo()
 	_setup_sombra()
 	_aplicar_rotacion_modelo()
+	_setup_smear_effect()
 
 	_buscar_enemigo_a_proteger()
 	_cambiar_estado(State.RUNNING)
@@ -247,6 +261,7 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 				particulas_pisada.emitting = false
 			velocity = Vector3.ZERO
 			set_collision_layer_value(3, false)
+			_reset_smear_effect()
 
 			# Restaurar material normal del escudo para que no quede rojo al morir
 			for mesh in _escudo_meshes:
@@ -257,7 +272,6 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 			# Muerte por daño crítico: sonido crítico encima de la muerte normal
 			if murio_por_critico:
 				AudioManager.play_sfx("muerte_critica")
-				murio_por_critico = false
 
 			# Efecto de sangre animada del goblin ballestero al morir
 			_spawn_sangre_animada(global_position)
@@ -569,7 +583,9 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 		murio_por_critico = golpe_critico
 		_cambiar_estado(State.DYING)
 	else:
-		if not golpe_en_escudo:
+		if golpe_en_escudo:
+			_aplicar_smear_impacto()
+		else:
 			_spawn_sangre_no_letal()
 		if current_state == State.DEFENDING:
 			_cambiar_estado(State.SHIELD_HIT)
@@ -611,17 +627,6 @@ func _flash_impacto_escudo_rojo() -> void:
 		_flash_rojo_mat.emission = Color(1.0, 0.0, 0.0)
 		_flash_rojo_mat.emission_energy_multiplier = 3.0
 
-	var escudo: Node3D = find_child("EscudoPesado", true, false) as Node3D
-	if escudo and is_instance_valid(escudo):
-		if not has_meta("_escudo_orig_scale"):
-			set_meta("_escudo_orig_scale", escudo.scale)
-		var _orig_scale: Vector3 = get_meta("_escudo_orig_scale")
-		if _escudo_punch_tween and _escudo_punch_tween.is_valid():
-			_escudo_punch_tween.kill()
-		_escudo_punch_tween = create_tween()
-		_escudo_punch_tween.tween_property(escudo, "scale", _orig_scale * 1.10, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		_escudo_punch_tween.tween_property(escudo, "scale", _orig_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-
 	for mesh in _escudo_meshes:
 		if is_instance_valid(mesh):
 			mesh.material_overlay = _flash_rojo_mat
@@ -631,6 +636,108 @@ func _flash_impacto_escudo_rojo() -> void:
 	for mesh in _escudo_meshes:
 		if is_instance_valid(mesh):
 			mesh.material_overlay = null
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SMEAR DE IMPACTO EN ESCUDO Y PERSONAJE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _setup_smear_effect() -> void:
+	if not model_root or not is_instance_valid(model_root):
+		model_root = find_child("Modelo", true, false) as Node3D
+	if not escudo_node or not is_instance_valid(escudo_node):
+		escudo_node = find_child("EscudoPesado", true, false) as Node3D
+	if model_root and is_instance_valid(model_root):
+		_orig_model_scale = model_root.scale
+		_orig_model_pos = model_root.position
+	if escudo_node and is_instance_valid(escudo_node):
+		_orig_escudo_scale = escudo_node.scale
+		_orig_escudo_pos = escudo_node.position
+
+
+func _aplicar_smear_impacto() -> void:
+	if not habilitar_smear_impacto:
+		return
+
+	if _smear_tween and _smear_tween.is_valid():
+		_smear_tween.kill()
+
+	_is_smear_active = true
+
+	# Asegurar que las referencias y escalas base estén listas
+	if _orig_model_scale == Vector3.ONE and model_root:
+		_setup_smear_effect()
+
+	# Calcular objetivos de escala deformada (smear frame exagerado)
+	var smear_model_val: Vector3 = Vector3(
+		_orig_model_scale.x * smear_escala_personaje.x,
+		_orig_model_scale.y * smear_escala_personaje.y,
+		_orig_model_scale.z * smear_escala_personaje.z
+	)
+	var smear_model_pos: Vector3 = _orig_model_pos + Vector3(smear_retroceso_x, 0.0, 0.0)
+
+	var smear_escudo_val: Vector3 = Vector3(
+		_orig_escudo_scale.x * smear_escala_escudo.x,
+		_orig_escudo_scale.y * smear_escala_escudo.y,
+		_orig_escudo_scale.z * smear_escala_escudo.z
+	)
+
+	# Rebote elástico intermedio con overshoot reactivo
+	var rebote_model_val: Vector3 = Vector3(
+		_orig_model_scale.x * 0.88,
+		_orig_model_scale.y * 1.15,
+		_orig_model_scale.z * 0.92
+	)
+	var rebote_model_pos: Vector3 = _orig_model_pos - Vector3(smear_retroceso_x * 0.25, 0.0, 0.0)
+
+	var rebote_escudo_val: Vector3 = Vector3(
+		_orig_escudo_scale.x * 0.90,
+		_orig_escudo_scale.y * 0.90,
+		_orig_escudo_scale.z * 1.12
+	)
+
+	# Fase 0: Aplicar instantáneamente el smear frame en el impacto
+	if model_root and is_instance_valid(model_root):
+		model_root.scale = smear_model_val
+		model_root.position = smear_model_pos
+	if escudo_node and is_instance_valid(escudo_node):
+		escudo_node.scale = smear_escudo_val
+
+	_smear_tween = create_tween()
+	# 1. Retención breve del smear frame para máxima legibilidad óptica (0.045s)
+	_smear_tween.tween_interval(0.045)
+
+	# 2. Rebote elástico con overshoot (0.11s)
+	if model_root and is_instance_valid(model_root):
+		_smear_tween.parallel().tween_property(model_root, "scale", rebote_model_val, 0.11).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_smear_tween.parallel().tween_property(model_root, "position", rebote_model_pos, 0.11).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if escudo_node and is_instance_valid(escudo_node):
+		_smear_tween.parallel().tween_property(escudo_node, "scale", rebote_escudo_val, 0.11).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	# 3. Asentamiento suave a la escala y posición original (0.13s)
+	if model_root and is_instance_valid(model_root):
+		_smear_tween.chain().tween_property(model_root, "scale", _orig_model_scale, 0.13).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_smear_tween.parallel().tween_property(model_root, "position", _orig_model_pos, 0.13).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if escudo_node and is_instance_valid(escudo_node):
+		_smear_tween.parallel().tween_property(escudo_node, "scale", _orig_escudo_scale, 0.13).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	_smear_tween.tween_callback(func():
+		_is_smear_active = false
+		_reset_smear_effect()
+	)
+
+
+func _reset_smear_effect() -> void:
+	if _smear_tween and _smear_tween.is_valid():
+		_smear_tween.kill()
+	_is_smear_active = false
+	if model_root and is_instance_valid(model_root):
+		model_root.scale = _orig_model_scale
+		model_root.position = _orig_model_pos
+	if escudo_node and is_instance_valid(escudo_node):
+		escudo_node.scale = _orig_escudo_scale
+		escudo_node.position = _orig_escudo_pos
+
 
 
 func _spawn_sangre() -> void:
@@ -703,8 +810,8 @@ func _soltar_escudo_pesado(por_explosion: bool = false) -> void:
 	if not escudo:
 		return
 
-	# Matar el punch de escala en vuelo: reaplicaría la escala local x100
-	# bajo el contenedor normalizado y agigantaría el escudo caído
+	# Resetear smear y matar cualquier tween de escala activo para restaurar escala base
+	_reset_smear_effect()
 	if _escudo_punch_tween and _escudo_punch_tween.is_valid():
 		_escudo_punch_tween.kill()
 		_escudo_punch_tween = null
@@ -1055,9 +1162,11 @@ func _setup_audio_correr_descalzo() -> void:
 		var stream_mp3 = stream as AudioStreamMP3
 		if stream_mp3:
 			stream_mp3.loop = true
-		# NOTA: el WAV importado trae loop_mode=0 y loop_end sin inicializar;
-		# forzar LOOP_FORWARD en runtime loopea sobre rango vacío = silencio.
-		# El encadenado se hace con finished -> play (ver más abajo).
+		var stream_wav = stream as AudioStreamWAV
+		if stream_wav:
+			stream_wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			if stream_wav.loop_end <= 0:
+				stream_wav.loop_end = stream_wav.data.size()
 		_audio_correr_descalzo = AudioStreamPlayer3D.new()
 		_audio_correr_descalzo.name = "AudioCorrerDescalzo"
 		_audio_correr_descalzo.stream = stream

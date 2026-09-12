@@ -33,6 +33,7 @@ var _activa: bool = false
 
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
+	add_to_group("flechas_fondo_esteticas")
 	_aplicar_capa_visual_recursiva(self)
 	_actualizar_variante_visual()
 

@@ -614,8 +614,9 @@ idle_max = 2.0
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.092516, -0.20376292, 3.083572)
 
-[node name="TrayectoriaEmbarcaciones" parent="." unique_id=2026995100 instance=ExtResource("71_trayectoria_embarcaciones")]
+[node name="TrayectoriaEmbarcaciones" parent="." unique_id=2026995100 unique_name_in_owner=true instance=ExtResource("71_trayectoria_embarcaciones")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.29578602, -8.134172)
+spawn_al_iniciar = false
 velocidad_canoa = 1.6
 velocidad_balsa = 1.4
 

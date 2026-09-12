@@ -27,9 +27,10 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
 @export_range(1.0, 1.4, 0.01) var escala_cobertura_fondo_animado: float = 1.18
-@export var limitar_fps_subviewport_fondo_3d: bool = true
+@export var limitar_fps_subviewport_fondo_3d: bool = false
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
 @export var pausar_video_fondo_en_combate: bool = true
+const AUDIO_DEFENSORAS_ENTRADA: AudioStream = preload("res://TEST_/Defensoras entrada.wav")
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === MODO TUTORIAL ===
@@ -361,6 +362,10 @@ func _ready():
 			6: total_continuar = total_enemigos_oleada_6
 		_configurar_oleada_combate(total_continuar, oleada_continuar)
 
+		_forzar_refresco_outline_global()
+		if is_instance_valid(game_ui) and game_ui.has_method("_forzar_outline_en_runtime"):
+			game_ui._forzar_outline_en_runtime(true)
+
 		if wave_spawner and not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
 			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
 		return
@@ -593,12 +598,12 @@ func _configurar_render_subviewports() -> void:
 		)
 
 	if subviewport_medio_3d:
-		subviewport_medio_3d.msaa_3d = Viewport.MSAA_2X
+		subviewport_medio_3d.msaa_3d = Viewport.MSAA_DISABLED
 		subviewport_medio_3d.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 		subviewport_medio_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 	if subviewport_frente_3d:
-		subviewport_frente_3d.msaa_3d = Viewport.MSAA_2X
+		subviewport_frente_3d.msaa_3d = Viewport.MSAA_DISABLED
 		subviewport_frente_3d.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 		subviewport_frente_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
@@ -760,11 +765,10 @@ func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
 
 
 func _forzar_refresco_outline_global() -> void:
-	# Mantiene compatibilidad con versiones antiguas del shader que dependen de un global uniform.
-	ShaderGlobals.asegurar_outline_global(true)
-
 	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
 		push_warning("[NIVEL01] No se encontró TOON_LINEANEGRA.gdshader para refresco.")
+		ShaderGlobals.asegurar_outline_global(true)
+		ShaderGlobals.asegurar_outline_proyectiles(true)
 		return
 
 	var shader_outline := ResourceLoader.load(
@@ -772,6 +776,11 @@ func _forzar_refresco_outline_global() -> void:
 	)
 	if shader_outline == null:
 		push_warning("[NIVEL01] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
+
+	# IMPORTANTE: Asegurar parámetros globales del shader DESPUÉS de recargar el recurso
+	# para evitar que tomen los valores por defecto (false en project.godot)
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
 
 
 func _mostrar_dialogo_inicio_protagonista():
@@ -1147,6 +1156,10 @@ func _aplicar_perfil_render_combate() -> void:
 
 func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
 	estado_actual = NivelEstado.NIVEL_1
+
+	# Asegurar que el contorno toon global siempre esté activo en cada oleada de combate
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
 
 	# Si se avanza a la oleada 2, 3 o 4 (o cualquier otra oleada que no sea la inicial), remover instrucciones
 	if numero_oleada > 1:
@@ -2778,6 +2791,8 @@ func _iniciar_mensajera_oleada_5() -> void:
 	ballestera.global_position = start_pos
 	ballestera._setup_animation_player()
 	ballestera._importar_animaciones_jugador()
+	if ballestera.has_method("asegurar_contorno_toon"):
+		ballestera.asegurar_contorno_toon()
 
 	# SFX: Defensoras entrada - mensajera corriendo
 	_reproducir_defensoras_entrada_sfx()
@@ -2890,7 +2905,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 
 ## Despliega 2 defensoras de ballesta móviles que caminan y escalan a las plataformas 1 y 3
 func _reproducir_defensoras_entrada_sfx() -> void:
-	var defensores_stream: AudioStream = load("res://TEST_/Defensoras entrada.wav") as AudioStream
+	var defensores_stream: AudioStream = AUDIO_DEFENSORAS_ENTRADA
 	if defensores_stream:
 		var defensores_player := AudioStreamPlayer.new()
 		defensores_player.stream = defensores_stream
@@ -2928,6 +2943,8 @@ func _desplegar_defensoras_moviles_plataformas() -> void:
 		add_child(defensora)
 		defensora.scale = Vector3(0.3, 0.3, 0.3)
 		defensora.global_position = start_pos
+		if defensora.has_method("asegurar_contorno_toon"):
+			defensora.asegurar_contorno_toon()
 
 		_reproducir_defensoras_entrada_sfx()
 		defensora.desplegar_a_plataforma(idx_plat)

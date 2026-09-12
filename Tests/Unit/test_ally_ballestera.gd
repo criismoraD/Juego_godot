@@ -347,4 +347,90 @@ func test_escena_contiene_hitbox_body_y_shape():
 	assert_true(col.shape is Shape3D, "La forma debe ser un recurso Shape3D editable")
 
 
+func test_ballestera_registra_mallas_en_grupo_outline_meshes() -> void:
+	# Arrange & Act: Instanciar ballestera como se hace al desplegar refuerzos
+	var escena_packed: PackedScene = load("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
+	var defensora: AllyBallestera = escena_packed.instantiate() as AllyBallestera
+	add_child_autofree(defensora)
+
+	# Assert: Todas las mallas principales (cuerpo y ballesta) deben estar en el grupo outline_meshes
+	var mallas_encontradas: int = 0
+	for child in defensora.find_children("*", "MeshInstance3D", true, false):
+		var mi := child as MeshInstance3D
+		if mi.name == "SombraMesh":
+			continue
+		mallas_encontradas += 1
+		assert_true(
+			mi.is_in_group("outline_meshes"),
+			"La malla %s de AllyBallestera debe pertenecer al grupo outline_meshes" % mi.name
+		)
+	assert_gt(mallas_encontradas, 0, "AllyBallestera debe tener al menos una MeshInstance3D visible")
+
+
+func test_ballestera_asegura_contorno_toon_en_ready_y_despliegue() -> void:
+	# Arrange: Instanciar ballestera
+	var escena_packed: PackedScene = load("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
+	var defensora: AllyBallestera = escena_packed.instantiate() as AllyBallestera
+	add_child_autofree(defensora)
+
+	# Act: Ejecutar asegurar_contorno_toon explícitamente y verificar materiales
+	defensora.asegurar_contorno_toon()
+
+	# Assert: Comprobar que los materiales activos tienen next_pass con TOON_LINEANEGRA y ancho 20.0
+	for child in defensora.find_children("*", "MeshInstance3D", true, false):
+		var mi := child as MeshInstance3D
+		if mi.name == "SombraMesh" or mi.mesh == null:
+			continue
+		for s in range(mi.mesh.get_surface_count()):
+			var mat = mi.get_active_material(s)
+			if mat is StandardMaterial3D:
+				var std_mat := mat as StandardMaterial3D
+				assert_not_null(std_mat.next_pass, "El material de la malla %s debe tener next_pass" % mi.name)
+				assert_true(std_mat.next_pass is ShaderMaterial, "next_pass debe ser ShaderMaterial")
+				var sm := std_mat.next_pass as ShaderMaterial
+				assert_eq(
+					float(sm.get_shader_parameter("outline_width")),
+					20.0,
+					"outline_width debe ser 20.0 en la malla %s" % mi.name
+				)
+				assert_eq(
+					sm.get_shader_parameter("outline_color"),
+					Color(0, 0, 0, 1),
+					"outline_color debe ser negro opaco en la malla %s" % mi.name
+				)
+
+
+func test_forzar_outline_en_runtime_aplica_a_material_ballestera() -> void:
+	# Arrange: Instanciar GameUI y cargar material de ballestera
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var mat_ballestera: StandardMaterial3D = load("res://Entities/Aliada_Ballestera/BALLESTERA_ALIADA_MAT.tres")
+	assert_not_null(mat_ballestera, "BALLESTERA_ALIADA_MAT.tres debe existir")
+
+	# Corromper o simular outline desactivado en el material
+	var outline_mat := mat_ballestera.next_pass as ShaderMaterial
+	if outline_mat:
+		outline_mat.set_shader_parameter("outline_width", 0.0)
+
+	# Act: Simular lo que ocurre al reintentar o forzar refresco de runtime
+	ui._forzar_outline_en_runtime(true)
+
+	# Assert: El material de la ballestera debe haber sido restaurado con ancho 20.0
+	assert_not_null(mat_ballestera.next_pass, "BALLESTERA_ALIADA_MAT debe conservar next_pass")
+	var sm := mat_ballestera.next_pass as ShaderMaterial
+	assert_eq(
+		float(sm.get_shader_parameter("outline_width")),
+		GameUI.OUTLINE_WIDTH_RUNTIME,
+		"BALLESTERA_ALIADA_MAT debe tener outline_width restablecido a 20.0 por _forzar_outline_en_runtime"
+	)
+	assert_eq(
+		sm.get_shader_parameter("outline_color"),
+		Color(0, 0, 0, 1),
+		"BALLESTERA_ALIADA_MAT debe tener outline_color negro tras forzar outline"
+	)
+
+
+
+
+
 

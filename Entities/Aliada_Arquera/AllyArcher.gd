@@ -58,6 +58,9 @@ var plataforma_asignada: int = 0
 var arrow_scene = preload("res://Entities/Proyectil_Flecha_Aliada/AllyArrow.tscn")
 var explosive_arrow_scene = preload("res://Entities/Flecha_Explosiva/FlechaExplosiva.tscn")
 var dissolve_shader = preload("res://System/Shaders/dissolve.gdshader")
+const SHADER_TOON_OUTLINE: Shader = preload("res://System/Shaders/TOON_LINEANEGRA.gdshader")
+const ESCENA_FLECHA_EXPLOSIVA_GLB: PackedScene = preload("res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb")
+const SHADER_PROYECTIL_LINEA: Shader = preload("res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader")
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
 const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
@@ -154,6 +157,7 @@ func _ready():
 	if is_zero_approx(global_position.z):
 		global_position.z = plano_profundidad_z
 	_aplicar_prioridad_renderizado(-2.0)
+	asegurar_contorno_toon()
 
 	call_deferred("_iniciar")
 	call_deferred("_conectar_eventos_oleada")
@@ -163,6 +167,39 @@ func _aplicar_prioridad_renderizado(offset: float) -> void:
 	for node in find_children("*", "VisualInstance3D", true, false):
 		if node is VisualInstance3D:
 			node.sorting_offset = offset
+
+
+## Asegura que todas las mallas de la arquera estén registradas en el grupo
+## "outline_meshes" y que sus materiales tengan el shader TOON_LINEANEGRA activo con ancho 20.0.
+func asegurar_contorno_toon() -> void:
+	var shader_outline: Shader = SHADER_TOON_OUTLINE
+	if not shader_outline:
+		return
+
+	for child in find_children("*", "MeshInstance3D", true, false):
+		var mi := child as MeshInstance3D
+		if not mi or mi.name == "SombraMesh":
+			continue
+		if not mi.is_in_group("outline_meshes"):
+			mi.add_to_group("outline_meshes")
+
+		if mi.mesh:
+			for i in range(mi.mesh.get_surface_count()):
+				var mat: Material = mi.get_active_material(i)
+				if mat is StandardMaterial3D:
+					var std_mat := mat as StandardMaterial3D
+					if std_mat.next_pass == null or not (std_mat.next_pass is ShaderMaterial):
+						var outline_mat := ShaderMaterial.new()
+						outline_mat.shader = shader_outline
+						outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+						outline_mat.set_shader_parameter("outline_width", 20.0)
+						std_mat.next_pass = outline_mat
+					elif std_mat.next_pass is ShaderMaterial:
+						var outline_mat := std_mat.next_pass as ShaderMaterial
+						if outline_mat.shader == null:
+							outline_mat.shader = shader_outline
+						outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+						outline_mat.set_shader_parameter("outline_width", 20.0)
 
 
 func _configurar_particulas_pisada() -> void:
@@ -463,7 +500,7 @@ func _buscar_arrow_node():
 		var parent_attach = arrow_node.get_parent()
 		explosive_arrow_node = parent_attach.get_node_or_null("FLECHA_EXPLOSIVA_VISUAL") as Node3D
 		if not explosive_arrow_node:
-			var glb_scene = load("res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb") as PackedScene
+			var glb_scene: PackedScene = ESCENA_FLECHA_EXPLOSIVA_GLB
 			if glb_scene:
 				explosive_arrow_node = glb_scene.instantiate() as Node3D
 				explosive_arrow_node.name = "FLECHA_EXPLOSIVA_VISUAL"
@@ -1566,7 +1603,7 @@ func _aplicar_material_celeste_flecha(nodo: Node) -> void:
 	mat.emission_energy_multiplier = energia_emision
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
-	var outline_shader = load("res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader") as Shader
+	var outline_shader: Shader = SHADER_PROYECTIL_LINEA
 	if outline_shader:
 		var outline_mat = ShaderMaterial.new()
 		outline_mat.shader = outline_shader

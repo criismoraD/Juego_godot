@@ -143,3 +143,104 @@ func test_instanciar_escena_balsa_pirata() -> void:
 	assert_not_null(balsa.get_node_or_null("BalsaPirataModel"), "Debe contener el modelo como hijo")
 
 	balsa.free()
+
+
+func test_asegurar_materiales_no_sobrescribe_material_tripulantes() -> void:
+	# Arrange & Act
+	var balsa := ESCENA_BALSA.instantiate() as BalsaPirata
+	add_child_autofree(balsa)
+
+	# Assert
+	var tripulante := balsa.get_node_or_null("Tripulante1") as Node3D
+	assert_not_null(tripulante, "Tripulante1 debe existir en la balsa")
+
+	var meshes_tripulante: Array[Node] = tripulante.find_children("*", "MeshInstance3D", true, false)
+	assert_gt(meshes_tripulante.size(), 0, "El tripulante debe tener mallas 3D")
+	for m in meshes_tripulante:
+		var mi := m as MeshInstance3D
+		if mi and mi.mesh:
+			for s in range(mi.mesh.get_surface_count()):
+				var mat_override := mi.get_surface_override_material(s)
+				assert_ne(
+					mat_override,
+					BalsaPirata.MAT_BALSA,
+					"El tripulante NO debe tener la textura de la balsa asignada en la superficie " + str(s)
+				)
+
+
+func test_destruir_balsa_detiene_movimiento_y_marca_destruida() -> void:
+	# Arrange
+	var balsa := ESCENA_BALSA.instantiate() as BalsaPirata
+	add_child_autofree(balsa)
+	balsa.navegar_hacia_x(10.0, 2.0)
+	watch_signals(balsa)
+
+	# Act
+	balsa.destruir_balsa()
+
+	# Assert
+	assert_true(balsa.esta_destruida(), "La balsa debe reportar esta_destruida = true")
+	assert_false(balsa.esta_flotando(), "La flotación estándar debe haberse detenido")
+	assert_false(balsa.esta_navegando(), "La navegación horizontal debe haberse detenido")
+	assert_signal_emitted(balsa, "balsa_destruida", "Debe emitirse la señal balsa_destruida")
+
+
+func test_destruir_balsa_mata_a_todos_los_tripulantes() -> void:
+	# Arrange
+	var balsa := ESCENA_BALSA.instantiate() as BalsaPirata
+	add_child_autofree(balsa)
+
+	var tripulantes := balsa.find_children("*", "TripulanteBarcoFondoGoblinGirl", true, false)
+	assert_gt(tripulantes.size(), 0, "La balsa debe tener tripulantes goblins")
+	for t in tripulantes:
+		assert_false((t as TripulanteBarcoFondoGoblinGirl).esta_muerta(), "Tripulante debe iniciar viva")
+
+	# Act
+	balsa.destruir_balsa()
+
+	# Assert
+	for t in tripulantes:
+		var trip := t as TripulanteBarcoFondoGoblinGirl
+		assert_true(trip.esta_muerta(), "Todos los tripulantes deben estar muertos tras destruir_balsa")
+		assert_false(trip.esta_en_combate(), "Los tripulantes no deben continuar en combate")
+
+
+func test_destruir_balsa_sustituye_modelo_por_destruido() -> void:
+	# Arrange
+	var balsa := ESCENA_BALSA.instantiate() as BalsaPirata
+	add_child_autofree(balsa)
+
+	# Act
+	balsa.destruir_balsa()
+
+	# Assert
+	var modelo_nuevo := balsa.find_child("BalsaPirataModel", true, false) as Node3D
+	assert_not_null(modelo_nuevo, "Debe existir un nuevo modelo BalsaPirataModel")
+
+	var meshes := modelo_nuevo.find_children("*", "MeshInstance3D", true, false)
+	assert_gt(meshes.size(), 0, "El modelo destruido debe contener mallas 3D")
+	for m in meshes:
+		var mi := m as MeshInstance3D
+		if is_instance_valid(mi) and mi.mesh:
+			for s in range(mi.mesh.get_surface_count()):
+				assert_eq(
+					mi.get_surface_override_material(s),
+					BalsaPirata.MAT_BALSA_DESTRUIDA,
+					"El modelo destruido debe tener MAT_BALSA_DESTRUIDA asignado"
+				)
+
+
+func test_destruir_balsa_es_idempotente() -> void:
+	# Arrange
+	var balsa := ESCENA_BALSA.instantiate() as BalsaPirata
+	add_child_autofree(balsa)
+	watch_signals(balsa)
+
+	# Act: Llamar dos veces
+	balsa.destruir_balsa()
+	balsa.destruir_balsa()
+
+	# Assert
+	assert_true(balsa.esta_destruida())
+	assert_signal_emit_count(balsa, "balsa_destruida", 1, "La señal no debe duplicarse")
+

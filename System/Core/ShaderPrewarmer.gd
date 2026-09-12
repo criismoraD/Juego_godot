@@ -43,7 +43,9 @@ const ESCENAS_CRITICAS: Array[String] = [
 	"res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn",
 	"res://VFX/Scenes/BloodSplashNormal.tscn",
 	"res://VFX/Scenes/BloodSplashNoLetal.tscn",
-	"res://VFX/Scenes/BloodSplashEmbajador.tscn"
+	"res://VFX/Scenes/BloodSplashEmbajador.tscn",
+	"res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb",
+	"res://TEST_/Balsa pirata destruida/Balsa pirata destruida.glb"
 ]
 
 const MATERIALES_CRITICOS: Array[String] = [
@@ -52,7 +54,8 @@ const MATERIALES_CRITICOS: Array[String] = [
 	"res://System/Shaders/TOON_LINEANEGRA.gdshader",
 	"res://System/Shaders/sombra_falsa.gdshader",
 	"res://System/Shaders/cortinilla_circular.gdshader",
-	"res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader"
+	"res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader",
+	"res://System/Shaders/TRAYECTORIA_FLECHA_PUNTEADA.gdshader"
 ]
 
 

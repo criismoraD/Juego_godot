@@ -480,11 +480,10 @@ func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
 
 
 func _forzar_refresco_outline_global() -> void:
-	# Mantiene compatibilidad con versiones antiguas del shader que dependen de un global uniform.
-	ShaderGlobals.asegurar_outline_global(true)
-
 	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
 		push_warning("[NIVEL01] No se encontró TOON_LINEANEGRA.gdshader para refresco.")
+		ShaderGlobals.asegurar_outline_global(true)
+		ShaderGlobals.asegurar_outline_proyectiles(true)
 		return
 
 	var shader_outline := ResourceLoader.load(
@@ -492,6 +491,11 @@ func _forzar_refresco_outline_global() -> void:
 	)
 	if shader_outline == null:
 		push_warning("[NIVEL01] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
+
+	# IMPORTANTE: Asegurar parámetros globales del shader DESPUÉS de recargar el recurso
+	# para evitar que tomen los valores por defecto (false en project.godot)
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
 
 
 func _mostrar_dialogo_inicio_protagonista():

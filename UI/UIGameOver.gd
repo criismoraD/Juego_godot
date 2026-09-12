@@ -13,6 +13,7 @@ static var ultima_oleada_jugada: int = 1
 
 var background: ColorRect = null
 var title_label: Label = null
+var subtitle_label: Label = null
 var btn_continue: Button = null
 var font_morpheus: Font = null
 var _anim_time: float = 0.0
@@ -26,6 +27,8 @@ func _ready() -> void:
 	var escena_actual := get_tree().current_scene
 	if escena_actual and escena_actual.scene_file_path != "":
 		ultima_escena_jugada = escena_actual.scene_file_path
+	elif ultima_escena_jugada == "":
+		ultima_escena_jugada = "res://Levels/NIVEL01/NIVEL01.tscn"
 	# Recordar oleada donde murió (para Continuar desde esa oleada)
 	if escena_actual and "oleada_combate_actual" in escena_actual:
 		ultima_oleada_jugada = int(escena_actual.oleada_combate_actual)
@@ -95,6 +98,11 @@ func _construir_ui() -> void:
 			title_label.pivot_offset = title_label.size * 0.5
 	)
 	v_box.add_child(title_label)
+
+	# Label secundario / subtítulo (mantenido por compatibilidad de tests y llamadas)
+	subtitle_label = Label.new()
+	subtitle_label.visible = false
+	v_box.add_child(subtitle_label)
 
 	# Botón de Continuar / Reiniciar Centrado
 	var btn_center := CenterContainer.new()
@@ -176,6 +184,11 @@ func _on_continue_pressed() -> void:
 	# Continuar desde el principio de la oleada donde murió (ej. nivel 4 → oleada 4)
 	if ultima_oleada_jugada >= 1 and ultima_oleada_jugada <= 5:
 		GameUI.continuar_desde_oleada = ultima_oleada_jugada
+
+	# Reactivar contornos toon globales antes de la transición
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
+
 	# Reiniciar el ÚLTIMO NIVEL JUGADO (guardado al mostrarse Game Over)
 	var target_scene := ultima_escena_jugada if ultima_escena_jugada != "" else "res://Levels/NIVEL01/NIVEL01.tscn"
 	if has_node("/root/SceneManager"):

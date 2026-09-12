@@ -22,6 +22,9 @@ const INTERVALO_MINIMO_ABSOLUTO: float = 0.25
 @export var escena_goblina_escudo: PackedScene = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.tscn")  ## Escena de Guardiana Moradita (antes Goblina Escudo Pesado)
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns base (más lento)
 @export var intervalo_minimo_aparicion: float = 0.5  ## Segundos mínimos entre spawns cuando quedan pocos enemigos en la barra de progreso
+@export var umbral_rafaga_final: int = 10  ## Cantidad de enemigos restantes en la barra para activar la ráfaga final casi de golpe
+@export var intervalo_rafaga_final: float = 0.30  ## Intervalo ultrarrápido (segundos) durante la ráfaga final
+@export var umbral_proporcion_rafaga: float = 0.35  ## Proporción máxima de la oleada (35%) para evitar ráfaga prematura en oleadas muy cortas
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
 @export var altura_spawn: float = 0.0  # Altura extra para spawnar sobre el suelo
@@ -116,14 +119,29 @@ func _process(delta):
 	_check_shield_imp_spawn(delta)
 
 
+## Retorna true si la ráfaga final está activa (pocos enemigos restantes en la barra de progreso).
+func es_rafaga_final() -> bool:
+	if spawn_infinito or enemigos_por_oleada <= 0:
+		return false
+	var restantes_barra: int = max(0, enemigos_por_oleada - enemigos_muertos_en_oleada)
+	if restantes_barra <= 0:
+		return false
+	var factor: float = float(restantes_barra) / float(enemigos_por_oleada)
+	return restantes_barra <= umbral_rafaga_final and factor <= umbral_proporcion_rafaga
+
+
 ## Calcula el intervalo de aparición dinámico según los enemigos restantes en la barra de progreso.
 ## A menor cantidad de enemigos restantes, menor es el intervalo (mayor frecuencia de aparición).
+## Al activarse la "Ráfaga Final" (ej: <= 10 enemigos restantes), los enemigos salen casi de golpe.
 func _calcular_intervalo_actual() -> float:
 	var intervalo_actual: float = intervalo_aparicion
 	if not spawn_infinito and enemigos_por_oleada > 0:
 		var restantes_barra: int = max(0, enemigos_por_oleada - enemigos_muertos_en_oleada)
 		var factor: float = clampf(float(restantes_barra) / float(enemigos_por_oleada), 0.0, 1.0)
-		intervalo_actual = lerpf(intervalo_minimo_aparicion, intervalo_aparicion, factor)
+		if es_rafaga_final():
+			intervalo_actual = intervalo_rafaga_final
+		else:
+			intervalo_actual = lerpf(intervalo_minimo_aparicion, intervalo_aparicion, factor)
 
 	if evento_cuerno_en_progreso:
 		intervalo_actual /= 2.0

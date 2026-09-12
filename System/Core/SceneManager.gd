@@ -107,6 +107,8 @@ func _monitorear_carga_async(target_path: String) -> void:
 
 	# 6. Cambiar a la nueva escena
 	get_tree().change_scene_to_packed(packed_scene)
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
 	scene_load_completed.emit(target_path)
 
 	# 7. Desvanecer la pantalla de carga suavemente para revelar el juego sin bloquear inputs
@@ -135,6 +137,8 @@ func _finalizar_carga_fallida(target_path: String) -> void:
 	_is_loading = false
 	_loading_path = ""
 	get_tree().change_scene_to_file(target_path)
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
 
 
 ## Transición cinemática con cortinilla circular (Iris in/out)
@@ -165,6 +169,8 @@ func cambiar_escena_cortinilla_circular(target_path: String, duracion: float = 0
 
 	# 2. Cambio de escena
 	get_tree().change_scene_to_file(target_path)
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
 	await get_tree().process_frame
 	await get_tree().process_frame
 

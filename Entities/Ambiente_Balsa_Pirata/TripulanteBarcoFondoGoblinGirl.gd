@@ -34,6 +34,7 @@ enum EstadoTripulante { IDLE, APUNTANDO, DISPARANDO }
 # === ESTADO PRIVADO ===
 var _estado_actual: EstadoTripulante = EstadoTripulante.IDLE
 var _en_combate: bool = false
+var _esta_muerta: bool = false
 var _temporizador_disparo: float = 0.0
 var _temporizador_fase: float = 0.0
 
@@ -86,6 +87,8 @@ func _process(delta: float) -> void:
 # === FUNCIONES PÚBLICAS ===
 ## Activa el combate estético de la arquera goblin.
 func iniciar_combate(retraso_inicial: float = -1.0) -> void:
+	if _esta_muerta:
+		return
 	_en_combate = true
 	if retraso_inicial >= 0.0:
 		_temporizador_disparo = retraso_inicial
@@ -95,6 +98,8 @@ func iniciar_combate(retraso_inicial: float = -1.0) -> void:
 
 ## Detiene el combate y regresa a animación IDLE constante.
 func detener_combate() -> void:
+	if _esta_muerta:
+		return
 	_en_combate = false
 	_ir_a_idle()
 
@@ -107,6 +112,33 @@ func esta_en_combate() -> bool:
 ## Retorna el estado actual del tripulante.
 func obtener_estado() -> EstadoTripulante:
 	return _estado_actual
+
+
+## Provoca la muerte del tripulante: desactiva combate y animación de ataque,
+## y reproduce una animación de muerte aleatoria junto con su sonido.
+func morir() -> void:
+	if _esta_muerta:
+		return
+	_esta_muerta = true
+	_en_combate = false
+	set_process(false)
+	_ocultar_flecha_mano()
+
+	if is_instance_valid(_anim_tree):
+		_anim_tree.active = false
+
+	var death_anims: Array = ["MUERTE1", "MUERTE2", "MUERTE3"]
+	death_anims.shuffle()
+	_reproducir_anim_personaje(death_anims, 0.15)
+	_reproducir_anim_arco("ARCO_IDLE", 0.1)
+
+	if AudioManager and AudioManager.has_method("play_sfx"):
+		AudioManager.play_sfx("goblin_girl_death")
+
+
+## Retorna true si el tripulante ha muerto.
+func esta_muerta() -> bool:
+	return _esta_muerta
 
 
 # === FUNCIONES PRIVADAS DE ANIMACIÓN Y DISPARO ===

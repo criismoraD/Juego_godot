@@ -11,7 +11,7 @@ const TAMANO_MINIMO_TEXTURA_FONDO: float = 1.0
 const PROFUNDIDAD_MINIMA_FONDO: float = 0.01
 const PIXEL_SIZE_MINIMO_FONDO: float = 0.0001
 const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
-	"enemy_projectiles", "enemies", "shield_imps", "pickups", "power_ups_flecha_explosiva"
+	"enemy_projectiles", "enemies", "shield_imps", "pickups", "power_ups_flecha_explosiva", "flechas_fondo_esteticas"
 ]
 @export_category("Configuración General")
 @export var limite_fin_mapa_x: float = -5.0  ## Posición X donde el Imp se detiene
@@ -27,9 +27,10 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
 @export_range(0.75, 1.0, 0.05) var escala_render_subviewport_frente_3d: float = 1.0
 @export_range(1.0, 1.4, 0.01) var escala_cobertura_fondo_animado: float = 1.18
-@export var limitar_fps_subviewport_fondo_3d: bool = true
+@export var limitar_fps_subviewport_fondo_3d: bool = false
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
 @export var pausar_video_fondo_en_combate: bool = true
+const AUDIO_DEFENSORAS_ENTRADA: AudioStream = preload("res://TEST_/Defensoras entrada.wav")
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
@@ -160,6 +161,11 @@ var _monitor_timer: float = 0.0
 @onready var muro_plataforma: StaticBody3D = $Muro_Plataforma
 @onready var muro_plataforma2: StaticBody3D = $Muro_Plataforma2
 @onready var torre_de_asedio: TorreDeAsedio = get_node_or_null("Torre_de_asedio") as TorreDeAsedio
+@onready var trayectoria_embarcaciones: ControladorTrayectoriaEmbarcaciones = (
+	get_node_or_null("%TrayectoriaEmbarcaciones") as ControladorTrayectoriaEmbarcaciones
+	if has_node("%TrayectoriaEmbarcaciones")
+	else get_node_or_null("TrayectoriaEmbarcaciones") as ControladorTrayectoriaEmbarcaciones
+)
 var escudo_enemigo: EscudoDestruible:
 
 	get:
@@ -213,6 +219,8 @@ func _ready():
 		_set_elemento_nivel3_activo(escudo_enemigo2, false)
 	if is_instance_valid(escudo_enemigo3):
 		_set_elemento_nivel3_activo(escudo_enemigo3, false)
+
+	_desactivar_evento_batalla_naval()
 
 	_forzar_refresco_outline_global()
 	_configurar_compositor_3d()
@@ -363,6 +371,10 @@ func _ready():
 			5: total_continuar = total_enemigos_oleada_5
 			6: total_continuar = total_enemigos_oleada_6
 		_configurar_oleada_combate(total_continuar, oleada_continuar)
+
+		_forzar_refresco_outline_global()
+		if is_instance_valid(game_ui) and game_ui.has_method("_forzar_outline_en_runtime"):
+			game_ui._forzar_outline_en_runtime(true)
 
 		if wave_spawner and not wave_spawner.oleada_iniciada.is_connected(_on_oleada_iniciada_eliminar_defensas):
 			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
@@ -542,12 +554,12 @@ func _configurar_render_subviewports() -> void:
 		)
 
 	if subviewport_medio_3d:
-		subviewport_medio_3d.msaa_3d = Viewport.MSAA_2X
+		subviewport_medio_3d.msaa_3d = Viewport.MSAA_DISABLED
 		subviewport_medio_3d.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 		subviewport_medio_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 	if subviewport_frente_3d:
-		subviewport_frente_3d.msaa_3d = Viewport.MSAA_2X
+		subviewport_frente_3d.msaa_3d = Viewport.MSAA_DISABLED
 		subviewport_frente_3d.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 		subviewport_frente_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
@@ -709,11 +721,10 @@ func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:
 
 
 func _forzar_refresco_outline_global() -> void:
-	# Mantiene compatibilidad con versiones antiguas del shader que dependen de un global uniform.
-	ShaderGlobals.asegurar_outline_global(true)
-
 	if not ResourceLoader.exists(RUTA_SHADER_OUTLINE):
 		push_warning("[NIVEL01] No se encontró TOON_LINEANEGRA.gdshader para refresco.")
+		ShaderGlobals.asegurar_outline_global(true)
+		ShaderGlobals.asegurar_outline_proyectiles(true)
 		return
 
 	var shader_outline := ResourceLoader.load(
@@ -721,6 +732,11 @@ func _forzar_refresco_outline_global() -> void:
 	)
 	if shader_outline == null:
 		push_warning("[NIVEL01] No se pudo recargar TOON_LINEANEGRA.gdshader en cache.")
+
+	# IMPORTANTE: Asegurar parámetros globales del shader DESPUÉS de recargar el recurso
+	# para evitar que tomen los valores por defecto (false en project.godot)
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
 
 
 func _mostrar_dialogo_inicio_protagonista():
@@ -1097,6 +1113,10 @@ func _aplicar_perfil_render_combate() -> void:
 func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
 	estado_actual = NivelEstado.NIVEL_1
 
+	# Asegurar que el contorno toon global siempre esté activo en cada oleada de combate
+	ShaderGlobals.asegurar_outline_global(true)
+	ShaderGlobals.asegurar_outline_proyectiles(true)
+
 	# Si se avanza a la oleada 2, 3 o 4 (o cualquier otra oleada que no sea la inicial), remover instrucciones
 	if numero_oleada > 1:
 		get_tree().call_group("ui_instrucciones", "queue_free")
@@ -1108,6 +1128,12 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	wave_spawner.probabilidad_canonero = 0.0
 	wave_spawner.probabilidad_igual = false
 	wave_spawner.forzar_tipo_enemigo = -1  # Normal
+
+	# Evento de batalla naval: SOLO debe activarse en el nivel 5 (oleada 5)
+	if numero_oleada == 5:
+		_activar_evento_batalla_naval()
+	else:
+		_desactivar_evento_batalla_naval()
 
 	# Mostrar escudos de la oleada 2 (visibles ÚNICAMENTE en la oleada 2)
 	var activa_oleada2 := (numero_oleada == 2)
@@ -1601,6 +1627,21 @@ func _mostrar_inter_nivel_continuar():
 ## el límite y Eryn queda en el segundo piso delante del escudo. Sin input
 ## hasta que termina.
 func _iniciar_cinematica_oleada5() -> void:
+	# Al terminar la oleada 5, la balsa pirata enemiga explota y se hunde
+	if is_instance_valid(trayectoria_embarcaciones) and trayectoria_embarcaciones.has_method("destruir_balsa_enemiga"):
+		trayectoria_embarcaciones.destruir_balsa_enemiga()
+
+	# Al terminar la oleada 5 la canoa aliada ya no debe ser visible ni aparecer en la cinemática de Perrena
+	if is_instance_valid(trayectoria_embarcaciones) and trayectoria_embarcaciones.has_method("ocultar_o_despawnear_canoa"):
+		trayectoria_embarcaciones.ocultar_o_despawnear_canoa()
+	for canoa in get_tree().get_nodes_in_group("canoas_aliadas"):
+		if is_instance_valid(canoa):
+			if canoa.has_method("ocultar_y_desactivar"):
+				canoa.ocultar_y_desactivar()
+			else:
+				canoa.visible = false
+			canoa.queue_free()
+
 	# Sin ":=": GDScript.new() devuelve Variant y el proyecto trata el
 	# inferido-inseguro como error; con "=" la llamada es dinámica.
 	var cine = ESCENA_CINEMATICA_OLEADA5.new()
@@ -1619,6 +1660,8 @@ func _probar_cinematica_oleada5_debug() -> void:
 	if transicion_carteles_en_progreso:
 		return
 	oleada_combate_actual = 5
+	if is_instance_valid(trayectoria_embarcaciones) and not trayectoria_embarcaciones.esta_activo():
+		trayectoria_embarcaciones.spawnear_ambas()
 	if is_instance_valid(wave_spawner):
 		wave_spawner.detener_spawning()
 		wave_spawner.cola_spawn.clear()
@@ -2735,6 +2778,33 @@ func _spawn_medikit_puerta_torre() -> void:
 	medikit.global_position = Vector3(-9.7, 0.25, 0.0)
 
 
+# === EVENTO BATALLA NAVAL (NIVEL 5) ===
+func _activar_evento_batalla_naval() -> void:
+	if not is_instance_valid(trayectoria_embarcaciones):
+		trayectoria_embarcaciones = (
+			get_node_or_null("%TrayectoriaEmbarcaciones") as ControladorTrayectoriaEmbarcaciones
+			if has_node("%TrayectoriaEmbarcaciones")
+			else get_node_or_null("TrayectoriaEmbarcaciones") as ControladorTrayectoriaEmbarcaciones
+		)
+	if not is_instance_valid(trayectoria_embarcaciones):
+		return
+	if not trayectoria_embarcaciones.esta_activo():
+		trayectoria_embarcaciones.spawnear_ambas()
+
+
+func _desactivar_evento_batalla_naval() -> void:
+	if not is_instance_valid(trayectoria_embarcaciones):
+		trayectoria_embarcaciones = (
+			get_node_or_null("%TrayectoriaEmbarcaciones") as ControladorTrayectoriaEmbarcaciones
+			if has_node("%TrayectoriaEmbarcaciones")
+			else get_node_or_null("TrayectoriaEmbarcaciones") as ControladorTrayectoriaEmbarcaciones
+		)
+	if not is_instance_valid(trayectoria_embarcaciones):
+		return
+	if trayectoria_embarcaciones.has_method("despawnear_ambas"):
+		trayectoria_embarcaciones.despawnear_ambas()
+
+
 func _spawn_icono_mensajera_oleada_5() -> void:
 	# Asegurar que solo exista 1 icono de mensajera en todo el nivel
 	for n in get_tree().get_nodes_in_group("icono_mensajera"):
@@ -2791,6 +2861,8 @@ func _iniciar_mensajera_oleada_5() -> void:
 	ballestera.global_position = start_pos
 	ballestera._setup_animation_player()
 	ballestera._importar_animaciones_jugador()
+	if ballestera.has_method("asegurar_contorno_toon"):
+		ballestera.asegurar_contorno_toon()
 
 	# SFX: Defensoras entrada - mensajera corriendo
 	_reproducir_defensoras_entrada_sfx()
@@ -2910,7 +2982,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 
 ## Despliega 2 defensoras de ballesta móviles que caminan y escalan a las plataformas 1 y 3
 func _reproducir_defensoras_entrada_sfx() -> void:
-	var defensores_stream: AudioStream = load("res://TEST_/Defensoras entrada.wav") as AudioStream
+	var defensores_stream: AudioStream = AUDIO_DEFENSORAS_ENTRADA
 	if defensores_stream:
 		var defensores_player := AudioStreamPlayer.new()
 		defensores_player.stream = defensores_stream
@@ -2948,6 +3020,8 @@ func _desplegar_defensoras_moviles_plataformas() -> void:
 		add_child(defensora)
 		defensora.scale = Vector3(0.3, 0.3, 0.3)
 		defensora.global_position = start_pos
+		if defensora.has_method("asegurar_contorno_toon"):
+			defensora.asegurar_contorno_toon()
 
 		_reproducir_defensoras_entrada_sfx()
 		defensora.desplegar_a_plataforma(idx_plat)

@@ -51,17 +51,17 @@ func test_flotacion_alcanza_amplitud_en_cuarto_de_ciclo() -> void:
 	canoa.free()
 
 
-func test_flotacion_invierte_signo_en_medio_ciclo() -> void:
+func test_flotacion_invierte_signo_en_tres_cuartos_de_ciclo() -> void:
 	# Arrange
 	var canoa := _crear_canoa_determinista()
 	canoa.amplitud_flotacion = 0.5
 	canoa.frecuencia_flotacion = 1.0
 
 	# Act
-	var desplazamiento: Vector3 = canoa.calcular_desplazamiento(0.5)
+	var desplazamiento: Vector3 = canoa.calcular_desplazamiento(0.75)
 
 	# Assert
-	assert_almost_eq(desplazamiento.y, -0.5, MARGEN_FLOAT, "En 1/2 ciclo la canoa baja a -amplitud")
+	assert_almost_eq(desplazamiento.y, -0.5, MARGEN_FLOAT, "En 3/4 ciclo la canoa baja a -amplitud")
 
 	canoa.free()
 

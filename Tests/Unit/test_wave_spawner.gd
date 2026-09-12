@@ -431,6 +431,48 @@ func test_ajuste_inmediato_spawn_timer_al_morir_enemigo():
 	assert_almost_eq(_spawner.spawn_timer, 2.5, 0.01, "El spawn_timer debe acelerarse inmediatamente al morir enemigos")
 
 
+func test_rafaga_final_se_activa_con_diez_o_menos_enemigos_restantes():
+	# Arrange: Oleada de 50 enemigos con 40 muertos (10 restantes en la barra de progreso)
+	_spawner.enemigos_por_oleada = 50
+	_spawner.intervalo_aparicion = 5.0
+	_spawner.intervalo_minimo_aparicion = 0.5
+	_spawner.intervalo_rafaga_final = 0.30
+	_spawner.umbral_rafaga_final = 10
+	_spawner.enemigos_muertos_en_oleada = 40
+
+	# Act & Assert
+	assert_true(_spawner.es_rafaga_final(), "Debe reportar que la ráfaga final está activa")
+	var intervalo: float = _spawner._calcular_intervalo_actual()
+	assert_almost_eq(intervalo, 0.30, 0.01, "Con 10 restantes en barra el intervalo debe ser el de ráfaga final (0.30s)")
+
+
+func test_rafaga_final_recorta_spawn_timer_inmediatamente():
+	# Arrange: Oleada de 50 enemigos con 39 muertos (11 restantes, sin ráfaga aún)
+	_spawner.is_wave_active = true
+	_spawner.enemigos_por_oleada = 50
+	_spawner.intervalo_aparicion = 5.0
+	_spawner.intervalo_rafaga_final = 0.30
+	_spawner.goblins_spawned_in_wave = 15
+	_spawner.enemigos_muertos_en_oleada = 39
+	_spawner.spawn_timer = 3.0
+
+	# Act: Muere el enemigo 40, quedando exactamente 10 restantes
+	_spawner.enemigos_muertos_en_oleada = 40
+
+	# Assert: El spawn_timer debe recortarse inmediatamente al intervalo de ráfaga final (0.30s)
+	assert_almost_eq(_spawner.spawn_timer, 0.30, 0.01, "El timer debe caer de golpe a 0.30s al activarse la ráfaga final")
+
+
+func test_rafaga_final_no_se_activa_con_barra_vacia():
+	# Arrange: Oleada completa con 0 restantes
+	_spawner.enemigos_por_oleada = 50
+	_spawner.enemigos_muertos_en_oleada = 50
+
+	# Act & Assert
+	assert_false(_spawner.es_rafaga_final(), "No debe haber ráfaga final si quedan 0 enemigos")
+
+
+
 func test_predefined_wave_spawn_queue_wave_5_nueva_composicion():
 	# Arrange: dummies para las escenas de oleada 5 no cubiertas en before_each.
 	_spawner.escena_lonko = _create_dummy_scene("LonkoNode")

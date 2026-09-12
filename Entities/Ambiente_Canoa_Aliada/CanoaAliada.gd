@@ -78,6 +78,7 @@ var _direccion_navegacion: float = 1.0
 
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
+	add_to_group("canoas_aliadas")
 	_posicion_base = position
 	_rotacion_base = rotation_degrees
 	_inicializar_fases()
@@ -150,6 +151,19 @@ func detener() -> void:
 	_flotando = false
 	set_process(false)
 	_restaurar_transformada_base()
+
+
+## Oculta inmediatamente la canoa y a sus tripulantes y desactiva su procesamiento.
+func ocultar_y_desactivar() -> void:
+	visible = false
+	_flotando = false
+	_navegando = false
+	set_process(false)
+	for hijo in find_children("*", "TripulanteBarcoFondoAllyArcher", true, false):
+		var tripulante := hijo as Node3D
+		if is_instance_valid(tripulante):
+			tripulante.visible = false
+			tripulante.set_process(false)
 
 
 ## Indica si la canoa se está moviendo actualmente.

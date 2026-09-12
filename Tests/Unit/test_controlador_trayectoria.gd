@@ -130,3 +130,28 @@ func test_spawnear_balsa_nace_en_rojo_fuerte_y_navega_a_rojo_suave() -> void:
 	assert_true(balsa.esta_navegando(), "Debe comenzar a navegar")
 
 	controlador.free()
+
+
+func test_destruir_balsa_enemiga_destruye_la_balsa_instanciada() -> void:
+	# Arrange
+	var controlador := ESCENA_TRAYECTORIA.instantiate() as ControladorTrayectoriaEmbarcaciones
+	add_child_autofree(controlador)
+	var balsa: BalsaPirata = controlador.spawnear_balsa()
+	assert_false(balsa.esta_destruida(), "La balsa debe nacer sin destruir")
+
+	# Act
+	controlador.destruir_balsa_enemiga()
+
+	# Assert
+	assert_true(balsa.esta_destruida(), "destruir_balsa_enemiga debe activar destruir_balsa en la balsa")
+
+
+func test_destruir_balsa_enemiga_sin_balsa_es_seguro() -> void:
+	# Arrange
+	var controlador := ESCENA_TRAYECTORIA.instantiate() as ControladorTrayectoriaEmbarcaciones
+	add_child_autofree(controlador)
+
+	# Act & Assert (no debe arrojar errores si no hay balsa)
+	controlador.destruir_balsa_enemiga()
+	pass_test("Llamar a destruir_balsa_enemiga sin balsa es seguro")
+

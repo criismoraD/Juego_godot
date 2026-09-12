@@ -190,6 +190,9 @@ func _ready():
 	ShaderGlobals.asegurar_outline_global(outlines_enabled)
 	ShaderGlobals.asegurar_outline_proyectiles(outline_proy_enabled)
 
+	# Escanear materiales con outline inmediatamente para disponibilidad sincrónica
+	_scan_outline_materials()
+
 	# Buscar al player
 	await get_tree().process_frame
 	_find_player()
@@ -197,9 +200,6 @@ func _ready():
 	# Buscar WorldEnvironment
 	_find_world_environment()
 	_find_capa001()
-
-	# Escanear materiales con outline
-	_scan_outline_materials()
 
 	# Escaneo inicial de mallas para el sistema de outlines optimizado
 	var scene_root = _get_scene_root()
@@ -274,9 +274,12 @@ func _scan_outline_materials():
 		preload("res://Entities/Ambiente_Plataforma/MAT_platform.tres"),
 		preload("res://Entities/Ambiente_Escudo/MAT_shield.tres"),
 		preload("res://Entities/Ambiente_Pinchos/MAT_spike_trap.tres"),
-		preload("res://Entities/Jugador_Arquera/Recurve Bow 2.tres")
+		preload("res://Entities/Jugador_Arquera/Recurve Bow 2.tres"),
+		preload("res://Entities/Aliada_Ballestera/BALLESTERA_ALIADA_MAT.tres"),
+		preload("res://Entities/Aliada_Arquera/ALLY_ARCHER_MAT.tres")
 	]
 
+	materials_with_outline.clear()
 	for mat in materials:
 		if mat and mat.next_pass:
 			materials_with_outline.append({"material": mat, "outline": mat.next_pass})
@@ -1335,42 +1338,41 @@ func _toggle_outlines_proyectiles():
 	_aplicar_toggle_outline_proyectiles()
 
 
-func _aplicar_toggle_outline_proyectiles():
-	if not outline_proy_btn:
-		return
-
-	outline_proy_btn.disabled = false
-	if outline_proy_enabled:
-		outline_proy_btn.text = "✏️ BORDES PROY: ON"
-		outline_proy_btn.tooltip_text = "Desactivar contorno en proyectiles enemigos"
-		_style_button(outline_proy_btn, Color(0.15, 0.55, 0.6))
-	else:
-		outline_proy_btn.text = "✏️ BORDES PROY: OFF"
-		outline_proy_btn.tooltip_text = "Activar contorno en proyectiles enemigos"
-		_style_button(outline_proy_btn, Color(0.35, 0.35, 0.4))
+func _aplicar_toggle_outline_proyectiles() -> void:
+	if is_instance_valid(outline_proy_btn):
+		outline_proy_btn.disabled = false
+		if outline_proy_enabled:
+			outline_proy_btn.text = "✏️ BORDES PROY: ON"
+			outline_proy_btn.tooltip_text = "Desactivar contorno en proyectiles enemigos"
+			_style_button(outline_proy_btn, Color(0.15, 0.55, 0.6))
+		else:
+			outline_proy_btn.text = "✏️ BORDES PROY: OFF"
+			outline_proy_btn.tooltip_text = "Activar contorno en proyectiles enemigos"
+			_style_button(outline_proy_btn, Color(0.35, 0.35, 0.4))
 
 	ShaderGlobals.asegurar_outline_proyectiles(outline_proy_enabled)
 
 
-func _aplicar_toggle_outline_global():
-	if not outline_btn:
-		return
-
-	outline_btn.disabled = false
-	if outlines_enabled:
-		outline_btn.text = "✏️ BORDES: GLOBAL ON"
-		outline_btn.tooltip_text = "Desactivar contorno global"
-		_style_button(outline_btn, Color(0.1, 0.6, 0.5))
-	else:
-		outline_btn.text = "✏️ BORDES: GLOBAL OFF"
-		outline_btn.tooltip_text = "Activar contorno global"
-		_style_button(outline_btn, Color(0.35, 0.35, 0.4))
+func _aplicar_toggle_outline_global() -> void:
+	if is_instance_valid(outline_btn):
+		outline_btn.disabled = false
+		if outlines_enabled:
+			outline_btn.text = "✏️ BORDES: GLOBAL ON"
+			outline_btn.tooltip_text = "Desactivar contorno global"
+			_style_button(outline_btn, Color(0.1, 0.6, 0.5))
+		else:
+			outline_btn.text = "✏️ BORDES: GLOBAL OFF"
+			outline_btn.tooltip_text = "Activar contorno global"
+			_style_button(outline_btn, Color(0.35, 0.35, 0.4))
 
 	_forzar_outline_en_runtime(outlines_enabled)
 
 
 func _forzar_outline_en_runtime(habilitado: bool) -> void:
 	ShaderGlobals.asegurar_outline_global(habilitado)
+
+	if materials_with_outline.is_empty():
+		_scan_outline_materials()
 
 	if SHADER_OUTLINE == null:
 		push_warning("[GameUI] No se pudo cargar SHADER_OUTLINE (TOON_LINEANEGRA.gdshader).")
@@ -1388,7 +1390,17 @@ func _forzar_outline_en_runtime(habilitado: bool) -> void:
 			)
 
 	# OPT: Cachear el grupo para evitar múltiples accesos al tree
-	var meshes = get_tree().get_nodes_in_group("outline_meshes")
+	var meshes: Array[Node] = []
+	if get_tree():
+		meshes = get_tree().get_nodes_in_group("outline_meshes")
+		if meshes.is_empty():
+			var scene_root := _get_scene_root()
+			if is_instance_valid(scene_root):
+				for m in scene_root.find_children("*", "MeshInstance3D", true, false):
+					if m is MeshInstance3D:
+						m.add_to_group("outline_meshes")
+				meshes = get_tree().get_nodes_in_group("outline_meshes")
+
 	for nodo in meshes:
 		var mesh_instance := nodo as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:
@@ -1963,6 +1975,8 @@ func _alternar_tipo_defensoras() -> void:
 			nueva_aliada.flechas_explosivas = f_exp
 		if "flechas_multiples" in nueva_aliada:
 			nueva_aliada.flechas_multiples = f_mult
+		if nueva_aliada.has_method("asegurar_contorno_toon"):
+			nueva_aliada.call("asegurar_contorno_toon")
 
 	_actualizar_boton_tipo_defensoras()
 

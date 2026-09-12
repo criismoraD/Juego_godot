@@ -213,6 +213,17 @@ func iniciar(nivel, al_terminar: Callable) -> void:
 	_ajustar_fxaa(true)
 	_ajustar_fondo_fps(true)
 	_ocultar_icono_refuerzo()
+	# La canoa aliada no debe ser visible en la cinemática en que aparece Perrena
+	if is_instance_valid(nivel) and "trayectoria_embarcaciones" in nivel and is_instance_valid(nivel.trayectoria_embarcaciones):
+		if nivel.trayectoria_embarcaciones.has_method("ocultar_o_despawnear_canoa"):
+			nivel.trayectoria_embarcaciones.ocultar_o_despawnear_canoa()
+	for canoa in get_tree().get_nodes_in_group("canoas_aliadas"):
+		if is_instance_valid(canoa):
+			if canoa.has_method("ocultar_y_desactivar"):
+				canoa.ocultar_y_desactivar()
+			else:
+				canoa.visible = false
+			canoa.queue_free()
 	_mostrar_niebla(true)
 	_ajustar_contornos(true)
 	_ajustar_sombra_falsa(true)
