@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bduw0imvq6xeh" path="res://Entities/Ambiente_Canoa_Aliada/Canoa_aliada.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cx4pa18v52pqr" path="res://Entities/Ambiente_Canoa_Aliada/Tripulante_barco_fondo_ally_archer.tscn" id="3_tripulante"]
+
+[node name="CanoaProtagonistaRio" type="Node3D" unique_id=2026998500]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
+script = ExtResource("1_script")
+velocidad_avance = 0.65
+navegacion_continua = true
+
+[node name="CanoaAliadaModel" parent="." unique_id=2026998501 instance=ExtResource("2_model")]
+transform = Transform3D(1.0005641, 0, 0, 0, 1.2588098, 0, 0, 0, 1, 0, 0.005566733, 0)
+
+[node name="Protagonista" parent="." unique_id=2026998502 instance=ExtResource("3_tripulante")]
+transform = Transform3D(0.135, 0, 0, 0, 0.135, 0, 0, 0, 0.135, 0.08, 0.11, 0)
+
+[node name="Acompanante" parent="." unique_id=2026998503 instance=ExtResource("3_tripulante")]
+transform = Transform3D(0.11, 0, 0, 0, 0.11, 0, 0, 0, 0.11, -0.36, 0.1, 0)
+esta_sentada = true

@@ -1,0 +1,5 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.tscn" id="1_rio"]
+
+[node name="Rio en canoa con paralax" instance=ExtResource("1_rio")]
