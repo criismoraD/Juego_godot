@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" uid="uid://d1i7tpyrfxb4k" path="res://TEST_/Madero volador/Madero volador_D.jpg" id="1_madero_tex"]
+
+[resource]
+resource_name = "Madero volador_M"
+cull_mode = 2
+albedo_texture = ExtResource("1_madero_tex")
+emission_enabled = true
+emission_texture = ExtResource("1_madero_tex")

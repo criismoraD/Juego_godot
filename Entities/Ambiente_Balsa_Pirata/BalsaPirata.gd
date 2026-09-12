@@ -24,6 +24,22 @@ const UMBRAL_LLEGADA_X: float = 0.05  ## Tolerancia en metros para considerar de
 const MAT_BALSA: Material = preload("res://TEST_/Balsa piarata/Balsa piarata_MAT.tres")
 const ESCENA_BALSA_DESTRUIDA: PackedScene = preload("res://TEST_/Balsa pirata destruida/Balsa pirata destruida.glb")
 const MAT_BALSA_DESTRUIDA: Material = preload("res://TEST_/Balsa pirata destruida/Balsa pirata destruida_MAT.tres")
+const SCRIPT_MADERO_VOLADOR: Script = preload("res://Entities/Ambiente_Balsa_Pirata/MaderoVolador.gd")
+const CANTIDAD_MADEROS_VOLADORES: int = 3
+const CONFIG_MADEROS_VOLADORES: Array[Dictionary] = [
+	{
+		"offset": Vector3(0.25, 0.25, 0.1),
+		"impulso": Vector3(3.4, 7.2, 0.25)
+	},
+	{
+		"offset": Vector3(0.0, 0.35, -0.15),
+		"impulso": Vector3(1.9, 8.2, -0.3)
+	},
+	{
+		"offset": Vector3(-0.25, 0.3, 0.05),
+		"impulso": Vector3(-3.2, 7.5, 0.15)
+	}
+]
 const ESCENA_EXPLOSION_PILAR: PackedScene = preload("res://Entities/Enemigo_Lonko/Explocion_Pilar.tscn")
 const TEXTURA_ROCAS_NEGRAS: Texture2D = preload("res://Entities/Enemigo_Lonko/PIEDRAS_NEGRAS_ DESTRUCION.png")
 const SFX_EXPLOSION_01: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION01.mp3")
@@ -106,6 +122,7 @@ var _direccion_navegacion: float = 1.0
 var _destruida: bool = false
 var _en_hundimiento: bool = false
 var _tween_hundimiento: Tween = null
+var _maderos_lanzados: Array[Node3D] = []
 
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
@@ -244,6 +261,7 @@ func destruir_balsa() -> void:
 
 	_matar_tripulacion()
 	_sustituir_por_modelo_destruido()
+	_lanzar_maderos_voladores()
 	_explotar_en_cadena()
 	_iniciar_hundimiento()
 	balsa_destruida.emit()
@@ -252,6 +270,11 @@ func destruir_balsa() -> void:
 ## Retorna true si la balsa ha iniciado o completado su destrucción.
 func esta_destruida() -> bool:
 	return _destruida
+
+
+## Retorna los maderos voladores expulsados durante la destrucción.
+func obtener_maderos_lanzados() -> Array[Node3D]:
+	return _maderos_lanzados
 
 
 # === FUNCIONES PRIVADAS ===
@@ -351,6 +374,31 @@ func _sustituir_por_modelo_destruido() -> void:
 					mi.set_surface_override_material(s, MAT_BALSA_DESTRUIDA)
 
 	_aplicar_capa_visual_recursiva(nuevo_modelo)
+
+
+func _lanzar_maderos_voladores() -> void:
+	var root_scene: Node = get_tree().current_scene if is_inside_tree() and get_tree() else null
+	if root_scene == null and is_inside_tree() and get_tree():
+		root_scene = get_tree().root
+	if root_scene == null:
+		root_scene = get_parent()
+	if root_scene == null:
+		root_scene = self
+
+	var altura_agua: float = _posicion_base.y - 0.05
+	if _posicion_base.is_zero_approx():
+		altura_agua = global_position.y - 0.05
+
+	_maderos_lanzados.clear()
+	for cfg in CONFIG_MADEROS_VOLADORES:
+		var madero: Node3D = SCRIPT_MADERO_VOLADOR.new() as Node3D
+		root_scene.add_child(madero)
+		var offset: Vector3 = cfg["offset"]
+		var impulso: Vector3 = cfg["impulso"]
+		var spawn_pos: Vector3 = global_position + global_transform.basis * offset
+		madero.lanzar(spawn_pos, impulso, altura_agua, capa_visual)
+		_aplicar_capa_visual_recursiva(madero)
+		_maderos_lanzados.append(madero)
 
 
 func _explotar_en_cadena() -> void:
