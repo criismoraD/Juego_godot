@@ -209,6 +209,8 @@ func test_conversacion_dual_con_eryntits() -> void:
 
 	# En página 0 (Eryn activa): Eryntits3 está visible/activo al 100%
 	assert_eq(tits.modulate, Color.WHITE, "Eryntits3 activo debe tener modulate blanco")
+	var sm: ShaderMaterial = tits.material as ShaderMaterial
+	assert_eq(sm.get_shader_parameter("color_modulacion"), Color.WHITE, "color_modulacion debe ser blanco en reposo/activo")
 	var escala_tits_base: Vector2 = dialogo.get("_escala_tits_base") as Vector2
 	assert_almost_eq(tits.scale.x, escala_tits_base.x, 0.02, "Eryntits3 escala X coincide con su base activa")
 	assert_almost_eq(tits.scale.y, escala_tits_base.y, 0.02, "Eryntits3 escala Y coincide con su base activa")
@@ -219,6 +221,7 @@ func test_conversacion_dual_con_eryntits() -> void:
 
 	# Assert: Eryntits3 se atenúa y se encoge en sincronía con RetratoEryn
 	assert_lt(tits.modulate.r, 0.6, "Eryntits3 apagado al hablar Perrena")
+	assert_eq(sm.get_shader_parameter("color_modulacion"), DialogoComic.COLOR_RETRATO_APAGADO, "color_modulacion debe oscurecer el shader")
 	assert_almost_eq(tits.scale.x, escala_tits_base.x * DialogoComic.ESCALA_RETRATO_APAGADO, 0.01, "Eryntits3 se reduce a escala inactiva")
 	assert_almost_eq(tits.scale.y, escala_tits_base.y * DialogoComic.ESCALA_RETRATO_APAGADO, 0.01, "Eryntits3 se reduce a escala inactiva")
 
@@ -228,6 +231,7 @@ func test_conversacion_dual_con_eryntits() -> void:
 
 	# Assert: Eryntits3 recupera foco, color pleno y escala base
 	assert_eq(tits.modulate, Color.WHITE, "Eryntits3 recupera color al hablar Eryn")
+	assert_eq(sm.get_shader_parameter("color_modulacion"), Color.WHITE, "color_modulacion debe volver a blanco")
 	assert_almost_eq(tits.scale.x, escala_tits_base.x, 0.02, "Eryntits3 vuelve a escala activa")
 	assert_almost_eq(tits.scale.y, escala_tits_base.y, 0.02, "Eryntits3 vuelve a escala activa")
 

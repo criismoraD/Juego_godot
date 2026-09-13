@@ -28,6 +28,7 @@ const ELEV_FOGUEO_MAX_DEG: float = -4.0
 @export var plano_profundidad_z: float = 0.02  ## Plano Z prioritario frente a arqueras aliadas
 var en_despliegue: bool = false  ## Bloquea la FSM de combate y apuntado mientras camina o escala hacia su puesto
 var plataforma_asignada: int = 1  ## Plataforma a la que fue asignada la defensora móvil
+var _oleada_en_curso: bool = true  ## False cuando la oleada ha culminado y las defensoras deben celebrar sin atacar
 
 @export_category("Vida")
 @export var vida_maxima: int = 4  ## 4 de vida para la ballestera defensora
@@ -441,12 +442,26 @@ func _iniciar():
 
 func _conectar_eventos_oleada() -> void:
 	var spawner = _get_cached_wave_spawner()
-	if spawner and spawner.has_signal("oleada_completada"):
-		if not spawner.oleada_completada.is_connected(_on_oleada_completada):
-			spawner.oleada_completada.connect(_on_oleada_completada)
+	if spawner:
+		if spawner.has_signal("oleada_iniciada"):
+			if not spawner.oleada_iniciada.is_connected(_on_oleada_iniciada):
+				spawner.oleada_iniciada.connect(_on_oleada_iniciada)
+		if spawner.has_signal("oleada_completada"):
+			if not spawner.oleada_completada.is_connected(_on_oleada_completada):
+				spawner.oleada_completada.connect(_on_oleada_completada)
+
+
+func _on_oleada_iniciada(_numero_oleada: int) -> void:
+	_oleada_en_curso = true
+	if es_movil or en_despliegue:
+		return
+	if current_state == State.CELEBRATING:
+		_cambiar_estado(State.IDLE)
+		_play_anim(["IDE", "IDLE_001", "IDLE"], 0.3)
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
+	_oleada_en_curso = false
 	if not _puede_celebrar():
 		return
 	if es_movil:
@@ -1023,6 +1038,10 @@ func _restaurar_torso() -> void:
 
 
 func _process_idle(delta: float):
+	if not _oleada_en_curso:
+		state_timer = 0.6
+		return
+
 	if paralisis_timer > 0.0:
 		state_timer = 0.4
 		return
@@ -1042,6 +1061,10 @@ func _process_reloading(delta: float):
 
 
 func _process_aiming(delta: float):
+	if not _oleada_en_curso:
+		_cambiar_estado(State.CELEBRATING)
+		return
+
 	state_timer -= delta
 	if state_timer <= 0:
 		if not _puede_atacar():
@@ -1087,10 +1110,14 @@ func _process_celebrating(delta: float):
 			return
 		_loops_victoria_restantes = 0
 		# Defensoras moviles quedan en IDLE: el timer del await maneja la retirada
-		# Defensoras fijas vuelven a apuntar directamente
+		# Defensoras fijas permanecen celebrando en loop mientras la oleada siga terminada
 		if es_movil or es_mensajera:
 			_cambiar_estado(State.IDLE)
 		else:
+			if not _oleada_en_curso:
+				var _dur_clip: float = _get_anim_length("VICTORIA")
+				state_timer = maxf(_dur_clip, 0.3)
+				return
 			_cambiar_estado(State.AIMING)
 
 
@@ -1173,6 +1200,9 @@ func _fijar_pose_combate(blend_time: float = 0.35) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _disparar():
+	if not _oleada_en_curso:
+		return
+
 	_reproducir_sonido_disparo()
 
 	var objetivo := objetivo_actual if is_instance_valid(objetivo_actual) else _obtener_objetivo_prioritario()
@@ -1380,12 +1410,20 @@ func _es_imp_escudo(enemy: Node) -> bool:
 
 
 func _puede_atacar() -> bool:
+	if not _oleada_en_curso:
+		_puede_atacar_cached = false
+		return false
+
+	var spawner = _get_cached_wave_spawner()
+	if spawner and "is_wave_active" in spawner and not spawner.is_wave_active:
+		_puede_atacar_cached = false
+		return false
+
 	if _puede_atacar_timer > 0.0:
 		return _puede_atacar_cached
 
 	_puede_atacar_timer = PUEDE_ATACAR_INTERVAL
 
-	var spawner = _get_cached_wave_spawner()
 	var enemies: Array = []
 	if spawner and spawner.has_method("get_active_enemies"):
 		if "is_wave_active" in spawner and not spawner.is_wave_active:
@@ -1558,6 +1596,8 @@ func _get_cached_wave_spawner() -> Node:
 	if get_tree() == null:
 		return null
 	_cached_wave_spawner = get_tree().get_first_node_in_group("wave_spawners")
+	if not _cached_wave_spawner:
+		_cached_wave_spawner = get_tree().get_first_node_in_group("wave_spawner")
 	if _cached_wave_spawner:
 		return _cached_wave_spawner
 	var scene_root = get_tree().current_scene

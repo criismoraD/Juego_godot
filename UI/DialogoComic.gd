@@ -369,6 +369,10 @@ func _aplicar_foco(nodo: Node, activo: bool, base_esc: Vector2, base_pos: Vector
 			base_pos.x + offset_rel.x * factor,
 			base_pos.y + dy_anchor + offset_rel.y * factor
 		)
+		if _material_eryn_tits:
+			_material_eryn_tits.set_shader_parameter(
+				"color_modulacion", Color.WHITE if activo else COLOR_RETRATO_APAGADO
+			)
 
 
 func _revelar_texto():
@@ -520,6 +524,7 @@ func _configurar_material_eryn_tits() -> void:
 	_material_eryn_tits.set_shader_parameter("factor_lado_derecho", factor_lado_derecho)
 	_material_eryn_tits.set_shader_parameter("deformacion_x", 0.0)
 	_material_eryn_tits.set_shader_parameter("deformacion_y", 0.0)
+	_material_eryn_tits.set_shader_parameter("color_modulacion", Color.WHITE)
 
 
 func reproducir_respiracion_eryn() -> void:

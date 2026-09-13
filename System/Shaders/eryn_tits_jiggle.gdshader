@@ -6,6 +6,7 @@ uniform float deformacion_y : hint_range(-2.0, 2.0) = 0.0;
 uniform float amplitud_uv : hint_range(0.0, 0.2) = 0.038;
 uniform float amplitud_y : hint_range(0.0, 0.2) = 0.040;
 uniform float factor_lado_derecho : hint_range(1.0, 3.0) = 1.8;
+uniform vec4 color_modulacion : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 void fragment() {
 	// Máscara horizontal asimétrica:
@@ -36,5 +37,5 @@ void fragment() {
 	uv_deformada.y -= deformacion_y * amplitud_y * factor_total;
 	uv_deformada = clamp(uv_deformada, vec2(0.0), vec2(1.0));
 
-	COLOR = texture(TEXTURE, uv_deformada) * COLOR;
+	COLOR = texture(TEXTURE, uv_deformada) * color_modulacion;
 }

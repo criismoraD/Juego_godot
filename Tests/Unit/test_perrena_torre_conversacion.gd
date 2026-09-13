@@ -351,8 +351,9 @@ func test_claves_existen_en_csv_con_texto_es() -> void:
 		"PERRENA_OPCION_ASALTO", "PERRENA_OPCION_CIVILES", "PERRENA_OPCION_CONSEJOS",
 		"PERRENA_ASALTO_1", "PERRENA_ASALTO_2", "PERRENA_ASALTO_3", "PERRENA_ASALTO_4",
 		"PERRENA_CIVILES_1", "PERRENA_CIVILES_2",
-		"PERRENA_CONSEJO_1", "PERRENA_CONSEJO_2", "PERRENA_CONSEJO_3", "PERRENA_CONSEJO_4",
-		"PERRENA_CONSEJO_5", "PERRENA_CONSEJO_6", "PERRENA_CONSEJO_7", "PERRENA_CONSEJO_8",
+		"PERRENA_CONSEJO_1", "PERRENA_CONSEJO_2", "PERRENA_CONSEJO_2_ERYN", "PERRENA_CONSEJO_2_PERRENA",
+		"PERRENA_CONSEJO_3", "PERRENA_CONSEJO_4",
+		"PERRENA_CONSEJO_5", "PERRENA_CONSEJO_6", "PERRENA_CONSEJO_7", "PERRENA_CONSEJO_7_ERYN", "PERRENA_CONSEJO_8",
 	]:
 		assert_true(csv.contains(clave), "La clave %s está registrada" % clave)
 	for texto in [
@@ -360,7 +361,11 @@ func test_claves_existen_en_csv_con_texto_es() -> void:
 		"río para evitar ser emboscadas",
 		"turbantes y grandes mochilas",
 		"no te hagas el muerto",
+		"Pero soy una chica, tus consejos no pueden ser mas al azar…",
+		"maldiciones prohibidas o pociones que pueden modificar tu sexo",
+		"El mundo es un lugar bizarro",
 		"apuéstale todo al rojo",
+		"No tenemos casinos en el bosque…",
 	]:
 		assert_true(csv.contains(texto), "El texto español existe: %s" % texto)
 
@@ -485,3 +490,71 @@ func test_abrir_menu_suena_seleccion_menu() -> void:
 			suena = true
 			break
 	assert_true(suena, "Abrir el menú suena seleccion_menu")
+
+
+func test_dialogo_consejo_2_tiene_tres_paginas_con_eryn_y_perrena() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+
+	# Assert constantes
+	assert_eq(
+		Array(npc.DIALOGO_CONSEJO_2_PAGINAS),
+		["PERRENA_CONSEJO_2", "PERRENA_CONSEJO_2_ERYN", "PERRENA_CONSEJO_2_PERRENA"],
+		"El consejo 2 consta de 3 páginas (Perrena, Eryn, Perrena)"
+	)
+	assert_eq(
+		Array(npc.DIALOGO_CONSEJO_2_HABLANTES),
+		["perrena", "eryn", "perrena"],
+		"Los hablantes alternan Perrena -> Eryn -> Perrena"
+	)
+
+	# Act: forzamos que la siguiente clave en cola sea PERRENA_CONSEJO_2 y mostramos
+	npc._consejos_cola = [npc.CONSEJOS_CLAVES.find("PERRENA_CONSEJO_2")]
+	npc._mostrar_consejo_perrena()
+
+	# Assert: se instanció el diálogo con las páginas y hablantes correctos
+	var ancla: Node = get_tree().current_scene if get_tree().current_scene else nivel
+	var dialogo := ancla.find_child("DialogoConversacionNivel5", true, false) as DialogoComic
+	assert_not_null(dialogo, "Se instanció el diálogo para el consejo 2")
+	if dialogo:
+		assert_eq(dialogo.paginas_texto.size(), 3, "El diálogo tiene 3 páginas de texto")
+		assert_eq(Array(dialogo.paginas_hablante), ["perrena", "eryn", "perrena"], "Los hablantes del diálogo coinciden")
+		dialogo.emit_signal("continuado")
+		await get_tree().process_frame
+		await get_tree().process_frame
+
+
+func test_dialogo_consejo_7_tiene_dos_paginas_con_perrena_y_eryn() -> void:
+	# Arrange
+	var nivel := await _instanciar_nivel()
+	var npc := _obtener_npc(nivel)
+
+	# Assert constantes
+	assert_eq(
+		Array(npc.DIALOGO_CONSEJO_7_PAGINAS),
+		["PERRENA_CONSEJO_7", "PERRENA_CONSEJO_7_ERYN"],
+		"El consejo 7 consta de 2 páginas (Perrena, Eryn)"
+	)
+	assert_eq(
+		Array(npc.DIALOGO_CONSEJO_7_HABLANTES),
+		["perrena", "eryn"],
+		"Los hablantes son Perrena -> Eryn"
+	)
+
+	# Act: forzamos que la siguiente clave en cola sea PERRENA_CONSEJO_7 y mostramos
+	npc._consejos_cola = [npc.CONSEJOS_CLAVES.find("PERRENA_CONSEJO_7")]
+	npc._mostrar_consejo_perrena()
+
+	# Assert: se instanció el diálogo con las páginas y hablantes correctos
+	var ancla: Node = get_tree().current_scene if get_tree().current_scene else nivel
+	var dialogo := ancla.find_child("DialogoConversacionNivel5", true, false) as DialogoComic
+	assert_not_null(dialogo, "Se instanció el diálogo para el consejo 7")
+	if dialogo:
+		assert_eq(dialogo.paginas_texto.size(), 2, "El diálogo tiene 2 páginas de texto")
+		assert_eq(Array(dialogo.paginas_hablante), ["perrena", "eryn"], "Los hablantes del diálogo coinciden")
+		dialogo.emit_signal("continuado")
+		await get_tree().process_frame
+		await get_tree().process_frame
+
+

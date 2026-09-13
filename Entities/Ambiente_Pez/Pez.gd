@@ -11,8 +11,10 @@ extends Node3D
 # === CONFIGURACIÓN - MOVIMIENTO ===
 @export_category("Movimiento en Río")
 @export var velocidad_nado: float = 1.0  ## Velocidad base de traslación horizontal
-@export var limite_x_min: float = -11.0  ## Límite izquierdo del recorrido visible
-@export var limite_x_max: float = 5.0  ## Límite derecho del recorrido visible
+@export var limite_x_min: float = -11.0  ## Límite izquierdo del recorrido visible estático
+@export var limite_x_max: float = 5.0  ## Límite derecho del recorrido visible estático
+@export var usar_limites_dinamicos_camara: bool = true  ## Si true, calcula el cruce relativo a la cámara
+@export var margen_pantalla_peces: float = 6.0  ## Distancia a izquierda/derecha de la cámara para entrar/salir de pantalla
 
 # === CONFIGURACIÓN - PROFUNDIDAD Y DERIVA ===
 @export_category("Profundidad y Oscilación")
@@ -94,9 +96,10 @@ func _process(delta: float) -> void:
 	rotation_degrees.y = _rot_inicial.y + (onda_z * 4.0 * _direccion_x)
 
 	# 7. Verificar si completó el recorrido para ocultarse y reiniciar temporizador
-	if _direccion_x < 0.0 and position.x < limite_x_min:
+	var limites := _obtener_limites_x()
+	if _direccion_x < 0.0 and position.x < limites.x:
 		_finalizar_cruce()
-	elif _direccion_x > 0.0 and position.x > limite_x_max:
+	elif _direccion_x > 0.0 and position.x > limites.y:
 		_finalizar_cruce()
 
 
@@ -110,14 +113,15 @@ func _iniciar_cruce(desde_posicion_actual: bool = false) -> void:
 	if _mesh:
 		_mesh.scale.x = 1.0 if _nadando_hacia_derecha else -1.0
 
-	if desde_posicion_actual and position.x >= limite_x_min and position.x <= limite_x_max:
+	var limites := _obtener_limites_x()
+	if desde_posicion_actual and position.x >= limites.x and position.x <= limites.y:
 		_pos_inicial = position
 	else:
 		# Colocar en el punto de inicio correspondiente
 		if _nadando_hacia_derecha:
-			position.x = limite_x_min - randf_range(0.0, 0.8)
+			position.x = limites.x - randf_range(0.2, 0.8)
 		else:
-			position.x = limite_x_max + randf_range(0.0, 0.8)
+			position.x = limites.y + randf_range(0.2, 0.8)
 
 		_pos_inicial.y = randf_range(profundidad_base_y - 0.06, profundidad_base_y + 0.04)
 		_pos_inicial.z = randf_range(2.3, 3.8)
@@ -131,6 +135,24 @@ func _iniciar_cruce(desde_posicion_actual: bool = false) -> void:
 
 	visible = true
 	_activo = true
+
+
+func _obtener_limites_x() -> Vector2:
+	if not usar_limites_dinamicos_camara:
+		return Vector2(limite_x_min, limite_x_max)
+
+	var vp := get_viewport()
+	var cam := vp.get_camera_3d() if vp else null
+	if not is_instance_valid(cam):
+		var raiz := get_tree().root if get_tree() else null
+		if raiz:
+			cam = raiz.find_child("CamaraPrincipal", true, false) as Camera3D
+
+	if is_instance_valid(cam):
+		var x_cam: float = cam.global_position.x
+		return Vector2(x_cam - margen_pantalla_peces, x_cam + margen_pantalla_peces)
+
+	return Vector2(limite_x_min, limite_x_max)
 
 
 func _finalizar_cruce() -> void:

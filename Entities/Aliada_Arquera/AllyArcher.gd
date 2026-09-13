@@ -52,6 +52,7 @@ var plataforma_asignada: int = 0
 @export var plano_profundidad_z: float = -0.02  ## Plano Z retrasado (detrás de ballesteras y protagonista)
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
+var _oleada_en_curso: bool = true  ## False cuando la oleada ha culminado y las defensoras deben celebrar sin atacar
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -782,7 +783,13 @@ func _process_idle(delta: float) -> void:
 	_check_enemigos_timer -= delta
 	if _check_enemigos_timer <= 0.0:
 		_check_enemigos_timer = CHECK_ENEMIGOS_INTERVAL
-		_hay_enemigos_cache = (_contar_enemigos_en_pantalla() >= enemigos_minimos)
+		_hay_enemigos_cache = (_oleada_en_curso and _contar_enemigos_en_pantalla() >= enemigos_minimos)
+
+	if not _oleada_en_curso:
+		_examinando = false
+		_play_anim(["IDE", "IDLE_001", "IDLE"], 0.3)
+		_play_bow_anim("ARCO_IDLE", 0.3)
+		return
 
 	var hay_enemigos: bool = _hay_enemigos_cache
 	if not hay_enemigos:
@@ -872,10 +879,14 @@ func _process_getting_up(delta: float) -> void:
 
 
 ## CELEBRATING: la animación VICTORIA corre en LOOP (el AnimationPlayer
-## la repite sola); aquí solo se agota el tiempo total y se corta a IDLE.
+## la repite sola); si la oleada concluyó, permanece celebrando sin volver a IDLE.
 func _process_celebrating(delta: float) -> void:
 	state_timer -= delta
 	if state_timer <= 0:
+		if not _oleada_en_curso:
+			var _dur_clip: float = _get_anim_length("VICTORIA")
+			state_timer = maxf(_dur_clip / velocidad_anim_victoria, 0.3)
+			return
 		_loops_victoria_restantes = 0
 		_cambiar_estado(State.IDLE)
 
@@ -917,7 +928,7 @@ func _cambiar_estado(nuevo: State):
 
 	match nuevo:
 		State.IDLE:
-			var hay_enemigos: bool = (_contar_enemigos_en_pantalla() >= enemigos_minimos)
+			var hay_enemigos: bool = (_oleada_en_curso and _contar_enemigos_en_pantalla() >= enemigos_minimos)
 			_examinando = false
 			if not hay_enemigos:
 				_play_anim(["IDE", "IDLE_001", "IDLE"], 0.3)
@@ -1009,6 +1020,7 @@ func _conectar_eventos_oleada() -> void:
 
 
 func _on_oleada_iniciada(numero_oleada: int) -> void:
+	_oleada_en_curso = true
 	if es_movil or en_despliegue:
 		return
 
@@ -1033,6 +1045,7 @@ func _on_oleada_iniciada(numero_oleada: int) -> void:
 
 
 func _on_oleada_completada(_numero_oleada: int) -> void:
+	_oleada_en_curso = false
 	celebrar_victoria()
 
 
@@ -1109,6 +1122,8 @@ func _get_cached_wave_spawner() -> Node:
 		return null
 
 	_cached_wave_spawner = get_tree().get_first_node_in_group("wave_spawners")
+	if not _cached_wave_spawner:
+		_cached_wave_spawner = get_tree().get_first_node_in_group("wave_spawner")
 	if _cached_wave_spawner:
 		return _cached_wave_spawner
 
@@ -1162,9 +1177,15 @@ func _es_lonko_en_pilar_completo(enemy: Node) -> bool:
 
 ## Devuelve la cantidad de enemigos presentes en pantalla, vivos, estén o no reconocidos como objetivos
 func _contar_enemigos_en_pantalla() -> int:
+	if not _oleada_en_curso:
+		return 0
+
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and "is_wave_active" in wave_spawner and not wave_spawner.is_wave_active:
+		return 0
+
 	var count := 0
 	var enemies: Array = []
-	var wave_spawner = _get_cached_wave_spawner()
 	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
 		enemies = wave_spawner.get_active_enemies()
 	else:
@@ -1187,10 +1208,15 @@ func _contar_enemigos_en_pantalla() -> int:
 
 
 func _contar_enemigos_vivos() -> int:
-	var count = 0
-	var enemies = []
+	if not _oleada_en_curso:
+		return 0
 
 	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and "is_wave_active" in wave_spawner and not wave_spawner.is_wave_active:
+		return 0
+
+	var count = 0
+	var enemies = []
 	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
 		enemies = wave_spawner.get_active_enemies()
 	else:
@@ -1438,6 +1464,8 @@ func agregar_flechas_explosivas(cantidad: int = 5) -> void:
 
 
 func _disparar():
+	if not _oleada_en_curso:
+		return
 	if not arrow_scene:
 		return
 

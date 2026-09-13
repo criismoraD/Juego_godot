@@ -430,6 +430,51 @@ func test_forzar_outline_en_runtime_aplica_a_material_ballestera() -> void:
 	)
 
 
+func test_oleada_completada_permanece_celebrando_sin_atacar_ni_disparar() -> void:
+	# Arrange
+	_ballestera.visible = true
+	_ballestera.current_state = _ballestera.State.IDLE
+	assert_true(_ballestera._oleada_en_curso, "La oleada debe iniciar activa por defecto")
+
+	# Act: Finalizar la oleada
+	_ballestera._on_oleada_completada(1)
+
+	# Assert 1: Bandera de oleada y estado
+	assert_false(_ballestera._oleada_en_curso, "Al completarse la oleada, _oleada_en_curso debe ser false")
+	assert_eq(_ballestera.current_state, _ballestera.State.CELEBRATING, "Debe entrar en estado CELEBRATING")
+	assert_false(_ballestera._puede_atacar(), "No debe poder atacar cuando la oleada ha culminado")
+
+	# Act 2: Agotar los loops de celebración simulando paso del tiempo
+	while _ballestera._loops_victoria_restantes > 0:
+		_ballestera.state_timer = 0.0
+		_ballestera._process_celebrating(0.01)
+
+	# Assert 2: Permanece celebrando y NO cambia a AIMING
+	assert_eq(_ballestera.current_state, _ballestera.State.CELEBRATING, "Debe permanecer celebrando en loop continuo mientras la oleada esté completada")
+	assert_ne(_ballestera.current_state, _ballestera.State.AIMING, "Bajo ningún concepto debe volver a AIMING al terminar los loops")
+
+	# Act 3: Intentar disparar forzadamente
+	var balas_antes := get_tree().get_nodes_in_group("projectiles").size()
+	_ballestera._disparar()
+	var balas_despues := get_tree().get_nodes_in_group("projectiles").size()
+	assert_eq(balas_despues, balas_antes, "No debe spawnear proyectiles cuando la oleada no está en curso")
+
+
+func test_oleada_iniciada_reanuda_estado_idle() -> void:
+	# Arrange
+	_ballestera.visible = true
+	_ballestera._on_oleada_completada(1)
+	assert_eq(_ballestera.current_state, _ballestera.State.CELEBRATING)
+
+	# Act: Inicia la siguiente oleada
+	_ballestera._on_oleada_iniciada(2)
+
+	# Assert
+	assert_true(_ballestera._oleada_en_curso, "_oleada_en_curso debe reactivarse en true")
+	assert_eq(_ballestera.current_state, _ballestera.State.IDLE, "Al iniciar la nueva oleada debe salir de CELEBRATING a IDLE")
+
+
+
 
 
 

@@ -418,5 +418,52 @@ func test_escena_contiene_hitbox_body_y_shape():
 	assert_true(col.shape is Shape3D, "La forma debe ser un recurso Shape3D editable")
 
 
+func test_oleada_completada_permanece_celebrando_sin_atacar_ni_gastar_municion() -> void:
+	# Arrange
+	_ally.visible = true
+	_ally.current_state = _ally.State.IDLE
+	_ally.flechas_explosivas = 5
+	_ally.flechas_multiples = 3
+	assert_true(_ally._oleada_en_curso, "La oleada debe iniciar activa")
+
+	# Act 1: Culmina la oleada
+	_ally._on_oleada_completada(1)
+
+	# Assert 1: Entra a CELEBRATING y detecta fin de oleada
+	assert_false(_ally._oleada_en_curso, "_oleada_en_curso debe ser false al terminar la oleada")
+	assert_eq(_ally.current_state, _ally.State.CELEBRATING, "Debe pasar a estado CELEBRATING")
+	assert_eq(_ally._contar_enemigos_en_pantalla(), 0, "Con oleada terminada el conteo de enemigos debe ser 0")
+
+	# Act 2: Agotar el timer de celebración
+	_ally.state_timer = 0.0
+	_ally._process_celebrating(0.01)
+
+	# Assert 2: Debe continuar celebrando en loop continuo
+	assert_eq(_ally.current_state, _ally.State.CELEBRATING, "Debe mantenerse celebrando en loop continuo mientras la oleada esté finalizada")
+	assert_ne(_ally.current_state, _ally.State.IDLE, "No debe regresar a IDLE mientras no comience la nueva oleada")
+
+	# Act 3: Intentar disparo forzado
+	_ally._disparar()
+
+	# Assert 3: No desperdiciar munición
+	assert_eq(_ally.flechas_explosivas, 5, "Las flechas explosivas deben preservarse intactas sin gastarse")
+	assert_eq(_ally.flechas_multiples, 3, "Las flechas múltiples deben preservarse intactas sin gastarse")
+
+
+func test_oleada_iniciada_reanuda_estado_idle() -> void:
+	# Arrange
+	_ally.visible = true
+	_ally._on_oleada_completada(1)
+	assert_eq(_ally.current_state, _ally.State.CELEBRATING)
+
+	# Act: Inicia la siguiente oleada
+	_ally._on_oleada_iniciada(2)
+
+	# Assert
+	assert_true(_ally._oleada_en_curso, "_oleada_en_curso debe reactivarse en true")
+	assert_eq(_ally.current_state, _ally.State.IDLE, "Al iniciar la nueva oleada debe salir de CELEBRATING a IDLE")
+
+
+
 
 

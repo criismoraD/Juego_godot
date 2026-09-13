@@ -103,10 +103,21 @@ PERRENA_CIVILES_1,"Algunos miembros del gremio de comerciantes quedaron atrapado
 PERRENA_CIVILES_2,El gremio sabe devolver los favores,The guild knows how to return favors,,,,,,,,,,,,
 PERRENA_CONSEJO_1,"Si te ves atacado por un oso no te hagas el muerto, no funciona","If a bear attacks you, don't play dead: it doesn't work",,,,,,,,,,,,
 PERRENA_CONSEJO_2,"Si sientes un bulto extraño al palparte los testículos deberías visitar a un médico","If you feel a strange lump when checking your testicles, you should see a doctor",,,,,,,,,,,,
+PERRENA_CONSEJO_2_ERYN,"Pero soy una chica, tus consejos no pueden ser mas al azar…","But I'm a girl, your advice couldn't be more random…",,,,,,,,,,,,
+PERRENA_CONSEJO_2_PERRENA,"Nunca se sabe, existen maldiciones prohibidas o pociones que pueden modificar tu sexo\nEl mundo es un lugar bizarro","You never know, there are forbidden curses or potions that can change your sex\nThe world is a bizarre place",,,,,,,,,,,,
 PERRENA_CONSEJO_3,"Si te pierdes prioriza un refugio antes que comida, la intemperie te matará antes que el hambre","If you get lost, prioritize shelter over food: exposure will kill you before hunger does",,,,,,,,,,,,
 PERRENA_CONSEJO_4,"Si quieres mantener tu piel joven evita fumar, eso consume tu colágeno","If you want to keep your skin young, avoid smoking: it depletes your collagen",,,,,,,,,,,,
 PERRENA_CONSEJO_5,"Nunca respondas mensajes de tipos que te pidan dibujar su cómic a cambio de fama sin pagarte nada","Never reply to messages from guys who ask you to draw their comic for fame without paying you anything",,,,,,,,,,,,
 PERRENA_CONSEJO_6,"Si tienes los recursos y tiempo adopta un perro, son fuentes de amor infinito","If you have the resources and time, adopt a dog: they are sources of infinite love",,,,,,,,,,,,
 PERRENA_CONSEJO_7,"Si vas al casino apuéstale todo al rojo, es lo que yo haría…","If you go to the casino, bet it all on red: that is what I would do…",,,,,,,,,,,,
+PERRENA_CONSEJO_7_ERYN,"No tenemos casinos en el bosque…\nPero recordaré apostar al rojo si se da la oportunidad","We don't have casinos in the forest…\nBut I'll remember to bet on red if the chance arises",,,,,,,,,,,,
 PERRENA_CONSEJO_8,"Una buena espada tiene su centro de gravedad a unos pocos centímetros de la guarda, lo que permite moverla con agilidad","A good sword has its center of gravity a few centimeters from the guard, which lets you wield it with agility",,,,,,,,,,,,
+BTN_VOLVER,VOLVER,BACK,VOLTAR,RETOUR,返回,戻る,НАЗАД,ZURÜCK,뒤로,INDIETRO,WRÓĆ,رجوع,KUTIPUY,01000010 01000001 01001111 01001100
+BTN_CERRAR,CERRAR,CLOSE,FECHAR,FERMER,关闭,閉じる,ЗАКРЫТЬ,SCHLIESSEN,닫기,CHIUDI,ZAMKNIJ,إغلاق,WICHQAY,01000011 01001100 01001111 01010011
+GALLERY_SUBTITLE,"Colección de ilustraciones y arte conceptual","Collection of illustrations and concept art",,,,,,,,,,,,
+OBRA_01_TITULO,Eryn diseño Dialogos,Eryn Dialogue Design,Eryn Design Diálogos,Eryn Design Dialogues,艾琳对话立绘设计,エリン対話立ち絵デザイン,Эрин дизайн диалогов,Eryn Dialogdesign,에린 대화 디자인,Eryn Design Dialoghi,Eryn Projekt Dialogowy,تصميم إيرين للحوارات,Eryn rimanakuy ch'anta,01000101 01110010 01111001 01101110
+OBRA_01_DESC,"Diseño de expresiones y retrato de Eryn para los diálogos principales","Expressions and portrait design of Eryn for main dialogues",,,,,,,,,,,,
+OBRA_02_TITULO,0.1 Version,0.1 Version,0.1 Versão,0.1 Version,0.1 版本,0.1 バージョン,Версия 0.1,0.1 Version,0.1 버전,0.1 Versione,0.1 Wersja,الإصدار 0.1,0.1 Version,01000011 00101110 00110001
+OBRA_02_DESC,"Video demostrativo de la versión 0.1 del juego","Demonstration video of game version 0.1",,,,,,,,,,,,
+
 

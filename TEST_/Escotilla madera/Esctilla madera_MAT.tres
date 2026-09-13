@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" uid="uid://djs1ms68yh5nv" path="res://TEST_/Escotilla madera/Esctilla madera_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Esctilla madera_M"
+albedo_texture = ExtResource("1_tex")
+roughness = 0.8

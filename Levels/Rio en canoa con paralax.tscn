@@ -7,12 +7,21 @@
 [ext_resource type="Script" uid="uid://b2nhjsebdynqx" path="res://Levels/Rio_En_Canoa_Con_Parallax/ParallaxFondoRio.gd" id="5_parallax"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn" id="6_canoa"]
 [ext_resource type="Texture2D" uid="uid://x6yasi6rallh" path="res://TEST_/Textura agua nivel 6.png" id="7_8fuu7"]
-[ext_resource type="Texture2D" uid="uid://drg1ydjilaicb" path="res://TEST_/Fondo nivel 6 atardecer.png" id="7_atardecer"]
-[ext_resource type="Texture2D" uid="uid://2hxi2e56yy0f" path="res://TEST_/Fondo terroso nivel 6.png" id="8_terroso"]
+[ext_resource type="Texture2D" uid="uid://ck3sab5hs521s" path="res://TEST_/arboles prueba.png" id="9_80jwg"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PiedraFondoCordillera.tscn" id="9_cordillera"]
+[ext_resource type="Texture2D" uid="uid://b2t5g72t8hny7" path="res://TEST_/nube rosada.png" id="10_43yr5"]
+[ext_resource type="Texture2D" uid="uid://bs15lhvgwf7xj" path="res://TEST_/Fondo_estatico_preview.png" id="11_preview_fondo"]
+[ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Entities/Ambiente_Piso/PISO ALIADO.glb" id="14_kh264"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
 dof_blur_far_transition = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5wjan"]
+render_priority = -10
+shading_mode = 0
+disable_fog = true
+albedo_texture = ExtResource("11_preview_fondo")
 
 [node name="Rio en canoa con paralax" type="Node3D" unique_id=2026999000]
 script = ExtResource("1_script")
@@ -79,11 +88,10 @@ fov = 5.0
 size = 0.01
 
 [node name="WaterPlane" parent="." unique_id=2026999008 instance=ExtResource("3_water")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9324427, -0.17290789, -12.304441)
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4.5028443, -5.9324427, -0.17290789, -67.57953)
 
 [node name="WaterPlane2" parent="." unique_id=1903931376 instance=ExtResource("3_water")]
-transform = Transform3D(2.176133, 0, 0, 0, 0.964538, -0.29040247, 0, 0.26394403, 1.0612258, -5.9324427, -1.1105967, -73.22456)
-visible = false
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4.5028443, -5.9324427, -0.17290789, -67.57953)
 
 [node name="Pez" parent="." unique_id=2026999009 instance=ExtResource("4_pez")]
 transform = Transform3D(0.8114411, 0, 0, 0, 0.8114411, 0, 0, 0, 1, 2.5, -0.6677978, 2.5)
@@ -100,37 +108,199 @@ script = ExtResource("5_parallax")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
 
 [node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
-transform = Transform3D(2.5, 0, 0, 0, 1.9389358, 0, 0, 0, 1, -4.9087925, -2.977428, -43.294548)
-layers = 3
+transform = Transform3D(11.327185, 0, 0, 0, 10.066407, 0, 0, 0, 1, -5.840851, -4.7548733, -100.41611)
+layers = 2
+material_override = SubResource("StandardMaterial3D_5wjan")
 pixel_size = 0.005
-texture = ExtResource("7_atardecer")
+render_priority = -10
+texture = ExtResource("11_preview_fondo")
 
 [node name="agua textura" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999022]
 transform = Transform3D(8.592436, -0.001270286, 0.002848781, 0.014861771, -1.9625132, -1.6370641, -0.0013601979, -29.467228, 0.10902822, -5.1831093, -4.1894703, 0.37693024)
+visible = false
 layers = 3
 pixel_size = 0.005
 texture = ExtResource("7_8fuu7")
 
+[node name="CapaCordillera" type="Node3D" parent="ParallaxFondo" unique_id=2026999030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -28)
+
+[node name="PiedraCordillera_0" parent="ParallaxFondo/CapaCordillera" unique_id=2026999031 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, -21.25, -2.3809147, -56.50928)
+
+[node name="PiedraCordillera_1" parent="ParallaxFondo/CapaCordillera" unique_id=2026999032 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, -12.75, -2.366786, -56.183224)
+
+[node name="PiedraCordillera_2" parent="ParallaxFondo/CapaCordillera" unique_id=2026999033 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, -4.25, -2.1972475, -55.73407)
+
+[node name="PiedraCordillera_3" parent="ParallaxFondo/CapaCordillera" unique_id=2026999034 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 4.25, -2.4358678, -55.22635)
+
+[node name="PiedraCordillera_4" parent="ParallaxFondo/CapaCordillera" unique_id=2026999035 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 12.75, -2.558239, -54.510597)
+
+[node name="PiedraCordillera_5" parent="ParallaxFondo/CapaCordillera" unique_id=2026999036 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 21.25, -2.0966191, -53.382694)
+
+[node name="PiedraCordillera_6" parent="ParallaxFondo/CapaCordillera" unique_id=2026999037 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 29.75, -2.2, -53.695236)
+
+[node name="PiedraCordillera_7" parent="ParallaxFondo/CapaCordillera" unique_id=2026999038 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 38.25, -2.3, -53.660324)
+
+[node name="PiedraCordillera_8" parent="ParallaxFondo/CapaCordillera" unique_id=2026999039 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 46.75, -2.4, -53.169956)
+
+[node name="PiedraCordillera_9" parent="ParallaxFondo/CapaCordillera" unique_id=2026999041 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 55.25, -2.2, -52.849495)
+
+[node name="PiedraCordillera_10" parent="ParallaxFondo/CapaCordillera" unique_id=2026999045 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 63.75, -2.3, -53)
+
+[node name="PiedraCordillera_11" parent="ParallaxFondo/CapaCordillera" unique_id=2026999046 instance=ExtResource("9_cordillera")]
+transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 72.25, -2.3, -53)
+
 [node name="CapaTerroso" type="Node3D" parent="ParallaxFondo" unique_id=2026999023]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -20)
 
-[node name="Terroso_0" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999024]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -45.5904)
-layers = 2
+[node name="Arboles_0" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999024]
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, -33.1485, 1.353241, -85.38983)
+layers = 3
 pixel_size = 0.0035
-texture = ExtResource("8_terroso")
+texture = ExtResource("9_80jwg")
 
-[node name="Terroso_1" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999025]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -45.04354)
-layers = 2
+[node name="Arboles_1" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999047]
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, -19.6785, 1.353241, -83.67983)
+layers = 3
 pixel_size = 0.0035
-texture = ExtResource("8_terroso")
+texture = ExtResource("9_80jwg")
 
-[node name="Terroso_2" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999026]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -44.533867)
-layers = 2
+[node name="Arboles_2" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999048]
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, -6.208499, 1.353241, -82.65994)
+layers = 3
 pixel_size = 0.0035
-texture = ExtResource("8_terroso")
+texture = ExtResource("9_80jwg")
+
+[node name="Arboles_3" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999049]
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, 7.2615013, 1.353241, -85.56304)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("9_80jwg")
+
+[node name="Arboles_4" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999050]
+transform = Transform3D(20.654787, 0, 0, 0, 11.183316, 0, 0, 0, 9.331494, 20.731503, 1.353241, -82.380394)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("9_80jwg")
+
+[node name="Arboles_5" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999051]
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, 34.201504, 1.353241, -82.67502)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("9_80jwg")
+
+[node name="Arboles_6" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999052]
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, 47.671505, 1.353241, -85.81168)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("9_80jwg")
+
+[node name="Arboles_7" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999053]
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, 61.141506, 1.353241, -84.70971)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("9_80jwg")
+
+[node name="NubeRosa_0" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=1307623279]
+transform = Transform3D(70.373566, 0, 0, 0, 11.935594, 0, 0, 0, 7.4582386, -28.208498, -0.83228993, -89.70932)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("10_43yr5")
+
+[node name="NubeRosa_1" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999054]
+transform = Transform3D(70.373566, 0, 0, 0, 11.935594, 0, 0, 0, 7.4582386, 7.2615013, -0.83228993, -89.70932)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("10_43yr5")
+
+[node name="NubeRosa_2" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999055]
+transform = Transform3D(70.373566, 0, 0, 0, 11.935594, 0, 0, 0, 7.4582386, 42.731503, -0.83228993, -89.70932)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("10_43yr5")
+
+[node name="NubeRosa_3" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999056]
+transform = Transform3D(70.373566, 0, 0, 0, 11.935594, 0, 0, 0, 7.4582386, 78.2015, -0.83228993, -89.70932)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("10_43yr5")
+
+[node name="NubeRosa_4" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999057]
+transform = Transform3D(70.373566, 0, 0, 0, 11.935594, 0, 0, 0, 7.4582386, 113.6715, -0.83228993, -89.70932)
+layers = 3
+pixel_size = 0.0035
+texture = ExtResource("10_43yr5")
 
 [node name="CanoaProtagonistaRio" parent="." unique_id=2026999012 instance=ExtResource("6_canoa")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -6, -0.28, -7.5)
+
+[node name="PISO ALIADO6" parent="." unique_id=328449249 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.07384, 0, 0, 0, 3.0799909, -22.684576, -1.7293684, -82.94933)
+
+[node name="PISO ALIADO7" parent="." unique_id=1060963024 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.933131, 0, 0, 0, 3.0799909, -17.18048, -1.7175071, -82.94933)
+
+[node name="PISO ALIADO8" parent="." unique_id=663436152 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 9.420902, 0, 0, 0, 3.0799909, -11.90124, -1.4105332, -82.94933)
+
+[node name="PISO ALIADO9" parent="." unique_id=642433076 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 9.996444, 0, 0, 0, 3.0799909, -6.4217095, -1.5428724, -82.94933)
+
+[node name="PISO ALIADO10" parent="." unique_id=1320092230 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 9.597738, 0, 0, 0, 3.0799909, -1.0074811, -1.4918253, -82.94933)
+
+[node name="PISO ALIADO11" parent="." unique_id=993523357 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 3.8769507, -1.4770741, -82.94933)
+
+[node name="PISO ALIADO14" parent="." unique_id=418172636 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 17.165363, -1.4770741, -81.8263)
+
+[node name="PISO ALIADO15" parent="." unique_id=1953340002 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 23.060976, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO16" parent="." unique_id=1992592966 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 28.141108, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO17" parent="." unique_id=1356162262 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 33.335327, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO18" parent="." unique_id=1472923586 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 38.601254, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO19" parent="." unique_id=941681363 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 43.411034, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO20" parent="." unique_id=401586440 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 48.172073, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO21" parent="." unique_id=780407699 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 54.93792, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO22" parent="." unique_id=826076444 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 61.252735, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO23" parent="." unique_id=571556474 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 66.61313, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO24" parent="." unique_id=1523911472 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 70.902824, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO25" parent="." unique_id=1793991629 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 73.99425, -1.4770741, -80.830505)
+
+[node name="PISO ALIADO12" parent="." unique_id=1184400067 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 7.2355685, 0, 0, 0, 3.0799909, 9.592409, -1.0493348, -82.94933)
+
+[node name="PISO ALIADO13" parent="." unique_id=1603298363 instance=ExtResource("14_kh264")]
+transform = Transform3D(5.992707, 0, 0, 0, 7.2355685, 0, 0, 0, 3.0799909, 17.969572, -1.0493348, -82.7293)

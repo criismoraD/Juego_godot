@@ -71,7 +71,13 @@ func _on_opciones_pressed() -> void:
 
 
 func _on_galeria_pressed() -> void:
-	_mostrar_mensaje("Galería - En desarrollo / Gallery - Coming soon", 2.0)
+	if transitioning:
+		return
+	transitioning = true
+	_mostrar_mensaje("")
+	var tween := create_tween()
+	tween.tween_property(fade_overlay, "color:a", 1.0, 0.4).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	tween.finished.connect(func(): get_tree().change_scene_to_file("res://UI/GaleriaArte.tscn"))
 
 
 func _on_creditos_pressed() -> void:

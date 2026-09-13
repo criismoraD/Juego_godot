@@ -12,6 +12,7 @@
 [ext_resource type="Material" path="res://Levels/Nivel_Interior/MAT_sombra_interior_overlay.tres" id="10_mat_sombra"]
 [ext_resource type="Material" path="res://Levels/Nivel_Interior/MAT_DesaturacionBordes.tres" id="15_mat_desat"]
 [ext_resource type="PackedScene" uid="uid://c6v2j8xay1k4p" path="res://Entities/Jugador_Perrena/PerrenaInterior.tscn" id="16_perrena_interior"]
+[ext_resource type="PackedScene" uid="uid://vkufopn4cak8" path="res://TEST_/Escotilla madera/Esctilla madera.glb" id="17_escotilla"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_estruc"]
 size = Vector3(2, 1.0500488, 2)
@@ -119,7 +120,7 @@ fov = 45.0
 size = 0.565
 
 [node name="ESCUDO_ORNAMENTO2" parent="." unique_id=702858261 instance=ExtResource("2_ymvt4")]
-transform = Transform3D(0.295, 0, 0, 0, 0.295, 0, 0, 0, 0.295, 0, 0.38631535, -0.267338)
+transform = Transform3D(0.295, 0, 0, 0, 0.26605266, 0, 0, 0, 0.295, 0, 0.38631535, -0.267338)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=581938210]
 environment = ExtResource("8_env")
@@ -316,3 +317,6 @@ transform = Transform3D(0.58224, 0, -0.81301, 0, 1, 0, 0.81301, 0, 0.58224, 0.32
 
 [node name="MesaConfiguracion" parent="." unique_id=1482910382 instance=ExtResource("6_mesa")]
 transform = Transform3D(0.9923861, 0, -0.1231656, 0, 1, 0, 0.1231656, 0, 0.9923861, 0.04901872, 0.050048828, -0.23174888)
+
+[node name="EscotillaMadera" parent="." unique_id=1946057064 instance=ExtResource("17_escotilla")]
+transform = Transform3D(0.13508484, 0.0019865362, 0.014737339, -0.002339416, 0.11470851, -0.00025522304, -0.015628455, 0, 0.12742063, -0.33441848, 0.03780817, 0.21148029)

@@ -97,6 +97,24 @@ const DIALOGO_CIVILES_HABLANTES: Array[String] = [
 	HABLANTE_PERRENA,
 	HABLANTE_PERRENA,
 ]
+const DIALOGO_CONSEJO_2_PAGINAS: Array[String] = [
+	"PERRENA_CONSEJO_2",
+	"PERRENA_CONSEJO_2_ERYN",
+	"PERRENA_CONSEJO_2_PERRENA",
+]
+const DIALOGO_CONSEJO_2_HABLANTES: Array[String] = [
+	HABLANTE_PERRENA,
+	HABLANTE_ERYN,
+	HABLANTE_PERRENA,
+]
+const DIALOGO_CONSEJO_7_PAGINAS: Array[String] = [
+	"PERRENA_CONSEJO_7",
+	"PERRENA_CONSEJO_7_ERYN",
+]
+const DIALOGO_CONSEJO_7_HABLANTES: Array[String] = [
+	HABLANTE_PERRENA,
+	HABLANTE_ERYN,
+]
 const CONSEJOS_CLAVES: Array[String] = [
 	"PERRENA_CONSEJO_1",
 	"PERRENA_CONSEJO_2",
@@ -757,6 +775,12 @@ func _rellenar_consejos() -> void:
 func _mostrar_consejo_perrena() -> void:
 	var clave := obtener_siguiente_consejo()
 	if clave.is_empty():
+		return
+	if clave == "PERRENA_CONSEJO_2":
+		_mostrar_dialogo_torre(DIALOGO_CONSEJO_2_PAGINAS, DIALOGO_CONSEJO_2_HABLANTES)
+		return
+	if clave == "PERRENA_CONSEJO_7":
+		_mostrar_dialogo_torre(DIALOGO_CONSEJO_7_PAGINAS, DIALOGO_CONSEJO_7_HABLANTES)
 		return
 	var paginas: Array[String] = [clave]
 	var hablantes: Array[String] = [HABLANTE_PERRENA]
