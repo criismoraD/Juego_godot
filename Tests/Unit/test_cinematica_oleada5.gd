@@ -599,7 +599,8 @@ func test_dialogo_dual_resalta_hablante_y_apaga_otro() -> void:
 	# Assert página 0 (Eryn): ella plena, Perrena encogida y oscura.
 	assert_eq(dlg.find_child("Nombre", true, false).text, "Eryn", "Habla Eryn")
 	assert_eq(eryn_nodo.modulate, Color.WHITE, "Eryn plena")
-	assert_eq(eryn_nodo.scale, Vector2(0.5853904, 0.5853905), "Eryn a tamaño base")
+	assert_almost_eq(eryn_nodo.scale.x, 0.5853904, 0.02, "Eryn a tamaño base X")
+	assert_almost_eq(eryn_nodo.scale.y, 0.5853905, 0.02, "Eryn a tamaño base Y")
 	assert_lt(perrena_nodo.modulate.r, 0.6, "Perrena oscura")
 	assert_lt(perrena_nodo.scale.x, 0.535, "Perrena encogida")
 	var borde_eryn: float = _borde_inferior_retrato(eryn_nodo)

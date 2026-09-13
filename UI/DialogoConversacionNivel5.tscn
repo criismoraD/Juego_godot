@@ -5,6 +5,16 @@
 [ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
 [ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://UI/Protagonista/PROTA_NORMAL.png" id="4_qyvsk"]
 [ext_resource type="Texture2D" uid="uid://c0e7qjot2m0oi" path="res://TEST_/Perrena png.png" id="5_perrena"]
+[ext_resource type="Shader" uid="uid://qpdkuds4ycao" path="res://System/Shaders/eryn_tits_jiggle.gdshader" id="6_shader_tits"]
+[ext_resource type="Texture2D" uid="uid://u1efafgkmg7m" path="res://TEST_/Eryn tits 3.png" id="7_tits"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jiggle"]
+shader = ExtResource("6_shader_tits")
+shader_parameter/deformacion_x = 0.0
+shader_parameter/deformacion_y = 0.0
+shader_parameter/amplitud_uv = 0.038
+shader_parameter/amplitud_y = 0.04
+shader_parameter/factor_lado_derecho = 1.8
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]
 content_margin_left = 14.0
@@ -155,6 +165,12 @@ text = "BTN_SKIP"
 position = Vector2(445, 526)
 scale = Vector2(0.5853904, 0.5853905)
 texture = ExtResource("4_qyvsk")
+
+[node name="Eryntits3" type="Sprite2D" parent="." unique_id=1946057063]
+material = SubResource("ShaderMaterial_jiggle")
+position = Vector2(555.17163, 525.54803)
+scale = Vector2(0.5882714, 0.5896108)
+texture = ExtResource("7_tits")
 
 [node name="RetratoPerrena" type="Sprite2D" parent="." unique_id=1396290820]
 position = Vector2(1483, 527.00006)

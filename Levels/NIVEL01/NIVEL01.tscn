@@ -595,11 +595,11 @@ draw_pass_1 = SubResource("QuadMesh_dust")
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=1808647889]
+[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=1802110535]
 visible = false
 material_override = ExtResource("47_plano_mat")
 
-[node name="TORRE" parent="TORRE" index="1" unique_id=624476145]
+[node name="TORRE" parent="TORRE" index="1" unique_id=1970117339]
 transform = Transform3D(1.0111401, 0, 0, 0, 1.0001929, 0, 0, 0, 1.0001929, -0.002997756, 0, 0)
 layers = 2
 
@@ -614,9 +614,8 @@ idle_max = 2.0
 [node name="Tronco" parent="." unique_id=1939768984 instance=ExtResource("25_cx8r4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.092516, -0.20376292, 3.083572)
 
-[node name="TrayectoriaEmbarcaciones" parent="." unique_id=2026995100 unique_name_in_owner=true instance=ExtResource("71_trayectoria_embarcaciones")]
+[node name="TrayectoriaEmbarcaciones" parent="." unique_id=2026995100 instance=ExtResource("71_trayectoria_embarcaciones")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.29578602, -8.134172)
-spawn_al_iniciar = false
 velocidad_canoa = 1.6
 velocidad_balsa = 1.4
 

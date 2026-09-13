@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://TEST_/Salpicadura_test/SalpicaduraTest.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://TEST_/Salpicadura_test/salpicadura_test_strip.png" id="2_strip"]
+
+[node name="SalpicaduraTest" type="AnimatedSprite3D"]
+billboard = 1
+shaded = false
+render_priority = 2
+offset = Vector2(0, 56)
+script = ExtResource("1_script")
+tira_textura = ExtResource("2_strip")
+escala_efecto = 1.6

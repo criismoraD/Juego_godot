@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cb5c03pe088q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="4_pez"]
 [ext_resource type="Script" uid="uid://b2nhjsebdynqx" path="res://Levels/Rio_En_Canoa_Con_Parallax/ParallaxFondoRio.gd" id="5_parallax"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn" id="6_canoa"]
+[ext_resource type="Texture2D" uid="uid://x6yasi6rallh" path="res://TEST_/Textura agua nivel 6.png" id="7_8fuu7"]
 [ext_resource type="Texture2D" uid="uid://drg1ydjilaicb" path="res://TEST_/Fondo nivel 6 atardecer.png" id="7_atardecer"]
 [ext_resource type="Texture2D" uid="uid://2hxi2e56yy0f" path="res://TEST_/Fondo terroso nivel 6.png" id="8_terroso"]
 
@@ -81,7 +82,8 @@ size = 0.01
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9324427, -0.17290789, -12.304441)
 
 [node name="WaterPlane2" parent="." unique_id=1903931376 instance=ExtResource("3_water")]
-transform = Transform3D(2.176133, 0, 0, 0, 0.964538, -0.29040247, 0, 0.26394403, 1.0612258, -5.9324427, -2.9302492, -73.22456)
+transform = Transform3D(2.176133, 0, 0, 0, 0.964538, -0.29040247, 0, 0.26394403, 1.0612258, -5.9324427, -1.1105967, -73.22456)
+visible = false
 
 [node name="Pez" parent="." unique_id=2026999009 instance=ExtResource("4_pez")]
 transform = Transform3D(0.8114411, 0, 0, 0, 0.8114411, 0, 0, 0, 1, 2.5, -0.6677978, 2.5)
@@ -98,16 +100,16 @@ script = ExtResource("5_parallax")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
 
 [node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
-transform = Transform3D(2.5, 0, 0, 0, 1.9389358, 0, 0, 0, 1, 0.38863945, 0, -43.294548)
+transform = Transform3D(2.5, 0, 0, 0, 1.9389358, 0, 0, 0, 1, -4.9087925, -2.977428, -43.294548)
 layers = 3
 pixel_size = 0.005
 texture = ExtResource("7_atardecer")
 
-[node name="Atardecer_1" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999022]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.89449, 0, 0)
+[node name="agua textura" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999022]
+transform = Transform3D(8.592436, -0.001270286, 0.002848781, 0.014861771, -1.9625132, -1.6370641, -0.0013601979, -29.467228, 0.10902822, -5.1831093, -4.1894703, 0.37693024)
 layers = 3
 pixel_size = 0.005
-texture = ExtResource("7_atardecer")
+texture = ExtResource("7_8fuu7")
 
 [node name="CapaTerroso" type="Node3D" parent="ParallaxFondo" unique_id=2026999023]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -20)

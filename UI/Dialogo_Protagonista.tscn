@@ -4,6 +4,16 @@
 [ext_resource type="Texture2D" uid="uid://dk74spg47cqta" path="res://UI/Protagonista/Eryn_beta.png" id="2_tex_eryn"]
 [ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
 [ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://UI/Protagonista/PROTA_NORMAL.png" id="4_qyvsk"]
+[ext_resource type="Shader" uid="uid://qpdkuds4ycao" path="res://System/Shaders/eryn_tits_jiggle.gdshader" id="5_shader"]
+[ext_resource type="Texture2D" uid="uid://u1efafgkmg7m" path="res://TEST_/Eryn tits 3.png" id="6_tits"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jiggle"]
+shader = ExtResource("5_shader")
+shader_parameter/deformacion_x = 0.0
+shader_parameter/deformacion_y = 0.0
+shader_parameter/amplitud_uv = 0.038
+shader_parameter/amplitud_y = 0.04
+shader_parameter/factor_lado_derecho = 1.8
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]
 content_margin_left = 14.0
@@ -137,3 +147,9 @@ text = "Saltar Diálogo"
 position = Vector2(488, 526)
 scale = Vector2(0.5853904, 0.5853905)
 texture = ExtResource("4_qyvsk")
+
+[node name="Eryntits3" type="Sprite2D" parent="." unique_id=-1946057062]
+material = SubResource("ShaderMaterial_jiggle")
+position = Vector2(598.17163, 525.54803)
+scale = Vector2(0.5882714, 0.5896108)
+texture = ExtResource("6_tits")

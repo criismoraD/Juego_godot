@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://x6yasi6rallh"
-path.s3tc="res://.godot/imported/Textura agua nivel 6.png-aae00b83bac08a7bf828369d2c2ed154.s3tc.ctex"
-path.etc2="res://.godot/imported/Textura agua nivel 6.png-aae00b83bac08a7bf828369d2c2ed154.etc2.ctex"
+uid="uid://7it4sale8obb"
+path.s3tc="res://.godot/imported/salpicadura_test_strip.png-d682e4ff23204ede8bb0dd224ae583c1.s3tc.ctex"
+path.etc2="res://.godot/imported/salpicadura_test_strip.png-d682e4ff23204ede8bb0dd224ae583c1.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://TEST_/Textura agua nivel 6.png"
-dest_files=["res://.godot/imported/Textura agua nivel 6.png-aae00b83bac08a7bf828369d2c2ed154.s3tc.ctex", "res://.godot/imported/Textura agua nivel 6.png-aae00b83bac08a7bf828369d2c2ed154.etc2.ctex"]
+source_file="res://TEST_/Salpicadura_test/salpicadura_test_strip.png"
+dest_files=["res://.godot/imported/salpicadura_test_strip.png-d682e4ff23204ede8bb0dd224ae583c1.s3tc.ctex", "res://.godot/imported/salpicadura_test_strip.png-d682e4ff23204ede8bb0dd224ae583c1.etc2.ctex"]
 
 [params]
 
