@@ -23,6 +23,7 @@ func test_instanciacion_dialogo_con_eryntits() -> void:
 
 	var mat := eryn_tits.material as ShaderMaterial
 	assert_eq(mat.shader, SHADER_JIGGLE, "El shader asignado debe ser eryn_tits_jiggle.gdshader")
+	assert_almost_eq(float(mat.get_shader_parameter("factor_lado_izquierdo")), 1.7, 0.01, "El parámetro factor_lado_izquierdo debe estar configurado en 1.7")
 
 
 func test_alineacion_eryntits_con_prota() -> void:
@@ -54,6 +55,26 @@ func test_animacion_bamboleo_genera_tween() -> void:
 	var tween: Tween = dialogo.get("_tween_eryn_tits") as Tween
 	assert_not_null(tween, "animar_bamboleo_eryntits() debe crear un Tween")
 	assert_true(tween.is_valid(), "El Tween de bamboleo debe estar activo y válido")
+
+
+func test_intensificacion_lado_izquierdo_al_continuar_dialogo() -> void:
+	# Arrange
+	var dialogo: DialogoComic = SCENE_DIALOGO_PROTA.instantiate() as DialogoComic
+	add_child_autofree(dialogo)
+
+	# Assert: factor_lado_izquierdo inicializado correctamente
+	assert_almost_eq(dialogo.factor_lado_izquierdo, 1.7, 0.01, "factor_lado_izquierdo debe ser 1.7 por defecto")
+
+	# Act: Modificar valor e invocar animar_bamboleo_eryntits()
+	dialogo.factor_lado_izquierdo = 2.2
+	dialogo.animar_bamboleo_eryntits()
+
+	# Assert
+	var eryn_tits: Sprite2D = dialogo.find_child("Eryntits3", true, false) as Sprite2D
+	assert_not_null(eryn_tits)
+	var mat := eryn_tits.material as ShaderMaterial
+	assert_not_null(mat)
+	assert_almost_eq(float(mat.get_shader_parameter("factor_lado_izquierdo")), 2.2, 0.01, "El ShaderMaterial debe actualizar factor_lado_izquierdo a 2.2")
 
 
 func test_resiliencia_sin_nodo_eryntits() -> void:

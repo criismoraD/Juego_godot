@@ -20,6 +20,7 @@ const SHADER_ERYN_TITS: Shader = preload("res://System/Shaders/eryn_tits_jiggle.
 @export var bamboleo_activo: bool = true
 @export_enum("Arriba_Abajo", "Derecha_Izquierda") var direccion_bamboleo: String = "Arriba_Abajo"
 @export var bamboleo_amplitud: float = 0.038
+@export var factor_lado_izquierdo: float = 1.7
 @export var factor_lado_derecho: float = 1.8
 var retrato_eryn: Node = null
 var retrato_perrena: Node = null
@@ -444,6 +445,7 @@ func _animar_bamboleo_eryntits() -> void:
 
 	_material_eryn_tits.set_shader_parameter("amplitud_uv", bamboleo_amplitud)
 	_material_eryn_tits.set_shader_parameter("amplitud_y", bamboleo_amplitud)
+	_material_eryn_tits.set_shader_parameter("factor_lado_izquierdo", factor_lado_izquierdo)
 	_material_eryn_tits.set_shader_parameter("factor_lado_derecho", factor_lado_derecho)
 
 	_tween_eryn_tits = create_tween()
@@ -521,6 +523,7 @@ func _configurar_material_eryn_tits() -> void:
 
 	_material_eryn_tits.set_shader_parameter("amplitud_uv", bamboleo_amplitud)
 	_material_eryn_tits.set_shader_parameter("amplitud_y", bamboleo_amplitud)
+	_material_eryn_tits.set_shader_parameter("factor_lado_izquierdo", factor_lado_izquierdo)
 	_material_eryn_tits.set_shader_parameter("factor_lado_derecho", factor_lado_derecho)
 	_material_eryn_tits.set_shader_parameter("deformacion_x", 0.0)
 	_material_eryn_tits.set_shader_parameter("deformacion_y", 0.0)

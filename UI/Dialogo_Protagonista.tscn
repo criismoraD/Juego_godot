@@ -13,6 +13,7 @@ shader_parameter/deformacion_x = 0.0
 shader_parameter/deformacion_y = 0.0
 shader_parameter/amplitud_uv = 0.038
 shader_parameter/amplitud_y = 0.04
+shader_parameter/factor_lado_izquierdo = 1.7
 shader_parameter/factor_lado_derecho = 1.8
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogo"]

@@ -5,6 +5,7 @@ uniform float deformacion_x : hint_range(-2.0, 2.0) = 0.0;
 uniform float deformacion_y : hint_range(-2.0, 2.0) = 0.0;
 uniform float amplitud_uv : hint_range(0.0, 0.2) = 0.038;
 uniform float amplitud_y : hint_range(0.0, 0.2) = 0.040;
+uniform float factor_lado_izquierdo : hint_range(1.0, 3.0) = 1.7;
 uniform float factor_lado_derecho : hint_range(1.0, 3.0) = 1.8;
 uniform vec4 color_modulacion : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
@@ -12,7 +13,7 @@ void fragment() {
 	// Máscara horizontal asimétrica:
 	// - Borde izquierdo (UV.x = 0): Anclaje suave para no despegar el tirante del hombro/brazo
 	// - Lado derecho (UV.x > 0.4): Mayor holgura y movimiento visible del contorno del pecho derecho
-	float mask_izq = smoothstep(0.0, 0.12, UV.x);
+	float mask_izq = smoothstep(0.0, 0.08, UV.x);
 	float mask_der = 1.0 - smoothstep(0.86, 1.05, UV.x) * 0.22;
 	float mask_x = mask_izq * mask_der;
 
@@ -26,9 +27,12 @@ void fragment() {
 	float prod = clamp(mask_x * mask_y, 0.0, 1.0);
 	float mascara = prod > 0.0 ? pow(prod, 0.8) : 0.0;
 
-	// Ponderación asimétrica: mayor amplitud y libertad en el pecho derecho prominente (perspectiva 3/4)
-	float peso_derecho = mix(1.0, factor_lado_derecho, smoothstep(0.35, 0.80, UV.x));
-	float factor_total = mascara * peso_derecho;
+	// Ponderación elástica por lateral:
+	// - Lado izquierdo: factor_lado_izquierdo para intensificar el rebote del pecho izquierdo
+	// - Lado derecho: factor_lado_derecho para el pecho derecho en perspectiva 3/4
+	float peso_izq = mix(factor_lado_izquierdo, 1.0, smoothstep(0.08, 0.45, UV.x));
+	float peso_der = mix(1.0, factor_lado_derecho, smoothstep(0.38, 0.80, UV.x));
+	float factor_total = mascara * max(peso_izq, peso_der);
 
 	vec2 uv_deformada = UV;
 	// Desplazamiento horizontal (bamboleo lateral)
