@@ -661,5 +661,275 @@ func test_reflejo_loop_continuo() -> void:
 	assert_almost_eq(reflejo[0].position.x, x_max_inicial + parallax.ancho_segmento_cordillera, MARGEN_FLOAT, "El reflejo debe hacer wrap continuo a la derecha")
 
 
+# === TESTS DE PROTAGONISTA EN CANOA ALIADA ===
+func test_canoa_rio_contiene_protagonista_controlable() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	# Act
+	var canoa: Node3D = nivel.obtener_canoa()
+	assert_not_null(canoa, "El nivel debe exponer la canoa protagonista")
+	var prota := canoa.find_child("Protagonista", true, false) as CharacterBody3D
+
+	# Assert: protagonista real y controlable, no el marinero decorativo
+	assert_not_null(prota, "La canoa debe contener el nodo Protagonista")
+	assert_true(prota is Player, "Protagonista debe ser la arquera jugable (Player)")
+	assert_not_null(canoa.find_child("SueloCanoa", true, false), "La canoa debe tener suelo físico para la protagonista")
 
 
+func test_protagonista_misma_escala_nivel1() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	# Act
+	var canoa: Node3D = nivel.obtener_canoa()
+	var prota := canoa.find_child("Protagonista", true, false) as Node3D
+	assert_not_null(prota, "La canoa debe contener a la protagonista")
+
+	# Assert: escala mundo compensada por profundidad Z=-7.5 para igualar tamaño en pantalla de Nivel 1
+	var escala_mundo: Vector3 = prota.global_transform.basis.get_scale()
+	assert_almost_eq(escala_mundo.x, 0.356, MARGEN_FLOAT, "Escala mundo X compensada igual que nivel 1")
+	assert_almost_eq(escala_mundo.y, 0.356, MARGEN_FLOAT, "Escala mundo Y compensada igual que nivel 1")
+	assert_almost_eq(escala_mundo.z, 0.356, MARGEN_FLOAT, "Escala mundo Z compensada igual que nivel 1")
+
+
+func test_defensora_misma_escala_nivel1() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	# Act
+	var canoa: Node3D = nivel.obtener_canoa()
+	var defensora := canoa.find_child("Acompanante", true, false) as Node3D
+	assert_not_null(defensora, "La canoa debe contener a la defensora acompañante")
+
+	# Assert: escala mundo 0.356 como AllyArcher en NIVEL01 proyectada
+	# (local 0.178 x canoa x2 = 0.356)
+	var escala_mundo: Vector3 = defensora.global_transform.basis.get_scale()
+	var escala_esperada: float = 0.178 * 2.0
+	assert_almost_eq(escala_esperada, 0.356, MARGEN_FLOAT, "La fórmula local debe dar 0.356")
+	assert_almost_eq(escala_mundo.x, 0.356, MARGEN_FLOAT, "Defensora escala mundo X compensada igual que nivel 1")
+	assert_almost_eq(escala_mundo.y, 0.356, MARGEN_FLOAT, "Defensora escala mundo Y compensada igual que nivel 1")
+	assert_almost_eq(escala_mundo.z, 0.356, MARGEN_FLOAT, "Defensora escala mundo Z compensada igual que nivel 1")
+
+
+func test_protagonista_apoyada_en_suelo_canoa() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	# Act
+	var canoa: Node3D = nivel.obtener_canoa()
+	var prota := canoa.find_child("Protagonista", true, false) as Node3D
+	var suelo := canoa.find_child("SueloCanoa", true, false) as StaticBody3D
+	assert_not_null(prota, "La canoa debe contener a la protagonista")
+	assert_not_null(suelo, "La canoa debe contener el suelo")
+
+	# Assert: los pies (origen) quedan sobre la cara superior del suelo y dentro de su planta
+	var colision := suelo.find_child("CollisionShape3D", true, false) as CollisionShape3D
+	assert_not_null(colision, "SueloCanoa debe tener forma de colisión")
+	var caja := colision.shape as BoxShape3D
+	assert_not_null(caja, "La forma del suelo debe ser una caja")
+	var relativo: Vector3 = suelo.to_local(prota.global_position)
+	assert_almost_eq(relativo.y, caja.size.y / 2.0, MARGEN_FLOAT, "Los pies deben apoyar sobre el suelo")
+	assert_true(absf(relativo.x) <= caja.size.x / 2.0, "La protagonista debe estar dentro del largo del suelo")
+	assert_true(absf(relativo.z) <= caja.size.z / 2.0, "La protagonista debe estar dentro del ancho del suelo")
+
+
+# === TESTS DE PASAJERA SUJETA A LA CANOA ===
+func test_pasajera_no_sale_de_la_canoa() -> void:
+	# Arrange
+	var packed := load("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn") as PackedScene
+	var canoa: CanoaProtagonistaRio = packed.instantiate() as CanoaProtagonistaRio
+	add_child_autofree(canoa)
+	var prota := canoa.find_child("Protagonista", true, false) as Node3D
+	assert_not_null(prota, "La canoa debe contener a la protagonista")
+
+	# Act: forzarla fuera de los límites
+	prota.position = Vector3(5.0, 0.3, -5.0)
+	canoa._sujetar_pasajera()
+
+	# Assert: recortada a los límites configurados
+	assert_almost_eq(prota.position.x, canoa.limite_pasajera_x.y, MARGEN_FLOAT, "X debe recortarse al máximo")
+	assert_almost_eq(prota.position.z, canoa.limite_pasajera_z.x, MARGEN_FLOAT, "Z debe recortarse al mínimo")
+	assert_almost_eq(prota.position.y, 0.3, MARGEN_FLOAT, "Y no debe alterarse al sujetar")
+
+
+func test_pasajera_dentro_de_limites_no_se_mueve() -> void:
+	# Arrange
+	var packed := load("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn") as PackedScene
+	var canoa: CanoaProtagonistaRio = packed.instantiate() as CanoaProtagonistaRio
+	add_child_autofree(canoa)
+	var prota := canoa.find_child("Protagonista", true, false) as Node3D
+	assert_not_null(prota, "La canoa debe contener a la protagonista")
+
+	# Act
+	prota.position = Vector3(0.0, 0.3, 0.0)
+	canoa._sujetar_pasajera()
+
+	# Assert
+	assert_almost_eq(prota.position.x, 0.0, MARGEN_FLOAT, "X dentro de límites no cambia")
+	assert_almost_eq(prota.position.z, 0.0, MARGEN_FLOAT, "Z dentro de límites no cambia")
+
+
+func test_pasajera_visible_sobre_borda() -> void:
+	# Arrange
+	var packed := load("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn") as PackedScene
+	var canoa: CanoaProtagonistaRio = packed.instantiate() as CanoaProtagonistaRio
+	add_child_autofree(canoa)
+
+	# Act
+	var prota := canoa.find_child("Protagonista", true, false) as Node3D
+	assert_not_null(prota, "La canoa debe contener a la protagonista")
+
+	# Assert: la cabeza (2.0 de alto a escala local) supera la borda media (0.17)
+	var altura_cabeza: float = prota.position.y + 2.0 * prota.scale.y
+	assert_gt(altura_cabeza, 0.17, "La cabeza debe asomar por encima de la borda")
+
+
+# === TESTS DE CASA BONETA ACOPLADA A LA CORDILLERA ===
+func test_casa_boneta_deteccion_en_ambas_escenas_rio() -> void:
+	# Arrange & Act: escena principal y escena del usuario
+	for path_escena in [ESCENA_RIO_PATH, "res://Levels/Rio en canoa con paralax.tscn"]:
+		var packed := load(path_escena) as PackedScene
+		assert_not_null(packed, "La escena %s debe cargar correctamente" % path_escena)
+		var nivel: Node3D = packed.instantiate() as Node3D
+		add_child_autofree(nivel)
+
+		var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+		assert_not_null(parallax, "ParallaxFondo debe existir en %s" % path_escena)
+
+		# Assert: CasaBoneta posicionable detectada y registrada
+		var casa: Node3D = nivel.find_child("CasaBoneta", true, false) as Node3D
+		assert_not_null(casa, "CasaBoneta debe existir en %s" % path_escena)
+		var segmentos: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
+		assert_true(segmentos.has(casa), "Parallax debe registrar CasaBoneta en %s" % path_escena)
+
+
+func test_casa_boneta_misma_velocidad_cordillera() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var casas: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
+	assert_gt(casas.size(), 0, "CasaBoneta debe existir")
+	var cordillera: Array[Node3D] = parallax.obtener_segmentos_cordillera()
+	assert_gt(cordillera.size(), 0, "Cordillera debe tener segmentos")
+
+	var pos_inicial_cord: float = cordillera[0].position.x
+	var pos_inicial_casa: float = casas[0].position.x
+
+	# Act: Simular un avance de 1.0 segundo
+	parallax._actualizar_loop_cordillera(1.0)
+	parallax._actualizar_loop_casa_boneta(1.0)
+
+	# Assert: Desplazamiento idéntico al de la cordillera
+	var delta_cord: float = pos_inicial_cord - cordillera[0].position.x
+	var delta_casa: float = pos_inicial_casa - casas[0].position.x
+	var desplazamiento_esperado: float = parallax.velocidad_base * parallax.factor_cordillera * 1.0
+
+	assert_almost_eq(delta_cord, desplazamiento_esperado, MARGEN_FLOAT, "Desplazamiento cordillera")
+	assert_almost_eq(delta_casa, desplazamiento_esperado, MARGEN_FLOAT, "CasaBoneta avanza al ritmo esperado")
+	assert_almost_eq(delta_casa, delta_cord, MARGEN_FLOAT, "CasaBoneta debe moverse exactamente a la misma velocidad que la cordillera")
+
+
+# === TESTS DE MÚSICA DEL NIVEL ===
+func test_musica_viaje_rio_registrada() -> void:
+	# Arrange & Act
+	var total: int = AudioManager.bgm_streams.size()
+
+	# Assert: índice 7 con la canción cargada
+	assert_gte(total, 8, "Debe existir el índice 7 de música")
+	assert_not_null(AudioManager.bgm_streams[7], "Viaje por el rio debe estar cargado en el índice 7")
+
+
+func test_nivel_rio_pide_musica_viaje() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
+	add_child_autofree(nivel)
+
+	# Assert
+	assert_eq(nivel.MUSICA_VIAJE_RIO, 7, "El nivel debe apuntar al índice 7")
+	assert_true(nivel.musica_viaje_rio, "La música debe estar activada por defecto")
+
+
+# === TESTS DE BOSQUE ROJO CON PARALLAX PROPIO ===
+func test_bosque_rojo_deteccion_en_ambas_escenas_rio() -> void:
+	# Arrange & Act: escena principal y escena del usuario
+	for path_escena in [ESCENA_RIO_PATH, "res://Levels/Rio en canoa con paralax.tscn"]:
+		var packed := load(path_escena) as PackedScene
+		assert_not_null(packed, "La escena %s debe cargar correctamente" % path_escena)
+		var nivel: Node3D = packed.instantiate() as Node3D
+		add_child_autofree(nivel)
+
+		var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+		assert_not_null(parallax, "ParallaxFondo debe existir en %s" % path_escena)
+
+		# Assert: BosqueRojo posicionable detectado y registrado
+		var bosque: Sprite3D = nivel.find_child("BosqueRojo", true, false) as Sprite3D
+		assert_not_null(bosque, "BosqueRojo debe existir en %s" % path_escena)
+		var sprites: Array[Sprite3D] = parallax.obtener_sprites_bosque_rojo()
+		assert_true(sprites.has(bosque), "Parallax debe registrar BosqueRojo en %s" % path_escena)
+
+
+func test_bosque_rojo_mas_lento_que_cordillera() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var sprites: Array[Sprite3D] = parallax.obtener_sprites_bosque_rojo()
+	assert_gt(sprites.size(), 0, "BosqueRojo debe existir")
+	var cordillera: Array[Node3D] = parallax.obtener_segmentos_cordillera()
+	assert_gt(cordillera.size(), 0, "Cordillera debe tener segmentos")
+
+	# Assert: el factor propio es menor (más lejos = más lento)
+	assert_lt(parallax.factor_bosque_rojo, parallax.factor_cordillera, "El bosque debe moverse más lento que la cordillera")
+
+	var pos_inicial_cord: float = cordillera[0].position.x
+	var pos_inicial_bosque: float = sprites[0].position.x
+
+	# Act: Simular un avance de 1.0 segundo
+	parallax._actualizar_loop_cordillera(1.0)
+	parallax._actualizar_loop_bosque_rojo(1.0)
+
+	# Assert: cada uno avanza a su ritmo
+	var delta_cord: float = pos_inicial_cord - cordillera[0].position.x
+	var delta_bosque: float = pos_inicial_bosque - sprites[0].position.x
+
+	assert_almost_eq(delta_cord, parallax.velocidad_base * parallax.factor_cordillera, MARGEN_FLOAT, "Desplazamiento cordillera")
+	assert_almost_eq(delta_bosque, parallax.velocidad_base * parallax.factor_bosque_rojo, MARGEN_FLOAT, "Bosque avanza a su ritmo propio")
+	assert_lt(delta_bosque, delta_cord, "El bosque debe avanzar menos que la cordillera")
+
+
+func test_bosque_rojo_loop_continuo() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var sprites: Array[Sprite3D] = parallax.obtener_sprites_bosque_rojo()
+	assert_gt(sprites.size(), 0, "BosqueRojo debe existir")
+
+	var x_max_inicial: float = -INF
+	for s in sprites:
+		if s.position.x > x_max_inicial:
+			x_max_inicial = s.position.x
+
+	# Act: Forzar que el primer sprite salga por la izquierda del límite visible
+	sprites[0].position.x = -100.0
+	parallax._actualizar_loop_bosque_rojo(0.0)
+
+	# Assert: Debe recolocarse a la derecha con su propio ancho de segmento
+	assert_almost_eq(sprites[0].position.x, x_max_inicial + parallax.ancho_segmento_bosque_rojo, MARGEN_FLOAT, "BosqueRojo debe hacer wrap continuo a la derecha")

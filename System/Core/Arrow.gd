@@ -2,6 +2,12 @@ extends Area3D
 class_name ArrowProjectile
 const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 const DURACION_DESVANECIMIENTO: float = 0.6
+const MARGEN_OFFSCREEN_3D_X: float = 85.0
+const MARGEN_OFFSCREEN_3D_Y_ABAJO: float = 30.0
+const MARGEN_OFFSCREEN_3D_Y_ARRIBA: float = 70.0
+const MARGEN_OFFSCREEN_PANTALLA_X: float = 400.0
+const MARGEN_OFFSCREEN_PANTALLA_ARRIBA: float = 2000.0
+const MARGEN_OFFSCREEN_PANTALLA_ABAJO: float = 300.0
 
 # === CONFIGURACIÓN (Español) ===
 @export_category("Física")
@@ -164,31 +170,29 @@ func _physics_process(delta):
 	_check_off_screen()
 
 
-func _check_off_screen():
-	# Verificación ultra-rápida en coordenadas 3D para evitar cálculos de proyección por matriz
-	if global_position.y < -20.0 or global_position.x < -25.0 or global_position.x > 55.0 or global_position.y > 50.0:
-		_safe_destroy()
+func _check_off_screen() -> void:
+	var camera: Camera3D = CameraUtilsRef.obtener_camara_juego(self)
+	if camera:
+		# Verificación rápida 3D relativa a la cámara activa (soporta niveles estáticos y móviles como el río)
+		var cam_pos: Vector3 = camera.global_position
+		if absf(global_position.x - cam_pos.x) > MARGEN_OFFSCREEN_3D_X or global_position.y < (cam_pos.y - MARGEN_OFFSCREEN_3D_Y_ABAJO) or global_position.y > (cam_pos.y + MARGEN_OFFSCREEN_3D_Y_ARRIBA):
+			_safe_destroy()
+			return
+
+		# Verificación precisa de bordes de pantalla proyectados
+		var screen_pos: Vector2 = camera.unproject_position(global_position)
+		var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+
+		if screen_pos.x < -MARGEN_OFFSCREEN_PANTALLA_X or screen_pos.x > (viewport_size.x + MARGEN_OFFSCREEN_PANTALLA_X):
+			_safe_destroy()
+		elif screen_pos.y < -MARGEN_OFFSCREEN_PANTALLA_ARRIBA:
+			_safe_destroy()
+		elif screen_pos.y > (viewport_size.y + MARGEN_OFFSCREEN_PANTALLA_ABAJO):
+			_safe_destroy()
 		return
 
-	var camera = CameraUtilsRef.obtener_camara_juego(self)
-	if not camera:
-		return
-
-	# Obtener posición en pantalla
-	var screen_pos = camera.unproject_position(global_position)
-	var viewport_size = get_viewport().get_visible_rect().size
-
-	# Margen horizontal moderado
-	var margin_x = 400.0
-	# Margen vertical amplio arriba para permitir trayectorias parabólicas
-	var margin_top = 2000.0
-	var margin_bottom = 300.0
-
-	if screen_pos.x < -margin_x or screen_pos.x > viewport_size.x + margin_x:
-		_safe_destroy()
-	elif screen_pos.y < -margin_top:
-		_safe_destroy()
-	elif screen_pos.y > viewport_size.y + margin_bottom:
+	# Fallback si no hay cámara activa (ej. tests unitarios headless)
+	if global_position.y < -50.0 or global_position.y > 150.0:
 		_safe_destroy()
 
 

@@ -75,6 +75,14 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 @export var sincronizar_agua_textura_con_cordillera: bool = true  ## Si true, la TexturaAgua se desplaza a la misma velocidad de la cordillera
 @export var ancho_segmento_agua_textura: float = 20.0  ## Ancho de cada panel de agua para el wrap del loop
 
+@export_category("Casa boneta")
+@export var sincronizar_casa_boneta_con_cordillera: bool = true  ## Si true, la CasaBoneta se desplaza a la misma velocidad de la cordillera
+
+@export_category("Bosque rojo")
+@export var sincronizar_bosque_rojo_con_fondo: bool = true  ## Si true, el BosqueRojo hace scroll parallax detrás de la cordillera
+@export var factor_bosque_rojo: float = 0.28  ## Más lento que la cordillera (0.35): está más lejos
+@export var ancho_segmento_bosque_rojo: float = 100.0  ## Ancho de cada franja de bosque para el wrap del loop
+
 @export_category("Renderizado")
 @export var capa_visual: int = 3  ## Capa de renderizado (Fondo = 2, Editor = 1, Ambas = 3)
 
@@ -91,6 +99,8 @@ var _segmentos_piso_aliado: Array[Node3D] = []
 var _sprites_arboles: Array[Sprite3D] = []
 var _sprites_nubes: Array[Sprite3D] = []
 var _sprites_agua_textura: Array[Sprite3D] = []
+var _sprites_bosque_rojo: Array[Sprite3D] = []
+var _segmentos_casa_boneta: Array[Node3D] = []
 var _x_max_agua_textura: float = -INF
 var _sprite_fondo_video: Sprite3D = null
 var _video_player: VideoStreamPlayer = null
@@ -128,6 +138,8 @@ func _process(delta: float) -> void:
 	_actualizar_loop_reflejo(delta)
 	_actualizar_loop_piso_aliado(delta)
 	_actualizar_loop_agua_textura(delta)
+	_actualizar_loop_casa_boneta(delta)
+	_actualizar_loop_bosque_rojo(delta)
 	_actualizar_loop_arboles(delta)
 	_actualizar_loop_nubes(delta)
 	_actualizar_loop_terroso(delta)
@@ -188,6 +200,38 @@ func registrar_sprite_agua_textura(sprite_agua: Sprite3D) -> void:
 		)
 
 
+## Retorna los segmentos de casa boneta sincronizados con la cordillera.
+func obtener_segmentos_casa_boneta() -> Array[Node3D]:
+	if _segmentos_casa_boneta.is_empty():
+		_inicializar_capa_casa_boneta()
+	return _segmentos_casa_boneta
+
+
+## Permite registrar un segmento de casa boneta dinámicamente.
+func registrar_segmento_casa_boneta(nodo_casa: Node3D) -> void:
+	if is_instance_valid(nodo_casa) and not _segmentos_casa_boneta.has(nodo_casa):
+		_segmentos_casa_boneta.append(nodo_casa)
+		_segmentos_casa_boneta.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+			return a.position.x < b.position.x
+		)
+
+
+## Retorna los sprites de bosque rojo con scroll parallax propio.
+func obtener_sprites_bosque_rojo() -> Array[Sprite3D]:
+	if _sprites_bosque_rojo.is_empty():
+		_inicializar_capa_bosque_rojo()
+	return _sprites_bosque_rojo
+
+
+## Permite registrar un sprite de bosque rojo dinámicamente.
+func registrar_sprite_bosque_rojo(sprite_bosque: Sprite3D) -> void:
+	if is_instance_valid(sprite_bosque) and not _sprites_bosque_rojo.has(sprite_bosque):
+		_sprites_bosque_rojo.append(sprite_bosque)
+		_sprites_bosque_rojo.sort_custom(func(a: Sprite3D, b: Sprite3D) -> bool:
+			return a.position.x < b.position.x
+		)
+
+
 ## Retorna el sprite donde se reproduce el fondo de video.
 func obtener_sprite_fondo_video() -> Sprite3D:
 	return _sprite_fondo_video
@@ -241,6 +285,8 @@ func _inicializar_capas() -> void:
 	_inicializar_capa_reflejo()
 	_inicializar_capa_piso_aliado()
 	_inicializar_capa_agua_textura()
+	_inicializar_capa_casa_boneta()
+	_inicializar_capa_bosque_rojo()
 	_inicializar_capas_arboles_y_nubes()
 
 
@@ -721,6 +767,101 @@ func _actualizar_loop_agua_textura(delta: float) -> void:
 			var base_x: float = _x_max_agua_textura if _x_max_agua_textura > -INF else x_max
 			sprite.position.x = base_x + ancho_segmento_agua_textura
 			_x_max_agua_textura = sprite.position.x
+
+
+func _inicializar_capa_casa_boneta() -> void:
+	_segmentos_casa_boneta.clear()
+	_recolectar_casas_boneta(self)
+	var padre: Node = get_parent()
+	if is_instance_valid(padre) and padre != self:
+		_recolectar_casas_boneta(padre)
+
+	_segmentos_casa_boneta.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		return a.position.x < b.position.x
+	)
+
+
+func _recolectar_casas_boneta(contenedor: Node) -> void:
+	for hijo in contenedor.get_children():
+		if hijo is Node3D and not (hijo is Light3D or hijo is Camera3D) and _es_casa_boneta(hijo):
+			if not _segmentos_casa_boneta.has(hijo):
+				_segmentos_casa_boneta.append(hijo as Node3D)
+
+
+func _es_casa_boneta(nodo: Node) -> bool:
+	return nodo.name.to_lower().begins_with("casaboneta")
+
+
+func _actualizar_loop_casa_boneta(delta: float) -> void:
+	if not sincronizar_casa_boneta_con_cordillera or _segmentos_casa_boneta.is_empty():
+		return
+
+	# Velocidad idéntica a la cordillera para no romper el efecto parallax
+	var paso: float = velocidad_base * factor_cordillera * delta
+	for casa in _segmentos_casa_boneta:
+		if is_instance_valid(casa):
+			casa.position.x -= paso
+
+	var x_cam: float = _obtener_x_camara()
+	var contenedor: Node3D = _segmentos_casa_boneta[0].get_parent() as Node3D
+	var x_cam_local: float = contenedor.to_local(Vector3(x_cam, 0.0, 0.0)).x if contenedor else x_cam
+	var limite_izq: float = x_cam_local - 30.0
+
+	var x_max: float = -INF
+	for casa in _segmentos_casa_boneta:
+		if is_instance_valid(casa) and casa.position.x > x_max:
+			x_max = casa.position.x
+
+	for casa in _segmentos_casa_boneta:
+		if is_instance_valid(casa) and casa.position.x <= limite_izq:
+			casa.position.x = x_max + ancho_segmento_cordillera
+			x_max = casa.position.x
+
+
+func _inicializar_capa_bosque_rojo() -> void:
+	_sprites_bosque_rojo.clear()
+	var padre: Node = get_parent()
+	if not is_instance_valid(padre):
+		return
+	for hijo in padre.get_children():
+		if hijo is Sprite3D and (hijo as Node3D).visible and _es_sprite_bosque_rojo(hijo):
+			_sprites_bosque_rojo.append(hijo as Sprite3D)
+
+	_sprites_bosque_rojo.sort_custom(func(a: Sprite3D, b: Sprite3D) -> bool:
+		return a.position.x < b.position.x
+	)
+
+
+func _es_sprite_bosque_rojo(nodo: Node) -> bool:
+	if not (nodo is Sprite3D):
+		return false
+	return nodo.name.to_lower().begins_with("bosquerojo")
+
+
+func _actualizar_loop_bosque_rojo(delta: float) -> void:
+	if not sincronizar_bosque_rojo_con_fondo or _sprites_bosque_rojo.is_empty():
+		return
+
+	# Más lento que la cordillera: el bosque está más lejos
+	var paso: float = velocidad_base * factor_bosque_rojo * delta
+	for sprite in _sprites_bosque_rojo:
+		if is_instance_valid(sprite):
+			sprite.position.x -= paso
+
+	var x_cam: float = _obtener_x_camara()
+	var contenedor: Node3D = _sprites_bosque_rojo[0].get_parent() as Node3D
+	var x_cam_local: float = contenedor.to_local(Vector3(x_cam, 0.0, 0.0)).x if contenedor else x_cam
+	var limite_izq: float = x_cam_local - 35.0
+
+	var x_max: float = -INF
+	for sprite in _sprites_bosque_rojo:
+		if is_instance_valid(sprite) and sprite.position.x > x_max:
+			x_max = sprite.position.x
+
+	for sprite in _sprites_bosque_rojo:
+		if is_instance_valid(sprite) and sprite.position.x <= limite_izq:
+			sprite.position.x = x_max + ancho_segmento_bosque_rojo
+			x_max = sprite.position.x
 
 
 func _actualizar_loop_arboles(delta: float) -> void:

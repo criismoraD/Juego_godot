@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Entities/Ambiente_Agua/WaterPlane.tscn" id="3_water"]
 [ext_resource type="PackedScene" uid="uid://cb5c03pe088q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="4_pez"]
 [ext_resource type="Script" uid="uid://b2nhjsebdynqx" path="res://Levels/Rio_En_Canoa_Con_Parallax/ParallaxFondoRio.gd" id="5_parallax"]
-[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn" id="6_canoa"]
+[ext_resource type="PackedScene" uid="uid://doxc140ei2l5d" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn" id="6_canoa"]
 [ext_resource type="Texture2D" uid="uid://x6yasi6rallh" path="res://TEST_/Textura agua nivel 6.png" id="7_8fuu7"]
 [ext_resource type="Texture2D" uid="uid://ck3sab5hs521s" path="res://TEST_/arboles prueba.png" id="9_80jwg"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PiedraFondoCordillera.tscn" id="9_cordillera"]
@@ -22,18 +22,27 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ReflejoCordillera.tscn" id="21_reflejo"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Hojas/HojasPlane.tscn" id="22_hojas"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Tulemaki.tscn" id="23_tulemaki"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/CasaBoneta.tscn" id="24_boneta"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PlataformaMaderos.tscn" id="25_maderos"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/WoodmetalPiso.tscn" id="26_woodmetal"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/BotePesquero.tscn" id="27_pesquero"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/TituloRio.tscn" id="28_titulo"]
+[ext_resource type="Texture2D" uid="uid://v6gcah0t5i68" path="res://TEST_/Bosque rojo.png" id="29_bosque"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Naufragio.tscn" id="30_naufragio"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/RocaRio.tscn" id="31_roca"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PescadosColgando.tscn" id="32_pescados"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
 dof_blur_far_transition = 1.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y3cos"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kxpb6"]
 render_priority = -10
 shading_mode = 0
 disable_fog = true
 albedo_texture = ExtResource("11_preview_fondo")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_m2lcq"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6nluj"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 0.5
@@ -41,10 +50,10 @@ shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 shader_parameter/opacidad = 0.25
 shader_parameter/desvanecer_borde_inferior = 0.55
 
-[sub_resource type="QuadMesh" id="QuadMesh_c31k2"]
+[sub_resource type="QuadMesh" id="QuadMesh_5vpvx"]
 size = Vector2(260, 90)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ptpy8"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2deb7"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 10.0
@@ -52,10 +61,10 @@ shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 shader_parameter/opacidad = 1.0
 shader_parameter/desvanecer_borde_inferior = 1.0
 
-[sub_resource type="QuadMesh" id="QuadMesh_oacr6"]
+[sub_resource type="QuadMesh" id="QuadMesh_o0llu"]
 size = Vector2(260, 90)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_g4v3l"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mcddk"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 10.0
@@ -63,7 +72,7 @@ shader_parameter/tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
 shader_parameter/opacidad = 0.35
 shader_parameter/desvanecer_borde_inferior = 1.0
 
-[sub_resource type="QuadMesh" id="QuadMesh_l65n7"]
+[sub_resource type="QuadMesh" id="QuadMesh_8jq2a"]
 size = Vector2(260, 90)
 
 [node name="Rio en canoa con paralax" type="Node3D" unique_id=2026999000]
@@ -385,7 +394,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
 [node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
 transform = Transform3D(11.327185, 0, 0, 0, 10.066407, 0, 0, 0, 1, -5.840851, -4.7548733, -100.41611)
 layers = 3
-material_override = SubResource("StandardMaterial3D_y3cos")
+material_override = SubResource("StandardMaterial3D_kxpb6")
 pixel_size = 0.005
 render_priority = -10
 texture = ExtResource("11_preview_fondo")
@@ -556,6 +565,9 @@ layers = 3
 pixel_size = 0.0035
 texture = ExtResource("10_43yr5")
 
+[node name="CasaBoneta" parent="ParallaxFondo" unique_id=480447024 instance=ExtResource("24_boneta")]
+transform = Transform3D(-0.040822774, 0, -2.137603, 0, 1.1948875, 0, 1.3270913, 0, -0.065754995, 13.55995, 0.2256093, -80.890625)
+
 [node name="CanoaProtagonistaRio" parent="." unique_id=2026999012 instance=ExtResource("6_canoa")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -6, -0.28, -7.5)
 
@@ -563,7 +575,7 @@ transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -6, -0.28, -7.5)
 transform = Transform3D(-4.3556647, 0, -0.23415327, 0, 5.104199, 0, 0.28687, 0, -3.5552456, -6.460387, -1.5769513, -5.6379423)
 
 [node name="Ruina arco7" parent="." unique_id=134338258 instance=ExtResource("15_ruina")]
-transform = Transform3D(-5.7920356, 0, -0.23923887, 0, 5.104199, 0, 0.38147137, 0, -3.6324623, -8.745207, -3.6154883, -23.881466)
+transform = Transform3D(-5.7920356, 0, -0.23923887, 0, 5.104199, 0, 0.38147137, 0, -3.6324623, -3.1537385, -3.2337425, -24.717731)
 
 [node name="Ruina arco8" parent="." unique_id=1642895263 instance=ExtResource("15_ruina")]
 transform = Transform3D(-0.24024683, 0, -7.8573833, 0, 8.379931, 0, 8.610124, 0, -0.2192434, 23.621439, -2.4580832, -7.825558)
@@ -681,10 +693,10 @@ transform = Transform3D(0.7983159, -0.7613457, -9.718946, 0.0767081, 12.244763, 
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.07103, -3.546595, -136.79895)
 
 [node name="DesenfoqueEspecial" parent="." unique_id=1408794707 instance=ExtResource("20_especial")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.405718, 32.102604)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.375109, 32.12107)
 layers = 7
-material_override = SubResource("ShaderMaterial_m2lcq")
-mesh = SubResource("QuadMesh_c31k2")
+material_override = SubResource("ShaderMaterial_6nluj")
+mesh = SubResource("QuadMesh_5vpvx")
 grado_desenfoque = 0.5
 opacidad = 0.25
 tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
@@ -693,8 +705,8 @@ desvanecer_borde_inferior = 0.55
 [node name="DesenfoqueEspecial2" parent="." unique_id=1339205412 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.405718, -10.060026)
 layers = 7
-material_override = SubResource("ShaderMaterial_ptpy8")
-mesh = SubResource("QuadMesh_oacr6")
+material_override = SubResource("ShaderMaterial_2deb7")
+mesh = SubResource("QuadMesh_o0llu")
 grado_desenfoque = 10.0
 tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 desvanecer_borde_inferior = 1.0
@@ -702,8 +714,8 @@ desvanecer_borde_inferior = 1.0
 [node name="DesenfoqueEspecial3" parent="." unique_id=1235090770 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -45.12014, -75.003555)
 layers = 2
-material_override = SubResource("ShaderMaterial_g4v3l")
-mesh = SubResource("QuadMesh_l65n7")
+material_override = SubResource("ShaderMaterial_mcddk")
+mesh = SubResource("QuadMesh_8jq2a")
 grado_desenfoque = 10.0
 opacidad = 0.35
 tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
@@ -716,3 +728,77 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.113289, 2.5, -70.70515)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.426834, 0.3518641, -77.143005)
 amplitud_rebote = 0.05
 altura_flote = 0.3
+
+[node name="PlataformaMaderos" parent="." unique_id=1408794724 instance=ExtResource("25_maderos")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 23.501625, -0.3483677, -11.223211)
+
+[node name="PlataformaMaderos3" parent="." unique_id=1593872609 instance=ExtResource("25_maderos")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.732016, -0.31453562, -11.223211)
+
+[node name="PlataformaMaderos4" parent="." unique_id=966018742 instance=ExtResource("25_maderos")]
+transform = Transform3D(0.06987919, -0.33040988, 1.9964799, 1.7133607, 1.0749696, 0.012075325, -0.6712332, 2.7095234, 0.23866788, 25.674839, -0.31453562, -5.15582)
+
+[node name="PlataformaMaderos2" parent="." unique_id=225704585 instance=ExtResource("25_maderos")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 23.31573, 2.6433551, -8.7293415)
+
+[node name="WoodmetalPiso" parent="." unique_id=1408794725 instance=ExtResource("26_woodmetal")]
+transform = Transform3D(0.69857126, -2.2406774, 0, 6.155616, 0.2542837, 0, 0, 0, 2, 24.343685, -0.50092876, -9.763872)
+
+[node name="BotePesquero" parent="." unique_id=1408794726 instance=ExtResource("27_pesquero")]
+transform = Transform3D(1.2871968, 0, -2.6178553, -0.34574696, 2.8364575, -0.16952203, 2.5986702, 0.37738404, 1.2741451, 21.443773, -0.29405716, -12.275533)
+amplitud_floteo = 0.03
+velocidad_floteo = 0.2
+
+[node name="BotePesquero2" parent="." unique_id=1689685070 instance=ExtResource("27_pesquero")]
+transform = Transform3D(-0.64310414, 0.066803426, 2.6083589, -0.27980974, 2.7690506, -0.15761007, -2.2571065, -0.36230853, -0.7236457, 27.687654, -0.42904913, -9.316204)
+amplitud_floteo = 0.03
+velocidad_floteo = 0.1
+
+[node name="BotePesquero3" parent="." unique_id=1839232716 instance=ExtResource("27_pesquero")]
+transform = Transform3D(-0.64310414, 0.066803426, 2.6083589, -0.27980974, 2.7690506, -0.15761007, -2.2571065, -0.36230853, -0.7236457, -1.1506596, -0.42904913, -23.155575)
+amplitud_floteo = 0.03
+velocidad_floteo = 0.1
+
+[node name="TituloRio" parent="." unique_id=1408794727 instance=ExtResource("28_titulo")]
+
+[node name="BosqueRojo" type="Sprite3D" parent="." unique_id=1408794728]
+transform = Transform3D(3.0814605, 0, -0.02755871, 0, 1.5764208, 0, 0.08495335, 0, 0.9996202, 6.762432, 3.6404142, -86.54529)
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("29_bosque")
+
+[node name="BosqueRojo4" type="Sprite3D" parent="." unique_id=2050351797]
+transform = Transform3D(3.0826313, 0, 0, 0, 1.5764208, 0, 0, 0, 1, -6.1673145, 3.6404133, -89.872406)
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("29_bosque")
+
+[node name="BosqueRojo2" type="Sprite3D" parent="." unique_id=1130558364]
+transform = Transform3D(3.0800922, 0, -0.040577084, 0, 1.5764208, 0, 0.1250842, 0, 0.9991764, 40.022453, 3.8841524, -86.69064)
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("29_bosque")
+
+[node name="BosqueRojo3" type="Sprite3D" parent="." unique_id=271359009]
+transform = Transform3D(3.0826313, 0, 0, 0, 1.5764208, 0, 0, 0, 1, 78.87372, 3.6404142, -85.44277)
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("29_bosque")
+
+[node name="Naufragio" parent="." unique_id=1408794730 instance=ExtResource("30_naufragio")]
+transform = Transform3D(11.862902, 0, 0, 0, 11.930646, 0, 0, 0, 6.9585457, 64.77791, -0.9720125, -17.4752)
+
+[node name="RocaRio" parent="." unique_id=1408794731 instance=ExtResource("31_roca")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 39.02904, -0.6, 2.61663)
+
+[node name="RocaRio4" parent="." unique_id=1039721084 instance=ExtResource("31_roca")]
+transform = Transform3D(3.1007743, -0.49141362, 0, 0.29471943, 5.1702147, 0, 0, 0, 3, 48.319206, -4.097939, -37.348885)
+
+[node name="RocaRio2" parent="." unique_id=927876736 instance=ExtResource("31_roca")]
+transform = Transform3D(27.614399, 0, 0, 0, 3, 0, 0, 0, 15.088055, 61.738617, -3.0068746, -17.539055)
+
+[node name="RocaRio3" parent="." unique_id=1461955662 instance=ExtResource("31_roca")]
+transform = Transform3D(27.614399, 0, 0, 0, 2.9998918, 0.1281077, 0, -0.025472015, 15.087512, -1.1933956, -3.6007662, -11.032141)
+
+[node name="PescadosColgando" parent="." unique_id=1408794732 instance=ExtResource("32_pescados")]
+transform = Transform3D(1.5451015, 0.019181503, -0.3685234, 1.8626451e-09, 1.9972963, 0.10395852, 0.29006875, -0.10217361, 1.9630035, 25.473322, 3.1081262, -9.945517)

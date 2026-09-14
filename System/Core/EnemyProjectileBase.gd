@@ -7,6 +7,9 @@ const DURACION_DESVANECIMIENTO: float = 0.6
 const DEFAULT_OFFSCREEN_MARGIN_X: float = 200.0
 const DEFAULT_OFFSCREEN_MARGIN_TOP: float = 200.0
 const DEFAULT_OFFSCREEN_MARGIN_BOTTOM: float = 200.0
+const MAX_OFFSCREEN_3D_DIST_X: float = 85.0
+const MAX_OFFSCREEN_3D_HEIGHT_TOP: float = 70.0
+const MAX_OFFSCREEN_3D_HEIGHT_BOTTOM: float = 30.0
 const MIN_WORLD_Y: float = -20.0
 const SPAWN_COLLISION_DELAY: float = 0.1
 const DESTROY_DELAY: float = 0.3
@@ -432,21 +435,24 @@ func _check_destroy() -> void:
 
 
 func _check_off_screen() -> void:
-	if global_position.y < MIN_WORLD_Y or global_position.x < -25.0 or global_position.x > 55.0 or global_position.y > 50.0:
-		_safe_destroy()
+	var camera := CAMERA_UTILS_REF.obtener_camara_juego(self)
+	if camera:
+		var cam_pos: Vector3 = camera.global_position
+		if absf(global_position.x - cam_pos.x) > MAX_OFFSCREEN_3D_DIST_X or global_position.y < (cam_pos.y - MAX_OFFSCREEN_3D_HEIGHT_BOTTOM) or global_position.y > (cam_pos.y + MAX_OFFSCREEN_3D_HEIGHT_TOP):
+			_safe_destroy()
+			return
+
+		var screen_pos := camera.unproject_position(global_position)
+		var viewport_size := get_viewport().get_visible_rect().size
+		if screen_pos.x < -offscreen_margin_x or screen_pos.x > viewport_size.x + offscreen_margin_x:
+			_safe_destroy()
+		elif screen_pos.y < -offscreen_margin_top:
+			_safe_destroy()
+		elif screen_pos.y > viewport_size.y + offscreen_margin_bottom:
+			_safe_destroy()
 		return
 
-	var camera := CAMERA_UTILS_REF.obtener_camara_juego(self )
-	if not camera:
-		return
-
-	var screen_pos := camera.unproject_position(global_position)
-	var viewport_size := get_viewport().get_visible_rect().size
-	if screen_pos.x < -offscreen_margin_x or screen_pos.x > viewport_size.x + offscreen_margin_x:
-		_safe_destroy()
-	elif screen_pos.y < -offscreen_margin_top:
-		_safe_destroy()
-	elif screen_pos.y > viewport_size.y + offscreen_margin_bottom:
+	if global_position.y < MIN_WORLD_Y or global_position.y > 150.0:
 		_safe_destroy()
 
 

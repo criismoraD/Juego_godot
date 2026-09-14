@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://TEST_/naufragio/naufragio.glb" id="1_model"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/Naufragio_Mat.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/Naufragio.gd" id="3_script"]
+
+[node name="Naufragio" type="Node3D"]
+script = ExtResource("3_script")
+material_naufragio = ExtResource("2_mat")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]

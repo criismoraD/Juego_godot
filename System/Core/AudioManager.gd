@@ -378,6 +378,7 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://System/Audio/Music/VICTORY.mp3"))  # Índice 4 - Victoria
 	bgm_streams.append(load("res://System/Audio/Music/Noche Aplastante.mp3"))  # Índice 5 - Noche Aplastante (Oleada 5)
 	bgm_streams.append(load("res://TEST_/Torre interior.mp3"))  # Índice 6 - Torre interior
+	bgm_streams.append(load("res://TEST_/Viaje por el rio.mp3"))  # Índice 7 - Viaje por el rio
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -553,6 +554,7 @@ var bgm_volume_offsets: Dictionary = {
 	4: 0.0,   ## VICTORY (-15.0 dB base)
 	5: 2.0,   ## Noche Aplastante (Oleada 5: -13.0 dB base, aumentado +4.0 dB)
 	6: 0.0,   ## Torre interior (-15.0 dB base)
+	7: 0.0,   ## Viaje por el rio (-15.0 dB base)
 }
 
 

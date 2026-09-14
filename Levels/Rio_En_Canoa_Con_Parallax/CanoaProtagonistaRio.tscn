@@ -1,21 +1,30 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://doxc140ei2l5d"]
 
-[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dpbtqlvxsj10k" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bduw0imvq6xeh" path="res://Entities/Ambiente_Canoa_Aliada/Canoa_aliada.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://cx4pa18v52pqr" path="res://Entities/Ambiente_Canoa_Aliada/Tripulante_barco_fondo_ally_archer.tscn" id="3_tripulante"]
+[ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Entities/Jugador_Arquera/Player.tscn" id="4_player"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_suelo"]
+size = Vector3(1.1, 0.25, 0.45)
 
 [node name="CanoaProtagonistaRio" type="Node3D" unique_id=2026998500]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 script = ExtResource("1_script")
-velocidad_avance = 0.65
-navegacion_continua = true
 
 [node name="CanoaAliadaModel" parent="." unique_id=2026998501 instance=ExtResource("2_model")]
-transform = Transform3D(1.0005641, 0, 0, 0, 1.2588098, 0, 0, 0, 1, 0, 0.005566733, 0)
+transform = Transform3D(2.0424726, 0, 0, 0, 1.9994787, 0, 0, 0, 1.782749, 0, 0.005566733, 0)
 
-[node name="Protagonista" parent="." unique_id=2026998502 instance=ExtResource("3_tripulante")]
-transform = Transform3D(0.135, 0, 0, 0, 0.135, 0, 0, 0, 0.135, 0.08, 0.11, 0)
+[node name="Protagonista" parent="." unique_id=2026998502 instance=ExtResource("4_player")]
+transform = Transform3D(0.178, 0, 0, 0, 0.178, 0, 0, 0, 0.178, 0.31096578, 0.1553143, 0)
+plano_profundidad_z = -7.5
 
 [node name="Acompanante" parent="." unique_id=2026998503 instance=ExtResource("3_tripulante")]
-transform = Transform3D(0.11, 0, 0, 0, 0.11, 0, 0, 0, 0.11, -0.36, 0.1, 0)
-esta_sentada = true
+transform = Transform3D(0.178, 0, 0, 0, 0.178, 0, 0, 0, 0.178, -0.7550017, 0.21778524, 0.10152596)
+
+[node name="SueloCanoa" type="StaticBody3D" parent="." unique_id=2026998504]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05, 0.175, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SueloCanoa" unique_id=2026998505]
+transform = Transform3D(1.8167179, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.12573335, 0)
+shape = SubResource("BoxShape_suelo")

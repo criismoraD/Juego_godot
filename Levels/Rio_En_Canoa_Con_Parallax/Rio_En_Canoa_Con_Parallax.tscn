@@ -23,6 +23,15 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ReflejoCordillera.tscn" id="22_reflejo"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Hojas/HojasPlane.tscn" id="23_hojas"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Tulemaki.tscn" id="24_tulemaki"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/CasaBoneta.tscn" id="25_boneta"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PlataformaMaderos.tscn" id="26_maderos"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/WoodmetalPiso.tscn" id="27_woodmetal"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/BotePesquero.tscn" id="28_pesquero"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/TituloRio.tscn" id="29_titulo"]
+[ext_resource type="Texture2D" path="res://TEST_/Bosque rojo.png" id="30_bosque"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Naufragio.tscn" id="31_naufragio"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/RocaRio.tscn" id="32_roca"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PescadosColgando.tscn" id="33_pescados"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
@@ -377,6 +386,37 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 2.5, -8.0)
 
 [node name="Tulemaki" parent="." unique_id=2026999130 instance=ExtResource("24_tulemaki")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.0, 2.0, -6.0)
+
+[node name="CasaBoneta" parent="ParallaxFondo" unique_id=2026999131 instance=ExtResource("25_boneta")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, -1.5, -45.0)
+
+[node name="PlataformaMaderos" parent="." unique_id=2026999132 instance=ExtResource("26_maderos")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 10.0, -0.3, -10.0)
+
+[node name="WoodmetalPiso" parent="." unique_id=2026999133 instance=ExtResource("27_woodmetal")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 13.0, 0.2, -7.0)
+
+[node name="BotePesquero" parent="." unique_id=2026999134 instance=ExtResource("28_pesquero")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0, -0.15, -9.0)
+
+[node name="TituloRio" parent="." unique_id=2026999135 instance=ExtResource("29_titulo")]
+
+[node name="BosqueRojo" type="Sprite3D" parent="." unique_id=2026999136]
+transform = Transform3D(14, 0, 0, 0, 8, 0, 0, 0, 1, -3, 1.5, -70.0)
+layers = 3
+pixel_size = 0.0035
+double_sided = true
+shaded = false
+texture = ExtResource("30_bosque")
+
+[node name="Naufragio" parent="." unique_id=2026999137 instance=ExtResource("31_naufragio")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.0, -0.4, -12.0)
+
+[node name="RocaRio" parent="." unique_id=2026999138 instance=ExtResource("32_roca")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.0, -0.6, -9.0)
+
+[node name="PescadosColgando" parent="." unique_id=2026999139 instance=ExtResource("33_pescados")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 2.0, 1.5, -8.0)
 
 
 

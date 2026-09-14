@@ -402,7 +402,6 @@ size = 0.01
 
 [node name="SubViewportMedio3D" type="SubViewport" parent="." unique_id=164925320]
 transparent_bg = true
-msaa_3d = 0
 screen_space_aa = 1
 size = Vector2i(1152, 648)
 render_target_update_mode = 4
@@ -418,7 +417,6 @@ size = 0.01
 [node name="SubViewportFrente3D" type="SubViewport" parent="." unique_id=164925310]
 transparent_bg = true
 handle_input_locally = false
-msaa_3d = 0
 screen_space_aa = 1
 size = Vector2i(1920, 1080)
 render_target_update_mode = 4
@@ -663,7 +661,7 @@ transform = Transform3D(0.5865819, 0.12402413, -0.023229882, -0.110541105, 0.451
 transform = Transform3D(0.38889393, 0.3764421, 0.03367601, -0.16841969, 0.7789061, -0.17040402, -0.07277604, 0.20903748, 0.5743069, -6.480166, 0.006891027, 0.51001906)
 
 [node name="PINCHO10" parent="." unique_id=990766162 instance=ExtResource("25_qcvbp")]
-transform = Transform3D(0.28340974, 0.65401834, -0.095981024, -0.26394388, 0.35843238, -0.4073939, -0.18684898, 0.48568135, 0.42990443, -9.748371, 2.6810513, -2.8079684)
+transform = Transform3D(0.28340974, 0.65401834, -0.095981024, -0.26394388, 0.35843238, -0.4073939, -0.18684898, 0.48568135, 0.42990443, -17.326984, 2.6810513, -2.8079684)
 
 [node name="PINCHO2" parent="." unique_id=1487982446 instance=ExtResource("25_qcvbp")]
 transform = Transform3D(0.44602785, 0.54782546, -0.019494671, -0.38826168, 0.57895917, -0.17260231, -0.10154799, 0.19259633, 0.57430685, -6.268942, 0.1362295, 0.46189582)
@@ -781,7 +779,7 @@ transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684
 transform = Transform3D(2.14817, 0, 0, 0, 1.5927807, 0.017112091, 0, -0.02160684, 1.2614435, -7.6941657, 1.438156, 0.33921558)
 
 [node name="Woodmetal_piso10" parent="." unique_id=1058340024 instance=ExtResource("50_woodmetal")]
-transform = Transform3D(-0.022196103, 1.5928422, -1.8626451e-09, -2.1478577, -0.016457507, 0.017112095, 0.029136728, 0.00022325665, 1.2614435, -12.283481, 0.6929167, -2.551062)
+transform = Transform3D(-0.022196103, 1.5928422, -1.8626451e-09, -2.1478577, -0.016457507, 0.017112095, 0.029136728, 0.00022325665, 1.2614435, -13.372644, 0.6929167, -0.3029747)
 
 [node name="Woodmetal_piso4" parent="." unique_id=1054819951 instance=ExtResource("50_woodmetal")]
 transform = Transform3D(0.022335617, -0.021603156, 1.2669097, -8.3541457e-17, 1.5926845, 0.017188132, -1.504783, -0.00032065882, 0.01880484, -6.6092753, 1.4265611, -0.31277564)

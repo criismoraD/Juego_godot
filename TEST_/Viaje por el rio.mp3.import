@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bdp1f64lnfk0"
+path="res://.godot/imported/Viaje por el rio.mp3-9fecad844c9e8ba3340b4137ad957ec7.mp3str"
+
+[deps]
+
+source_file="res://TEST_/Viaje por el rio.mp3"
+dest_files=["res://.godot/imported/Viaje por el rio.mp3-9fecad844c9e8ba3340b4137ad957ec7.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://TEST_/Tablones madera plataforma/Plataformaa madera.glb" id="1_model"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/PlataformaMaderos_Mat.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/PlataformaMaderos.gd" id="3_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_plataforma"]
+size = Vector3(1.0, 0.14, 0.94)
+
+[node name="PlataformaMaderos" type="Node3D"]
+script = ExtResource("3_script")
+material_maderos = ExtResource("2_mat")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="SueloPlataforma" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SueloPlataforma"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+shape = SubResource("BoxShape_plataforma")

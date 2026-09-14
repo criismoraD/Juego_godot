@@ -10,6 +10,7 @@ extends Node3D
 const VELOCIDAD_CANOA_DEFECTO: float = 0.65
 const VELOCIDAD_PARALLAX_DEFECTO: float = 1.0
 const ANCHO_AGUA_AMPLIADO: float = 120.0
+const MUSICA_VIAJE_RIO: int = 7  ## Índice en AudioManager de "Viaje por el rio"
 
 # === EXPORTS ===
 @export_category("Control de Travesía")
@@ -17,6 +18,7 @@ const ANCHO_AGUA_AMPLIADO: float = 120.0
 @export var velocidad_parallax: float = VELOCIDAD_PARALLAX_DEFECTO  ## Velocidad del fondo rocoso
 @export var travesia_activa: bool = true  ## Si false, detiene el avance de la canoa y el parallax
 @export var camara_sigue_canoa: bool = true  ## Si true, la cámara principal sigue el avance de la canoa aliada
+@export var musica_viaje_rio: bool = true  ## Si true, suena "Viaje por el rio" al entrar al nivel
 @export var focos_fijos_a_camara: bool = true  ## Si true, todos los focos LuzCentroPiso*/LuzTorre* acompañan a la cámara en X como un sol fijo mientras la cordillera hace scroll
 
 # === ONREADY ===
@@ -54,6 +56,10 @@ func _ready() -> void:
 			parallax_fondo.call("_inicializar_capa_agua_textura")
 		if parallax_fondo.has_method("_inicializar_capa_reflejo"):
 			parallax_fondo.call("_inicializar_capa_reflejo")
+		if parallax_fondo.has_method("_inicializar_capa_casa_boneta"):
+			parallax_fondo.call("_inicializar_capa_casa_boneta")
+		if parallax_fondo.has_method("_inicializar_capa_bosque_rojo"):
+			parallax_fondo.call("_inicializar_capa_bosque_rojo")
 		if parallax_fondo.has_method("aplicar_capas_fondo"):
 			parallax_fondo.call("aplicar_capas_fondo")
 
@@ -202,6 +208,9 @@ func _inicializar_agua() -> void:
 
 
 func _inicializar_escenario() -> void:
+	if musica_viaje_rio:
+		AudioManager.play_music(MUSICA_VIAJE_RIO)
+
 	if is_instance_valid(canoa_protagonista):
 		canoa_protagonista.set("velocidad_avance", velocidad_canoa)
 		if travesia_activa:
