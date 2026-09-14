@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://c62nylveq5d7t"]
+
+[ext_resource type="Shader" path="res://System/Shaders/desenfoque_fondo_plano.gdshader" id="1_shader"]
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/PlanoDesenfoqueFondo.gd" id="2_script"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_desenfoque"]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/desenfoque = 3.5
+shader_parameter/tinte = Color(1, 1, 1, 1)
+shader_parameter/opacidad = 1.0
+shader_parameter/desvanecer_borde_inferior = 0.08
+
+[sub_resource type="QuadMesh" id="QuadMesh_plano"]
+size = Vector2(260, 90)
+
+[node name="PlanoDesenfoqueFondo" type="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18, -50)
+material_override = SubResource("ShaderMaterial_desenfoque")
+mesh = SubResource("QuadMesh_plano")
+script = ExtResource("2_script")
+grado_desenfoque = 3.5
+opacidad = 1.0
+tinte = Color(1, 1, 1, 1)
+desvanecer_borde_inferior = 0.08
+tamano = Vector2(260, 90)
+seguir_camara_x = true

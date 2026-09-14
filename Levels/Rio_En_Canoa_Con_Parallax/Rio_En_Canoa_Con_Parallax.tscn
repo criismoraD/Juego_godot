@@ -13,6 +13,16 @@
 [ext_resource type="Texture2D" uid="uid://b2t5g72t8hny7" path="res://TEST_/nube rosada.png" id="11_nubes"]
 [ext_resource type="Texture2D" path="res://TEST_/Fondo_estatico_preview.png" id="12_preview_fondo"]
 [ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Entities/Ambiente_Piso/PISO ALIADO.glb" id="14_piso_aliado"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/RuinaArco.tscn" id="15_ruina"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="16_arboleda"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PlanoDesenfoqueFondo.tscn" id="17_desenfoque"]
+[ext_resource type="Texture2D" uid="uid://x6yasi6rallh" path="res://TEST_/Textura agua nivel 6.png" id="18_agua"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ArbolNaranjo.tscn" id="19_naranjo"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Pajaros/PajarosPlane.tscn" id="20_pajaros"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/DesenfoqueEspecial.tscn" id="21_especial"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ReflejoCordillera.tscn" id="22_reflejo"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Hojas/HojasPlane.tscn" id="23_hojas"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Tulemaki.tscn" id="24_tulemaki"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
@@ -151,6 +161,45 @@ transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 63.75, -2.3, -53.0)
 
 [node name="PiedraCordillera_11" parent="ParallaxFondo/CapaCordillera" unique_id=2026999046 instance=ExtResource("9_cordillera")]
 transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 72.25, -2.3, -53.0)
+
+[node name="CapaReflejoCordillera" type="Node3D" parent="ParallaxFondo" unique_id=2026999116]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -28)
+
+[node name="ReflejoCordillera_0" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999117 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, -21.25, -1.7809147, -55.00928)
+
+[node name="ReflejoCordillera_1" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999118 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, -12.75, -1.766786, -54.683224)
+
+[node name="ReflejoCordillera_2" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999119 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, -4.25, -1.5972475, -54.23407)
+
+[node name="ReflejoCordillera_3" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999120 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 4.25, -1.8358678, -53.72635)
+
+[node name="ReflejoCordillera_4" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999121 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 12.75, -1.958239, -53.010597)
+
+[node name="ReflejoCordillera_5" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999122 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 21.25, -1.4966191, -51.882694)
+
+[node name="ReflejoCordillera_6" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999123 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 29.75, -1.6, -52.195236)
+
+[node name="ReflejoCordillera_7" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999124 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 38.25, -1.7, -52.160324)
+
+[node name="ReflejoCordillera_8" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999125 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 46.75, -1.8, -51.669956)
+
+[node name="ReflejoCordillera_9" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999126 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 55.25, -1.6, -51.349495)
+
+[node name="ReflejoCordillera_10" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999127 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 63.75, -1.7, -51.5)
+
+[node name="ReflejoCordillera_11" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=2026999128 instance=ExtResource("22_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 72.25, -1.7, -51.5)
 
 [node name="CapaTerroso" type="Node3D" parent="ParallaxFondo" unique_id=2026999023]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -20)
@@ -297,5 +346,38 @@ transform = Transform3D(5.992707, 0, 0, 0, 7.2355685, 0, 0, 0, 3.0799909, 9.5924
 
 [node name="PISO ALIADO13" parent="." unique_id=1603298363 instance=ExtResource("14_piso_aliado")]
 transform = Transform3D(5.992707, 0, 0, 0, 7.2355685, 0, 0, 0, 3.0799909, 17.969572, -1.0493348, -82.7293)
+
+[node name="RuinaArco" parent="." unique_id=2026999110 instance=ExtResource("15_ruina")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, 6.0, -0.5, -35.0)
+
+[node name="Arboleda" parent="." unique_id=2026999111 instance=ExtResource("16_arboleda")]
+transform = Transform3D(2.0, 0, 0, 0, 2.0, 0, 0, 0, 2.0, 2.0, 0.0, -12.0)
+
+[node name="PlanoDesenfoqueFondo" parent="." unique_id=2026999080 instance=ExtResource("17_desenfoque")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18, -48)
+
+[node name="TexturaAgua" type="Sprite3D" parent="." unique_id=2026999112]
+transform = Transform3D(4, 0, 0, 0, 2, 0, 0, 0, 1, -6, 1.0, -6.5)
+pixel_size = 0.005
+double_sided = true
+shaded = false
+texture = ExtResource("18_agua")
+
+[node name="ArbolNaranjo" parent="." unique_id=2026999113 instance=ExtResource("19_naranjo")]
+transform = Transform3D(2.0, 0, 0, 0, 2.0, 0, 0, 0, 2.0, -2.0, 0.0, -5.0)
+
+[node name="PajarosPlane" parent="." unique_id=2026999114 instance=ExtResource("20_pajaros")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 8.0, -25.0)
+
+[node name="DesenfoqueEspecial" parent="." unique_id=2026999115 instance=ExtResource("21_especial")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20.0, -60.0)
+
+[node name="HojasPlane" parent="." unique_id=2026999129 instance=ExtResource("23_hojas")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 2.5, -8.0)
+
+[node name="Tulemaki" parent="." unique_id=2026999130 instance=ExtResource("24_tulemaki")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.0, 2.0, -6.0)
+
+
 
 

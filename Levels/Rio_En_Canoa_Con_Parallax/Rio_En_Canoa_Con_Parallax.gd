@@ -17,6 +17,7 @@ const ANCHO_AGUA_AMPLIADO: float = 120.0
 @export var velocidad_parallax: float = VELOCIDAD_PARALLAX_DEFECTO  ## Velocidad del fondo rocoso
 @export var travesia_activa: bool = true  ## Si false, detiene el avance de la canoa y el parallax
 @export var camara_sigue_canoa: bool = true  ## Si true, la cámara principal sigue el avance de la canoa aliada
+@export var focos_fijos_a_camara: bool = true  ## Si true, todos los focos LuzCentroPiso*/LuzTorre* acompañan a la cámara en X como un sol fijo mientras la cordillera hace scroll
 
 # === ONREADY ===
 @onready var parallax_fondo: Node3D = find_child("ParallaxFondo", true, false) as Node3D
@@ -29,6 +30,8 @@ const ANCHO_AGUA_AMPLIADO: float = 120.0
 # === VARIABLES PRIVADAS ===
 var _offset_camara_x: float = 2.9400935
 var _offset_water_x: float = 0.0675573
+var _focos_fijos: Array[SpotLight3D] = []
+var _offsets_focos_x: Array[float] = []
 var _segmentos_agua: Array[Node3D] = []
 
 
@@ -40,12 +43,19 @@ func _ready() -> void:
 			_offset_camara_x = camara_principal.global_position.x - canoa_x
 		if is_instance_valid(water_plane):
 			_offset_water_x = water_plane.global_position.x - canoa_x
+	_inicializar_focos_fijos()
 
 	if is_instance_valid(parallax_fondo):
 		if parallax_fondo.has_method("fijar_camara_referencia") and is_instance_valid(camara_principal):
 			parallax_fondo.call("fijar_camara_referencia", camara_principal)
 		if parallax_fondo.has_method("_inicializar_capa_piso_aliado"):
 			parallax_fondo.call("_inicializar_capa_piso_aliado")
+		if parallax_fondo.has_method("_inicializar_capa_agua_textura"):
+			parallax_fondo.call("_inicializar_capa_agua_textura")
+		if parallax_fondo.has_method("_inicializar_capa_reflejo"):
+			parallax_fondo.call("_inicializar_capa_reflejo")
+		if parallax_fondo.has_method("aplicar_capas_fondo"):
+			parallax_fondo.call("aplicar_capas_fondo")
 
 	_inicializar_agua()
 	_inicializar_escenario()
@@ -58,6 +68,7 @@ func _process(_delta: float) -> void:
 			camara_principal.global_position.x = canoa_x + _offset_camara_x
 		if is_instance_valid(water_plane):
 			water_plane.global_position.x = canoa_x + _offset_water_x
+	_actualizar_focos_fijos()
 
 
 # === FUNCIONES PÚBLICAS ===
@@ -113,6 +124,16 @@ func obtener_water_plane() -> Node3D:
 	return water_plane
 
 
+## Retorna los focos que acompañan a la cámara como sol fijo.
+func obtener_focos_fijos() -> Array[SpotLight3D]:
+	return _focos_fijos
+
+
+## Retorna el foco del piso 2 si existe en la escena.
+func obtener_luz_piso2() -> SpotLight3D:
+	return find_child("LuzCentroPiso2", true, false) as SpotLight3D
+
+
 ## Retorna los segmentos de agua que componen el río infinito en repetición.
 func obtener_segmentos_agua() -> Array[Node3D]:
 	return _segmentos_agua
@@ -123,6 +144,39 @@ func obtener_segmentos_piso_aliado() -> Array[Node3D]:
 	if is_instance_valid(parallax_fondo) and parallax_fondo.has_method("obtener_segmentos_piso_aliado"):
 		return parallax_fondo.call("obtener_segmentos_piso_aliado")
 	return []
+
+
+func _inicializar_focos_fijos() -> void:
+	_focos_fijos.clear()
+	_offsets_focos_x.clear()
+	if not is_instance_valid(camara_principal):
+		return
+	var candidatos: Array[Node] = find_children("*", "SpotLight3D", true, false)
+	for candidato in candidatos:
+		var foco: SpotLight3D = candidato as SpotLight3D
+		if foco == null or not _es_foco_fijo(foco):
+			continue
+		_focos_fijos.append(foco)
+		_offsets_focos_x.append(foco.global_position.x - camara_principal.global_position.x)
+
+
+func _actualizar_focos_fijos() -> void:
+	if not focos_fijos_a_camara or not is_instance_valid(camara_principal):
+		return
+	var camara_x: float = camara_principal.global_position.x
+	for i in range(_focos_fijos.size()):
+		var foco: SpotLight3D = _focos_fijos[i]
+		if is_instance_valid(foco):
+			foco.global_position.x = camara_x + _offsets_focos_x[i]
+
+
+func _es_foco_fijo(foco: SpotLight3D) -> bool:
+	var nombre: String = foco.name.to_lower()
+	if nombre.begins_with("luzcentropiso"):
+		return true
+	if nombre.begins_with("luztorre"):
+		return true
+	return false
 
 
 func _inicializar_agua() -> void:

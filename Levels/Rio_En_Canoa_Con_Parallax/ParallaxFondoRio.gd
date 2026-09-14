@@ -16,6 +16,7 @@ const TEX_NUBES: Texture2D = preload("res://TEST_/nube rosada.png")
 const TEX_ATARDECER: Texture2D = preload("res://TEST_/Fondo nivel 6 atardecer.png")
 const TEX_TERROSO: Texture2D = preload("res://TEST_/Fondo terroso nivel 6.png")
 const ESCENA_CORDILLERA: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/PiedraFondoCordillera.tscn")
+const ESCENA_REFLEJO: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/ReflejoCordillera.tscn")
 
 const CANTIDAD_SEGMENTOS: int = 3
 const CANTIDAD_SEGMENTOS_CORDILLERA: int = 12
@@ -65,24 +66,37 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 @export var altura_y_cordillera: float = 0.8  ## Cota Y base para la cordillera de piedras
 @export var escala_cordillera: Vector3 = Vector3(10.0, 7.5, 10.0)  ## Escala 3D del modelo de cordillera
 
-@export_category("Piso Aliado")
-@export var sincronizar_piso_con_cordillera: bool = true  ## Si true, el piso aliado se desplaza a la misma velocidad de la cordillera
+@export_category("Piso Aliado / Piso Nueva Version")
+@export var sincronizar_piso_con_cordillera: bool = true  ## Si true, el piso (Piso nueva version / Piso Aliado) se desplaza a la misma velocidad de la cordillera
 @export var ancho_segmento_piso: float = 5.4  ## Distancia horizontal entre piezas de piso para el wrap del loop
+@export var sincronizar_reflejo_con_cordillera: bool = true  ## Si true, el reflejo de la cordillera en el agua se desplaza a la misma velocidad que ella
+
+@export_category("Textura de agua")
+@export var sincronizar_agua_textura_con_cordillera: bool = true  ## Si true, la TexturaAgua se desplaza a la misma velocidad de la cordillera
+@export var ancho_segmento_agua_textura: float = 20.0  ## Ancho de cada panel de agua para el wrap del loop
 
 @export_category("Renderizado")
 @export var capa_visual: int = 3  ## Capa de renderizado (Fondo = 2, Editor = 1, Ambas = 3)
+
+@export_category("Capas de fondo lejano")
+@export var capa_cordillera: int = 2  ## Capa visual de la cordillera (2 = fondo, se difumina por la distancia)
+@export var capa_piso_fondo: int = 2  ## Capa visual del piso de fondo (2 = fondo, se difumina por la distancia)
 
 # === VARIABLES PRIVADAS ===
 var _sprites_terroso: Array[Sprite3D] = []
 var _sprites_atardecer: Array[Sprite3D] = []
 var _segmentos_cordillera: Array[Node3D] = []
+var _segmentos_reflejo: Array[Node3D] = []
 var _segmentos_piso_aliado: Array[Node3D] = []
 var _sprites_arboles: Array[Sprite3D] = []
 var _sprites_nubes: Array[Sprite3D] = []
+var _sprites_agua_textura: Array[Sprite3D] = []
+var _x_max_agua_textura: float = -INF
 var _sprite_fondo_video: Sprite3D = null
 var _video_player: VideoStreamPlayer = null
 
 var _nodo_capa_terroso: Node3D = null
+var _nodo_capa_reflejo: Node3D = null
 var _nodo_capa_atardecer: Node3D = null
 var _nodo_capa_cordillera: Node3D = null
 var _camara_referencia: Camera3D = null
@@ -93,6 +107,7 @@ var _offset_fondo_video_x: float = 8.06
 func _ready() -> void:
 	_inicializar_capas()
 	_aplicar_capa_visual_recursiva(self)
+	_aplicar_capas_fondo()
 
 
 func _process(delta: float) -> void:
@@ -110,7 +125,9 @@ func _process(delta: float) -> void:
 		return
 
 	_actualizar_loop_cordillera(delta)
+	_actualizar_loop_reflejo(delta)
 	_actualizar_loop_piso_aliado(delta)
+	_actualizar_loop_agua_textura(delta)
 	_actualizar_loop_arboles(delta)
 	_actualizar_loop_nubes(delta)
 	_actualizar_loop_terroso(delta)
@@ -120,6 +137,13 @@ func _process(delta: float) -> void:
 ## Retorna la lista de nodos 3D de la cordillera de piedras.
 func obtener_segmentos_cordillera() -> Array[Node3D]:
 	return _segmentos_cordillera
+
+
+## Retorna la lista de nodos 3D del reflejo espejado de la cordillera sobre el agua.
+func obtener_segmentos_reflejo() -> Array[Node3D]:
+	if _segmentos_reflejo.is_empty():
+		_inicializar_capa_reflejo()
+	return _segmentos_reflejo
 
 
 ## Retorna la lista de nodos 3D del piso aliado sincronizados con la cordillera.
@@ -146,6 +170,22 @@ func obtener_sprites_arboles() -> Array[Sprite3D]:
 ## Retorna la lista de sprites que componen la capa de nubes rosa.
 func obtener_sprites_nubes() -> Array[Sprite3D]:
 	return _sprites_nubes
+
+
+## Retorna los sprites de textura de agua sincronizados con la cordillera.
+func obtener_sprites_agua_textura() -> Array[Sprite3D]:
+	if _sprites_agua_textura.is_empty():
+		_inicializar_capa_agua_textura()
+	return _sprites_agua_textura
+
+
+## Permite registrar un sprite de textura de agua dinámicamente.
+func registrar_sprite_agua_textura(sprite_agua: Sprite3D) -> void:
+	if is_instance_valid(sprite_agua) and not _sprites_agua_textura.has(sprite_agua):
+		_sprites_agua_textura.append(sprite_agua)
+		_sprites_agua_textura.sort_custom(func(a: Sprite3D, b: Sprite3D) -> bool:
+			return a.position.x < b.position.x
+		)
 
 
 ## Retorna el sprite donde se reproduce el fondo de video.
@@ -189,11 +229,18 @@ func set_desplazamiento_activo(nuevo_estado: bool) -> void:
 	activo = nuevo_estado
 
 
+## Reaplica las capas de fondo lejano (cordillera y piso) tras recolecciones externas.
+func aplicar_capas_fondo() -> void:
+	_aplicar_capas_fondo()
+
+
 # === FUNCIONES PRIVADAS ===
 func _inicializar_capas() -> void:
 	_inicializar_capa_fondo_video()
 	_inicializar_capa_cordillera()
+	_inicializar_capa_reflejo()
 	_inicializar_capa_piso_aliado()
+	_inicializar_capa_agua_textura()
 	_inicializar_capas_arboles_y_nubes()
 
 
@@ -316,14 +363,75 @@ func _construir_capa_cordillera() -> void:
 		_segmentos_cordillera.append(piedra)
 
 
+func _inicializar_capa_reflejo() -> void:
+	_nodo_capa_reflejo = get_node_or_null("CapaReflejoCordillera") as Node3D
+	if _nodo_capa_reflejo == null:
+		_construir_capa_reflejo()
+		return
+
+	_segmentos_reflejo.clear()
+	for hijo in _nodo_capa_reflejo.get_children():
+		if hijo is Node3D and (hijo as Node3D).visible:
+			_segmentos_reflejo.append(hijo)
+
+	_segmentos_reflejo.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		return a.position.x < b.position.x
+	)
+
+
+func _construir_capa_reflejo() -> void:
+	_nodo_capa_reflejo = Node3D.new()
+	_nodo_capa_reflejo.name = "CapaReflejoCordillera"
+	_nodo_capa_reflejo.position = Vector3(0.0, altura_y_cordillera, PROFUNDIDAD_CORDILLERA)
+	add_child(_nodo_capa_reflejo)
+
+	_segmentos_reflejo.clear()
+	for i in range(CANTIDAD_SEGMENTOS_CORDILLERA):
+		var reflejo: Node3D = ESCENA_REFLEJO.instantiate() as Node3D
+		reflejo.name = "ReflejoCordillera_" + str(i)
+		reflejo.scale = Vector3(10.0, -7.5, 10.0)
+		var x_pos: float = -21.25 + float(i) * ancho_segmento_cordillera
+		reflejo.position = Vector3(x_pos, -1.7, -52.5)
+		_nodo_capa_reflejo.add_child(reflejo)
+		_segmentos_reflejo.append(reflejo)
+
+
+func _actualizar_loop_reflejo(delta: float) -> void:
+	if not sincronizar_reflejo_con_cordillera or _segmentos_reflejo.is_empty():
+		return
+
+	# Velocidad idéntica a la cordillera para que el reflejo la acompañe
+	var paso: float = velocidad_base * factor_cordillera * delta
+	for seg in _segmentos_reflejo:
+		if is_instance_valid(seg):
+			seg.position.x -= paso
+
+	var x_cam: float = _obtener_x_camara()
+	var x_cam_local: float = _nodo_capa_reflejo.to_local(Vector3(x_cam, 0.0, 0.0)).x if _nodo_capa_reflejo else x_cam
+	var limite_izquierdo: float = x_cam_local - 30.0
+
+	var x_maxima: float = -INF
+	for seg in _segmentos_reflejo:
+		if is_instance_valid(seg) and seg.position.x > x_maxima:
+			x_maxima = seg.position.x
+
+	for seg in _segmentos_reflejo:
+		if is_instance_valid(seg) and seg.position.x <= limite_izquierdo:
+			seg.position.x = x_maxima + ancho_segmento_cordillera
+			x_maxima = seg.position.x
+
+
 func _inicializar_capa_piso_aliado() -> void:
 	_segmentos_piso_aliado.clear()
 
-	# 1. Buscar en CapaPisoAliado dentro de ParallaxFondo si existiera
+	# 1. Buscar en CapaPisoAliado o CapaPiso dentro de ParallaxFondo si existiera
 	var contenedor := get_node_or_null("CapaPisoAliado") as Node3D
+	if not is_instance_valid(contenedor):
+		contenedor = get_node_or_null("CapaPiso") as Node3D
+
 	if is_instance_valid(contenedor):
 		for hijo in contenedor.get_children():
-			if hijo is Node3D and hijo.visible:
+			if hijo is Node3D and hijo.visible and not (hijo is Light3D or hijo is Camera3D):
 				_segmentos_piso_aliado.append(hijo)
 
 	# 2. Si no hay contenedor hijo, buscar en el nodo padre (el nivel)
@@ -331,19 +439,33 @@ func _inicializar_capa_piso_aliado() -> void:
 		var padre: Node = get_parent()
 		if is_instance_valid(padre):
 			var cont_padre := padre.find_child("CapaPisoAliado", false, false) as Node3D
+			if not is_instance_valid(cont_padre):
+				cont_padre = padre.find_child("CapaPiso", false, false) as Node3D
+			if not is_instance_valid(cont_padre):
+				cont_padre = padre.find_child("Pisos", false, false) as Node3D
+
 			if is_instance_valid(cont_padre):
 				for hijo in cont_padre.get_children():
-					if hijo is Node3D and hijo.visible:
+					if hijo is Node3D and hijo.visible and not (hijo is Light3D or hijo is Camera3D):
 						_segmentos_piso_aliado.append(hijo)
 			else:
 				for hijo in padre.get_children():
-					if hijo is Node3D and hijo.visible and (hijo.name.begins_with("PISO ALIADO") or hijo.name.begins_with("PisoAliado") or hijo.name.begins_with("Piso_Aliado")):
+					if hijo is Node3D and hijo.visible and _es_segmento_piso(hijo):
 						_segmentos_piso_aliado.append(hijo)
 
 	# Ordenar de izquierda a derecha por posición X
 	_segmentos_piso_aliado.sort_custom(func(a: Node3D, b: Node3D) -> bool:
 		return a.position.x < b.position.x
 	)
+
+
+func _es_segmento_piso(nodo: Node) -> bool:
+	if not (nodo is Node3D) or nodo is Light3D or nodo is Camera3D:
+		return false
+	var n: String = nodo.name.to_lower()
+	if n.begins_with("piso"):
+		return true
+	return false
 
 
 func _inicializar_capas_arboles_y_nubes() -> void:
@@ -546,6 +668,61 @@ func _actualizar_loop_piso_aliado(delta: float) -> void:
 			x_maxima = piso.position.x
 
 
+func _inicializar_capa_agua_textura() -> void:
+	_sprites_agua_textura.clear()
+	_x_max_agua_textura = -INF
+	var padre: Node = get_parent()
+	if not is_instance_valid(padre):
+		return
+	for hijo in padre.get_children():
+		if hijo is Sprite3D and (hijo as Node3D).visible and _es_sprite_agua_textura(hijo):
+			_sprites_agua_textura.append(hijo as Sprite3D)
+			if (hijo as Sprite3D).position.x > _x_max_agua_textura:
+				_x_max_agua_textura = (hijo as Sprite3D).position.x
+
+	_sprites_agua_textura.sort_custom(func(a: Sprite3D, b: Sprite3D) -> bool:
+		return a.position.x < b.position.x
+	)
+
+
+func _es_sprite_agua_textura(nodo: Node) -> bool:
+	if not (nodo is Sprite3D):
+		return false
+	return nodo.name.to_lower().begins_with("texturaagua")
+
+
+func _actualizar_loop_agua_textura(delta: float) -> void:
+	if not sincronizar_agua_textura_con_cordillera or _sprites_agua_textura.is_empty():
+		return
+
+	# Velocidad idéntica a la cordillera para completar el efecto parallax
+	var paso: float = velocidad_base * factor_cordillera * delta
+	for sprite in _sprites_agua_textura:
+		if is_instance_valid(sprite):
+			sprite.position.x -= paso
+	if _x_max_agua_textura > -INF:
+		_x_max_agua_textura -= paso
+
+	var x_cam: float = _obtener_x_camara()
+	var contenedor: Node3D = _sprites_agua_textura[0].get_parent() as Node3D
+	var x_cam_local: float = contenedor.to_local(Vector3(x_cam, 0.0, 0.0)).x if contenedor else x_cam
+	var limite_izq: float = x_cam_local - 30.0
+
+	var x_max: float = -INF
+	for sprite in _sprites_agua_textura:
+		if is_instance_valid(sprite) and sprite.position.x > limite_izq and sprite.position.x > x_max:
+			x_max = sprite.position.x
+
+	if x_max > -INF:
+		_x_max_agua_textura = x_max
+
+	for sprite in _sprites_agua_textura:
+		if is_instance_valid(sprite) and sprite.position.x <= limite_izq:
+			var base_x: float = _x_max_agua_textura if _x_max_agua_textura > -INF else x_max
+			sprite.position.x = base_x + ancho_segmento_agua_textura
+			_x_max_agua_textura = sprite.position.x
+
+
 func _actualizar_loop_arboles(delta: float) -> void:
 	if _sprites_arboles.is_empty():
 		return
@@ -631,3 +808,26 @@ func _aplicar_capa_visual_recursiva(nodo: Node) -> void:
 			nodo.layers = capa_visual
 	for hijo in nodo.get_children():
 		_aplicar_capa_visual_recursiva(hijo)
+
+
+## Mueve la cordillera y el piso de fondo a su capa lejana (2 por defecto).
+func _aplicar_capas_fondo() -> void:
+	for seg in _segmentos_cordillera:
+		if is_instance_valid(seg):
+			_fijar_capa_recursiva(seg, capa_cordillera)
+	for seg in _segmentos_reflejo:
+		if is_instance_valid(seg):
+			_fijar_capa_recursiva(seg, capa_cordillera)
+	for piso in _segmentos_piso_aliado:
+		if is_instance_valid(piso):
+			_fijar_capa_recursiva(piso, capa_piso_fondo)
+
+
+func _fijar_capa_recursiva(nodo: Node, capa: int) -> void:
+	if nodo is VisualInstance3D and not (nodo is Light3D or nodo is Camera3D):
+		if Engine.is_editor_hint():
+			(nodo as VisualInstance3D).layers = capa | 1
+		else:
+			(nodo as VisualInstance3D).layers = capa
+	for hijo in nodo.get_children():
+		_fijar_capa_recursiva(hijo, capa)

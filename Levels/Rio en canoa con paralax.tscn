@@ -11,17 +11,60 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PiedraFondoCordillera.tscn" id="9_cordillera"]
 [ext_resource type="Texture2D" uid="uid://b2t5g72t8hny7" path="res://TEST_/nube rosada.png" id="10_43yr5"]
 [ext_resource type="Texture2D" uid="uid://bs15lhvgwf7xj" path="res://TEST_/Fondo_estatico_preview.png" id="11_preview_fondo"]
-[ext_resource type="PackedScene" uid="uid://bl8cslg28i16h" path="res://Entities/Ambiente_Piso/PISO ALIADO.glb" id="14_kh264"]
+[ext_resource type="PackedScene" uid="uid://bt5hq5wnbxah" path="res://Entities/Ambiente_Piso/Piso nueva version.glb" id="13_8y7wb"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/RuinaArco.tscn" id="15_ruina"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Arboleda/Arboleda.tscn" id="16_arboleda"]
+[ext_resource type="PackedScene" uid="uid://c62nylveq5d7t" path="res://Levels/Rio_En_Canoa_Con_Parallax/PlanoDesenfoqueFondo.tscn" id="17_desenfoque"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ArbolNaranjo.tscn" id="18_naranjo"]
+[ext_resource type="Shader" uid="uid://8rpafty4m5ih" path="res://System/Shaders/desenfoque_fondo_plano.gdshader" id="19_bok55"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Pajaros/PajarosPlane.tscn" id="19_pajaros"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/DesenfoqueEspecial.tscn" id="20_especial"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ReflejoCordillera.tscn" id="21_reflejo"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Hojas/HojasPlane.tscn" id="22_hojas"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Tulemaki.tscn" id="23_tulemaki"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
 dof_blur_far_transition = 1.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5wjan"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y3cos"]
 render_priority = -10
 shading_mode = 0
 disable_fog = true
 albedo_texture = ExtResource("11_preview_fondo")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_m2lcq"]
+render_priority = 0
+shader = ExtResource("19_bok55")
+shader_parameter/desenfoque = 0.5
+shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
+shader_parameter/opacidad = 0.25
+shader_parameter/desvanecer_borde_inferior = 0.55
+
+[sub_resource type="QuadMesh" id="QuadMesh_c31k2"]
+size = Vector2(260, 90)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ptpy8"]
+render_priority = 0
+shader = ExtResource("19_bok55")
+shader_parameter/desenfoque = 10.0
+shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
+shader_parameter/opacidad = 1.0
+shader_parameter/desvanecer_borde_inferior = 1.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_oacr6"]
+size = Vector2(260, 90)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_g4v3l"]
+render_priority = 0
+shader = ExtResource("19_bok55")
+shader_parameter/desenfoque = 10.0
+shader_parameter/tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
+shader_parameter/opacidad = 0.35
+shader_parameter/desvanecer_borde_inferior = 1.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_l65n7"]
+size = Vector2(260, 90)
 
 [node name="Rio en canoa con paralax" type="Node3D" unique_id=2026999000]
 script = ExtResource("1_script")
@@ -52,11 +95,237 @@ light_cull_mask = 7
 shadow_opacity = 0.0
 shadow_blur = 0.0
 
+[node name="DirectionalLight3D4" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=381349969]
+transform = Transform3D(0.40658432, -0.30609608, 0.8608102, 0.19945453, 0.9492161, 0.24332458, -0.8915756, 0.07276058, 0.44698864, -42.98878, 42.75307, -73.242874)
+layers = 7
+light_color = Color(0.9803595, 0.7913548, 0.8295638, 1)
+light_energy = 0.35
+light_cull_mask = 7
+shadow_opacity = 0.0
+shadow_blur = 0.0
+
+[node name="DirectionalLight3D3" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=1320930515]
+transform = Transform3D(0.40658432, -0.30609608, 0.86081034, 0.19945447, 0.9492161, 0.24332449, -0.8915756, 0.07276055, 0.44698858, -57.36869, 68.00733, -81.23981)
+layers = 2
+light_color = Color(0.9647059, 0.47058824, 0.36078432, 1)
+light_energy = 0.0
+light_cull_mask = 2
+shadow_opacity = 0.0
+shadow_blur = 0.0
+
 [node name="LuzCentroPiso" type="SpotLight3D" parent="Lighting" unique_id=2026999004]
 transform = Transform3D(0.9659258, 0.1294095, -0.2241439, 0, 0.8660254, 0.5, 0.258819, -0.4829629, 0.8365163, 1.5, 4.5, 1.2)
 layers = 7
 light_color = Color(1, 0.95, 0.88, 1)
 light_energy = 1.2
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso6" type="SpotLight3D" parent="Lighting" unique_id=55190861]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -103.73384)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso7" type="SpotLight3D" parent="Lighting" unique_id=882423129]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -87.60636)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso14" type="SpotLight3D" parent="Lighting" unique_id=876322445]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -87.60636)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso15" type="SpotLight3D" parent="Lighting" unique_id=1307619099]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -87.60636)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso16" type="SpotLight3D" parent="Lighting" unique_id=1516162427]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -87.60636)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso17" type="SpotLight3D" parent="Lighting" unique_id=1618669134]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -87.60636)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso18" type="SpotLight3D" parent="Lighting" unique_id=1900640336]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -87.60636)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso8" type="SpotLight3D" parent="Lighting" unique_id=1554130686]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -103.73384)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso9" type="SpotLight3D" parent="Lighting" unique_id=1111138629]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -103.73384)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso10" type="SpotLight3D" parent="Lighting" unique_id=284931188]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -103.73384)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso11" type="SpotLight3D" parent="Lighting" unique_id=1791179036]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -112.33409)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso12" type="SpotLight3D" parent="Lighting" unique_id=728048656]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -112.33409)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
+light_cull_mask = 7
+shadow_opacity = 0.7
+shadow_blur = 0.6
+spot_range = 9.0
+spot_angle = 48.0
+spot_angle_attenuation = 1.8
+
+[node name="LuzCentroPiso13" type="SpotLight3D" parent="Lighting" unique_id=774779800]
+transform = Transform3D(0.9659259, 0.12940954, -0.2241439, 0.2575749, -0.3958267, 0.8814627, 0.025347525, -0.9091614, -0.41567189, -0.48379707, 4.5, -136.27797)
+layers = 7
+light_color = Color(0.9708373, 0.5584855, 0.26605642, 1)
+light_energy = 16.0
+light_indirect_energy = 9.238
+light_volumetric_fog_energy = 1.235
+light_size = 0.802
+light_specular = 1.375
 light_cull_mask = 7
 shadow_opacity = 0.7
 shadow_blur = 0.6
@@ -93,11 +362,17 @@ transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4.5028443, -5.9324427, -0.172907
 [node name="WaterPlane2" parent="." unique_id=1903931376 instance=ExtResource("3_water")]
 transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4.5028443, -5.9324427, -0.17290789, -67.57953)
 
+[node name="WaterPlane3" parent="." unique_id=856752725 instance=ExtResource("3_water")]
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4.5028443, -5.9324427, -0.17290789, -67.57953)
+
+[node name="WaterPlane4" parent="." unique_id=1252177003 instance=ExtResource("3_water")]
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4.5028443, -5.9324427, -0.17290789, -67.57953)
+
 [node name="Pez" parent="." unique_id=2026999009 instance=ExtResource("4_pez")]
 transform = Transform3D(0.8114411, 0, 0, 0, 0.8114411, 0, 0, 0, 1, 2.5, -0.6677978, 2.5)
 
 [node name="Pez2" parent="." unique_id=2026999010 instance=ExtResource("4_pez")]
-transform = Transform3D(0.72689563, 0, 0, 0, 0.72689563, 0, 0, 0, 0.85, -2.6435776, -0.5587452, 2.8)
+transform = Transform3D(0.72689563, 0, 0, 0, 0.72689563, 0, 0, 0, 0.85, -2.6435776, -0.5587452, -4.292016)
 tiempo_entre_apariciones = 10.0
 direccion_inicial_derecha = true
 
@@ -109,8 +384,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
 
 [node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
 transform = Transform3D(11.327185, 0, 0, 0, 10.066407, 0, 0, 0, 1, -5.840851, -4.7548733, -100.41611)
-layers = 2
-material_override = SubResource("StandardMaterial3D_5wjan")
+layers = 3
+material_override = SubResource("StandardMaterial3D_y3cos")
 pixel_size = 0.005
 render_priority = -10
 texture = ExtResource("11_preview_fondo")
@@ -161,6 +436,45 @@ transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 63.75, -2.3, -53)
 [node name="PiedraCordillera_11" parent="ParallaxFondo/CapaCordillera" unique_id=2026999046 instance=ExtResource("9_cordillera")]
 transform = Transform3D(10, 0, 0, 0, 7.5, 0, 0, 0, 10, 72.25, -2.3, -53)
 
+[node name="CapaReflejoCordillera" type="Node3D" parent="ParallaxFondo" unique_id=1408794708]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -28)
+
+[node name="ReflejoCordillera_0" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794709 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, -21.25, -1.7809147, -55.00928)
+
+[node name="ReflejoCordillera_1" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794710 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, -12.75, -1.766786, -54.683224)
+
+[node name="ReflejoCordillera_2" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794711 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, -4.25, -1.5972475, -54.23407)
+
+[node name="ReflejoCordillera_3" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794712 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 4.25, -1.8358678, -53.72635)
+
+[node name="ReflejoCordillera_4" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794713 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 12.75, -1.958239, -53.010597)
+
+[node name="ReflejoCordillera_5" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794714 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 21.25, -1.4966191, -51.882694)
+
+[node name="ReflejoCordillera_6" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794715 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 29.75, -1.6, -52.195236)
+
+[node name="ReflejoCordillera_7" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794716 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 38.25, -1.7, -52.160324)
+
+[node name="ReflejoCordillera_8" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794717 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 46.75, -1.8, -51.669956)
+
+[node name="ReflejoCordillera_9" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794718 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 55.25, -1.6, -51.349495)
+
+[node name="ReflejoCordillera_10" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794719 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 63.75, -1.7, -51.5)
+
+[node name="ReflejoCordillera_11" parent="ParallaxFondo/CapaReflejoCordillera" unique_id=1408794720 instance=ExtResource("21_reflejo")]
+transform = Transform3D(10, 0, 0, 0, -7.5, 0, 0, 0, 10, 72.25, -1.7, -51.5)
+
 [node name="CapaTerroso" type="Node3D" parent="ParallaxFondo" unique_id=2026999023]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -20)
 
@@ -201,7 +515,7 @@ pixel_size = 0.0035
 texture = ExtResource("9_80jwg")
 
 [node name="Arboles_6" type="Sprite3D" parent="ParallaxFondo/CapaTerroso" unique_id=2026999052]
-transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, 47.671505, 1.353241, -85.81168)
+transform = Transform3D(16.037027, 0, 0, 0, 11.183316, 0, 0, 0, 7.520414, 47.671505, 1.353241, -81.88373)
 layers = 3
 pixel_size = 0.0035
 texture = ExtResource("9_80jwg")
@@ -245,62 +559,160 @@ texture = ExtResource("10_43yr5")
 [node name="CanoaProtagonistaRio" parent="." unique_id=2026999012 instance=ExtResource("6_canoa")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -6, -0.28, -7.5)
 
-[node name="PISO ALIADO6" parent="." unique_id=328449249 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.07384, 0, 0, 0, 3.0799909, -22.684576, -1.7293684, -82.94933)
+[node name="Ruina arco2" parent="." unique_id=1408794701 instance=ExtResource("15_ruina")]
+transform = Transform3D(-4.3556647, 0, -0.23415327, 0, 5.104199, 0, 0.28687, 0, -3.5552456, -6.460387, -1.5769513, -5.6379423)
 
-[node name="PISO ALIADO7" parent="." unique_id=1060963024 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.933131, 0, 0, 0, 3.0799909, -17.18048, -1.7175071, -82.94933)
+[node name="Ruina arco7" parent="." unique_id=134338258 instance=ExtResource("15_ruina")]
+transform = Transform3D(-5.7920356, 0, -0.23923887, 0, 5.104199, 0, 0.38147137, 0, -3.6324623, -8.745207, -3.6154883, -23.881466)
 
-[node name="PISO ALIADO8" parent="." unique_id=663436152 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 9.420902, 0, 0, 0, 3.0799909, -11.90124, -1.4105332, -82.94933)
+[node name="Ruina arco8" parent="." unique_id=1642895263 instance=ExtResource("15_ruina")]
+transform = Transform3D(-0.24024683, 0, -7.8573833, 0, 8.379931, 0, 8.610124, 0, -0.2192434, 23.621439, -2.4580832, -7.825558)
 
-[node name="PISO ALIADO9" parent="." unique_id=642433076 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 9.996444, 0, 0, 0, 3.0799909, -6.4217095, -1.5428724, -82.94933)
+[node name="Ruina arco4" parent="." unique_id=243242801 instance=ExtResource("15_ruina")]
+transform = Transform3D(-3.528059, -0.6893992, -1.9583799, -0.7625239, 3.1897242, -0.42326716, 2.4546835, 0, -2.9462173, -6.460387, -1.9353285, -12.597451)
 
-[node name="PISO ALIADO10" parent="." unique_id=1320092230 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 9.597738, 0, 0, 0, 3.0799909, -1.0074811, -1.4918253, -82.94933)
+[node name="Ruina arco6" parent="." unique_id=942261013 instance=ExtResource("15_ruina")]
+transform = Transform3D(-9.018152, 0.112361036, -0.23534882, 0.304109, 3.2612424, 0.047123052, 0.60107565, 0.03579229, -3.5548546, -12.398468, -2.376428, -26.350641)
 
-[node name="PISO ALIADO11" parent="." unique_id=993523357 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 3.8769507, -1.4770741, -82.94933)
+[node name="Ruina arco5" parent="." unique_id=1908786024 instance=ExtResource("15_ruina")]
+transform = Transform3D(0.31181574, 0.43375096, 3.5221524, -0.762524, 3.1897247, -0.4232672, -4.2866592, -0.53584653, 0.33149683, -1.4802628, -2.5563068, -19.058968)
 
-[node name="PISO ALIADO14" parent="." unique_id=418172636 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 17.165363, -1.4770741, -81.8263)
+[node name="Ruina arco3" parent="." unique_id=1111326461 instance=ExtResource("15_ruina")]
+transform = Transform3D(-4.1778517, 0, 1.0323569, 0, 3.2633739, 0, -1.2647791, 0, -3.4101083, 0.116395, -2.020134, -9.763069)
 
-[node name="PISO ALIADO15" parent="." unique_id=1953340002 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 23.060976, -1.4770741, -80.830505)
+[node name="Piso nueva version2" parent="." unique_id=633994152 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 73.505875, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO16" parent="." unique_id=1992592966 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 28.141108, -1.4770741, -80.830505)
+[node name="Piso nueva version3" parent="." unique_id=681594575 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 68.03155, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO17" parent="." unique_id=1356162262 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 33.335327, -1.4770741, -80.830505)
+[node name="Piso nueva version4" parent="." unique_id=149651646 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 62.820984, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO18" parent="." unique_id=1472923586 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 38.601254, -1.4770741, -80.830505)
+[node name="Piso nueva version5" parent="." unique_id=107494320 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 57.721848, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO19" parent="." unique_id=941681363 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 43.411034, -1.4770741, -80.830505)
+[node name="Piso nueva version6" parent="." unique_id=633070895 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 52.428783, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO20" parent="." unique_id=401586440 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 48.172073, -1.4770741, -80.830505)
+[node name="Piso nueva version7" parent="." unique_id=461368378 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 48.546276, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO21" parent="." unique_id=780407699 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 54.93792, -1.4770741, -80.830505)
+[node name="Piso nueva version8" parent="." unique_id=985028297 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 43.176125, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO22" parent="." unique_id=826076444 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 61.252735, -1.4770741, -80.830505)
+[node name="Piso nueva version9" parent="." unique_id=1917356111 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 37.660755, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO23" parent="." unique_id=571556474 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 66.61313, -1.4770741, -80.830505)
+[node name="Piso nueva version10" parent="." unique_id=1385504481 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 32.21256, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO24" parent="." unique_id=1523911472 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 70.902824, -1.4770741, -80.830505)
+[node name="Piso nueva version11" parent="." unique_id=711099308 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 27.034939, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO25" parent="." unique_id=1793991629 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 10.184559, 0, 0, 0, 3.0799909, 73.99425, -1.4770741, -80.830505)
+[node name="Piso nueva version12" parent="." unique_id=913508818 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 22.088736, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO12" parent="." unique_id=1184400067 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 7.2355685, 0, 0, 0, 3.0799909, 9.592409, -1.0493348, -82.94933)
+[node name="Piso nueva version13" parent="." unique_id=1846755819 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 22.088736, -1.0109841, -79.71202)
 
-[node name="PISO ALIADO13" parent="." unique_id=1603298363 instance=ExtResource("14_kh264")]
-transform = Transform3D(5.992707, 0, 0, 0, 7.2355685, 0, 0, 0, 3.0799909, 17.969572, -1.0493348, -82.7293)
+[node name="Piso nueva version14" parent="." unique_id=825564766 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.7155757, 0, -0.41846442, 0, 7.0601153, 0, 0.6741643, 0, 3.5477471, 16.654896, -1.0109841, -80.23707)
+
+[node name="Piso nueva version15" parent="." unique_id=2102753301 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 11.453812, -1.0109841, -80.454346)
+
+[node name="Piso nueva version16" parent="." unique_id=2102411221 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, 6.6536427, -1.0109841, -80.92238)
+
+[node name="Piso nueva version17" parent="." unique_id=1178944287 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.7429833, 0, -0.23261917, 0, 7.0601153, 0, 0.37475955, 0, 3.5647595, 1.2797012, -1.0109841, -80.985)
+
+[node name="Piso nueva version18" parent="." unique_id=454257674 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, -3.974523, -1.0109841, -81.457695)
+
+[node name="Piso nueva version19" parent="." unique_id=338478829 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.74696, 0, -0.19106112, 0, 7.0601153, 0, 0.30780774, 0, 3.567228, -9.3643, -1.0109841, -81.60377)
+
+[node name="Piso nueva version20" parent="." unique_id=107087167 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.747083, 0, -0.18963303, 0, 7.0601153, 0, 0.30550703, 0, 3.5673044, -14.706613, -1.0109841, -81.99698)
+
+[node name="Piso nueva version21" parent="." unique_id=703591075 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, -19.944992, -1.0109841, -82.21522)
+
+[node name="Piso nueva version23" parent="." unique_id=746772191 instance=ExtResource("13_8y7wb")]
+transform = Transform3D(5.755197, 0, 0, 0, 7.0601153, 0, 0, 0, 3.5723412, -24.198603, -1.0109841, -82.763855)
+
+[node name="Arboleda" parent="." unique_id=1408794703 instance=ExtResource("16_arboleda")]
+transform = Transform3D(-1.1287537, 0, 0.33932608, 0, 1.0534246, 0, -0.19432507, 0, -1.9710046, -10, -0.12557852, -0.7885983)
+layers = 2
+
+[node name="Arboleda3" parent="." unique_id=1093536380 instance=ExtResource("16_arboleda")]
+transform = Transform3D(-1.1287537, 0, 0.33932608, 0, 1.0534246, 0, -0.19432507, 0, -1.9710046, -10, -0.12557852, -0.7885983)
+layers = 2
+
+[node name="PlanoDesenfoqueFondo" parent="." unique_id=2026999080 instance=ExtResource("17_desenfoque")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 41.60374, -79.70931)
+opacidad = 0.4
+tinte = Color(1, 0.5764706, 0.5372549, 1)
+desvanecer_borde_inferior = 0.05
+
+[node name="PlanoDesenfoqueFondo2" parent="." unique_id=1633725096 instance=ExtResource("17_desenfoque")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 41.60374, -114.87195)
+opacidad = 0.45
+tinte = Color(1, 0.5764706, 0.5372549, 1)
+
+[node name="TexturaAgua" type="Sprite3D" parent="." unique_id=1408794704]
+transform = Transform3D(27.34158, 0, 0, 0, -4.2083678e-07, 1.0000001, 0, -9.627624, -4.3711392e-08, 12.278857, -0.4841671, -91.14463)
+layers = 2
+pixel_size = 0.005
+texture = ExtResource("7_8fuu7")
+
+[node name="ArbolNaranjo" parent="." unique_id=1408794705 instance=ExtResource("18_naranjo")]
+transform = Transform3D(12.357768, 0, 0, 0, 9.196742, 0, 0, 0, 11.418608, -6.225909, -1.2708077, -21.65086)
+
+[node name="ArbolNaranjo2" parent="." unique_id=1163948514 instance=ExtResource("18_naranjo")]
+transform = Transform3D(7.354736, -1.9923987, -8.836422, 2.221655, 8.961887, -1.5362467, 9.679179, -0.54308915, 7.06698, -11.396862, -1.9229567, -23.851206)
+
+[node name="ArbolNaranjo3" parent="." unique_id=1743011992 instance=ExtResource("18_naranjo")]
+transform = Transform3D(0.7983159, -0.7613457, -9.718946, 0.0767081, 12.244763, 1.3047863, 0.3295472, -1.0058603, 23.240088, -16.308855, -1.9229567, -37.848)
+
+[node name="PajarosPlane" parent="." unique_id=1408794706 instance=ExtResource("19_pajaros")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.07103, -3.546595, -136.79895)
+
+[node name="DesenfoqueEspecial" parent="." unique_id=1408794707 instance=ExtResource("20_especial")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.405718, 32.102604)
+layers = 7
+material_override = SubResource("ShaderMaterial_m2lcq")
+mesh = SubResource("QuadMesh_c31k2")
+grado_desenfoque = 0.5
+opacidad = 0.25
+tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
+desvanecer_borde_inferior = 0.55
+
+[node name="DesenfoqueEspecial2" parent="." unique_id=1339205412 instance=ExtResource("20_especial")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.405718, -10.060026)
+layers = 7
+material_override = SubResource("ShaderMaterial_ptpy8")
+mesh = SubResource("QuadMesh_oacr6")
+grado_desenfoque = 10.0
+tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
+desvanecer_borde_inferior = 1.0
+
+[node name="DesenfoqueEspecial3" parent="." unique_id=1235090770 instance=ExtResource("20_especial")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -45.12014, -75.003555)
+layers = 2
+material_override = SubResource("ShaderMaterial_g4v3l")
+mesh = SubResource("QuadMesh_l65n7")
+grado_desenfoque = 10.0
+opacidad = 0.35
+tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
+desvanecer_borde_inferior = 1.0
+
+[node name="HojasPlane" parent="." unique_id=1408794721 instance=ExtResource("22_hojas")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.113289, 2.5, -70.70515)
+
+[node name="Tulemaki" parent="." unique_id=1408794722 instance=ExtResource("23_tulemaki")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.426834, 0.3518641, -77.143005)
+amplitud_rebote = 0.05
+altura_flote = 0.3

@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bj04a8ty6pygo"]
+
+[ext_resource type="Texture2D" uid="uid://b2cvjoo6a10ro" path="res://TEST_/Ruina arco/Ruina arco_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "RuinaArco_Mat"
+specular_mode = 2
+albedo_texture = ExtResource("1_tex")
+metallic_specular = 0.0

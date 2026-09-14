@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://TEST_/Piedra fondo level 6/Pidras fondo level 6_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "PiedraFondoReflejo_Mat"
+albedo_color = Color(0.55, 0.65, 0.8, 1)
+albedo_texture = ExtResource("1_tex")
+roughness = 0.95
+cull_mode = 2

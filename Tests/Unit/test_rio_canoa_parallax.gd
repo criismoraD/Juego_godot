@@ -479,4 +479,187 @@ func test_pisos_aliados_loop_continuo() -> void:
 	assert_almost_eq(piso_0.position.x, x_max_inicial + parallax.ancho_segmento_piso, MARGEN_FLOAT, "El piso aliado debe hacer wrap continuo a la derecha")
 
 
+func test_piso_nueva_version_escena_usuario_deteccion_y_velocidad_cordillera() -> void:
+	# Arrange & Act: Probar la escena principal con 'Piso nueva version'
+	var path_usuario: String = "res://Levels/Rio en canoa con paralax.tscn"
+	var packed := load(path_usuario) as PackedScene
+	assert_not_null(packed, "La escena 'Rio en canoa con paralax.tscn' debe cargar correctamente")
+
+	var nivel: Node3D = packed.instantiate() as Node3D
+	assert_not_null(nivel)
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	assert_not_null(parallax, "ParallaxFondo debe existir en la escena del usuario")
+
+	var pisos: Array[Node3D] = parallax.obtener_segmentos_piso_aliado()
+	assert_gt(pisos.size(), 0, "Debe detectar los nodos 'Piso nueva version'")
+	assert_gte(pisos.size(), 20, "Deben estar presentes los segmentos de 'Piso nueva version'")
+
+	# Assert de velocidad y desplazamiento sincronizado con la cordillera
+	var cordillera: Array[Node3D] = parallax.obtener_segmentos_cordillera()
+	assert_gt(cordillera.size(), 0, "Cordillera debe tener segmentos")
+
+	var pos_inicial_cord: float = cordillera[0].position.x
+	var pos_inicial_piso: float = pisos[0].position.x
+
+	# Act: Simular un avance de 1.0 segundo
+	parallax._actualizar_loop_cordillera(1.0)
+	parallax._actualizar_loop_piso_aliado(1.0)
+
+	# Assert: Desplazamiento idéntico
+	var delta_cord: float = pos_inicial_cord - cordillera[0].position.x
+	var delta_piso: float = pos_inicial_piso - pisos[0].position.x
+	var desplazamiento_esperado: float = parallax.velocidad_base * parallax.factor_cordillera * 1.0
+
+	assert_almost_eq(delta_cord, desplazamiento_esperado, MARGEN_FLOAT, "Desplazamiento cordillera")
+	assert_almost_eq(delta_piso, desplazamiento_esperado, MARGEN_FLOAT, "Piso nueva version avanza al ritmo esperado")
+	assert_almost_eq(delta_piso, delta_cord, MARGEN_FLOAT, "Piso nueva version debe moverse exactamente a la misma velocidad que la cordillera")
+
+
+func test_textura_agua_deteccion_en_ambas_escenas_rio() -> void:
+	# Arrange & Act: escena principal y escena del usuario
+	for path_escena in [ESCENA_RIO_PATH, "res://Levels/Rio en canoa con paralax.tscn"]:
+		var packed := load(path_escena) as PackedScene
+		assert_not_null(packed, "La escena %s debe cargar correctamente" % path_escena)
+		var nivel: Node3D = packed.instantiate() as Node3D
+		add_child_autofree(nivel)
+
+		var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+		assert_not_null(parallax, "ParallaxFondo debe existir en %s" % path_escena)
+
+		# Assert: TexturaAgua posicionable detectada y registrada
+		var nodo_agua: Sprite3D = nivel.find_child("TexturaAgua", true, false) as Sprite3D
+		assert_not_null(nodo_agua, "TexturaAgua debe existir en %s" % path_escena)
+		var sprites: Array[Sprite3D] = parallax.obtener_sprites_agua_textura()
+		assert_gt(sprites.size(), 0, "Debe detectar TexturaAgua en %s" % path_escena)
+
+
+func test_textura_agua_misma_velocidad_cordillera() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var sprites: Array[Sprite3D] = parallax.obtener_sprites_agua_textura()
+	assert_gt(sprites.size(), 0, "TexturaAgua debe existir")
+	var cordillera: Array[Node3D] = parallax.obtener_segmentos_cordillera()
+	assert_gt(cordillera.size(), 0, "Cordillera debe tener segmentos")
+
+	var pos_inicial_cord: float = cordillera[0].position.x
+	var pos_inicial_agua: float = sprites[0].position.x
+
+	# Act: Simular un avance de 1.0 segundo
+	parallax._actualizar_loop_cordillera(1.0)
+	parallax._actualizar_loop_agua_textura(1.0)
+
+	# Assert: Desplazamiento idéntico al de la cordillera
+	var delta_cord: float = pos_inicial_cord - cordillera[0].position.x
+	var delta_agua: float = pos_inicial_agua - sprites[0].position.x
+	var desplazamiento_esperado: float = parallax.velocidad_base * parallax.factor_cordillera * 1.0
+
+	assert_almost_eq(delta_cord, desplazamiento_esperado, MARGEN_FLOAT, "Desplazamiento cordillera")
+	assert_almost_eq(delta_agua, desplazamiento_esperado, MARGEN_FLOAT, "TexturaAgua avanza al ritmo esperado")
+	assert_almost_eq(delta_agua, delta_cord, MARGEN_FLOAT, "TexturaAgua debe moverse exactamente a la misma velocidad que la cordillera")
+
+
+func test_textura_agua_loop_continuo() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var sprites: Array[Sprite3D] = parallax.obtener_sprites_agua_textura()
+	assert_gt(sprites.size(), 0, "TexturaAgua debe existir")
+
+	var x_max_inicial: float = -INF
+	for s in sprites:
+		if s.position.x > x_max_inicial:
+			x_max_inicial = s.position.x
+
+	# Act: Forzar que el primer sprite salga por la izquierda del límite visible
+	sprites[0].position.x = -100.0
+	parallax._actualizar_loop_agua_textura(0.0)
+
+	# Assert: Debe recolocarse a la derecha con su propio ancho de segmento
+	assert_almost_eq(sprites[0].position.x, x_max_inicial + parallax.ancho_segmento_agua_textura, MARGEN_FLOAT, "TexturaAgua debe hacer wrap continuo a la derecha")
+
+
+# === TESTS DE REFLEJO ESPEJADO DE LA CORDILLERA ===
+func test_reflejo_cordillera_inicializacion_y_segmentos() -> void:
+	# Arrange & Act
+	var parallax: ParallaxFondoRio = SCRIPT_PARALLAX.new() as ParallaxFondoRio
+	add_child_autofree(parallax)
+
+	# Assert
+	var capa_reflejo := parallax.get_node_or_null("CapaReflejoCordillera") as Node3D
+	assert_not_null(capa_reflejo, "Debe instanciar automáticamente CapaReflejoCordillera")
+
+	var segmentos: Array[Node3D] = parallax.obtener_segmentos_reflejo()
+	assert_eq(segmentos.size(), 12, "El reflejo debe contener 12 segmentos como la cordillera")
+
+	for i in range(segmentos.size()):
+		var seg := segmentos[i] as Node3D
+		assert_not_null(seg, "Cada segmento del reflejo debe ser un Node3D válido")
+		assert_lt(seg.scale.y, 0.0, "Cada segmento del reflejo debe estar invertido en Y (mirror)")
+		if i > 0:
+			var seg_ant := segmentos[i - 1] as Node3D
+			assert_gt(seg.position.x, seg_ant.position.x, "Los segmentos del reflejo deben estar alineados de izquierda a derecha")
+
+
+func test_reflejo_misma_velocidad_cordillera() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var cordillera: Array[Node3D] = parallax.obtener_segmentos_cordillera()
+	var reflejo: Array[Node3D] = parallax.obtener_segmentos_reflejo()
+	assert_gt(cordillera.size(), 0, "Cordillera debe tener segmentos")
+	assert_gt(reflejo.size(), 0, "Reflejo debe tener segmentos")
+
+	var pos_inicial_cord: float = cordillera[0].position.x
+	var pos_inicial_refl: float = reflejo[0].position.x
+
+	# Act: Simular un avance de 1.0 segundo
+	parallax._actualizar_loop_cordillera(1.0)
+	parallax._actualizar_loop_reflejo(1.0)
+
+	# Assert: Desplazamiento idéntico
+	var delta_cord: float = pos_inicial_cord - cordillera[0].position.x
+	var delta_refl: float = pos_inicial_refl - reflejo[0].position.x
+	var desplazamiento_esperado: float = parallax.velocidad_base * parallax.factor_cordillera * 1.0
+
+	assert_almost_eq(delta_cord, desplazamiento_esperado, MARGEN_FLOAT, "Desplazamiento cordillera")
+	assert_almost_eq(delta_refl, desplazamiento_esperado, MARGEN_FLOAT, "Reflejo avanza al ritmo esperado")
+	assert_almost_eq(delta_refl, delta_cord, MARGEN_FLOAT, "El reflejo debe moverse exactamente a la misma velocidad que la cordillera")
+
+
+func test_reflejo_loop_continuo() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var reflejo: Array[Node3D] = parallax.obtener_segmentos_reflejo()
+	assert_gt(reflejo.size(), 0, "Reflejo debe tener segmentos")
+
+	var x_max_inicial: float = -INF
+	for seg in reflejo:
+		if seg.position.x > x_max_inicial:
+			x_max_inicial = seg.position.x
+
+	# Act: Forzar que el primer segmento salga por la izquierda del límite visible
+	reflejo[0].position.x = -100.0
+	parallax._actualizar_loop_reflejo(0.0)
+
+	# Assert: Debe recolocarse a la derecha con el ancho de la cordillera
+	assert_almost_eq(reflejo[0].position.x, x_max_inicial + parallax.ancho_segmento_cordillera, MARGEN_FLOAT, "El reflejo debe hacer wrap continuo a la derecha")
+
+
+
 

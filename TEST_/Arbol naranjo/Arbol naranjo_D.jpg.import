@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dfdndb0assvwb"
-path.s3tc="res://.godot/imported/Tulemaki.png-03654b79a94a448c06c241b19aa02973.s3tc.ctex"
-path.etc2="res://.godot/imported/Tulemaki.png-03654b79a94a448c06c241b19aa02973.etc2.ctex"
+uid="uid://t20va0s1ii6n"
+path.s3tc="res://.godot/imported/Arbol naranjo_D.jpg-657c500e883357f4082e4a7c966e1fe0.s3tc.ctex"
+path.etc2="res://.godot/imported/Arbol naranjo_D.jpg-657c500e883357f4082e4a7c966e1fe0.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://TEST_/Tulemaki.png"
-dest_files=["res://.godot/imported/Tulemaki.png-03654b79a94a448c06c241b19aa02973.s3tc.ctex", "res://.godot/imported/Tulemaki.png-03654b79a94a448c06c241b19aa02973.etc2.ctex"]
+source_file="res://TEST_/Arbol naranjo/Arbol naranjo_D.jpg"
+dest_files=["res://.godot/imported/Arbol naranjo_D.jpg-657c500e883357f4082e4a7c966e1fe0.s3tc.ctex", "res://.godot/imported/Arbol naranjo_D.jpg-657c500e883357f4082e4a7c966e1fe0.etc2.ctex"]
 
 [params]
 

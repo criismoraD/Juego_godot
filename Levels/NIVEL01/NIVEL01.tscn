@@ -74,7 +74,7 @@ viewport_path = NodePath("SubViewportFondo3D/SubViewport")
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_cx8r4"]
 dof_blur_far_enabled = true
-dof_blur_far_distance = 45.0
+dof_blur_far_distance = 55.0
 dof_blur_far_transition = 1.0
 dof_blur_amount = 0.05
 
@@ -402,7 +402,7 @@ size = 0.01
 
 [node name="SubViewportMedio3D" type="SubViewport" parent="." unique_id=164925320]
 transparent_bg = true
-msaa_3d = 2
+msaa_3d = 0
 screen_space_aa = 1
 size = Vector2i(1152, 648)
 render_target_update_mode = 4
@@ -418,7 +418,7 @@ size = 0.01
 [node name="SubViewportFrente3D" type="SubViewport" parent="." unique_id=164925310]
 transparent_bg = true
 handle_input_locally = false
-msaa_3d = 2
+msaa_3d = 0
 screen_space_aa = 1
 size = Vector2i(1920, 1080)
 render_target_update_mode = 4

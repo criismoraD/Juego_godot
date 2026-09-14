@@ -4,7 +4,9 @@
 
 [resource]
 resource_name = "TORRE_M"
+specular_mode = 2
 albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
 albedo_texture = ExtResource("1_wrw76")
+metallic_specular = 0.0
 roughness = 1.0
 metallic = 0.0
