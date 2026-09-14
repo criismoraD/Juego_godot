@@ -19,6 +19,12 @@ const AMPLITUD_BALANCEO: float = 0.05
 @export var amplitud_rebote: float = 0.08  ## Intensidad del squash & stretch (0.0 = rígido)
 @export var altura_flote: float = 0.35  ## Desplazamiento vertical de la flotación en metros
 @export var escala_base: Vector3 = Vector3.ONE  ## Escala de referencia sobre la que pulsa
+## Material opcional para mallas 3D hijas (el PNG del tulemaki no lo usa).
+@export var material_general: StandardMaterial3D:
+	set(nuevo_material):
+		material_general = nuevo_material
+		if is_node_ready():
+			_aplicar_material_general()
 
 # === VARIABLES PRIVADAS ===
 var _tiempo: float = 0.0
@@ -33,6 +39,7 @@ func _ready() -> void:
 	if is_instance_valid(visual):
 		_pos_visual_base = visual.position
 		visual.scale = escala_base
+	_aplicar_material_general()
 
 
 func _process(delta: float) -> void:
@@ -48,6 +55,23 @@ func _process(delta: float) -> void:
 ## Reinicia el ciclo de rebote (útil al reutilizar la instancia).
 func reiniciar_rebote() -> void:
 	_tiempo = 0.0
+
+
+## Aplica el material opcional a las mallas 3D bajo Visual.
+func _aplicar_material_general() -> void:
+	if material_general == null or not is_instance_valid(visual):
+		return
+	_aplicar_material_a(visual)
+
+
+func _aplicar_material_a(nodo: Node) -> void:
+	if nodo is MeshInstance3D:
+		var malla := nodo as MeshInstance3D
+		malla.material_override = material_general
+		if malla.mesh != null and malla.mesh.get_surface_count() > 0:
+			malla.set_surface_override_material(0, material_general)
+	for hijo in nodo.get_children():
+		_aplicar_material_a(hijo)
 
 
 # === FUNCIONES PRIVADAS ===

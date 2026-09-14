@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://bq8iiagb14vlo" path="res://TEST_/Baija contenedor/Basija contenedor.glb" id="1_model"]
+[ext_resource type="PackedScene" uid="uid://bo4pxk1m0mhc6" path="res://TEST_/Basija destruida/Basija destruida.glb" id="2_destruido"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/BasijaContenedor_Mat.tres" id="3_mat"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/BasijaDestruida_Mat.tres" id="4_mat_des"]
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/VasijaContenedor.gd" id="5_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_vasija"]
+size = Vector3(0.75, 1.0, 0.75)
+
+[node name="VasijaContenedor" type="StaticBody3D"]
+script = ExtResource("5_script")
+material_contenedor = ExtResource("3_mat")
+material_destruido = ExtResource("4_mat_des")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="ModeloDestruido" parent="." instance=ExtResource("2_destruido")]
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape_vasija")

@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" uid="uid://cuj2ootiw0ml5" path="res://TEST_/Baldosa musgo/Baldosa musgo_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "BaldosaMusgo_Mat"
+albedo_texture = ExtResource("1_tex")
+roughness = 0.9

@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" uid="uid://cvtysr1n1bu7h" path="res://TEST_/Baija contenedor/Basija contenedor_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "BasijaContenedor_Mat"
+albedo_texture = ExtResource("1_tex")
+roughness = 0.85

@@ -21,6 +21,7 @@ func _crear_titulo() -> TituloRio:
 func _tiempos_cortos(titulo: TituloRio) -> void:
 	titulo.tiempo_aparicion = 0.05
 	titulo.tiempo_visible = 0.05
+	titulo.tiempo_brillo = 0.05
 	titulo.tiempo_desaparicion = 0.05
 
 
@@ -42,7 +43,12 @@ func test_valores_por_defecto() -> void:
 	# Assert
 	assert_eq(titulo.clave_traduccion, CLAVE_TITULO, "Clave de traducción por defecto")
 	assert_true(titulo.mostrar_al_iniciar, "Debe presentarse al iniciar por defecto")
-	assert_eq(titulo.tamano_fuente, 64, "Tamaño de fuente por defecto")
+	assert_eq(titulo.tamano_fuente, 120, "Misma tipografía de tamaño que el nivel 1")
+	assert_eq(titulo.color_fuente, Color.BLACK, "Texto negro como el nivel 1")
+	assert_almost_eq(titulo.tiempo_aparicion, 2.0, 0.001, "Misma duración de aparición que el nivel 1")
+	assert_almost_eq(titulo.tiempo_visible, 16.0, 0.001, "Misma duración visible que el nivel 1")
+	assert_almost_eq(titulo.tiempo_brillo, 1.0, 0.001, "Misma duración de brillo que el nivel 1")
+	assert_almost_eq(titulo.tiempo_desaparicion, 3.0, 0.001, "Misma duración de desaparición que el nivel 1")
 
 
 # === PRESENTACIÓN ===

@@ -14,5 +14,4 @@ resource_name = "Canoa aliada_M"
 next_pass = SubResource("ShaderMaterial_outline")
 cull_mode = 2
 albedo_texture = ExtResource("1_tex")
-emission_enabled = true
 emission_texture = ExtResource("1_tex")

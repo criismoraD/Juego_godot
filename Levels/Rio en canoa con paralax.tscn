@@ -31,18 +31,24 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Naufragio.tscn" id="30_naufragio"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/RocaRio.tscn" id="31_roca"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PescadosColgando.tscn" id="32_pescados"]
+[ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://TEST_/Bandera A.png" id="33_bandera"]
+[ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="34_bandera_shader"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Cangrejo.tscn" id="35_cangrejo"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Zapayo.tscn" id="36_zapayo"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/BaldosaMusgo.tscn" id="37_baldosa"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/VasijaContenedor.tscn" id="38_vasija"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
 dof_blur_far_transition = 1.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kxpb6"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8jq2a"]
 render_priority = -10
 shading_mode = 0
 disable_fog = true
 albedo_texture = ExtResource("11_preview_fondo")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_6nluj"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_n4fgt"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 0.5
@@ -50,10 +56,10 @@ shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 shader_parameter/opacidad = 0.25
 shader_parameter/desvanecer_borde_inferior = 0.55
 
-[sub_resource type="QuadMesh" id="QuadMesh_5vpvx"]
+[sub_resource type="QuadMesh" id="QuadMesh_h558e"]
 size = Vector2(260, 90)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_2deb7"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_eqame"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 10.0
@@ -61,10 +67,10 @@ shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 shader_parameter/opacidad = 1.0
 shader_parameter/desvanecer_borde_inferior = 1.0
 
-[sub_resource type="QuadMesh" id="QuadMesh_o0llu"]
+[sub_resource type="QuadMesh" id="QuadMesh_eha8q"]
 size = Vector2(260, 90)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_mcddk"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p0knt"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 10.0
@@ -72,8 +78,22 @@ shader_parameter/tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
 shader_parameter/opacidad = 0.35
 shader_parameter/desvanecer_borde_inferior = 1.0
 
-[sub_resource type="QuadMesh" id="QuadMesh_8jq2a"]
+[sub_resource type="QuadMesh" id="QuadMesh_bnhsh"]
 size = Vector2(260, 90)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaA"]
+render_priority = 0
+shader = ExtResource("34_bandera_shader")
+shader_parameter/albedo_texture = ExtResource("33_bandera")
+shader_parameter/tint_color = Color(1, 1, 1, 1)
+shader_parameter/blur_amount = 1.0
+shader_parameter/wind_speed = 2.2
+shader_parameter/wind_strength = 0.06
+shader_parameter/flutter_speed = 4.5
+shader_parameter/flutter_strength = 0.02
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_t2dwb"]
+size = Vector3(1.18396, 0.30294037, 4.020111)
 
 [node name="Rio en canoa con paralax" type="Node3D" unique_id=2026999000]
 script = ExtResource("1_script")
@@ -394,7 +414,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
 [node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
 transform = Transform3D(11.327185, 0, 0, 0, 10.066407, 0, 0, 0, 1, -5.840851, -4.7548733, -100.41611)
 layers = 3
-material_override = SubResource("StandardMaterial3D_kxpb6")
+material_override = SubResource("StandardMaterial3D_8jq2a")
 pixel_size = 0.005
 render_priority = -10
 texture = ExtResource("11_preview_fondo")
@@ -568,6 +588,12 @@ texture = ExtResource("10_43yr5")
 [node name="CasaBoneta" parent="ParallaxFondo" unique_id=480447024 instance=ExtResource("24_boneta")]
 transform = Transform3D(-0.040822774, 0, -2.137603, 0, 1.1948875, 0, 1.3270913, 0, -0.065754995, 13.55995, 0.2256093, -80.890625)
 
+[node name="CasaBoneta2" parent="ParallaxFondo" unique_id=558188226 instance=ExtResource("24_boneta")]
+transform = Transform3D(1.6761172, 0, -0.55789876, 0, 1.1948875, 0, 0.4529307, 0, 2.0645628, 10.529651, 0.2256093, -80.98384)
+
+[node name="CasaBoneta3" parent="ParallaxFondo" unique_id=638221352 instance=ExtResource("24_boneta")]
+transform = Transform3D(0.12539148, 0, 2.1330295, 0, 1.1948875, 0, -1.7317021, 0, 0.15445149, 15.996127, 0.2256093, -80.58782)
+
 [node name="CanoaProtagonistaRio" parent="." unique_id=2026999012 instance=ExtResource("6_canoa")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -6, -0.28, -7.5)
 
@@ -579,6 +605,15 @@ transform = Transform3D(-5.7920356, 0, -0.23923887, 0, 5.104199, 0, 0.38147137, 
 
 [node name="Ruina arco8" parent="." unique_id=1642895263 instance=ExtResource("15_ruina")]
 transform = Transform3D(-0.24024683, 0, -7.8573833, 0, 8.379931, 0, 8.610124, 0, -0.2192434, 23.621439, -2.4580832, -7.825558)
+
+[node name="Ruina arco9" parent="." unique_id=1384074354 instance=ExtResource("15_ruina")]
+transform = Transform3D(8.612614, 0, -0.13463193, 0, 8.379931, 0, 0.1218009, 0, 9.519866, 80.878426, -1.5916415, -6.4548483)
+
+[node name="Ruina arco10" parent="." unique_id=21889985 instance=ExtResource("15_ruina")]
+transform = Transform3D(-8.335577, -1.502571, 1.6853366, -1.6278462, 8.222324, -0.37420392, -1.4353435, -0.59907824, -9.36299, 91.95583, -4.4148073, -12.402775)
+
+[node name="Ruina arco11" parent="." unique_id=1231571293 instance=ExtResource("15_ruina")]
+transform = Transform3D(0.08609009, -0.56266916, -9.498856, 0.453884, 8.349695, -0.6334143, 8.601077, -0.43498665, 0.12850165, 83.12526, -5.877127, -0.3306129)
 
 [node name="Ruina arco4" parent="." unique_id=243242801 instance=ExtResource("15_ruina")]
 transform = Transform3D(-3.528059, -0.6893992, -1.9583799, -0.7625239, 3.1897242, -0.42326716, 2.4546835, 0, -2.9462173, -6.460387, -1.9353285, -12.597451)
@@ -695,8 +730,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.07103, -3.546595, -136.79
 [node name="DesenfoqueEspecial" parent="." unique_id=1408794707 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.375109, 32.12107)
 layers = 7
-material_override = SubResource("ShaderMaterial_6nluj")
-mesh = SubResource("QuadMesh_5vpvx")
+material_override = SubResource("ShaderMaterial_n4fgt")
+mesh = SubResource("QuadMesh_h558e")
 grado_desenfoque = 0.5
 opacidad = 0.25
 tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
@@ -705,8 +740,8 @@ desvanecer_borde_inferior = 0.55
 [node name="DesenfoqueEspecial2" parent="." unique_id=1339205412 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.405718, -10.060026)
 layers = 7
-material_override = SubResource("ShaderMaterial_2deb7")
-mesh = SubResource("QuadMesh_o0llu")
+material_override = SubResource("ShaderMaterial_eqame")
+mesh = SubResource("QuadMesh_eha8q")
 grado_desenfoque = 10.0
 tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 desvanecer_borde_inferior = 1.0
@@ -714,8 +749,8 @@ desvanecer_borde_inferior = 1.0
 [node name="DesenfoqueEspecial3" parent="." unique_id=1235090770 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -45.12014, -75.003555)
 layers = 2
-material_override = SubResource("ShaderMaterial_mcddk")
-mesh = SubResource("QuadMesh_8jq2a")
+material_override = SubResource("ShaderMaterial_p0knt")
+mesh = SubResource("QuadMesh_bnhsh")
 grado_desenfoque = 10.0
 opacidad = 0.35
 tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
@@ -734,6 +769,21 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 23.501625, -0.3483677, -11.22
 
 [node name="PlataformaMaderos3" parent="." unique_id=1593872609 instance=ExtResource("25_maderos")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.732016, -0.31453562, -11.223211)
+
+[node name="PlataformaMaderos5" parent="." unique_id=144700016 instance=ExtResource("25_maderos")]
+transform = Transform3D(0.298877, 0, 2.985075, 0, 3, 0, -2.985075, 0, 0.298877, 61.061344, -0.31453562, -16.171434)
+
+[node name="PlataformaMaderos6" parent="." unique_id=1918432575 instance=ExtResource("25_maderos")]
+transform = Transform3D(0.298877, 0, 2.985075, 0, 3, 0, -2.985075, 0, 0.298877, 60.770615, -0.31453562, -13.267706)
+
+[node name="PlataformaMaderos7" parent="." unique_id=1369178605 instance=ExtResource("25_maderos")]
+transform = Transform3D(0.298877, 0, 2.985075, 0, 3, 0, -2.985075, 0, 0.298877, 60.48169, -0.31453562, -10.382018)
+
+[node name="PlataformaMaderos8" parent="." unique_id=1319906100 instance=ExtResource("25_maderos")]
+transform = Transform3D(2.9986684, 0, -0.089371815, 0, 3, 0, 0.089371815, 0, 2.9986684, 80.635826, 3.1962235, -6.8919644)
+
+[node name="PlataformaMaderos9" parent="." unique_id=1044571134 instance=ExtResource("25_maderos")]
+transform = Transform3D(2.9892502, 0.031798437, 0.251733, -0.022211254, 2.9977157, -0.11491436, -0.25275925, 0.11263895, 2.9872103, 84.24132, 0.040156454, -10.05083)
 
 [node name="PlataformaMaderos4" parent="." unique_id=966018742 instance=ExtResource("25_maderos")]
 transform = Transform3D(0.06987919, -0.33040988, 1.9964799, 1.7133607, 1.0749696, 0.012075325, -0.6712332, 2.7095234, 0.23866788, 25.674839, -0.31453562, -5.15582)
@@ -791,14 +841,233 @@ transform = Transform3D(11.862902, 0, 0, 0, 11.930646, 0, 0, 0, 6.9585457, 64.77
 [node name="RocaRio" parent="." unique_id=1408794731 instance=ExtResource("31_roca")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 39.02904, -0.6, 2.61663)
 
-[node name="RocaRio4" parent="." unique_id=1039721084 instance=ExtResource("31_roca")]
-transform = Transform3D(3.1007743, -0.49141362, 0, 0.29471943, 5.1702147, 0, 0, 0, 3, 48.319206, -4.097939, -37.348885)
+[node name="RocaRio6" parent="." unique_id=802593849 instance=ExtResource("31_roca")]
+transform = Transform3D(9.804546, 0, 0, 0, 4.968932, 0, 0, 0, 6.0085816, 81.02026, -5.504873, -2.0891366)
+
+[node name="RocaRio12" parent="." unique_id=1415323978 instance=ExtResource("31_roca")]
+transform = Transform3D(1.0910306, 0, -6.655289, 0, 3, 0, 9.505592, 0, 0.7638791, 76.314415, -3.2530067, -6.1339474)
+
+[node name="RocaRio9" parent="." unique_id=1512433093 instance=ExtResource("31_roca")]
+transform = Transform3D(15.883867, 0, 0, 0, 2.538626, 0, 0, 0, 3, 88.515144, -2.615191, 0.10966039)
+
+[node name="RocaRio10" parent="." unique_id=47340271 instance=ExtResource("31_roca")]
+transform = Transform3D(15.883867, 0, 0, 0, 2.538626, 0, 0, 0, 3, 94.075134, -2.615191, 0.10966039)
+
+[node name="RocaRio11" parent="." unique_id=564790272 instance=ExtResource("31_roca")]
+transform = Transform3D(15.883867, 0, 0, 0, 2.538626, 0, 0, 0, 3, 106.55174, -2.615191, 0.10966039)
+
+[node name="RocaRio5" parent="." unique_id=1893848923 instance=ExtResource("31_roca")]
+transform = Transform3D(9.789306, 0, 0, 0, 2.4276142, 0, 0, 0, 3, 81.37454, -3.8536952, -3.613716)
 
 [node name="RocaRio2" parent="." unique_id=927876736 instance=ExtResource("31_roca")]
 transform = Transform3D(27.614399, 0, 0, 0, 3, 0, 0, 0, 15.088055, 61.738617, -3.0068746, -17.539055)
+
+[node name="RocaRio7" parent="." unique_id=1560637026 instance=ExtResource("31_roca")]
+transform = Transform3D(27.614399, 0, 0, 0, 3, 0, 0, 0, 28.80232, 82.0806, -5.2064996, -9.75374)
+
+[node name="RocaRio8" parent="." unique_id=1847630454 instance=ExtResource("31_roca")]
+transform = Transform3D(47.222534, 0, 0, 0, 3, 0, 0, 0, 28.80232, 100.775215, -3.3372521, -3.703771)
+
+[node name="RocaRio4" parent="." unique_id=1678767038 instance=ExtResource("31_roca")]
+transform = Transform3D(-14.698954, 0, -0.80676806, 0, 2.1692095, 0, 1.839487, 0, -6.4467144, 29.814089, -3.1150599, -10.745102)
 
 [node name="RocaRio3" parent="." unique_id=1461955662 instance=ExtResource("31_roca")]
 transform = Transform3D(27.614399, 0, 0, 0, 2.9998918, 0.1281077, 0, -0.025472015, 15.087512, -1.1933956, -3.6007662, -11.032141)
 
 [node name="PescadosColgando" parent="." unique_id=1408794732 instance=ExtResource("32_pescados")]
 transform = Transform3D(1.5451015, 0.019181503, -0.3685234, 1.8626451e-09, 1.9972963, 0.10395852, 0.29006875, -0.10217361, 1.9630035, 25.473322, 3.1081262, -9.945517)
+
+[node name="PescadosColgando2" parent="." unique_id=869831399 instance=ExtResource("32_pescados")]
+transform = Transform3D(-1.4331632, 0.019181501, -0.82181287, 0.046732064, 1.9972965, -0.085280925, 0.6444675, -0.102173604, -1.8213595, 59.586037, -0.07604991, -19.292713)
+
+[node name="LuzAmbientePequena" type="OmniLight3D" parent="." unique_id=1408794733]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.079022, 7.416075, -23.751637)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="LuzAmbientePequena2" type="OmniLight3D" parent="." unique_id=652771132]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.521889, 4.9324803, -10.912103)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="LuzAmbientePequena3" type="OmniLight3D" parent="." unique_id=1203139078]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.755632, 4.3406186, -10.453869)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="LuzAmbientePequena9" type="OmniLight3D" parent="." unique_id=1172807537]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.634298, 1.4529657, -11.954788)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="LuzAmbientePequena4" type="OmniLight3D" parent="." unique_id=1394207731]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.924425, 1.2398295, -12.320579)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="LuzAmbientePequena5" type="OmniLight3D" parent="." unique_id=37300972]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.05994, 1.7547798, -19.382326)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="LuzAmbientePequena6" type="OmniLight3D" parent="." unique_id=326744954]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63.601196, 2.4187584, -18.474257)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+omni_range = 7.821611
+
+[node name="LuzAmbientePequena7" type="OmniLight3D" parent="." unique_id=1901793070]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.25126, 4.227936, -17.170685)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+omni_range = 7.821611
+
+[node name="LuzAmbientePequena8" type="OmniLight3D" parent="." unique_id=190523948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62.01574, 0.5795846, -18.113503)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+omni_range = 7.821611
+
+[node name="BanderaA" type="Sprite3D" parent="." unique_id=1408794734]
+transform = Transform3D(0.5, 0, 0, 0, 0.36890534, 0.0047975183, 0, -0.09115285, 0.019416071, 66.499405, 0.9011768, -19.504288)
+layers = 2
+material_override = SubResource("ShaderMaterial_banderaA")
+texture = ExtResource("33_bandera")
+
+[node name="Cangrejo" parent="." unique_id=1408794736 instance=ExtResource("35_cangrejo")]
+transform = Transform3D(-0.5845912, -0.032692347, 0.19765532, -0.08946537, 0.4490622, -0.36498603, -0.10123773, -0.20806327, -0.8188049, 57.822773, -0.13076523, -18.565123)
+velocidad = 4.0
+amplitud_rebote = 0.01
+altura_flote = 0.1
+
+[node name="Zapayo" parent="." unique_id=1408794737 instance=ExtResource("36_zapayo")]
+transform = Transform3D(0.4441641, 0, 0.13748364, 0, 0.51, 0, -0.24239275, 0, 0.25192708, 60.687077, 1.3636792, -16.928572)
+
+[node name="Zapayo3" parent="." unique_id=842529054 instance=ExtResource("36_zapayo")]
+transform = Transform3D(0.4441641, 0, 0.13748364, 0, 0.51, 0, -0.24239275, 0, 0.25192708, 26.183762, 3.4759037, -9.7358885)
+
+[node name="Zapayo2" parent="." unique_id=1331025785 instance=ExtResource("36_zapayo")]
+transform = Transform3D(0.27139804, 0.0070552044, 0.029360041, -0.0046662157, 0.33780286, -0.019672062, -0.020585999, 0.016443515, 0.39153048, 64.67904, -0.017276289, -17.058558)
+
+[node name="BaldosaMusgo6" parent="." unique_id=882063817 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 80.65668, -0.37821603, -6.9453235)
+
+[node name="BaldosaMusgo7" parent="." unique_id=1719942795 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 80.65668, -0.37821603, -5.356195)
+
+[node name="BaldosaMusgo8" parent="." unique_id=935136909 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 83.51866, -0.37821603, -6.431385)
+
+[node name="BaldosaMusgo10" parent="." unique_id=1754725500 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 86.62327, -0.37821603, -6.431385)
+
+[node name="BaldosaMusgo11" parent="." unique_id=244676657 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 89.32815, -0.37821603, -6.431385)
+
+[node name="BaldosaMusgo12" parent="." unique_id=1252980668 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 92.4283, -0.37821603, -6.431385)
+
+[node name="BaldosaMusgo13" parent="." unique_id=595137384 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 95.452194, -0.37821603, -6.431385)
+
+[node name="BaldosaMusgo14" parent="." unique_id=1570367172 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 95.452194, -0.37821603, -3.7779968)
+
+[node name="BaldosaMusgo15" parent="." unique_id=588882878 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 92.41222, -0.37821603, -3.7779968)
+
+[node name="BaldosaMusgo16" parent="." unique_id=917336413 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 89.35481, -0.37821603, -3.7779968)
+
+[node name="BaldosaMusgo17" parent="." unique_id=1323733422 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 86.1097, -0.37821603, -3.7779968)
+
+[node name="BaldosaMusgo18" parent="." unique_id=392920539 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 86.1097, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo19" parent="." unique_id=1034196984 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 89.49046, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo20" parent="." unique_id=1254886829 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 92.578186, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo21" parent="." unique_id=1155676473 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 95.1588, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo22" parent="." unique_id=1523338919 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 98.04194, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo23" parent="." unique_id=1508253676 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 101.04369, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo24" parent="." unique_id=646920609 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 103.652985, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo25" parent="." unique_id=974301319 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 106.77827, -0.37821603, -1.8070201)
+
+[node name="BaldosaMusgo26" parent="." unique_id=1183925345 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 106.77827, -0.37821603, -4.6551423)
+
+[node name="BaldosaMusgo27" parent="." unique_id=739961485 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 103.537346, -0.37821603, -4.6551423)
+
+[node name="BaldosaMusgo28" parent="." unique_id=1576153877 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 100.34912, -0.37821603, -4.6551423)
+
+[node name="BaldosaMusgo29" parent="." unique_id=1540094501 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 98.10445, -0.37821603, -4.6551423)
+
+[node name="BaldosaMusgo30" parent="." unique_id=250616215 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 98.10445, -0.37821603, -7.554936)
+
+[node name="BaldosaMusgo31" parent="." unique_id=1873168947 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 101.2817, -0.37821603, -7.554936)
+
+[node name="BaldosaMusgo32" parent="." unique_id=221435240 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 104.54462, -0.37821603, -7.554936)
+
+[node name="BaldosaMusgo33" parent="." unique_id=1339957334 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 107.0282, -0.37821603, -7.554936)
+
+[node name="BaldosaMusgo34" parent="." unique_id=1308475745 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 107.0282, -0.37821603, -7.554936)
+
+[node name="BaldosaMusgo9" parent="." unique_id=795262287 instance=ExtResource("37_baldosa")]
+transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 77.62167, -0.39718086, -6.9453235)
+
+[node name="VasijaContenedor" parent="." unique_id=1408794739 instance=ExtResource("38_vasija")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 9.137882, -0.80850685, -7.6689835)
+cantidad_municion = 5
+curacion_pocion = 0
+direccion_viaje = "Izquierda"
+profundidad_hundimiento = null
+duracion_hundimiento = null
+
+[node name="Piso parada 1" type="CollisionShape3D" parent="." unique_id=1569699420]
+transform = Transform3D(0.9998998, 0, -0.0141562, 0, 1, 0, 0.0141562, 0, 0.9998998, 25.232988, 2.8842733, -7.445366)
+shape = SubResource("BoxShape3D_t2dwb")
+debug_color = Color(0.9607843, 0, 0.52156866, 1)
+
+[node name="Piso parada 2" type="CollisionShape3D" parent="." unique_id=93238205]
+transform = Transform3D(-0.013327871, 0, 0.9999112, 0, 1, 0, -0.9999112, 0, -0.013327871, 23.8523, 2.8210332, -8.804653)
+shape = SubResource("BoxShape3D_t2dwb")
+debug_color = Color(0.9607843, 0, 0.52156866, 1)

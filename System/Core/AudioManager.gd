@@ -118,6 +118,8 @@ func _load_all_sounds():
 
 	sfx_streams["impacto_suelo"] = [load("res://TEST_/Impacto suelo.mp3")]
 
+	sfx_streams["vasija_quebrada"] = [load("res://TEST_/vasija_quebrada.mp3")]
+
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
 	# ═══════════════════════════════════════════════════════════════════════════════

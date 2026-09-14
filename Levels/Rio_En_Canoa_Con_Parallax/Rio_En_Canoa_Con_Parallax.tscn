@@ -32,6 +32,23 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Naufragio.tscn" id="31_naufragio"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/RocaRio.tscn" id="32_roca"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/PescadosColgando.tscn" id="33_pescados"]
+[ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://TEST_/Bandera A.png" id="34_bandera"]
+[ext_resource type="Shader" uid="uid://brid0ieabxl7a" path="res://System/Shaders/arbustos_difuminados.gdshader" id="35_bandera_shader"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Cangrejo.tscn" id="36_cangrejo"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Zapayo.tscn" id="37_zapayo"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/BaldosaMusgo.tscn" id="38_baldosa"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/VasijaContenedor.tscn" id="39_vasija"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaA"]
+render_priority = 0
+shader = ExtResource("35_bandera_shader")
+shader_parameter/albedo_texture = ExtResource("34_bandera")
+shader_parameter/tint_color = Color(1, 1, 1, 1)
+shader_parameter/blur_amount = 1.0
+shader_parameter/wind_speed = 2.2
+shader_parameter/wind_strength = 0.06
+shader_parameter/flutter_speed = 4.5
+shader_parameter/flutter_strength = 0.02
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
@@ -417,6 +434,31 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.0, -0.6, -9.0)
 
 [node name="PescadosColgando" parent="." unique_id=2026999139 instance=ExtResource("33_pescados")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 2.0, 1.5, -8.0)
+
+[node name="LuzAmbientePequena" type="OmniLight3D" parent="." unique_id=2026999140]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, -6.0)
+layers = 3
+light_color = Color(1, 0.85490197, 0.8, 1)
+light_energy = 1.5
+light_cull_mask = 7
+
+[node name="BanderaA" type="Sprite3D" parent="." unique_id=2026999141]
+transform = Transform3D(0.5, 0, 0, 0, 0.38, 0, 0, 0, 0.02, 5.0, 1.5, -8.0)
+layers = 2
+material_override = SubResource("ShaderMaterial_banderaA")
+texture = ExtResource("34_bandera")
+
+[node name="Cangrejo" parent="." unique_id=2026999142 instance=ExtResource("36_cangrejo")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 8.0, -0.2, -7.0)
+
+[node name="Zapayo" parent="." unique_id=2026999143 instance=ExtResource("37_zapayo")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 10.0, 2.5, -8.0)
+
+[node name="BaldosaMusgo" parent="." unique_id=2026999144 instance=ExtResource("38_baldosa")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0, -0.3, -7.0)
+
+[node name="VasijaContenedor" parent="." unique_id=2026999145 instance=ExtResource("39_vasija")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -4.0, -0.2, -8.0)
 
 
 

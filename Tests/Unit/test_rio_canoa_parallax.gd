@@ -841,6 +841,53 @@ func test_casa_boneta_misma_velocidad_cordillera() -> void:
 	assert_almost_eq(delta_casa, delta_cord, MARGEN_FLOAT, "CasaBoneta debe moverse exactamente a la misma velocidad que la cordillera")
 
 
+func test_casa_boneta_reciclaje_fuera_de_vista() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var camara: Camera3D = nivel.find_child("CamaraPrincipal", true, false) as Camera3D
+	assert_not_null(camara, "Debe existir la cámara principal")
+	var casas: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
+	assert_gt(casas.size(), 0, "CasaBoneta debe existir")
+
+	# Act: forzar que la primera casa salga por la izquierda del límite visible
+	casas[0].position.x = camara.global_position.x - parallax.margen_casa_atras - 10.0
+	parallax._actualizar_loop_casa_boneta(0.0)
+
+	# Assert: reaparece delante de la cámara, fuera de vista (sin pop visible)
+	assert_gt(casas[0].position.x, camara.global_position.x + parallax.margen_casa_adelante - MARGEN_FLOAT, "La casa debe reaparecer fuera de vista a la derecha")
+
+
+func test_casa_boneta_conserva_grupo_delante() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var camara: Camera3D = nivel.find_child("CamaraPrincipal", true, false) as Camera3D
+	var casas: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
+	assert_gt(casas.size(), 0, "CasaBoneta debe existir")
+
+	# Arrange: segunda casa como grupo delante de la cámara
+	var cam_x: float = camara.global_position.x
+	var extra := Node3D.new()
+	extra.position = Vector3(cam_x + 60.0, 0.0, -80.0)
+	parallax.add_child(extra)
+	parallax.registrar_segmento_casa_boneta(extra)
+
+	# Act: la primera queda atrás y se recicla
+	casas[0].position.x = cam_x - parallax.margen_casa_atras - 1.0
+	parallax._actualizar_loop_casa_boneta(0.0)
+
+	# Assert: se suma al final del grupo delantero, no salta a la cámara
+	var esperado: float = cam_x + 60.0 + parallax.ancho_segmento_cordillera
+	assert_almost_eq(casas[0].position.x, esperado, MARGEN_FLOAT, "Debe conservar el grupo delantero")
+
+
 # === TESTS DE MÚSICA DEL NIVEL ===
 func test_musica_viaje_rio_registrada() -> void:
 	# Arrange & Act

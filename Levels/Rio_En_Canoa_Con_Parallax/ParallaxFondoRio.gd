@@ -77,6 +77,8 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 
 @export_category("Casa boneta")
 @export var sincronizar_casa_boneta_con_cordillera: bool = true  ## Si true, la CasaBoneta se desplaza a la misma velocidad de la cordillera
+@export var margen_casa_atras: float = 30.0  ## Distancia tras la cámara donde se recicla la casa
+@export var margen_casa_adelante: float = 55.0  ## Distancia delante de la cámara donde reaparece (fuera de vista)
 
 @export_category("Bosque rojo")
 @export var sincronizar_bosque_rojo_con_fondo: bool = true  ## Si true, el BosqueRojo hace scroll parallax detrás de la cordillera
@@ -805,17 +807,19 @@ func _actualizar_loop_casa_boneta(delta: float) -> void:
 	var x_cam: float = _obtener_x_camara()
 	var contenedor: Node3D = _segmentos_casa_boneta[0].get_parent() as Node3D
 	var x_cam_local: float = contenedor.to_local(Vector3(x_cam, 0.0, 0.0)).x if contenedor else x_cam
-	var limite_izq: float = x_cam_local - 30.0
+	var limite_izq: float = x_cam_local - margen_casa_atras
 
 	var x_max: float = -INF
 	for casa in _segmentos_casa_boneta:
 		if is_instance_valid(casa) and casa.position.x > x_max:
 			x_max = casa.position.x
 
+	# Reaparece fuera de vista: conserva el grupo si sigue delante, o salta delante de la cámara
+	var destino_reciclaje: float = maxf(x_max + ancho_segmento_cordillera, x_cam_local + margen_casa_adelante)
 	for casa in _segmentos_casa_boneta:
 		if is_instance_valid(casa) and casa.position.x <= limite_izq:
-			casa.position.x = x_max + ancho_segmento_cordillera
-			x_max = casa.position.x
+			casa.position.x = destino_reciclaje
+			destino_reciclaje += ancho_segmento_cordillera
 
 
 func _inicializar_capa_bosque_rojo() -> void:

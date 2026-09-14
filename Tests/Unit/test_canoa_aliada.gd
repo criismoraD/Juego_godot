@@ -264,8 +264,7 @@ func test_navegar_hacia_x_desplaza_canoa_hacia_derecha() -> void:
 	canoa.free()
 
 
-func test_canoa_alcanza_destino_y_emite_senal() -> void:
-	# Arrange
+func test_canoa_alcanza_destino_y_emite_senal() -> void:	# Arrange
 	var canoa := _crear_canoa_determinista()
 	canoa.fijar_posicion_base(Vector3(-7.0, 0.0, 0.0))
 	canoa.navegar_hacia_x(-6.5, 2.0)
@@ -280,4 +279,49 @@ func test_canoa_alcanza_destino_y_emite_senal() -> void:
 	assert_signal_emitted(canoa, "destino_alcanzado", "Debe emitirse destino_alcanzado")
 
 	canoa.free()
+
+
+# === SONIDO DE NAVEGACIÓN ===
+func test_sonido_suena_mientras_navega() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	assert_not_null(canoa._audio_navegacion, "Debe crear el reproductor de navegación")
+
+	# Act
+	canoa.navegar_hacia_x(100.0, 1.0)
+	canoa._process(0.1)
+
+	# Assert
+	assert_true(canoa._audio_navegacion.playing, "El sonido debe sonar mientras navega")
+
+
+func test_sonido_se_detiene_en_parada() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	canoa.navegar_hacia_x(100.0, 1.0)
+	canoa._process(0.1)
+	assert_true(canoa._audio_navegacion.playing, "Precondición: sonando al navegar")
+
+	# Act: parada futura (detener navegación sin frenar flotación)
+	canoa.detener_navegacion()
+	canoa._process(0.1)
+
+	# Assert
+	assert_false(canoa._audio_navegacion.playing, "El sonido debe detenerse en paradas")
+
+
+func test_sonido_no_suena_si_esta_desactivado() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	canoa.sonido_navegacion_activo = false
+	add_child_autofree(canoa)
+
+	# Act
+	canoa.navegar_hacia_x(100.0, 1.0)
+	canoa._process(0.5)
+
+	# Assert
+	assert_false(canoa._audio_navegacion.playing, "Con el flag apagado nunca suena")
 

@@ -6,5 +6,4 @@
 resource_name = "Balsa piarata_M"
 cull_mode = 2
 albedo_texture = ExtResource("1_jhppu")
-emission_enabled = true
 emission_texture = ExtResource("1_jhppu")

@@ -17,6 +17,9 @@ extends Node3D
 signal destino_alcanzado
 
 # === CONSTANTES ===
+const SONIDO_NAVEGACION: AudioStream = preload("res://TEST_/sonido_canoa_por_el_rio.mp3")
+
+# === CONSTANTES ===
 const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase aleatoria
 
 # === FLOTACIÓN VERTICAL (Y) ===
@@ -58,6 +61,11 @@ const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase al
 @export var fase_deriva_z: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
 @export var fase_guinada: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
 
+# === SONIDO DE NAVEGACIÓN ===
+@export_category("Sonido de Navegación")
+@export var sonido_navegacion_activo: bool = true  ## Si true, suena en loop mientras navega y se detiene en paradas
+@export var volumen_navegacion_db: float = -12.0  ## Volumen del loop de navegación
+
 # === ESTADO PRIVADO ===
 var _tiempo: float = 0.0
 var _posicion_base: Vector3 = Vector3.ZERO
@@ -74,6 +82,7 @@ var _navegando: bool = false
 var _x_destino: float = 0.0
 var _velocidad_navegacion: float = 0.0
 var _direccion_navegacion: float = 1.0
+var _audio_navegacion: AudioStreamPlayer = null
 
 
 # === FUNCIONES BUILT-IN ===
@@ -83,6 +92,7 @@ func _ready() -> void:
 	_rotacion_base = rotation_degrees
 	_inicializar_fases()
 	_aplicar_capa_visual_recursiva(self)
+	_inicializar_sonido_navegacion()
 	_flotando = flotar_al_iniciar
 	set_process(_flotando or _navegando)
 
@@ -93,6 +103,8 @@ func _process(delta: float) -> void:
 
 	if _navegando:
 		_actualizar_navegacion(delta)
+
+	_actualizar_sonido_navegacion()
 
 	if not _flotando:
 		return
@@ -149,6 +161,8 @@ func flotar() -> void:
 ## Detiene el vaivén y devuelve la canoa a su transformada base.
 func detener() -> void:
 	_flotando = false
+	_navegando = false
+	_detener_sonido_navegacion()
 	set_process(false)
 	_restaurar_transformada_base()
 
@@ -158,6 +172,7 @@ func ocultar_y_desactivar() -> void:
 	visible = false
 	_flotando = false
 	_navegando = false
+	_detener_sonido_navegacion()
 	set_process(false)
 	for hijo in find_children("*", "TripulanteBarcoFondoAllyArcher", true, false):
 		var tripulante := hijo as Node3D
@@ -241,6 +256,38 @@ func _resolver_fase(fase_configurada: float) -> float:
 func _aplicar_flotacion() -> void:
 	position = _posicion_base + calcular_desplazamiento(_tiempo)
 	rotation_degrees = calcular_rotacion_grados(_tiempo)
+
+
+func _inicializar_sonido_navegacion() -> void:
+	if SONIDO_NAVEGACION == null:
+		return
+	_audio_navegacion = AudioStreamPlayer.new()
+	_audio_navegacion.name = "SonidoNavegacion"
+	_audio_navegacion.stream = SONIDO_NAVEGACION
+	if _audio_navegacion.stream is AudioStreamMP3:
+		(_audio_navegacion.stream as AudioStreamMP3).loop = true
+	elif _audio_navegacion.stream is AudioStreamOggVorbis:
+		(_audio_navegacion.stream as AudioStreamOggVorbis).loop = true
+	elif _audio_navegacion.stream is AudioStreamWAV:
+		(_audio_navegacion.stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+	_audio_navegacion.volume_db = volumen_navegacion_db
+	_audio_navegacion.bus = "Master"
+	add_child(_audio_navegacion)
+
+
+func _actualizar_sonido_navegacion() -> void:
+	if not is_instance_valid(_audio_navegacion):
+		return
+	if _navegando and sonido_navegacion_activo:
+		if not _audio_navegacion.playing:
+			_audio_navegacion.play()
+	else:
+		_detener_sonido_navegacion()
+
+
+func _detener_sonido_navegacion() -> void:
+	if is_instance_valid(_audio_navegacion) and _audio_navegacion.playing:
+		_audio_navegacion.stop()
 
 
 func _restaurar_transformada_base() -> void:

@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" uid="uid://bncln2mt3gbm5" path="res://TEST_/Basija destruida/Basija destruida_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "BasijaDestruida_Mat"
+albedo_texture = ExtResource("1_tex")
+roughness = 0.95
