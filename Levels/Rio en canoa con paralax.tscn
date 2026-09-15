@@ -44,19 +44,19 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ArbolLowPoly.tscn" id="44_lowpoly"]
 [ext_resource type="Texture2D" uid="uid://tj4lmy2qwd4l" path="res://Levels/Rio_En_Canoa_Con_Parallax/fuego_2d_alineado.png" id="44_n5ctp"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Fuego2D.tscn" id="45_fuego"]
-[ext_resource type="Texture2D" path="res://TEST_/Niebla sutil.png" id="46_niebla_tex"]
+[ext_resource type="Texture2D" uid="uid://ble248dq6wivh" path="res://TEST_/niebla simple nivel rio.png" id="46_niebla_tex"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rio"]
 dof_blur_far_distance = 55.0
 dof_blur_far_transition = 1.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_n5ctp"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fe3kk"]
 render_priority = -10
 shading_mode = 0
 disable_fog = true
 albedo_texture = ExtResource("11_preview_fondo")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_fe3kk"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_q653g"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 0.5
@@ -64,10 +64,10 @@ shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 shader_parameter/opacidad = 0.25
 shader_parameter/desvanecer_borde_inferior = 0.55
 
-[sub_resource type="QuadMesh" id="QuadMesh_q653g"]
+[sub_resource type="QuadMesh" id="QuadMesh_a2shw"]
 size = Vector2(260, 90)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_a2shw"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p3hwo"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 10.0
@@ -75,10 +75,10 @@ shader_parameter/tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 shader_parameter/opacidad = 1.0
 shader_parameter/desvanecer_borde_inferior = 1.0
 
-[sub_resource type="QuadMesh" id="QuadMesh_p3hwo"]
+[sub_resource type="QuadMesh" id="QuadMesh_yycmc"]
 size = Vector2(260, 90)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_yycmc"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kviqy"]
 render_priority = 0
 shader = ExtResource("19_bok55")
 shader_parameter/desenfoque = 10.0
@@ -86,7 +86,7 @@ shader_parameter/tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
 shader_parameter/opacidad = 0.35
 shader_parameter/desvanecer_borde_inferior = 1.0
 
-[sub_resource type="QuadMesh" id="QuadMesh_kviqy"]
+[sub_resource type="QuadMesh" id="QuadMesh_pqpeq"]
 size = Vector2(260, 90)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaA"]
@@ -519,7 +519,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, -38)
 [node name="Atardecer_0" type="Sprite3D" parent="ParallaxFondo/CapaAtardecer" unique_id=2026999021]
 transform = Transform3D(11.327185, 0, 0, 0, 10.066407, 0, 0, 0, 1, -5.840851, -4.7548733, -100.41611)
 layers = 3
-material_override = SubResource("StandardMaterial3D_n5ctp")
+material_override = SubResource("StandardMaterial3D_fe3kk")
 pixel_size = 0.005
 render_priority = -10
 texture = ExtResource("11_preview_fondo")
@@ -841,8 +841,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.07103, -3.546595, -136.79
 [node name="DesenfoqueEspecial" parent="." unique_id=1408794707 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.375109, 32.12107)
 layers = 7
-material_override = SubResource("ShaderMaterial_fe3kk")
-mesh = SubResource("QuadMesh_q653g")
+material_override = SubResource("ShaderMaterial_q653g")
+mesh = SubResource("QuadMesh_a2shw")
 grado_desenfoque = 0.5
 opacidad = 0.25
 tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
@@ -851,8 +851,8 @@ desvanecer_borde_inferior = 0.55
 [node name="DesenfoqueEspecial2" parent="." unique_id=1339205412 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.405718, -10.060026)
 layers = 7
-material_override = SubResource("ShaderMaterial_a2shw")
-mesh = SubResource("QuadMesh_p3hwo")
+material_override = SubResource("ShaderMaterial_p3hwo")
+mesh = SubResource("QuadMesh_yycmc")
 grado_desenfoque = 10.0
 tinte = Color(0.8289213, 0.4551006, 0.56359184, 1)
 desvanecer_borde_inferior = 1.0
@@ -860,8 +860,8 @@ desvanecer_borde_inferior = 1.0
 [node name="DesenfoqueEspecial3" parent="." unique_id=1235090770 instance=ExtResource("20_especial")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -45.12014, -75.003555)
 layers = 2
-material_override = SubResource("ShaderMaterial_yycmc")
-mesh = SubResource("QuadMesh_kviqy")
+material_override = SubResource("ShaderMaterial_kviqy")
+mesh = SubResource("QuadMesh_pqpeq")
 grado_desenfoque = 10.0
 opacidad = 0.35
 tinte = Color(0.88659585, 0.43662766, 0.339446, 1)
@@ -1259,38 +1259,151 @@ transform = Transform3D(7.014677, 0, 0, 0, 7.014677, 0, 0, 0, 4, 90.204384, 0.76
 
 [node name="NieblaSutil" type="Sprite3D" parent="." unique_id=1408794743]
 transform = Transform3D(6, 0, 0, 0, 2, 0, 0, 0, 1, -3, 0.8, -25)
+visible = false
 pixel_size = 0.005
-double_sided = true
-shaded = false
 texture = ExtResource("46_niebla_tex")
 
-[node name="ArbolLowPoly6(cordillera)" parent="." unique_id=1614717905 instance=ExtResource("44_lowpoly")]
-transform = Transform3D(3.2516782, -0.021322474, -0.6871038, -0.14585933, 2.6654484, -0.11147245, 1.8966062, 0.24154425, 1.169447, 86.72833, -0.7929815, -39.186165)
+[node name="ArbolLowPoly Estatua" parent="." unique_id=1614717905 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(3.2516782, -0.021322474, -0.6871038, -0.14585933, 2.6654484, -0.11147245, 1.8966062, 0.24154425, 1.169447, 87.33479, -1.221715, -41.0496)
 
-[node name="ArbolLowPoly7(cordillera)" parent="." unique_id=422251096 instance=ExtResource("44_lowpoly")]
-transform = Transform3D(-3.4058576, 0, 0.58160806, -0.1458593, 2.665448, -0.1114724, -1.603327, -0.24248351, -1.2253364, 89.566826, -0.7929815, -39.947994)
+[node name="ArbolLowPoly7 Estatua" parent="." unique_id=422251096 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-3.4058576, 0, 0.58160806, -0.1458593, 2.665448, -0.1114724, -1.603327, -0.24248351, -1.2253364, 89.566826, -2, -42.928623)
+
+[node name="ArbolLowPoly7(cordillera)2" parent="." unique_id=2062882655 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 72.16655, 0.093467, -79.66791)
+
+[node name="ArbolLowPoly7(cordillera)3" parent="." unique_id=1761883425 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 70.20535, 0.093467, -80.006874)
+
+[node name="ArbolLowPoly7(cordillera)4" parent="." unique_id=479573000 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 68.30223, 0.093467, -79.162384)
+
+[node name="ArbolLowPoly7(cordillera)5" parent="." unique_id=212958857 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 63.00122, 0.093467, -80.00454)
+
+[node name="ArbolLowPoly7(cordillera)6" parent="." unique_id=1105463790 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 62.10289, 0.093467, -80.15968)
+
+[node name="ArbolLowPoly7(cordillera)7" parent="." unique_id=618390407 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 67.55206, 0.093467, -81.4115)
+
+[node name="ArbolLowPoly7(cordillera)8" parent="." unique_id=591089668 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 58.5754, 0.093467, -79.56099)
+
+[node name="ArbolLowPoly7(cordillera)9" parent="." unique_id=569870449 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 55.731922, 0.093467, -79.56099)
+
+[node name="ArbolLowPoly7(cordillera)10" parent="." unique_id=630120441 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 55.022964, 0.093467, -79.56099)
+
+[node name="ArbolLowPoly7(cordillera)11" parent="." unique_id=690133965 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 55.022964, 0.093467, -78.979836)
+
+[node name="ArbolLowPoly7(cordillera)12" parent="." unique_id=348743619 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 50.660267, 0.093467, -81.353455)
+
+[node name="ArbolLowPoly7(cordillera)13" parent="." unique_id=1024321060 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 57.567703, 0.093467, -81.353455)
+
+[node name="ArbolLowPoly7(cordillera)14" parent="." unique_id=1218078828 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 48.112385, 0.093467, -79.87808)
+
+[node name="ArbolLowPoly7(cordillera)15" parent="." unique_id=772335419 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 46.35909, 0.093467, -80.26593)
+
+[node name="ArbolLowPoly7(cordillera)16" parent="." unique_id=1440475140 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 44.391586, 0.093467, -80.26593)
+
+[node name="ArbolLowPoly7(cordillera)17" parent="." unique_id=4021043 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 42.07425, 0.093467, -81.64092)
+
+[node name="ArbolLowPoly7(cordillera)18" parent="." unique_id=880149815 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 44.331257, 0.093467, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)19" parent="." unique_id=2081376333 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 47.343582, 0.093467, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)20" parent="." unique_id=919863921 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 49.451763, -0.18606758, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)21" parent="." unique_id=1700570756 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 38.08734, 0.7388382, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)22" parent="." unique_id=2035549314 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 33.61166, 0.41845608, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)23" parent="." unique_id=1391301540 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 29.620647, 0.41845608, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)24" parent="." unique_id=1814829819 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 24.988604, 0.41845608, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)25" parent="." unique_id=895997943 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 22.33074, 0.41845608, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)26" parent="." unique_id=1652399471 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 18.90097, 0.41845608, -82.225494)
+
+[node name="ArbolLowPoly7(cordillera)31" parent="." unique_id=366656024 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 16.641422, 0.41845608, -82.90947)
+
+[node name="ArbolLowPoly7(cordillera)32" parent="." unique_id=953077648 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 12.629217, 0.41845608, -82.90947)
+
+[node name="ArbolLowPoly7(cordillera)33" parent="." unique_id=1416358411 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 14.876247, 0.09505606, -82.90947)
+
+[node name="ArbolLowPoly7(cordillera)34" parent="." unique_id=1826193867 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 10.239918, 0.09505606, -83.86863)
+
+[node name="ArbolLowPoly7(cordillera)35" parent="." unique_id=1378640145 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 8.040731, 0.09505606, -83.86863)
+
+[node name="ArbolLowPoly7(cordillera)36" parent="." unique_id=2003688741 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 8.040731, -0.20750427, -81.04557)
+
+[node name="ArbolLowPoly7(cordillera)37" parent="." unique_id=1723976502 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 2.898425, -0.20750427, -82.17734)
+
+[node name="ArbolLowPoly7(cordillera)38" parent="." unique_id=1846897202 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 7.1705666, -0.20750427, -82.17734)
+
+[node name="ArbolLowPoly7(cordillera)39" parent="." unique_id=1084584010 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 3.856338, -0.56900406, -82.17734)
+
+[node name="ArbolLowPoly7(cordillera)27" parent="." unique_id=470112045 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 17.632627, 0.09339833, -80.015915)
+
+[node name="ArbolLowPoly7(cordillera)28" parent="." unique_id=1935957646 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.9854856, 0, 0.75291765, -0.08503042, 1.7694557, -0.144306, -0.9346786, -0.16097248, -1.5862528, 18.895254, 0.41845608, -80.04951)
+
+[node name="ArbolLowPoly7(cordillera)29" parent="." unique_id=1301521856 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.0383775, 0.095863886, 1.5495045, -0.085030414, 1.7694556, -0.14430599, -1.933274, -0.1293145, -0.8259045, 18.222939, -0.17930555, -80.34501)
+
+[node name="ArbolLowPoly7(cordillera)30" parent="." unique_id=1711947536 instance=ExtResource("44_lowpoly")]
+transform = Transform3D(-1.0383775, 0.095863886, 1.5495045, -0.085030414, 1.7694556, -0.14430599, -1.933274, -0.1293145, -0.8259045, 19.16002, -0.4571309, -80.04828)
 
 [node name="Fuego2D" parent="." unique_id=1408794750 instance=ExtResource("45_fuego")]
-transform = Transform3D(0.9827825, 0, 0, 0, 0.96293813, 0, 0, 0, 1, 96.98019, 1.3091362, -10.160118)
+transform = Transform3D(0.99270123, 0, 0, 0, 1.0165633, 0, 0, 0, 1, 96.98019, 1.3091362, -10.160118)
 pixel_size = 0.0055
 sprite_frames = SubResource("SpriteFrames_ail8q")
 
 [node name="Fuego2D3" parent="." unique_id=1902314080 instance=ExtResource("45_fuego")]
-transform = Transform3D(0.9827825, 0, 0, 0, 0.96293813, 0, 0, 0, 1, 106.56241, 1.3091362, -10.386945)
+transform = Transform3D(0.99270123, 0, 0, 0, 1.0165633, 0, 0, 0, 1, 106.56241, 1.3091362, -10.386945)
 pixel_size = 0.0055
 sprite_frames = SubResource("SpriteFrames_ail8q")
 
 [node name="Fuego2D4" parent="." unique_id=1782335628 instance=ExtResource("45_fuego")]
-transform = Transform3D(0.9827825, 0, 0, 0, 0.96293813, 0, 0, 0, 1, 91.91422, 0.41058564, -34.71022)
+transform = Transform3D(0.99270123, 0, 0, 0, 1.0165633, 0, 0, 0, 1, 91.91422, 0.41058564, -34.71022)
 pixel_size = 0.0055
 sprite_frames = SubResource("SpriteFrames_ail8q")
 
 [node name="Fuego2D5" parent="." unique_id=1245352450 instance=ExtResource("45_fuego")]
-transform = Transform3D(0.9827825, 0, 0, 0, 0.96293813, 0, 0, 0, 1, 91.82552, 0.59941363, -34.60699)
+transform = Transform3D(0.99270123, 0, 0, 0, 1.0165633, 0, 0, 0, 1, 91.82552, 0.59941363, -34.60699)
 pixel_size = 0.0055
 sprite_frames = SubResource("SpriteFrames_ail8q")
 
 [node name="Fuego2D2" parent="." unique_id=1002465041 instance=ExtResource("45_fuego")]
-transform = Transform3D(0.9827825, 0, 0, 0, 0.96293813, 0, 0, 0, 1, 0.5951344, -0.027080417, -9.493406)
+transform = Transform3D(0.99270123, 0, 0, 0, 1.0165633, 0, 0, 0, 1, 0.5951344, -0.027080417, -9.493406)
 pixel_size = 0.0055
 sprite_frames = SubResource("SpriteFrames_ail8q")

@@ -853,13 +853,19 @@ func test_casa_boneta_reciclaje_fuera_de_vista() -> void:
 	assert_not_null(camara, "Debe existir la cámara principal")
 	var casas: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
 	assert_gt(casas.size(), 0, "CasaBoneta debe existir")
+	var pisos: Array[Node3D] = parallax.obtener_segmentos_piso_aliado()
+	assert_gt(pisos.size(), 0, "Debe haber piso para anclar")
 
 	# Act: forzar que la primera casa salga por la izquierda del límite visible
 	casas[0].position.x = camara.global_position.x - parallax.margen_reciclaje_atras - 10.0
 	parallax._actualizar_loop_casa_boneta(0.0)
 
-	# Assert: reaparece delante de la cámara, fuera de vista (sin pop visible)
-	assert_gt(casas[0].position.x, camara.global_position.x + parallax.margen_reciclaje_adelante - MARGEN_FLOAT, "La casa debe reaparecer fuera de vista a la derecha")
+	# Assert: reaparece sobre una baldosa (nunca flotando) y fuera de atrás
+	var xs_piso: Array = []
+	for piso in pisos:
+		xs_piso.append((piso as Node3D).global_position.x)
+	assert_true(xs_piso.has(casas[0].global_position.x), "La casa debe caer sobre una baldosa")
+	assert_gt(casas[0].global_position.x, camara.global_position.x - 5.0, "No debe quedar atrás")
 
 
 func test_casa_boneta_conserva_grupo_delante() -> void:
@@ -872,21 +878,21 @@ func test_casa_boneta_conserva_grupo_delante() -> void:
 	var camara: Camera3D = nivel.find_child("CamaraPrincipal", true, false) as Camera3D
 	var casas: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
 	assert_gt(casas.size(), 0, "CasaBoneta debe existir")
+	var pisos: Array[Node3D] = parallax.obtener_segmentos_piso_aliado()
+	assert_gt(pisos.size(), 0, "Debe haber piso para anclar")
 
-	# Arrange: segunda casa como grupo delante de la cámara
-	var cam_x: float = camara.global_position.x
-	var extra := Node3D.new()
-	extra.position = Vector3(cam_x + 60.0, 0.0, -80.0)
-	parallax.add_child(extra)
-	parallax.registrar_segmento_casa_boneta(extra)
-
-	# Act: la primera queda atrás y se recicla
-	casas[0].position.x = cam_x - parallax.margen_reciclaje_atras - 1.0
+	# Act: todas las casas quedan atrás y se reciclan
+	for casa in casas:
+		(casa as Node3D).position.x = camara.global_position.x - parallax.margen_reciclaje_atras - 1.0
 	parallax._actualizar_loop_casa_boneta(0.0)
 
-	# Assert: se suma al final del grupo delantero, no salta a la cámara
-	var esperado: float = cam_x + 60.0 + parallax.ancho_segmento_cordillera
-	assert_almost_eq(casas[0].position.x, esperado, MARGEN_FLOAT, "Debe conservar el grupo delantero")
+	# Assert: todas sobre baldosas y fuera de atrás
+	var xs_piso: Array = []
+	for piso in pisos:
+		xs_piso.append((piso as Node3D).global_position.x)
+	for casa in casas:
+		assert_true(xs_piso.has((casa as Node3D).global_position.x), "Cada casa debe caer sobre una baldosa")
+		assert_gt((casa as Node3D).global_position.x, camara.global_position.x - 5.0, "Ninguna queda atrás")
 
 
 # === TESTS DE MÚSICA DEL NIVEL ===
@@ -1184,7 +1190,7 @@ func test_sonido_canoa_stream_asignado_y_volumen_audible() -> void:
 	assert_not_null(audio, "La canoa debe poseer un AudioStreamPlayer para el sonido de navegación")
 	assert_not_null(audio.stream, "El AudioStreamPlayer debe tener cargado el stream de sonido_canoa_por_el_rio")
 	assert_eq(audio.stream.resource_path, "res://TEST_/sonido_canoa_por_el_rio.mp3", "Ruta de sonido_canoa_por_el_rio.mp3 correcta")
-	assert_gt(audio.volume_db, 0.0, "El volumen debe ser positivo (> 0 dB) para destacar con nitidez sobre la mezcla")
+	assert_between(audio.volume_db, -20.0, 0.0, "El volumen debe ser sutil y natural (<= 0 dB) para no sobrecargar la mezcla")
 	assert_eq(audio.bus, &"Master", "Debe reproducirse en el bus Master")
 
 

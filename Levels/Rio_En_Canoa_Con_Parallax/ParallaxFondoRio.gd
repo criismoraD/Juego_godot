@@ -831,7 +831,35 @@ func _actualizar_loop_casa_boneta(delta: float) -> void:
 		if is_instance_valid(casa):
 			casa.position.x -= paso
 
-	_reciclar_fuera_de_vista(_segmentos_casa_boneta, ancho_segmento_cordillera)
+	# Reciclaje anclado al piso: reaparece sobre una baldosa (nunca flotando)
+	_reciclar_casas_sobre_piso()
+
+
+## Recicla las casas que salen por la izquierda sobre baldosas visibles o delanteras.
+func _reciclar_casas_sobre_piso() -> void:
+	var x_cam: float = _obtener_x_camara()
+	for casa in _segmentos_casa_boneta:
+		if not is_instance_valid(casa):
+			continue
+		if casa.global_position.x <= x_cam - margen_reciclaje_atras:
+			casa.global_position.x = _x_piso_adelante(x_cam)
+
+
+## Baldosa más cercana al punto de reaparición (delante de la cámara).
+func _x_piso_adelante(x_cam: float) -> float:
+	var objetivo: float = x_cam + margen_reciclaje_adelante
+	var mejor: float = objetivo
+	var mejor_dist: float = INF
+	for piso in _segmentos_piso_aliado:
+		if not is_instance_valid(piso):
+			continue
+		var px: float = (piso as Node3D).global_position.x
+		if px >= x_cam - 5.0:
+			var dist: float = absf(px - objetivo)
+			if dist < mejor_dist:
+				mejor_dist = dist
+				mejor = px
+	return mejor
 
 
 func _inicializar_capa_bosque_rojo() -> void:

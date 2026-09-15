@@ -19,7 +19,7 @@ extends CanoaAliada
 
 @export_category("Sonido de Travesía (sonido_canoa_por_el_rio)")
 ## Control directo del volumen del sonido de la canoa en el Inspector (dB)
-@export_range(-20.0, 24.0, 0.5) var volumen_sonido_canoa_db: float = 6.0:
+@export_range(-30.0, 12.0, 0.5) var volumen_sonido_canoa_db: float = -3.0:
 	set(v):
 		volumen_sonido_canoa_db = v
 		volumen_navegacion_db = v

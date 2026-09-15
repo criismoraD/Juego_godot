@@ -32,6 +32,6 @@ shape = SubResource("BoxShape_suelo")
 
 [node name="SonidoNavegacion" type="AudioStreamPlayer" parent="." unique_id=2026998506]
 stream = ExtResource("5_audio")
-volume_db = 6.0
+volume_db = -3.0
 bus = &"Master"
 

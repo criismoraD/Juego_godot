@@ -325,3 +325,55 @@ func test_sonido_no_suena_si_esta_desactivado() -> void:
 	# Assert
 	assert_false(canoa._audio_navegacion.playing, "Con el flag apagado nunca suena")
 
+
+func test_volumen_navegacion_sutil_por_defecto() -> void:
+	# Arrange & Act
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+
+	# Assert
+	assert_true(canoa.volumen_navegacion_db <= 0.0, "El volumen por defecto debe ser sutil y no sobrecargar la mezcla")
+	assert_gt(canoa.volumen_navegacion_db, -20.0, "El volumen debe ser audible")
+
+
+func test_sonido_crossfade_inicia_segunda_voz_sin_cortes() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	canoa.navegar_hacia_x(1000.0, 1.0)
+	canoa._process(0.1)
+
+	assert_true(canoa._audio_navegacion.playing, "Voz A debe estar reproduciendo al inicio")
+
+	# Act: Avanzar el tiempo hasta el punto de disparo del crossfade (4.8s)
+	canoa._process(4.8)
+
+	# Assert: En el momento del crossfade, la voz B se activa y ambas voces suenan
+	assert_true(canoa._en_crossfade, "Debe entrar en estado de crossfade")
+	assert_true(canoa._audio_navegacion_b.playing, "Voz B debe comenzar a reproducir")
+	assert_true(canoa.esta_reproduciendo_sonido_navegacion(), "El sonido global no debe sufrir cortes")
+
+	# Act: Completar la ventana de crossfade (1.0s más)
+	canoa._process(1.1)
+
+	# Assert: Se alternó la voz primaria a la voz B y no hay fisuras
+	assert_false(canoa._en_crossfade, "El crossfade debe haber culminado")
+	assert_true(canoa._audio_navegacion_b.playing, "Voz B debe ser ahora la voz activa")
+	assert_true(canoa.esta_reproduciendo_sonido_navegacion(), "El sonido se mantiene continuo tras la transición")
+
+
+func test_detener_silencia_ambas_voces() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	canoa.navegar_hacia_x(1000.0, 1.0)
+	canoa._process(4.9) # En pleno crossfade
+	assert_true(canoa.esta_reproduciendo_sonido_navegacion(), "Precondición: reproduciendo en crossfade")
+
+	# Act
+	canoa.detener()
+
+	# Assert
+	assert_false(canoa.esta_reproduciendo_sonido_navegacion(), "Ambas voces deben callar al detener")
+
+
