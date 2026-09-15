@@ -108,6 +108,7 @@ func recibir_golpe(dano: float = 1.0) -> void:
 	if _destruido or vida_contenedor <= 0.0:
 		return
 	vida_contenedor -= dano
+	AudioManager.play_sfx("arrow_impact")
 	_flash_dano()
 	if vida_contenedor <= 0.0:
 		_destruir()

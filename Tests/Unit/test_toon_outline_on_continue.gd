@@ -1,4 +1,4 @@
-﻿extends "res://addons/gut/test.gd"
+extends "res://addons/gut/test.gd"
 
 ## Pruebas unitarias para verificar la permanencia y reactivación del contorno
 ## Toon (TOON_LINEANEGRA) al continuar tras Game Over o recargar escenas.

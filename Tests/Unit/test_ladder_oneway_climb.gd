@@ -1,4 +1,4 @@
-﻿extends GutTest
+extends GutTest
 
 ## Tests de verificación para la escalada de escaleras y desembarque en plataformas One-Way.
 ## Comprueba que el jugador sube a través de la plataforma, que esta se vuelve sólida al llegar

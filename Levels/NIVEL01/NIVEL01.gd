@@ -29,7 +29,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export_range(1.0, 1.4, 0.01) var escala_cobertura_fondo_animado: float = 1.18
 @export var limitar_fps_subviewport_fondo_3d: bool = false
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
-@export var pausar_video_fondo_en_combate: bool = true
+@export var pausar_video_fondo_en_combate: bool = false  ## true = congela la cascada en combate (ahorra CPU); false = cascada animada siempre
 const AUDIO_DEFENSORAS_ENTRADA: AudioStream = preload("res://TEST_/Defensoras entrada.wav")
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false

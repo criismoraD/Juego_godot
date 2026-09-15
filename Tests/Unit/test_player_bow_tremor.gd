@@ -1,4 +1,4 @@
-﻿extends "res://addons/gut/test.gd"
+extends "res://addons/gut/test.gd"
 
 ## Tests unitarios para el efecto de temblor/tiritar del arco al tensar (Player.gd).
 ## Verifica que el arco y la flecha comiencen con vibracion sutil mientras se tensa,

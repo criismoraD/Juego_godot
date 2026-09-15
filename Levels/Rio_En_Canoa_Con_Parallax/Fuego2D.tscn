@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/Fuego2D.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Levels/Rio_En_Canoa_Con_Parallax/fuego_2d_alineado.png" id="2_tex"]
+
+[node name="Fuego2D" type="AnimatedSprite3D"]
+billboard = 1
+shaded = false
+render_priority = 2
+offset = Vector2(0, 74)
+script = ExtResource("1_script")
+tira_textura = ExtResource("2_tex")
+
+[node name="LuzFuego" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+light_color = Color(1, 0.65, 0.25, 1)
+light_energy = 1.2
+omni_range = 3.5
+omni_attenuation = 1.35

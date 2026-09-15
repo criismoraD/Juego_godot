@@ -1,4 +1,4 @@
-﻿extends GutTest
+extends GutTest
 
 ## Test unitario integral para la corrección del bug de la escalera del medio (Ladder2).
 ## Verifica la transición entre escaleras, mantenimiento de estado, inicio de escalada

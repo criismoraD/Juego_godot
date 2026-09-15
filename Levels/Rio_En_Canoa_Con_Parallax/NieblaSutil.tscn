@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://TEST_/niebla simple nivel rio.png" id="1_tex"]
+
+[node name="NieblaSutil" type="Sprite3D"]
+layers = 3
+double_sided = true
+shaded = false
+texture = ExtResource("1_tex")

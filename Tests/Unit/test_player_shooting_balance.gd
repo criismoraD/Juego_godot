@@ -1,4 +1,4 @@
-﻿extends "res://addons/gut/test.gd"
+extends "res://addons/gut/test.gd"
 
 var PlayerScript = load("res://Entities/Jugador_Arquera/Player.gd")
 var _player = null

@@ -1,4 +1,4 @@
-﻿extends "res://addons/gut/test.gd"
+extends "res://addons/gut/test.gd"
 
 ## Tests unitarios para el diálogo de la arquera superior al aparecer la primera goblin rosada en pantalla en oleada 3.
 ## Sigue la estructura AAA (Arrange, Act, Assert) y las normas de AGENTS.md.

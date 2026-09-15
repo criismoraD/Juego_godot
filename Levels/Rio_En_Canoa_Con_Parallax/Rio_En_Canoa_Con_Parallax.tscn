@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.gd" id="1_script"]
-[ext_resource type="Environment" uid="uid://dla06m2nrcawf" path="res://Recursos_Compartidos/new_environment.tres" id="2_env"]
+[ext_resource type="Environment" path="res://Recursos_Compartidos/rio_environment.tres" id="2_env"]
 [ext_resource type="PackedScene" uid="uid://cxqcex5ugbppo" path="res://Entities/Ambiente_Agua/WaterPlane.tscn" id="3_water"]
 [ext_resource type="PackedScene" uid="uid://cb5c03pe088q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="4_pez"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/ParallaxFondoRio.gd" id="5_parallax"]
@@ -38,6 +38,13 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Zapayo.tscn" id="37_zapayo"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/BaldosaMusgo.tscn" id="38_baldosa"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/VasijaContenedor.tscn" id="39_vasija"]
+[ext_resource type="PackedScene" uid="uid://c0gtu2yrqpnxw" path="res://UI/GameUI.tscn" id="40_gameui"]
+[ext_resource type="PackedScene" uid="uid://b7v8x2y1w4n0k" path="res://UI/UI_Vida_Protagonista.tscn" id="41_uivida"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/BraceroPilar.tscn" id="42_bracero"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/EstatuaMedea.tscn" id="43_estatua"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/NieblaSutil.tscn" id="44_niebla"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ArbolLowPoly.tscn" id="45_lowpoly"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Fuego2D.tscn" id="46_fuego"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaA"]
 render_priority = 0
@@ -459,6 +466,26 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0, -0.3, -7.0)
 
 [node name="VasijaContenedor" parent="." unique_id=2026999145 instance=ExtResource("39_vasija")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -4.0, -0.2, -8.0)
+
+[node name="GameUI" parent="." unique_id=2026999146 instance=ExtResource("40_gameui")]
+
+[node name="UIVidaProtagonista" parent="." unique_id=2026999147 instance=ExtResource("41_uivida")]
+
+[node name="BraceroPilar" parent="." unique_id=2026999148 instance=ExtResource("42_bracero")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -7.0, -0.2, -11.0)
+
+[node name="EstatuaMedea" parent="." unique_id=2026999149 instance=ExtResource("43_estatua")]
+transform = Transform3D(4, 0, 0, 0, 4, 0, 0, 0, 4, 14.0, -0.5, -20.0)
+
+[node name="NieblaSutil" parent="." unique_id=2026999150 instance=ExtResource("44_niebla")]
+transform = Transform3D(6, 0, 0, 0, 2, 0, 0, 0, 1, -3.0, 0.8, -25.0)
+
+[node name="ArbolLowPoly" parent="." unique_id=2026999152 instance=ExtResource("45_lowpoly")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0, -0.3, -12.0)
+
+[node name="Fuego2D" parent="." unique_id=2026999153 instance=ExtResource("46_fuego")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.5, -7)
+
 
 
 

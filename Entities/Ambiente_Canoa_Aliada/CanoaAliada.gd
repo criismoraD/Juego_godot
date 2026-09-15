@@ -64,7 +64,17 @@ const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase al
 # === SONIDO DE NAVEGACIÓN ===
 @export_category("Sonido de Navegación")
 @export var sonido_navegacion_activo: bool = true  ## Si true, suena en loop mientras navega y se detiene en paradas
-@export var volumen_navegacion_db: float = -12.0  ## Volumen del loop de navegación
+@export_range(-20.0, 24.0, 0.5) var volumen_navegacion_db: float = 6.0:  ## Volumen del loop de navegación (realzado para presencia en la mezcla)
+	set(v):
+		volumen_navegacion_db = v
+		if is_instance_valid(_audio_navegacion):
+			_audio_navegacion.volume_db = volumen_navegacion_db
+
+@export_range(0.5, 2.0, 0.05) var pitch_navegacion: float = 1.0:
+	set(v):
+		pitch_navegacion = v
+		if is_instance_valid(_audio_navegacion):
+			_audio_navegacion.pitch_scale = pitch_navegacion
 
 # === ESTADO PRIVADO ===
 var _tiempo: float = 0.0
@@ -259,20 +269,41 @@ func _aplicar_flotacion() -> void:
 
 
 func _inicializar_sonido_navegacion() -> void:
-	if SONIDO_NAVEGACION == null:
-		return
-	_audio_navegacion = AudioStreamPlayer.new()
-	_audio_navegacion.name = "SonidoNavegacion"
-	_audio_navegacion.stream = SONIDO_NAVEGACION
+	if _audio_navegacion == null:
+		_audio_navegacion = get_node_or_null("SonidoNavegacion") as AudioStreamPlayer
+
+	if _audio_navegacion == null:
+		if SONIDO_NAVEGACION == null:
+			push_warning("[CanoaAliada] Sin stream de navegación; la canoa se moverá en silencio")
+			return
+		_audio_navegacion = AudioStreamPlayer.new()
+		_audio_navegacion.name = "SonidoNavegacion"
+		_audio_navegacion.stream = SONIDO_NAVEGACION
+		add_child(_audio_navegacion)
+
+	if _audio_navegacion.stream == null and SONIDO_NAVEGACION != null:
+		_audio_navegacion.stream = SONIDO_NAVEGACION
+
 	if _audio_navegacion.stream is AudioStreamMP3:
 		(_audio_navegacion.stream as AudioStreamMP3).loop = true
 	elif _audio_navegacion.stream is AudioStreamOggVorbis:
 		(_audio_navegacion.stream as AudioStreamOggVorbis).loop = true
 	elif _audio_navegacion.stream is AudioStreamWAV:
 		(_audio_navegacion.stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+
 	_audio_navegacion.volume_db = volumen_navegacion_db
+	_audio_navegacion.pitch_scale = pitch_navegacion
 	_audio_navegacion.bus = "Master"
-	add_child(_audio_navegacion)
+
+	if not _audio_navegacion.finished.is_connected(_al_terminar_sonido_navegacion):
+		_audio_navegacion.finished.connect(_al_terminar_sonido_navegacion)
+
+	_actualizar_sonido_navegacion()
+
+
+func _al_terminar_sonido_navegacion() -> void:
+	if _navegando and sonido_navegacion_activo and is_instance_valid(_audio_navegacion):
+		_audio_navegacion.play()
 
 
 func _actualizar_sonido_navegacion() -> void:

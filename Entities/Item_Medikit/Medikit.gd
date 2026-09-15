@@ -1,4 +1,4 @@
-﻿@tool
+@tool
 class_name Medikit
 extends Area3D
 ## Item Medikit de salud:

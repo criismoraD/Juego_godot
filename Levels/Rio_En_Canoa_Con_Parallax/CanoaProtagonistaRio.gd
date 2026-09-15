@@ -17,6 +17,19 @@ extends CanoaAliada
 @export var limite_pasajera_x: Vector2 = Vector2(-0.5, 0.4)  ## Rango local X donde puede moverse
 @export var limite_pasajera_z: Vector2 = Vector2(-0.15, 0.15)  ## Rango local Z donde puede moverse
 
+@export_category("Sonido de Travesía (sonido_canoa_por_el_rio)")
+## Control directo del volumen del sonido de la canoa en el Inspector (dB)
+@export_range(-20.0, 24.0, 0.5) var volumen_sonido_canoa_db: float = 6.0:
+	set(v):
+		volumen_sonido_canoa_db = v
+		volumen_navegacion_db = v
+
+## Tono / pitch del sonido de navegación
+@export_range(0.5, 2.0, 0.05) var pitch_sonido_canoa: float = 1.0:
+	set(v):
+		pitch_sonido_canoa = v
+		pitch_navegacion = v
+
 const Y_PISO_CANOA: float = 0.3  ## Altura del piso de la canoa donde se posa la protagonista
 
 # === ONREADY ===
@@ -49,10 +62,18 @@ func _process(delta: float) -> void:
 
 
 # === FUNCIONES PÚBLICAS ===
-## Inicia la travesía hacia la derecha a velocidad constante.
+## Inicia la travesía hacia la derecha a velocidad constante y activa el sonido.
 func iniciar_travesia(vel: float = -1.0) -> void:
 	var v: float = vel if vel > 0.0 else velocidad_avance
 	navegar_hacia_x(100000.0, v)
+	_actualizar_sonido_navegacion()
+
+
+## Retorna el reproductor de audio de navegación de la canoa.
+func obtener_audio_navegacion() -> AudioStreamPlayer:
+	if not is_instance_valid(_audio_navegacion):
+		_inicializar_sonido_navegacion()
+	return _audio_navegacion
 
 
 func _sincronizar_plano_z_pasajera() -> void:

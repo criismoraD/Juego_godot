@@ -1,4 +1,4 @@
-﻿extends "res://addons/gut/test.gd"
+extends "res://addons/gut/test.gd"
 
 ## Tests unitarios para el efecto Smear en impacto de escudo
 ## en GuardianaMoradita (Goblina con Escudo Pesado).

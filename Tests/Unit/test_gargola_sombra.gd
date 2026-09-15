@@ -1,4 +1,4 @@
-﻿extends GutTest
+extends GutTest
 ## Test unitario para la sombra circular del enemigo Gargola.
 ## Verifica que posea una sombra circular similar al Globo aerostatico,
 ## visible a las alturas de vuelo y con proporciones 1:1.

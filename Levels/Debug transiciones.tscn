@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bppnkjkwfv0ye"]
 
-[ext_resource type="Environment" uid="uid://dla06m2nrcawf" path="res://Recursos_Compartidos/new_environment.tres" id="2_qcvbp"]
+[ext_resource type="Environment" path="res://Levels/debug_environment.tres" id="2_qcvbp"]
 [ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Entities/Jugador_Arquera/Player.tscn" id="4_1cr8j"]
 [ext_resource type="Script" uid="uid://dhksy0vksfyqc" path="res://System/Core/WaveSpawner.gd" id="5_spawner"]
 [ext_resource type="PackedScene" uid="uid://dh6gp8m68vbd3" path="res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn" id="6_an7ty"]

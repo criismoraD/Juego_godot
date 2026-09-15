@@ -1,4 +1,4 @@
-﻿extends GutTest
+extends GutTest
 
 ## Test unitario para la física y estabilidad de movimiento del jugador en el interior.
 

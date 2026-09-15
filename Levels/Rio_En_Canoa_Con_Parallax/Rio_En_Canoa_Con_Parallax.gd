@@ -11,6 +11,7 @@ const VELOCIDAD_CANOA_DEFECTO: float = 0.65
 const VELOCIDAD_PARALLAX_DEFECTO: float = 1.0
 const ANCHO_AGUA_AMPLIADO: float = 120.0
 const MUSICA_VIAJE_RIO: int = 7  ## Índice en AudioManager de "Viaje por el rio"
+const MULTIPLICADOR_ACELERACION_DEFECTO: float = 6.0
 
 # === EXPORTS ===
 @export_category("Control de Travesía")
@@ -20,6 +21,11 @@ const MUSICA_VIAJE_RIO: int = 7  ## Índice en AudioManager de "Viaje por el rio
 @export var camara_sigue_canoa: bool = true  ## Si true, la cámara principal sigue el avance de la canoa aliada
 @export var musica_viaje_rio: bool = true  ## Si true, suena "Viaje por el rio" al entrar al nivel
 @export var focos_fijos_a_camara: bool = true  ## Si true, todos los focos LuzCentroPiso*/LuzTorre* acompañan a la cámara en X como un sol fijo mientras la cordillera hace scroll
+
+@export_category("Debug / Testeo de Recorrido")
+@export var permitir_aceleracion_debug: bool = true  ## Si true, permite acelerar el recorrido con la tecla Z para testeo
+@export var multiplicador_aceleracion: float = MULTIPLICADOR_ACELERACION_DEFECTO  ## Multiplicador de velocidad al presionar la tecla Z
+@export var modo_toggle_z: bool = false  ## Si true, la tecla Z conmuta el modo rápido; si false, acelera mientras se mantenga presionada
 
 # === ONREADY ===
 @onready var parallax_fondo: Node3D = find_child("ParallaxFondo", true, false) as Node3D
@@ -35,10 +41,16 @@ var _offset_water_x: float = 0.0675573
 var _focos_fijos: Array[SpotLight3D] = []
 var _offsets_focos_x: Array[float] = []
 var _segmentos_agua: Array[Node3D] = []
+var _acelerando_debug: bool = false
+var _velocidad_canoa_base: float = VELOCIDAD_CANOA_DEFECTO
+var _velocidad_parallax_base: float = VELOCIDAD_PARALLAX_DEFECTO
 
 
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
+	_velocidad_canoa_base = velocidad_canoa
+	_velocidad_parallax_base = velocidad_parallax
+
 	if is_instance_valid(canoa_protagonista):
 		var canoa_x: float = canoa_protagonista.global_position.x
 		if is_instance_valid(camara_principal):
@@ -60,6 +72,10 @@ func _ready() -> void:
 			parallax_fondo.call("_inicializar_capa_casa_boneta")
 		if parallax_fondo.has_method("_inicializar_capa_bosque_rojo"):
 			parallax_fondo.call("_inicializar_capa_bosque_rojo")
+		if parallax_fondo.has_method("_inicializar_capa_niebla"):
+			parallax_fondo.call("_inicializar_capa_niebla")
+		if parallax_fondo.has_method("_inicializar_capa_arbol_cordillera"):
+			parallax_fondo.call("_inicializar_capa_arbol_cordillera")
 		if parallax_fondo.has_method("aplicar_capas_fondo"):
 			parallax_fondo.call("aplicar_capas_fondo")
 
@@ -67,7 +83,23 @@ func _ready() -> void:
 	_inicializar_escenario()
 
 
+func _input(event: InputEvent) -> void:
+	if not permitir_aceleracion_debug or not travesia_activa:
+		return
+
+	if event is InputEventKey and not event.echo:
+		var es_tecla_z: bool = (event.keycode == KEY_Z or event.physical_keycode == KEY_Z)
+		if es_tecla_z:
+			if modo_toggle_z:
+				if event.pressed:
+					set_aceleracion_debug(not _acelerando_debug)
+			else:
+				set_aceleracion_debug(event.pressed)
+
+
 func _process(_delta: float) -> void:
+	_comprobar_liberacion_aceleracion()
+
 	if camara_sigue_canoa and is_instance_valid(canoa_protagonista):
 		var canoa_x: float = canoa_protagonista.global_position.x
 		if is_instance_valid(camara_principal):
@@ -83,6 +115,10 @@ func fijar_velocidad_travesia(nueva_vel_canoa: float, nueva_vel_parallax: float)
 	velocidad_canoa = nueva_vel_canoa
 	velocidad_parallax = nueva_vel_parallax
 
+	if not _acelerando_debug:
+		_velocidad_canoa_base = nueva_vel_canoa
+		_velocidad_parallax_base = nueva_vel_parallax
+
 	if is_instance_valid(canoa_protagonista):
 		canoa_protagonista.set("velocidad_avance", nueva_vel_canoa)
 		if travesia_activa and canoa_protagonista.has_method("iniciar_travesia"):
@@ -95,6 +131,8 @@ func fijar_velocidad_travesia(nueva_vel_canoa: float, nueva_vel_parallax: float)
 ## Pausa o reanuda la travesía del nivel.
 func set_travesia_activa(activo: bool) -> void:
 	travesia_activa = activo
+	if not activo and _acelerando_debug:
+		set_aceleracion_debug(false)
 
 	if is_instance_valid(canoa_protagonista):
 		if activo:
@@ -108,6 +146,34 @@ func set_travesia_activa(activo: bool) -> void:
 
 	if is_instance_valid(parallax_fondo) and parallax_fondo.has_method("set_desplazamiento_activo"):
 		parallax_fondo.call("set_desplazamiento_activo", activo)
+
+
+## Activa o desactiva la aceleración rápida de debug para testear el recorrido del río.
+func set_aceleracion_debug(activa: bool) -> void:
+	if _acelerando_debug == activa:
+		return
+
+	_acelerando_debug = activa
+	var mult: float = multiplicador_aceleracion if _acelerando_debug else 1.0
+	var nueva_canoa: float = _velocidad_canoa_base * mult
+	var nueva_parallax: float = _velocidad_parallax_base * mult
+
+	fijar_velocidad_travesia(nueva_canoa, nueva_parallax)
+
+
+## Indica si la aceleración debug con tecla Z está actualmente activa.
+func esta_acelerando_debug() -> bool:
+	return _acelerando_debug
+
+
+## Retorna la velocidad base de la canoa antes de cualquier aceleración.
+func obtener_velocidad_canoa_base() -> float:
+	return _velocidad_canoa_base
+
+
+## Retorna la velocidad base del parallax antes de cualquier aceleración.
+func obtener_velocidad_parallax_base() -> float:
+	return _velocidad_parallax_base
 
 
 ## Retorna la referencia viva a la canoa de la protagonista.
@@ -150,6 +216,26 @@ func obtener_segmentos_piso_aliado() -> Array[Node3D]:
 	if is_instance_valid(parallax_fondo) and parallax_fondo.has_method("obtener_segmentos_piso_aliado"):
 		return parallax_fondo.call("obtener_segmentos_piso_aliado")
 	return []
+
+
+## Muestra el HUD de vida (en el nivel 1 lo revelan las instrucciones, aquí no existen).
+func mostrar_hud() -> void:
+	_mostrar_hud()
+
+
+func _comprobar_liberacion_aceleracion() -> void:
+	if not _acelerando_debug or modo_toggle_z:
+		return
+	if not (Input.is_key_pressed(KEY_Z) or Input.is_physical_key_pressed(KEY_Z)):
+		set_aceleracion_debug(false)
+
+
+func _mostrar_hud() -> void:
+	if get_tree() == null:
+		return
+	var hud_vida: Node = get_tree().get_first_node_in_group("ui_vida_protagonista")
+	if is_instance_valid(hud_vida) and hud_vida.has_method("mostrar"):
+		hud_vida.call("mostrar")
 
 
 func _inicializar_focos_fijos() -> void:
@@ -210,6 +296,8 @@ func _inicializar_agua() -> void:
 func _inicializar_escenario() -> void:
 	if musica_viaje_rio:
 		AudioManager.play_music(MUSICA_VIAJE_RIO)
+
+	_mostrar_hud()
 
 	if is_instance_valid(canoa_protagonista):
 		canoa_protagonista.set("velocidad_avance", velocidad_canoa)

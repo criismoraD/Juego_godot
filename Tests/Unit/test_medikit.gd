@@ -1,4 +1,4 @@
-﻿extends "res://addons/gut/test.gd"
+extends "res://addons/gut/test.gd"
 
 var MedikitScript = load("res://Entities/Item_Medikit/Medikit.gd")
 var PlayerScript = load("res://Entities/Jugador_Arquera/Player.gd")
