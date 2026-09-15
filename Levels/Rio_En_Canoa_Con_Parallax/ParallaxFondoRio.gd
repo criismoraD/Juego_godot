@@ -84,7 +84,7 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 
 @export_category("Bosque rojo")
 @export var sincronizar_bosque_rojo_con_fondo: bool = true  ## Si true, el BosqueRojo hace scroll parallax detrás de la cordillera
-@export var factor_bosque_rojo: float = 0.28  ## Más lento que la cordillera (0.35): está más lejos
+@export var factor_bosque_rojo: float = 0.15  ## Entre nubes (0.08) y árboles (0.18): es lo más lejano
 @export var ancho_segmento_bosque_rojo: float = 100.0  ## Ancho de cada franja de bosque para el wrap del loop
 
 @export_category("Niebla sutil")

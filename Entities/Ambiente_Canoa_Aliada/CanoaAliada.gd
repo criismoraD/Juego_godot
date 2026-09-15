@@ -18,9 +18,11 @@ signal destino_alcanzado
 
 # === CONSTANTES ===
 const SONIDO_NAVEGACION: AudioStream = preload("res://TEST_/sonido_canoa_por_el_rio.mp3")
-
-# === CONSTANTES ===
 const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase aleatoria
+const OFFSET_INICIO_AUDIO: float = 0.25  ## Salta el silencio inicial de compresión MP3
+const TIEMPO_DISPARO_CROSSFADE: float = 4.8  ## Comienza el crossfade antes del corte o silencio final del clip
+const DURACION_CROSSFADE: float = 1.0  ## Ventana de transición progresiva (equal-power)
+const VOLUMEN_SILENCIO_DB: float = -80.0
 
 # === FLOTACIÓN VERTICAL (Y) ===
 @export_category("Flotación Vertical (Y)")
@@ -64,17 +66,18 @@ const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase al
 # === SONIDO DE NAVEGACIÓN ===
 @export_category("Sonido de Navegación")
 @export var sonido_navegacion_activo: bool = true  ## Si true, suena en loop mientras navega y se detiene en paradas
-@export_range(-20.0, 24.0, 0.5) var volumen_navegacion_db: float = 6.0:  ## Volumen del loop de navegación (realzado para presencia en la mezcla)
+@export_range(-30.0, 12.0, 0.5) var volumen_navegacion_db: float = -3.0:  ## Volumen sutil y natural del loop de navegación (dB)
 	set(v):
 		volumen_navegacion_db = v
-		if is_instance_valid(_audio_navegacion):
-			_audio_navegacion.volume_db = volumen_navegacion_db
+		_actualizar_volumen_voces()
 
 @export_range(0.5, 2.0, 0.05) var pitch_navegacion: float = 1.0:
 	set(v):
 		pitch_navegacion = v
 		if is_instance_valid(_audio_navegacion):
 			_audio_navegacion.pitch_scale = pitch_navegacion
+		if is_instance_valid(_audio_navegacion_b):
+			_audio_navegacion_b.pitch_scale = pitch_navegacion
 
 # === ESTADO PRIVADO ===
 var _tiempo: float = 0.0
@@ -93,6 +96,10 @@ var _x_destino: float = 0.0
 var _velocidad_navegacion: float = 0.0
 var _direccion_navegacion: float = 1.0
 var _audio_navegacion: AudioStreamPlayer = null
+var _audio_navegacion_b: AudioStreamPlayer = null
+var _reloj_audio_voz: float = 0.0
+var _voz_activa: int = 0
+var _en_crossfade: bool = false
 
 
 # === FUNCIONES BUILT-IN ===
@@ -114,7 +121,7 @@ func _process(delta: float) -> void:
 	if _navegando:
 		_actualizar_navegacion(delta)
 
-	_actualizar_sonido_navegacion()
+	_actualizar_sonido_navegacion(delta)
 
 	if not _flotando:
 		return
@@ -194,6 +201,13 @@ func ocultar_y_desactivar() -> void:
 ## Indica si la canoa se está moviendo actualmente.
 func esta_flotando() -> bool:
 	return _flotando
+
+
+## Indica si el sonido de navegación está activo en cualquiera de las voces de audio.
+func esta_reproduciendo_sonido_navegacion() -> bool:
+	return (is_instance_valid(_audio_navegacion) and _audio_navegacion.playing) or \
+		(is_instance_valid(_audio_navegacion_b) and _audio_navegacion_b.playing)
+
 
 
 ## Reinicia el ciclo de flotación desde cero, regenerando las fases aleatorias.
@@ -284,41 +298,132 @@ func _inicializar_sonido_navegacion() -> void:
 	if _audio_navegacion.stream == null and SONIDO_NAVEGACION != null:
 		_audio_navegacion.stream = SONIDO_NAVEGACION
 
-	if _audio_navegacion.stream is AudioStreamMP3:
-		(_audio_navegacion.stream as AudioStreamMP3).loop = true
-	elif _audio_navegacion.stream is AudioStreamOggVorbis:
-		(_audio_navegacion.stream as AudioStreamOggVorbis).loop = true
-	elif _audio_navegacion.stream is AudioStreamWAV:
-		(_audio_navegacion.stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
-
 	_audio_navegacion.volume_db = volumen_navegacion_db
 	_audio_navegacion.pitch_scale = pitch_navegacion
 	_audio_navegacion.bus = "Master"
 
+	# Segunda voz complementaria para crossfade en bucle continuo y transparente (sin saltos ni silencios)
+	if _audio_navegacion_b == null:
+		_audio_navegacion_b = get_node_or_null("SonidoNavegacionB") as AudioStreamPlayer
+	if _audio_navegacion_b == null:
+		_audio_navegacion_b = AudioStreamPlayer.new()
+		_audio_navegacion_b.name = "SonidoNavegacionB"
+		_audio_navegacion_b.stream = _audio_navegacion.stream
+		add_child(_audio_navegacion_b)
+
+	if _audio_navegacion_b.stream == null:
+		_audio_navegacion_b.stream = _audio_navegacion.stream
+
+	_audio_navegacion_b.volume_db = VOLUMEN_SILENCIO_DB
+	_audio_navegacion_b.pitch_scale = pitch_navegacion
+	_audio_navegacion_b.bus = _audio_navegacion.bus
+
 	if not _audio_navegacion.finished.is_connected(_al_terminar_sonido_navegacion):
 		_audio_navegacion.finished.connect(_al_terminar_sonido_navegacion)
+	if not _audio_navegacion_b.finished.is_connected(_al_terminar_sonido_navegacion):
+		_audio_navegacion_b.finished.connect(_al_terminar_sonido_navegacion)
 
-	_actualizar_sonido_navegacion()
+	_actualizar_sonido_navegacion(0.0)
 
 
 func _al_terminar_sonido_navegacion() -> void:
-	if _navegando and sonido_navegacion_activo and is_instance_valid(_audio_navegacion):
-		_audio_navegacion.play()
+	if _navegando and sonido_navegacion_activo:
+		_actualizar_sonido_navegacion(0.0)
 
 
-func _actualizar_sonido_navegacion() -> void:
+func _actualizar_volumen_voces() -> void:
+	if not _en_crossfade:
+		if _voz_activa == 0 and is_instance_valid(_audio_navegacion) and _audio_navegacion.playing:
+			_audio_navegacion.volume_db = volumen_navegacion_db
+		elif _voz_activa == 1 and is_instance_valid(_audio_navegacion_b) and _audio_navegacion_b.playing:
+			_audio_navegacion_b.volume_db = volumen_navegacion_db
+
+
+func _actualizar_sonido_navegacion(delta: float = 0.0) -> void:
 	if not is_instance_valid(_audio_navegacion):
 		return
-	if _navegando and sonido_navegacion_activo:
-		if not _audio_navegacion.playing:
-			_audio_navegacion.play()
-	else:
+
+	if not (_navegando and sonido_navegacion_activo):
 		_detener_sonido_navegacion()
+		return
+
+	# Si ninguna voz está activa, arrancar la voz principal A desde el offset libre de silencio
+	var voz_a_reproduciendo: bool = _audio_navegacion.playing
+	var voz_b_reproduciendo: bool = is_instance_valid(_audio_navegacion_b) and _audio_navegacion_b.playing
+	if not voz_a_reproduciendo and not voz_b_reproduciendo:
+		_voz_activa = 0
+		_reloj_audio_voz = 0.0
+		_en_crossfade = false
+		_audio_navegacion.volume_db = volumen_navegacion_db
+		_audio_navegacion.pitch_scale = pitch_navegacion
+		_audio_navegacion.play(OFFSET_INICIO_AUDIO)
+		if is_instance_valid(_audio_navegacion_b):
+			_audio_navegacion_b.stop()
+			_audio_navegacion_b.volume_db = VOLUMEN_SILENCIO_DB
+		return
+
+	if delta <= 0.0:
+		return
+
+	_reloj_audio_voz += delta
+
+	# Crossfade activo entre voces
+	if _reloj_audio_voz >= TIEMPO_DISPARO_CROSSFADE and _reloj_audio_voz < (TIEMPO_DISPARO_CROSSFADE + DURACION_CROSSFADE):
+		_en_crossfade = true
+		var ratio: float = clampf((_reloj_audio_voz - TIEMPO_DISPARO_CROSSFADE) / DURACION_CROSSFADE, 0.0, 1.0)
+		# Curva equal-power (potencia constante sin caídas de volumen en el centro)
+		var ganancia_in: float = sin(ratio * PI * 0.5)
+		var ganancia_out: float = cos(ratio * PI * 0.5)
+
+		if _voz_activa == 0:
+			if is_instance_valid(_audio_navegacion_b) and not _audio_navegacion_b.playing:
+				_audio_navegacion_b.pitch_scale = pitch_navegacion
+				_audio_navegacion_b.play(OFFSET_INICIO_AUDIO)
+			_audio_navegacion.volume_db = linear_to_db(maxf(ganancia_out, 0.0001)) + volumen_navegacion_db
+			if is_instance_valid(_audio_navegacion_b):
+				_audio_navegacion_b.volume_db = linear_to_db(maxf(ganancia_in, 0.0001)) + volumen_navegacion_db
+		else:
+			if not _audio_navegacion.playing:
+				_audio_navegacion.pitch_scale = pitch_navegacion
+				_audio_navegacion.play(OFFSET_INICIO_AUDIO)
+			if is_instance_valid(_audio_navegacion_b):
+				_audio_navegacion_b.volume_db = linear_to_db(maxf(ganancia_out, 0.0001)) + volumen_navegacion_db
+			_audio_navegacion.volume_db = linear_to_db(maxf(ganancia_in, 0.0001)) + volumen_navegacion_db
+
+	elif _reloj_audio_voz >= (TIEMPO_DISPARO_CROSSFADE + DURACION_CROSSFADE):
+		# Fin del crossfade: alternar la voz primaria
+		_en_crossfade = false
+		if _voz_activa == 0:
+			_voz_activa = 1
+			_audio_navegacion.stop()
+			_audio_navegacion.volume_db = VOLUMEN_SILENCIO_DB
+			if is_instance_valid(_audio_navegacion_b):
+				_audio_navegacion_b.volume_db = volumen_navegacion_db
+			_reloj_audio_voz = DURACION_CROSSFADE
+		else:
+			_voz_activa = 0
+			if is_instance_valid(_audio_navegacion_b):
+				_audio_navegacion_b.stop()
+				_audio_navegacion_b.volume_db = VOLUMEN_SILENCIO_DB
+			_audio_navegacion.volume_db = volumen_navegacion_db
+			_reloj_audio_voz = DURACION_CROSSFADE
+
+	else:
+		_en_crossfade = false
+		if _voz_activa == 0:
+			_audio_navegacion.volume_db = volumen_navegacion_db
+		elif is_instance_valid(_audio_navegacion_b):
+			_audio_navegacion_b.volume_db = volumen_navegacion_db
 
 
 func _detener_sonido_navegacion() -> void:
 	if is_instance_valid(_audio_navegacion) and _audio_navegacion.playing:
 		_audio_navegacion.stop()
+	if is_instance_valid(_audio_navegacion_b) and _audio_navegacion_b.playing:
+		_audio_navegacion_b.stop()
+	_reloj_audio_voz = 0.0
+	_voz_activa = 0
+	_en_crossfade = false
 
 
 func _restaurar_transformada_base() -> void:
