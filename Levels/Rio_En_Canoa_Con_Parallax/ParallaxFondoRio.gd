@@ -17,6 +17,7 @@ const TEX_ATARDECER: Texture2D = preload("res://TEST_/Fondo nivel 6 atardecer.pn
 const TEX_TERROSO: Texture2D = preload("res://TEST_/Fondo terroso nivel 6.png")
 const ESCENA_CORDILLERA: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/PiedraFondoCordillera.tscn")
 const ESCENA_REFLEJO: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/ReflejoCordillera.tscn")
+const SEMIALTURA_PISO_MODELO: float = 0.092  ## Mitad del alto del GLB de piso (1m aprox): cima = pos.y + 0.092 * escala.y
 
 const CANTIDAD_SEGMENTOS: int = 3
 const CANTIDAD_SEGMENTOS_CORDILLERA: int = 12
@@ -93,7 +94,6 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 
 @export_category("Árboles de cordillera")
 @export var sincronizar_arbol_cordillera: bool = true  ## Si true, los ArbolLow(cordillera) se desplazan con la cordillera
-
 @export_category("Renderizado")
 @export var capa_visual: int = 3  ## Capa de renderizado (Fondo = 2, Editor = 1, Ambas = 3)
 
@@ -114,6 +114,7 @@ var _sprites_bosque_rojo: Array[Sprite3D] = []
 var _segmentos_niebla: Array[Node3D] = []
 var _segmentos_casa_boneta: Array[Node3D] = []
 var _segmentos_arbol_cordillera: Array[Node3D] = []
+var _arboles_asentados: bool = false
 var _sprite_fondo_video: Sprite3D = null
 var _video_player: VideoStreamPlayer = null
 
@@ -968,6 +969,13 @@ func _inicializar_capa_arbol_cordillera() -> void:
 		return a.position.x < b.position.x
 	)
 
+	# Asentar los etiquetados sobre el piso más cercano (nunca flotando).
+	# Solo en juego: en el editor se respeta tu colocación manual.
+	if not Engine.is_editor_hint():
+		for arbol in _segmentos_arbol_cordillera:
+			if is_instance_valid(arbol):
+				_asentar_arbol_cercano(arbol)
+
 
 func _recolectar_arboles_cordillera(contenedor: Node) -> void:
 	for hijo in contenedor.get_children():
@@ -991,7 +999,76 @@ func _actualizar_loop_arbol_cordillera(delta: float) -> void:
 		if is_instance_valid(arbol):
 			arbol.position.x -= paso
 
-	_reciclar_fuera_de_vista(_segmentos_arbol_cordillera, ancho_segmento_cordillera)
+	_asegurar_arboles_asentados()
+	_reciclar_arboles_sobre_piso()
+
+
+## Asienta una vez todos los árboles (reintenta hasta lograrlo aunque el init fallara).
+func _asegurar_arboles_asentados() -> void:
+	if _arboles_asentados:
+		return
+	if _segmentos_piso_aliado.is_empty():
+		_inicializar_capa_piso_aliado()
+		if _segmentos_piso_aliado.is_empty():
+			return
+	for arbol in _segmentos_arbol_cordillera:
+		if is_instance_valid(arbol):
+			_asentar_arbol_cercano(arbol)
+	_arboles_asentados = true
+
+
+## Recicla los árboles que salen asentándolos sobre baldosas (nunca flotando).
+func _reciclar_arboles_sobre_piso() -> void:
+	var x_cam: float = _obtener_x_camara()
+	for arbol in _segmentos_arbol_cordillera:
+		if not is_instance_valid(arbol):
+			continue
+		if arbol.global_position.x <= x_cam - margen_reciclaje_atras:
+			_asentar_arbol_delante(arbol, x_cam)
+
+
+## Asienta un árbol sobre la baldosa más cercana a su posición actual.
+func _asentar_arbol_cercano(arbol: Node3D) -> void:
+	var mejor: Node3D = null
+	var mejor_dist: float = INF
+	var a: Vector2 = Vector2(arbol.global_position.x, arbol.global_position.z)
+	for piso in _segmentos_piso_aliado:
+		if not is_instance_valid(piso):
+			continue
+		var p := piso as Node3D
+		var dist: float = a.distance_to(Vector2(p.global_position.x, p.global_position.z))
+		if dist < mejor_dist:
+			mejor_dist = dist
+			mejor = p
+	if mejor != null:
+		arbol.global_position = Vector3(mejor.global_position.x, _y_piso_superior(mejor), mejor.global_position.z)
+
+
+## Asienta un árbol reciclado sobre la baldosa más cercana delante de la cámara.
+func _asentar_arbol_delante(arbol: Node3D, x_cam: float) -> void:
+	var objetivo: float = x_cam + margen_reciclaje_adelante
+	var mejor: Node3D = null
+	var mejor_dist: float = INF
+	for piso in _segmentos_piso_aliado:
+		if not is_instance_valid(piso):
+			continue
+		var p := piso as Node3D
+		if p.global_position.x >= x_cam - 5.0:
+			var dist: float = absf(p.global_position.x - objetivo)
+			if dist < mejor_dist:
+				mejor_dist = dist
+				mejor = p
+	if mejor == null:
+		arbol.global_position.x = objetivo
+		return
+	arbol.global_position = Vector3(mejor.global_position.x, _y_piso_superior(mejor), mejor.global_position.z)
+
+
+## Altura de la cara superior de una baldosa de piso.
+func _y_piso_superior(piso: Node3D) -> float:
+	if not is_instance_valid(piso):
+		return 0.0
+	return piso.global_position.y + SEMIALTURA_PISO_MODELO * absf(piso.global_transform.basis.get_scale().y)
 
 
 func _actualizar_loop_arboles(delta: float) -> void:

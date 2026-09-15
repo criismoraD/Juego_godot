@@ -130,6 +130,10 @@ func _ready():
 		boton_continuar.focus_mode = Control.FOCUS_NONE
 		boton_continuar.pressed.connect(_on_continue_pressed)
 
+	var marco := find_child("Panel", true, false) as Control
+	if marco and not marco.gui_input.is_connected(_on_marco_gui_input):
+		marco.gui_input.connect(_on_marco_gui_input)
+
 	if paginas_texto.size() > 0:
 		_indice_pagina = 0
 		_aplicar_pagina_actual()
@@ -429,8 +433,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Completa al instante el texto si se clickea/toquea fuera de los botones.
-func _completar_con_click(event: InputEvent) -> void:
-	if not avance_rapido_con_click or not _revelando:
+func _completar_con_click(event: InputEvent) -> void:	if not avance_rapido_con_click or not _revelando:
 		return
 	var es_click_izquierdo: bool = event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and (event as InputEventMouseButton).pressed
 	var es_toque: bool = event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed
@@ -438,6 +441,12 @@ func _completar_con_click(event: InputEvent) -> void:
 		return
 	_terminar_revelado()
 	get_viewport().set_input_as_handled()
+
+
+## El marco oscuro consume los clicks (no llegan a _unhandled_input): se atienden aquí.
+## Los botones están por encima y consumen primero, así que no interfieren.
+func _on_marco_gui_input(event: InputEvent) -> void:
+	_completar_con_click(event)
 
 
 func animar_bamboleo_eryntits() -> void:

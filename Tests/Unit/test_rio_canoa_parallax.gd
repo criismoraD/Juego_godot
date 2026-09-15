@@ -1223,3 +1223,88 @@ func test_sonido_canoa_loop_continuo() -> void:
 
 	# Assert
 	assert_true(stream.loop, "El stream MP3 de la canoa debe estar configurado con loop = true")
+
+
+# === TESTS DE ÁRBOLES ASENTADOS SOBRE PISO ===
+func test_arbol_reciclado_cae_sobre_piso() -> void:	# Arrange
+	var parallax: ParallaxFondoRio = SCRIPT_PARALLAX.new() as ParallaxFondoRio
+	add_child_autofree(parallax)
+	var piso := Node3D.new()
+	piso.name = "PisoTest"
+	piso.position = Vector3(50.0, -1.0, -80.0)
+	piso.scale = Vector3(5.75, 7.06, 3.57)
+	parallax.add_child(piso)
+	parallax._segmentos_piso_aliado.append(piso)
+	var arbol := Node3D.new()
+	arbol.name = "ArbolLow(cordillera)"
+	arbol.position = Vector3(-100.0, 5.0, -39.0)
+	parallax.add_child(arbol)
+	parallax._segmentos_arbol_cordillera.append(arbol)
+
+	# Act: sale por la izquierda y se recicla
+	parallax._actualizar_loop_arbol_cordillera(0.0)
+
+	# Assert: sobre la baldosa (nunca flotando)
+	assert_almost_eq(arbol.global_position.x, 50.0, MARGEN_FLOAT, "X sobre la baldosa")
+	assert_almost_eq(arbol.global_position.z, -80.0, MARGEN_FLOAT, "Z sobre la baldosa")
+	assert_almost_eq(arbol.global_position.y, -0.3505, 0.01, "Base sobre la cara superior")
+
+
+func test_arboles_se_asientan_solos_aunque_falle_init() -> void:
+	# Arrange: parallax sin pasar por el init de asentado, con piso disponible
+	var parallax: ParallaxFondoRio = SCRIPT_PARALLAX.new() as ParallaxFondoRio
+	add_child_autofree(parallax)
+	var piso := Node3D.new()
+	piso.name = "PisoTest"
+	piso.position = Vector3(50.0, -1.0, -80.0)
+	piso.scale = Vector3(5.75, 7.06, 3.57)
+	parallax.add_child(piso)
+	parallax._segmentos_piso_aliado.append(piso)
+	var arbol := Node3D.new()
+	arbol.name = "ArbolLow(cordillera)"
+	arbol.position = Vector3(0.0, 5.0, -39.0)
+	parallax.add_child(arbol)
+	parallax._segmentos_arbol_cordillera.append(arbol)
+	assert_false(parallax._arboles_asentados, "Precondición: aún no asentados")
+
+	# Act: un frame del loop (sin init previo de asentado)
+	parallax._actualizar_loop_arbol_cordillera(0.016)
+
+	# Assert: se asientan solos sobre el piso
+	assert_true(parallax._arboles_asentados, "Debe marcarse como asentado")
+	assert_almost_eq(arbol.global_position.x, 50.0, MARGEN_FLOAT, "X sobre la baldosa")
+	assert_almost_eq(arbol.global_position.z, -80.0, MARGEN_FLOAT, "Z sobre la baldosa")
+
+
+# === TESTS DE BANDERA MORADA ===
+func test_bandera_morada_textura_y_shader_asignados() -> void:
+	# Arrange
+	var packed := load("res://Levels/Rio_En_Canoa_Con_Parallax/BanderaMorada.tscn") as PackedScene
+	assert_not_null(packed, "La escena BanderaMorada.tscn debe cargar correctamente")
+	var bandera := packed.instantiate() as Sprite3D
+	add_child_autofree(bandera)
+
+	# Assert
+	assert_not_null(bandera.texture, "BanderaMorada debe tener textura asignada")
+	assert_eq(bandera.texture.resource_path, "res://TEST_/bandera morada.png", "La textura debe ser bandera morada.png")
+	assert_not_null(bandera.material_override, "BanderaMorada debe tener material_override")
+	assert_true(bandera.material_override is ShaderMaterial, "material_override debe ser ShaderMaterial")
+	var mat := bandera.material_override as ShaderMaterial
+	assert_not_null(mat.get_shader_parameter("albedo_texture"), "albedo_texture del shader NO debe ser null para evitar que se vea blanca")
+	assert_eq(mat.get_shader_parameter("albedo_texture").resource_path, "res://TEST_/bandera morada.png")
+
+
+func test_bandera_morada_escena_instanciable() -> void:
+	# Arrange
+	var packed := load("res://Levels/Rio_En_Canoa_Con_Parallax/BanderaMorada.tscn") as PackedScene
+	assert_not_null(packed, "La escena empaquetada BanderaMorada.tscn debe existir")
+
+	# Act
+	var bandera := packed.instantiate() as Sprite3D
+	add_child_autofree(bandera)
+
+	# Assert
+	assert_not_null(bandera.texture, "Debe poseer la textura de bandera morada por defecto")
+	assert_not_null(bandera.material_override, "Debe tener configurado su material de ondeado")
+	var mat := bandera.material_override as ShaderMaterial
+	assert_not_null(mat.get_shader_parameter("albedo_texture"), "albedo_texture debe estar preconfigurada")

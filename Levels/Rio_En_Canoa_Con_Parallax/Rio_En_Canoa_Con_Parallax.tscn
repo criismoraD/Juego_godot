@@ -45,6 +45,18 @@
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/NieblaSutil.tscn" id="44_niebla"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/ArbolLowPoly.tscn" id="45_lowpoly"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Fuego2D.tscn" id="46_fuego"]
+[ext_resource type="Texture2D" uid="uid://uvcwmwspohbx" path="res://TEST_/bandera morada.png" id="47_morada"]
+[ext_resource type="Shader" path="res://System/Shaders/bandera_colgante.gdshader" id="48_morada_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaMorada"]
+render_priority = 0
+shader = ExtResource("48_morada_shader")
+shader_parameter/albedo_texture = ExtResource("47_morada")
+shader_parameter/tint_color = Color(1, 1, 1, 1)
+shader_parameter/wind_speed = 1.8
+shader_parameter/wind_strength = 0.06
+shader_parameter/flutter_speed = 3.6
+shader_parameter/flutter_strength = 0.02
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaA"]
 render_priority = 0
@@ -485,6 +497,14 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0, -0.3, -12.0)
 
 [node name="Fuego2D" parent="." unique_id=2026999153 instance=ExtResource("46_fuego")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.5, -7)
+
+[node name="BanderaMorada" type="Sprite3D" parent="." unique_id=2026999154]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.0, 2.0, -9.0)
+layers = 2
+pixel_size = 0.005
+double_sided = true
+material_override = SubResource("ShaderMaterial_banderaMorada")
+texture = ExtResource("47_morada")
 
 
 

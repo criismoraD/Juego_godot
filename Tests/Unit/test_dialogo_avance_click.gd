@@ -130,3 +130,27 @@ func test_flag_apagado_ignora_click() -> void:
 	# Assert
 	assert_true(dialogo._revelando, "Con el flag apagado el revelado continúa")
 	assert_eq(dialogo.dialogo_label.visible_characters, 0, "Con el flag apagado el texto no se completa")
+
+
+# === MARCO OSCURO ===
+func test_marco_conectado_al_gui_input() -> void:
+	# Arrange & Act
+	var dialogo := await _crear_dialogo()
+
+	# Assert: el Panel consume clicks y los deriva al avance rápido
+	var marco := dialogo.find_child("Panel", true, false) as Control
+	assert_not_null(marco, "Debe existir el marco Panel")
+	assert_true(marco.gui_input.is_connected(Callable(dialogo, "_on_marco_gui_input")), "El marco debe derivar clicks")
+
+
+func test_click_en_marco_completa_texto() -> void:
+	# Arrange
+	var dialogo := await _crear_dialogo()
+	var total: int = _poner_en_revelado(dialogo)
+
+	# Act: click que llega vía gui_input del marco (el Panel lo consume antes)
+	dialogo._on_marco_gui_input(_crear_click_izquierdo())
+
+	# Assert
+	assert_false(dialogo._revelando, "El revelado debe terminar")
+	assert_eq(dialogo.dialogo_label.visible_characters, total, "El texto debe completarse")

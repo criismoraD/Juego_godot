@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://cx6g8moradab1"]
+
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/BanderaMorada.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://uvcwmwspohbx" path="res://TEST_/bandera morada.png" id="2_tex"]
+[ext_resource type="Shader" uid="uid://ba7y6l2aci0ng" path="res://System/Shaders/bandera_colgante.gdshader" id="3_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaMorada"]
+render_priority = 0
+shader = ExtResource("3_shader")
+shader_parameter/albedo_texture = ExtResource("2_tex")
+shader_parameter/tint_color = Color(1, 1, 1, 1)
+shader_parameter/wind_speed = 1.8
+shader_parameter/wind_strength = 0.06
+shader_parameter/flutter_speed = 3.6
+shader_parameter/flutter_strength = 0.02
+
+[node name="BanderaMorada" type="Sprite3D"]
+layers = 2
+material_override = SubResource("ShaderMaterial_banderaMorada")
+pixel_size = 0.005
+double_sided = true
+texture = ExtResource("2_tex")
+script = ExtResource("1_script")
