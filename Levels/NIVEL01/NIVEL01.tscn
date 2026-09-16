@@ -61,7 +61,7 @@
 [ext_resource type="Texture2D" uid="uid://dabgoeh5m5d7n" path="res://TEST_/puerta 2d.png" id="67_puerta"]
 [ext_resource type="Texture2D" uid="uid://byf5br88xbovy" path="res://TEST_/puerta recortada.png" id="68_puerta_rec"]
 [ext_resource type="Texture2D" uid="uid://cso1gbk0o4lhn" path="res://TEST_/Mandoble 2D.png" id="69_mandoble"]
-[ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblin/GoblinBallesteroCadaver.tscn" id="70_cadaver_goblin"]
+[ext_resource type="PackedScene" uid="uid://co37jc8pvo6pm" path="res://Entities/Enemigo_Goblin/GoblinBallesteroCadaver.tscn" id="70_cadaver_goblin"]
 [ext_resource type="PackedScene" uid="uid://cp4o213v54nyq" path="res://System/Ambiente/TrayectoriaEmbarcaciones.tscn" id="71_trayectoria_embarcaciones"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Enrredadera/EnrredaderaClasica.tscn" id="72_enredadera"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]

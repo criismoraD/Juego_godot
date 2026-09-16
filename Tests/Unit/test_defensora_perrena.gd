@@ -643,3 +643,60 @@ func test_hacha_perrena_no_se_traba_con_barreras_limite() -> void:
 
 
 
+
+
+# === TESTS DE OBJETIVO LIBERADO (DEFENSIVA ANTI-CRASH) ===
+func test_lanzar_hacha_con_objetivo_liberado_no_rompe() -> void:
+	# Arrange: defensora lista y un blanco que muere antes del lanzamiento	
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena	
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3.ZERO	
+	var blanco := Node3D.new()
+	_root_test.add_child(blanco)
+	blanco.free()  # Simula enemigo liberado entre adquisicion y disparo	
+	assert_false(is_instance_valid(blanco), "Precondici�n: el blanco debe estar liberado")
+	var hachas_antes: int = 0	
+	for n in _root_test.get_children():
+		if n is HachaPerrenaProjectile:
+			hachas_antes += 1	
+		# Act: con el parametro antes tipado esto rompia en el binding	
+	defensora._lanzar_hacha_hacia_objetivo(blanco)	
+		# Assert: lanza igual (tiro de fallback hacia adelante) sin errores	
+	var hachas_despues: int = 0	
+	for n in _root_test.get_children():
+		if n is HachaPerrenaProjectile:
+			hachas_despues += 1	
+	assert_eq(hachas_despues, hachas_antes + 1, "Debe generar el hacha aunque el blanco este liberado")
+func test_proceso_atacando_reapunta_si_objetivo_muere() -> void:
+	# Arrange: a mitad de animacion con objetivo muerto + otro vivo al alcance	
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena	
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3.ZERO	
+	var muerto := Node3D.new()	
+	_root_test.add_child(muerto)
+	muerto.free()	
+	var vivo := Node3D.new()	
+	vivo.name = "GoblinVivo"
+	vivo.add_to_group("enemies")
+	vivo.global_position = Vector3(5.0, 0.0, 0.0)
+	_root_test.add_child(vivo)
+	defensora._objetivo_actual = muerto	
+	defensora._hacha_arrojada_en_ciclo = false	
+	defensora._tiempo_en_estado = 0.35	
+		# Act	
+	defensora._proceso_atacando(0.016)	
+		# Assert: revalido al vivo y disparo	
+	assert_true(defensora._hacha_arrojada_en_ciclo, "Debe completar el ciclo de lanzamiento")
+	assert_eq(defensora._objetivo_actual, vivo, "Debe reapuntar al enemigo vivo")
+func test_initialize_hacha_con_objetivo_liberado_no_rompe() -> void:
+	# Arrange	
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile	
+	_root_test.add_child(hacha)	
+	var blanco := Node3D.new()	
+	_root_test.add_child(blanco)	
+	blanco.free()	
+		# Act	
+	hacha.initialize(Vector3.RIGHT, 1.0, hacha, false, blanco)	
+		# Assert: lo guarda sin romper; el homing lo filtra con is_instance_valid	
+	assert_false(is_instance_valid(hacha.objetivo_fijado), "El objetivo fijado debe seguir invalido")
+

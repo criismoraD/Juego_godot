@@ -11,12 +11,10 @@ radius = 0.1328125
 height = 0.4682129
 
 [node name="ImpEnemyEstandarte" type="CharacterBody3D" unique_id=396466542]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
+transform = Transform3D(2.1, 0, 0, 0, 2.1, 0, 0, 0, 2.1, 0, 0, 0)
 collision_layer = 4
 script = ExtResource("1_script")
 intervalo_disparo_arco = 0.1
-velocidad_flecha_arco_min = 15.0
-velocidad_flecha_arco_max = 22.0
 multiplicador_cadencia_arco = 1.5
 escala_proyectil_estandarte = 2.0
 escala_gravedad_caida = 0.4
@@ -31,7 +29,7 @@ particulas_detener_emision = 0.5
 [node name="ImpModel" parent="." unique_id=1077982534 instance=ExtResource("2_model")]
 transform = Transform3D(1.9670125e-08, 0, -0.45, 0, 0.45, 0, -0.45, 0, -1.9670125e-08, 0, 0, 0)
 
-[node name="Skeleton3D" parent="ImpModel/Armature" parent_id_path=PackedInt32Array(1077982534, 549751310) index="0" unique_id=1092276912]
+[node name="Skeleton3D" parent="ImpModel/Armature" parent_id_path=PackedInt32Array(1077982534, 947465845) index="0" unique_id=614533223]
 bones/0/position = Vector3(0.829525, -0.6966571, -30.999323)
 bones/0/rotation = Quaternion(-0.47004282, -0.5673288, 0.53404415, 0.41472256)
 bones/1/rotation = Quaternion(0.006432363, 0.008815246, 0.006930739, 0.9999165)
@@ -101,7 +99,7 @@ bones/53/rotation = Quaternion(-0.45188177, -0.1010428, -0.106704235, 0.87989056
 bones/54/rotation = Quaternion(0.6678873, 0.08560992, 0.0016953647, 0.7393204)
 bones/55/rotation = Quaternion(0.29263857, 0.1685618, -0.050213404, 0.9399086)
 
-[node name="IMP_ESTANDARTE_001" parent="ImpModel/Armature/Skeleton3D" index="0" unique_id=1737972388]
+[node name="IMP_ESTANDARTE_001" parent="ImpModel/Armature/Skeleton3D" index="0" unique_id=749559809]
 transform = Transform3D(1, -8.7422784e-08, -8.742278e-08, 8.7422784e-08, 1, 0, 8.742278e-08, -7.642743e-15, 1, 0, 0, 0)
 
 [node name="BoneAttachment3D" type="BoneAttachment3D" parent="ImpModel/Armature/Skeleton3D" index="1" unique_id=1168374536]

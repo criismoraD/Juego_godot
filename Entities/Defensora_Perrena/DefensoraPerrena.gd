@@ -632,6 +632,14 @@ func _proceso_atacando(_delta: float) -> void:
 		_hacha_arrojada_en_ciclo = true
 		if hacha_mano:
 			hacha_mano.visible = false
+		# El objetivo pudo morir/liberarse desde que se adquirió: revalidar
+		if not is_instance_valid(_objetivo_actual):
+			_objetivo_actual = _buscar_mejor_objetivo(false)
+		if not is_instance_valid(_objetivo_actual):
+			# Sin blancos válidos: abortar el ciclo sin contar ataque
+			_tiempo_para_proximo_ataque = 0.5
+			_cambiar_estado(State.IDLE)
+			return
 		_lanzar_hacha_hacia_objetivo(_objetivo_actual)
 		contador_ataques += 1
 		ataque_lanzado.emit(contador_ataques)
@@ -710,7 +718,10 @@ func _lanzar_hacha_especial() -> void:
 	hacha.initialize(dir, 1.0, self, true, target)
 
 
-func _lanzar_hacha_hacia_objetivo(target: Node) -> void:
+## NOTA: `target` va sin tipar a propósito. Puede ser una referencia a un
+## enemigo ya liberado (muere entre la adquisición y el lanzamiento) y un
+## parámetro tipado `Node` rompería en el binding antes del guard de abajo.
+func _lanzar_hacha_hacia_objetivo(target) -> void:
 	var root := get_tree().current_scene if get_tree().current_scene else get_tree().root
 	if not root:
 		return

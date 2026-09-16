@@ -17,11 +17,11 @@ script = ExtResource("1_script")
 transform = Transform3D(2.0424726, 0, 0, 0, 1.9994787, 0, 0, 0, 1.782749, 0, 0.005566733, 0)
 
 [node name="Protagonista" parent="." unique_id=2026998502 instance=ExtResource("4_player")]
-transform = Transform3D(0.178, 0, 0, 0, 0.178, 0, 0, 0, 0.178, 0.31096578, 0.1553143, 0)
+transform = Transform3D(0.188, 0, 0, 0, 0.188, 0, 0, 0, 0.188, 0.31096578, 0.1553143, 0)
 plano_profundidad_z = -7.5
 
 [node name="Acompanante" parent="." unique_id=2026998503 instance=ExtResource("3_tripulante")]
-transform = Transform3D(0.17, 0, 0, 0, 0.17, 0, 0, 0, 0.17, -0.7550017, 0.21778524, 0.10152596)
+transform = Transform3D(0.18, 0, 0, 0, 0.18, 0, 0, 0, 0.18, -0.7550017, 0.21778524, 0.10152596)
 esta_sentada = true
 
 [node name="SueloCanoa" type="StaticBody3D" parent="." unique_id=2026998504]

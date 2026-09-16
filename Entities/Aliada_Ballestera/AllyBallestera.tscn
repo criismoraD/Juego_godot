@@ -8,6 +8,7 @@
 size = Vector3(0.4567871, 1.9733582, 5.9940186)
 
 [node name="AllyBallestera" type="Node3D" unique_id=718293019]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 0, 0, 0)
 script = ExtResource("1_script")
 velocidad_virote = 20.0
 angulo_pitch_max = 30.0
@@ -20,7 +21,7 @@ velocidad_giro_victoria = 1.0
 [node name="BallesteraModel" parent="." unique_id=928371028 instance=ExtResource("2_glb")]
 transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
 
-[node name="Skeleton3D" parent="BallesteraModel/Armature" parent_id_path=PackedInt32Array(928371028, 1923823803) index="0" unique_id=702564445]
+[node name="Skeleton3D" parent="BallesteraModel/Armature" parent_id_path=PackedInt32Array(928371028, 1074472788) index="0" unique_id=1114912071]
 bones/0/position = Vector3(0.27836737, 0.38700032, -50.88987)
 bones/0/rotation = Quaternion(0.9555925, -0.28014544, 0.009702785, 0.0909249)
 bones/1/rotation = Quaternion(0.044221357, -0.5528876, 0.83124185, 0.037373293)

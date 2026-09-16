@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cajyovci7qunw" path="res://Entities/Enemigo_Arquera_Rosa/ArqueraRosa.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://d3fyi28xp1rlq" path="res://Entities/Enemigo_Goblin_Girl/GEO_GOBLIN_GIRL.fbx" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="3_bow"]
-[ext_resource type="PackedScene" uid="uid://b1vrosaarrow7q" path="res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.tscn" id="4_arrow"]
+[ext_resource type="PackedScene" uid="uid://cwnmxfh0bnsua" path="res://Entities/Proyectil_Flecha_Arquera_Rosa/RosaArrow.tscn" id="4_arrow"]
 [ext_resource type="PackedScene" uid="uid://cocrrn7wicpsd" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn" id="5_aura"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_arquera_rosa"]
@@ -11,10 +11,9 @@ radius = 0.18
 height = 0.65
 
 [node name="ArqueraRosa" type="CharacterBody3D" unique_id=1271437514]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
 collision_layer = 4
 script = ExtResource("1_script")
-potencia_disparo_min = 1.0
-potencia_disparo_max = 1.8
 velocidad_caminar = 0.7
 distancia_minima_caminar = 1.2
 distancia_maxima_caminar = 4.5
@@ -28,7 +27,7 @@ light_color = Color(1, 0.298039, 0.74902, 1)
 [node name="GOBLING_GIRL" parent="." unique_id=1820795102 instance=ExtResource("2_model")]
 transform = Transform3D(-2.8412401e-08, 0, -0.65, 0, 0.65, 0, 0.65, 0, -2.8412401e-08, 0, 0, 0)
 
-[node name="Skeleton3D" parent="GOBLING_GIRL/Armature" parent_id_path=PackedInt32Array(1820795102, 1459110170) index="0" unique_id=1617552455]
+[node name="Skeleton3D" parent="GOBLING_GIRL/Armature" parent_id_path=PackedInt32Array(1820795102, 1384912888) index="0" unique_id=1460984265]
 bones/0/position = Vector3(-0.009932179, 0.5193747, -0.0053768996)
 bones/0/rotation = Quaternion(0.026197832, 0.7752353, 0.019284794, -0.6308344)
 bones/1/position = Vector3(0, 0.03169947, -0.0030554575)

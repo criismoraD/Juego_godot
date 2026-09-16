@@ -68,6 +68,7 @@ func test_emergencia_trayectoria_y_aterrizaje() -> void:
 	assert_almost_eq(azulina.global_position.y, destino.y, MARGEN_FLOAT, "Aterriza en Y")
 	assert_almost_eq(azulina.global_position.z, destino.z, MARGEN_FLOAT, "Cae hacia el fondo")
 	_limpiar_lanzas()
+	_limpiar_salpicaduras()
 
 
 # === SALTO ACUÁTICO: ÁPICE (1), CAÍDA (2) Y REMATE ===
@@ -85,6 +86,7 @@ func test_apice_por_encima_de_origen_y_caida() -> void:
 	assert_gt(apice.y, destino.y, "El ápice debe estar sobre el punto de caída")
 	assert_gt(apice.y, azulina.global_position.y, "El ápice debe estar sobre el punto de spawn en el agua")
 	assert_almost_eq(apice.y, destino.y + 0.75, MARGEN_FLOAT, "Ápice = punto medio + altura del arco")
+	_limpiar_salpicaduras()
 
 
 func test_aterrizaje_dispara_lanza_de_inmediato() -> void:
@@ -103,6 +105,7 @@ func test_aterrizaje_dispara_lanza_de_inmediato() -> void:
 	# Assert: al caer (punto 2) pasa a SHOOTING y arranca el ataque sin pausa previa
 	assert_eq(azulina.current_state, azulina.State.SHOOTING, "Al aterrizar entra en SHOOTING")
 	assert_true(azulina._lanzando, "Al aterrizar inicia el ataque de lanza de inmediato")
+	_limpiar_salpicaduras()
 
 
 func test_sin_disparo_al_aterrizar_si_desactivado() -> void:
@@ -121,6 +124,7 @@ func test_sin_disparo_al_aterrizar_si_desactivado() -> void:
 	# Assert: retoma la marcha sin atacar
 	assert_eq(azulina.current_state, azulina.State.WALKING, "Sin remate sigue caminando")
 	assert_false(azulina._lanzando, "Sin remate no ataca al aterrizar")
+	_limpiar_salpicaduras()
 
 
 
@@ -248,6 +252,20 @@ func _limpiar_lanzas() -> void:
 			(n as Node).queue_free()
 
 
+func _contar_salpicaduras() -> int:
+	var conteo: int = 0
+	for n in get_tree().root.get_children():
+		if n is SalpicaduraAzulina and not (n as Node).is_queued_for_deletion():
+			conteo += 1
+	return conteo
+
+
+func _limpiar_salpicaduras() -> void:
+	for n in get_tree().root.get_children():
+		if n is SalpicaduraAzulina:
+			(n as Node).queue_free()
+
+
 func test_disparo_a_mitad_de_emergencia() -> void:
 	# Arrange
 	var azulina := _crear_azulina()
@@ -271,6 +289,7 @@ func test_disparo_a_mitad_de_emergencia() -> void:
 		azulina._procesar_emergencia(0.1)
 		t += 0.1
 	_limpiar_lanzas()
+	_limpiar_salpicaduras()
 
 
 func test_squash_estira_aplastay_recupera() -> void:
@@ -305,6 +324,63 @@ func test_squash_estira_aplastay_recupera() -> void:
 	assert_almost_eq(azulina._modelo.scale.y, base, MARGEN_FLOAT, "Recupera la altura base")
 	assert_almost_eq(azulina._modelo.scale.x, base, MARGEN_FLOAT, "Recupera el ancho base")
 	_limpiar_lanzas()
+	_limpiar_salpicaduras()
+
+
+# === SALPICADURA AL EMERGER ===
+func test_salpicadura_estructura_como_fuego() -> void:
+	# Arrange & Act
+	var sal := preload("res://Entities/Enemigo_Azulina/SalpicaduraAzulina.tscn").instantiate() as SalpicaduraAzulina
+	add_child_autofree(sal)
+
+	# Assert: AnimatedSprite3D con tira de 13 cuadros a 12 FPS, sin bucle (un impacto)
+	assert_true(sal is AnimatedSprite3D, "La salpicadura es un AnimatedSprite3D")
+	assert_eq(sal.billboard, BaseMaterial3D.BILLBOARD_ENABLED, "Billboard para verse siempre de frente")
+	assert_false(sal.shaded, "Sin sombras para emitir luz propia como el fuego")
+	assert_not_null(sal.sprite_frames, "Debe generar sus SpriteFrames")
+	assert_true(sal.sprite_frames.has_animation(&"default"), "Debe tener animación default")
+	assert_eq(sal.sprite_frames.get_frame_count(&"default"), 13, "13 cuadros de la tira")
+	assert_almost_eq(sal.sprite_frames.get_animation_speed(&"default"), 12.0, MARGEN_FLOAT, "12 FPS")
+	assert_false(sal.sprite_frames.get_animation_loop(&"default"), "Un solo impacto, sin bucle")
+	sal.queue_free()
+
+
+func test_emerger_genera_salpicadura_en_origen() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.salpicadura_al_emerger = true
+	_limpiar_salpicaduras()
+	var destino := Vector3(2.0, 0.5, 0.0)
+
+	# Act
+	azulina.emerger_en(destino)
+
+	# Assert: una salpicadura justo donde rompe el agua
+	assert_eq(_contar_salpicaduras(), 1, "Emerger genera su splash")
+	var sal: SalpicaduraAzulina = null
+	for n in get_tree().root.get_children():
+		if n is SalpicaduraAzulina and not (n as Node).is_queued_for_deletion():
+			sal = n
+			break
+	assert_not_null(sal, "Debe existir la salpicadura")
+	assert_lt((sal.global_position - azulina.global_position).length(), 0.01, "El splash nace donde rompe el agua")
+	_limpiar_salpicaduras()
+
+
+func test_sin_salpicadura_si_desactivada() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.salpicadura_al_emerger = false
+	_limpiar_salpicaduras()
+
+	# Act
+	azulina.emerger_en(Vector3(2.0, 0.5, 0.0))
+
+	# Assert
+	assert_eq(_contar_salpicaduras(), 0, "Sin flag no hay splash")
+	_limpiar_salpicaduras()
 
 
 # === MUERTE ALEATORIA E IDLE ===

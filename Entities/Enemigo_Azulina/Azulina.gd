@@ -9,6 +9,7 @@ extends EnemyBase
 signal emergencia_completada
 
 const ESCENA_LANZA: PackedScene = preload("res://Entities/Proyectil_Lanza_Azulina/LanzaAzulinaProjectile.tscn")
+const ESCENA_SALPICADURA: PackedScene = preload("res://Entities/Enemigo_Azulina/SalpicaduraAzulina.tscn")
 const MATERIAL_AZULINA: Material = preload("res://Entities/Enemigo_Azulina/Azulina_MAT.tres")
 const MATERIAL_LANZA: Material = preload("res://Entities/Enemigo_Azulina/LanzaAzulina_MAT.tres")
 const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el GLB (salto de emergencia)
@@ -21,6 +22,9 @@ const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el 
 @export var deriva_fondo_z: float = 1.0  ## Metros hacia la cámara desde donde nace (cae hacia el fondo)
 @export var altura_salto: float = 2.0  ## Altura máxima del arco de emergencia sobre la recta origen→caída
 @export var duracion_emergencia: float = 1.4  ## Segundos del salto
+
+@export_category("Salpicadura al emerger")
+@export var salpicadura_al_emerger: bool = true  ## Si true, genera el splash donde rompe el agua al emerger
 
 @export_category("Remate al aterrizar")
 @export var disparar_al_aterrizar: bool = true  ## Si true, al caer al terreno pasa a SHOOTING y lanza de inmediato
@@ -124,6 +128,7 @@ func emerger_en(destino: Vector3) -> void:
 	_lanzo_en_emergencia = false
 	_memoria_squash = 0.0
 	velocity = Vector3.ZERO
+	_spawnear_salpicadura()
 	_play_animation(ANIM_SALTO_AGUA)
 
 
@@ -132,6 +137,23 @@ func elegir_animacion_muerte() -> String:
 	if animaciones_muerte.is_empty():
 		return "Muerte 1"
 	return animaciones_muerte[randi() % animaciones_muerte.size()]
+
+
+## Genera el splash donde rompe el agua al emerger (igual que Fuego2D es
+## la versión productiva de su escena de pruebas).
+func _spawnear_salpicadura() -> void:
+	if not salpicadura_al_emerger:
+		return
+	if not is_inside_tree() or get_tree() == null:
+		return
+	var sal := ESCENA_SALPICADURA.instantiate() as SalpicaduraAzulina
+	if sal == null:
+		return
+	var raiz: Node = get_tree().current_scene
+	if raiz == null:
+		raiz = get_tree().root
+	raiz.add_child(sal)
+	sal.disparar_impacto(_origen_emergencia, false)
 
 
 ## Punto más alto del salto: mitad del recorrido + altura del arco.

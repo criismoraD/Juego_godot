@@ -53,6 +53,7 @@ material = SubResource("Mat_polvo")
 size = Vector2(0.65, 0.65)
 
 [node name="GuardianaMoradita" type="CharacterBody3D" unique_id=1555641251]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
 collision_layer = 4
 script = ExtResource("1_script")
 
@@ -63,7 +64,7 @@ shape = SubResource("CapsuleShape3D_body")
 [node name="Modelo" parent="." unique_id=1735846083 instance=ExtResource("2_glb")]
 transform = Transform3D(-3.40949e-08, 0, -0.78, 0, 0.78, 0, 0.78, 0, -3.40949e-08, 0, 0, 0)
 
-[node name="Skeleton3D" parent="Modelo/Armature" parent_id_path=PackedInt32Array(1735846083, 796679820) index="0" unique_id=1132627363]
+[node name="Skeleton3D" parent="Modelo/Armature" parent_id_path=PackedInt32Array(1735846083, 1590951036) index="0" unique_id=1802257595]
 bones/0/position = Vector3(-0.17784548, 0.19601941, -46.340485)
 bones/0/rotation = Quaternion(-0.6031069, -0.26539683, 0.33302408, 0.6744787)
 bones/1/rotation = Quaternion(0.34994653, 0.43942255, 0.8125995, -0.15533012)

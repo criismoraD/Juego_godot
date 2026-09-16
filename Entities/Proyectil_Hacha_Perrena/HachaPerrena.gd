@@ -69,12 +69,15 @@ func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 
 
+## NOTA: `p_objetivo` va sin tipar a propósito: puede llegar ya liberado
+## (el blanco muere antes del impacto) y un `Node` tipado rompería en el
+## binding; el guard de homing con is_instance_valid lo filtra.
 func initialize(
 	direccion_disparo: Vector3,
 	potencia: float = 1.0,
 	p_tirador: Node = null,
 	p_es_especial: bool = false,
-	p_objetivo: Node = null
+	p_objetivo = null
 ) -> void:
 	tirador = p_tirador
 	es_hacha_especial = p_es_especial
