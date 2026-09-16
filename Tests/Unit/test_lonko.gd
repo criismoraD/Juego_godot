@@ -371,6 +371,106 @@ func test_lonko_cancelar_recuperacion_ult_en_dano() -> void:
 	await get_tree().process_frame
 
 
+func test_lonko_muerte_cae_por_fisica_solo_suelo() -> void:
+	# Arrange: Lonko en lo alto del pilar
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+	lonko._base_pos_pilar = Vector3(2.0, 0.2, 0.45)
+	lonko.global_position = Vector3(2.0, 0.2 + lonko.altura_pilar_offset, 0.45)
+
+	# Act: daño letal
+	lonko.take_damage(999.0)
+	await get_tree().process_frame
+
+	# Assert: física activa, solo suelo, anim de muerte en curso
+	assert_eq(lonko.current_state, Lonko.State.DYING, "Debe entrar en DYING")
+	assert_eq(lonko.collision_layer, 0, "Sin capa hostil al morir")
+	assert_eq(lonko.collision_mask, 1, "Solo debe colisionar con el suelo")
+	assert_true(lonko.is_physics_processing(), "La física debe seguir activa para caer")
+	assert_true(lonko._cayendo_por_destruccion_pilar, "Debe marcar caída por física")
+	assert_eq(lonko.velocity.y, 0.0, "Empieza sin impulso vertical: cae por gravedad")
+	assert_false(lonko._ha_tocado_suelo_muerte, "Aún no debe haber tocado suelo en el aire")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_muerte_suelta_pilar_y_toca_suelo() -> void:
+	# Arrange: pilar vinculado presente y Lonko casi en el suelo
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+	lonko._base_pos_pilar = Vector3(2.0, 0.2, 0.45)
+	var pilar_fake := Node3D.new()
+	pilar_fake.name = "PilarLonko"
+	var pilar_body := StaticBody3D.new()
+	pilar_body.name = "PilarBody"
+	pilar_body.collision_layer = 2
+	pilar_body.collision_mask = 0
+	pilar_fake.add_child(pilar_body)
+	scene_root.add_child(pilar_fake)
+	lonko._instancia_pilar = pilar_fake
+
+	# Act: soltar el pilar al morir
+	lonko._hundir_y_disolver_pilar()
+
+	# Assert: pilar desvinculado y sin colisiones (no arrastra al cuerpo)
+	assert_null(lonko._instancia_pilar, "El pilar debe desvincularse al morir")
+	assert_eq(pilar_body.collision_layer, 0, "El pilar no debe bloquear al caer")
+	assert_eq(pilar_body.collision_mask, 0, "El pilar no debe colisionar con nada")
+
+	# Act: daño letal y contacto con suelo
+	lonko.take_damage(999.0)
+	await get_tree().process_frame
+	lonko.global_position.y = 0.2 + 0.01
+	lonko._process_dying(0.016)
+
+	# Assert: registra el impacto sin revertir la física
+	assert_true(lonko._ha_tocado_suelo_muerte, "Debe registrar el contacto con el suelo")
+	assert_eq(lonko.collision_mask, 1, "Debe seguir colisionando solo con el suelo")
+	assert_true(lonko.is_physics_processing(), "La física debe seguir activa en el suelo")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
+func test_lonko_muerte_explosiva_sutil_y_solo_muerte_01() -> void:
+	# Arrange: Lonko sobre el pilar marcada por flecha explosiva desde la derecha
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+	lonko._base_pos_pilar = Vector3(2.0, 0.2, 0.45)
+	lonko.global_position = Vector3(2.0, 0.2 + lonko.altura_pilar_offset, 0.45)
+	lonko.murio_por_explosion = true
+	lonko.last_hit_position = lonko.global_position + Vector3(1.0, 0.0, 0.0)
+
+	# Act: daño letal
+	lonko.take_damage(999.0)
+	await get_tree().process_frame
+
+	# Assert: impulso sutil en vez de salir volando
+	assert_eq(lonko.current_state, Lonko.State.DYING, "Debe entrar en DYING")
+	assert_false(lonko.murio_por_explosion, "La bandera debe limpiarse tras aplicar el impulso")
+	assert_gte(absf(lonko.velocity.x), Lonko.IMPULSO_EXPLOSIVO_X_MIN - 0.05, "Empujón lateral mínimo sutil")
+	assert_lte(absf(lonko.velocity.x), Lonko.IMPULSO_EXPLOSIVO_X_MAX + 0.05, "Empujón lateral máximo sutil")
+	assert_gte(lonko.velocity.y, Lonko.IMPULSO_EXPLOSIVO_Y_MIN - 0.05, "Saltito vertical mínimo")
+	assert_lte(lonko.velocity.y, Lonko.IMPULSO_EXPLOSIVO_Y_MAX + 0.05, "Saltito vertical máximo")
+
+	# Assert: dirección opuesta al impacto (golpe desde la derecha empuja a la izquierda)
+	assert_lt(lonko.velocity.x, 0.0, "El impacto desde la derecha debe empujar hacia la izquierda")
+
+	# Assert: muerte explosiva siempre con MUERTE_01
+	if lonko.anim_player:
+		assert_true(
+			"MUERTE_01" in lonko.anim_player.current_animation,
+			"Muerte explosiva debe usar MUERTE_01, fue: %s" % lonko.anim_player.current_animation
+		)
+
+	lonko.queue_free()
+	await get_tree().process_frame
+
+
 func test_disparo_normal_alcanza_al_jugador_a_distancia() -> void:
 	# Arrange: Lonko real y una flecha como la de su mano.
 	var lonko := LONKO_SCENE.instantiate() as Lonko

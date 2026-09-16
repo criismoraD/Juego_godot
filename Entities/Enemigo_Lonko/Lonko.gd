@@ -21,6 +21,10 @@ const YAW_BASE_IZQUIERDA: float = -90.0  ## Mirando a la izquierda (jugadora)
 const YAW_HACIA_FONDO: float = 180.0  ## Mirando al fondo durante la invocación del pilar
 const BLEND_ANIMACIONES: float = 0.2  ## Transición suave entre clips (evita el micro salto/parpadeo)
 const DURACION_ESPEJO_SG: float = 0.15  ## Duración del volteo suave de escala al entrar/salir del IDLE
+const IMPULSO_EXPLOSIVO_X_MIN: float = 0.8  ## Empujón lateral sutil al morir por explosión sobre el pilar
+const IMPULSO_EXPLOSIVO_X_MAX: float = 1.3
+const IMPULSO_EXPLOSIVO_Y_MIN: float = 1.0  ## Saltito corto: despega del pilar y cae al suelo cercano
+const IMPULSO_EXPLOSIVO_Y_MAX: float = 1.6
 
 ## Humo de pisadas: spritesheet SmokeFX Lite 1A-1 (tira horizontal 9x1 de 64px)
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
@@ -1816,9 +1820,15 @@ func _on_state_dying() -> void:
 	_hundir_y_disolver_pilar()
 	_drop_power_up()
 
-	# Desactivar colisiones hostiles e ignorar el pilar por completo
+	# Base primero (sangre/VFX), y DESPUÉS la config física de Lonko.
+	# Orden inverso la pisaba: EnemyBase desactiva física y pone mask=0,
+	# lo que dejaba el cuerpo flotando atado al tween del pilar.
+	super._on_state_dying()
+
+	# Caída física al suelo con la animación de muerte en curso:
+	# sin capa hostil, solo colisiona con el suelo e ignora el pilar.
 	collision_layer = 0
-	collision_mask = 1  # Solo colisiona con el suelo
+	collision_mask = 1
 
 	if _instancia_pilar and is_instance_valid(_instancia_pilar):
 		if _instancia_pilar is CollisionObject3D:
@@ -1828,19 +1838,22 @@ func _on_state_dying() -> void:
 				add_collision_exception_with(child)
 
 	set_physics_process(true)
-	super._on_state_dying()
 
 	if anim_player:
 		anim_player.playback_default_blend_time = BLEND_ANIMACIONES
 
-	# Reproducir SIEMPRE animación de muerte de inmediato
-	var rand_death: String = "MUERTE_01" if randf() < 0.5 else "MUERTE_02"
-	_play_animation(rand_death, 0.15, 1.0)
+	# Animación de muerte: la explosiva sobre el pilar siempre usa MUERTE_01
+	# (la 02 abre demasiado el cuerpo y se ve mal en la caída corta al suelo).
+	var anim_muerte: String = "MUERTE_01"
+	if not murio_por_explosion:
+		anim_muerte = "MUERTE_01" if randf() < 0.5 else "MUERTE_02"
+	_play_animation(anim_muerte, 0.15, 1.0)
 
 	_ha_tocado_suelo_muerte = false
 	_cayendo_por_destruccion_pilar = true
 
-	# Impulso explosivo si murió por explosión (similar a Goblin Girl)
+	# Impulso sutil si murió por explosión: despega del pilar y cae al suelo
+	# cercano en vez de salir volando lejos (similar a Goblin Girl, reducido).
 	if murio_por_explosion:
 		_lanzar_arco_explosivo()
 		murio_por_explosion = false
@@ -1849,8 +1862,8 @@ func _on_state_dying() -> void:
 			var dx: float = global_position.x - last_hit_position.x
 			if absf(dx) > 0.05:
 				push_dir = signf(dx)
-		velocity.x = push_dir * randf_range(2.0, 3.2)
-		velocity.y = randf_range(2.5, 3.8)
+		velocity.x = push_dir * randf_range(IMPULSO_EXPLOSIVO_X_MIN, IMPULSO_EXPLOSIVO_X_MAX)
+		velocity.y = randf_range(IMPULSO_EXPLOSIVO_Y_MIN, IMPULSO_EXPLOSIVO_Y_MAX)
 		velocity.z = 0.0
 	elif _pilar_fue_destruido_primero:
 		velocity = Vector3(randf_range(0.8, 1.4), 1.8, 0.0)
@@ -2246,10 +2259,9 @@ func _hundir_y_disolver_pilar() -> void:
 			pilar_to_destroy.queue_free()
 	)
 
-	# Caída de la Lonko al suelo
-	var tween_lonko := create_tween()
-	tween_lonko.tween_property(self, "global_position:y", ground_y, duracion_hundir) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# El cuerpo de Lonko NO se hunde con el pilar: cae por física (gravedad de
+	# EnemyBase._physics_process + move_and_slide) con la animación de muerte
+	# en curso y collision_mask=1 (solo suelo). Sin tween en Y.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
