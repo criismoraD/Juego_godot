@@ -2,22 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d23g71f5ks8mx"
-path.s3tc="res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.s3tc.ctex"
-path.etc2="res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.etc2.ctex"
+uid="uid://chltbxct8jomq"
+path="res://.godot/imported/splash.png-0bac5a41b3d32b043a13cba914922526.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://TEST_/Azulina/Azulina_D.jpg"
-dest_files=["res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.s3tc.ctex", "res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.etc2.ctex"]
+source_file="res://TEST_/splash.png"
+dest_files=["res://.godot/imported/splash.png-0bac5a41b3d32b043a13cba914922526.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -25,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -39,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

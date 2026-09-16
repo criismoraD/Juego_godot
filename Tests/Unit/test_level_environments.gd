@@ -1,7 +1,7 @@
 extends GutTest
 
 const SCENE_NIVEL01: String = "res://Levels/NIVEL01/NIVEL01.tscn"
-const SCENE_RIO: String = "res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.tscn"
+const SCENE_RIO: String = "res://Levels/Rio en canoa con paralax.tscn"
 const SCENE_TUTORIAL: String = "res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.tscn"
 const SCENE_ASALTO: String = "res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn"
 

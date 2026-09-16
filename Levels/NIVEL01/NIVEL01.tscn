@@ -63,6 +63,7 @@
 [ext_resource type="Texture2D" uid="uid://cso1gbk0o4lhn" path="res://TEST_/Mandoble 2D.png" id="69_mandoble"]
 [ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblin/GoblinBallesteroCadaver.tscn" id="70_cadaver_goblin"]
 [ext_resource type="PackedScene" uid="uid://cp4o213v54nyq" path="res://System/Ambiente/TrayectoriaEmbarcaciones.tscn" id="71_trayectoria_embarcaciones"]
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_Enrredadera/EnrredaderaClasica.tscn" id="72_enredadera"]
 [ext_resource type="Script" uid="uid://b2sja6x1bvy7e" path="res://Levels/NIVEL01/NIVEL01.gd" id="Script_Level01"]
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_frente"]
@@ -968,7 +969,7 @@ layers = 2
 texture = ExtResource("61_carretaA")
 
 [node name="CarretaA2" type="Sprite3D" parent="." unique_id=922990415]
-transform = Transform3D(0.26288572, 0, 0, 0, 0.22413635, 0, 0, 0, 1.0579704, -8.10577, 0.32580853, -4.1445627)
+transform = Transform3D(0.26288572, 0, 0, 0, 0.22413635, 0, 0, 0, 1.0579704, -8.10577, 0.32580853, -4.622015)
 layers = 2
 texture = ExtResource("61_carretaA")
 
@@ -1005,7 +1006,7 @@ flip_h = true
 texture = ExtResource("59_barricadaC")
 
 [node name="Enrredadera" parent="." unique_id=1948201889 instance=ExtResource("46_enrredadera")]
-transform = Transform3D(0.5244295, -0.09918412, -0.09260402, 0.08495165, 0.61229044, -0.015000804, 0.06275718, 0, 0.7941503, -8.0155735, 0.9974483, -5.0429506)
+transform = Transform3D(0.037580453, -0.61871797, -0.0066359728, 0.5299347, 0.043876544, -0.093576126, 0.06275718, 1.1404798e-09, 0.7941503, -8.365451, 1.9327494, -5.0429506)
 layers = 2
 
 [node name="PUERTA_TRIGER" type="Area3D" parent="." unique_id=1633856024]
@@ -1023,6 +1024,9 @@ transform = Transform3D(0.030259425, 0, -1.777069, 0, 1.8436748, 0, 1.3535084, 0
 
 [node name="CascoOxidado2" parent="." unique_id=996348724 instance=ExtResource("64_casco")]
 transform = Transform3D(0.176191, 0.06539871, -0.16184175, -0.053394802, 0.22050126, 0.046766996, 0.16913226, 0.0014837682, 0.1833605, -4.676608, 0.17896314, 1.0030396)
+
+[node name="CascoOxidado3" parent="." unique_id=1804696214 instance=ExtResource("64_casco")]
+transform = Transform3D(0.22555935, 0.06147845, -0.08426343, -0.0533948, 0.22050126, 0.046766993, 0.0936588, -0.02235158, 0.22959422, -7.6864967, 0.17896314, -3.4772873)
 
 [node name="PecheraMetalica" parent="." unique_id=192837468 instance=ExtResource("65_pechera")]
 transform = Transform3D(0.41612652, 0.11858257, -0.15494941, -0.0008256695, 0.23145613, 0.74674, 0.14392701, -0.34152204, 0.45227906, -2.7501125, 0.022549553, 0.76418537)
@@ -1070,6 +1074,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.2, 0.4126004)
 
 [node name="GoblinBallesteroCadaver2" parent="." unique_id=433895711 instance=ExtResource("70_cadaver_goblin")]
 transform = Transform3D(0.091842264, 0, 0.99577355, 0, 1, 0, -0.99577355, 0, 0.091842264, 5.6517224, 0.24184366, -1.5195154)
+
+[node name="EnredaderaTorre" parent="." unique_id=2026999167 instance=ExtResource("72_enredadera")]
+transform = Transform3D(0.5608661, -0.17595366, 0, 0.21409826, 0.46093985, 0, 0, 0, 1, -8.103903, 1.1181004, -5.3653374)
+layers = 2
 
 [editable path="SubViewportFondo3D/BUSTO_BRONCE2"]
 [editable path="SubViewportFondo3D/BUSTO_BRONCE3"]

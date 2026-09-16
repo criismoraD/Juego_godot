@@ -20,7 +20,7 @@ distancia_minima_caminar = 0.8
 [node name="GOBLING_GIRL" parent="." unique_id=1820795102 instance=ExtResource("2_model")]
 transform = Transform3D(-2.8412401e-08, 0, -0.65, 0, 0.65, 0, 0.65, 0, -2.8412401e-08, 0, 0, 0)
 
-[node name="Skeleton3D" parent="GOBLING_GIRL/Armature" parent_id_path=PackedInt32Array(1820795102, 1459110170) index="0" unique_id=1617552455]
+[node name="Skeleton3D" parent="GOBLING_GIRL/Armature" parent_id_path=PackedInt32Array(1820795102, 1384912888) index="0" unique_id=1460984265]
 bones/0/position = Vector3(-0.009932179, 0.5193747, -0.0053768996)
 bones/0/rotation = Quaternion(0.026197832, 0.7752353, 0.019284794, -0.6308344)
 bones/1/position = Vector3(0, 0.03169947, -0.0030554575)

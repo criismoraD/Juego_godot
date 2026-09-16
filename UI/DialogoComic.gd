@@ -433,7 +433,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Completa al instante el texto si se clickea/toquea fuera de los botones.
-func _completar_con_click(event: InputEvent) -> void:	if not avance_rapido_con_click or not _revelando:
+func _completar_con_click(event: InputEvent) -> void:
+	if not avance_rapido_con_click or not _revelando:
 		return
 	var es_click_izquierdo: bool = event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and (event as InputEventMouseButton).pressed
 	var es_toque: bool = event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed
@@ -718,6 +719,3 @@ func _aplicar_respiracion_bucle(factor: float) -> void:
 
 func _exit_tree() -> void:
 	_detener_bucle_respiracion()
-
-
-

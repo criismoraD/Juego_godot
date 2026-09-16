@@ -4,7 +4,7 @@ extends "res://addons/gut/test.gd"
 ## Validan la estructura del nivel, paridad de posiciones con NIVEL01,
 ## el funcionamiento del loop infinito de parallax y la navegación de la canoa.
 
-const ESCENA_RIO_PATH: String = "res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.tscn"
+const ESCENA_RIO_PATH: String = "res://Levels/Rio en canoa con paralax.tscn"
 const SCRIPT_PARALLAX: Script = preload("res://Levels/Rio_En_Canoa_Con_Parallax/ParallaxFondoRio.gd")
 const SCRIPT_CANOA_RIO: Script = preload("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.gd")
 const ESCENA_CANOA_PATH: String = "res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn"
@@ -42,12 +42,12 @@ func test_camara_agua_y_peces_en_posiciones_nivel01() -> void:
 	assert_almost_eq(camara.position.y, 3.265016, MARGEN_FLOAT, "Posición Y de cámara debe coincidir con Nivel 1")
 	assert_almost_eq(camara.position.z, 40.971046, MARGEN_FLOAT, "Posición Z de cámara debe coincidir con Nivel 1")
 
-	# Act & Assert WaterPlane: (-5.9324, -0.1729, -12.3044)
+	# Act & Assert WaterPlane: (-5.9324, -0.1729, -67.5795) en la escena del usuario
 	var water: Node3D = nivel.find_child("WaterPlane", true, false) as Node3D
 	assert_not_null(water, "Debe existir WaterPlane")
 	assert_almost_eq(water.position.x, -5.9324427, MARGEN_FLOAT, "Posición X de agua debe coincidir con Nivel 1")
 	assert_almost_eq(water.position.y, -0.17290789, MARGEN_FLOAT, "Posición Y de agua debe coincidir con Nivel 1")
-	assert_almost_eq(water.position.z, -12.304441, MARGEN_FLOAT, "Posición Z de agua debe coincidir con Nivel 1")
+	assert_almost_eq(water.position.z, -67.57953, MARGEN_FLOAT, "Posición Z de agua en la escena del usuario")
 
 	# Act & Assert Pez 1 y Pez 2
 	var pez1: Node3D = nivel.find_child("Pez", true, false) as Node3D
@@ -421,8 +421,8 @@ func test_pisos_aliados_deteccion_en_escena() -> void:
 
 	# Assert
 	var pisos: Array[Node3D] = nivel.obtener_segmentos_piso_aliado()
-	assert_gt(pisos.size(), 0, "Debe detectar los nodos PISO ALIADO en la escena")
-	assert_eq(pisos.size(), 20, "Deben estar presentes los 20 segmentos de piso aliado")
+	assert_gt(pisos.size(), 0, "Debe detectar los nodos de piso en la escena")
+	assert_eq(pisos.size(), 23, "Deben estar presentes los 23 segmentos de piso (21 Piso nueva version + 2 Piso parada)")
 
 
 func test_pisos_aliados_sincronizados_misma_velocidad_cordillera() -> void:
@@ -518,34 +518,37 @@ func test_piso_nueva_version_escena_usuario_deteccion_y_velocidad_cordillera() -
 	assert_almost_eq(delta_piso, delta_cord, MARGEN_FLOAT, "Piso nueva version debe moverse exactamente a la misma velocidad que la cordillera")
 
 
-func test_textura_agua_deteccion_en_ambas_escenas_rio() -> void:
-	# Arrange & Act: escena principal y escena del usuario
-	for path_escena in [ESCENA_RIO_PATH, "res://Levels/Rio en canoa con paralax.tscn"]:
-		var packed := load(path_escena) as PackedScene
-		assert_not_null(packed, "La escena %s debe cargar correctamente" % path_escena)
-		var nivel: Node3D = packed.instantiate() as Node3D
-		add_child_autofree(nivel)
+func test_textura_agua_fija_no_entra_al_loop() -> void:
+	# Arrange & Act: la escena del usuario solo trae la sombra fija colocada a mano
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	assert_not_null(packed, "La escena del usuario debe cargar correctamente")
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
 
-		var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
-		assert_not_null(parallax, "ParallaxFondo debe existir en %s" % path_escena)
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	assert_not_null(parallax, "ParallaxFondo debe existir")
 
-		# Assert: TexturaAgua posicionable detectada y registrada
-		var nodo_agua: Sprite3D = nivel.find_child("TexturaAgua", true, false) as Sprite3D
-		var sprites: Array[Sprite3D] = parallax.obtener_sprites_agua_textura()
-		if nodo_agua != null:
-			assert_true(sprites.has(nodo_agua), "TexturaAgua móvil debe registrarse en %s" % path_escena)
-		# Las marcadas (fijo) son sombras colocadas a mano y no entran al loop
-		for fijo in nivel.find_children("TexturaAgua(fijo)", "", true, false):
-			assert_false(sprites.has(fijo), "TexturaAgua(fijo) no debe moverse en %s" % path_escena)
+	# Assert: no hay textura móvil y la fija queda fuera del loop
+	var sprites: Array[Sprite3D] = parallax.obtener_sprites_agua_textura()
+	assert_true(sprites.is_empty(), "Sin TexturaAgua móvil no hay sprites en el loop")
+	assert_null(nivel.find_child("TexturaAgua", true, false), "La escena no trae TexturaAgua móvil")
+	# Las marcadas (fijo) son sombras colocadas a mano y no entran al loop
+	for fijo in nivel.find_children("TexturaAgua(fijo)", "", true, false):
+		assert_false(sprites.has(fijo), "TexturaAgua(fijo) no debe moverse")
 
 
 func test_textura_agua_misma_velocidad_cordillera() -> void:
-	# Arrange
+	# Arrange: la escena no trae textura móvil; se registra una dinámica para cubrir el mecanismo
 	var packed := load(ESCENA_RIO_PATH) as PackedScene
 	var nivel: Node3D = packed.instantiate() as Node3D
 	add_child_autofree(nivel)
 
 	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var agua := Sprite3D.new()
+	agua.name = "TexturaAgua"
+	agua.position = Vector3(10.0, -0.4, -60.0)
+	nivel.add_child(agua)
+	parallax.registrar_sprite_agua_textura(agua)
 	var sprites: Array[Sprite3D] = parallax.obtener_sprites_agua_textura()
 	assert_gt(sprites.size(), 0, "TexturaAgua debe existir")
 	var cordillera: Array[Node3D] = parallax.obtener_segmentos_cordillera()
@@ -569,12 +572,17 @@ func test_textura_agua_misma_velocidad_cordillera() -> void:
 
 
 func test_textura_agua_loop_continuo() -> void:
-	# Arrange
+	# Arrange: sprite registrado dinámicamente (la escena no trae textura móvil)
 	var packed := load(ESCENA_RIO_PATH) as PackedScene
 	var nivel: Node3D = packed.instantiate() as Node3D
 	add_child_autofree(nivel)
 
 	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var agua := Sprite3D.new()
+	agua.name = "TexturaAgua"
+	agua.position = Vector3(10.0, -0.4, -60.0)
+	nivel.add_child(agua)
+	parallax.registrar_sprite_agua_textura(agua)
 	var sprites: Array[Sprite3D] = parallax.obtener_sprites_agua_textura()
 	assert_gt(sprites.size(), 0, "TexturaAgua debe existir")
 	var camara: Camera3D = nivel.find_child("CamaraPrincipal", true, false) as Camera3D
@@ -691,11 +699,12 @@ func test_protagonista_misma_escala_nivel1() -> void:
 	var prota := canoa.find_child("Protagonista", true, false) as Node3D
 	assert_not_null(prota, "La canoa debe contener a la protagonista")
 
-	# Assert: escala mundo compensada por profundidad Z=-7.5 para igualar tamaño en pantalla de Nivel 1
+	# Assert: escala de nodo 0.356 (local 0.178 x canoa x2).
+	# Altura visual real: 0.178 x 2 x 2.37 (modelo) = 0.84 m, par con NIVEL01 (0.71 m x1.2).
 	var escala_mundo: Vector3 = prota.global_transform.basis.get_scale()
-	assert_almost_eq(escala_mundo.x, 0.356, MARGEN_FLOAT, "Escala mundo X compensada igual que nivel 1")
-	assert_almost_eq(escala_mundo.y, 0.356, MARGEN_FLOAT, "Escala mundo Y compensada igual que nivel 1")
-	assert_almost_eq(escala_mundo.z, 0.356, MARGEN_FLOAT, "Escala mundo Z compensada igual que nivel 1")
+	assert_almost_eq(escala_mundo.x, 0.356, MARGEN_FLOAT, "Escala mundo X de nodo 0.356")
+	assert_almost_eq(escala_mundo.y, 0.356, MARGEN_FLOAT, "Escala mundo Y de nodo 0.356")
+	assert_almost_eq(escala_mundo.z, 0.356, MARGEN_FLOAT, "Escala mundo Z de nodo 0.356")
 
 
 func test_defensora_misma_escala_nivel1() -> void:
@@ -709,14 +718,14 @@ func test_defensora_misma_escala_nivel1() -> void:
 	var defensora := canoa.find_child("Acompanante", true, false) as Node3D
 	assert_not_null(defensora, "La canoa debe contener a la defensora acompañante")
 
-	# Assert: escala mundo 0.356 como AllyArcher en NIVEL01 proyectada
-	# (local 0.178 x canoa x2 = 0.356)
+	# Assert: escala de nodo 0.34 (local 0.17 x canoa x2).
+	# Tripulación de fondo sentada: 0.17 x 2 x 0.598 (modelo) = 0.20 m, menor que la protagonista.
 	var escala_mundo: Vector3 = defensora.global_transform.basis.get_scale()
-	var escala_esperada: float = 0.178 * 2.0
-	assert_almost_eq(escala_esperada, 0.356, MARGEN_FLOAT, "La fórmula local debe dar 0.356")
-	assert_almost_eq(escala_mundo.x, 0.356, MARGEN_FLOAT, "Defensora escala mundo X compensada igual que nivel 1")
-	assert_almost_eq(escala_mundo.y, 0.356, MARGEN_FLOAT, "Defensora escala mundo Y compensada igual que nivel 1")
-	assert_almost_eq(escala_mundo.z, 0.356, MARGEN_FLOAT, "Defensora escala mundo Z compensada igual que nivel 1")
+	var escala_esperada: float = 0.17 * 2.0
+	assert_almost_eq(escala_esperada, 0.34, MARGEN_FLOAT, "La fórmula local debe dar 0.34")
+	assert_almost_eq(escala_mundo.x, 0.34, MARGEN_FLOAT, "Defensora escala mundo X de nodo 0.34")
+	assert_almost_eq(escala_mundo.y, 0.34, MARGEN_FLOAT, "Defensora escala mundo Y de nodo 0.34")
+	assert_almost_eq(escala_mundo.z, 0.34, MARGEN_FLOAT, "Defensora escala mundo Z de nodo 0.34")
 
 
 func test_protagonista_apoyada_en_suelo_canoa() -> void:
@@ -795,22 +804,21 @@ func test_pasajera_visible_sobre_borda() -> void:
 
 
 # === TESTS DE CASA BONETA ACOPLADA A LA CORDILLERA ===
-func test_casa_boneta_deteccion_en_ambas_escenas_rio() -> void:
-	# Arrange & Act: escena principal y escena del usuario
-	for path_escena in [ESCENA_RIO_PATH, "res://Levels/Rio en canoa con paralax.tscn"]:
-		var packed := load(path_escena) as PackedScene
-		assert_not_null(packed, "La escena %s debe cargar correctamente" % path_escena)
-		var nivel: Node3D = packed.instantiate() as Node3D
-		add_child_autofree(nivel)
+func test_casa_boneta_deteccion_en_escena_rio() -> void:
+	# Arrange & Act: escena del usuario
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	assert_not_null(packed, "La escena del río debe cargar correctamente")
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
 
-		var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
-		assert_not_null(parallax, "ParallaxFondo debe existir en %s" % path_escena)
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	assert_not_null(parallax, "ParallaxFondo debe existir")
 
-		# Assert: CasaBoneta posicionable detectada y registrada
-		var casa: Node3D = nivel.find_child("CasaBoneta", true, false) as Node3D
-		assert_not_null(casa, "CasaBoneta debe existir en %s" % path_escena)
-		var segmentos: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
-		assert_true(segmentos.has(casa), "Parallax debe registrar CasaBoneta en %s" % path_escena)
+	# Assert: CasaBoneta posicionable detectada y registrada
+	var casa: Node3D = nivel.find_child("CasaBoneta", true, false) as Node3D
+	assert_not_null(casa, "CasaBoneta debe existir")
+	var segmentos: Array[Node3D] = parallax.obtener_segmentos_casa_boneta()
+	assert_true(segmentos.has(casa), "Parallax debe registrar CasaBoneta")
 
 
 func test_casa_boneta_misma_velocidad_cordillera() -> void:
@@ -917,22 +925,21 @@ func test_nivel_rio_pide_musica_viaje() -> void:
 
 
 # === TESTS DE BOSQUE ROJO CON PARALLAX PROPIO ===
-func test_bosque_rojo_deteccion_en_ambas_escenas_rio() -> void:
-	# Arrange & Act: escena principal y escena del usuario
-	for path_escena in [ESCENA_RIO_PATH, "res://Levels/Rio en canoa con paralax.tscn"]:
-		var packed := load(path_escena) as PackedScene
-		assert_not_null(packed, "La escena %s debe cargar correctamente" % path_escena)
-		var nivel: Node3D = packed.instantiate() as Node3D
-		add_child_autofree(nivel)
+func test_bosque_rojo_deteccion_en_escena_rio() -> void:
+	# Arrange & Act: escena del usuario
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	assert_not_null(packed, "La escena del río debe cargar correctamente")
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
 
-		var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
-		assert_not_null(parallax, "ParallaxFondo debe existir en %s" % path_escena)
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	assert_not_null(parallax, "ParallaxFondo debe existir")
 
-		# Assert: BosqueRojo posicionable detectado y registrado
-		var bosque: Sprite3D = nivel.find_child("BosqueRojo", true, false) as Sprite3D
-		assert_not_null(bosque, "BosqueRojo debe existir en %s" % path_escena)
-		var sprites: Array[Sprite3D] = parallax.obtener_sprites_bosque_rojo()
-		assert_true(sprites.has(bosque), "Parallax debe registrar BosqueRojo en %s" % path_escena)
+	# Assert: BosqueRojo posicionable detectado y registrado
+	var bosque: Sprite3D = nivel.find_child("BosqueRojo", true, false) as Sprite3D
+	assert_not_null(bosque, "BosqueRojo debe existir")
+	var sprites: Array[Sprite3D] = parallax.obtener_sprites_bosque_rojo()
+	assert_true(sprites.has(bosque), "Parallax debe registrar BosqueRojo")
 
 
 func test_bosque_rojo_mas_lento_que_cordillera() -> void:

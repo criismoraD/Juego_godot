@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d23g71f5ks8mx"
-path.s3tc="res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.s3tc.ctex"
-path.etc2="res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.etc2.ctex"
+uid="uid://mikj8hq6uysi"
+path.s3tc="res://.godot/imported/Lanza Azulina_D.jpg-cef11b2939b7af2c6459eb1939c17154.s3tc.ctex"
+path.etc2="res://.godot/imported/Lanza Azulina_D.jpg-cef11b2939b7af2c6459eb1939c17154.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://TEST_/Azulina/Azulina_D.jpg"
-dest_files=["res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.s3tc.ctex", "res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.etc2.ctex"]
+source_file="res://TEST_/Lanza Azulina/Lanza Azulina_D.jpg"
+dest_files=["res://.godot/imported/Lanza Azulina_D.jpg-cef11b2939b7af2c6459eb1939c17154.s3tc.ctex", "res://.godot/imported/Lanza Azulina_D.jpg-cef11b2939b7af2c6459eb1939c17154.etc2.ctex"]
 
 [params]
 

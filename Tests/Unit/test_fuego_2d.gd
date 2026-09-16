@@ -6,7 +6,6 @@ extends "res://addons/gut/test.gd"
 const FUEGO_SCENE_PATH: String = "res://Levels/Rio_En_Canoa_Con_Parallax/Fuego2D.tscn"
 const BRACERO_SCENE_PATH: String = "res://Levels/Rio_En_Canoa_Con_Parallax/BraceroPilar.tscn"
 const RIO_ESCENA_USUARIO_PATH: String = "res://Levels/Rio en canoa con paralax.tscn"
-const RIO_ESCENA_CANONICA_PATH: String = "res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.tscn"
 const Fuego2DScript: Script = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Fuego2D.gd")
 const BraceroPilarScript: Script = preload("res://Levels/Rio_En_Canoa_Con_Parallax/BraceroPilar.gd")
 const MARGEN_FLOAT: float = 0.01
@@ -118,23 +117,15 @@ func test_difuminado_propiedad_y_shader() -> void:
 	assert_false(bool(fuego.call("tiene_difuminado_activo")), "tiene_difuminado_activo debe ser false")
 
 
-func test_presencia_en_escenas_nivel_rio() -> void:
-	# Arrange & Act: Comprobar que ambas escenas del río contienen un nodo independiente 'Fuego2D'
+func test_presencia_en_escena_nivel_rio() -> void:
+	# Arrange & Act: Comprobar que la escena del río contiene nodos independientes 'Fuego2D'
 	var packed_usuario := load(RIO_ESCENA_USUARIO_PATH) as PackedScene
-	assert_not_null(packed_usuario, "La escena de usuario del río debe cargar")
+	assert_not_null(packed_usuario, "La escena del río debe cargar")
 	var escena_usuario: Node = packed_usuario.instantiate()
 	add_child_autofree(escena_usuario)
 
 	var fuego_usuario: Node = escena_usuario.find_child("Fuego2D", true, false)
-	assert_not_null(fuego_usuario, "La escena de usuario 'Rio en canoa con paralax' debe contener un nodo Fuego2D en el árbol")
-
-	var packed_canon := load(RIO_ESCENA_CANONICA_PATH) as PackedScene
-	assert_not_null(packed_canon, "La escena canónica del río debe cargar")
-	var escena_canon: Node = packed_canon.instantiate()
-	add_child_autofree(escena_canon)
-
-	var fuego_canon: Node = escena_canon.find_child("Fuego2D", true, false)
-	assert_not_null(fuego_canon, "La escena canónica debe contener un nodo Fuego2D en el árbol")
+	assert_not_null(fuego_usuario, "La escena 'Rio en canoa con paralax' debe contener un nodo Fuego2D en el árbol")
 
 
 func test_bracero_pilar_soporta_fuego_manual() -> void:

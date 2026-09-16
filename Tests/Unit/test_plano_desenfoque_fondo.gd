@@ -8,7 +8,6 @@ extends "res://addons/gut/test.gd"
 
 const SCENE_PLANO_DESENFOQUE: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/PlanoDesenfoqueFondo.tscn")
 const SCENE_RIO_USUARIO: String = "res://Levels/Rio en canoa con paralax.tscn"
-const SCENE_RIO_TEST: String = "res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.tscn"
 const SHADER_DESENFOQUE: Shader = preload("res://System/Shaders/desenfoque_fondo_plano.gdshader")
 
 
@@ -111,18 +110,6 @@ func test_presencia_y_posicion_en_escena_usuario() -> void:
 	assert_not_null(canoa)
 	assert_lt(plano.position.z, canoa.position.z, "El plano de desenfoque debe estar DETRÁS de la canoa")
 	assert_gt(plano.position.z, -105.0, "El plano de desenfoque debe estar DELANTE del fondo más lejano")
-
-
-func test_presencia_en_escena_test() -> void:
-	# Arrange & Act: Comprobar la escena hermana 'Rio_En_Canoa_Con_Parallax.tscn'
-	var packed := load(SCENE_RIO_TEST) as PackedScene
-	assert_not_null(packed)
-	var nivel: Node3D = packed.instantiate() as Node3D
-	assert_not_null(nivel)
-	add_child_autofree(nivel)
-
-	var plano: PlanoDesenfoqueFondo = nivel.find_child("PlanoDesenfoqueFondo", true, false) as PlanoDesenfoqueFondo
-	assert_not_null(plano, "PlanoDesenfoqueFondo debe existir en Rio_En_Canoa_Con_Parallax.tscn")
 
 
 func test_planos_desenfoque_no_invaden_primer_plano() -> void:

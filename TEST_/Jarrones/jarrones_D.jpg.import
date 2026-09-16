@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d23g71f5ks8mx"
-path.s3tc="res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.s3tc.ctex"
-path.etc2="res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.etc2.ctex"
+uid="uid://dwhncrxgnnra4"
+path.s3tc="res://.godot/imported/jarrones_D.jpg-03ba6140417a008e207c3b82f29779e7.s3tc.ctex"
+path.etc2="res://.godot/imported/jarrones_D.jpg-03ba6140417a008e207c3b82f29779e7.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://TEST_/Azulina/Azulina_D.jpg"
-dest_files=["res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.s3tc.ctex", "res://.godot/imported/Azulina_D.jpg-e80f213f7c24d5da211eaa834216ab6b.etc2.ctex"]
+source_file="res://TEST_/Jarrones/jarrones_D.jpg"
+dest_files=["res://.godot/imported/jarrones_D.jpg-03ba6140417a008e207c3b82f29779e7.s3tc.ctex", "res://.godot/imported/jarrones_D.jpg-03ba6140417a008e207c3b82f29779e7.etc2.ctex"]
 
 [params]
 
