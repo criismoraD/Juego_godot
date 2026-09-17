@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/Enemigo_Azulina/SalpicaduraAgua.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://TEST_/Salpicadura_agua/salpicadura_agua_alineada.png" id="2_tira"]
+
+[node name="SalpicaduraAgua" type="AnimatedSprite3D"]
+pixel_size = 0.005
+script = ExtResource("1_script")
+tira_textura = ExtResource("2_tira")
+escala_efecto = 1.2
+velocidad_fps = 12.0

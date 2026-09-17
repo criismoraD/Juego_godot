@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://ggqdvt7gmgst" path="res://TEST_/Palo musgo/palo musgo.glb" id="1_model"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/PaloMusgo_Mat.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/PaloMusgo.gd" id="3_script"]
+
+[node name="PaloMusgo" type="Node3D"]
+script = ExtResource("3_script")
+material_palo = ExtResource("2_mat")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]

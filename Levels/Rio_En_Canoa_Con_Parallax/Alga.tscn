@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/Alga.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cyd1ns84wuiw0" path="res://TEST_/Alga.png" id="2_tex"]
+[ext_resource type="Shader" path="res://System/Shaders/alga_oleaje.gdshader" id="3_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_alga"]
+render_priority = 0
+shader = ExtResource("3_shader")
+shader_parameter/albedo_texture = ExtResource("2_tex")
+shader_parameter/tint_color = Color(1, 1, 1, 1)
+shader_parameter/oleaje_speed = 1.5
+shader_parameter/oleaje_strength = 0.08
+shader_parameter/rizo_speed = 3.0
+shader_parameter/rizo_strength = 0.02
+
+[node name="Alga" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Cuerpo" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.025, 0)
+material_override = SubResource("ShaderMaterial_alga")
+pixel_size = 0.005
+double_sided = true
+texture = ExtResource("2_tex")

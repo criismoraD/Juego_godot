@@ -47,6 +47,8 @@ func test_emergencia_trayectoria_y_aterrizaje() -> void:
 	# Arrange
 	var azulina := _crear_azulina()
 	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.aterrizar_en_centro = false
 	var destino := Vector3(2.0, 0.5, 0.0)
 
 	# Act
@@ -76,6 +78,7 @@ func test_apice_por_encima_de_origen_y_caida() -> void:
 	# Arrange
 	var azulina := _crear_azulina()
 	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
 	var destino := Vector3(2.0, 0.5, 0.0)
 
 	# Act
@@ -345,10 +348,27 @@ func test_salpicadura_estructura_como_fuego() -> void:
 	sal.queue_free()
 
 
+func test_salpicadura_agua_usa_splash_png() -> void:
+	# Arrange & Act
+	var sal := preload("res://Entities/Enemigo_Azulina/SalpicaduraAgua.tscn").instantiate() as SalpicaduraAgua
+	add_child_autofree(sal)
+
+	# Assert: AnimatedSprite3D con los 10 cuadros de la tira alineada, sin bucle (un impacto)
+	assert_true(sal is AnimatedSprite3D, "La salpicadura es un AnimatedSprite3D")
+	assert_true(sal is SalpicaduraAzulina, "Sigue contando como salpicadura de azulina")
+	assert_not_null(sal.sprite_frames, "Debe generar sus SpriteFrames")
+	assert_true(sal.sprite_frames.has_animation(&"default"), "Debe tener animación default")
+	assert_eq(sal.sprite_frames.get_frame_count(&"default"), 10, "10 cuadros del splash")
+	assert_false(sal.sprite_frames.get_animation_loop(&"default"), "Un solo impacto, sin bucle")
+	sal.queue_free()
+
+
 func test_emerger_genera_salpicadura_en_origen() -> void:
 	# Arrange
 	var azulina := _crear_azulina()
 	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.aterrizar_en_centro = false
 	azulina.salpicadura_al_emerger = true
 	_limpiar_salpicaduras()
 	var destino := Vector3(2.0, 0.5, 0.0)
@@ -356,7 +376,7 @@ func test_emerger_genera_salpicadura_en_origen() -> void:
 	# Act
 	azulina.emerger_en(destino)
 
-	# Assert: una salpicadura justo donde rompe el agua
+	# Assert: una salpicadura en el punto de rotura (XZ del origen, Y a nivel de orilla)
 	assert_eq(_contar_salpicaduras(), 1, "Emerger genera su splash")
 	var sal: SalpicaduraAzulina = null
 	for n in get_tree().root.get_children():
@@ -364,7 +384,67 @@ func test_emerger_genera_salpicadura_en_origen() -> void:
 			sal = n
 			break
 	assert_not_null(sal, "Debe existir la salpicadura")
-	assert_lt((sal.global_position - azulina.global_position).length(), 0.01, "El splash nace donde rompe el agua")
+	assert_almost_eq(sal.global_position.x, azulina.global_position.x + azulina.desplazamiento_lateral_salpicadura, MARGEN_FLOAT, "Corrido lateral según export")
+	assert_almost_eq(sal.global_position.z, azulina.global_position.z + azulina.adelanto_camara_salpicadura, MARGEN_FLOAT, "Adelantado a camara para no quedar tras el ledge")
+	assert_almost_eq(sal.global_position.y, destino.y - azulina.profundidad_rotura, MARGEN_FLOAT, "Apenas bajo la orilla")
+	_limpiar_salpicaduras()
+
+
+func test_emergencia_en_zona_aleatoria() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = true
+	azulina.aterrizar_en_centro = false
+	azulina.usar_centro_zona_personalizado = false
+	azulina.zona_extension = Vector3(4.0, 0.0, 1.5)
+	var centro := Vector3(2.0, 0.5, 0.0)
+
+	# Act & Assert: varios sorteos caen dentro de la zona y no repiten punto
+	var primera: Vector3 = Vector3.ZERO
+	var varia := false
+	for i in range(10):
+		azulina.emerger_en(centro)
+		var t: float = 0.0
+		while azulina._emergiendo and t < 10.0:
+			azulina._procesar_emergencia(0.1)
+			t += 0.1
+		var caida: Vector3 = azulina.global_position
+		assert_true(absf(caida.x - centro.x) <= 4.0 + MARGEN_FLOAT, "X dentro de la zona")
+		assert_almost_eq(caida.y, centro.y, MARGEN_FLOAT, "Y de la zona")
+		assert_true(absf(caida.z - centro.z) <= 1.5 + MARGEN_FLOAT, "Z dentro de la zona")
+		if i == 0:
+			primera = caida
+		elif caida.distance_to(primera) > 0.01:
+			varia = true
+	assert_true(varia, "No cae siempre en el mismo lugar")
+	_limpiar_lanzas()
+	_limpiar_salpicaduras()
+
+
+func test_aterrizaje_en_centro_del_eje() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = true
+	azulina.aterrizar_en_centro = true
+	azulina.centro_aterrizaje_x = 0.0
+	azulina.usar_centro_zona_personalizado = false
+	azulina.zona_extension = Vector3(4.0, 0.0, 1.5)
+
+	# Act: emerger pidiendo otro punto e ir hasta el suelo
+	azulina.emerger_en(Vector3(5.0, 1.0, 2.0))
+	var t: float = 0.0
+	while azulina._emergiendo and t < 10.0:
+		azulina._procesar_emergencia(0.1)
+		t += 0.1
+
+	# Assert: cae en el centro del eje aunque emerja en la zona
+	assert_false(azulina._emergiendo, "Debe terminar la emergencia")
+	assert_almost_eq(azulina.global_position.x, 0.0, MARGEN_FLOAT, "Cae en el centro del eje 0")
+	assert_almost_eq(azulina.global_position.y, 1.0, MARGEN_FLOAT, "Mantiene la altura pedida")
+	assert_almost_eq(azulina.global_position.z, 2.0, MARGEN_FLOAT, "Mantiene el fondo pedido")
+	_limpiar_lanzas()
 	_limpiar_salpicaduras()
 
 
@@ -404,7 +484,7 @@ func test_quieta_entre_ataques_y_reenganche() -> void:
 	var azulina := _crear_azulina()
 	azulina.emerger_del_agua = false
 	azulina._emergiendo = false
-	assert_eq(azulina.animacion_quieta, "Mirar", "Idle natural por defecto")
+	assert_eq(azulina.animacion_quieta, "Idle", "Idle natural por defecto")
 
 	# Act: pausa agotada => reengancha el ataque
 	azulina._lanzando = false
@@ -413,6 +493,135 @@ func test_quieta_entre_ataques_y_reenganche() -> void:
 
 	# Assert
 	assert_true(azulina._lanzando, "Tras la pausa quieta vuelve a atacar")
+
+
+func test_dano_reproduce_flinch_y_pausa_ataque() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina._emergiendo = false
+	azulina._change_state(azulina.State.SHOOTING)
+	azulina._iniciar_ataque()
+	var timer_antes: float = azulina._timer_lanzamiento
+
+	# Act: impacto no letal en pleno ataque
+	azulina.take_damage(1.0)
+
+	# Assert: arranca el flinch con la animación de daño
+	assert_gt(azulina._tiempo_flinch, 0.0, "El impacto abre ventana de flinch")
+	assert_true(String(azulina.anim_player.current_animation).contains("Daño"), "Suena la animación de daño")
+
+	# Act: el ciclo de ataque queda congelado durante el flinch
+	azulina._process_shooting(0.2)
+
+	# Assert: el temporizador no avanzó ni disparó
+	assert_almost_eq(azulina._timer_lanzamiento, timer_antes, MARGEN_FLOAT, "El ataque se pausa en el flinch")
+	assert_false(azulina._lanzo_proyectil, "No dispara durante el flinch")
+	_limpiar_lanzas()
+	_limpiar_salpicaduras()
+
+
+# === PARRY DE LANZA ===
+func test_parry_se_activa_cada_n_ataques() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 4
+	azulina.ataques_para_parry_max = 4
+	azulina._emergiendo = false
+
+	# Act: 3 impactos espaciados (fuera de la ventana multi) no activan
+	assert_false(azulina.manejar_impacto_aura(null), "1er impacto pasa")
+	azulina._impactos_recientes.clear()
+	assert_false(azulina.manejar_impacto_aura(null), "2do impacto pasa")
+	azulina._impactos_recientes.clear()
+	assert_false(azulina.manejar_impacto_aura(null), "3er impacto pasa")
+	azulina._impactos_recientes.clear()
+	assert_false(azulina._parry_activo, "Aún no hay parry")
+
+	# Act: el 4to activa y repele
+	assert_true(azulina.manejar_impacto_aura(null), "4to impacto se repele")
+
+	# Assert: giro visible con lanza por 3 segundos
+	assert_true(azulina._parry_activo, "Parry activo")
+	assert_true(azulina._mano.visible, "La lanza solo se ve en el parry")
+	assert_almost_eq(azulina._mano.scale.x, azulina.escala_lanza_parry, MARGEN_FLOAT, "Asta agrandada en el giro")
+	_limpiar_salpicaduras()
+
+
+func test_parry_multidisparo_inmediato() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 5
+	azulina.ataques_para_parry_max = 5
+	azulina._emergiendo = false
+
+	# Act: 2 impactos seguidos (misma ráfaga) activan sin esperar el conteo
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina.manejar_impacto_aura(null), "Ráfaga múltiple se repele")
+
+	# Assert
+	assert_true(azulina._parry_activo, "Multidisparo activa el parry")
+	_limpiar_salpicaduras()
+
+
+func test_parry_repele_y_expira() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina._emergiendo = false
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._parry_activo, "Precondición: parry activo")
+
+	# Act: más proyectiles rebotan sin daño ni extensión
+	assert_true(azulina.manejar_impacto_aura(null), "Repele durante el giro")
+
+	# Act: agotar los 3 segundos
+	azulina._procesar_parry(azulina.duracion_parry + 0.1)
+
+	# Assert: termina, oculta la lanza y deja pasar
+	assert_false(azulina._parry_activo, "El parry expira")
+	assert_false(azulina._mano.visible, "La lanza se oculta al terminar")
+	assert_false(azulina.manejar_impacto_aura(null), "Sin parry el impacto pasa")
+	_limpiar_salpicaduras()
+
+
+func test_parry_enfriamiento_impide_reactivacion() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina.enfriamiento_parry = 5.0
+	azulina._emergiendo = false
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._parry_activo, "Precondición: parry activo")
+	azulina._procesar_parry(azulina.duracion_parry + 0.1)
+	assert_false(azulina._parry_activo, "Precondición: parry expirado")
+
+	# Act: impactos durante el enfriamiento no reactivan aunque cumplan el conteo
+	for i in range(5):
+		azulina._impactos_recientes.clear()
+		assert_false(azulina.manejar_impacto_aura(null), "En enfriamiento el impacto pasa")
+
+	# Assert: sigue vulnerable
+	assert_false(azulina._parry_activo, "No se reactiva en enfriamiento")
+
+	# Act: agotado el enfriamiento, el siguiente impacto activa
+	azulina._procesar_parry(5.0)
+	assert_true(azulina.manejar_impacto_aura(null), "Tras el enfriamiento repele")
+
+	# Assert
+	assert_true(azulina._parry_activo, "Vuelve a activar tras el enfriamiento")
+	_limpiar_salpicaduras()
 
 
 # === WAVESPAWNER Y DEBUG ===

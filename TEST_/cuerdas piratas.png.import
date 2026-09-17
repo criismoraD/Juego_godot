@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cyd1ns84wuiw0"
-path.s3tc="res://.godot/imported/Alga.png-5165ee42f663d1df4e04f62eab074420.s3tc.ctex"
-path.etc2="res://.godot/imported/Alga.png-5165ee42f663d1df4e04f62eab074420.etc2.ctex"
+uid="uid://b0jfvf15tktiq"
+path.s3tc="res://.godot/imported/cuerdas piratas.png-e204ee436686dd0ff566d2d2615e003e.s3tc.ctex"
+path.etc2="res://.godot/imported/cuerdas piratas.png-e204ee436686dd0ff566d2d2615e003e.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://TEST_/Alga.png"
-dest_files=["res://.godot/imported/Alga.png-5165ee42f663d1df4e04f62eab074420.s3tc.ctex", "res://.godot/imported/Alga.png-5165ee42f663d1df4e04f62eab074420.etc2.ctex"]
+source_file="res://TEST_/cuerdas piratas.png"
+dest_files=["res://.godot/imported/cuerdas piratas.png-e204ee436686dd0ff566d2d2615e003e.s3tc.ctex", "res://.godot/imported/cuerdas piratas.png-e204ee436686dd0ff566d2d2615e003e.etc2.ctex"]
 
 [params]
 

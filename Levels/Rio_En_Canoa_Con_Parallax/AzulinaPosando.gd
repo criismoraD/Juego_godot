@@ -69,9 +69,14 @@ func _iniciar_pose_en_loop() -> void:
 		return
 	var original: String = ""
 	for nombre: String in _player.get_animation_list():
-		if nombre.contains(animacion_pose):
+		if nombre == animacion_pose:
 			original = nombre
 			break
+	if original.is_empty():
+		for nombre: String in _player.get_animation_list():
+			if nombre.contains(animacion_pose):
+				original = nombre
+				break
 	if original.is_empty():
 		push_warning("[AzulinaPosando] animación no encontrada: " + animacion_pose)
 		return
