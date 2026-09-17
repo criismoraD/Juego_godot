@@ -182,6 +182,8 @@ func _load_all_sounds():
 	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]
 
 	sfx_streams["splash_agua"] = [load("res://TEST_/splash sonido.mp3")]
+	sfx_streams["girar_lanza"] = [load("res://TEST_/girar lanza azulina.mp3")]
+	sfx_streams["azulina_muerte"] = [load("res://TEST_/azulina muerte.mp3")]
 	sfx_streams["entrada_azulina"] = [load("res://TEST_/Entrada azulina.mp3")]
 
 	sfx_streams["shield_imp_impact"] = [

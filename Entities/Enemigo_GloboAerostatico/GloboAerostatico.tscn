@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://drrwx2pijhll4" path="res://Entities/Enemigo_GloboAerostatico/GloboAerostatico.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://83bv0c7r7vwf" path="res://Entities/Enemigo_GloboAerostatico/Globo_aerostatico.glb" id="2_model_globo"]
-[ext_resource type="Material" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_MAT.tres" id="3_mat_globo"]
+[ext_resource type="Material" uid="uid://cglobomatr01" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_MAT.tres" id="3_mat_globo"]
 [ext_resource type="PackedScene" uid="uid://b8lvuys7l34k8" path="res://Entities/Enemigo_GloboAerostatico/Globo_destruido.glb" id="6_model_destruido"]
 [ext_resource type="Material" uid="uid://c3p58tt52hu6c" path="res://Entities/Enemigo_GloboAerostatico/GLOBO_DESTRUIDO_MAT.tres" id="7_mat_destruido"]
 [ext_resource type="PackedScene" uid="uid://ccanastaglb01" path="res://Entities/Enemigo_GloboAerostatico/Canasta.glb" id="8_model_canasta"]
@@ -33,7 +33,7 @@ shape = SubResource("CapsuleShape3D_col")
 
 [node name="ModeloGlobo" parent="PivotBamboleo" unique_id=1832631609 instance=ExtResource("2_model_globo")]
 
-[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=1260285538]
+[node name="Globo aerostatico" parent="PivotBamboleo/ModeloGlobo" index="0" unique_id=1489145900]
 transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
 surface_material_override/0 = ExtResource("3_mat_globo")
 
@@ -44,7 +44,7 @@ transform = Transform3D(0.8, 0, -3.6679783e-08, 0, 0.8, 0, 3.6679783e-08, 0, 0.8
 transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 visible = false
 
-[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0" unique_id=183135368]
+[node name="Globo destruido" parent="PivotBamboleo/ModeloGloboDestruido" index="0" unique_id=1500818420]
 transform = Transform3D(-1.6483941, 0, -1.1326063, 0, 2, 0, 1.1326063, 0, -1.6483941, 0.054484993, -0.18903297, 0)
 surface_material_override/0 = ExtResource("7_mat_destruido")
 
@@ -52,7 +52,7 @@ surface_material_override/0 = ExtResource("7_mat_destruido")
 transform = Transform3D(0.64995676, 0.007494867, 0, -0.007494867, 0.64995676, 0, 0, 0, 0.65, 0.009118631, -0.19150734, 0)
 visible = false
 
-[node name="modelo 3d (1K)" parent="PivotBamboleo/ModeloCanasta" index="0" unique_id=1866252364]
+[node name="modelo 3d (1K)" parent="PivotBamboleo/ModeloCanasta" index="0" unique_id=1117459047]
 transform = Transform3D(-0.4296071, 0, -0.9030159, 0, 1, 0, 0.9030159, 0, -0.4296071, 0.09473237, 0.41738158, 0)
 
 [node name="RangoDanoCanasta" type="Area3D" parent="PivotBamboleo/ModeloCanasta" unique_id=88990011]

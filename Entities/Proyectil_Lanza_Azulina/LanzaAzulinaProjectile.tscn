@@ -1,22 +1,22 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://6ykse4o0gc6y"]
 
-[ext_resource type="Script" path="res://Entities/Proyectil_Lanza_Azulina/LanzaAzulinaProjectile.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://76puwiauah1d" path="res://Entities/Proyectil_Lanza_Azulina/LanzaAzulinaProjectile.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://dj6op2ss2l7cx" path="res://TEST_/Lanza Azulina/Lanza Azulina.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_lanza"]
 radius = 0.08
 height = 0.7
 
-[node name="LanzaAzulinaProjectile" type="Area3D"]
+[node name="LanzaAzulinaProjectile" type="Area3D" unique_id=982951996]
 transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 0, 0, 0)
 collision_layer = 4
 collision_mask = 67
 monitorable = false
 script = ExtResource("1_script")
 
-[node name="LanzaModel" parent="." instance=ExtResource("2_model")]
-transform = Transform3D(0, 0.5, 0, -0.5, 0, 0, 0, 0, 0.5, 0.1, 0, 0)
+[node name="LanzaModel" parent="." unique_id=153073558 instance=ExtResource("2_model")]
+transform = Transform3D(-2.6226834e-08, 0.6, 0, -0.6, -2.6226834e-08, 0, 0, 0, 0.6, -0.27655655, 0, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1990778152]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0.023641601, 0.0023935866, 0)
 shape = SubResource("CapsuleShape_lanza")

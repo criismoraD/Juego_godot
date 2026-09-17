@@ -92,6 +92,43 @@ func test_apice_por_encima_de_origen_y_caida() -> void:
 	_limpiar_salpicaduras()
 
 
+func test_tramo_final_acelera_animacion() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.aterrizar_en_centro = false
+	azulina.acelerar_tramo_final = true
+	azulina.inicio_tramo_final = 0.55
+	azulina.velocidad_tramo_final = 1.7
+	var destino := Vector3(2.0, 0.5, 0.0)
+
+	# Act: arrancar el salto (tramo inicial sin acelerar)
+	azulina.emerger_en(destino)
+	var base: float = azulina._velocidad_salto_base
+	azulina._procesar_emergencia(0.1)
+
+	# Assert: velocidad base antes del punto
+	assert_almost_eq(azulina.anim_player.speed_scale, base, MARGEN_FLOAT, "Tramo inicial normal")
+
+	# Act: avanzar pasado el punto de aceleración
+	var t: float = 0.1
+	while azulina._emergiendo and t < 10.0:
+		azulina._procesar_emergencia(0.1)
+		t += 0.1
+		if t > azulina.duracion_emergencia * 0.6:
+			break
+
+	# Assert: acelerado y al aterrizar restaura
+	assert_almost_eq(azulina.anim_player.speed_scale, base * 1.7, MARGEN_FLOAT, "Tramo final acelerado")
+	while azulina._emergiendo and t < 20.0:
+		azulina._procesar_emergencia(0.1)
+		t += 0.1
+	assert_almost_eq(azulina.anim_player.speed_scale, base, MARGEN_FLOAT, "Restaura al aterrizar")
+	_limpiar_lanzas()
+	_limpiar_salpicaduras()
+
+
 func test_aterrizaje_dispara_lanza_de_inmediato() -> void:
 	# Arrange
 	var azulina := _crear_azulina()
@@ -518,6 +555,40 @@ func test_dano_reproduce_flinch_y_pausa_ataque() -> void:
 	# Assert: el temporizador no avanzó ni disparó
 	assert_almost_eq(azulina._timer_lanzamiento, timer_antes, MARGEN_FLOAT, "El ataque se pausa en el flinch")
 	assert_false(azulina._lanzo_proyectil, "No dispara durante el flinch")
+
+	# Act: agotar el flinch fuera de ataque
+	azulina._lanzando = false
+	azulina._process_shooting(azulina._tiempo_flinch + 0.1)
+
+	# Assert: vuelve a la quieta sin quedarse clavada
+	assert_true(String(azulina.anim_player.current_animation).contains(azulina.animacion_quieta) or String(azulina.anim_player.current_animation).contains("Idle"), "Retoma la base al terminar")
+	_limpiar_lanzas()
+	_limpiar_salpicaduras()
+
+
+func test_lanza_se_oculta_al_arrojar_y_vuelve_en_idle() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina._emergiendo = false
+	azulina._change_state(azulina.State.SHOOTING)
+	azulina._iniciar_ataque()
+
+	# Act: dispara la lanza
+	azulina._lanzar_lanza()
+
+	# Assert: la mano queda vacía
+	assert_true(azulina._lanza_arrojada, "Marca la lanza como arrojada")
+	assert_false(azulina._mano.visible, "La mano queda vacía al arrojar")
+
+	# Act: termina el ataque y vuelve a idle
+	azulina._timer_lanzamiento = azulina._duracion_anim_ataque()
+	azulina._process_shooting(0.1)
+
+	# Assert: reaparece con disolución celeste
+	assert_false(azulina._lanza_arrojada, "Limpia la marca al volver a idle")
+	assert_true(azulina._mano.visible, "Vuelve a la mano")
 	_limpiar_lanzas()
 	_limpiar_salpicaduras()
 
@@ -548,6 +619,155 @@ func test_parry_se_activa_cada_n_ataques() -> void:
 	assert_true(azulina._parry_activo, "Parry activo")
 	assert_true(azulina._mano.visible, "La lanza solo se ve en el parry")
 	assert_almost_eq(azulina._mano.scale.x, azulina.escala_lanza_parry, MARGEN_FLOAT, "Asta agrandada en el giro")
+	assert_almost_eq(azulina.anim_player.speed_scale, azulina.velocidad_parry, MARGEN_FLOAT, "Giro acelerado")
+	_limpiar_salpicaduras()
+
+
+func test_parry_alterna_normal_e_invertido() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina._emergiendo = false
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._parry_activo, "Precondición: parry activo")
+	var anim := azulina.anim_player.get_animation(azulina._anim_parry_loop)
+	assert_not_null(anim, "Existe el giro duplicado")
+	assert_eq(anim.loop_mode, Animation.LOOP_NONE, "Sin loop propio: lo alterna el código")
+
+	# Act: llevar al borde del final y procesar
+	azulina.anim_player.seek(anim.length - 0.01, true)
+	azulina._procesar_parry(0.01)
+
+	# Assert: congela el cuadro final sin cortar el parry
+	assert_false(azulina.anim_player.is_playing(), "Congela el cuadro final")
+	assert_gt(azulina._tiempo_hold_parry, 0.0, "Abre la ventana de hold")
+	assert_true(azulina._parry_activo, "El parry continúa")
+
+	# Act: agotar el hold y procesar
+	azulina._procesar_parry(azulina.duracion_hold_parry + 0.1)
+
+	# Assert: invierte sin cortarse
+	assert_lt(azulina.anim_player.get_playing_speed(), 0.0, "Gira invertido")
+	assert_true(azulina._parry_activo, "El parry continúa")
+
+	# Act: llevar al borde del inicio y procesar
+	azulina.anim_player.seek(0.01, true)
+	azulina._procesar_parry(0.01)
+
+	# Assert: vuelve a normal
+	assert_gt(azulina.anim_player.get_playing_speed(), 0.0, "Vuelve al giro normal")
+	_limpiar_salpicaduras()
+
+
+func test_parry_humo_a_ambos_lados() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina._emergiendo = false
+	var antes: int = get_tree().root.find_children("*", "GPUParticles3D", true, false).size()
+
+	# Act
+	azulina.manejar_impacto_aura(null)
+
+	# Assert: una nube a cada lado
+	var nubes := get_tree().root.find_children("*", "GPUParticles3D", true, false)
+	assert_eq(nubes.size() - antes, 2, "Humo a ambos lados")
+	for n in nubes:
+		(n as Node).queue_free()
+	_limpiar_salpicaduras()
+
+
+func test_morir_suelta_lanza_voladora() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina._emergiendo = false
+
+	# Act: daño letal con la lanza en mano
+	azulina.take_damage(99.0)
+
+	# Assert: la lanza sale volando y la mano queda vacía
+	var halladas := get_tree().root.find_children("*", "LanzaVoladora", true, false)
+	assert_false(halladas.is_empty(), "La lanza sale volando al morir")
+	assert_false(azulina._mano.visible, "La mano queda vacía")
+	for n in halladas:
+		(n as Node).queue_free()
+	_limpiar_lanzas()
+	_limpiar_salpicaduras()
+
+
+func test_muerte_explosiva_impulsa_cadaver() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina._emergiendo = false
+	azulina.murio_por_explosion = true
+	azulina.last_hit_position = azulina.global_position + Vector3(-1.0, 0.0, 0.0)
+
+	# Act: daño letal marcado por flecha explosiva
+	azulina.take_damage(99.0)
+
+	# Assert: sale impulsado en parábola como la goblin arquera con física reactivada
+	assert_true(azulina._impulso_explosivo_activo, "Activa el vuelo del cadáver")
+	assert_true(azulina.is_physics_processing(), "La física del cuerpo debe reactivarse durante el vuelo")
+	assert_gt(azulina.velocity.x, 0.0, "Empuje lateral hacia la derecha opuesto al impacto")
+	assert_gt(azulina.velocity.y, 0.0, "Se eleva en el aire")
+	assert_eq(azulina.velocity.z, 0.0, "Sin desvío en Z (2.5D)")
+	assert_false(azulina.murio_por_explosion, "La bandera murio_por_explosion se limpia para permitir disolución normal")
+	azulina._process_dying(0.1)
+	assert_gt(absf(azulina.velocity.x), 0.0, "Conserva el empuje en el aire")
+	_limpiar_lanzas()
+	_limpiar_salpicaduras()
+
+
+func test_lanza_voladora_vuelo_parabolico_como_arquera_goblin() -> void:
+	# Arrange: LanzaVoladora hereda de GoblinPiezaFisica
+	var voladora := LanzaVoladora.new()
+	add_child_autofree(voladora)
+
+	# Act: iniciar vuelo con impulso y rotación
+	voladora.iniciar_vuelo(Vector3(2.5, 4.5, 0.0), 10.0)
+
+	# Assert: se comporta exactamente igual que la pieza de la arquera goblin
+	assert_true(voladora is GoblinPiezaFisica, "LanzaVoladora debe heredar de GoblinPiezaFisica")
+	assert_true(voladora.active, "El vuelo debe quedar activo")
+	assert_false(voladora.resting, "No debe estar en reposo al iniciar")
+	assert_almost_eq(voladora.velocity.x, 2.5, MARGEN_FLOAT, "Velocidad horizontal asignada")
+	assert_almost_eq(voladora.velocity.y, 4.5, MARGEN_FLOAT, "Velocidad vertical asignada")
+	assert_almost_eq(voladora.rot_speed_z, 10.0, MARGEN_FLOAT, "Rotación asignada")
+	assert_almost_eq(voladora.gravity, 14.0, MARGEN_FLOAT, "Gravedad estándar de piezas físicas")
+
+
+func test_morir_desvanece_circulo_con_humo() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina._emergiendo = false
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._circulo.visible, "Precondición: aro visible")
+	var humo_antes: int = get_tree().root.find_children("*", "GPUParticles3D", true, false).size()
+
+	# Act: daño letal con el aro puesto
+	azulina.take_damage(99.0)
+
+	# Assert: humo celeste a ambos lados y el aro inicia su fundido
+	var humo_despues: int = get_tree().root.find_children("*", "GPUParticles3D", true, false).size()
+	assert_eq(humo_despues - humo_antes, 2, "Humo a ambos lados al morir")
+	assert_true(is_instance_valid(azulina._circulo), "El aro sigue en escena desvaneciéndose")
+	for n in get_tree().root.find_children("*", "GPUParticles3D", true, false):
+		(n as Node).queue_free()
+	_limpiar_lanzas()
 	_limpiar_salpicaduras()
 
 
@@ -621,6 +841,85 @@ func test_parry_enfriamiento_impide_reactivacion() -> void:
 
 	# Assert
 	assert_true(azulina._parry_activo, "Vuelve a activar tras el enfriamiento")
+	_limpiar_salpicaduras()
+
+
+func test_parry_congela_piernas_y_gira_brazos() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina._emergiendo = false
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._parry_activo, "Precondición: parry activo")
+
+	# Assert: piernas resueltas con postura capturada
+	assert_false(azulina._huesos_piernas.is_empty(), "Resuelve huesos de piernas")
+	assert_eq(azulina._huesos_piernas.size(), azulina._pose_piernas_fija.size(), "Una postura por hueso")
+
+	# Act: aplicar la fijación directamente (el diferido corre al final del cuadro)
+	azulina._aplicar_piernas_estaticas()
+
+	# Assert: cada pierna queda en su postura capturada
+	for i in range(azulina._huesos_piernas.size()):
+		var idx: int = azulina._huesos_piernas[i]
+		assert_eq(azulina._esqueleto.get_bone_pose_rotation(idx), azulina._pose_piernas_fija[i], "Pierna fija")
+	_limpiar_salpicaduras()
+
+
+func test_barrido_agarre_mueve_lanza() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina.barrer_agarre_debug = true
+	azulina.velocidad_barrido = 0.6
+	azulina._emergiendo = false
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._parry_activo, "Precondición: parry activo")
+	var eje_antes: Vector3 = azulina._mano.transform.basis.x
+
+	# Act: el barrido rota el agarre
+	azulina._procesar_parry(0.5)
+
+	# Assert
+	assert_ne(azulina._mano.transform.basis.x, eje_antes, "El barrido rota la lanza")
+	_limpiar_salpicaduras()
+
+
+func test_circulo_visible_y_gira_en_parry() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina._emergiendo = false
+	assert_true(is_instance_valid(azulina._circulo), "Crea el aro al iniciar")
+	assert_false(azulina._circulo.visible, "Oculto fuera del parry")
+
+	# Act: activar y avanzar
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._parry_activo, "Precondición: parry activo")
+	if azulina._circulo.sprite_frames == null:
+		assert_false(azulina._circulo.visible, "Sin PNG no se muestra (sin romper)")
+		_limpiar_salpicaduras()
+		return
+	assert_true(azulina._circulo.visible, "Visible durante el giro")
+	assert_true(azulina._circulo.is_playing(), "Animando los 9 aros")
+	assert_eq(azulina._circulo.sprite_frames.get_frame_count(&"giro"), 9, "9 cuadros del círculo")
+	assert_almost_eq(azulina._circulo.modulate.a, azulina.opacidad_circulo, MARGEN_FLOAT, "Opacidad aplicada")
+	assert_almost_eq(azulina._circulo.position.x, azulina.offset_circulo.x, MARGEN_FLOAT, "Aro en offset manual X")
+	assert_almost_eq(azulina._circulo.position.y, azulina.offset_circulo.y, MARGEN_FLOAT, "Aro en offset manual Y")
+	assert_almost_eq(azulina._circulo.position.z, azulina.offset_circulo.z, MARGEN_FLOAT, "Aro en offset manual Z")
+	assert_true(is_instance_valid(azulina._luz_circulo), "Crea su luz celeste")
+	assert_true(azulina._luz_circulo.visible, "Brilla durante el giro")
+	azulina._procesar_parry(azulina.duracion_parry + 0.1)
+	assert_false(azulina._circulo.visible, "Se oculta al terminar")
 	_limpiar_salpicaduras()
 
 

@@ -459,12 +459,34 @@ func _stick_to_surface():
 	if trail:
 		trail.emitting = false
 
+	_preservar_brillo_clavada()
+
 	# Programar desvanecimiento después de un tiempo clavada (sin borrado brusco)
 	get_tree().create_timer(tiempo_pegada).timeout.connect(
 		func():
 			if is_instance_valid(self) and is_inside_tree():
 				_desvanecer_y_liberar()
 	)
+
+
+## Al clavarse pierde la estela y en sombra se lee negra: le deja un brillo
+## cálido propio (copia por flecha para no teñir las demás) hasta desvanecerse.
+func _preservar_brillo_clavada() -> void:
+	for mesh in _cached_mesh_instances:
+		if not is_instance_valid(mesh):
+			continue
+		var orig: Material = mesh.material_override
+		if orig == null and mesh.mesh:
+			orig = mesh.mesh.surface_get_material(0)
+		if not (orig is StandardMaterial3D):
+			continue
+		if (orig as StandardMaterial3D).emission_enabled:
+			continue
+		var mat := (orig as StandardMaterial3D).duplicate() as StandardMaterial3D
+		mat.emission_enabled = true
+		mat.emission = Color(1.0, 0.55, 0.2)
+		mat.emission_energy_multiplier = 0.35
+		mesh.material_override = mat
 
 
 ## Transición de transparencia al dejar de estar clavada (terreno/escudo):
@@ -521,6 +543,8 @@ func _stick_to_shield(shield: Node3D):
 	var trail = get_node_or_null("TrailParticles")
 	if trail:
 		trail.emitting = false
+
+	_preservar_brillo_clavada()
 
 	var glob_trans = global_transform
 	call_deferred("_reparent_to_shield", shield, glob_trans)

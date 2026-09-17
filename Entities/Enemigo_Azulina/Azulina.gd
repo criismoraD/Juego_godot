@@ -10,6 +10,7 @@ signal emergencia_completada
 
 const ESCENA_LANZA: PackedScene = preload("res://Entities/Proyectil_Lanza_Azulina/LanzaAzulinaProjectile.tscn")
 const ESCENA_SALPICADURA: PackedScene = preload("res://Entities/Enemigo_Azulina/SalpicaduraAgua.tscn")
+const ESCENA_LANZA_SUELTA: PackedScene = preload("res://TEST_/Lanza Azulina/Lanza Azulina.glb")
 const MATERIAL_AZULINA: Material = preload("res://Entities/Enemigo_Azulina/Azulina_MAT.tres")
 const MATERIAL_LANZA: Material = preload("res://Entities/Enemigo_Azulina/LanzaAzulina_MAT.tres")
 const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el GLB (salto de emergencia)
@@ -22,6 +23,9 @@ const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el 
 @export var deriva_fondo_z: float = 1.0  ## Metros hacia la cámara desde donde nace (cae hacia el fondo)
 @export var altura_salto: float = 2.0  ## Altura máxima del arco de emergencia sobre la recta origen→caída
 @export var duracion_emergencia: float = 1.4  ## Segundos del salto
+@export var acelerar_tramo_final: bool = true  ## Si true, la animación se acelera al final para un aterrizaje con impacto
+@export_range(0.0, 1.0, 0.05) var inicio_tramo_final: float = 0.55  ## Fracción del salto donde arranca la aceleración
+@export var velocidad_tramo_final: float = 1.7  ## Multiplicador de velocidad en el tramo final
 @export var emergencia_en_zona_aleatoria: bool = true  ## Si true, el punto de caida se sortea dentro de la zona (no sale siempre del mismo lugar)
 @export var usar_centro_zona_personalizado: bool = false  ## Si false, la zona se centra en el punto de spawn
 @export var zona_centro: Vector3 = Vector3.ZERO  ## Centro manual de la zona (solo si usar_centro_zona_personalizado)
@@ -58,12 +62,30 @@ const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el 
 @export var ventana_multidisparo: float = 0.6  ## Segundos: 2+ impactos en esta ventana activan de inmediato
 @export var enfriamiento_parry: float = 5.0  ## Segundos vulnerables tras un parry antes de poder activar otro
 @export var animacion_parry: String = "Giro de lanza parry"  ## Giro corto que se repite invertido en loop
+@export_range(0.5, 3.0, 0.1) var velocidad_parry: float = 1.6  ## Velocidad del giro para un ciclo dinámico
+@export var duracion_hold_parry: float = 1.5  ## Segundos congelado en el cuadro final antes de invertir
 @export var escala_lanza_parry: float = 1.5  ## Tamaño del asta durante el giro (el reposo se restaura solo)
 @export var forzar_parry_debug: bool = false:  ## DEBUG en juego (árbol Remoto): al activar fuerza el parry para verificar lanza y giro
 	set(v):
 		forzar_parry_debug = v
 		if v and is_node_ready() and is_inside_tree() and not Engine.is_editor_hint():
 			_activar_parry()
+@export var barrer_agarre_debug: bool = false  ## DEBUG: gira la lanza en la mano durante el parry para buscar el agarre visible
+@export var velocidad_barrido: float = 0.6  ## Radianes por segundo del barrido de agarre
+@export var imprimir_agarre_debug: bool = false  ## DEBUG: imprime el transform actual de la lanza (para fijarlo en el tscn)
+@export var circulo_parry: bool = true  ## Si true, muestra el aro protector animado durante el parry
+@export var tamano_circulo: float = 1.4:  ## Diámetro en metros del aro protector
+	set(v):
+		tamano_circulo = maxf(0.5, v)
+		_aplicar_tamano_circulo()
+@export var fps_circulo: float = 20.0  ## Cuadros por segundo del aro
+@export var offset_circulo: Vector3 = Vector3(0.0, 0.65, 0.6):  ## Posición manual del aro respecto a sus pies (Z+ = hacia la cámara)
+	set(v):
+		offset_circulo = v
+		if is_instance_valid(_circulo):
+			_circulo.position = v
+@export_range(0.1, 1.0, 0.05) var opacidad_circulo: float = 1.0  ## 1.0 = sólido
+@export var brillo_circulo: float = 1.2  ## Energía de la luz celeste del aro
 
 @export_category("Ataque de lanza")
 @export var tiempo_lanzamiento: float = 0.9  ## Segundo de la animación donde sale la lanza
@@ -72,6 +94,7 @@ const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el 
 @export var velocidad_lanza: float = 14.0  ## Más rápida que el tridente del imp (8)
 @export var gravedad_lanza: float = 0.6  ## Más tensa que el tridente (1.2)
 @export var dispersion_rad: float = 0.03  ## Dispersión mínima: precisión alta
+@export var duracion_reaparicion_lanza: float = 0.5  ## Segundos de la disolución celeste al volver a la mano
 
 # === ESTADO PRIVADO ===
 var _emergiendo: bool = false
@@ -86,6 +109,13 @@ var _modelo: Node3D = null  ## AzulinaModel cacheado para el squash & stretch
 var _escala_modelo_base: float = 0.9  ## Escala de mundo del modelo (se captura en _ready)
 var _memoria_squash: float = 0.0  ## Deformación remanente (-1 aplastada .. +1 estirada), decae a 0
 var _lanzo_en_emergencia: bool = false  ## Disparo único a mitad del salto de entrada
+var _velocidad_salto_base: float = 1.0  ## speed_scale previo al salto (se restaura al aterrizar)
+var _lanza_arrojada: bool = false  ## La lanza salió volando: se oculta hasta volver a idle
+var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: impulso en parábola al morir
+var _impulso_explosivo_activo: bool = false  ## True durante el vuelo parabólico del cadáver
+var _impulso_muerte_activo: bool:
+	get: return _impulso_explosivo_activo
+	set(v): _impulso_explosivo_activo = v
 var _tiempo_flinch: float = 0.0  ## Segundos restantes de la animación de daño (bloquea el ataque para que se vea)
 var _parry_activo: bool = false  ## Giro de lanza repelente en curso
 var _tiempo_parry: float = 0.0  ## Segundos restantes del parry
@@ -93,10 +123,17 @@ var _tiempo_enfriamiento: float = 0.0  ## Segundos restantes vulnerables antes d
 var _contador_ataques: int = 0  ## Ataques recibidos en el ciclo actual (para el sorteo 4-5)
 var _umbral_parry: int = 4  ## Ataques necesarios para activar (se sortea 4-5 por ciclo)
 var _impactos_recientes: Array[float] = []  ## Tiempos de impactos (para detectar multidisparo)
-var _anim_parry_loop: String = ""  ## Nombre del giro duplicado para el ping-pong
-var _parry_hacia_atras: bool = false  ## Dirección actual del ping-pong del giro
-var _mano: Node3D = null  ## LanzaMano cacheada (solo visible durante el parry)
+var _anim_parry_loop: String = ""  ## Nombre del giro duplicado para alternar normal/invertido
+var _giro_hacia_atras: bool = false  ## Dirección actual de la alternancia
+var _tiempo_hold_parry: float = 0.0  ## Congelado restante en el cuadro final
+var _velocidad_previa_parry: float = 1.0  ## speed_scale anterior para restaurarlo al terminar
+var _mano: Node3D = null  ## Soporte de lanzas (attachment: cubre LanzaMano y lanza giro parry)
+var _circulo: AnimatedSprite3D = null  ## Aro protector animado cuadro por cuadro durante el parry
+var _luz_circulo: OmniLight3D = null  ## Brillo celeste del aro
 var _escala_lanza_base: Vector3 = Vector3.ZERO  ## Escala de reposo del asta (se restaura tras el parry)
+var _esqueleto: Skeleton3D = null  ## Esqueleto cacheado para congelar piernas en el parry
+var _huesos_piernas: Array[int] = []  ## Índices resueltos de HUESOS_PIERNAS
+var _pose_piernas_fija: Array[Quaternion] = []  ## Postura de piernas capturada al activar (se mantiene)
 
 
 # === HOOKS DE ENEMYBASE ===
@@ -108,6 +145,8 @@ func _on_enemy_ready() -> void:
 	_aplicar_material_azulina()
 	_forzar_loop_movimiento()
 	_umbral_parry = _sortear_umbral_parry()
+	_resolver_hueso_mano()
+	_crear_circulo_parry()
 	_mostrar_lanza(false)
 	if emerger_del_agua:
 		_iniciar_emergencia()
@@ -121,6 +160,10 @@ func _process_walking(delta: float) -> void:
 		return
 	if _procesar_parry(delta):
 		return
+	if _tiempo_flinch > 0.0:
+		_tiempo_flinch -= delta
+		if _tiempo_flinch <= 0.0:
+			_play_animation("Correr", fundido_transiciones)
 	_recuperar_squash(delta)
 	super._process_walking(delta)
 
@@ -132,6 +175,8 @@ func _process_shooting(delta: float) -> void:
 		return
 	if _tiempo_flinch > 0.0:
 		_tiempo_flinch -= delta
+		if _tiempo_flinch <= 0.0 and not _lanzando:
+			_play_animation(animacion_quieta, fundido_transiciones)
 		if anim_player != null and not String(anim_player.current_animation).contains("Daño"):
 			_play_animation("Daño")
 		return
@@ -143,6 +188,8 @@ func _process_shooting(delta: float) -> void:
 		if _timer_lanzamiento >= _duracion_anim_ataque():
 			_lanzando = false
 			_pausa_lanzamiento = randf_range(pausa_entre_lanzamientos_min, pausa_entre_lanzamientos_max)
+			if _lanza_arrojada and not _parry_activo:
+				_reaparecer_lanza()
 			_play_animation(animacion_quieta, fundido_transiciones)
 	else:
 		_pausa_lanzamiento -= delta
@@ -150,24 +197,257 @@ func _process_shooting(delta: float) -> void:
 			_iniciar_ataque()
 
 
+## Humo celeste a ambos lados al iniciar el giro (como al romperse escudos).
+## Humo celeste a ambos lados de un punto (parry,ruptura o muerte del aro).
+func _spawn_humo_celeste(centro: Vector3) -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
+	var tex: Texture2D = load("res://VFX/Textures/Smoke/Smoke_2A-2.png") as Texture2D
+	if tex == null:
+		return
+	var raiz: Node = get_tree().current_scene
+	if raiz == null:
+		raiz = get_tree().root
+	for lado in [-1.0, 1.0]:
+		var puf := GPUParticles3D.new()
+		puf.amount = 4
+		puf.lifetime = 0.75
+		puf.one_shot = true
+		puf.explosiveness = 0.3
+		puf.randomness = 0.3
+		puf.visibility_aabb = AABB(Vector3(-1.5, -1.2, -1.5), Vector3(3.0, 3.0, 3.0))
+		var pmat := ParticleProcessMaterial.new()
+		pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINT
+		pmat.direction = Vector3(lado * 0.8, 0.35, 0.0)
+		pmat.spread = 22.0
+		pmat.initial_velocity_min = 0.8
+		pmat.initial_velocity_max = 1.4
+		pmat.gravity = Vector3(0.0, -0.3, 0.0)
+		pmat.scale_min = 0.55
+		pmat.scale_max = 0.85
+		var grad := Gradient.new()
+		grad.set_color(0, Color(0.45, 0.85, 1.0, 0.9))
+		grad.set_color(1, Color(0.45, 0.85, 1.0, 0.0))
+		var grad_tex := GradientTexture1D.new()
+		grad_tex.gradient = grad
+		pmat.color_ramp = grad_tex
+		puf.process_material = pmat
+		var mat := StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.vertex_color_use_as_albedo = true
+		mat.albedo_color = Color(0.5, 0.85, 1.0)
+		mat.albedo_texture = tex
+		mat.particles_anim_h_frames = 6
+		mat.particles_anim_v_frames = 1
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		mat.billboard_keep_scale = true
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.85, 0.85)
+		quad.material = mat
+		puf.draw_pass_1 = quad
+		raiz.add_child(puf)
+		puf.global_position = centro + Vector3(lado * 0.3, 0.05, 0.0)
+		puf.emitting = true
+		get_tree().create_timer(2.0).timeout.connect(_liberar_humo.bind(puf))
+
+
+## Humo del parry a ambos lados de sus pies.
+func _spawn_humo_parry() -> void:
+	_spawn_humo_celeste(global_position)
+
+
+func _liberar_humo(puf: GPUParticles3D) -> void:
+	if is_instance_valid(puf):
+		puf.queue_free()
+
+
+## Suelta la lanza al morir con física de la misma manera que la arquera goblin:
+## sale volando en parábola (LanzaVoladora que hereda de GoblinPiezaFisica),
+## rebota contra el suelo y se disuelve tras un tiempo con efecto celeste.
+func _soltar_lanza_al_morir() -> void:
+	if get_tree() == null:
+		return
+	var root_scene: Node = get_tree().current_scene
+	if not root_scene:
+		root_scene = get_tree().root
+	if not root_scene:
+		return
+
+	# Dirección de expulsión según el punto de impacto de la explosión o golpe
+	var push_dir: float = 1.0
+	if last_hit_position != Vector3.ZERO:
+		var dx: float = global_position.x - last_hit_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+	elif is_instance_valid(player_ref):
+		var dx: float = global_position.x - (player_ref as Node3D).global_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+
+	var lanza_mano := find_child("LanzaMano", true, false) as Node3D
+	var lanza_parry := find_child("lanza giro parry", true, false) as Node3D
+	if is_instance_valid(lanza_parry):
+		lanza_parry.visible = false
+
+	var tr_lanza: Transform3D = global_transform
+	var pieza_visual: Node3D = null
+
+	if is_instance_valid(lanza_mano):
+		tr_lanza = lanza_mano.global_transform
+		if lanza_mano.get_parent():
+			lanza_mano.get_parent().remove_child(lanza_mano)
+		pieza_visual = lanza_mano
+	elif is_instance_valid(_mano):
+		tr_lanza = (_mano as Node3D).global_transform
+		if ESCENA_LANZA_SUELTA:
+			pieza_visual = ESCENA_LANZA_SUELTA.instantiate() as Node3D
+	else:
+		tr_lanza = global_transform * Transform3D(Basis(), Vector3(0.0, 0.5, 0.0))
+		if ESCENA_LANZA_SUELTA:
+			pieza_visual = ESCENA_LANZA_SUELTA.instantiate() as Node3D
+
+	if not is_instance_valid(pieza_visual):
+		return
+
+	var contenedor := LanzaVoladora.new()
+	root_scene.add_child(contenedor)
+	contenedor.global_transform = tr_lanza
+
+	pieza_visual.transform = Transform3D.IDENTITY
+	pieza_visual.visible = true
+	# Aplicar MATERIAL_LANZA para asegurar el aspecto correcto sin tintes de daño residuales
+	for m in pieza_visual.find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		mi.visible = true
+		if MATERIAL_LANZA:
+			mi.material_override = MATERIAL_LANZA
+	if pieza_visual is MeshInstance3D:
+		(pieza_visual as MeshInstance3D).visible = true
+		if MATERIAL_LANZA:
+			(pieza_visual as MeshInstance3D).material_override = MATERIAL_LANZA
+	contenedor.add_child(pieza_visual)
+
+	contenedor.iniciar_vuelo(
+		Vector3(push_dir * randf_range(2.0, 3.6), randf_range(3.8, 5.6), 0.0),
+		randf_range(-14.0, 14.0)
+	)
+
+
 func _on_state_dying() -> void:
 	super._on_state_dying()
 	_parry_activo = false
+	_soltar_lanza_al_morir()
 	_mostrar_lanza(false)
+	_desvanecer_circulo_muerte()
+	AudioManager.play_sfx("azulina_muerte")
 	_aplicar_squash_stretch(0.0)
-	_play_animation(elegir_animacion_muerte())
+
+	# Muerte por explosión: reactiva física y aplica el impulso cinético lateral
+	# igual que la arquera goblin
+	if murio_por_explosion:
+		_aplicar_impulso_explosivo()
+		murio_por_explosion = false
+
+	var anim_muerte := elegir_animacion_muerte()
+	var duracion_muerte := _get_animation_duration(anim_muerte)
+	_play_animation(anim_muerte)
+
+	get_tree().create_timer(duracion_muerte + 0.5).timeout.connect(
+		func():
+			if is_instance_valid(self) and is_inside_tree():
+				_die()
+	)
+
+
+## Existe la animación en el player (nombre directo o con prefijo Armature).
+func _tiene_animacion(nombre_anim: String) -> bool:
+	if anim_player == null:
+		return false
+	for variante in [nombre_anim, "Armature|" + nombre_anim, "Armature|Armature|" + nombre_anim]:
+		if anim_player.has_animation(variante):
+			return true
+	return false
+
+
+## Impulso de la explosión idéntico a la arquera goblin: reactiva la física del cuerpo
+## y le da un salto hacia arriba con empuje lateral según el punto de explosión.
+## La gravedad del EnemyBase dibuja la parábola mientras suena su animación de muerte normal.
+func _aplicar_impulso_explosivo() -> void:
+	_impulso_explosivo_activo = true
+	set_physics_process(true)
+	collision_layer = 0  ## Nadie colisiona contra el cadáver
+	collision_mask = 1   ## Pero él sí colisiona contra el suelo para aterrizar
+
+	# Dirección de expulsión según el punto de impacto de la explosión
+	var push_dir: float = 1.0
+	if last_hit_position != Vector3.ZERO:
+		var dx: float = global_position.x - last_hit_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+	elif is_instance_valid(player_ref):
+		var dx: float = global_position.x - (player_ref as Node3D).global_position.x
+		if absf(dx) > 0.05:
+			push_dir = signf(dx)
+
+	velocity.x = push_dir * randf_range(1.6, 2.4)
+	velocity.y = randf_range(2.0, 2.8)
+	velocity.z = 0.0
+
+
+func _aplicar_impulso_muerte() -> void:
+	_aplicar_impulso_explosivo()
+
+
+## Durante la muerte con impulso: conserva el empuje lateral en el aire y
+## frena al aterrizar para que no patine; la gravedad la aplica el EnemyBase.
+func _process_dying(delta: float) -> void:
+	if not _impulso_explosivo_activo:
+		velocity.x = 0
+		return
+	if is_on_floor():
+		velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
+	else:
+		velocity.x = move_toward(velocity.x, 0.0, delta * 0.8)
 
 
 func take_damage(amount: float) -> void:
 	var viva_antes: bool = health > 0
 	super.take_damage(amount)
 	if viva_antes and health > 0 and not _parry_activo and current_state != State.DYING and current_state != State.DEAD:
-		_tiempo_flinch = clampf(_get_animation_duration("Daño"), 0.3, 0.9)
-		_play_animation("Daño")
+		if _tiene_animacion("Daño"):
+			_tiempo_flinch = maxf(0.25, _get_animation_duration("Daño"))
+			_play_animation("Daño")
 
 
 # === PARRY DE LANZA ===
-const MARGEN_GIRO_PARRY: float = 0.05  ## Ventana (s) para invertir el giro antes del extremo
+const MARGEN_GIRO_PARRY: float = 0.03  ## Ventana (s) para invertir el giro en los extremos
+const HUESOS_PIERNAS: Array[String] = [  ## Cadera y piernas fijas en su postura: el giro queda en torso y brazos
+	"mixamorig_Hips",
+	"mixamorig_LeftUpLeg", "mixamorig_RightUpLeg",
+	"mixamorig_LeftLeg", "mixamorig_RightLeg",
+	"mixamorig_LeftFoot", "mixamorig_RightFoot",
+	"mixamorig_LeftToeBase", "mixamorig_RightToeBase",
+]
+const RUTA_CIRCULO_PARRY: String = "res://TEST_/circulo protector lanza.png"
+
+static var _tex_circulo_cache: Texture2D = null
+static var _aviso_circulo_mostrado: bool = false
+
+
+## Carga diferida del aro: si falta el PNG avisa una vez y el parry sigue sin aro.
+static func _textura_circulo() -> Texture2D:
+	if _tex_circulo_cache != null:
+		return _tex_circulo_cache
+	if ResourceLoader.exists(RUTA_CIRCULO_PARRY):
+		_tex_circulo_cache = ResourceLoader.load(RUTA_CIRCULO_PARRY) as Texture2D
+	if _tex_circulo_cache == null and not _aviso_circulo_mostrado:
+		_aviso_circulo_mostrado = true
+		push_warning("[Azulina] falta " + RUTA_CIRCULO_PARRY + ": reponer el PNG para ver el aro")
+	return _tex_circulo_cache
+const SHADER_DISOLUCION: Shader = preload("res://System/Shaders/dissolve.gdshader")
+const COLOR_DISOLUCION_LANZA := Color(0.45, 0.85, 1.0)  ## Brillo celeste al reaparecer la lanza
 
 
 ## Hook del aura repelente (igual que Arquera Rosa): lo llaman los proyectiles al impactar.
@@ -208,7 +488,13 @@ func _activar_parry() -> void:
 	_impactos_recientes.clear()
 	_umbral_parry = _sortear_umbral_parry()
 	_mostrar_lanza(true)
+	_mostrar_circulo(true)
+	AudioManager.play_sfx("girar_lanza")
+	_spawn_humo_parry()
+	_capturar_pose_piernas()
 	_iniciar_anim_parry()
+	if forzar_parry_debug:
+		_diag_parry()
 
 
 ## Avanza el parry y su enfriamiento; retorna true para congelar marcha y ataque mientras dura.
@@ -219,10 +505,61 @@ func _procesar_parry(delta: float) -> bool:
 		return false
 	_tiempo_parry -= delta
 	velocity.x = 0
-	_conducir_anim_parry()
+	if barrer_agarre_debug and is_instance_valid(_mano):
+		_mano.rotate_x(velocidad_barrido * delta)
+	if imprimir_agarre_debug and is_instance_valid(_mano):
+		push_warning("[Azulina] agarre actual: " + str(_mano.transform))
+	_alternar_giro_parry(delta)
+	_congelar_piernas_parry()
 	if _tiempo_parry <= 0.0:
 		_desactivar_parry()
 	return true
+
+
+## Resuelve los huesos de las piernas una vez (tolera ambas variantes de nombre).
+func _resolver_huesos_piernas() -> void:
+	if is_instance_valid(_esqueleto) and not _huesos_piernas.is_empty():
+		return
+	_huesos_piernas.clear()
+	_pose_piernas_fija.clear()
+	var esqueletos := find_children("*", "Skeleton3D", true, false)
+	if esqueletos.is_empty():
+		return
+	_esqueleto = esqueletos[0] as Skeleton3D
+	if _esqueleto == null:
+		return
+	for nombre_hueso in HUESOS_PIERNAS:
+		var idx: int = _esqueleto.find_bone(nombre_hueso)
+		if idx < 0:
+			idx = _esqueleto.find_bone(nombre_hueso.replace("_", ":"))
+		if idx >= 0:
+			_huesos_piernas.append(idx)
+			_pose_piernas_fija.append(Quaternion.IDENTITY)
+
+
+## Guarda la postura actual de piernas para mantenerla durante todo el giro.
+func _capturar_pose_piernas() -> void:
+	_resolver_huesos_piernas()
+	if _esqueleto == null or not is_instance_valid(_esqueleto):
+		return
+	for i in range(_huesos_piernas.size()):
+		_pose_piernas_fija[i] = _esqueleto.get_bone_pose_rotation(_huesos_piernas[i])
+
+
+## Fija las piernas tras la animación (diferido al final del cuadro para imponerse).
+func _congelar_piernas_parry() -> void:
+	if _esqueleto == null or not is_instance_valid(_esqueleto):
+		return
+	if _huesos_piernas.is_empty():
+		return
+	call_deferred("_aplicar_piernas_estaticas")
+
+
+func _aplicar_piernas_estaticas() -> void:
+	if not _parry_activo or _esqueleto == null or not is_instance_valid(_esqueleto):
+		return
+	for i in range(_huesos_piernas.size()):
+		_esqueleto.set_bone_pose_rotation(_huesos_piernas[i], _pose_piernas_fija[i])
 
 
 ## Termina el giro, oculta la lanza, abre la ventana vulnerable y retoma el ciclo de combate.
@@ -230,6 +567,9 @@ func _desactivar_parry() -> void:
 	_parry_activo = false
 	_tiempo_enfriamiento = enfriamiento_parry
 	_mostrar_lanza(false)
+	_mostrar_circulo(false)
+	if anim_player != null:
+		anim_player.speed_scale = _velocidad_previa_parry
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 	if _lanzando:
@@ -244,6 +584,172 @@ func _sortear_umbral_parry() -> int:
 	var minimo: int = maxi(1, ataques_para_parry_min)
 	var maximo: int = maxi(minimo, ataques_para_parry_max)
 	return randi_range(minimo, maximo)
+
+
+## Fija el attachment al hueso de la mano por NOMBRE (el índice grabado queda obsoleto si se reimporta).
+func _resolver_hueso_mano() -> void:
+	var attach := find_child("BoneAttachment3D", true, false) as BoneAttachment3D
+	if attach == null:
+		_mano = find_child("LanzaMano", true, false) as Node3D
+		return
+	_mano = attach
+	var skel := attach.get_parent() as Skeleton3D
+	if skel == null:
+		return
+	var idx: int = skel.find_bone("mixamorig_RightHand")
+	if idx < 0:
+		idx = skel.find_bone("mixamorig:RightHand")
+	if idx < 0:
+		push_warning("[Azulina] hueso de mano no encontrado en el esqueleto")
+		return
+	if attach.bone_idx != idx:
+		attach.bone_idx = idx
+
+
+## Crea el aro protector (billboard) que gira durante el parry para reforzar el giro.
+## Crea el aro protector animado cuadro por cuadro (grilla 3x3 de la hoja).
+## Todos los cuadros comparten caja común centrada para reemplazo en el mismo lugar.
+func _crear_circulo_parry() -> void:
+	if is_instance_valid(_circulo):
+		return
+	var aro := AnimatedSprite3D.new()
+	aro.name = "CirculoParry"
+	aro.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	aro.shaded = false
+	aro.position = offset_circulo
+	aro.visible = false
+	add_child(aro)
+	_circulo = aro
+	var luz := OmniLight3D.new()
+	luz.name = "LuzCirculo"
+	luz.light_color = Color(0.45, 0.85, 1.0)
+	luz.light_energy = brillo_circulo
+	luz.omni_range = 2.5
+	luz.omni_attenuation = 1.2
+	luz.shadow_enabled = false
+	luz.visible = false
+	aro.add_child(luz)
+	_luz_circulo = luz
+	_construir_frames_circulo()
+	_aplicar_tamano_circulo()
+
+
+## Recorta los 9 aros de la hoja en una animación con caja común de 225x214.
+## Si falta el PNG avisa una vez y deja el aro sin cuadros (el parry sigue sin aro).
+func _construir_frames_circulo() -> void:
+	if not is_instance_valid(_circulo):
+		return
+	var tira := _textura_circulo()
+	if tira == null:
+		return
+	var sf := SpriteFrames.new()
+	if not sf.has_animation(&"giro"):
+		sf.add_animation(&"giro")
+	sf.set_animation_loop(&"giro", true)
+	sf.set_animation_speed(&"giro", fps_circulo)
+	var celdas: Array[Rect2i] = [
+		Rect2i(1, 0, 225, 191), Rect2i(248, 0, 201, 191), Rect2i(463, 0, 206, 191),
+		Rect2i(1, 209, 225, 214), Rect2i(248, 209, 201, 214), Rect2i(463, 209, 206, 214),
+		Rect2i(1, 453, 225, 205), Rect2i(248, 453, 201, 205), Rect2i(463, 453, 206, 205),
+	]
+	for celda in celdas:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tira
+		atlas.region = Rect2(Vector2(celda.position), Vector2(celda.size))
+		atlas.margin = Rect2(
+			Vector2((225.0 - float(celda.size.x)) * 0.5, (214.0 - float(celda.size.y)) * 0.5),
+			Vector2(225.0, 214.0)
+		)
+		sf.add_frame(&"giro", atlas)
+	_circulo.sprite_frames = sf
+
+
+func _aplicar_tamano_circulo() -> void:
+	if not is_instance_valid(_circulo):
+		return
+	_circulo.pixel_size = maxf(0.5, tamano_circulo) / 225.0
+
+
+## La lanza vuelve a la mano en idle con disolución celeste (efecto de muerte invertido).
+func _reaparecer_lanza() -> void:
+	_lanza_arrojada = false
+	if not is_instance_valid(_mano):
+		_mano = find_child("LanzaMano", true, false) as Node3D
+	if not is_instance_valid(_mano):
+		return
+	(_mano as Node3D).visible = true
+	var mallas: Array[MeshInstance3D] = []
+	if _mano is MeshInstance3D:
+		mallas.append(_mano as MeshInstance3D)
+	for m in _mano.find_children("*", "MeshInstance3D", true, false):
+		mallas.append(m as MeshInstance3D)
+	if mallas.is_empty():
+		return
+	for mi in mallas:
+		var mat := ShaderMaterial.new()
+		mat.shader = SHADER_DISOLUCION
+		mat.set_shader_parameter("dissolve_amount", 1.0)
+		mat.set_shader_parameter("glow_color", COLOR_DISOLUCION_LANZA)
+		mi.material_override = mat
+	var tween := create_tween()
+	tween.tween_method(_actualizar_disolucion_lanza.bind(mallas), 1.0, 0.0, maxf(0.1, duracion_reaparicion_lanza))
+	tween.tween_callback(_restaurar_material_lanza.bind(mallas))
+
+
+func _actualizar_disolucion_lanza(valor: float, mallas: Array) -> void:
+	for mi in mallas:
+		if is_instance_valid(mi) and (mi as MeshInstance3D).material_override is ShaderMaterial:
+			((mi as MeshInstance3D).material_override as ShaderMaterial).set_shader_parameter("dissolve_amount", valor)
+
+
+func _restaurar_material_lanza(mallas: Array) -> void:
+	for mi in mallas:
+		if is_instance_valid(mi):
+			(mi as MeshInstance3D).material_override = MATERIAL_LANZA
+
+
+## Al morir, el aro se deshace como la muerte enemiga: humo celeste + fundido.
+func _desvanecer_circulo_muerte() -> void:
+	if not is_instance_valid(_circulo) or not _circulo.visible:
+		return
+	_spawn_humo_celeste(_circulo.global_position)
+	if is_instance_valid(_luz_circulo):
+		_luz_circulo.visible = false
+	var tween := create_tween()
+	tween.tween_property(_circulo, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(_ocultar_circulo_muerte)
+
+
+func _ocultar_circulo_muerte() -> void:
+	if is_instance_valid(_circulo):
+		_circulo.stop()
+		_circulo.visible = false
+
+
+func _mostrar_circulo(visible: bool) -> void:
+	if not is_instance_valid(_circulo):
+		_crear_circulo_parry()
+	if not is_instance_valid(_circulo):
+		return
+	if not circulo_parry:
+		_circulo.visible = false
+		_circulo.stop()
+		if is_instance_valid(_luz_circulo):
+			_luz_circulo.visible = false
+		return
+	_circulo.visible = visible
+	if is_instance_valid(_luz_circulo):
+		_luz_circulo.visible = visible
+		_luz_circulo.light_energy = brillo_circulo
+	if not visible:
+		_circulo.stop()
+		return
+	if _circulo.sprite_frames == null or not _circulo.sprite_frames.has_animation(&"giro"):
+		_circulo.visible = false
+		return
+	_circulo.modulate = Color(1.0, 1.0, 1.0, clampf(opacidad_circulo, 0.1, 1.0))
+	_circulo.frame = 0
+	_circulo.play(&"giro")
 
 
 func _mostrar_lanza(visible: bool) -> void:
@@ -261,7 +767,35 @@ func _mostrar_lanza(visible: bool) -> void:
 	_mano.visible = visible
 
 
-## El giro es corto: lo duplica y lo repite invertido en loop para que calce.
+## Diagnóstico del parry forzado: imprime dónde quedó la lanza y con qué mallas.
+func _diag_parry() -> void:
+	if not is_instance_valid(_mano):
+		push_warning("[Azulina] diag parry: LanzaMano NO encontrada")
+		return
+	var detalle: Array[String] = []
+	for m in _mano.find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		detalle.append(str(mi.name) + " vis=" + str(mi.visible) + " mat=" + str(mi.material_override != null))
+	if _mano is MeshInstance3D:
+		detalle.append("SELF vis=" + str((_mano as MeshInstance3D).visible))
+	var info_hueso := "sin_attachment"
+	var attach := find_child("BoneAttachment3D", true, false) as BoneAttachment3D
+	if attach == null and is_instance_valid(_mano):
+		attach = _mano.get_parent() as BoneAttachment3D
+	if attach != null:
+		var skel := attach.get_parent() as Skeleton3D
+		var idx_nombre: int = -1
+		if skel != null:
+			idx_nombre = skel.find_bone("mixamorig_RightHand")
+			if idx_nombre < 0:
+				idx_nombre = skel.find_bone("mixamorig:RightHand")
+		info_hueso = "attach_idx=" + str(attach.bone_idx) + " nombre_idx=" + str(idx_nombre)
+	push_warning("[Azulina] diag parry: mano_global=" + str((_mano as Node3D).global_position) + " visible=" + str(_mano.visible) + " escala=" + str(_mano.scale) + " cuerpo_global=" + str(global_position) + " " + info_hueso + " mallas=[" + ", ".join(detalle) + "]")
+	push_warning("[Azulina] diag parry: huesos_piernas=" + str(_huesos_piernas.size()) + " de " + str(HUESOS_PIERNAS.size()))
+	push_warning("[Azulina] diag parry: circulo=" + str(is_instance_valid(_circulo)) + " visible=" + str(_circulo.visible if is_instance_valid(_circulo) else false) + " pos=" + str(_circulo.position if is_instance_valid(_circulo) else Vector3.ZERO))
+
+
+## El giro es una revolución completa: se duplica en loop lineal fluido hacia adelante.
 func _iniciar_anim_parry() -> void:
 	if anim_player == null:
 		return
@@ -283,24 +817,40 @@ func _iniciar_anim_parry() -> void:
 		var giro := anim_player.get_animation(original).duplicate() as Animation
 		giro.loop_mode = Animation.LOOP_NONE
 		_agregar_animacion(anim_player, _anim_parry_loop, giro)
-	_parry_hacia_atras = false
+	_velocidad_previa_parry = anim_player.speed_scale
+	anim_player.speed_scale = velocidad_parry
+	_giro_hacia_atras = false
+	_tiempo_hold_parry = 0.0
 	anim_player.play(_anim_parry_loop, fundido_ataque)
 
 
-func _conducir_anim_parry() -> void:
+## Alterna el giro normal e invertido en los extremos para un ciclo continuo.
+## Al llegar al cuadro final lo congela duracion_hold_parry antes de invertir.
+func _alternar_giro_parry(delta: float) -> void:
 	if anim_player == null or _anim_parry_loop.is_empty():
 		return
-	if anim_player.current_animation != _anim_parry_loop or not anim_player.is_playing():
+	if anim_player.current_animation != _anim_parry_loop:
+		return
+	if _tiempo_hold_parry > 0.0:
+		_tiempo_hold_parry -= delta
+		if _tiempo_hold_parry <= 0.0:
+			_giro_hacia_atras = true
+			anim_player.play_backwards(_anim_parry_loop)
+		return
+	if not anim_player.is_playing():
 		return
 	var anim := anim_player.get_animation(_anim_parry_loop)
-	if anim == null or anim.length <= 0.0:
+	if anim == null or anim.length <= MARGEN_GIRO_PARRY:
+		return
+	if not anim_player.is_playing():
 		return
 	var pos: float = anim_player.current_animation_position
-	if not _parry_hacia_atras and pos >= anim.length - MARGEN_GIRO_PARRY:
-		_parry_hacia_atras = true
-		anim_player.play_backwards(_anim_parry_loop)
-	elif _parry_hacia_atras and pos <= MARGEN_GIRO_PARRY:
-		_parry_hacia_atras = false
+	if not _giro_hacia_atras and pos >= anim.length - MARGEN_GIRO_PARRY:
+		anim_player.pause()
+		_tiempo_hold_parry = duracion_hold_parry
+		return
+	elif _giro_hacia_atras and pos <= MARGEN_GIRO_PARRY:
+		_giro_hacia_atras = false
 		anim_player.play(_anim_parry_loop)
 
 
@@ -339,8 +889,8 @@ func emerger_en(destino: Vector3) -> void:
 	_memoria_squash = 0.0
 	velocity = Vector3.ZERO
 	_spawnear_salpicadura()
-	if is_inside_tree() and get_tree() != null and not Engine.is_editor_hint():
-		AudioManager.play_sfx_3d("entrada_azulina", _origen_emergencia)
+	if anim_player != null:
+		_velocidad_salto_base = anim_player.speed_scale
 	_play_animation(ANIM_SALTO_AGUA, fundido_ataque)
 
 
@@ -394,6 +944,7 @@ func _procesar_emergencia(delta: float) -> void:
 	pos.y += sin(avance * PI) * altura_salto
 	global_position = pos
 	_aplicar_envolvente_salto(avance)
+	_acelerar_tramo_final(avance)
 	if not _lanzo_en_emergencia and avance >= momento_disparo_emergencia:
 		_lanzo_en_emergencia = true
 		_lanzar_lanza()
@@ -402,6 +953,8 @@ func _procesar_emergencia(delta: float) -> void:
 		global_position = _destino_emergencia
 		_memoria_squash = -1.0
 		_aplicar_squash_stretch(_memoria_squash)
+		if anim_player != null:
+			anim_player.speed_scale = _velocidad_salto_base
 		VFXFactory.spawn_shield_break_smoke(self, _destino_emergencia)
 		emergencia_completada.emit()
 		_al_aterrizar()
@@ -414,6 +967,19 @@ func _aplicar_envolvente_salto(avance: float) -> void:
 		return
 	var entrada: float = clampf(avance / 0.08, 0.0, 1.0)
 	_aplicar_squash_stretch(cos(avance * PI) * entrada)
+
+
+## Acelera la animación en el tramo final del salto para un aterrizaje con impacto.
+## No toca el parry: si está girando, su velocidad manda.
+func _acelerar_tramo_final(avance: float) -> void:
+	if not acelerar_tramo_final or anim_player == null:
+		return
+	if _parry_activo:
+		return
+	if avance >= inicio_tramo_final:
+		anim_player.speed_scale = _velocidad_salto_base * velocidad_tramo_final
+	else:
+		anim_player.speed_scale = _velocidad_salto_base
 
 
 ## Aplica la deformación conservando volumen (lo que crece en Y encoge en XZ).
@@ -470,6 +1036,9 @@ func _lanzar_lanza() -> void:
 	var lanza := ESCENA_LANZA.instantiate() as LanzaAzulinaProjectile
 	if lanza == null:
 		return
+	_lanza_arrojada = true
+	if not _parry_activo and is_instance_valid(_mano):
+		(_mano as Node3D).visible = false
 	var raiz: Node = get_tree().current_scene
 	if raiz == null:
 		raiz = get_tree().root
