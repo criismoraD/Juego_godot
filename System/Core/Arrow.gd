@@ -51,6 +51,8 @@ var _destello_punta_creado: bool = false
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
 var _desvaneciendose: bool = false  ## True durante la transición de transparencia clavada
+var esta_rebotando: bool = false  ## True cuando la flecha fue repelida/rebotada (no hace daño de rebote)
+var desintegrando_celeste: bool = false  ## True mientras se desintegra con disolución celeste
 static var _cached_tip_material: StandardMaterial3D = null
 static var _cached_tip_mesh: SphereMesh = null
 
@@ -197,7 +199,13 @@ func _check_off_screen() -> void:
 
 
 func _on_body_entered(body):
-	if is_stuck:
+	if is_stuck or _destroying or desintegrando_celeste:
+		return
+
+	# Flechas que están rebotando no causan daño; se clavan si tocan superficies
+	if esta_rebotando:
+		if body is StaticBody3D or body is AnimatableBody3D:
+			_stick_to_surface()
 		return
 
 	# Ignorar cuerpos ocultos o desactivados
@@ -299,8 +307,10 @@ func _on_body_entered(body):
 	if tipo_dueño == TipoFlecha.JUGADOR:
 		# Las flechas del jugador dañan enemigos (x2 con sobrecarga morada al 100%)
 		if body.has_method("take_damage") and body.is_in_group("enemies"):
-			# Verificar interacción con aura repelente (ej: Arquera Rosa)
+			# Verificar interacción con aura repelente / parry (ej: Arquera Rosa, Azulina)
 			if body.has_method("manejar_impacto_aura") and body.manejar_impacto_aura(self):
+				if _destroying or desintegrando_celeste or is_queued_for_deletion():
+					return
 				_rebotar_de_aura(body)
 				return
 
@@ -341,7 +351,7 @@ func _on_body_entered(body):
 
 
 func _on_area_entered(area: Area3D):
-	if is_stuck:
+	if is_stuck or _destroying:
 		return
 
 	if es_explosiva:
@@ -916,6 +926,9 @@ func _explotar(hit_target: Node = null) -> void:
 
 
 func _rebotar_de_aura(body: Node) -> void:
+	if _destroying or desintegrando_celeste or is_queued_for_deletion():
+		return
+	esta_rebotando = true
 	if _ray_ccd and is_instance_valid(body):
 		_ray_ccd.add_exception(body)
 
@@ -929,3 +942,125 @@ func _rebotar_de_aura(body: Node) -> void:
 
 	var t := get_tree().create_timer(1.2)
 	t.timeout.connect(_safe_destroy)
+
+
+## Desintegra la flecha en el aire con shader de disolución y resplandor celeste sin causar daño de rebote.
+func desintegrar_celeste(duracion: float = 0.35, color: Color = Color(0.35, 0.85, 1.0, 1.0)) -> void:
+	if _destroying or desintegrando_celeste:
+		return
+	_destroying = true
+	desintegrando_celeste = true
+	esta_rebotando = false
+
+	# Desactivar colisiones y física inmediatamente para evitar cualquier daño o interacción
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
+	set_physics_process(false)
+	velocity = Vector3.ZERO
+	if _ray_ccd:
+		_ray_ccd.enabled = false
+
+	# Detener trail
+	var trail = get_node_or_null("TrailParticles")
+	if trail and trail is GPUParticles3D:
+		trail.emitting = false
+
+	# Limpiar luces o accesorios de punta (ej. flecha explosiva)
+	var red_light = get_node_or_null("RedTipLight")
+	if red_light:
+		red_light.queue_free()
+	var red_mesh = get_node_or_null("RedTipMesh")
+	if red_mesh:
+		red_mesh.queue_free()
+
+	# Chispas celestes en el punto de impacto
+	_spawn_chispas_desintegracion(color)
+
+	# Buscar mallas si no están en cache
+	if _cached_mesh_instances.is_empty():
+		_cached_mesh_instances = find_children("*", "MeshInstance3D", true, false)
+
+	# Aplicar shader de disolución 3D a todas las mallas de la flecha
+	var shader_dissolve: Shader = preload("res://System/Shaders/dissolve.gdshader")
+	var mats: Array[ShaderMaterial] = []
+	for mesh in _cached_mesh_instances:
+		if not is_instance_valid(mesh):
+			continue
+		var mi := mesh as MeshInstance3D
+		var mat := ShaderMaterial.new()
+		mat.shader = shader_dissolve
+		mat.set_shader_parameter("dissolve_amount", 0.0)
+		mat.set_shader_parameter("glow_color", color)
+		mat.set_shader_parameter("glow_intensity", 8.0)
+		mat.set_shader_parameter("edge_thickness", 0.08)
+		mat.set_shader_parameter("noise_scale", 25.0)
+
+		var orig: Material = mi.material_override
+		if orig == null and mi.mesh:
+			orig = mi.mesh.surface_get_material(0)
+		if orig is StandardMaterial3D:
+			if (orig as StandardMaterial3D).albedo_texture != null:
+				mat.set_shader_parameter("albedo_texture", (orig as StandardMaterial3D).albedo_texture)
+			var col: Color = (orig as StandardMaterial3D).albedo_color
+			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+
+		mi.material_override = mat
+		mats.append(mat)
+
+	if not is_inside_tree() or mats.is_empty():
+		_cleanup_materials()
+		queue_free()
+		return
+
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_method(func(val: float) -> void:
+		for sm in mats:
+			if is_instance_valid(sm):
+				sm.set_shader_parameter("dissolve_amount", val)
+	, 0.0, 1.0, maxf(0.05, duracion))
+	tween.tween_callback(func() -> void:
+		_cleanup_materials()
+		queue_free()
+	)
+
+
+func _spawn_chispas_desintegracion(color: Color) -> void:
+	if not is_inside_tree():
+		return
+	var sparks := CPUParticles3D.new()
+	sparks.amount = 8
+	sparks.lifetime = 0.25
+	sparks.one_shot = true
+	sparks.explosiveness = 0.9
+	sparks.emitting = true
+	sparks.local_coords = false
+	sparks.direction = Vector3.UP
+	sparks.spread = 60.0
+	sparks.initial_velocity_min = 1.5
+	sparks.initial_velocity_max = 3.0
+	sparks.gravity = Vector3(0, -4.0, 0)
+	var color_grad := Gradient.new()
+	color_grad.set_color(0, Color(color.r, color.g, color.b, 0.9))
+	color_grad.set_color(1, Color(color.r * 0.5, color.g * 0.5, color.b, 0.0))
+	sparks.color_ramp = color_grad
+	sparks.scale_amount_min = 0.02
+	sparks.scale_amount_max = 0.05
+	var base_mat := StandardMaterial3D.new()
+	base_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	base_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	base_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	base_mat.vertex_color_use_as_albedo = true
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.04, 0.04)
+	qm.material = base_mat
+	sparks.mesh = qm
+	var root := get_tree().current_scene
+	if not root:
+		root = get_tree().root
+	root.add_child(sparks)
+	sparks.global_position = global_position
+	get_tree().create_timer(0.35).timeout.connect(func():
+		if is_instance_valid(sparks):
+			sparks.queue_free()
+	)

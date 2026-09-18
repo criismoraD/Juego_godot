@@ -5,10 +5,19 @@ signal flechas_explosivas_changed(cantidad: int)
 signal flechas_multiples_changed(cantidad: int)
 signal tipo_municion_changed(tipo: int)
 signal died
+signal fuego_rapido_changed(activo: bool, tiempo_restante: float)
 enum AimState { NONE, DRAWING, AIMING, SHOOTING }
 enum MoveState { GROUND, AIR, LANDING, CLIMBING, DEAD, CROUCHING }
 enum TipoMunicion { NORMAL, EXPLOSIVA, MULTIPLE }
 const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
+const ESCENA_AURA_FUEGO_RAPIDO: PackedScene = preload("res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn")
+const SONIDO_AURA_FUEGO_RAPIDO: AudioStream = preload("res://System/Audio/SFX/Aura.mp3")
+
+# === BUFF FUEGO RÁPIDO ===
+var fuego_rapido_activo: bool = false
+var fuego_rapido_timer: float = 0.0
+var _aura_fuego_rapido_node: Node3D = null
+var _aura_fuego_rapido_audio: AudioStreamPlayer3D = null
 # === CONFIGURACIÓN - MOVIMIENTO ===
 const COYOTE_TIME: float = 0.15
 const JUMP_BUFFER_TIME: float = 0.12
@@ -1136,7 +1145,7 @@ func _potencia_sobrecarga_actual() -> float:
 		return 0.0
 	if municion_activa != TipoMunicion.NORMAL:
 		return 0.0
-	var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+	var adjusted_over_dur: float = duracion_sobrecarga / _get_multiplicador_velocidad_disparo_total()
 	if adjusted_over_dur <= 0.0:
 		return 0.0
 	return clampf(sobrecarga_time / adjusted_over_dur, 0.0, 1.0)
@@ -1436,11 +1445,11 @@ func _actualizar_temblor_arco(delta: float) -> void:
 	# Calcular ratio de tensado
 	var ratio_verde: float = 0.0
 	if current_aim_state == AimState.DRAWING:
-		var adjusted_draw_time: float = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
+		var adjusted_draw_time: float = tiempo_tensar / (_get_multiplicador_velocidad_disparo_total() * velocidad_recarga)
 		if adjusted_draw_time > 0.0:
 			ratio_verde = clampf(state_timer / adjusted_draw_time, 0.0, 1.0) * 0.4
 	elif current_aim_state == AimState.AIMING:
-		var adjusted_charge_dur: float = duracion_carga / multiplicador_velocidad_disparo
+		var adjusted_charge_dur: float = duracion_carga / _get_multiplicador_velocidad_disparo_total()
 		if adjusted_charge_dur > 0.0:
 			var ratio_carga: float = clampf(charge_time / adjusted_charge_dur, 0.0, 1.0)
 			ratio_verde = 0.4 + 0.6 * ratio_carga
@@ -1545,6 +1554,11 @@ func _process_gameplay(delta):
 			_ocultar_icono_aturdimiento()
 		else:
 			_paralisis_vfx_timer += delta
+
+	if fuego_rapido_activo:
+		fuego_rapido_timer -= delta
+		if fuego_rapido_timer <= 0.0:
+			desactivar_fuego_rapido()
 
 	control_visual_state(delta)
 	update_charge_bar_position()
@@ -1665,7 +1679,7 @@ func control_visual_state(delta):
 			if current > 0.0:
 				anim_tree.set(
 					blend_path,
-					move_toward(current, 0.0, 5.0 * delta * multiplicador_velocidad_disparo)
+					move_toward(current, 0.0, 5.0 * delta * _get_multiplicador_velocidad_disparo_total())
 				)
 
 			reset_torso_bone()
@@ -1735,7 +1749,7 @@ func control_visual_state(delta):
 			if current < 1.0:
 				anim_tree.set(
 					blend_path,
-					move_toward(current, 1.0, 5.0 * delta * multiplicador_velocidad_disparo)
+					move_toward(current, 1.0, 5.0 * delta * _get_multiplicador_velocidad_disparo_total())
 				)
 
 			state_timer += delta
@@ -1752,7 +1766,7 @@ func control_visual_state(delta):
 				return
 
 			var adjusted_draw_time = (
-				tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
+				tiempo_tensar / (_get_multiplicador_velocidad_disparo_total() * velocidad_recarga)
 			)
 			if state_timer >= adjusted_draw_time:
 				current_aim_state = AimState.AIMING
@@ -1784,7 +1798,7 @@ func control_visual_state(delta):
 			if float(anim_tree.get(blend_path)) != 1.0:
 				anim_tree.set(blend_path, 1.0)
 
-			var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
+			var adjusted_charge_dur = duracion_carga / _get_multiplicador_velocidad_disparo_total()
 			charge_time += delta
 			_trajectory_fade_timer += delta
 
@@ -1796,7 +1810,7 @@ func control_visual_state(delta):
 			# Los power-ups (explosiva/múltiple) topan en la verde y no acumulan sobrecarga.
 			var base_power := clampf(charge_time / adjusted_charge_dur, 0.0, 1.0)
 			if base_power >= 0.98 and municion_activa == TipoMunicion.NORMAL:
-				var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+				var adjusted_over_dur: float = duracion_sobrecarga / _get_multiplicador_velocidad_disparo_total()
 				sobrecarga_time = minf(sobrecarga_time + delta, adjusted_over_dur)
 				if overcharge_bar:
 					overcharge_bar.visible = true
@@ -1854,7 +1868,7 @@ func control_visual_state(delta):
 
 			state_timer += delta
 
-			var current_shoot_dur = min(duracion_maxima_disparo, shoot_anim_duration / (multiplicador_velocidad_disparo * velocidad_recarga))
+			var current_shoot_dur = min(duracion_maxima_disparo, shoot_anim_duration / (_get_multiplicador_velocidad_disparo_total() * velocidad_recarga))
 
 			if state_timer >= current_shoot_dur:
 				current_aim_state = AimState.NONE
@@ -1889,7 +1903,7 @@ func start_shooting():
 
 	current_aim_state = AimState.SHOOTING
 	state_timer = 0.0  # Reset timer para contar duración del disparo
-	_cooldown_disparo_timer = cadencia_disparo  # Cooldown antes de poder iniciar otro tensado
+	_cooldown_disparo_timer = cadencia_disparo / (1.3 if fuego_rapido_activo else 1.0)  # Cooldown antes de poder iniciar otro tensado
 
 	# Detener temblor del arco inmediatamente al disparar
 	_detener_temblor_arco()
@@ -1912,8 +1926,8 @@ func start_shooting():
 		shoot_anim_duration = anim_player.get_animation("Armature|Armature|DISPARAR").length
 
 	# Calcular potencia del disparo de forma consistente (0.0 a 1.0)
-	var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
-	var adjusted_draw_time = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
+	var adjusted_charge_dur = duracion_carga / _get_multiplicador_velocidad_disparo_total()
+	var adjusted_draw_time = tiempo_tensar / (_get_multiplicador_velocidad_disparo_total() * velocidad_recarga)
 
 	# Si charge_time > 0, estamos en AIMING y usamos ese valor proporcional al tiempo cargado
 	# Si charge_time = 0 (soltamos rápido durante DRAWING), potencia baja proporcional al tensado
@@ -1926,8 +1940,12 @@ func start_shooting():
 	# Asegurar límites de potencia
 	last_charge_power = clamp(last_charge_power, 0.05, 1.0)
 
+	# FUEGO RÁPIDO: Todos los disparos normales salen a la máxima potencia
+	if fuego_rapido_activo and municion_activa == TipoMunicion.NORMAL:
+		last_charge_power = 1.0
+
 	# Sobrecarga morada: solo disparo NORMAL con base al máximo (power >= 0.98)
-	var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+	var adjusted_over_dur: float = duracion_sobrecarga / _get_multiplicador_velocidad_disparo_total()
 	if municion_activa == TipoMunicion.NORMAL and last_charge_power >= 0.98 and sobrecarga_time > 0.0:
 		last_sobrecarga_power = clampf(sobrecarga_time / adjusted_over_dur, 0.0, 1.0)
 	else:
@@ -1970,7 +1988,7 @@ func cambiar_tipo_municion() -> void:
 
 	# Actualizar visualización de la flecha en la mano y trayectoria si se está apuntando
 	if current_aim_state != AimState.NONE and current_aim_state != AimState.SHOOTING:
-		var adjusted_draw_time = tiempo_tensar / (multiplicador_velocidad_disparo * velocidad_recarga)
+		var adjusted_draw_time = tiempo_tensar / (_get_multiplicador_velocidad_disparo_total() * velocidad_recarga)
 		var progress = clamp(state_timer / adjusted_draw_time, 0.0, 1.0) if current_aim_state == AimState.DRAWING else 1.0
 		_mostrar_flecha_visual(progress)
 		if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
@@ -1995,6 +2013,78 @@ func agregar_flechas_explosivas(cantidad: int = 10) -> void:
 	flechas_explosivas_changed.emit(flechas_explosivas)
 	tipo_municion_changed.emit(municion_activa)
 	AudioManager.play_sfx("obtencion_arma")
+
+
+## Activa el buff Fuego Rápido: inmortalidad, disparos normales a máxima potencia, 30% cadencia aumentada, aura y SFX
+func activar_fuego_rapido(duracion: float = 10.0) -> void:
+	fuego_rapido_activo = true
+	fuego_rapido_timer = duracion
+	_setup_aura_fuego_rapido()
+	fuego_rapido_changed.emit(true, fuego_rapido_timer)
+
+
+## Desactiva el buff Fuego Rápido y limpia sus efectos
+func desactivar_fuego_rapido() -> void:
+	if not fuego_rapido_activo and fuego_rapido_timer <= 0.0:
+		return
+	fuego_rapido_activo = false
+	fuego_rapido_timer = 0.0
+	_cleanup_aura_fuego_rapido()
+	fuego_rapido_changed.emit(false, 0.0)
+
+
+func _setup_aura_fuego_rapido() -> void:
+	if not _aura_fuego_rapido_node:
+		if ESCENA_AURA_FUEGO_RAPIDO:
+			_aura_fuego_rapido_node = ESCENA_AURA_FUEGO_RAPIDO.instantiate() as Node3D
+			add_child(_aura_fuego_rapido_node)
+			_aura_fuego_rapido_node.position = Vector3(0.0, 0.01, 0.0)
+
+	if _aura_fuego_rapido_node:
+		_aura_fuego_rapido_node.visible = true
+		_aura_fuego_rapido_node.scale = Vector3(0.42, 0.42, 0.42)
+		_aura_fuego_rapido_node.set("primary_color", Color(1.0, 0.45, 0.8, 1.0))
+		_aura_fuego_rapido_node.set("secondary_color", Color(0.9, 0.15, 0.65, 1.0))
+		_aura_fuego_rapido_node.set("light_color", Color(1.0, 0.3, 0.75, 1.0))
+		var anim_player := _aura_fuego_rapido_node.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if anim_player and anim_player.has_animation("main"):
+			anim_player.play("main")
+
+	if not _aura_fuego_rapido_audio:
+		_aura_fuego_rapido_audio = AudioStreamPlayer3D.new()
+		_aura_fuego_rapido_audio.name = "AuraFuegoRapidoAudio"
+		_aura_fuego_rapido_audio.stream = SONIDO_AURA_FUEGO_RAPIDO
+		_aura_fuego_rapido_audio.unit_size = 20.0
+		_aura_fuego_rapido_audio.max_db = 3.0
+		_aura_fuego_rapido_audio.volume_db = -3.0
+		_aura_fuego_rapido_audio.bus = "Master"
+		_aura_fuego_rapido_audio.finished.connect(func() -> void:
+			if is_instance_valid(_aura_fuego_rapido_audio) and fuego_rapido_activo and is_inside_tree() and not is_dead:
+				_aura_fuego_rapido_audio.play()
+		)
+		add_child(_aura_fuego_rapido_audio)
+
+	if _aura_fuego_rapido_audio and not _aura_fuego_rapido_audio.playing:
+		_aura_fuego_rapido_audio.play()
+
+
+func _cleanup_aura_fuego_rapido() -> void:
+	if _aura_fuego_rapido_node and is_instance_valid(_aura_fuego_rapido_node):
+		_aura_fuego_rapido_node.visible = false
+		_aura_fuego_rapido_node.queue_free()
+		_aura_fuego_rapido_node = null
+
+	if _aura_fuego_rapido_audio and is_instance_valid(_aura_fuego_rapido_audio):
+		_aura_fuego_rapido_audio.stop()
+		_aura_fuego_rapido_audio.queue_free()
+		_aura_fuego_rapido_audio = null
+
+
+func _get_multiplicador_velocidad_disparo_total() -> float:
+	var mult: float = multiplicador_velocidad_disparo
+	if fuego_rapido_activo:
+		mult *= 1.3
+	return mult
 
 
 ## Actualiza el flag de histéresis para mitigar drops explosivos
@@ -2027,6 +2117,10 @@ func spawn_arrow_projectile():
 	# Obtener dirección hacia el mouse
 	var shoot_dir = data["velocity"].normalized()
 
+	# FUEGO RÁPIDO: Disparos normales siempre a máxima potencia
+	if fuego_rapido_activo and municion_activa == TipoMunicion.NORMAL:
+		last_charge_power = 1.0
+
 	# Calcular velocidad basada en la carga (usando variables exportadas)
 	var arrow_speed = lerp(velocidad_flecha_minima, velocidad_flecha_maxima, last_charge_power)
 
@@ -2036,7 +2130,7 @@ func spawn_arrow_projectile():
 		Factor_Angulo = 1.0 - (Reduccion_Velocidad_Por_Angulo * shoot_dir.y)
 	arrow_speed *= Factor_Angulo
 
-	var es_potencia_maxima: bool = (last_charge_power >= 0.98)
+	var es_potencia_maxima: bool = (last_charge_power >= 0.98) or (fuego_rapido_activo and municion_activa == TipoMunicion.NORMAL)
 	if es_potencia_maxima:
 		arrow_speed *= multiplicador_tiro_maximo
 	if last_sobrecarga_power > 0.0:
@@ -2295,8 +2389,10 @@ func calculate_shoot_data() -> Dictionary:
 		shoot_direction = Vector3.RIGHT if _mirando_derecha else Vector3.LEFT
 
 	# Velocidad (usa los valores exportados)
-	var adjusted_charge_dur = duracion_carga / multiplicador_velocidad_disparo
+	var adjusted_charge_dur = duracion_carga / _get_multiplicador_velocidad_disparo_total()
 	var current_power = clamp(charge_time / adjusted_charge_dur, 0.0, 1.0)
+	if fuego_rapido_activo and municion_activa == TipoMunicion.NORMAL:
+		current_power = 1.0
 
 	var speed = lerp(velocidad_flecha_minima, velocidad_flecha_maxima, current_power)
 	var Factor_Angulo: float = 1.0
@@ -2307,7 +2403,7 @@ func calculate_shoot_data() -> Dictionary:
 		speed *= multiplicador_tiro_maximo
 		# Sobrecarga morada solo en disparo NORMAL (power-ups topan en verde)
 		if municion_activa == TipoMunicion.NORMAL:
-			var adjusted_over_dur: float = duracion_sobrecarga / multiplicador_velocidad_disparo
+			var adjusted_over_dur: float = duracion_sobrecarga / _get_multiplicador_velocidad_disparo_total()
 			var over_power := clampf(sobrecarga_time / adjusted_over_dur, 0.0, 1.0)
 			if over_power > 0.0:
 				speed *= lerpf(1.0, multiplicador_sobrecarga_max, over_power)
@@ -2752,8 +2848,8 @@ func _flash_damage():
 # SISTEMA DE RECIBIR DAÑO
 # ═══════════════════════════════════════════════════════════════════════════════
 func recibir_dano(cantidad: int = 1):
-	# Verificar invulnerabilidad o modo dios
-	if is_invulnerable or modo_dios or is_dead:
+	# Verificar invulnerabilidad, modo dios o buff de fuego rápido
+	if is_invulnerable or modo_dios or is_dead or fuego_rapido_activo:
 		return
 
 	# Reducir vida
@@ -2899,6 +2995,7 @@ func _die():
 	if is_dead:
 		return
 
+	desactivar_fuego_rapido()
 	_ocultar_icono_aturdimiento()
 	is_dead = true
 	died.emit()

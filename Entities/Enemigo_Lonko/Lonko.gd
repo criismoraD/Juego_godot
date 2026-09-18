@@ -66,7 +66,7 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 @export_category("Drops - Lonko")
 @export var power_up_explosivo_scene: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 @export_range(0.0, 1.0, 0.01) var drop_chance_flecha_explosiva: float = 0.30  ## 30% de probabilidad de dropear power-up
-@export var municion_drop_jugador: int = 8  ## Su drop suma 8 al contador del jugador
+@export var municion_drop_jugador: int = 6  ## Su drop suma 6 al contador del jugador
 
 @export_category("Debug Tracking - Lonko")
 @export var debug_tracking_override: bool = false  ## Activar para usar el slider de ángulo manualmente
@@ -1994,7 +1994,7 @@ func _drop_power_up() -> void:
 	var item := power_up_explosivo_scene.instantiate() as Node3D
 	if not item:
 		return
-	# Excepción Lonko: su drop suma 8 al contador del jugador (no el 10 por defecto)
+	# Excepción Lonko: su drop suma 6 al contador del jugador (no el 10 por defecto)
 	if "municion_a_otorgar_jugador" in item:
 		item.municion_a_otorgar_jugador = municion_drop_jugador
 	var target_parent: Node = get_tree().current_scene if (get_tree() and get_tree().current_scene) else (get_tree().root if get_tree() else null)

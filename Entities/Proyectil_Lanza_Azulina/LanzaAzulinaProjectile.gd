@@ -7,7 +7,7 @@ extends ImpTridentProjectile
 ## en vez del material emisivo plano: la estela sí usa el color azul
 ## de _init, pero la malla muestra la lanza real con su textura.
 
-const DANO_LANZA_AZULINA: float = 3.0
+const DANO_LANZA_AZULINA: float = 1.0
 const MATERIAL_LANZA: Material = preload("res://Entities/Enemigo_Azulina/LanzaAzulina_MAT.tres")
 
 
@@ -46,4 +46,4 @@ func _aplicar_dano_a_objetivo(body: Node) -> void:
 		target.take_damage(DANO_LANZA_AZULINA)
 		return
 	if target.has_method("recibir_dano"):
-		target.recibir_dano(3)
+		target.recibir_dano(DANO_LANZA_AZULINA)

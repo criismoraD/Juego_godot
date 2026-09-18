@@ -91,6 +91,7 @@ var btn_spawn_posion: Button
 var btn_spawn_flecha_explosiva: Button
 var flecha_explosiva_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 var flecha_multiple_scene_debug: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
+var fuego_rapido_scene_debug: PackedScene = preload("res://Entities/Item_Fuego_Rapido/PowerUpFuegoRapido.tscn")
 var refuerzo_perrena_scene_debug: PackedScene = preload("res://Entities/Item_Refuerzo_Perrena/IconoRefuerzoPerrena.tscn")
 var vignette_rect: ColorRect = null
 var _vignette_tween: Tween = null
