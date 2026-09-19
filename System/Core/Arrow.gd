@@ -268,6 +268,10 @@ func _on_body_entered(body):
 				return
 		elif tipo_dueño == TipoFlecha.JUGADOR:
 			if es_enemigo:
+				# Blindaje: si una explosiva llega hasta aquí por cualquier vía, explota con bono.
+				if es_explosiva:
+					_explotar(body)
+					return
 				var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
 				# SISTEMA GOLPE CRÍTICO: enemigos con momento vulnerable definido
 				# (ej.: GuardianaMoradita) se dañan por take_damage, no como escudo.
@@ -392,6 +396,11 @@ func _on_area_entered(area: Area3D):
 		if not es_enemigo:
 			if _ray_ccd: _ray_ccd.add_exception(area)
 			return  # Ignorar escudos aliados
+
+		# Blindaje: si una explosiva llega hasta aquí por cualquier vía, explota con bono.
+		if es_explosiva:
+			_explotar(area)
+			return
 
 		var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
 		var dano_escudo: float = 1.0
