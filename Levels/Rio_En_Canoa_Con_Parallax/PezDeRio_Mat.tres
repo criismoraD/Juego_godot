@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="Shader" path="res://Levels/Rio_En_Canoa_Con_Parallax/PezDeRio.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://TEST_/Pez de rio/Pez de rio_D.jpg" id="2_texture"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/velocidad_nado = 6.0
+shader_parameter/amplitud_cola = 0.09
+shader_parameter/longitud_onda = 4.5
+shader_parameter/curvatura_cuerpo = 0.025
+shader_parameter/tinte_agua = Color(0.85, 0.95, 1, 1)
+shader_parameter/intensidad_caustica = 0.08
+shader_parameter/textura_pez = ExtResource("2_texture")

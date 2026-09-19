@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://TEST_/Puente madera/Puente madero.glb" id="1_model"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/PuenteMadera_Mat.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/PuenteMadera.gd" id="3_script"]
+
+[node name="PuenteMadera" type="Node3D"]
+script = ExtResource("3_script")
+material_puente = ExtResource("2_mat")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]

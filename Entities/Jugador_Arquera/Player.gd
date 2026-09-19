@@ -2139,7 +2139,7 @@ func _cleanup_aura_fuego_rapido() -> void:
 
 func _get_multiplicador_velocidad_disparo_total() -> float:
 	var mult: float = multiplicador_velocidad_disparo
-	if fuego_rapido_activo:
+	if fuego_rapido_activo and municion_activa == TipoMunicion.NORMAL:
 		mult *= 1.3
 	return mult
 

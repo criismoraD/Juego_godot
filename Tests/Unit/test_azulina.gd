@@ -1745,3 +1745,53 @@ func test_lanza_voladora_gira_y_se_clava_con_punta_hacia_abajo() -> void:
 
 
 
+
+
+class FlechaFalsa:
+	extends Node3D
+	var es_explosiva: bool = false
+
+
+func _crear_flecha_falsa(explosiva: bool) -> Node3D:
+	var f := FlechaFalsa.new()
+	f.es_explosiva = explosiva
+	add_child_autofree(f)
+	return f
+
+
+func test_explosiva_no_se_desvia() -> void:
+	# Arrange: desv�o garantizado para normales
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.probabilidad_desvio_normal = 1.0
+	azulina._emergiendo = false
+	var flecha := _crear_flecha_falsa(true)
+
+	# Act
+	var resultado: bool = azulina.manejar_impacto_aura(flecha)
+
+	# Assert: pasa de largo para detonar al impactar
+	assert_false(resultado, "La explosiva no se desv�a")
+	assert_false(azulina._desviando_giro, "No inicia desv�o")
+	_limpiar_salpicaduras()
+
+
+func test_explosiva_atraviesa_parry_activo() -> void:
+	# Arrange: parry activo
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina.ataques_para_parry_min = 1
+	azulina.ataques_para_parry_max = 1
+	azulina._emergiendo = false
+	azulina.manejar_impacto_aura(null)
+	assert_true(azulina._parry_activo, "Precondici�n: parry activo")
+
+	# Act: llega una explosiva en pleno giro
+	var resultado: bool = azulina.manejar_impacto_aura(_crear_flecha_falsa(true))
+
+	# Assert: penetra (detonar� al impactar el cuerpo)
+	assert_false(resultado, "La explosiva atraviesa el parry")
+	_limpiar_salpicaduras()
+

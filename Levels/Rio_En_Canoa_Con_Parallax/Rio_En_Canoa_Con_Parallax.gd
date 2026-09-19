@@ -72,6 +72,8 @@ func _ready() -> void:
 			parallax_fondo.call("_inicializar_capa_casa_boneta")
 		if parallax_fondo.has_method("_inicializar_capa_bosque_rojo"):
 			parallax_fondo.call("_inicializar_capa_bosque_rojo")
+		if parallax_fondo.has_method("_inicializar_capa_montana_beta"):
+			parallax_fondo.call("_inicializar_capa_montana_beta")
 		if parallax_fondo.has_method("_inicializar_capa_niebla"):
 			parallax_fondo.call("_inicializar_capa_niebla")
 		if parallax_fondo.has_method("_inicializar_capa_arbol_cordillera"):
@@ -216,6 +218,11 @@ func obtener_segmentos_piso_aliado() -> Array[Node3D]:
 	if is_instance_valid(parallax_fondo) and parallax_fondo.has_method("obtener_segmentos_piso_aliado"):
 		return parallax_fondo.call("obtener_segmentos_piso_aliado")
 	return []
+
+
+## Retorna la referencia a la Montaña Beta si existe en el escenario.
+func obtener_montana_beta() -> Node3D:
+	return find_child("MontanaBeta", true, false) as Node3D
 
 
 ## Muestra el HUD de vida (en el nivel 1 lo revelan las instrucciones, aquí no existen).

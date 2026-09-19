@@ -248,3 +248,36 @@ func test_azulina_drop_fuego_rapido_probabilidad_y_ejecucion():
 		if d != _power_up:
 			d.queue_free()
 
+
+func test_fuego_rapido_no_afecta_otros_power_ups():
+	# Arrange: Activar fuego rápido
+	_player.activar_fuego_rapido(15.0)
+	_player.health = 5
+
+	# Act & Assert 1: Con munición NORMAL, velocidad es 1.3x
+	_player.municion_activa = Player.TipoMunicion.NORMAL
+	assert_almost_eq(_player._get_multiplicador_velocidad_disparo_total(), 1.3, 0.001, "Disparo normal debe tener 1.3x")
+
+	# Act & Assert 2: Con munición EXPLOSIVA, velocidad vuelve a 1.0 (sin efecto en comportamiento)
+	_player.municion_activa = Player.TipoMunicion.EXPLOSIVA
+	_player.flechas_explosivas = 5
+	assert_almost_eq(_player._get_multiplicador_velocidad_disparo_total(), 1.0, 0.001, "Flecha explosiva no debe verse acelerada por fuego rápido (1.0x)")
+
+	# Mantiene inmortalidad
+	_player.recibir_dano(2)
+	assert_eq(_player.health, 5, "Debe mantener inmortalidad aún con flechas explosivas activas")
+
+	# Mantiene aura activa
+	assert_true(_player.fuego_rapido_activo, "Fuego rápido sigue activo")
+	assert_not_null(_player._aura_fuego_rapido_node, "El nodo del aura sigue presente")
+
+	# Act & Assert 3: Con munición MULTIPLE, velocidad vuelve a 1.0 (sin efecto en comportamiento)
+	_player.municion_activa = Player.TipoMunicion.MULTIPLE
+	_player.flechas_multiples = 5
+	assert_almost_eq(_player._get_multiplicador_velocidad_disparo_total(), 1.0, 0.001, "Flecha múltiple no debe verse acelerada por fuego rápido (1.0x)")
+
+	# Mantiene inmortalidad con munición múltiple
+	_player.recibir_dano(2)
+	assert_eq(_player.health, 5, "Debe mantener inmortalidad aún con flechas múltiples activas")
+
+

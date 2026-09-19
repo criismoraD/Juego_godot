@@ -422,7 +422,7 @@ func test_pisos_aliados_deteccion_en_escena() -> void:
 	# Assert
 	var pisos: Array[Node3D] = nivel.obtener_segmentos_piso_aliado()
 	assert_gt(pisos.size(), 0, "Debe detectar los nodos de piso en la escena")
-	assert_eq(pisos.size(), 23, "Deben estar presentes los 23 segmentos de piso (21 Piso nueva version + 2 Piso parada)")
+	assert_eq(pisos.size(), 21, "Deben estar presentes los 21 segmentos de Piso nueva version (Piso parada excluida para no alterar el parallax)")
 
 
 func test_pisos_aliados_sincronizados_misma_velocidad_cordillera() -> void:
@@ -1315,3 +1315,61 @@ func test_bandera_morada_escena_instanciable() -> void:
 	assert_not_null(bandera.material_override, "Debe tener configurado su material de ondeado")
 	var mat := bandera.material_override as ShaderMaterial
 	assert_not_null(mat.get_shader_parameter("albedo_texture"), "albedo_texture debe estar preconfigurada")
+
+
+# === TESTS DE PREVENCIÓN DE ÁRBOLES FLOTANTES EN EL FONDO ===
+func test_bosque_rojo_base_enterrada_y_sin_huecos() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	assert_not_null(packed, "La escena del río debe cargar correctamente")
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	assert_not_null(parallax, "ParallaxFondo debe existir")
+
+	# Assert 1: Ancho de segmento continuo (<= 45m para cubrir con solape sprites de 42m)
+	assert_lte(parallax.ancho_segmento_bosque_rojo, 45.0, "El ancho de segmento de BosqueRojo debe ser <= 45m para evitar huecos en el fondo")
+
+	# Assert 2: Cada sprite de BosqueRojo tiene su base enterrada por debajo de Y = -2.5
+	var sprites: Array[Sprite3D] = parallax.obtener_sprites_bosque_rojo()
+	assert_gt(sprites.size(), 0, "Deben existir sprites de BosqueRojo")
+	for s in sprites:
+		var tex_h: float = float(s.texture.get_height()) if s.texture else 1200.0
+		# Row 1199 es el fondo de los árboles (599 px bajo el centro)
+		var base_y: float = s.global_position.y - (tex_h * 0.5) * s.pixel_size * s.scale.y
+		assert_lte(base_y, -2.5, "La base de %s debe estar enterrada bajo -2.5m (base_y=%.2f) para no flotar en valles" % [s.name, base_y])
+
+
+func test_arboles_capa_terroso_base_enterrada() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var capa_terroso := parallax.get_node_or_null("CapaTerroso") as Node3D
+	assert_not_null(capa_terroso, "CapaTerroso debe existir")
+
+	# Assert: Los sprites Arboles_* deben tener su base por debajo de -2.5 en coordenadas de mundo
+	for c in capa_terroso.get_children():
+		if c is Sprite3D and c.name.begins_with("Arbol"):
+			var s := c as Sprite3D
+			var tex_h: float = float(s.texture.get_height()) if s.texture else 240.0
+			var world_y: float = s.global_position.y
+			var base_y: float = world_y - (tex_h * 0.5) * s.pixel_size * s.scale.y
+			assert_lte(base_y, -2.5, "La base de %s debe estar bajo -2.5m (base_y=%.2f) para no verse flotando" % [s.name, base_y])
+
+
+func test_piso_parada_excluido_de_pisos_aliados() -> void:
+	# Arrange
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: Node3D = packed.instantiate() as Node3D
+	add_child_autofree(nivel)
+
+	var parallax: ParallaxFondoRio = nivel.find_child("ParallaxFondo", true, false) as ParallaxFondoRio
+	var pisos: Array[Node3D] = parallax.obtener_segmentos_piso_aliado()
+
+	# Assert: Piso parada 1 y 2 no deben estar incluidos
+	for p in pisos:
+		assert_false(p.name.to_lower().contains("parada"), "Piso parada '%s' NO debe estar en los pisos móviles del parallax" % p.name)

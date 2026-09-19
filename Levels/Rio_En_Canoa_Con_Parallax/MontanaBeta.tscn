@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://bqj52kml8n3ox"]
+
+[ext_resource type="Texture2D" path="res://TEST_/Montaña beta.png" id="1_tex"]
+[ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/MontanaBeta.gd" id="2_script"]
+
+[node name="MontanaBeta" type="Sprite3D"]
+layers = 2
+pixel_size = 0.0035
+texture = ExtResource("1_tex")
+script = ExtResource("2_script")

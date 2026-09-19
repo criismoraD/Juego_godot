@@ -46,6 +46,7 @@ const ESCUDO_ROTO_SCENE: PackedScene = preload("res://Entities/Enemigo_Imp_Escud
 # ═══════════════════════════════════════════════════════════════════════════════
 @export_category("Estadísticas")
 @export var vida_maxima: int = VIDA_MAXIMA_DEFAULT
+@export var reduccion_explosion_bloqueando: float = 4.0  ## Bloqueando absorbe 4 de la explosión: caen en 2 disparos
 @export var velocidad_carrera: float = VELOCIDAD_CARRERA_DEFAULT
 @export var distancia_proteccion: float = DISTANCIA_PROTECCION_DEFAULT
 @export var rotacion_y_modelo: float = 270.0
@@ -555,6 +556,10 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 		return
 
 	var dano_total: float = amount
+
+	# Bloqueando con el escudo en alto absorbe parte de la explosión (2 disparos para caer).
+	if murio_por_explosion and (current_state == State.DEFENDING or current_state == State.SHIELD_HIT):
+		dano_total = maxf(1.0, dano_total - reduccion_explosion_bloqueando)
 
 	# VULNERABILIDAD TÁCTICA: +6 de daño, texto CRÍTICO y sonido de daño si es golpeada en plena animación de ataque
 	var golpe_critico: bool = current_state == State.ATTACKING

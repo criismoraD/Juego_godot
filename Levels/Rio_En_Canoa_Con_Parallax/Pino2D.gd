@@ -155,17 +155,24 @@ func _reciclar_si_detras() -> void:
 		return
 	var destino: float = cam_x + margen_adelante
 	var max_x: float = -INF
+	var max_permitido: float = cam_x + 70.0
 	for otro in _registro:
 		if otro != self and is_instance_valid(otro):
 			var ox: float = (otro as Node3D).global_position.x
-			if ox > max_x:
+			if ox > max_x and ox <= max_permitido:
 				max_x = ox
-	if max_x != -INF:
-		destino = maxf(destino, max_x + separacion_reciclaje)
+	if max_x != -INF and max_x >= destino:
+		destino = max_x + separacion_reciclaje
+	if destino > max_permitido:
+		# Repartir dentro de la franja visible/adelantada sobre los pisos activos
+		destino = cam_x + margen_adelante + fmod(absf(global_position.x * 7.13 + global_position.z * 13.7), 25.0)
+
 	var destino_pos := Vector3(destino, global_position.y, global_position.z)
 	var suelo_y: float = _suelo_superior_en(destino_pos)
 	if not is_nan(suelo_y):
 		destino_pos.y = suelo_y + _mitad_visible()
+	else:
+		destino_pos.y = -0.36148 + _mitad_visible()
 	global_position = destino_pos
 
 
@@ -198,7 +205,7 @@ func _suelo_superior_en(punto: Vector3) -> float:
 			if dist < mejor_dist:
 				mejor_dist = dist
 				mejor = p
-	if mejor == null:
+	if mejor == null or mejor_dist > 20.0:
 		return NAN
 	return mejor.global_position.y + ParallaxFondoRio.SEMIALTURA_PISO_MODELO * absf(mejor.global_transform.basis.get_scale().y)
 

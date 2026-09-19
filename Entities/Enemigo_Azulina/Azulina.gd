@@ -655,8 +655,15 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 		if flecha.has_meta("fuego_rapido") and bool(flecha.get_meta("fuego_rapido")):
 			es_fuego_rapido = true
 
+	# 1c. Las explosivas no se desvían ni desintegran: penetran y detonan al impactar (como con la rosa)
+	var es_explosiva: bool = false
+	if is_instance_valid(flecha) and ("es_explosiva" in flecha):
+		es_explosiva = bool(flecha.get("es_explosiva"))
+
 	# 2. Si el parry prolongado (Lanza casteo + círculo protector) está activo: repele y desintegra proyectiles
 	if _parry_activo:
+		if es_explosiva:
+			return false
 		AudioManager.play_sfx("parry")
 		if is_instance_valid(flecha):
 			_desintegrar_flecha_bloqueada(flecha)
@@ -677,8 +684,8 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 			return true
 		return false
 
-	# 4. Desvío de disparos normales con "Giro de lanza parry" (25% de probabilidad)
-	if not es_fuego_rapido and probabilidad_desvio_normal > 0.0 and randf() < probabilidad_desvio_normal:
+	# 4. Desvío de disparos normales con "Giro de lanza parry" (25% de probabilidad, nunca explosivas)
+	if not es_fuego_rapido and not es_explosiva and probabilidad_desvio_normal > 0.0 and randf() < probabilidad_desvio_normal:
 		_ejecutar_desvio_giro()
 		AudioManager.play_sfx("parry")
 		_destello_celeste_lanza()
@@ -697,7 +704,7 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 	if _impactos_recientes.size() >= 2:
 		_activar_parry()
 		AudioManager.play_sfx("parry")
-		if is_instance_valid(flecha):
+		if is_instance_valid(flecha) and not es_explosiva:
 			_desintegrar_flecha_bloqueada(flecha)
 		_destello_celeste_lanza()
 		return true
@@ -706,7 +713,7 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 	if _contador_ataques >= _umbral_parry:
 		_activar_parry()
 		AudioManager.play_sfx("parry")
-		if is_instance_valid(flecha):
+		if is_instance_valid(flecha) and not es_explosiva:
 			_desintegrar_flecha_bloqueada(flecha)
 		_destello_celeste_lanza()
 		return true

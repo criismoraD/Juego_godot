@@ -86,7 +86,10 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 @export_category("Bosque rojo")
 @export var sincronizar_bosque_rojo_con_fondo: bool = true  ## Si true, el BosqueRojo hace scroll parallax detrás de la cordillera
 @export var factor_bosque_rojo: float = 0.15  ## Entre nubes (0.08) y árboles (0.18): es lo más lejano
-@export var ancho_segmento_bosque_rojo: float = 100.0  ## Ancho de cada franja de bosque para el wrap del loop
+@export var ancho_segmento_bosque_rojo: float = 40.0  ## Ancho de cada franja de bosque para el wrap del loop (solape continuo)
+
+@export_category("Montaña beta")
+@export var sincronizar_montana_beta_con_fondo: bool = true  ## Si true, la MontañaBeta avanza a la misma velocidad del bosque rojo (sin repetirse)
 
 @export_category("Niebla sutil")
 @export var sincronizar_niebla_con_cordillera: bool = true  ## Si true, la NieblaSutil se desplaza a la misma velocidad de la cordillera
@@ -111,6 +114,7 @@ var _sprites_arboles: Array[Sprite3D] = []
 var _sprites_nubes: Array[Sprite3D] = []
 var _sprites_agua_textura: Array[Sprite3D] = []
 var _sprites_bosque_rojo: Array[Sprite3D] = []
+var _segmentos_montana_beta: Array[Node3D] = []
 var _segmentos_niebla: Array[Node3D] = []
 var _segmentos_casa_boneta: Array[Node3D] = []
 var _segmentos_arbol_cordillera: Array[Node3D] = []
@@ -153,6 +157,7 @@ func _process(delta: float) -> void:
 	_actualizar_loop_agua_textura(delta)
 	_actualizar_loop_casa_boneta(delta)
 	_actualizar_loop_bosque_rojo(delta)
+	_actualizar_loop_montana_beta(delta)
 	_actualizar_loop_niebla(delta)
 	_actualizar_loop_arbol_cordillera(delta)
 	_actualizar_loop_arboles(delta)
@@ -247,6 +252,22 @@ func registrar_sprite_bosque_rojo(sprite_bosque: Sprite3D) -> void:
 		)
 
 
+## Retorna los nodos de montaña beta registrados en el parallax.
+func obtener_segmentos_montana_beta() -> Array[Node3D]:
+	if _segmentos_montana_beta.is_empty():
+		_inicializar_capa_montana_beta()
+	return _segmentos_montana_beta
+
+
+## Permite registrar un nodo de montaña beta dinámicamente.
+func registrar_segmento_montana_beta(nodo_montana: Node3D) -> void:
+	if is_instance_valid(nodo_montana) and not _segmentos_montana_beta.has(nodo_montana):
+		_segmentos_montana_beta.append(nodo_montana)
+		_segmentos_montana_beta.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+			return a.position.x < b.position.x
+		)
+
+
 ## Retorna los segmentos de niebla sutil sincronizados con la cordillera.
 func obtener_segmentos_niebla() -> Array[Node3D]:
 	if _segmentos_niebla.is_empty():
@@ -334,6 +355,7 @@ func _inicializar_capas() -> void:
 	_inicializar_capa_agua_textura()
 	_inicializar_capa_casa_boneta()
 	_inicializar_capa_bosque_rojo()
+	_inicializar_capa_montana_beta()
 	_inicializar_capa_niebla()
 	_inicializar_capa_arbol_cordillera()
 	_inicializar_capas_arboles_y_nubes()
@@ -558,6 +580,8 @@ func _es_segmento_piso(nodo: Node) -> bool:
 	if not (nodo is Node3D) or nodo is Light3D or nodo is Camera3D:
 		return false
 	var n: String = nodo.name.to_lower()
+	if n.contains("parada"):
+		return false
 	if n.begins_with("piso"):
 		return true
 	return false
@@ -894,6 +918,49 @@ func _actualizar_loop_bosque_rojo(delta: float) -> void:
 			sprite.position.x -= paso
 
 	_reciclar_fuera_de_vista(_sprites_bosque_rojo, ancho_segmento_bosque_rojo)
+
+
+func _inicializar_capa_montana_beta() -> void:
+	_segmentos_montana_beta.clear()
+	_recolectar_montana_beta(self)
+	var padre: Node = get_parent()
+	if is_instance_valid(padre) and padre != self:
+		_recolectar_montana_beta(padre)
+
+	_segmentos_montana_beta.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		return a.position.x < b.position.x
+	)
+
+
+func _recolectar_montana_beta(contenedor: Node) -> void:
+	for hijo in contenedor.get_children():
+		if hijo is Node3D and not (hijo is Light3D or hijo is Camera3D) and _es_montana_beta(hijo):
+			if not _segmentos_montana_beta.has(hijo):
+				_segmentos_montana_beta.append(hijo as Node3D)
+
+
+func _es_montana_beta(nodo: Node) -> bool:
+	if not (nodo is Node3D) or nodo is Light3D or nodo is Camera3D:
+		return false
+	var n: String = nodo.name.to_lower()
+	if n.begins_with("montanabeta") or n.begins_with("montañabeta"):
+		return true
+	var scr: Variant = nodo.get_script()
+	if scr is Script and (scr as Script).resource_path.ends_with("MontanaBeta.gd"):
+		return true
+	return false
+
+
+func _actualizar_loop_montana_beta(delta: float) -> void:
+	if not sincronizar_montana_beta_con_fondo or _segmentos_montana_beta.is_empty():
+		return
+
+	# Misma velocidad que el bosque rojo: el fondo más lejano
+	var paso: float = velocidad_base * factor_bosque_rojo * delta
+	for montana in _segmentos_montana_beta:
+		if is_instance_valid(montana):
+			montana.position.x -= paso
+	# NOTA: Este objeto NO se repite en el parallax, solo aparece una vez (sin _reciclar_fuera_de_vista).
 
 
 func _inicializar_capa_niebla() -> void:
