@@ -139,12 +139,17 @@ const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el 
 @export var momento_submersion_piquero: float = 0.35  ## Momento (0..1) donde alcanza el ápice y se sumerge a 230°
 @export var tiempo_bajo_agua: float = 1.2  ## Segundos bajo el agua antes de reemerger
 
+@export_category("Drops")
+@export var power_up_fuego_rapido_scene: PackedScene = preload("res://Entities/Item_Fuego_Rapido/PowerUpFuegoRapido.tscn")
+@export_range(0.0, 1.0, 0.01) var probabilidad_drop_fuego_rapido: float = 0.05  ## 5% de probabilidad de drop
+
 var distancia_piquero_x: float:
 	get: return absf(cos(deg_to_rad(angulo_salida_piquero_deg))) * distancia_salida_piquero
 var hundimiento_piquero: float:
 	get: return absf(sin(deg_to_rad(angulo_salida_piquero_deg))) * distancia_salida_piquero
 
 # === ESTADO PRIVADO ===
+var _drop_realizado: bool = false
 var _emergiendo: bool = false
 var _tiempo_emergencia: float = 0.0
 var _origen_emergencia: Vector3 = Vector3.ZERO
@@ -441,6 +446,29 @@ func _soltar_lanza_al_morir() -> void:
 	)
 
 
+func _dropear_power_up() -> void:
+	if _drop_realizado:
+		return
+	_drop_realizado = true
+
+	if not power_up_fuego_rapido_scene:
+		return
+
+	if randf() > probabilidad_drop_fuego_rapido:
+		return
+
+	var power_up := power_up_fuego_rapido_scene.instantiate() as Node3D
+	if not power_up:
+		return
+
+	var target_parent: Node = get_tree().current_scene if (get_tree() and get_tree().current_scene) else (get_tree().root if get_tree() else null)
+	if not target_parent and get_parent():
+		target_parent = get_parent()
+	if target_parent:
+		target_parent.add_child(power_up)
+		power_up.global_position = global_position + Vector3(0.0, 0.4, 0.0)
+
+
 func _on_state_dying() -> void:
 	super._on_state_dying()
 	_parry_activo = false
@@ -465,6 +493,7 @@ func _on_state_dying() -> void:
 	_soltar_lanza_al_morir()
 	_mostrar_lanza(false)
 	_desvanecer_circulo_muerte()
+	_dropear_power_up()
 	AudioManager.play_sfx("azulina_muerte")
 	_aplicar_squash_stretch(0.0)
 
@@ -620,6 +649,12 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 				_mostrar_lanza(false)
 		return false
 
+	# 1b. Las flechas normales con fuego rápido NO se pueden desviar con giro lanza parry y NO desencadenan lanza casteo
+	var es_fuego_rapido: bool = false
+	if is_instance_valid(flecha):
+		if flecha.has_meta("fuego_rapido") and bool(flecha.get_meta("fuego_rapido")):
+			es_fuego_rapido = true
+
 	# 2. Si el parry prolongado (Lanza casteo + círculo protector) está activo: repele y desintegra proyectiles
 	if _parry_activo:
 		AudioManager.play_sfx("parry")
@@ -630,6 +665,11 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 
 	# 3. Si ya está ejecutando el giro de desvío: repele proyectiles simultáneos hasta el límite
 	if _desviando_giro:
+		if es_fuego_rapido:
+			_desviando_giro = false
+			if not _parry_activo:
+				_mostrar_lanza(false)
+			return false
 		if _contador_desvios_giro < max_proyectiles_desvio_giro:
 			_contador_desvios_giro += 1
 			AudioManager.play_sfx("parry")
@@ -638,13 +678,15 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 		return false
 
 	# 4. Desvío de disparos normales con "Giro de lanza parry" (25% de probabilidad)
-	if probabilidad_desvio_normal > 0.0 and randf() < probabilidad_desvio_normal:
+	if not es_fuego_rapido and probabilidad_desvio_normal > 0.0 and randf() < probabilidad_desvio_normal:
 		_ejecutar_desvio_giro()
 		AudioManager.play_sfx("parry")
 		_destello_celeste_lanza()
 		return true
 
-	# 5. Si no desvió (el 75% restante): el impacto pasa. Se comprueba umbral de activación de parry prolongado
+	# 5. Si no desvió: el impacto pasa. Fuego rápido no desencadena la habilidad lanza casteo
+	if es_fuego_rapido:
+		return false
 	if _tiempo_enfriamiento > 0.0:
 		return false
 

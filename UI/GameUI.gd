@@ -2394,6 +2394,39 @@ func _spawn_flecha_multiple_debug() -> void:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# DEBUG: SPAWN FUEGO RÁPIDO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+func _spawn_fuego_rapido_debug() -> void:
+	if not fuego_rapido_scene_debug:
+		push_warning("[GameUI] fuego_rapido_scene_debug no está asignado.")
+		return
+
+	var scene_root := get_tree().current_scene
+	if not scene_root:
+		push_warning("[GameUI] No hay escena activa para instanciar el power-up.")
+		return
+
+	var item := fuego_rapido_scene_debug.instantiate() as Node3D
+	if not item:
+		push_warning("[GameUI] No se pudo instanciar PowerUpFuegoRapido.tscn.")
+		return
+
+	var target_x: float = 0.0
+	var target_y: float = 1.0
+	var target_z: float = 0.0
+	if player and is_instance_valid(player) and "global_position" in player:
+		target_x = player.global_position.x
+		target_y = player.global_position.y
+		target_z = player.global_position.z
+
+	item.position = Vector3(target_x, target_y + 4.0, target_z)
+	scene_root.add_child(item)
+	item.global_position = Vector3(target_x, target_y + 4.0, target_z)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DEBUG: SPAWN REFUERZO PERRENA
 # ═══════════════════════════════════════════════════════════════════════════════
 

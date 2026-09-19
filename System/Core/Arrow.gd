@@ -19,6 +19,7 @@ const MARGEN_OFFSCREEN_PANTALLA_ABAJO: float = 300.0
 enum TipoFlecha { JUGADOR, ENEMIGO }
 @export var tipo_dueño: TipoFlecha = TipoFlecha.JUGADOR
 @export var multiplicador_dano_sobrecarga: float = 2.0  ## Daño x2 solo con flecha de sobrecarga morada al 100% (meta "sobrecarga_max")
+const MULTIPLICADOR_DANO_FUEGO_RAPIDO: float = 2.0  ## Daño x2 en flechas normales con fuego rápido (meta "fuego_rapido")
 
 ## SISTEMA GOLPE CRÍTICO: daño letal instantáneo cuando la sobrecarga al 100%
 ## impacta a un enemigo en su momento vulnerable (es_momento_golpe_critico).
@@ -327,6 +328,8 @@ func _on_body_entered(body):
 			if body.has_method("set") and "ultimo_atacante" in body:
 				body.ultimo_atacante = tirador
 			var dano_final: float = 1.0
+			if has_meta("fuego_rapido") and bool(get_meta("fuego_rapido")):
+				dano_final *= MULTIPLICADOR_DANO_FUEGO_RAPIDO
 			var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
 			if es_sobrecarga:
 				dano_final *= multiplicador_dano_sobrecarga

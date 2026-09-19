@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dledflr6nhyey"
+path="res://.godot/imported/fire fire rapido.mp3-2e5a81914a4113d37ba2b5f62cfd1ba4.mp3str"
+
+[deps]
+
+source_file="res://TEST_/fire fire rapido.mp3"
+dest_files=["res://.godot/imported/fire fire rapido.mp3-2e5a81914a4113d37ba2b5f62cfd1ba4.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

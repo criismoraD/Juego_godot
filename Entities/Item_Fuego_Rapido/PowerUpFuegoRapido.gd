@@ -23,12 +23,13 @@ const SONIDO_PICKUP: String = "res://TEST_/Obtener arma.wav"
 const RADIO_PICKUP_JUGADOR: float = 2.0  ## Pickup por proximidad horizontal
 const RADIO_PICKUP_Y: float = 2.5  ## Margen vertical para plataformas/saltos
 const DURACION_DESINTEGRACION: float = 0.6  ## Duración del shader dissolve
+const TEXTURA_MODELO: Texture2D = preload("res://TEST_/Rapid fire/Rapid fire_D.jpg")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 @export_category("Efecto Fuego Rápido")
-@export var duracion_buff: float = 10.0  ## Duración en segundos del buff
+@export var duracion_buff: float = 15.0  ## Duración en segundos del buff
 @export var tiempo_en_pantalla: float = 3.0  ## Segundos antes de auto-consumirse
 @export var tiempo_escala_spawn: float = 0.4  ## Duración del escalado orgánico al aparecer
 
@@ -69,6 +70,7 @@ var fire_particles: GPUParticles3D = null
 func _ready() -> void:
 	_obtener_nodos_directos()
 	_centrar_modelo()
+	_asegurar_material_textura()
 
 	add_to_group("pickups")
 	add_to_group("power_ups_fuego_rapido")
@@ -199,6 +201,32 @@ func _centrar_modelo() -> void:
 		var center_offset: Vector3 = combined_aabb.get_center()
 		child_model.position -= center_offset
 		_model_centered = true
+
+
+## Asegura que los MeshInstance3D tengan el material con la textura diffuse de Rapid Fire
+func _asegurar_material_textura() -> void:
+	if not model_root:
+		return
+	var meshes: Array[Node] = model_root.find_children("*", "MeshInstance3D", true, false)
+	for mesh_node in meshes:
+		var mi := mesh_node as MeshInstance3D
+		if not mi:
+			continue
+		var mat: StandardMaterial3D = null
+		if mi.material_override and mi.material_override is StandardMaterial3D:
+			mat = mi.material_override as StandardMaterial3D
+		elif mi.mesh and mi.mesh.get_surface_count() > 0:
+			var surf_mat = mi.mesh.surface_get_material(0)
+			if surf_mat and surf_mat is StandardMaterial3D:
+				mat = surf_mat as StandardMaterial3D
+		if mat:
+			if mat.albedo_texture == null:
+				mat.albedo_texture = TEXTURA_MODELO
+		else:
+			var new_mat := StandardMaterial3D.new()
+			new_mat.albedo_texture = TEXTURA_MODELO
+			new_mat.roughness = 0.5
+			mi.material_override = new_mat
 
 
 func _comprobar_caida_al_suelo() -> void:
@@ -369,8 +397,12 @@ func _iniciar_desintegracion(duracion: float) -> void:
 			var std := orig as StandardMaterial3D
 			if std.albedo_texture:
 				mat.set_shader_parameter("albedo_texture", std.albedo_texture)
+			else:
+				mat.set_shader_parameter("albedo_texture", TEXTURA_MODELO)
 			var col := std.albedo_color
 			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+		else:
+			mat.set_shader_parameter("albedo_texture", TEXTURA_MODELO)
 
 		mi.material_override = mat
 		dissolve_mats.append(mat)
