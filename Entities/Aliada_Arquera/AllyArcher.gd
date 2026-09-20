@@ -1175,21 +1175,30 @@ func _es_lonko_en_pilar_completo(enemy: Node) -> bool:
 	return false
 
 
+## Lista unificada de enemigos: spawner (si existe) + grupo "enemies".
+## No depende de is_wave_active: ese flag solo controla el auto-spawn por oleadas,
+## pero en el nivel debug (PAUSADO + SPAWNEAR UNO) hay enemigos manuales presentes
+## a los que igual hay que atacar. La unión también cubre enemigos externos
+## (Torre de Asedio) no registrados en el spawner.
+func _lista_enemigos_union() -> Array:
+	var lista: Array = []
+	var wave_spawner = _get_cached_wave_spawner()
+	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
+		lista.append_array(wave_spawner.get_active_enemies())
+	if get_tree():
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if not lista.has(e):
+				lista.append(e)
+	return lista
+
+
 ## Devuelve la cantidad de enemigos presentes en pantalla, vivos, estén o no reconocidos como objetivos
 func _contar_enemigos_en_pantalla() -> int:
 	if not _oleada_en_curso:
 		return 0
 
-	var wave_spawner = _get_cached_wave_spawner()
-	if wave_spawner and "is_wave_active" in wave_spawner and not wave_spawner.is_wave_active:
-		return 0
-
 	var count := 0
-	var enemies: Array = []
-	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
-		enemies = wave_spawner.get_active_enemies()
-	else:
-		enemies = get_tree().get_nodes_in_group("enemies")
+	var enemies: Array = _lista_enemigos_union()
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
@@ -1211,16 +1220,8 @@ func _contar_enemigos_vivos() -> int:
 	if not _oleada_en_curso:
 		return 0
 
-	var wave_spawner = _get_cached_wave_spawner()
-	if wave_spawner and "is_wave_active" in wave_spawner and not wave_spawner.is_wave_active:
-		return 0
-
 	var count = 0
-	var enemies = []
-	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
-		enemies = wave_spawner.get_active_enemies()
-	else:
-		enemies = get_tree().get_nodes_in_group("enemies")
+	var enemies = _lista_enemigos_union()
 
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
@@ -1247,13 +1248,7 @@ func _contar_enemigos_vivos() -> int:
 ## Las gárgolas vuelan alto (3.3-5.2 m): el arco a ciego nunca las alcanza,
 ## así que requieren apuntado directo.
 func _obtener_gargola_objetivo() -> Node3D:
-	var enemies = []
-
-	var wave_spawner = _get_cached_wave_spawner()
-	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
-		enemies = wave_spawner.get_active_enemies()
-	else:
-		enemies = EnemyBase.active_enemies_cache
+	var enemies: Array = _lista_enemigos_union()
 
 	var mejor: Node3D = null
 	var menor_dist: float = INF
@@ -1277,13 +1272,7 @@ func _obtener_gargola_objetivo() -> Node3D:
 ## Busca el globo aerostático (vehículo volador) vivo más cercano frente a la arquera.
 ## Vuela alto (3.3-5.2 m): igual que la gárgola, el arco a ciego no lo alcanza.
 func _obtener_globo_objetivo() -> Node3D:
-	var enemies = []
-
-	var wave_spawner = _get_cached_wave_spawner()
-	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
-		enemies = wave_spawner.get_active_enemies()
-	else:
-		enemies = EnemyBase.active_enemies_cache
+	var enemies: Array = _lista_enemigos_union()
 
 	var mejor: Node3D = null
 	var menor_dist: float = INF
@@ -1307,13 +1296,7 @@ func _obtener_globo_objetivo() -> Node3D:
 ## Busca la arquera Lonko viva más cercana frente a la defensora,
 ## SOLO si está parada encima de su pilar con la animación de emerger completa.
 func _obtener_lonko_objetivo() -> Node3D:
-	var enemies = []
-
-	var wave_spawner = _get_cached_wave_spawner()
-	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
-		enemies = wave_spawner.get_active_enemies()
-	else:
-		enemies = get_tree().get_nodes_in_group("enemies")
+	var enemies: Array = _lista_enemigos_union()
 
 	var mejor: Node3D = null
 	var menor_dist: float = INF
@@ -1369,12 +1352,7 @@ func _obtener_pilar_lonko_objetivo() -> Node3D:
 
 ## Obtiene los enemigos vivos activos situados frente a la aliada
 func _obtener_enemigos_disponibles() -> Array:
-	var enemies = []
-	var wave_spawner = _get_cached_wave_spawner()
-	if wave_spawner and wave_spawner.has_method("get_active_enemies"):
-		enemies = wave_spawner.get_active_enemies()
-	else:
-		enemies = get_tree().get_nodes_in_group("enemies")
+	var enemies: Array = _lista_enemigos_union()
 
 	var validos: Array = []
 	for enemy in enemies:
@@ -1399,8 +1377,14 @@ func _obtener_enemigos_disponibles() -> Array:
 
 
 ## Sistema de disparo referencia Player: 3 anims TOMAR_FLECHA → IDLE_APUNTANDO → SOLTAR_FLECHA
-## Prioridades Arquera — Voladores 2, Básicos 0, Elite 0 (Lonko 1 solo sobre pilar), Guardian 0
-## 0 = azar, 1 = fija y apunta, 2 = fija inmediata y elimina
+## Clases: Voladores (Gárgola, Globo) / Básicos (Imp, Goblin arquero, Goblin ballestero,
+## Limo, Goblin general) / Elite (Arquera Lonko, Goblin rosada, Azulina) /
+## Guardian (Imp de escudo, Guardiana moradita).
+## Prioridades Arquera — Voladores 2, Básicos 0, Elite 0 (Lonko 1 solo sobre el pilar),
+## Guardian 0. Ver System/Core/PrioridadDefensoras.gd
+## 0 = azar (dispara al azar en rango ante su presencia),
+## 1 = fija, apunta y dispara al objetivo,
+## 2 = fija inmediata y elimina de la manera más efectiva posible.
 func _decidir_disparo_y_objetivo() -> Dictionary:
 	# Prioridad 2 - Voladores: Gárgola y Globo aerostático (máxima)
 	var gargola := _obtener_gargola_objetivo()
@@ -1420,7 +1404,8 @@ func _decidir_disparo_y_objetivo() -> Dictionary:
 			return { "target": volador, "type": TipoDisparoAliada.EXPLOSIVO }
 		return { "target": volador, "type": TipoDisparoAliada.NORMAL }
 
-	# Prioridad 1 - Elite excepción: Arquera lonko solo cuando está sobre pilar completo
+	# Prioridad 1 - Elite excepción: Arquera Lonko solo cuando está sobre el pilar
+	# con la animación de emerger completa. Rosada y Azulina quedan en prioridad 0.
 	var lonko := _obtener_lonko_objetivo()
 	if is_instance_valid(lonko):
 		# Reservar flechas explosivas para la arquera Lonko emergida
@@ -1428,7 +1413,9 @@ func _decidir_disparo_y_objetivo() -> Dictionary:
 			return { "target": lonko, "type": TipoDisparoAliada.EXPLOSIVO }
 		return { "target": lonko, "type": TipoDisparoAliada.NORMAL }
 
-	# Prioridad 0 - Básicos, Elite sin condición y Guardian: disparo al azar en rango
+	# Prioridad 0 - Básicos (Imp, Goblin arquero, Goblin ballestero, Limo, Goblin general),
+	# Elite sin condición (Rosada, Azulina, Lonko fuera del pilar) y Guardian
+	# (Imp de escudo, Guardiana moradita): disparo al azar en rango ante su presencia.
 	if flechas_multiples > 0:
 		return { "target": null, "type": TipoDisparoAliada.MULTIPLE }
 	if flechas_explosivas > 0:
@@ -1446,6 +1433,15 @@ func _obtener_objetivo_actual(forzar_refresco: bool = false) -> Node3D:
 	var decision := _decidir_disparo_y_objetivo()
 	_cached_target = decision.get("target", null)
 	return _cached_target
+
+
+## Devuelve el nivel de prioridad (0/1/2) de un enemigo para la arquera.
+## Voladores 2, Lonko sobre pilar 1, resto 0 (Básicos, Elite sin condición, Guardian).
+func prioridad_de(enemy: Node) -> int:
+	if not is_instance_valid(enemy):
+		return 0
+	var lonko_completo: bool = _es_lonko_en_pilar_completo(enemy) if _es_lonko(enemy) else false
+	return PrioridadDefensoras.prioridad_arquera(enemy, lonko_completo)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2086,7 +2082,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN, velo
 	plataforma_asignada = indice_plataforma
 	vida_maxima = 2
 	health = 2
-	scale = Vector3(0.3, 0.3, 0.3)
+	scale = Vector3(0.32, 0.32, 0.32)
 	_setup_animation_player()
 	_restaurar_torso()
 

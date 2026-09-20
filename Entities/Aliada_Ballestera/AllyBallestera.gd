@@ -5,7 +5,11 @@ extends Node3D
 ## Mantiene postura de combate fija de pie, cadencia de ataque lenta y pesada, ciclo de 5 disparos
 ## de pie y luego 5 disparos agachada reforzando el escudo de piso.
 ## Apuntado orgánico y suave multi-hueso con suavizado exponencial y micro-respiración.
-## No reconoce a la Imp de escudo como objetivo directo (solo la daña por casualidad de trayectoria).
+## Prioridades — Voladores 0, Básicos 2 (Imp, Goblin arquero, Goblin ballestero, Limo,
+## Goblin general), Elite 0 (Goblin rosada 2 solo sin aura barrera; Lonko y Azulina siempre 0),
+## Guardian 0 (Imp de escudo y Guardiana moradita).
+## Prioridad 0 = tiro al azar al frente; 2 = fija, apunta y dispara al objetivo.
+## No reconoce a guardianes como objetivo directo (solo los daña por casualidad de trayectoria).
 ## No hace fijación precisa a enemigos voladores ni arqueras Lonko (dispara al azar hacia el frente),
 ## y celebra con animación VICTORIA al finalizar una oleada.
 
@@ -1409,13 +1413,25 @@ func _es_imp_escudo(enemy: Node) -> bool:
 	return ("imp" in n and "escudo" in n) or ("impshield" in n) or ("impshield" in s) or ("imp_escudo" in s)
 
 
+## Lista unificada de enemigos: spawner (si existe) + grupo "enemies".
+## No depende de is_wave_active: ese flag solo controla el auto-spawn por oleadas,
+## pero en el nivel debug (PAUSADO + SPAWNEAR UNO) hay enemigos manuales presentes
+## a los que igual hay que atacar. La unión también cubre enemigos externos
+## (Torre de Asedio) no registrados en el spawner.
+func _lista_enemigos_union() -> Array:
+	var lista: Array = []
+	var spawner = _get_cached_wave_spawner()
+	if spawner and spawner.has_method("get_active_enemies"):
+		lista.append_array(spawner.get_active_enemies())
+	if get_tree():
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if not lista.has(e):
+				lista.append(e)
+	return lista
+
+
 func _puede_atacar() -> bool:
 	if not _oleada_en_curso:
-		_puede_atacar_cached = false
-		return false
-
-	var spawner = _get_cached_wave_spawner()
-	if spawner and "is_wave_active" in spawner and not spawner.is_wave_active:
 		_puede_atacar_cached = false
 		return false
 
@@ -1424,20 +1440,7 @@ func _puede_atacar() -> bool:
 
 	_puede_atacar_timer = PUEDE_ATACAR_INTERVAL
 
-	var enemies: Array = []
-	if spawner and spawner.has_method("get_active_enemies"):
-		if "is_wave_active" in spawner and not spawner.is_wave_active:
-			var hay_hostiles := false
-			for e in spawner.get_active_enemies():
-				if is_instance_valid(e) and not _es_pacifico_intacto(e) and not _es_enemigo_muerto(e) and not _es_imp_escudo(e):
-					hay_hostiles = true
-					break
-			if not hay_hostiles:
-				_puede_atacar_cached = false
-				return false
-		enemies = spawner.get_active_enemies()
-	else:
-		enemies = get_tree().get_nodes_in_group("enemies")
+	var enemies: Array = _lista_enemigos_union()
 
 	var hostiles_activos: int = 0
 	for enemy in enemies:
@@ -1479,26 +1482,68 @@ func _es_pacifico_intacto(enemy: Node) -> bool:
 	return false
 
 
-## Clases: Voladores (Gárgola, Globo) / Básicos (Imp, Goblin arquero, Goblin ballestero) / Elite (Lonko, Rosada) / Guardian (Imp escudo)
-## Ballestera: Voladores 0 (azar), Básicos 2 (fija y apunta), Elite 0 (Rosada sin aura 2), Guardian 0 (azar)
+## Clases: Voladores (Gárgola, Globo) / Básicos (Imp, Goblin arquero, Goblin ballestero,
+## Limo, Goblin general) / Elite (Lonko, Rosada, Azulina) / Guardian (Imp escudo, Guardiana moradita)
+## Ballestera: Voladores 0 (azar), Básicos 2 (fija y apunta), Elite 0 (Rosada sin aura 2),
+## Guardian 0 (azar). Ver System/Core/PrioridadDefensoras.gd
 func _es_volador_ballestera(enemy: Node) -> bool:
 	if not is_instance_valid(enemy):
 		return false
+	if enemy is Gargola or enemy is GloboAerostatico:
+		return true
 	var n: String = enemy.name.to_lower()
 	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
 	return enemy.is_in_group("flying_enemies") or ("gargola" in n) or ("gargola" in s) or ("gargoyle" in n) or ("globo" in n) or ("globo" in s)
 
+func _es_guardiana_moradita(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	if enemy is GuardianaMoradita:
+		return true
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	return ("moradita" in n or "moradita" in s or "goblina_escudo" in s) or ("guardiana" in n and "moradita" in n)
+
+func _es_guardian_ballestera(enemy: Node) -> bool:
+	return _es_imp_escudo(enemy) or _es_guardiana_moradita(enemy)
+
+func _es_azulina(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	if enemy is Azulina:
+		return true
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	return "azulina" in n or "azulina" in s
+
+func _es_lonko_ballestera(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	if enemy is Lonko:
+		return true
+	var n: String = enemy.name.to_lower()
+	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
+	return "lonko" in n or "lonko" in s
+
 func _es_basico_ballestera(enemy: Node) -> bool:
 	if not is_instance_valid(enemy):
 		return false
-	if _es_imp_escudo(enemy):
+	# Tipos duros de la clase Básicos: Imp, Goblin arquero (GoblinGirl),
+	# Goblin ballestero (Goblin), Limo y Goblin general.
+	if enemy is ImpEnemy or enemy is Goblin or enemy is GoblinGirl or enemy is LimoCuadrado or enemy is GoblinGeneral:
+		if _es_guardian_ballestera(enemy):
+			return false
+		return true
+	if _es_guardian_ballestera(enemy):
 		return false
 	var n: String = enemy.name.to_lower()
 	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
-	# Imp, Goblin arquero (GoblinGirl), Goblin ballestero (Goblin) y Limo cuadrado
+	# Elite nunca es básico: Lonko, Rosada, Azulina
 	if "arquera_rosa" in n or "arquera_rosa" in s or "rosa" in n or "rosa" in s:
 		return false
 	if "lonko" in n or "lonko" in s:
+		return false
+	if "azulina" in n or "azulina" in s:
 		return false
 	if _es_volador_ballestera(enemy):
 		return false
@@ -1527,20 +1572,18 @@ func _es_rosada_sin_aura(enemy: Node) -> bool:
 func _es_objetivo_azar_ballestera(enemy: Node) -> bool:
 	if not is_instance_valid(enemy):
 		return true
-	if _es_volador_ballestera(enemy):
-		return true  # Voladores 0
-	if _es_imp_escudo(enemy):
-		return true  # Guardian 0
-	if _es_rosada(enemy) and not _es_rosada_sin_aura(enemy):
-		return true  # Rosada con aura 0
-	var s: String = enemy.get_script().resource_path.to_lower() if enemy.get_script() else ""
-	if "lonko" in enemy.name.to_lower() or "lonko" in s:
-		return true  # Lonko 0 para ballestera
-	return false
+	# Prioridad 2 (apuntado preciso): Básicos y Rosada sin aura → NO es azar.
+	if _es_basico_ballestera(enemy) or _es_rosada_sin_aura(enemy):
+		return false
+	# Todo lo demás es prioridad 0 y se dispara al azar ante su presencia:
+	# Voladores (Gárgola, Globo), Elite (Lonko, Rosada con aura, Azulina),
+	# Guardian (Imp de escudo, Guardiana moradita) y cualquier clase no listada.
+	return true
 
 
-## Prioridad 0: hostiles que no merecen apuntado preciso (Lonko, voladores, guardianes,
-## rosada con aura) pero ante los que la ballestera igual dispara al azar en cualquier ángulo.
+## Prioridad 0: hostiles que no merecen apuntado preciso (Lonko, Azulina, voladores,
+## guardianes, rosada con aura) pero ante los que la ballestera igual dispara al azar
+## en cualquier ángulo.
 func _hay_objetivo_azar() -> bool:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy) or not (enemy is Node3D) or not enemy.is_inside_tree():
@@ -1575,7 +1618,9 @@ func _obtener_enemigos_terrestres_candidatos() -> Array[Node3D]:
 
 
 func _obtener_objetivo_prioritario() -> Node3D:
-	# Prioridad 2: Básicos y Rosada sin aura (ambos máxima)
+	# Prioridad 2: Básicos (Imp, Goblin arquero, Goblin ballestero, Limo, Goblin general)
+	# y Rosada sin aura barrera (excepción Elite). Resto (Voladores, Elite con condición
+	# sin cumplir, Guardian) es prioridad 0 y se dispara al azar.
 	var candidatos := _obtener_enemigos_terrestres_candidatos()
 	if candidatos.is_empty():
 		return null
@@ -1588,6 +1633,15 @@ func _obtener_objetivo_prioritario() -> Node3D:
 			menor_dist = dist
 			mejor = enemy
 	return mejor
+
+
+## Devuelve el nivel de prioridad (0/2) de un enemigo para la ballestera.
+## Básicos 2, Rosada sin aura 2, resto 0 (Voladores, Lonko, Azulina, Guardian,
+## Rosada con aura). Útil para debug y tests.
+func prioridad_de(enemy: Node) -> int:
+	if not is_instance_valid(enemy):
+		return 0
+	return PrioridadDefensoras.prioridad_ballestera(enemy, _es_rosada_sin_aura(enemy))
 
 
 func _get_cached_wave_spawner() -> Node:
@@ -1907,7 +1961,7 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	plataforma_asignada = indice_plataforma
 	vida_maxima = 2
 	health = 2
-	scale = Vector3(0.3, 0.3, 0.3)
+	scale = Vector3(0.32, 0.32, 0.32)
 	_setup_animation_player()
 	_importar_animaciones_jugador()
 	_restaurar_torso()

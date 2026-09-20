@@ -464,6 +464,43 @@ func test_oleada_iniciada_reanuda_estado_idle() -> void:
 	assert_eq(_ally.current_state, _ally.State.IDLE, "Al iniciar la nueva oleada debe salir de CELEBRATING a IDLE")
 
 
+class MockWaveSpawnerPausado extends Node:
+	var is_wave_active: bool = false
+	func get_active_enemies() -> Array:
+		return []
+
+
+func test_debug_pausado_con_enemigo_manual_si_cuenta_y_ataca() -> void:
+	# Arrange (bug nivel debug: PAUSADO + SPAWNEAR UNO dejaba a las defensoras sin atacar
+	# porque el conteo exigía is_wave_active == true)
+	AllyArcher._cached_wave_spawner = null
+	var mock_spawner := MockWaveSpawnerPausado.new()
+	mock_spawner.name = "MockWaveSpawnerPausado"
+	mock_spawner.add_to_group("wave_spawners")
+	get_tree().root.add_child(mock_spawner)
+	AllyArcher._cached_wave_spawner = mock_spawner
+	_ally.global_position = Vector3.ZERO
+	_ally._oleada_en_curso = true
+	var enemigo := Node3D.new()
+	enemigo.name = "AzulinaDebug"
+	enemigo.add_to_group("enemies")
+	get_tree().root.add_child(enemigo)
+	enemigo.global_position = Vector3(5.0, 0.0, 0.0)
+
+	# Act
+	var conteo: int = _ally._contar_enemigos_en_pantalla()
+
+	# Assert: aunque el spawner esté pausado, el enemigo manual presente debe contarse
+	assert_gt(conteo, 0, "Con spawner pausado pero enemigo manual presente, el conteo debe ser > 0")
+
+	# Cleanup
+	get_tree().root.remove_child(enemigo)
+	enemigo.free()
+	get_tree().root.remove_child(mock_spawner)
+	mock_spawner.free()
+	AllyArcher._cached_wave_spawner = null
+
+
 
 
 

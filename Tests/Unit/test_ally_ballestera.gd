@@ -474,6 +474,46 @@ func test_oleada_iniciada_reanuda_estado_idle() -> void:
 	assert_eq(_ballestera.current_state, _ballestera.State.IDLE, "Al iniciar la nueva oleada debe salir de CELEBRATING a IDLE")
 
 
+class MockWaveSpawnerPausado extends Node:
+	var is_wave_active: bool = false
+	func get_active_enemies() -> Array:
+		return []
+
+
+func test_debug_pausado_con_enemigo_manual_si_puede_atacar() -> void:
+	# Arrange (bug nivel debug: PAUSADO + SPAWNEAR UNO dejaba a la ballestera sin atacar
+	# porque _puede_atacar exigía is_wave_active == true)
+	AllyBallestera._cached_wave_spawner = null
+	var mock_spawner := MockWaveSpawnerPausado.new()
+	mock_spawner.name = "MockWaveSpawnerPausadoBallestera"
+	mock_spawner.add_to_group("wave_spawners")
+	get_tree().root.add_child(mock_spawner)
+	AllyBallestera._cached_wave_spawner = mock_spawner
+	_ballestera.global_position = Vector3.ZERO
+	_ballestera._oleada_en_curso = true
+	_ballestera._puede_atacar_timer = 0.0
+	var enemigo := Node3D.new()
+	enemigo.name = "ImpDebug"
+	enemigo.add_to_group("enemies")
+	get_tree().root.add_child(enemigo)
+	enemigo.global_position = Vector3(5.0, 0.0, 0.0)
+
+	# Act
+	var puede: bool = _ballestera._puede_atacar()
+	var objetivo: Node3D = _ballestera._obtener_objetivo_prioritario()
+
+	# Assert: aunque el spawner esté pausado, el básico manual debe habilitar ataque y apuntado
+	assert_true(puede, "Con spawner pausado pero básico manual presente, _puede_atacar debe ser true")
+	assert_eq(objetivo, enemigo, "El básico manual debe ser objetivo prioritario aunque el spawner esté pausado")
+
+	# Cleanup
+	get_tree().root.remove_child(enemigo)
+	enemigo.free()
+	get_tree().root.remove_child(mock_spawner)
+	mock_spawner.free()
+	AllyBallestera._cached_wave_spawner = null
+
+
 
 
 

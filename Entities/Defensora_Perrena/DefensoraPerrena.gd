@@ -4,10 +4,18 @@ extends Node3D
 ## Defensora Aliada Perrena: defensora especial invocada por el ítem de refuerzo.
 ## - Vida: 3 HP.
 ## - Ataque: arroja hachas rotatorias parabólicas (HachaPerrena) usando la animación "arrojar".
-## - Prioridades de Objetivo:
-##     * Prioridad 2 (Máxima): Escudos del escenario (es_escudo_enemigo) y Clase Guardián (Imp escudo, Guardiana moradita).
-##     * Prioridad 1: Enemigos de Élite (Lonko, Arquera Rosa).
-##     * Prioridad 0: Resto de enemigos (Básicos, voladores, etc.).
+## - Clases de enemigos:
+##     Voladores (Gárgola, Globo) / Básicos (Imp, Goblin arquero, Goblin ballestero,
+##     Limo, Goblin general) / Elite (Arquera Lonko, Goblin rosada, Azulina) /
+##     Guardian (Imp de escudo, Guardiana moradita).
+## - Prioridades de Objetivo (defensora hacha):
+##     * Prioridad 2 (Máxima): Escudos del escenario (es_escudo_enemigo) y Clase Guardián
+##       (Imp de escudo, Guardiana moradita). Fija inmediatamente y elimina de la
+##       manera más efectiva posible (bono de daño del hacha).
+##     * Prioridad 1 (Media): Clase Elite (Arquera Lonko, Goblin rosada, Azulina).
+##       Fija, apunta y dispara al objetivo.
+##     * Prioridad 0 (Sin prioridad): Voladores y Básicos. Dispara al azar en rango
+##       ante su presencia (se ataca al más cercano solo si no hay prioridades mayores).
 ## - Habilidad Especial:
 ##     * Ocurre cada 6 ataques.
 ##     * Realiza su animación "Celebracion" con un aura mágica protectora activa.
@@ -789,11 +797,13 @@ func _on_hacha_impacto(target: Node) -> void:
 			call_deferred("iniciar_ascenso_a_ultimo_piso")
 
 
-## Sistema de Selección por Prioridades:
+## Sistema de Selección por Prioridades (defensora hacha):
 ## Ataque normal:
-##   * Prioridad 2: Escudos de escenario (es_escudo_enemigo) y Clase Guardián (ImpShieldGirl, GuardianaMoradita)
-##   * Prioridad 1: Enemigos de Élite (Lonko, ArqueraRosa)
-##   * Prioridad 0: Resto de enemigos
+##   * Prioridad 2: Escudos de escenario (es_escudo_enemigo) y Clase Guardián
+##     (Imp de escudo, Guardiana moradita).
+##   * Prioridad 1: Clase Elite (Arquera Lonko, Goblin rosada, Azulina).
+##   * Prioridad 0: Voladores (Gárgola, Globo) y Básicos (Imp, Goblin arquero,
+##     Goblin ballestero, Limo, Goblin general).
 ## Ataque especial:
 ##   * Prioridad 1: CUALQUIER tipo de enemigo del juego
 ##   * Prioridad 0: Escudos y defensas del escenario si no hay enemigos
@@ -842,17 +852,21 @@ func _buscar_mejor_objetivo(es_ataque_especial: bool = false) -> Node:
 			objetivos_p1.append(enemy)
 		else:
 			var n_lower: String = enemy.name.to_lower()
-			# Prioridad 2: Clase Guardián
+			# Prioridad 2: Clase Guardián (Imp de escudo, Guardiana moradita).
+			# Fija inmediatamente y elimina de la manera más efectiva (bono del hacha).
 			if enemy is ImpShieldGirl or enemy is GuardianaMoradita:
 				objetivos_p2.append(enemy)
 			elif ("imp" in n_lower and "escudo" in n_lower) or ("guardiana" in n_lower and "moradita" in n_lower):
 				objetivos_p2.append(enemy)
-			# Prioridad 1: Élite (Lonko, Arquera Rosa)
-			elif enemy is Lonko or enemy is ArqueraRosa or enemy.get("es_elite") == true:
+			# Prioridad 1: Clase Elite (Arquera Lonko, Goblin rosada, Azulina).
+			# Fija, apunta y dispara al objetivo.
+			elif enemy is Lonko or enemy is ArqueraRosa or enemy is Azulina or enemy.get("es_elite") == true:
 				objetivos_p1.append(enemy)
-			elif "lonko" in n_lower or "rosa" in n_lower:
+			elif "lonko" in n_lower or "rosa" in n_lower or "azulina" in n_lower:
 				objetivos_p1.append(enemy)
-			# Prioridad 0: Resto
+			# Prioridad 0: Voladores (Gárgola, Globo) y Básicos (Imp, Goblin arquero,
+			# Goblin ballestero, Limo, Goblin general). Tiro al azar en rango ante su
+			# presencia: se toma el más cercano solo si no hay prioridades mayores.
 			else:
 				objetivos_p0.append(enemy)
 
@@ -877,6 +891,14 @@ func _obtener_mas_cercano(lista: Array[Node]) -> Node:
 				min_dist = d
 				mejor = item
 	return mejor
+
+
+## Devuelve el nivel de prioridad (0/1/2) de un enemigo para la defensora hacha.
+## Útil para debug y tests: Guardian 2, Elite 1, Voladores/Básicos 0.
+func prioridad_de(enemy: Node) -> int:
+	if not is_instance_valid(enemy):
+		return 0
+	return PrioridadDefensoras.prioridad_hacha(enemy)
 
 
 func take_damage(amount: float) -> void:
