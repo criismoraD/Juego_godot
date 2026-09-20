@@ -69,12 +69,12 @@ func test_escena_nivel_debug_contiene_arqueras_aliadas() -> void:
 	if ally1:
 		assert_almost_eq(ally1.position.x, -7.8802323, 0.01, "AllyArcher X debe coincidir con Nivel 1")
 		assert_almost_eq(ally1.position.y, 3.1431754, 0.01, "AllyArcher Y debe coincidir con Nivel 1")
-		assert_almost_eq(ally1.scale.x, 0.3, 0.01, "AllyArcher escala debe ser 0.3")
+		assert_almost_eq(ally1.scale.x, 0.32, 0.01, "AllyArcher escala debe ser 0.32")
 
 	if ally2:
 		assert_almost_eq(ally2.position.x, -7.1104116, 0.01, "AllyArcher2 X debe coincidir con Nivel 1")
 		assert_almost_eq(ally2.position.y, 1.585446, 0.01, "AllyArcher2 Y debe coincidir con Nivel 1")
-		assert_almost_eq(ally2.scale.x, 0.3, 0.01, "AllyArcher2 escala debe ser 0.3")
+		assert_almost_eq(ally2.scale.x, 0.32, 0.01, "AllyArcher2 escala debe ser 0.32")
 
 	instancia_nivel.free()
 

@@ -38,7 +38,7 @@ func after_each() -> void:
 func _crear_arquera_movil_estilo_oleada6() -> AllyArcher:
 	var arquera := ArqueraScene.instantiate() as AllyArcher
 	get_tree().root.add_child(arquera)
-	arquera.scale = Vector3(0.3, 0.3, 0.3)
+	arquera.scale = Vector3(0.32, 0.32, 0.32)
 	arquera.global_position = Vector3(-12.8, 0.185, 0.0)
 	# Igual que _desplegar_arquera_movil_oleada_6 de los niveles
 	arquera.es_movil = true

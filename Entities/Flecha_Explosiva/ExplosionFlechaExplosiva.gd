@@ -12,7 +12,7 @@ const OFFSET_Y_CENIZA: float = 0.02
 # === EXPORT CATEGORY: DAÑO ===
 @export_category("Daño de Explosión")
 @export var dano_base: float = 3.0  ## Daño base en área (3 HP)
-@export var bono_dano_estructuras: float = 6.0  ## Bono contra estructuras y escudos (+6 = 9 HP total)
+@export var bono_dano_estructuras: float = 5.0  ## Bono contra estructuras y escudos (+5 = 8 HP total)
 @export var radio_dano_override: float = -1.0  ## Si es > 0 sobrescribe el radio del CollisionShape3D
 
 # === EXPORT CATEGORY: EFECTOS VISUALES ===
@@ -114,40 +114,7 @@ func _crear_debug_collider_visual(radio: float) -> void:
 func _aplicar_dano_area(radio: float) -> void:
 	var danados: Dictionary = {}
 
-	# A. Dañar enemigos en radio
-	var enemigos: Array[Node] = get_tree().get_nodes_in_group("enemies")
-	for enemy in enemigos:
-		if not is_instance_valid(enemy) or not enemy.is_inside_tree() or not enemy.is_visible_in_tree():
-			continue
-		if enemy.is_in_group("allies") or enemy.is_in_group("player"):
-			continue
-
-		var id_e: int = enemy.get_instance_id()
-		if danados.has(id_e):
-			continue
-
-		var is_direct_hit: bool = _es_impacto_directo(enemy)
-		var dist: float = _calcular_distancia_a_entidad(enemy)
-
-		if is_direct_hit or dist <= radio:
-			danados[id_e] = true
-			if "last_hit_position" in enemy:
-				enemy.last_hit_position = global_position
-			if "last_hit_direction" in enemy:
-				enemy.last_hit_direction = Vector3.RIGHT
-			if "ultimo_atacante" in enemy:
-				enemy.ultimo_atacante = tirador_origen
-
-			var es_estructura: bool = (enemy is PilarLonkoBody or "es_pilar_enemigo" in enemy)
-			var dmg: float = (dano_base + bono_dano_estructuras) if es_estructura else dano_base
-			if "murio_por_explosion" in enemy:
-				enemy.murio_por_explosion = true
-			if enemy.has_method("take_damage"):
-				enemy.take_damage(dmg)
-			elif enemy.has_method("recibir_golpe"):
-				enemy.recibir_golpe(dmg)
-
-	# B. Dañar escudos y defensas enemigas en radio
+	# A. Dañar escudos y defensas enemigas en radio primero (absorben el impacto)
 	var escudos: Array[Node] = get_tree().get_nodes_in_group("escudos")
 	for escudo in escudos:
 		if not is_instance_valid(escudo) or not escudo.is_inside_tree() or not escudo.is_visible_in_tree():
@@ -168,16 +135,90 @@ func _aplicar_dano_area(radio: float) -> void:
 		if danados.has(id_s):
 			continue
 
+		var dueno: Node = _obtener_dueno_escudo(escudo)
+		if dueno and danados.has(dueno.get_instance_id()):
+			continue
+
 		var is_direct_hit: bool = _es_impacto_directo(escudo)
 		var dist: float = _calcular_distancia_a_entidad(escudo)
 
 		if is_direct_hit or dist <= radio:
 			danados[id_s] = true
+			if dueno:
+				danados[dueno.get_instance_id()] = true
+				for child in dueno.find_children("*", "", true, false):
+					if child.is_in_group("escudos"):
+						danados[child.get_instance_id()] = true
+				if "last_hit_position" in dueno:
+					dueno.last_hit_position = global_position
+				if "last_hit_direction" in dueno:
+					dueno.last_hit_direction = Vector3.RIGHT
+				if "ultimo_atacante" in dueno:
+					dueno.ultimo_atacante = tirador_origen
+				if "murio_por_explosion" in dueno:
+					dueno.murio_por_explosion = true
+
 			var dmg_est: float = dano_base + bono_dano_estructuras
 			if escudo.has_method("recibir_golpe"):
 				escudo.recibir_golpe(int(dmg_est))
 			elif escudo.has_method("take_damage"):
 				escudo.take_damage(dmg_est)
+
+	# B. Dañar enemigos en radio que no hayan sido ya dañados a través de su escudo
+	var enemigos: Array[Node] = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemigos:
+		if not is_instance_valid(enemy) or not enemy.is_inside_tree() or not enemy.is_visible_in_tree():
+			continue
+		if enemy.is_in_group("allies") or enemy.is_in_group("player"):
+			continue
+		if ("current_state" in enemy and (enemy.current_state == EnemyBase.State.DYING or enemy.current_state == EnemyBase.State.DEAD)) or ("health" in enemy and enemy.health <= 0):
+			continue
+
+		var id_e: int = enemy.get_instance_id()
+		if danados.has(id_e):
+			continue
+
+		var is_direct_hit: bool = _es_impacto_directo(enemy)
+		var dist: float = _calcular_distancia_a_entidad(enemy)
+
+		if is_direct_hit or dist <= radio:
+			danados[id_e] = true
+			for child in enemy.find_children("*", "", true, false):
+				if child.is_in_group("escudos"):
+					danados[child.get_instance_id()] = true
+
+			if "last_hit_position" in enemy:
+				enemy.last_hit_position = global_position
+			if "last_hit_direction" in enemy:
+				enemy.last_hit_direction = Vector3.RIGHT
+			if "ultimo_atacante" in enemy:
+				enemy.ultimo_atacante = tirador_origen
+
+			var es_estructura: bool = (enemy is PilarLonkoBody or "es_pilar_enemigo" in enemy)
+			var dmg: float = (dano_base + bono_dano_estructuras) if es_estructura else dano_base
+			if "murio_por_explosion" in enemy:
+				enemy.murio_por_explosion = true
+			if enemy.has_method("take_damage"):
+				enemy.take_damage(dmg)
+			elif enemy.has_method("recibir_golpe"):
+				enemy.recibir_golpe(dmg)
+
+
+func _obtener_dueno_escudo(escudo: Node) -> Node:
+	if escudo == null:
+		return null
+	if escudo.has_method("obtener_dueno_guardiana"):
+		var d: Node = escudo.obtener_dueno_guardiana()
+		if d:
+			return d
+	if escudo.owner and escudo.owner.is_in_group("enemies"):
+		return escudo.owner
+	var curr: Node = escudo.get_parent()
+	while curr:
+		if curr.is_in_group("enemies") and (curr.has_method("take_damage") or curr.has_method("recibir_golpe_escudo")):
+			return curr
+		curr = curr.get_parent()
+	return null
 
 
 func _es_impacto_directo(nodo: Node) -> bool:

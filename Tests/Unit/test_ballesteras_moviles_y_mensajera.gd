@@ -127,12 +127,12 @@ func test_despliegue_plataforma_1_baja():
 	_ballestera.desplegar_a_plataforma(1)
 	await get_tree().process_frame
 
-	# Assert: debe configurarse como móvil con 2 de vida, escala 0.3 y estar en despliegue
+	# Assert: debe configurarse como móvil con 2 de vida, escala 0.32 y estar en despliegue
 	assert_true(_ballestera.es_movil, "Debe estar en modo móvil")
 	assert_eq(_ballestera.vida_maxima, 2, "La vida máxima debe ser 2 para defensoras móviles")
 	assert_eq(_ballestera.health, 2, "La vida actual debe ser 2")
 	assert_true(_ballestera.en_despliegue, "Debe estar en estado de despliegue activo")
-	assert_almost_eq(_ballestera.scale.x, 0.3, 0.01, "La escala debe ser 0.3 como las defensoras fijas")
+	assert_almost_eq(_ballestera.scale.x, 0.32, 0.01, "La escala debe ser 0.32 igual que las defensoras de piso")
 
 
 func test_despliegue_plataforma_3_mas_alta():
@@ -149,7 +149,7 @@ func test_despliegue_plataforma_3_mas_alta():
 	# Assert
 	assert_true(_ballestera.es_movil, "Debe estar en modo móvil para plataforma más alta")
 	assert_eq(_ballestera.vida_maxima, 2, "La vida máxima debe ser 2")
-	assert_almost_eq(_ballestera.scale.x, 0.3, 0.01, "La escala debe ser 0.3 como las defensoras fijas")
+	assert_almost_eq(_ballestera.scale.x, 0.32, 0.01, "La escala debe ser 0.32 igual que las defensoras de piso")
 
 
 func test_finalizar_despliegue_plataforma_agacharse_y_postura_combate():

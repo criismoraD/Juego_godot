@@ -10,7 +10,7 @@ func before_each():
 	_arrow = ArrowScript.new()
 	_arrow.es_explosiva = true
 	_arrow.dano_base_explosiva = 3.0
-	_arrow.bono_dano_estructuras = 6.0
+	_arrow.bono_dano_estructuras = 5.0
 	_arrow.radio_explosion = 4.84
 	add_child_autofree(_arrow)
 
@@ -18,7 +18,7 @@ func test_arrow_explosiva_initialization():
 	# Assert
 	assert_true(_arrow.es_explosiva, "La flecha debe ser reconocida como explosiva")
 	assert_eq(_arrow.dano_base_explosiva, 3.0, "El daño base explosivo debe ser 3.0")
-	assert_eq(_arrow.bono_dano_estructuras, 6.0, "El bono de daño contra estructuras debe ser 6.0")
+	assert_eq(_arrow.bono_dano_estructuras, 5.0, "El bono de daño contra estructuras debe ser 5.0")
 	assert_eq(_arrow.radio_explosion, 4.84, "El radio de explosión debe ser 4.84m")
 
 func test_dano_pilar_dos_flechas_destruyen_15hp():
@@ -32,14 +32,14 @@ func test_dano_pilar_dos_flechas_destruyen_15hp():
 	assert_eq(pilar.vida_maxima, 15.0, "La vida máxima del pilar debe ser 15.0 HP")
 	assert_eq(pilar.vida_pilar, 15.0, "La vida inicial del pilar debe ser 15.0 HP")
 
-	# Act: Primer impacto con flecha explosiva (3 base + 6 bono = 9 daño)
+	# Act: Primer impacto con flecha explosiva (3 base + 5 bono = 8 daño)
 	var dano_infligido = _arrow.dano_base_explosiva + _arrow.bono_dano_estructuras
 	pilar.take_damage(dano_infligido)
 
 	# Assert 1er tiro
-	assert_eq(pilar.vida_pilar, 6.0, "Tras el primer tiro (9 daño), la vida del pilar debe ser 6.0 HP")
+	assert_eq(pilar.vida_pilar, 7.0, "Tras el primer tiro (8 daño), la vida del pilar debe ser 7.0 HP")
 
-	# Act: Segundo impacto con flecha explosiva (9 daño adicional)
+	# Act: Segundo impacto con flecha explosiva (8 daño adicional)
 	pilar.take_damage(dano_infligido)
 
 	# Assert 2do tiro
@@ -87,7 +87,7 @@ func test_explosion_scene_collider_radius_and_vfx():
 	# Assert
 	assert_not_null(expl.collision_shape, "Explosion scene must have a CollisionShape3D")
 	assert_eq(expl.dano_base, 3.0, "Explosion base damage should default to 3.0")
-	assert_eq(expl.bono_dano_estructuras, 6.0, "Explosion structure bonus should default to 6.0")
+	assert_eq(expl.bono_dano_estructuras, 5.0, "Explosion structure bonus should default to 5.0")
 	assert_gte(expl._obtener_radio_dano(), 0.7, "Explosion shape radius should be at least 0.7m")
 	assert_eq(expl.escala_vfx, Vector3(0.22, 0.22, 0.22), "Explosion VFX scale should be 0.22")
 	assert_eq(expl.tamano_ceniza, Vector2(1.4, 1.4), "Ash decal size should be 1.4m")
@@ -131,7 +131,7 @@ func test_flecha_explosiva_scene_instantiation():
 	assert_not_null(flecha, "Debe instanciarse correctamente como ArrowProjectile")
 	assert_true(flecha.es_explosiva, "es_explosiva debe ser true en la escena")
 	assert_eq(flecha.dano_base_explosiva, 3.0, "El daño base debe ser 3.0")
-	assert_eq(flecha.bono_dano_estructuras, 6.0, "El bono contra estructuras debe ser 6.0")
+	assert_eq(flecha.bono_dano_estructuras, 5.0, "El bono contra estructuras debe ser 5.0")
 	assert_eq(flecha.radio_explosion, 4.84, "El radio de explosión debe ser 4.84m")
 
 	# Verificar nodos hijos esenciales

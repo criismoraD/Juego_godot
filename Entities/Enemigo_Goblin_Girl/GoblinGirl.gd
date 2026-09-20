@@ -6,6 +6,9 @@ const PROJECTILE_SCALE: Vector3 = Vector3.ONE
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
 const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
+const BarraCircularFuegoRapidoScript = preload("res://Entities/Jugador_Arquera/BarraCircularFuegoRapido.gd")
+const ESCENA_AURA_FRENESI: PackedScene = preload("res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn")
+const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 var _particulas_pisada: GPUParticles3D = null
 
 ## Goblin Girl: Camina, se detiene y dispara flechas parabólicas con arco.
@@ -34,6 +37,16 @@ var esta_agachada: bool = false
 var en_animacion_disparo: bool = false
 var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: impulso en parábola al morir
 var _impulso_explosivo_activo: bool = false  ## True durante el vuelo parabólico del cadáver
+
+# === BUFF FRENESÍ (ACTIVADO POR GOBLIN GENERAL) ===
+@export var altura_barra_frenesi: float = 0.95
+var buff_frenesi_activo: bool = false
+var buff_frenesi_timer: float = 0.0
+var buff_frenesi_duracion_max: float = 10.0
+var multiplicador_frenesi: float = 1.0
+var _canvas_frenesi: CanvasLayer = null
+var _barra_frenesi_control: BarraCircularFuegoRapido = null
+var _aura_frenesi_node: Node3D = null
 # === REFERENCIAS ESPECÍFICAS ===
 var goblin_girl_arrow_scene = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
 var escena_flecha_visual_mano = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
@@ -189,6 +202,7 @@ func _on_state_shooting():
 
 
 func _on_state_dying():
+	remover_buff_frenesi()
 	if girl_anim_tree:
 		girl_anim_tree.active = false
 	super._on_state_dying()
@@ -321,6 +335,8 @@ func _process(delta):
 		_particulas_pisada_emitir()
 	if current_state == State.SHOOTING and rastrear_jugador:
 		_track_player()
+	if buff_frenesi_activo:
+		_actualizar_buff_frenesi(delta)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -331,8 +347,10 @@ func _process(delta):
 func _process_shooting(delta):
 	velocity.x = 0
 
-	# Incrementar timer de animación
-	anim_timer += delta
+	var mult_vel: float = multiplicador_frenesi if buff_frenesi_activo else 1.0
+
+	# Incrementar timer de animación acelerado por frenesí
+	anim_timer += delta * mult_vel
 	_actualizar_flecha_mano_durante_animacion()
 
 	# Timing del disparo: siempre basado en GIRL_GOB_DISPARO (torso superior)
@@ -349,7 +367,7 @@ func _process_shooting(delta):
 	if anim_timer >= anim_duration:
 		en_animacion_disparo = false
 		_actualizar_visibilidad_flecha_mano(false)
-		shoot_timer -= delta
+		shoot_timer -= delta * mult_vel
 		if shoot_timer <= 0:
 			en_animacion_disparo = true
 			anim_timer = 0.0
@@ -413,7 +431,7 @@ func _shoot_arrow():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-func _play_bow_animation(anim_name: String, custom_blend: float = -1.0):
+func _play_bow_animation(anim_name: String, custom_blend: float = -1.0, custom_speed: float = 1.0) -> void:
 	if not bow_anim_player:
 		return
 
@@ -422,14 +440,130 @@ func _play_bow_animation(anim_name: String, custom_blend: float = -1.0):
 	for prefix in prefixes:
 		var full_name = prefix + anim_name
 		if bow_anim_player.has_animation(full_name):
-			bow_anim_player.play(full_name, custom_blend)
+			bow_anim_player.play(full_name, custom_blend, custom_speed)
 			return
 
 	# Fallback: buscar por contenido del nombre
 	for a in bow_anim_player.get_animation_list():
 		if anim_name in a:
-			bow_anim_player.play(a, custom_blend)
+			bow_anim_player.play(a, custom_blend, custom_speed)
 			return
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BUFF DE FRENESÍ (ACTIVADO POR GOBLIN GENERAL)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+## Aplica el buff de frenesí: multiplica la cadencia de disparo (animación y recarga)
+## y activa el efecto de aura reducido y la barra circular sobre la cabeza.
+func aplicar_buff_frenesi(duracion: float = 10.0, multiplicador: float = 3.0) -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	buff_frenesi_activo = true
+	buff_frenesi_timer = duracion
+	buff_frenesi_duracion_max = duracion
+	multiplicador_frenesi = multiplicador
+
+	if anim_player:
+		anim_player.speed_scale = multiplicador
+	if bow_anim_player:
+		bow_anim_player.speed_scale = multiplicador
+	if girl_anim_tree:
+		girl_anim_tree.set("parameters/TimeScale/scale", multiplicador)
+
+	_setup_aura_frenesi()
+	_setup_barra_frenesi()
+
+
+## Remueve el buff de frenesí restaurando velocidades y ocultando aura y barra circular.
+func remover_buff_frenesi() -> void:
+	buff_frenesi_activo = false
+	buff_frenesi_timer = 0.0
+	multiplicador_frenesi = 1.0
+
+	if anim_player:
+		anim_player.speed_scale = 1.0
+	if bow_anim_player:
+		bow_anim_player.speed_scale = 1.0
+	if girl_anim_tree:
+		girl_anim_tree.set("parameters/TimeScale/scale", 1.0)
+
+	if _aura_frenesi_node and is_instance_valid(_aura_frenesi_node):
+		_aura_frenesi_node.visible = false
+	if _barra_frenesi_control and is_instance_valid(_barra_frenesi_control):
+		_barra_frenesi_control.visible = false
+		_barra_frenesi_control.progress = 0.0
+		_barra_frenesi_control.tiempo_restante = 0.0
+
+
+func _actualizar_buff_frenesi(delta: float) -> void:
+	if not buff_frenesi_activo:
+		return
+
+	buff_frenesi_timer -= delta
+	if buff_frenesi_timer <= 0.0:
+		remover_buff_frenesi()
+		return
+
+	if _barra_frenesi_control and is_instance_valid(_barra_frenesi_control):
+		_barra_frenesi_control.tiempo_restante = buff_frenesi_timer
+		_barra_frenesi_control.progress = clampf(buff_frenesi_timer / maxf(buff_frenesi_duracion_max, 0.001), 0.0, 1.0)
+		var camera := CameraUtilsRef.obtener_camara_juego(self)
+		if camera:
+			var head_pos := global_position + Vector3(0.0, altura_barra_frenesi, 0.0)
+			if not camera.is_position_behind(head_pos):
+				var screen_pos: Vector2 = camera.unproject_position(head_pos)
+				_barra_frenesi_control.visible = true
+				_barra_frenesi_control.position = screen_pos - (_barra_frenesi_control.size * 0.5)
+			else:
+				_barra_frenesi_control.visible = false
+
+
+func _setup_aura_frenesi() -> void:
+	if not _aura_frenesi_node or not is_instance_valid(_aura_frenesi_node):
+		if ESCENA_AURA_FRENESI:
+			_aura_frenesi_node = ESCENA_AURA_FRENESI.instantiate() as Node3D
+			_aura_frenesi_node.name = "AuraFrenesi"
+			add_child(_aura_frenesi_node)
+			_aura_frenesi_node.position = Vector3(0.0, 0.01, 0.0)
+
+	if _aura_frenesi_node and is_instance_valid(_aura_frenesi_node):
+		_aura_frenesi_node.visible = true
+		_aura_frenesi_node.scale = Vector3(0.24, 0.24, 0.24)
+		_aura_frenesi_node.set("primary_color", Color(1.0, 0.3, 0.6, 0.8))
+		_aura_frenesi_node.set("secondary_color", Color(0.9, 0.1, 0.4, 0.7))
+		_aura_frenesi_node.set("light_color", Color(1.0, 0.2, 0.5, 1.0))
+		_aura_frenesi_node.set("light_energy", 1.2)
+		var ap := _aura_frenesi_node.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if ap and ap.has_animation("main"):
+			ap.play("main")
+
+
+func _setup_barra_frenesi() -> void:
+	if not _barra_frenesi_control or not is_instance_valid(_barra_frenesi_control):
+		_canvas_frenesi = CanvasLayer.new()
+		_canvas_frenesi.name = "CanvasBarraFrenesi"
+		_canvas_frenesi.layer = 100
+		add_child(_canvas_frenesi)
+
+		_barra_frenesi_control = BarraCircularFuegoRapidoScript.new()
+		_barra_frenesi_control.name = "BarraCircularFrenesi"
+		_barra_frenesi_control.visible = true
+		_barra_frenesi_control.progress = 1.0
+		_barra_frenesi_control.tiempo_restante = buff_frenesi_duracion_max
+		_canvas_frenesi.add_child(_barra_frenesi_control)
+	else:
+		_barra_frenesi_control.visible = true
+		_barra_frenesi_control.progress = 1.0
+		_barra_frenesi_control.tiempo_restante = buff_frenesi_duracion_max
+
+	var camera := CameraUtilsRef.obtener_camara_juego(self)
+	if camera:
+		var head_pos := global_position + Vector3(0.0, altura_barra_frenesi, 0.0)
+		if not camera.is_position_behind(head_pos):
+			var screen_pos: Vector2 = camera.unproject_position(head_pos)
+			_barra_frenesi_control.position = screen_pos - (_barra_frenesi_control.size * 0.5)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -523,11 +657,17 @@ func _setup_animation_tree():
 	root.add_node("Seek", seek)
 	root.connect_node("Seek", 0, "UpperBlend")
 
+	# TimeScale para acelerar con frenesí
+	var time_scale = AnimationNodeTimeScale.new()
+	root.add_node("TimeScale", time_scale)
+	root.connect_node("TimeScale", 0, "Seek")
+
 	# Salida
-	root.connect_node("output", 0, "Seek")
+	root.connect_node("output", 0, "TimeScale")
 
 	girl_anim_tree.tree_root = root
 	girl_anim_tree.set("parameters/UpperBlend/blend_amount", 1.0)
+	girl_anim_tree.set("parameters/TimeScale/scale", multiplicador_frenesi if buff_frenesi_activo else 1.0)
 	girl_anim_tree.active = false  # Inactivo hasta que sea necesario
 
 

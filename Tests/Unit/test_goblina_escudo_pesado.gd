@@ -652,21 +652,21 @@ func test_sistema_golpe_critico_fuera_de_momento_no_mata() -> void:
 
 
 func test_explosion_bloqueando_requiere_dos_disparos() -> void:
-	# Arrange: bloqueando con el escudo en alto
+	# Arrange: con 10 HP de vida en su escudo
 	assert_not_null(_goblina)
 	_goblina._cambiar_estado(GoblinaScript.State.DEFENDING)
 	_goblina.murio_por_explosion = true
 
-	# Act: primera explosiva (9 - 4 = 5)
-	_goblina.take_damage(9.0)
+	# Act: primera explosiva (3 base + 5 bono = 8 de daño)
+	_goblina.take_damage(8.0)
 
-	# Assert: sobrevive al primer disparo
-	assert_gt(_goblina.health, 0, "Bloqueando absorbe: sobrevive a la primera explosiva")
-	assert_eq(_goblina.health, 5, "10 - (9 - 4) = 5")
+	# Assert: sobrevive al primer disparo con 2 HP
+	assert_gt(_goblina.health, 0, "Sobrevive a la primera flecha explosiva no crítica")
+	assert_eq(_goblina.health, 2, "10 - 8 = 2 HP restantes")
 
 	# Act: segunda explosiva
 	_goblina.murio_por_explosion = true
-	_goblina.take_damage(9.0)
+	_goblina.take_damage(8.0)
 
 	# Assert: cae al segundo disparo
-	assert_eq(_goblina.current_state, GoblinaScript.State.DYING, "Cae al segundo disparo bloqueando")
+	assert_eq(_goblina.current_state, GoblinaScript.State.DYING, "Cae al segundo disparo")

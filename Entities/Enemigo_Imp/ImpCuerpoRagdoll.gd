@@ -68,7 +68,7 @@ func _buscar_nodos() -> void:
 		for child in simulator.get_children():
 			if child is PhysicalBone3D:
 				var pb := child as PhysicalBone3D
-				pb.collision_layer = 4
+				pb.collision_layer = 0
 				pb.collision_mask = 1  # Colisiona contra el suelo
 				_physical_bones.append(pb)
 		_aplicar_masas()

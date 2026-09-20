@@ -46,7 +46,7 @@ const ESCUDO_ROTO_SCENE: PackedScene = preload("res://Entities/Enemigo_Imp_Escud
 # ═══════════════════════════════════════════════════════════════════════════════
 @export_category("Estadísticas")
 @export var vida_maxima: int = VIDA_MAXIMA_DEFAULT
-@export var reduccion_explosion_bloqueando: float = 4.0  ## Bloqueando absorbe 4 de la explosión: caen en 2 disparos
+@export var reduccion_explosion_bloqueando: float = 0.0  ## Reducción adicional de explosión bloqueando (por defecto 0.0: con 8 de daño y 10 HP cae naturalmente en 2 disparos)
 @export var velocidad_carrera: float = VELOCIDAD_CARRERA_DEFAULT
 @export var distancia_proteccion: float = DISTANCIA_PROTECCION_DEFAULT
 @export var rotacion_y_modelo: float = 270.0
@@ -261,7 +261,13 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 			if particulas_pisada:
 				particulas_pisada.emitting = false
 			velocity = Vector3.ZERO
-			set_collision_layer_value(3, false)
+			collision_layer = 0
+			collision_mask = 0
+			set_physics_process(false)
+			for child in find_children("*", "CollisionShape3D", true, false):
+				var cs := child as CollisionShape3D
+				if cs:
+					cs.set_deferred("disabled", true)
 			_reset_smear_effect()
 
 			# Restaurar material normal del escudo para que no quede rojo al morir
@@ -557,8 +563,8 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 
 	var dano_total: float = amount
 
-	# Bloqueando con el escudo en alto absorbe parte de la explosión (2 disparos para caer).
-	if murio_por_explosion and (current_state == State.DEFENDING or current_state == State.SHIELD_HIT):
+	# Reducción opcional de daño por explosión bloqueando si está configurada (> 0.0)
+	if murio_por_explosion and reduccion_explosion_bloqueando > 0.0 and (current_state == State.DEFENDING or current_state == State.SHIELD_HIT):
 		dano_total = maxf(1.0, dano_total - reduccion_explosion_bloqueando)
 
 	# VULNERABILIDAD TÁCTICA: +6 de daño, texto CRÍTICO y sonido de daño si es golpeada en plena animación de ataque

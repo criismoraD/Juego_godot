@@ -186,6 +186,8 @@ func _load_all_sounds():
 	sfx_streams["azulina_muerte"] = [load("res://TEST_/azulina muerte.mp3")]
 	sfx_streams["hit_azulina"] = [load("res://TEST_/Hit azulina.mp3")]
 	sfx_streams["fire_fire_rapido"] = [load("res://TEST_/fire fire rapido.mp3")]
+	sfx_streams["muerte_goblin_general"] = [load("res://TEST_/Muerte goblin general.mp3")]
+	sfx_streams["ult_goblin_general"] = [load("res://TEST_/Ruedo goblin.mp3")]
 	sfx_streams["entrada_azulina"] = [load("res://TEST_/Entrada azulina.mp3")]
 
 	sfx_streams["shield_imp_impact"] = [

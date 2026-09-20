@@ -135,6 +135,8 @@ func _physics_process(delta):
 				if collider:
 					if collider.is_in_group("allies") or (tipo_dueño == TipoFlecha.JUGADOR and collider.is_in_group("player")):
 						ignorar_colision = true
+					elif collider.is_in_group("enemies") and (("current_state" in collider and (collider.current_state == EnemyBase.State.DYING or collider.current_state == EnemyBase.State.DEAD)) or ("health" in collider and collider.health <= 0)):
+						ignorar_colision = true
 					elif tipo_dueño == TipoFlecha.JUGADOR and (collider.is_in_group("escudos") or collider.has_method("recibir_golpe")):
 						var es_enemigo: bool = false
 						if "es_escudo_enemigo" in collider:
@@ -227,6 +229,19 @@ func _on_body_entered(body):
 	if body.is_in_group("allies"):
 		if _ray_ccd: _ray_ccd.add_exception(body)
 		return
+
+	# Ignorar enemigos que estén muriendo o muertos para que sus cuerpos no bloqueen proyectiles
+	if body.is_in_group("enemies"):
+		var esta_muriendo: bool = false
+		if "current_state" in body:
+			var st = body.current_state
+			if st == EnemyBase.State.DYING or st == EnemyBase.State.DEAD:
+				esta_muriendo = true
+		if not esta_muriendo and "health" in body and body.health <= 0:
+			esta_muriendo = true
+		if esta_muriendo:
+			if _ray_ccd: _ray_ccd.add_exception(body)
+			return
 
 	# Ignorar defensas y escudos aliados si la flecha es del jugador/aliadas
 	if tipo_dueño == TipoFlecha.JUGADOR:

@@ -130,7 +130,7 @@ const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el 
 @export var dispersion_imp_factor: float = 0.08  ## Variación aleatoria de velocidad (+/- 8%) para dispersión natural
 
 @export_category("Reposicionamiento (Piquero)")
-@export var reposicionamiento_habilitado: bool = true  ## Si true, tras N ataques se tira de piquero al agua para reposicionarse
+@export var reposicionamiento_habilitado: bool = false  ## Deshabilitado de momento; se trabajará este concepto más adelante
 @export var ataques_para_reposicion: int = 5  ## Cantidad de lanzamientos de lanza antes de reposicionarse
 @export var duracion_piquero: float = 1.25  ## Segundos del salto de piquero hacia el agua
 @export var altura_salto_piquero: float = 0.8  ## Elevación del arco parabólico inicial del piquero
@@ -477,8 +477,13 @@ func _on_state_dying() -> void:
 	_reposicionando = false
 	_bajo_agua_esperando = false
 	visible = true
-	collision_layer = 4
-	collision_mask = 1
+	collision_layer = 0
+	collision_mask = 0
+	if not murio_por_explosion:
+		for child in find_children("*", "CollisionShape3D", true, false):
+			var cs := child as CollisionShape3D
+			if cs:
+				cs.set_deferred("disabled", true)
 	if _modelo != null:
 		_modelo.rotation.y = _rotacion_modelo_base_y
 	if _tween_destello_lanza != null and _tween_destello_lanza.is_valid():

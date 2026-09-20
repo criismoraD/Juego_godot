@@ -370,10 +370,10 @@ func _activar_ragdoll() -> void:
 		huesos_fisicos_creados.clear()
 		for child in ragdoll_simulator.get_children():
 			if child is PhysicalBone3D:
-				child.collision_layer = 4
+				child.collision_layer = 0
 				child.collision_mask = 1
 				# Forzar activación inmediata en el servidor de físicas para colisionar contra el suelo
-				PhysicsServer3D.body_set_collision_layer(child.get_rid(), 4)
+				PhysicsServer3D.body_set_collision_layer(child.get_rid(), 0)
 				PhysicsServer3D.body_set_collision_mask(child.get_rid(), 1)
 				huesos_fisicos_creados.append(child)
 				# Hueso raíz: el primero sin joint, o por defecto el primer hueso físico

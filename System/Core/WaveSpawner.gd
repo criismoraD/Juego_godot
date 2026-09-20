@@ -21,6 +21,7 @@ const INTERVALO_MINIMO_ABSOLUTO: float = 0.25
 @export var escena_limo: PackedScene  # Escena del limo cuadrado gelatinoso
 @export var escena_goblina_escudo: PackedScene = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.tscn")  ## Escena de Guardiana Moradita (antes Goblina Escudo Pesado)
 @export var escena_azulina: PackedScene  ## Escena de la enemiga Azulina (lanza precisa desde el agua)
+@export var escena_goblin_general: PackedScene  ## Escena del nuevo enemigo Goblin General
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns base (más lento)
 @export var intervalo_minimo_aparicion: float = 0.5  ## Segundos mínimos entre spawns cuando quedan pocos enemigos en la barra de progreso
 @export var umbral_rafaga_final: int = 10  ## Cantidad de enemigos restantes en la barra para activar la ráfaga final casi de golpe
@@ -42,7 +43,7 @@ const INTERVALO_MINIMO_ABSOLUTO: float = 0.25
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa, 8=globo_aerostatico, 9=limo_cuadrado, 10=goblina_escudo, 11=azulina
+var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa, 8=globo_aerostatico, 9=limo_cuadrado, 10=goblina_escudo, 11=azulina, 12=goblin_general
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
@@ -99,6 +100,9 @@ func _ready():
 
 	if not escena_azulina:
 		escena_azulina = preload("res://Entities/Enemigo_Azulina/Azulina.tscn")
+
+	if not escena_goblin_general:
+		escena_goblin_general = preload("res://Entities/Enemigo_Goblin_General/GoblinGeneral.tscn")
 
 	# Iniciar primera oleada después de un delay
 	wave_cooldown = 2.0
@@ -448,6 +452,8 @@ func _elegir_escena_probabilidades() -> PackedScene:
 			return escena_goblina_escudo
 		elif forzar_tipo_enemigo == 11:
 			return escena_azulina
+		elif forzar_tipo_enemigo == 12:
+			return escena_goblin_general
 		elif probabilidad_igual:
 			# Probabilidad igual: 20% cada tipo (5 tipos)
 			var roll = randf()

@@ -229,6 +229,16 @@ func _es_entidad_a_ignorar(target: Node) -> bool:
 		return true
 	if "es_escudo_enemigo" in target and not target.es_escudo_enemigo:
 		return true
+	if target.is_in_group("enemies"):
+		var esta_muriendo: bool = false
+		if "current_state" in target:
+			var st = target.current_state
+			if st == EnemyBase.State.DYING or st == EnemyBase.State.DEAD:
+				esta_muriendo = true
+		if not esta_muriendo and "health" in target and target.health <= 0:
+			esta_muriendo = true
+		if esta_muriendo:
+			return true
 	if _es_plataforma_aliada(target):
 		return true
 	return false

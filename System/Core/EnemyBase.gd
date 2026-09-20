@@ -477,6 +477,11 @@ func _on_state_dying():
 	collision_layer = 0
 	collision_mask = 0
 	set_physics_process(false)
+	if not ("murio_por_explosion" in self and self.murio_por_explosion):
+		for child in find_children("*", "CollisionShape3D", true, false):
+			var cs := child as CollisionShape3D
+			if cs:
+				cs.set_deferred("disabled", true)
 	if tiene_sangre:
 		_spawn_blood_splash()
 

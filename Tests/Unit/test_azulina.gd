@@ -1785,13 +1785,58 @@ func test_explosiva_atraviesa_parry_activo() -> void:
 	azulina.ataques_para_parry_min = 1
 	azulina.ataques_para_parry_max = 1
 	azulina._emergiendo = false
-	azulina.manejar_impacto_aura(null)
-	assert_true(azulina._parry_activo, "Precondici�n: parry activo")
+	azulina._activar_parry()
+	assert_true(azulina._parry_activo, "Precondición: parry activo")
 
 	# Act: llega una explosiva en pleno giro
 	var resultado: bool = azulina.manejar_impacto_aura(_crear_flecha_falsa(true))
 
-	# Assert: penetra (detonar� al impactar el cuerpo)
+	# Assert: penetra (detonar al impactar el cuerpo)
 	assert_false(resultado, "La explosiva atraviesa el parry")
 	_limpiar_salpicaduras()
 
+
+func test_azulina_muerte_pierde_colision_y_desactiva_capas() -> void:
+	# Arrange
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina._emergiendo = false
+	assert_eq(azulina.collision_layer, 4, "Precondición: capa 4 en vida")
+
+	# Act: aplicar daño letal
+	azulina.take_damage(99.0)
+	await wait_physics_frames(1)
+
+	# Assert: al morir pierde completamente su colisión para que los proyectiles la atraviesen
+	assert_eq(azulina.current_state, EnemyBase.State.DYING, "Estado actual debe ser DYING")
+	assert_eq(azulina.collision_layer, 0, "collision_layer debe ser 0 al morir")
+	assert_eq(azulina.collision_mask, 0, "collision_mask debe ser 0 al morir sin explosión")
+	var shape: CollisionShape3D = azulina.find_child("CollisionShape3D", true, false) as CollisionShape3D
+	assert_not_null(shape, "Debe existir CollisionShape3D")
+	assert_true(shape.disabled, "CollisionShape3D debe quedar deshabilitado")
+	_limpiar_salpicaduras()
+
+
+func test_flechas_atraviesan_enemigo_muerto_sin_colisionar_ni_destruirse() -> void:
+	# Arrange: Azulina muerta y una flecha del jugador
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.emergencia_en_zona_aleatoria = false
+	azulina._emergiendo = false
+	azulina.take_damage(99.0)
+	assert_eq(azulina.current_state, EnemyBase.State.DYING)
+
+	var flecha_scene: PackedScene = preload("res://Entities/Proyectil_Flecha/Arrow.tscn")
+	var flecha = flecha_scene.instantiate()
+	add_child_autofree(flecha)
+	flecha.tipo_dueño = ArrowProjectile.TipoFlecha.JUGADOR
+	flecha.global_position = azulina.global_position
+
+	# Act: la flecha detecta a Azulina durante su vuelo
+	flecha._on_body_entered(azulina)
+
+	# Assert: la flecha NO se destruye, NO se clava y pasa de largo
+	assert_false(flecha.is_stuck, "La flecha no debe clavarse en el cadáver")
+	assert_false(flecha.is_queued_for_deletion(), "La flecha no debe destruirse contra el cadáver")
+	_limpiar_salpicaduras()

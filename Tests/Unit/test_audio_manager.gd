@@ -194,3 +194,13 @@ func test_risa_victoria_ballestera_sfx_registrado_y_reproducible() -> void:
 			break
 	assert_true(played, "Un reproductor debe haber iniciado para risa_victoria_ballestera")
 
+
+func test_ult_goblin_general_usa_sonido_ruedo() -> void:
+	assert_true(audio_mgr.sfx_streams.has("ult_goblin_general"), "AudioManager debe tener registrado 'ult_goblin_general'")
+	assert_false(audio_mgr.sfx_streams.has("ruedo_goblin"), "El SFX 'ruedo_goblin' debe haberse eliminado del AudioManager")
+	var streams: Array = audio_mgr.sfx_streams.get("ult_goblin_general", [])
+	assert_gt(streams.size(), 0, "Debe tener stream para 'ult_goblin_general'")
+	var stream: AudioStream = streams[0] as AudioStream
+	assert_not_null(stream, "El stream de ult_goblin_general no debe ser nulo")
+	assert_true(stream.resource_path.ends_with("Ruedo goblin.mp3"), "El ult_goblin_general debe usar 'Ruedo goblin.mp3'")
+

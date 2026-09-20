@@ -30,6 +30,7 @@ const NOMBRE_FONDO_PARALLAX: String = "ParallaxFondo"
 		altura_pivote = nuevo_valor
 		if is_node_ready():
 			_aplicar_altura_pivote()
+@export var respetar_altura_manual: bool = true ## Si true, respeta la altura Y original del editor (evita que se vea plano)
 
 @export_category("Balanceo viento")
 @export var balanceo_activo: bool = false ## Si false, el pino queda totalmente estatico
@@ -48,12 +49,14 @@ static var _aviso_suelo_mostrado: bool = false
 var _tiempo: float = 0.0
 var _rotacion_visual_base: float = 0.0
 var _fondo_cache: Node = null
+var _altura_y_original: float = 0.0
 
 @onready var visual: Node3D = $Visual
 @onready var sprite: Sprite3D = $Visual/Pino
 
 
 func _ready() -> void:
+	_altura_y_original = global_position.y
 	if not _registro.has(self):
 		_registro.append(self)
 	if is_instance_valid(visual):
@@ -61,7 +64,7 @@ func _ready() -> void:
 	_aplicar_pixel_size()
 	_aplicar_escala_base()
 	_aplicar_altura_pivote()
-	if not Engine.is_editor_hint():
+	if not Engine.is_editor_hint() and not respetar_altura_manual:
 		_asentar()
 
 
@@ -167,18 +170,32 @@ func _reciclar_si_detras() -> void:
 		# Repartir dentro de la franja visible/adelantada sobre los pisos activos
 		destino = cam_x + margen_adelante + fmod(absf(global_position.x * 7.13 + global_position.z * 13.7), 25.0)
 
-	var destino_pos := Vector3(destino, global_position.y, global_position.z)
-	var suelo_y: float = _suelo_superior_en(destino_pos)
-	if not is_nan(suelo_y):
-		destino_pos.y = suelo_y + _mitad_visible()
-	else:
-		destino_pos.y = -0.36148 + _mitad_visible()
+	var destino_pos := Vector3(destino, _altura_y_original if respetar_altura_manual else global_position.y, global_position.z)
+	if not respetar_altura_manual:
+		var suelo_y: float = _suelo_superior_en(destino_pos)
+		if not is_nan(suelo_y):
+			destino_pos.y = suelo_y + _mitad_visible()
+		else:
+			destino_pos.y = -0.36148 + _mitad_visible()
 	global_position = destino_pos
 
 
-## Apoya la base visible del pino sobre el suelo (solo en juego).
+## Retorna la altura Y original configurada manualmente en el editor.
+func obtener_altura_original() -> float:
+	return _altura_y_original
+
+
+## Fija manualmente la altura original del pino.
+func fijar_altura_original(nueva_altura: float) -> void:
+	_altura_y_original = nueva_altura
+	global_position.y = nueva_altura
+
+
+## Apoya la base visible del pino sobre el suelo (solo en juego cuando respetar_altura_manual es false).
 ## No toca X/Z: respeta tu colocacion manual del editor.
 func _asentar() -> void:
+	if respetar_altura_manual:
+		return
 	var suelo_y: float = _suelo_superior_en(global_position)
 	if is_nan(suelo_y):
 		if not _aviso_suelo_mostrado:

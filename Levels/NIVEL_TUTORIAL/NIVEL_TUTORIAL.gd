@@ -2273,7 +2273,9 @@ func _crear_panel_controles_spawn() -> void:
 		{"nombre": "🌸 Arquera Rosa", "id": 7},
 		{"nombre": "🎈 Globo Goblin", "id": 8},
 		{"nombre": "🟩 Limo Cuadrado", "id": 9},
-		{"nombre": "🛡️ Guardiana Moradita", "id": 10}
+		{"nombre": "🛡️ Guardiana Moradita", "id": 10},
+		{"nombre": "Azulina", "id": 11},
+		{"nombre": "🎖️ Goblin General", "id": 12},
 	]
 	for opt in opciones:
 		var btn := Button.new()
@@ -2793,7 +2795,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 	var entrega_pos: Vector3 = Vector3(-7.4, 0.185, 0.0)
 
 	add_child(ballestera)
-	ballestera.scale = Vector3(0.3, 0.3, 0.3)
+	ballestera.scale = Vector3(0.32, 0.32, 0.32)
 	ballestera.global_position = start_pos
 	ballestera._setup_animation_player()
 	ballestera._importar_animaciones_jugador()
@@ -2947,7 +2949,7 @@ func _desplegar_defensoras_moviles_plataformas() -> void:
 		defensora.health = 2
 		defensora.enemigos_minimos = 1
 		add_child(defensora)
-		defensora.scale = Vector3(0.3, 0.3, 0.3)
+		defensora.scale = Vector3(0.32, 0.32, 0.32)
 		defensora.global_position = start_pos
 		if defensora.has_method("asegurar_contorno_toon"):
 			defensora.asegurar_contorno_toon()
@@ -3040,7 +3042,7 @@ func _desplegar_arquera_movil_oleada_6() -> void:
 	if not arquera:
 		return
 	add_child(arquera)
-	arquera.scale = Vector3(0.3, 0.3, 0.3)
+	arquera.scale = Vector3(0.32, 0.32, 0.32)
 	arquera.global_position = Vector3(-12.8, 0.185, 0.0)
 	# Dañables con 2 de vida como las defensoras regulares de piso
 	arquera.vida_maxima = 2

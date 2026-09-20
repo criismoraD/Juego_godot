@@ -2913,8 +2913,8 @@ func _flash_damage():
 # SISTEMA DE RECIBIR DAÑO
 # ═══════════════════════════════════════════════════════════════════════════════
 func recibir_dano(cantidad: int = 1):
-	# Verificar invulnerabilidad, modo dios o buff de fuego rápido
-	if is_invulnerable or modo_dios or is_dead or fuego_rapido_activo:
+	# Verificar invulnerabilidad o modo dios
+	if is_invulnerable or modo_dios or is_dead:
 		return
 
 	# Reducir vida

@@ -41,7 +41,7 @@ func test_power_up_consumo_activa_fuego_rapido():
 	assert_eq(_power_up.current_state, PowerUpFuegoRapido.State.DISSOLVING, "El power-up debe pasar al estado DISSOLVING")
 
 
-func test_inmortalidad_durante_fuego_rapido():
+func test_sin_inmortalidad_durante_fuego_rapido():
 	# Arrange
 	_player.health = 5
 	_player.activar_fuego_rapido(15.0)
@@ -49,15 +49,16 @@ func test_inmortalidad_durante_fuego_rapido():
 	# Act: Intentar dañar al jugador mientras tiene el buff activo
 	_player.recibir_dano(1)
 
-	# Assert: Inmortalidad previene reducción de vida
-	assert_eq(_player.health, 5, "El jugador no debe recibir daño mientras fuego_rapido_activo sea true")
+	# Assert: Inmortalidad eliminada, el jugador recibe daño
+	assert_eq(_player.health, 4, "El jugador SÍ debe recibir daño aunque fuego_rapido_activo sea true (inmortalidad eliminada)")
 
 	# Act 2: Desactivar buff y volver a recibir daño
 	_player.desactivar_fuego_rapido()
+	_player.is_invulnerable = false
 	_player.recibir_dano(1)
 
 	# Assert: Debe recibir daño normal tras expirar el buff
-	assert_eq(_player.health, 4, "El jugador debe volver a recibir daño normal al expirar fuego rápido")
+	assert_eq(_player.health, 3, "El jugador debe seguir recibiendo daño normal al expirar fuego rápido")
 
 
 func test_disparo_normal_sale_a_maxima_potencia_con_fuego_rapido():
@@ -263,9 +264,9 @@ func test_fuego_rapido_no_afecta_otros_power_ups():
 	_player.flechas_explosivas = 5
 	assert_almost_eq(_player._get_multiplicador_velocidad_disparo_total(), 1.0, 0.001, "Flecha explosiva no debe verse acelerada por fuego rápido (1.0x)")
 
-	# Mantiene inmortalidad
+	# Ya no es inmortal
 	_player.recibir_dano(2)
-	assert_eq(_player.health, 5, "Debe mantener inmortalidad aún con flechas explosivas activas")
+	assert_eq(_player.health, 3, "Recibe daño normalmente aún con flechas explosivas activas")
 
 	# Mantiene aura activa
 	assert_true(_player.fuego_rapido_activo, "Fuego rápido sigue activo")
@@ -276,8 +277,9 @@ func test_fuego_rapido_no_afecta_otros_power_ups():
 	_player.flechas_multiples = 5
 	assert_almost_eq(_player._get_multiplicador_velocidad_disparo_total(), 1.0, 0.001, "Flecha múltiple no debe verse acelerada por fuego rápido (1.0x)")
 
-	# Mantiene inmortalidad con munición múltiple
+	# Ya no es inmortal con munición múltiple
+	_player.is_invulnerable = false
 	_player.recibir_dano(2)
-	assert_eq(_player.health, 5, "Debe mantener inmortalidad aún con flechas múltiples activas")
+	assert_eq(_player.health, 1, "Recibe daño normalmente aún con flechas múltiples activas")
 
 

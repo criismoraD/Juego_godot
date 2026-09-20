@@ -86,6 +86,7 @@ var btn_solo_ggirl: Button
 var btn_solo_lonko: Button
 var btn_solo_arquera_rosa: Button
 var btn_solo_globo: Button
+var btn_solo_general: Button
 var btn_spawn_escudo: Button
 var btn_spawn_posion: Button
 var btn_spawn_flecha_explosiva: Button
@@ -1327,6 +1328,15 @@ func _update_spawn_buttons():
 		else:
 			btn_solo_globo.text = "🎈 GLOBO"
 			_style_button(btn_solo_globo, Color(0.4, 0.4, 0.5))
+
+	# Botón GENERAL
+	if is_instance_valid(btn_solo_general):
+		if tipo == 12:
+			btn_solo_general.text = "🎖️ GENERAL ✓"
+			_style_button(btn_solo_general, Color(0.85, 0.45, 0.1))
+		else:
+			btn_solo_general.text = "🎖️ GENERAL"
+			_style_button(btn_solo_general, Color(0.4, 0.4, 0.5))
 
 
 func _toggle_outlines():

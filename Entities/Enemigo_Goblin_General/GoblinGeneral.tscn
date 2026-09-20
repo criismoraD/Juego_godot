@@ -1,0 +1,117 @@
+[gd_scene format=3 uid="uid://d3xkb6q2v8m80"]
+
+[ext_resource type="Script" uid="uid://cgj4klfc284al" path="res://Entities/Enemigo_Goblin_General/GoblinGeneral.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cn7upgurdjjx2" path="res://TEST_/Goblin general/Goblin general.glb" id="2_model"]
+[ext_resource type="Material" uid="uid://bm28s7qplh1aa" path="res://Entities/Enemigo_Goblin_General/MAT_GOBLIN_GENERAL.tres" id="3_material"]
+[ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="4_bow"]
+[ext_resource type="PackedScene" uid="uid://dqp6bym8k0nbe" path="res://Recursos_Compartidos/FLECHA_ARQUERA_ENEMIGA.glb" id="5_arrow_mesh"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_general"]
+radius = 0.25
+height = 0.9633789
+
+[node name="GoblinGeneral" type="CharacterBody3D" unique_id=1283910245]
+transform = Transform3D(0.89, 0, 0, 0, 0.89, 0, 0, 0, 0.89, 0, 0, 0)
+collision_layer = 4
+script = ExtResource("1_script")
+distancia_minima_caminar = 3.0
+distancia_maxima_caminar = 9.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1849201948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07167488, 0.48168945, 0)
+shape = SubResource("CapsuleShape3D_general")
+
+[node name="GoblinGeneralModel" parent="." unique_id=1938572019 instance=ExtResource("2_model")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+
+[node name="Skeleton3D" parent="GoblinGeneralModel/Armature" parent_id_path=PackedInt32Array(1938572019, 2039585345) index="0" unique_id=1463080801]
+bones/0/position = Vector3(0, 6.906401, -38.07088)
+bones/0/rotation = Quaternion(-0.48100868, 0.4968018, -0.51416594, 0.5073974)
+bones/1/rotation = Quaternion(0.15540183, 0.24243906, 0.947392, -0.13972189)
+bones/2/rotation = Quaternion(-0.20070292, 0.09269811, 0.04099686, 0.97439456)
+bones/3/rotation = Quaternion(0.4192642, 0.01706338, -0.11418293, 0.90049356)
+bones/4/rotation = Quaternion(0.32187665, -0.084844455, 0.028975073, 0.94252706)
+bones/6/rotation = Quaternion(-0.3477716, 0.16460834, 0.8995814, 0.2066696)
+bones/7/rotation = Quaternion(-0.31190977, -0.078813545, -0.011868282, 0.9467629)
+bones/8/rotation = Quaternion(0.5130588, 0.13386016, 0.04279902, 0.8467706)
+bones/9/rotation = Quaternion(0.3327451, 0.08736119, -0.028696753, 0.9385229)
+bones/11/rotation = Quaternion(0.012276912, 0.014063432, 0.07073094, 0.99732083)
+bones/12/rotation = Quaternion(0.024227135, 0.003906396, 0.009827057, 0.99965054)
+bones/13/rotation = Quaternion(0.02427859, 0.0035180247, 0.009874531, 0.9996503)
+bones/14/rotation = Quaternion(-0.4920499, -0.48307568, 0.50041443, -0.52355546)
+bones/15/rotation = Quaternion(0.07279433, -0.11929028, 0.549551, 0.8236895)
+bones/16/rotation = Quaternion(0.0915471, 0.0050550704, 0.9035899, 0.4184723)
+bones/17/rotation = Quaternion(-0.14167307, -0.54937047, -0.15567613, 0.80863214)
+bones/18/rotation = Quaternion(0.10336475, 0.04764918, -0.063992284, 0.99143845)
+bones/19/rotation = Quaternion(0.76427764, 0.005041513, -0.12994607, 0.6316394)
+bones/20/position = Vector3(-0.0028271675, 1.6116655, -3.1014206e-06)
+bones/20/rotation = Quaternion(0.5005692, -0.011416012, -0.106235005, 0.8590776)
+bones/22/rotation = Quaternion(0.3655856, 0.006085456, -0.056985162, 0.9290118)
+bones/23/position = Vector3(0.00025075674, 1.4226341, -1.3870522e-07)
+bones/23/rotation = Quaternion(0.7195126, -0.003786319, -0.1410296, 0.6799986)
+bones/24/position = Vector3(-0.0034546852, 1.7492995, -7.8832227e-07)
+bones/24/rotation = Quaternion(0.65836674, 0.0046356153, -0.11982191, 0.74308443)
+bones/26/rotation = Quaternion(0.54880583, -0.14519024, -0.13232309, 0.8125408)
+bones/27/position = Vector3(0.0019880533, 1.9289538, 1.6963395e-07)
+bones/27/rotation = Quaternion(0.80506724, 0.0070419265, -0.21067303, 0.5544674)
+bones/28/rotation = Quaternion(0.6549265, -0.0041115326, -0.17644082, 0.7347946)
+bones/30/rotation = Quaternion(0.50154436, 0.013450093, -0.029471362, 0.8645252)
+bones/31/rotation = Quaternion(0.69104385, 0.0044573443, -0.13151284, 0.7107341)
+bones/32/position = Vector3(-0.0010415316, 1.5880206, -1.2089195e-06)
+bones/32/rotation = Quaternion(0.7367664, -0.0036999383, -0.14986804, 0.6593187)
+bones/33/position = Vector3(0.00025761127, 1.1221411, -5.111098e-06)
+bones/34/rotation = Quaternion(0.20134796, 0.09107365, 0.30678135, 0.9257699)
+bones/35/rotation = Quaternion(-0.073746465, -0.006825366, -0.43288982, 0.8983994)
+bones/36/rotation = Quaternion(0.013504341, 0.0008485232, 0.16587175, 0.9860545)
+bones/37/position = Vector3(0.083221674, 1.9646287, -4.053117e-06)
+bones/38/rotation = Quaternion(-0.06861407, -0.05514145, -0.03766644, 0.9954059)
+bones/39/rotation = Quaternion(-0.0022282708, -0.62779284, 0.06490531, 0.7756665)
+bones/41/rotation = Quaternion(0.546867, -0.49803284, 0.48428392, 0.46729958)
+bones/42/rotation = Quaternion(-0.1284677, 0.3676247, -0.0068804086, 0.92103255)
+bones/43/rotation = Quaternion(0.013686239, 0.0050681136, -0.112230465, 0.9935751)
+bones/44/position = Vector3(-7.396593e-07, 11.572876, 7.436238e-07)
+bones/44/rotation = Quaternion(0.019508775, 0.3776732, 0.0093665505, 0.9256861)
+bones/45/rotation = Quaternion(0.49134064, -0.06495778, 0.021757007, 0.8682692)
+bones/46/rotation = Quaternion(0.69828236, -0.004394439, 0.10489294, 0.70808184)
+bones/47/rotation = Quaternion(0.35367548, 0.008990351, 0.07831412, 0.93204063)
+bones/49/rotation = Quaternion(0.5095134, 0.015593267, -0.007324385, 0.8602903)
+bones/50/rotation = Quaternion(0.6770021, 0.0054392363, 0.12745577, 0.7248405)
+bones/51/position = Vector3(-0.0038638115, 1.6207937, -5.882521e-06)
+bones/51/rotation = Quaternion(0.31930706, -0.0034504868, 0.056389358, 0.9459658)
+bones/53/rotation = Quaternion(0.43935752, 0.19212238, 0.020534515, 0.8772869)
+bones/54/rotation = Quaternion(0.6585892, -0.006100046, 0.14666505, 0.73804635)
+bones/55/rotation = Quaternion(0.48308527, 0.0037965993, 0.11548354, 0.86791575)
+bones/57/position = Vector3(-0.8748032, 7.4125366, -0.10614179)
+bones/57/rotation = Quaternion(0.50086296, 0.08832813, 0.0027200007, 0.86100346)
+bones/58/position = Vector3(-0.00079238415, 1.319901, 7.836634e-07)
+bones/58/rotation = Quaternion(0.54061735, -0.015979657, 0.11931323, 0.8326115)
+bones/59/rotation = Quaternion(0.56730974, 0.0026246686, 0.11388014, 0.81558824)
+bones/61/rotation = Quaternion(0.30658832, -0.4238895, -0.32834142, 0.7864562)
+bones/62/position = Vector3(-0.081596136, 2.072087, -6.4055166e-07)
+bones/62/rotation = Quaternion(-0.048435766, 0.0006324928, 0.29099885, 0.9554963)
+bones/63/rotation = Quaternion(-0.11029105, 0.010127993, 0.38510835, 0.91620135)
+bones/64/position = Vector3(0.046500564, 1.9751971, 2.6673083e-06)
+
+[node name="Goblin general" parent="GoblinGeneralModel/Armature/Skeleton3D" index="0" unique_id=1863127081]
+material_override = ExtResource("3_material")
+
+[node name="BoneAttachmentArco" type="BoneAttachment3D" parent="GoblinGeneralModel/Armature/Skeleton3D" index="1" unique_id=1948201847]
+transform = Transform3D(0.26306638, 0.2770298, 0.9241484, -0.1154646, 0.96004295, -0.25492194, -0.95784324, -0.03964513, 0.28454247, 5.583301, 36.92286, -55.440353)
+bone_name = "mixamorig_RightHand"
+bone_idx = 44
+
+[node name="ARCO_GOBLING_GIRL" parent="GoblinGeneralModel/Armature/Skeleton3D/BoneAttachmentArco" unique_id=1984729184 instance=ExtResource("4_bow")]
+transform = Transform3D(0.952772, 44.89372, 9.188044, -35.48487, 0.228767, 22.27644, 8.054583, -4.302591, 97.05328, 0.754631, 7.188766, 1.766479)
+
+[node name="BoneAttachmentFlecha" type="BoneAttachment3D" parent="GoblinGeneralModel/Armature/Skeleton3D" index="2" unique_id=1938571938]
+transform = Transform3D(0.23655123, 0.14243479, -0.961122, -0.06948832, 0.98914355, 0.12948535, 0.9691311, 0.03615673, 0.24388078, 7.147686, 9.660912, -56.979908)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
+
+[node name="FlechaMano" type="Node3D" parent="GoblinGeneralModel/Armature/Skeleton3D/BoneAttachmentFlecha" unique_id=1938472910]
+transform = Transform3D(-18.95069, 40.56919, 33.308807, 72.909904, 11.378413, 6.5107775, -2.5835824, 23.527319, -60.584568, 6.185234, -8.659439, 3.1055584)
+
+[node name="FLECHA_ARQUERA_ENEMIGA" parent="GoblinGeneralModel/Armature/Skeleton3D/BoneAttachmentFlecha/FlechaMano" unique_id=1672633600 instance=ExtResource("5_arrow_mesh")]
+transform = Transform3D(-8.742278e-08, 0, 0.6106571, 0, 1.7377698, 0, -2, 0, -2.6692668e-08, 0.297046, 0, 0)
+
+[editable path="GoblinGeneralModel"]
