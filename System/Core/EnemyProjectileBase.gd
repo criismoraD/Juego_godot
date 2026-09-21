@@ -257,7 +257,7 @@ func _on_body_entered(body: Node) -> void:
 			return
 
 		AudioManager.play_sfx("arrow_impact")
-		_stick_to_surface()
+		_stick_to_surface(body)
 		return
 
 	if body.is_in_group("player"):
@@ -291,9 +291,26 @@ func _obtener_objetivo_dano(body: Node) -> Node:
 	return body
 
 
-func _stick_to_surface() -> void:
+func _stick_to_surface(surface: Node3D = null) -> void:
 	_marcar_como_pegado()
+	if is_instance_valid(surface) and surface is Node3D and not surface.is_queued_for_deletion():
+		var s_trans: Transform3D = surface.global_transform
+		if not is_zero_approx(s_trans.basis.determinant()):
+			var local_trans: Transform3D = s_trans.affine_inverse() * global_transform
+			call_deferred("_reparent_to_surface", surface, local_trans)
 	_programar_destruccion_pegada()
+
+
+func _reparent_to_surface(surface: Node3D, local_trans: Transform3D) -> void:
+	if not is_instance_valid(surface) or surface.is_queued_for_deletion() or not is_instance_valid(self) or not is_inside_tree():
+		return
+
+	var current_parent: Node = get_parent()
+	if current_parent != surface:
+		if current_parent:
+			current_parent.remove_child(self)
+		surface.add_child(self)
+	transform = local_trans
 
 
 func _stick_to_shield(shield: Node3D) -> void:

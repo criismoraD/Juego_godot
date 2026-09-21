@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://cmq58u1ickvxr"]
+
+[ext_resource type="Script" uid="uid://6n5a47d27jbu" path="res://TEST_/swimming-in-godot-from-scracth/scripts/rigid_body_3d.gd" id="1_p78r7"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_p78r7"]
+size = Vector3(1.8896484, 0.5415039, 1.7514648)
+
+[sub_resource type="TorusMesh" id="TorusMesh_sgb7v"]
+rings = 10
+ring_segments = 10
+
+[node name="Node3D" type="Node3D" unique_id=1337932254]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
+
+[node name="RigidBody3D" type="RigidBody3D" parent="." unique_id=653260544]
+script = ExtResource("1_p78r7")
+water_drag = 1.0
+water_angular_drag = 1.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D" unique_id=1966673954]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0034179688, 0.029857635, -0.018310547)
+shape = SubResource("BoxShape3D_p78r7")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D" unique_id=29376818]
+mesh = SubResource("TorusMesh_sgb7v")
+
+[node name="FloatPoints" type="Node3D" parent="RigidBody3D" unique_id=2106945830]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03842926, 0)
+
+[node name="Marker3D" type="Marker3D" parent="RigidBody3D/FloatPoints" unique_id=1148177180]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0062026978, -0.18234253, 0.9771118)
+
+[node name="Marker3D2" type="Marker3D" parent="RigidBody3D/FloatPoints" unique_id=180671706]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9437332, -0.18234253, -0.06347656)
+
+[node name="Marker3D3" type="Marker3D" parent="RigidBody3D/FloatPoints" unique_id=331844185]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.939209, -0.18234253, -0.07366943)
+
+[node name="Marker3D4" type="Marker3D" parent="RigidBody3D/FloatPoints" unique_id=841978812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0062026978, -0.18234253, -1.0695801)
+

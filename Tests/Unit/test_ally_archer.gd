@@ -464,6 +464,108 @@ func test_oleada_iniciada_reanuda_estado_idle() -> void:
 	assert_eq(_ally.current_state, _ally.State.IDLE, "Al iniciar la nueva oleada debe salir de CELEBRATING a IDLE")
 
 
+func test_tiro_azar_alcanza_zona_enemiga() -> void:
+	# Arrange: limpiar restos de otros tests y un básico lejos (x=15, fuera del
+	# alcance del arco ciego anterior de ~14m)
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e):
+			e.free()
+	_ally.global_position = Vector3(0, 3, 0)
+	var enemy := Node3D.new()
+	enemy.name = "GoblinEnemy"
+	enemy.add_to_group("enemies")
+	get_tree().root.add_child(enemy)
+	enemy.global_position = Vector3(15, 0, 0)
+	var spawn: Vector3 = _ally.global_position + Vector3(0, _ally.altura_spawn_flecha, 0)
+	var gravedad: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+	# Act: 8 disparos de azar integrando su vuelo balístico hasta el suelo
+	var xs: Array = []
+	for i in range(8):
+		var tiro := _ally._calcular_tiro_azar(spawn)
+		var pos := spawn
+		var vel: Vector3 = tiro["direction"] * float(tiro["speed"])
+		for s in range(600):
+			vel.y -= gravedad * 0.016
+			pos += vel * 0.016
+			if pos.y <= 0.0:
+				break
+		xs.append(pos.x)
+
+	# Assert: caen en zona enemiga (media ~15, todos entre 8 y 22)
+	var media: float = 0.0
+	for x in xs:
+		media += float(x)
+	media /= float(xs.size())
+	assert_gte(media, 12.0, "El tiro al azar debe llegar a la zona enemiga (media)")
+	assert_lte(media, 18.0, "El tiro al azar no debe pasarse sistemáticamente (media)")
+	assert_gte(float(xs.min()), 8.0, "Ningún tiro debe caer corto")
+	assert_lte(float(xs.max()), 22.0, "Ningún tiro debe perderse lejos")
+
+	# Cleanup
+	get_tree().root.remove_child(enemy)
+	enemy.free()
+
+
+func test_tiro_azar_alcanza_enemigo_lejano() -> void:
+	# Arrange: básico a 22m (inalcanzable con la potencia apuntada de 12)
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e):
+			e.free()
+	_ally.global_position = Vector3(0, 3, 0)
+	var enemy := Node3D.new()
+	enemy.name = "GoblinEnemy"
+	enemy.add_to_group("enemies")
+	get_tree().root.add_child(enemy)
+	enemy.global_position = Vector3(22, 0, 0)
+	var spawn: Vector3 = _ally.global_position + Vector3(0, _ally.altura_spawn_flecha, 0)
+	var gravedad: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+	# Act: 8 disparos integrando el vuelo hasta el suelo
+	var xs: Array = []
+	for i in range(8):
+		var tiro := _ally._calcular_tiro_azar(spawn)
+		var pos := spawn
+		var vel: Vector3 = tiro["direction"] * float(tiro["speed"])
+		for s in range(900):
+			vel.y -= gravedad * 0.016
+			pos += vel * 0.016
+			if pos.y <= 0.0:
+				break
+		xs.append(pos.x)
+
+	# Assert: caen en zona lejana (media ~22, todos entre 16 y 28)
+	var media: float = 0.0
+	for x in xs:
+		media += float(x)
+	media /= float(xs.size())
+	assert_gte(media, 19.0, "El azar debe alcanzar enemigos lejanos (media)")
+	assert_lte(media, 25.0, "Sin pasarse sistemáticamente (media)")
+	assert_gte(float(xs.min()), 15.0, "Ningún tiro debe caer corto")
+	assert_lte(float(xs.max()), 29.0, "Ningún tiro debe perderse lejos")
+
+	# Cleanup
+	get_tree().root.remove_child(enemy)
+	enemy.free()
+
+
+func test_ningun_disparo_sale_vertical() -> void:
+	# Arrange: tope de 65° (un tiro a 90° es inútil y antiestético en 2.5D)
+	var tope_rad := deg_to_rad(_ally.elevacion_maxima_absoluta)
+
+	# Act & Assert: vertical puro se recorta al tope
+	var recortada := _ally._limitar_elevacion(Vector3(0, 1, 0))
+	assert_almost_eq(atan2(recortada.y, recortada.x), tope_rad, 0.001, "El tiro vertical debe recortarse al tope")
+	assert_gt(recortada.x, 0.0, "Tras recortar debe avanzar a la derecha")
+
+	# Act & Assert: lo normal no se toca (llano, 35°, picado)
+	assert_eq(_ally._limitar_elevacion(Vector3(1, 0, 0)), Vector3(1, 0, 0), "El tiro llano no se toca")
+	var medio := Vector3(cos(deg_to_rad(35.0)), sin(deg_to_rad(35.0)), 0)
+	assert_eq(_ally._limitar_elevacion(medio), medio, "Un arco normal no se toca")
+	var picado := Vector3(1, -0.5, 0).normalized()
+	assert_eq(_ally._limitar_elevacion(picado), picado, "El tiro picado no se toca")
+
+
 class MockWaveSpawnerPausado extends Node:
 	var is_wave_active: bool = false
 	func get_active_enemies() -> Array:

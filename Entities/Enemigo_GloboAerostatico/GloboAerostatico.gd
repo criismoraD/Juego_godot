@@ -111,10 +111,23 @@ var sfx_explosion_02: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOS
 var sfx_globo_callendo: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Sonido_globo_callendo.mp3")
 var sfx_fuego1: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Fuego1.mp3")
 const SONIDO_MOVIMIENTO_GLOBO: String = "res://TEST_/Sonido de globo.wav"
-const VOLUMEN_MOVIMIENTO_DB: float = 9.0  ## La fuente WAV es muy silenciosa (RMS 2%): +9 dB audible sin saturar
+const VOLUMEN_MOVIMIENTO_DEFECTO_DB: float = -3.0  ## Volumen reducido para acompañar el vuelo del globo con sutileza
+const VOLUMEN_MOVIMIENTO_DB: float = VOLUMEN_MOVIMIENTO_DEFECTO_DB
+
+@export_category("Audio - Movimiento")
+@export_range(-30.0, 10.0, 0.5) var volumen_movimiento_db: float = VOLUMEN_MOVIMIENTO_DEFECTO_DB:
+	set(v):
+		volumen_movimiento_db = v
+		if is_instance_valid(_sfx_movimiento):
+			_sfx_movimiento.volume_db = v
+
+@export_category("Activación por Cámara (Nivel Río)")
+@export var activar_al_entrar_en_camara: bool = false  ## Si true, espera quieto y en silencio hasta entrar en cuadro
 
 var _modelo_globo_destruido_node: Node3D = null
 var _sfx_movimiento: AudioStreamPlayer = null
+var _notificador_pantalla_globo: VisibleOnScreenNotifier3D = null
+var _dormido_por_camara: bool = false  ## Quieto y en silencio hasta entrar en cuadro
 
 # ==============================================================================
 # HOOKS DE ENEMYBASE
@@ -143,6 +156,9 @@ func _on_enemy_ready() -> void:
 	_iniciar_tween_bamboleo()
 	_iniciar_tween_deformacion()
 	_configurar_sonido_movimiento()
+	_configurar_notificador_pantalla()
+	if activar_al_entrar_en_camara:
+		_iniciar_dormida_camara()
 
 	# Alinear estrictamente al plano Z de gameplay 2.5D para que las flechas impacten de lleno
 	var player = get_tree().get_first_node_in_group("player")
@@ -165,6 +181,11 @@ func _on_state_shooting() -> void:
 
 func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD:
+		return
+
+	# Dormido hasta entrar en cuadro: quieto, sin moverse ni sonar
+	if _dormido_por_camara:
+		velocity = Vector3.ZERO
 		return
 
 	if current_state == State.DYING:
@@ -211,17 +232,19 @@ func _configurar_sonido_movimiento() -> void:
 	_sfx_movimiento = AudioStreamPlayer.new()
 	_sfx_movimiento.name = "SfxMovimiento"
 	_sfx_movimiento.stream = stream
-	_sfx_movimiento.volume_db = VOLUMEN_MOVIMIENTO_DB
+	_sfx_movimiento.volume_db = volumen_movimiento_db
 	_sfx_movimiento.bus = "Master"
 	add_child(_sfx_movimiento)
 
 
 ## Inicia o detiene el sonido según si el globo se está moviendo.
 ## El stream se reinicia al terminar mientras siga desplazándose (loop manual).
+## No suena hasta entrar en pantalla.
 func _actualizar_sonido_movimiento() -> void:
 	if not _sfx_movimiento:
 		return
 	var esta_movimiento: bool = current_state != State.DYING and current_state != State.DEAD and absf(velocity.x) > 0.01
+	esta_movimiento = esta_movimiento and _globo_visible_en_pantalla()
 	if esta_movimiento:
 		if not _sfx_movimiento.playing:
 			_sfx_movimiento.play()
@@ -345,7 +368,10 @@ func _buscar_nodos_visuales() -> void:
 			if is_instance_valid(sombra):
 				sombra.queue_free()
 
-	# Tripulante eliminado — sin configuración de animaciones
+	# Tripulante: asegurar que las partes de desmembramiento estén ocultas mientras esté vivo
+	for partes in find_children("PartesExplotadas", "Node3D", true, false):
+		if partes is Node3D:
+			(partes as Node3D).visible = false
 
 
 func _poner_postura_idle() -> void:
@@ -405,6 +431,9 @@ func _iniciar_tween_deformacion() -> void:
 
 
 func take_damage(amount: float) -> void:
+	# Ser alcanzado lo despierta aunque aún no haya entrado en cuadro
+	if _dormido_por_camara:
+		_activar_por_camara()
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 	_flash_red()
@@ -747,6 +776,9 @@ func _reproducir_sonido_explosion(spawn_pos: Vector3) -> void:
 func _reproducir_sonido_globo_callendo() -> void:
 	if not sfx_globo_callendo:
 		return
+	# El globo no debe escucharse hasta aparecer en pantalla
+	if not _globo_visible_en_pantalla():
+		return
 	var player := AudioStreamPlayer3D.new()
 	player.stream = sfx_globo_callendo
 	player.volume_db = 4.0
@@ -760,6 +792,45 @@ func _reproducir_sonido_globo_callendo() -> void:
 	player.global_position = global_position
 	player.play()
 	player.finished.connect(player.queue_free)
+
+
+## Notificador para silenciar al globo fuera de pantalla.
+func _configurar_notificador_pantalla() -> void:
+	if _notificador_pantalla_globo and is_instance_valid(_notificador_pantalla_globo):
+		return
+	_notificador_pantalla_globo = VisibleOnScreenNotifier3D.new()
+	_notificador_pantalla_globo.name = "NotificadorPantallaGlobo"
+	_notificador_pantalla_globo.aabb = AABB(Vector3(-2, -1, -2), Vector3(4, 5, 4))
+	add_child(_notificador_pantalla_globo)
+
+
+## True si el globo ya está en el cuadro (sin cámara/entorno de test: false,
+## el sonido queda apagado hasta confirmarse visibilidad).
+func _globo_visible_en_pantalla() -> bool:
+	if is_instance_valid(_notificador_pantalla_globo):
+		return _notificador_pantalla_globo.is_on_screen()
+	return false
+
+
+## Espera quieto hasta entrar en cuadro (sin moverse ni sonar).
+func _iniciar_dormida_camara() -> void:
+	_dormido_por_camara = true
+	velocity = Vector3.ZERO
+	if is_instance_valid(_notificador_pantalla_globo) \
+	and not _notificador_pantalla_globo.screen_entered.is_connected(_activar_por_camara):
+		_notificador_pantalla_globo.screen_entered.connect(_activar_por_camara)
+	# Si ya está en cuadro al aparecer, activar sin esperar
+	await get_tree().process_frame
+	if is_instance_valid(self) and _dormido_por_camara and _globo_visible_en_pantalla():
+		_activar_por_camara()
+
+
+## Activa el globo al entrar en el cuadro de la cámara.
+func _activar_por_camara() -> void:
+	if not _dormido_por_camara:
+		return
+	_dormido_por_camara = false
+	_change_state(State.WALKING)
 
 
 ## Sonido Fuego1 al destruirse el globo (TEST_/Fuego1.mp3)

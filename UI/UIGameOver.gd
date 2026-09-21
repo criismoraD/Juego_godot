@@ -181,6 +181,12 @@ func _on_continue_pressed() -> void:
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
 	get_tree().paused = false
 
+	# Recuperación blindada: limpiar streams pausados y reanudar música detenida
+	if has_node("/root/AudioManager"):
+		var am = get_node("/root/AudioManager")
+		if am.has_method("recuperar_audio_continuar"):
+			am.call("recuperar_audio_continuar")
+
 	# Continuar desde el principio de la oleada donde murió (ej. nivel 4 → oleada 4)
 	if ultima_oleada_jugada >= 1 and ultima_oleada_jugada <= 5:
 		GameUI.continuar_desde_oleada = ultima_oleada_jugada

@@ -30,6 +30,10 @@ var _particulas_pisada: GPUParticles3D = null
 @export var offset_flecha_mano: Vector3 = Vector3(0.0, 0.0, 0.0)
 @export var rotacion_flecha_mano_grados: Vector3 = Vector3(90.0, 0.0, 0.0)
 @export var escala_flecha_mano: Vector3 = Vector3(1.0, 1.0, 1.0)
+@export_category("Activación por Cámara (Nivel Río)")
+@export var activar_al_entrar_en_camara: bool = false  ## Si true, espera dormida y se activa al entrar en cuadro
+var _dormida_por_camara: bool = false  ## Enemiga dormida hasta entrar en cuadro
+var _notificador_camara: VisibleOnScreenNotifier3D = null
 # === ESTADO ESPECÍFICO ===
 var anim_timer: float = 0.0
 var has_fired_this_cycle: bool = false
@@ -109,6 +113,43 @@ func _on_enemy_ready():
 	_configurar_particulas_pisada()
 	set_process(true)
 
+	if activar_al_entrar_en_camara or solo_atacar_en_pantalla:
+		_iniciar_dormida_camara()
+
+
+## Espera dormida fuera de cámara: quieta, sin física ni ataques, hasta entrar en cuadro (o recibir daño).
+func _iniciar_dormida_camara() -> void:
+	_dormida_por_camara = true
+	en_animacion_disparo = false
+	_actualizar_visibilidad_flecha_mano(false)
+	# Pose congelada (convención del ciclo sin ataque)
+	_play_animation("GIRL_GOB_CAMINA", -1.0, 0.0)
+	_play_bow_animation("ARCO_IDLE")
+	set_physics_process(false)
+	set_process(true)
+	if not _notificador_camara:
+		_notificador_camara = VisibleOnScreenNotifier3D.new()
+		_notificador_camara.name = "NotificadorCamara"
+		_notificador_camara.aabb = AABB(Vector3(-1, 0, -1), Vector3(2, 3, 2))
+		add_child(_notificador_camara)
+		_notificador_camara.screen_entered.connect(_activar_por_camara)
+	# Si ya está en cuadro al aparecer, activar sin esperar
+	await get_tree().process_frame
+	if is_instance_valid(self) and _dormida_por_camara \
+	and is_instance_valid(_notificador_camara) and (_notificador_camara.is_on_screen() or esta_en_pantalla_o_rango_camara()):
+		_activar_por_camara()
+
+
+## Activa la enemiga al entrar en el cuadro de la cámara.
+func _activar_por_camara() -> void:
+	if not _dormida_por_camara:
+		return
+	_dormida_por_camara = false
+	set_physics_process(true)
+	set_process(true)
+	_play_animation("GIRL_GOB_CAMINA")
+	_play_bow_animation("ARCO_IDLE")
+
 
 func _configurar_particulas_pisada() -> void:
 	if _particulas_pisada and is_instance_valid(_particulas_pisada):
@@ -186,6 +227,18 @@ func _on_state_walking():
 
 
 func _on_state_shooting():
+	if not puede_atacar():
+		en_animacion_disparo = false
+		if girl_anim_tree:
+			girl_anim_tree.active = false
+		_play_animation("GIRL_GOB_CAMINA", -1.0, 0.0)
+		_play_bow_animation("ARCO_IDLE")
+		anim_timer = 0.0
+		has_fired_this_cycle = false
+		shoot_timer = pausa_entre_disparos
+		_actualizar_visibilidad_flecha_mano(false)
+		return
+
 	en_animacion_disparo = true
 	if esta_agachada and girl_anim_tree:
 		# Activar AnimationTree: piernas agachadas + torso disparando
@@ -212,9 +265,11 @@ func _on_state_dying():
 
 	# Muerte por explosión: mantener la animación normal pero el cuerpo
 	# recibe el impulso (se eleva un poco y cae en parábola hacia la derecha)
+	# y deja la mancha de sangre del Imp.
 	if murio_por_explosion:
 		_aplicar_impulso_explosivo()
 		_lanzar_arco_explosivo()
+		VFXFactory.spawn_ground_blood_splatter(self, global_position, Color(0.85, 0.3, 1.0, 0.95))
 		murio_por_explosion = false
 
 	# Elegir aleatoriamente entre las 3 animaciones de muerte
@@ -304,6 +359,9 @@ func _lanzar_arco_explosivo() -> void:
 
 
 func take_damage(amount: float) -> void:
+	# Ser alcanzada la despierta aunque aún no haya entrado en cuadro
+	if _dormida_por_camara:
+		_activar_por_camara()
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
@@ -330,6 +388,10 @@ func _on_pacifico_detenido():
 
 
 func _process(delta):
+	if _dormida_por_camara:
+		if (_notificador_camara and _notificador_camara.is_on_screen()) or esta_en_pantalla_o_rango_camara():
+			_activar_por_camara()
+		return
 	super._process(delta)
 	if _particulas_pisada:
 		_particulas_pisada_emitir()
@@ -346,6 +408,28 @@ func _process(delta):
 
 func _process_shooting(delta):
 	velocity.x = 0
+
+	# Control de ataque condicionado a estar en pantalla / rango de cámara
+	if not puede_atacar():
+		en_animacion_disparo = false
+		_actualizar_visibilidad_flecha_mano(false)
+		_play_bow_animation("ARCO_IDLE")
+		if girl_anim_tree and girl_anim_tree.active:
+			girl_anim_tree.active = false
+		# Guardia quieta congelada (no caminando en el sitio mientras espera)
+		_play_animation("GIRL_GOB_CAMINA", -1.0, 0.0)
+		return
+
+	# Si estaba en reposo y ahora la cámara la enfoca, inicializar el ciclo de disparo
+	if not en_animacion_disparo and anim_timer == 0.0:
+		en_animacion_disparo = true
+		if esta_agachada and girl_anim_tree:
+			girl_anim_tree.active = true
+		else:
+			if girl_anim_tree:
+				girl_anim_tree.active = false
+			_play_animation("GIRL_GOB_DISPARO")
+		_play_bow_animation("ARCO_TENSAR")
 
 	var mult_vel: float = multiplicador_frenesi if buff_frenesi_activo else 1.0
 
@@ -382,6 +466,9 @@ func _process_shooting(delta):
 
 
 func _shoot_arrow():
+	if not puede_atacar():
+		return
+
 	if not goblin_girl_arrow_scene:
 		push_error("[GoblinGirl] No arrow scene!")
 		return

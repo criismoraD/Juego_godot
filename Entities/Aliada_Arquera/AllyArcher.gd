@@ -24,7 +24,10 @@ var plataforma_asignada: int = 0
 @export var tiempo_apuntado_max: float = 1.2  ## Segundos máximos en IDLE_APUNTANDO (más tiempo = más potencia)
 @export_range(0.0, 30.0, 1.0) var angulo_disparo_min: float = 5.0  ## Ángulo mínimo de elevación (grados)
 @export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 35.0  ## Ángulo máximo de elevación (grados)
+@export_range(45.0, 80.0, 1.0) var elevacion_maxima_absoluta: float = 65.0  ## Tope de elevación de CUALQUIER disparo (nunca 90° vertical)
+@export_range(0.0, 0.2, 0.005) var dispersion_azar: float = 0.06  ## Dispersión del tiro al azar (mucho mayor que la del apuntado: cae POR la zona, no EN el blanco)
 @export_range(1.0, 3.0, 0.05) var multiplicador_potencia_volador: float = 1.6  ## Fuerza extra al disparar a enemigos voladores (trayectoria más plana)
+@export_range(12.0, 24.0, 0.5) var potencia_maxima_azar: float = 18.0  ## Tope de potencia SOLO del tiro al azar (alcanza enemigos lejanos sin tocar el balance apuntado)
 @export_category("Tiempos")
 @export var idle_min: float = 0.4  ## Segundos mínimos en idle entre ciclos
 @export var idle_max: float = 0.9  ## Segundos máximos en idle entre ciclos
@@ -1540,9 +1543,15 @@ func _disparar():
 		direction.x += randf_range(-0.01, 0.01)
 		direction = direction.normalized()
 	else:
-		# Sin objetivo específico: arco a ciego hacia la derecha
-		var angulo = deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
-		direction = Vector3(cos(angulo), sin(angulo), 0).normalized()
+		# Prioridad 0: arco al azar pero CON ALCANCE (cae en zona enemiga,
+		# no a ciegas donde nunca llega). Sin fijación: cada disparo re-sortea.
+		var tiro := _calcular_tiro_azar(spawn_pos)
+		direction = tiro["direction"]
+		speed = tiro["speed"]
+
+	# Tope absoluto: ningún disparo sale a 90° vertical (antiestético e inútil
+	# en 2.5D). Solo recorta elevaciones extremas como voladores justo encima.
+	direction = _limitar_elevacion(direction)
 
 	# 4. CASO MÚLTIPLE: Ráfaga de 5 flechas normales
 	if es_flecha_multiple:
@@ -1564,6 +1573,65 @@ func _disparar():
 		arrow.tirador = self
 	get_tree().root.add_child(arrow)
 	arrow.global_position = spawn_pos
+
+
+## Tiro al azar con alcance (prioridad 0): elige un enemigo al azar como
+## referencia de distancia y calcula un arco balístico que CAE en su zona.
+## Sigue siendo azar (sin fijación ni seguimiento, con dispersión ancha),
+## pero las flechas llegan a los enemigos en vez de caer cortas a ciegas.
+func _calcular_tiro_azar(spawn_pos: Vector3) -> Dictionary:
+	var refs := _obtener_enemigos_disponibles()
+	var gravedad: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	if refs.is_empty():
+		var angulo_fb := deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
+		return {
+			"direction": Vector3(cos(angulo_fb), sin(angulo_fb), 0).normalized(),
+			"speed": (potencia_minima + potencia_maxima) * 0.5
+		}
+	var ref := refs[randi() % refs.size()] as Node3D
+	var punto_ref: Vector3 = ref.global_position + Vector3(0, 0.3, 0)
+	var dx: float = maxf(punto_ref.x - spawn_pos.x, 0.5)
+	var dy: float = punto_ref.y - spawn_pos.y
+
+	var ang_rad := deg_to_rad(randf_range(angulo_disparo_min, angulo_disparo_max))
+	var denom: float = 2.0 * pow(cos(ang_rad), 2.0) * (dx * tan(ang_rad) - dy)
+	var speed: float
+	if denom > 0.01:
+		var requerida: float = sqrt((gravedad * dx * dx) / denom)
+		if requerida > potencia_maxima_azar:
+			# Reintentar con el arco más alto antes de rendirse al máximo alcance
+			ang_rad = deg_to_rad(angulo_disparo_max)
+			var denom2: float = 2.0 * pow(cos(ang_rad), 2.0) * (dx * tan(ang_rad) - dy)
+			if denom2 > 0.01:
+				var requerida2: float = sqrt((gravedad * dx * dx) / denom2)
+				if requerida2 <= potencia_maxima_azar:
+					speed = clampf(requerida2, potencia_minima, potencia_maxima_azar)
+				else:
+					speed = potencia_maxima_azar
+			else:
+				speed = potencia_maxima_azar
+		else:
+			speed = clampf(requerida, potencia_minima, potencia_maxima_azar)
+	else:
+		speed = potencia_maxima_azar
+
+	var direction := Vector3(cos(ang_rad), sin(ang_rad), 0.0).normalized()
+	# Dispersión ancha de azar: cae POR la zona, no EN el blanco
+	direction.y += randf_range(-dispersion_azar, dispersion_azar)
+	direction.x += randf_range(-dispersion_azar, dispersion_azar)
+	return {"direction": direction.normalized(), "speed": speed}
+
+
+## Recorta la elevación de un disparo al tope absoluto (nunca 90°).
+## Solo actúa hacia arriba y hacia la derecha; deja intactos llanos y picados.
+func _limitar_elevacion(dir: Vector3) -> Vector3:
+	if dir.y <= 0.0:
+		return dir
+	var tope := deg_to_rad(elevacion_maxima_absoluta)
+	var ang := atan2(dir.y, absf(dir.x))
+	if ang <= tope:
+		return dir
+	return Vector3(cos(tope), sin(tope), 0.0).normalized()
 
 
 func _disparar_rafaga_aliada(base_direction: Vector3, speed: float, spawn_pos: Vector3) -> void:

@@ -857,6 +857,10 @@ func _on_dying():
 		if model:
 			model.rotation_degrees.y = rotacion_y_modelo - 180.0
 
+	# Muerte por explosión: deja la mancha de sangre del Imp.
+	if murio_por_explosion:
+		VFXFactory.spawn_ground_blood_splatter(self, global_position, Color(0.85, 0.3, 1.0, 0.95))
+
 	# Muerte por explosión en retirada (sin escudo, huyendo): mantener la
 	# animación de muerte pero el cuerpo sale volando en parábola hacia la
 	# derecha (mismo comportamiento que la GoblinGirl).

@@ -76,6 +76,9 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 @export var espejar_modelo_idle: bool = false  ## Desactivado: IDLE reproduce de forma frontal natural sin invertir ni espejar
 @export_range(1.0, 30.0, 0.5) var suavidad_giro: float = 8.0  ## Velocidad del giro suave del modelo (lerp_angle, mismo patrón que Player)
 
+@export_category("Activación - Lonko")
+@export var activar_al_entrar_en_camara: bool = false  ## Si true, espera dormido en IDLE y se activa al entrar en cuadro
+
 # Referencias
 var lonko_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin_Girl/GoblinGirlArrow.tscn")
 var sfx_dano_stream: AudioStream = preload("res://Entities/Enemigo_Lonko/Daño.mp3")
@@ -144,6 +147,8 @@ var _tween_recuperacion_ult: Tween = null
 var murio_por_explosion: bool = false  ## Marcado por FlechaExplosiva: suelta el arco volando al morir por explosión
 var _cayendo_por_destruccion_pilar: bool = false  ## Caída física dinámica al romperse el pilar
 var _ha_tocado_suelo_muerte: bool = false
+var _dormido_por_camara: bool = false  ## Si true, espera quieto en IDLE sin sonidos ni ataques hasta entrar en cámara
+var _notificador_camara_lonko: VisibleOnScreenNotifier3D = null
 
 
 func _on_enemy_ready() -> void:
@@ -165,7 +170,57 @@ func _on_enemy_ready() -> void:
 	_configurar_flecha_mano()
 	_configurar_particulas_pisada()
 	_setup_audio_correr_descalzo()
-	_play_random_run_animation()
+	if activar_al_entrar_en_camara or solo_atacar_en_pantalla:
+		_iniciar_dormido_camara()
+	else:
+		_play_random_run_animation()
+
+
+## Espera dormido fuera de cámara: quieto, sin física ni sonidos de pisadas,
+## hasta que entra en cuadro de cámara o recibe daño.
+func _iniciar_dormido_camara() -> void:
+	_dormido_por_camara = true
+	_is_shooting = false
+	_detener_sonido_correr()
+	_ocultar_flecha_mano()
+	_set_arco_visible(true)
+	_play_animation("IDLE", -1.0, 1.0)
+	_play_bow_animation("ARCO_IDLE")
+	set_physics_process(false)
+
+	if not _notificador_camara_lonko:
+		_notificador_camara_lonko = find_child("NotificadorCamaraLonko", true, false) as VisibleOnScreenNotifier3D
+		if not _notificador_camara_lonko:
+			_notificador_camara_lonko = VisibleOnScreenNotifier3D.new()
+			_notificador_camara_lonko.name = "NotificadorCamaraLonko"
+			_notificador_camara_lonko.aabb = AABB(Vector3(-1.5, 0.0, -1.5), Vector3(3.0, 4.0, 3.0))
+			add_child(_notificador_camara_lonko)
+		if not _notificador_camara_lonko.screen_entered.is_connected(_activar_por_camara):
+			_notificador_camara_lonko.screen_entered.connect(_activar_por_camara)
+
+	# Si ya está en pantalla al instanciarse, activarse sin esperar
+	await get_tree().process_frame
+	if is_instance_valid(self) and _dormido_por_camara:
+		if (_notificador_camara_lonko and _notificador_camara_lonko.is_on_screen()) or esta_en_pantalla_o_rango_camara():
+			_activar_por_camara()
+
+
+## Activa a Lonko al entrar en el rango de la cámara o al ser atacado.
+func _activar_por_camara() -> void:
+	if not _dormido_por_camara:
+		return
+	_dormido_por_camara = false
+	set_physics_process(true)
+	set_process(true)
+
+	if current_state == State.WALKING:
+		_play_random_run_animation()
+		_reanudar_sonido_correr()
+	elif current_state == State.SHOOTING:
+		if not _pilar_invocado and not _pilar_desplegado:
+			_iniciar_secuencia_pilar()
+		elif _pilar_desplegado and not _is_shooting:
+			_iniciar_secuencia_disparo()
 
 
 func _configurar_particulas_pisada() -> void:
@@ -441,6 +496,10 @@ func _recolorear_flecha_mano() -> void:
 func _process(delta: float) -> void:
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
+	if _dormido_por_camara:
+		if (_notificador_camara_lonko and _notificador_camara_lonko.is_on_screen()) or esta_en_pantalla_o_rango_camara():
+			_activar_por_camara()
+		return
 	super._process(delta)
 	_aplicar_yaw_suave(delta)
 	_actualizar_flecha_mano_lonko(delta)
@@ -654,7 +713,9 @@ func _process_walking(delta: float) -> void:
 
 func _on_state_shooting() -> void:
 	_detener_sonido_correr()
-	if _is_shooting or _is_taking_damage:
+	if _is_shooting or _is_taking_damage or _dormido_por_camara:
+		return
+	if solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara():
 		return
 	if not _pilar_invocado and not _pilar_desplegado:
 		_iniciar_secuencia_pilar()
@@ -667,6 +728,13 @@ func _process_shooting(_delta: float) -> void:
 	_detener_sonido_correr()
 	if _pilar_desplegado or _is_invulnerable or _pilar_invocado:
 		velocity.y = 0
+	if not _is_shooting and not _is_taking_damage and not _dormido_por_camara:
+		if not _pilar_invocado and not _pilar_desplegado:
+			if not solo_atacar_en_pantalla or esta_en_pantalla_o_rango_camara():
+				_iniciar_secuencia_pilar()
+		elif _pilar_desplegado:
+			if not solo_atacar_en_pantalla or esta_en_pantalla_o_rango_camara():
+				_iniciar_secuencia_disparo()
 
 
 func _play_random_run_animation() -> void:
@@ -1126,7 +1194,9 @@ func _iniciar_secuencia_disparo() -> void:
 		await get_tree().create_timer(tiempo_pausa, false).timeout
 		if not is_instance_valid(self) or current_state != State.SHOOTING:
 			return
-		if not _is_taking_damage:
+		while solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara() and is_instance_valid(self) and current_state == State.SHOOTING and not _is_taking_damage and not _dormido_por_camara:
+			await get_tree().create_timer(0.2, false).timeout
+		if not _is_taking_damage and not _dormido_por_camara and is_instance_valid(self) and current_state == State.SHOOTING:
 			_iniciar_secuencia_disparo()
 
 
@@ -1734,6 +1804,9 @@ func _propagar_config_electrica(arrow: FlechaElectricaAtaque) -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func take_damage(amount: float) -> void:
+	if _dormido_por_camara:
+		_activar_por_camara()
+
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
@@ -2273,9 +2346,10 @@ func _hundir_y_disolver_pilar() -> void:
 func manejar_impacto_aura(flecha: Node) -> bool:
 	if not (_apuntar_arriba and current_state != State.DYING and current_state != State.DEAD):
 		return false
-	# La flecha explosiva perfora igual que en el aura de Rosa
-	if flecha and ("es_explosiva" in flecha and flecha.es_explosiva):
-		return false
+	# La flecha explosiva o ult de Perrena perfora igual que en el aura de Rosa
+	if is_instance_valid(flecha):
+		if ("es_explosiva" in flecha and bool(flecha.get("es_explosiva"))) or ("es_hacha_especial" in flecha and bool(flecha.get("es_hacha_especial"))) or (flecha.has_meta("es_explosiva") and bool(flecha.get_meta("es_explosiva"))):
+			return false
 	AudioManager.play_sfx("parry")
 	return true
 

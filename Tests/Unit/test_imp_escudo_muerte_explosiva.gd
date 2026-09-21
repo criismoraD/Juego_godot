@@ -96,3 +96,18 @@ func test_humo_retirada_emite_solo_corriendo_en_retirada():
 	imp.velocity.x = 0.0
 	imp._actualizar_humo_retirada()
 	assert_false(imp.humo_retirada.emitting, "En retirada pero sin moverse no debe emitir humo")
+
+
+func test_muerte_explosiva_deja_mancha_del_imp() -> void:
+	# Arrange: sin escudo, marcada por explosión
+	imp.escudo_vida_actual = 0
+	imp.murio_por_explosion = true
+
+	# Act: morir
+	imp._cambiar_estado(ImpShieldGirl.State.DYING)
+
+	# Assert: misma mancha de sangre del Imp con desvanecido
+	var manchas := get_tree().root.find_children("ManchaSangreSuelo", "", true, false)
+	assert_false(manchas.is_empty(), "Debe dejar la mancha de sangre del Imp")
+	for m in manchas:
+		(m as Node).queue_free()

@@ -85,7 +85,7 @@ func _on_body_entered(body: Node) -> void:
 				return
 
 			AudioManager.play_sfx("arrow_impact")
-			_stick_to_surface()
+			_stick_to_surface(body)
 			return
 
 		return

@@ -76,7 +76,7 @@ func _remove_placeholder_visuals() -> void:
 			node.queue_free()
 
 
-func _stick_to_surface() -> void:
+func _stick_to_surface(_surface: Node3D = null) -> void:
 	# Bola de fuego: explota en superficie en lugar de quedarse clavada.
 	_spawn_hit_vfx()
 	_safe_destroy()

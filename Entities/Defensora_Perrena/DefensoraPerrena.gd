@@ -35,6 +35,8 @@ const HACHA_SCENE: PackedScene = preload("res://Entities/Proyectil_Hacha_Perrena
 const MAT_PERRENA: Material = preload("res://Entities/Jugador_Perrena/PERRENA_MAT.tres")
 const MAT_HACHA: Material = preload("res://Entities/Proyectil_Hacha_Perrena/HACHA_PERRENA_MAT.tres")
 const SFX_CELEBRACION: String = "res://TEST_/Guaf perrena exit menu.wav"
+const SFX_ATAQUE: String = "res://TEST_/Sonido ataque perrena.mp3"
+const SFX_ULT: String = "res://TEST_/Perrena ult.mp3"
 const SFX_SWOOSH_HACHA: String = "res://TEST_/Tensado de flecha explosiva.wav"
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 const IMPACTOS_REQUERIDOS_PARA_SUBIR: int = 6
@@ -42,6 +44,10 @@ const ATAQUES_PARA_ESPECIAL: int = 7  ## El ataque especial se ejecuta al 7mo at
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
 const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
+const HITBOX_RADIO_DE_PIE: float = 0.35
+const HITBOX_ALTO_DE_PIE: float = 1.70
+const HITBOX_RADIO_CANOA: float = 0.28
+const HITBOX_ALTO_CANOA: float = 0.75
 
 @export_category("Estadísticas")
 @export var vida_maxima: int = 3
@@ -50,8 +56,8 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 
 @export_category("Despliegue y Movimiento")
 @export var auto_desplegar: bool = false
-@export var velocidad_caminar: float = 1.6  ## Velocidad reducida para trote natural
-@export var velocidad_escaleras: float = 0.85  ## Velocidad reducida para trepar escaleras
+@export var velocidad_caminar: float = 1.4  ## Velocidad reducida para trote natural al ser invocada
+@export var velocidad_escaleras: float = 0.7  ## Velocidad reducida para trepar escaleras al ser invocada
 var en_despliegue: bool = false
 var en_fase_escudo_suelo: bool = false
 var impactos_fase_suelo: int = 0
@@ -59,10 +65,19 @@ var _iniciando_ascenso: bool = false
 var impactos_para_especial: int = 0
 var especial_cargado: bool = false
 
+@export_category("Canoa (Nivel Río)")
+@export var anim_idle_canoa: String = "Idle Canoa"  ## Reposo sentada como pasajera de la canoa; si falta usa "Idle agachada" y luego "Idle"
+@export var restringir_ataque_a_camara: bool = false  ## Si true, solo ataca objetivos ya visibles en cámara (se autoactiva en canoa)
+var en_canoa: bool = false  ## true cuando va de pasajera (se autodetecta por el padre canoa)
+
 @export_category("Cadencia de Ataque")
 @export var tiempo_espera_ataque_min: float = 1.4
 @export var tiempo_espera_ataque_max: float = 2.2
 @export var rango_deteccion_max_x: float = 24.0
+
+@export_category("Sonido de Ataque")
+@export var cada_cuantos_ataques_sonido: int = 3  ## Grito de ataque cada N hachas normales (el especial lleva su propio guaf)
+@export_range(-10.0, 24.0, 0.5) var volumen_ult_db: float = 12.0  ## Volumen del sonido Perrena ult
 
 var current_state: State = State.IDLE
 var contador_ataques: int = 0
@@ -74,6 +89,8 @@ var model_root: Node3D = null
 var armature_node: Node3D = null
 var armature_original_rotation: Vector3 = Vector3.ZERO
 var punto_spawn_hacha: Marker3D = null
+var last_hit_position: Vector3 = Vector3.ZERO
+var last_hit_direction: Vector3 = Vector3.ZERO
 
 var _particulas_pisada: GPUParticles3D = null
 var _malla_humo_der: QuadMesh = null
@@ -83,15 +100,18 @@ var _prev_pos_x: float = 0.0
 var _tiempo_para_proximo_ataque: float = 1.0
 var _tiempo_en_estado: float = 0.0
 var _hacha_arrojada_en_ciclo: bool = false
-var _objetivo_actual: Node = null
+var _objetivo_actual = null
 
 
 func _ready() -> void:
 	add_to_group("allies")
 	add_to_group("defensoras")
 
-	# Paridad visual con su modelo jugable: escala 0.3 a nivel de raíz
-	scale = Vector3(0.3, 0.3, 0.3)
+	# No pisar la escala si la instancia se colocó con un tamaño específico en el
+	# editor (ej. 0.18 como pasajera de la canoa del nivel del río, bajo un padre
+	# con escala 2.0). Solo normalizar a 0.3 al venir a escala identidad.
+	if scale.is_equal_approx(Vector3.ONE):
+		scale = Vector3(0.3, 0.3, 0.3)
 
 	health = vida_maxima
 	_setup_nodos_y_modelo()
@@ -101,10 +121,74 @@ func _ready() -> void:
 	_configurar_particulas_pisada()
 	_prev_pos_x = global_position.x
 
+	_detectar_modo_canoa()
+	_asegurar_loop_idle_canoa()
+
 	if auto_desplegar:
 		desplegar_hacia_primer_escudo()
 	else:
 		_cambiar_estado(State.IDLE)
+
+
+## Detecta si va de pasajera en una canoa (padre CanoaAliada/CanoaProtagonistaRio)
+## para usar el reposo sentado en vez del Idle de pie.
+func _detectar_modo_canoa() -> void:
+	var p: Node = get_parent()
+	while is_instance_valid(p):
+		if p is CanoaAliada:
+			en_canoa = true
+			restringir_ataque_a_camara = true
+			_actualizar_dimensiones_hitbox()
+			return
+		var scr = p.get_script()
+		if scr is Script and "canoa" in (scr as Script).resource_path.to_lower():
+			en_canoa = true
+			restringir_ataque_a_camara = true
+			_actualizar_dimensiones_hitbox()
+			return
+		p = p.get_parent()
+
+
+## Fuerza o retira el modo canoa desde fuera (ej. el nivel del río al subir/bajar).
+## Si está en reposo, cambia la animación en el acto y redimensiona la hitbox.
+func fijar_modo_canoa(activo: bool) -> void:
+	en_canoa = activo
+	restringir_ataque_a_camara = activo
+	_actualizar_dimensiones_hitbox()
+	if current_state == State.IDLE and anim_player:
+		_play_anim(_anim_reposo_nombres(), 0.25, 1.0)
+
+
+## True si la posición ya está en el cuadro de la cámara activa.
+## Sin viewport o sin cámara (tests) se considera visible para no bloquear.
+func _esta_en_camara(pos: Vector3) -> bool:
+	if get_viewport() == null:
+		return true
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return true
+	return cam.is_position_in_frustum(pos)
+
+
+## Nombres candidatos del reposo: sentada en canoa o de pie normal (con fallbacks).
+func _anim_reposo_nombres() -> Array:
+	if en_canoa:
+		var lista: Array = []
+		if anim_player and anim_player.has_animation(anim_idle_canoa):
+			lista.append(anim_idle_canoa)
+		lista.append_array(["Idle agachada", "Idle", "IDLE", "Armature|Armature|IDLE"])
+		return lista
+	return ["Idle", "IDLE", "Armature|Armature|IDLE"]
+
+
+## Garantiza que el idle de canoa quede en loop como el resto de reposos.
+func _asegurar_loop_idle_canoa() -> void:
+	if not anim_player or anim_idle_canoa.is_empty():
+		return
+	if anim_player.has_animation(anim_idle_canoa):
+		var a := anim_player.get_animation(anim_idle_canoa)
+		if a:
+			a.loop_mode = Animation.LOOP_LINEAR
 
 
 func _setup_nodos_y_modelo() -> void:
@@ -140,11 +224,16 @@ func _configurar_loops_animaciones() -> void:
 
 func _resolver_animation_player() -> AnimationPlayer:
 	# Resolver el AnimationPlayer corporal de Perrena
+	# (se ignora "VistaPrevia": reproductor vacío solo para el editor)
 	var players = find_children("*", "AnimationPlayer", true, false)
 	for p in players:
+		if "VISTAPREVIA" in p.name.to_upper():
+			continue
 		if p is AnimationPlayer and (p.has_animation("arrojar") or p.has_animation("Correr")):
 			return p as AnimationPlayer
 	for p in players:
+		if "VISTAPREVIA" in p.name.to_upper():
+			continue
 		if p is AnimationPlayer and p.has_animation("Idle"):
 			return p as AnimationPlayer
 	return null
@@ -159,14 +248,45 @@ func _setup_hitbox() -> void:
 	hitbox_body.collision_mask = 0
 
 	var col := CollisionShape3D.new()
+	col.name = "CollisionShape3D"
 	var shape := CapsuleShape3D.new()
-	# Escalado proporcional al padre (0.3) para medir 0.35m radio y 1.7m alto en el mundo
-	shape.radius = 1.16
-	shape.height = 5.66
 	col.shape = shape
-	col.position = Vector3(0.0, 2.83, 0.0)
 	hitbox_body.add_child(col)
 	add_child(hitbox_body)
+	_actualizar_dimensiones_hitbox()
+
+
+## Calibra dinámicamente las dimensiones físicas de la hitbox según la postura:
+## - De pie (niveles estándar): 1.70m de altura, 0.35m de radio.
+## - Sentada en canoa (nivel río): 0.75m de altura, 0.28m de radio (evita recibir daño por arriba).
+func _actualizar_dimensiones_hitbox() -> void:
+	if not hitbox_body:
+		return
+	var col := hitbox_body.get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if not col:
+		for child in hitbox_body.get_children():
+			if child is CollisionShape3D:
+				col = child
+				break
+	if not col or not (col.shape is CapsuleShape3D):
+		return
+
+	var shape := col.shape as CapsuleShape3D
+	var esc_y: float = 1.0
+	if is_inside_tree():
+		esc_y = global_transform.basis.get_scale().y
+	else:
+		esc_y = scale.y
+
+	if esc_y <= 0.001:
+		esc_y = 0.3
+
+	var h_mundo: float = HITBOX_ALTO_CANOA if en_canoa else HITBOX_ALTO_DE_PIE
+	var r_mundo: float = HITBOX_RADIO_CANOA if en_canoa else HITBOX_RADIO_DE_PIE
+
+	shape.height = h_mundo / esc_y
+	shape.radius = r_mundo / esc_y
+	col.position = Vector3(0.0, (h_mundo * 0.5) / esc_y, 0.0)
 
 
 func _setup_aura() -> void:
@@ -395,7 +515,7 @@ func desplegar_hacia_primer_escudo(start_override_x: float = NAN) -> void:
 	# Iniciar en el suelo
 	global_position = Vector3(start_x, floor_y, 0.0)
 
-	var walk_speed: float = 2.8
+	var walk_speed: float = velocidad_caminar
 
 	# Correr mirando hacia adelante (+X)
 	_orientar_modelo_derecha()
@@ -444,8 +564,8 @@ func iniciar_ascenso_a_ultimo_piso() -> void:
 					p3_escudo_x = e3d.global_position.x - 0.65
 					break
 
-	var walk_speed: float = 2.8
-	var climb_speed: float = 1.5
+	var walk_speed: float = velocidad_caminar
+	var climb_speed: float = velocidad_escaleras
 
 	# 1. Correr hacia la izquierda (-X) para alcanzar la Escalera 1
 	_orientar_modelo_izquierda()
@@ -558,7 +678,7 @@ func desplegar_hacia_ultimo_piso(start_override_x: float = NAN) -> void:
 	var p1_ladder_x: float = -7.58
 	global_position = Vector3(start_x, floor_y, 0.0)
 
-	var walk_speed: float = 2.8
+	var walk_speed: float = velocidad_caminar
 
 	# 1. Correr por el suelo hacia la Escalera 1 (mirando a la derecha)
 	_orientar_modelo_derecha()
@@ -651,6 +771,8 @@ func _proceso_atacando(_delta: float) -> void:
 		_lanzar_hacha_hacia_objetivo(_objetivo_actual)
 		contador_ataques += 1
 		ataque_lanzado.emit(contador_ataques)
+		if cada_cuantos_ataques_sonido > 0 and contador_ataques % cada_cuantos_ataques_sonido == 0:
+			_reproducir_sfx_ataque()
 
 	# Fin de animación arrojar (~0.7s)
 	if _tiempo_en_estado >= 0.7:
@@ -672,10 +794,10 @@ func _iniciar_habilidad_especial() -> void:
 	# SFX y animación de celebración
 	if anim_player and anim_player.has_animation("Celebracion"):
 		anim_player.play("Celebracion", 0.15, 1.0)
-	elif anim_player and anim_player.has_animation("Idle"):
-		anim_player.play("Idle", 0.15, 1.0)
+	else:
+		_play_anim(_anim_reposo_nombres(), 0.15, 1.0)
 
-	_reproducir_sfx_celebracion()
+	_reproducir_sfx_ult()
 
 
 func _proceso_celebrando(_delta: float) -> void:
@@ -705,10 +827,10 @@ func _lanzar_hacha_especial() -> void:
 
 	# Prioridad 1 contra cualquier tipo de enemigo del juego
 	var target: Node = _buscar_mejor_objetivo(true)
-	var spawn_p: Vector3 = punto_spawn_hacha.global_position if punto_spawn_hacha else (global_position + Vector3(0.2, 1.2, 0.0))
+	var spawn_p: Vector3 = punto_spawn_hacha.global_position if is_instance_valid(punto_spawn_hacha) and punto_spawn_hacha.is_inside_tree() else (global_position + Vector3(0.2, 1.2, 0.0))
 
 	var target_pos: Vector3 = spawn_p + Vector3(10.0, 0.0, 0.0)
-	if is_instance_valid(target) and target is Node3D:
+	if is_instance_valid(target) and target is Node3D and (target as Node3D).is_inside_tree():
 		target_pos = (target as Node3D).global_position + Vector3(0.0, 0.4, 0.0)
 
 	var dir := (target_pos - spawn_p).normalized()
@@ -734,10 +856,10 @@ func _lanzar_hacha_hacia_objetivo(target) -> void:
 	if not root:
 		return
 
-	var spawn_p: Vector3 = punto_spawn_hacha.global_position if punto_spawn_hacha else (global_position + Vector3(0.2, 1.2, 0.0))
+	var spawn_p: Vector3 = punto_spawn_hacha.global_position if is_instance_valid(punto_spawn_hacha) and punto_spawn_hacha.is_inside_tree() else (global_position + Vector3(0.2, 1.2, 0.0))
 	var target_pos: Vector3 = spawn_p + Vector3(8.0, 0.0, 0.0)
 
-	if is_instance_valid(target) and target is Node3D:
+	if is_instance_valid(target) and target is Node3D and (target as Node3D).is_inside_tree():
 		target_pos = (target as Node3D).global_position + Vector3(0.0, 0.4, 0.0)
 
 	# Cálculo de trayectoria parabólica hacia el blanco
@@ -816,8 +938,22 @@ func _buscar_mejor_objetivo(es_ataque_especial: bool = false) -> Node:
 
 	# 1. Escudos del escenario en grupo "escudos"
 	for escudo in get_tree().get_nodes_in_group("escudos"):
-		if not is_instance_valid(escudo) or not (escudo is Node3D):
+		if not is_instance_valid(escudo) or not (escudo is Node3D) or not (escudo as Node3D).is_inside_tree():
 			continue
+		# Estructuras no visibles (ocultas, retraídas) no son objetivo válido
+		if not (escudo as Node3D).is_visible_in_tree():
+			continue
+		# Pilar de Lonko ya destruido: no seguir golpeando donde no hay nada
+		if "vida_pilar" in escudo:
+			var vp = escudo.get("vida_pilar")
+			if (vp is int or vp is float) and float(vp) <= 0.0:
+				continue
+		# Escudo que ya recibió sus golpes: destruido aunque el nodo siga presente
+		if "golpes_recibidos" in escudo and "golpes_para_destruir" in escudo:
+			var gr = escudo.get("golpes_recibidos")
+			var gp = escudo.get("golpes_para_destruir")
+			if (gr is int or gr is float) and (gp is int or gp is float) and float(gr) >= float(gp):
+				continue
 		var es_escudo_enem: bool = false
 		if "es_escudo_enemigo" in escudo:
 			es_escudo_enem = escudo.es_escudo_enemigo
@@ -831,6 +967,8 @@ func _buscar_mejor_objetivo(es_ataque_especial: bool = false) -> Node:
 		if es_escudo_enem:
 			var ex: float = (escudo as Node3D).global_position.x
 			if ex > my_x and (ex - my_x) <= rango_deteccion_max_x:
+				if restringir_ataque_a_camara and not _esta_en_camara((escudo as Node3D).global_position):
+					continue
 				if es_ataque_especial:
 					objetivos_p0.append(escudo)
 				else:
@@ -838,13 +976,19 @@ func _buscar_mejor_objetivo(es_ataque_especial: bool = false) -> Node:
 
 	# 2. Enemigos en grupo "enemies"
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(enemy) or not (enemy is Node3D):
+		if not is_instance_valid(enemy) or not (enemy is Node3D) or not (enemy as Node3D).is_inside_tree():
 			continue
 		if enemy.get("is_dead") == true or enemy.get("is_dying") == true or enemy.get("muerto") == true:
 			continue
+		if "vida_pilar" in enemy:
+			var vp = enemy.get("vida_pilar")
+			if (vp is int or vp is float) and float(vp) <= 0.0:
+				continue
 
 		var ex: float = (enemy as Node3D).global_position.x
 		if ex <= my_x or (ex - my_x) > rango_deteccion_max_x:
+			continue
+		if restringir_ataque_a_camara and not _esta_en_camara((enemy as Node3D).global_position):
 			continue
 
 		if es_ataque_especial:
@@ -885,7 +1029,7 @@ func _obtener_mas_cercano(lista: Array[Node]) -> Node:
 	var mejor: Node = null
 	var min_dist: float = 99999.0
 	for item in lista:
-		if is_instance_valid(item) and item is Node3D:
+		if is_instance_valid(item) and item is Node3D and (item as Node3D).is_inside_tree():
 			var d: float = absf((item as Node3D).global_position.x - global_position.x)
 			if d < min_dist:
 				min_dist = d
@@ -901,22 +1045,28 @@ func prioridad_de(enemy: Node) -> int:
 	return PrioridadDefensoras.prioridad_hacha(enemy)
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, hit_pos: Vector3 = Vector3.ZERO, hit_dir: Vector3 = Vector3.ZERO) -> void:
 	if es_inmune or current_state == State.DYING or current_state == State.DEAD:
 		return
+
+	if not hit_pos.is_zero_approx():
+		last_hit_position = hit_pos
+	if not hit_dir.is_zero_approx():
+		last_hit_direction = hit_dir
 
 	health -= int(amount)
 	vida_cambiada.emit(health)
 
 	if health > 0:
+		SangreNoLetal.spawn(self, last_hit_position, last_hit_direction)
 		if anim_player and anim_player.has_animation("impacto"):
 			anim_player.play("impacto", 0.05, 1.2)
 	else:
 		_morir()
 
 
-func recibir_dano(amount: int) -> void:
-	take_damage(float(amount))
+func recibir_dano(amount: int, hit_pos: Vector3 = Vector3.ZERO, hit_dir: Vector3 = Vector3.ZERO) -> void:
+	take_damage(float(amount), hit_pos, hit_dir)
 
 
 func curar(amount: int = 1) -> void:
@@ -930,6 +1080,8 @@ func _morir() -> void:
 	_cambiar_estado(State.DYING)
 	murio.emit()
 
+	_crear_splash_sangre_muerte()
+
 	if hitbox_body:
 		hitbox_body.collision_layer = 0
 
@@ -937,6 +1089,28 @@ func _morir() -> void:
 		anim_player.play("Muerte 1", 0.1, 1.0)
 
 	_iniciar_desintegracion_celeste()
+
+
+## Splash de sangre letal idéntico al de las demás aliadas (BloodSplashNormal).
+func _crear_splash_sangre_muerte() -> void:
+	var blood_scene: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
+	if not blood_scene:
+		return
+	var splash = blood_scene.instantiate() as BloodSplash2D
+	if not splash:
+		return
+
+	var root := get_tree().current_scene if get_tree() else null
+	if root:
+		root.add_child(splash)
+	elif get_parent():
+		get_parent().add_child(splash)
+	else:
+		add_child(splash)
+
+	var spawn_pos := last_hit_position if not last_hit_position.is_zero_approx() else (global_position + Vector3(0.0, 0.7, 0.0))
+	var dir := last_hit_direction if not last_hit_direction.is_zero_approx() else Vector3.LEFT
+	splash.setup(spawn_pos, dir, Color.WHITE)
 
 
 ## Desintegración celeste idéntica al efecto de partículas de las ballesteras:
@@ -1069,8 +1243,7 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 		_tiempo_para_proximo_ataque = randf_range(tiempo_espera_ataque_min, tiempo_espera_ataque_max)
 		if hacha_mano:
 			hacha_mano.visible = false
-		if anim_player and anim_player.has_animation("Idle"):
-			anim_player.play("Idle", 0.2, 1.0)
+		_play_anim(_anim_reposo_nombres(), 0.2, 1.0)
 
 
 func _reproducir_sfx_celebracion() -> void:
@@ -1081,6 +1254,39 @@ func _reproducir_sfx_celebracion() -> void:
 	audio.stream = stream
 	audio.unit_size = 18.0
 	audio.volume_db = 2.5
+	audio.bus = "Master"
+	add_child(audio)
+	audio.play()
+	audio.finished.connect(audio.queue_free)
+
+
+## Sonido de Habilidad Especial / Ult de Perrena (Perrena ult.mp3)
+func _reproducir_sfx_ult() -> void:
+	var stream := load(SFX_ULT) as AudioStream
+	if not stream:
+		return
+	var audio := AudioStreamPlayer3D.new()
+	audio.name = "SfxUltPerrena"
+	audio.stream = stream
+	audio.unit_size = 35.0
+	audio.volume_db = volumen_ult_db
+	audio.bus = "Master"
+	add_child(audio)
+	audio.play()
+	audio.finished.connect(audio.queue_free)
+
+
+
+## Grito de ataque cada N hachas normales (ver cada_cuantos_ataques_sonido).
+func _reproducir_sfx_ataque() -> void:
+	var stream := load(SFX_ATAQUE) as AudioStream
+	if not stream:
+		return
+	var audio := AudioStreamPlayer3D.new()
+	audio.name = "SfxAtaquePerrena"
+	audio.stream = stream
+	audio.unit_size = 32.0
+	audio.volume_db = 10.0
 	audio.bus = "Master"
 	add_child(audio)
 	audio.play()

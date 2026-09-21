@@ -47,3 +47,17 @@ func test_muerte_normal_sin_impulso():
 	# Assert: la muerte normal mantiene el comportamiento de EnemyBase
 	assert_false(girl._impulso_explosivo_activo, "Sin explosión no hay vuelo parabólico")
 	assert_false(girl.is_physics_processing(), "La física debe permanecer desactivada (muerte en sitio)")
+
+
+func test_muerte_explosiva_deja_mancha_del_imp() -> void:
+	# Arrange
+	girl.murio_por_explosion = true
+
+	# Act
+	girl._on_state_dying()
+
+	# Assert: misma mancha de sangre del Imp con desvanecido
+	var manchas := get_tree().root.find_children("ManchaSangreSuelo", "", true, false)
+	assert_false(manchas.is_empty(), "Debe dejar la mancha de sangre del Imp")
+	for m in manchas:
+		(m as Node).queue_free()

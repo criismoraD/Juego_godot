@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://0gbt7iux8kqa"
+path="res://.godot/imported/Sonido reventado.mp3-34039eb520a3fa098191c18b10db2c36.mp3str"
+
+[deps]
+
+source_file="res://TEST_/Sonido reventado.mp3"
+dest_files=["res://.godot/imported/Sonido reventado.mp3-34039eb520a3fa098191c18b10db2c36.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -2,8 +2,8 @@ class_name PezDeRio
 extends Node3D
 
 ## Pez de río 3D decorativo con animación de nado natural en el agua.
-## Se activa 1 segundo tras la entrada de la canoa, se desplaza lentamente de derecha
-## a izquierda y desaparece al cruzar la pantalla para optimizar recursos.
+## Se activa únicamente cuando la cámara lo enfoca en escena, desplazándose lentamente
+## de derecha a izquierda y desapareciendo al cruzar la pantalla para optimizar recursos.
 
 # === CONSTANTES ===
 const ROTACION_Y_HACIA_IZQUIERDA: float = -PI * 0.5  ## Cabeza (+Z) orientada hacia -X (izquierda)
@@ -11,6 +11,8 @@ const VELOCIDAD_NADO_DEFECTO: float = 1.15
 const TIEMPO_ESPERA_DEFECTO: float = 1.0
 const MARGEN_DESAPARICION_DEFECTO: float = 6.5
 const TIEMPO_ADICIONAL_DESAPARICION_DEFECTO: float = 4.0
+const MARGEN_ENFOQUE_X_DEFECTO: float = 7.5
+const AABB_NOTIFICADOR_DEFECTO: AABB = AABB(Vector3(-1.5, -0.6, -0.6), Vector3(3.0, 1.2, 1.2))
 
 # === EXPORTS ===
 @export_category("Visual y Material")
@@ -20,9 +22,11 @@ const TIEMPO_ADICIONAL_DESAPARICION_DEFECTO: float = 4.0
 		if is_node_ready():
 			_aplicar_material()
 
-@export_category("Activación y Tiempo")
-@export var tiempo_espera_activacion: float = TIEMPO_ESPERA_DEFECTO  ## Segundos tras inicio antes de activarse y nadar
-@export var autoactivar: bool = true  ## Si true, se activa automáticamente tras el tiempo de espera
+@export_category("Activación y Enfoque de Cámara")
+@export var activar_solo_al_enfocar: bool = true  ## Si true, solo se activa y nada cuando la cámara enfoca al pez en escena
+@export var margen_enfoque_x: float = MARGEN_ENFOQUE_X_DEFECTO  ## Distancia horizontal máxima respecto a la cámara para considerarlo enfocado
+@export var tiempo_espera_activacion: float = TIEMPO_ESPERA_DEFECTO  ## Tiempo de espera para compatibilidad / fallback
+@export var autoactivar: bool = true  ## Si true, permite la activación automática (por enfoque de cámara o fallback)
 
 @export_category("Cinemática de Nado")
 @export var velocidad: float = VELOCIDAD_NADO_DEFECTO  ## Velocidad lenta de avance hacia la izquierda (m/s)
@@ -38,6 +42,7 @@ const TIEMPO_ADICIONAL_DESAPARICION_DEFECTO: float = 4.0
 
 # === VARIABLES PRIVADAS ===
 var _activo: bool = false
+var _ciclo_finalizado: bool = false
 var _tiempo: float = 0.0
 var _pos_base_y: float = 0.0
 var _pos_base_z: float = 0.0
@@ -46,6 +51,7 @@ var _tiempo_fuera_pantalla: float = 0.0
 
 # === ONREADY ===
 @onready var mesh_inst: MeshInstance3D = find_child("Pez de rio", true, false) as MeshInstance3D
+@onready var notifier: VisibleOnScreenNotifier3D = find_child("VisibleOnScreenNotifier3D", true, false) as VisibleOnScreenNotifier3D
 
 
 # === FUNCIONES BUILT-IN ===
@@ -58,18 +64,28 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 
-	if autoactivar:
-		visible = false
-		_activo = false
+	_activo = false
+	visible = false
+
+	if is_instance_valid(notifier):
+		notifier.screen_entered.connect(_on_screen_entered)
+
+	if not autoactivar:
+		return
+
+	if not activar_solo_al_enfocar:
 		var timer := get_tree().create_timer(tiempo_espera_activacion)
 		timer.timeout.connect(activar)
-	else:
-		_activo = false
-		visible = false
 
 
 func _process(delta: float) -> void:
-	if Engine.is_editor_hint() or not _activo or delta <= 0.0:
+	if Engine.is_editor_hint() or delta <= 0.0:
+		return
+
+	if not _activo:
+		if autoactivar and not _ciclo_finalizado and activar_solo_al_enfocar:
+			if _camara_enfoca_pez():
+				activar()
 		return
 
 	_tiempo += delta
@@ -94,7 +110,7 @@ func _process(delta: float) -> void:
 # === FUNCIONES PÚBLICAS ===
 ## Activa el pez haciéndolo visible y comenzando su nado.
 func activar() -> void:
-	if not is_inside_tree():
+	if _ciclo_finalizado:
 		return
 	_activo = true
 	visible = true
@@ -122,25 +138,51 @@ func fijar_camara(cam: Camera3D) -> void:
 
 
 # === FUNCIONES PRIVADAS ===
+func _on_screen_entered() -> void:
+	if autoactivar and not _activo and not _ciclo_finalizado and activar_solo_al_enfocar:
+		activar()
+
+
+func _camara_enfoca_pez() -> bool:
+	if is_instance_valid(notifier) and notifier.is_on_screen():
+		return true
+
+	var cam := _obtener_camara()
+	if not is_instance_valid(cam):
+		return false
+
+	var dx: float = global_position.x - cam.global_position.x
+	if dx <= margen_enfoque_x and dx >= -margen_desaparicion:
+		return true
+
+	return false
+
+
 func _desaparecer() -> void:
 	_activo = false
 	visible = false
+	_ciclo_finalizado = true
 	if destruir_al_salir:
 		queue_free()
 
 
-func _obtener_x_camara() -> float:
+func _obtener_camara() -> Camera3D:
 	if is_instance_valid(_camara_cache):
-		return _camara_cache.global_position.x
+		return _camara_cache
 	var vp := get_viewport()
 	if vp:
 		_camara_cache = vp.get_camera_3d()
-	if not is_instance_valid(_camara_cache):
+	if not is_instance_valid(_camara_cache) and is_inside_tree():
 		var raiz := get_tree().root if get_tree() else null
 		if raiz:
 			_camara_cache = raiz.find_child("CamaraPrincipal", true, false) as Camera3D
-	if is_instance_valid(_camara_cache):
-		return _camara_cache.global_position.x
+	return _camara_cache
+
+
+func _obtener_x_camara() -> float:
+	var cam := _obtener_camara()
+	if is_instance_valid(cam):
+		return cam.global_position.x
 	return 0.0
 
 
@@ -155,4 +197,3 @@ func _aplicar_a_instancias(nodo: Node) -> void:
 		(nodo as MeshInstance3D).material_override = material_pez
 	for hijo in nodo.get_children():
 		_aplicar_a_instancias(hijo)
-

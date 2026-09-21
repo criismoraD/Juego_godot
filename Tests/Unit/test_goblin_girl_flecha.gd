@@ -66,3 +66,85 @@ func test_animacion_disparo_no_pisa_la_pose_de_la_flecha() -> void:
 
 	goblin.queue_free()
 	await get_tree().process_frame
+
+
+func test_tiradora_fija_pasa_a_tiro_sin_bucle_caminata() -> void:
+	# Arrange: arquera apostada (velocidad 0, como las del río)
+	var goblin := GOBLIN_GIRL_SCENE.instantiate() as GoblinGirl
+	scene_root.add_child(goblin)
+	await get_tree().process_frame
+	goblin.velocidad_caminar = 0.0
+	goblin.target_walk_distance = 0.0
+	goblin.walked_distance = 0.0
+	goblin._change_state(EnemyBase.State.WALKING)
+
+	# Act: procesar caminata sin poder avanzar
+	goblin._process_walking(0.016)
+
+	# Assert: a tiro directo, quieta, sin bucle de caminata
+	assert_eq(goblin.current_state, EnemyBase.State.SHOOTING, "La tiradora fija debe pasar a SHOOTING")
+	assert_eq(goblin.velocity.x, 0.0, "Debe estar detenida")
+
+	goblin.queue_free()
+	await get_tree().process_frame
+
+
+func test_tiro_bloqueado_queda_en_guardia_quieta() -> void:
+	# Arrange: en tiro pero sin permiso de atacar
+	var goblin := GOBLIN_GIRL_SCENE.instantiate() as GoblinGirl
+	scene_root.add_child(goblin)
+	await get_tree().process_frame
+	goblin._change_state(EnemyBase.State.DYING)
+
+	# Act: ciclo de tiro bloqueado
+	goblin._process_shooting(0.016)
+
+	# Assert: guardia quieta congelada, no caminando en el sitio
+	assert_true(String(goblin.anim_player.current_animation).contains("CAMINA"), "Bloqueada debe quedar quieta, no caminando")
+
+	goblin.queue_free()
+	await get_tree().process_frame
+
+
+func test_rio_espera_dormida_y_activa_en_cuadro() -> void:
+	# Arrange: versión del río, fuera de cámara (sin cámara en headless)
+	var goblin := GOBLIN_GIRL_SCENE.instantiate() as GoblinGirl
+	goblin.activar_al_entrar_en_camara = true
+	scene_root.add_child(goblin)
+	await get_tree().process_frame
+
+	# Assert: dormida, quieta y sin física ni proceso hasta entrar en cuadro
+	assert_true(goblin._dormida_por_camara, "Debe esperar dormida fuera de cámara")
+	assert_false(goblin.is_physics_processing(), "Dormida no debe desplazarse")
+	assert_false(goblin.is_processing(), "Dormida no debe procesar ni sonar")
+
+	# Act: entra en el cuadro de la cámara
+	goblin._activar_por_camara()
+
+	# Assert: activa con su ciclo normal
+	assert_false(goblin._dormida_por_camara, "Debe activarse al entrar en cuadro")
+	assert_true(goblin.is_physics_processing(), "Activa debe correr física")
+	assert_true(goblin.is_processing(), "Activa debe procesar")
+
+	goblin.queue_free()
+	await get_tree().process_frame
+
+
+func test_rio_recibir_dano_despierta() -> void:
+	# Arrange: dormida fuera de cámara
+	var goblin := GOBLIN_GIRL_SCENE.instantiate() as GoblinGirl
+	goblin.activar_al_entrar_en_camara = true
+	scene_root.add_child(goblin)
+	await get_tree().process_frame
+	var vida_antes: int = goblin.health
+	assert_true(goblin._dormida_por_camara, "Precondición: dormida")
+
+	# Act: la alcanzan antes de entrar en cuadro
+	goblin.take_damage(1.0)
+
+	# Assert: despierta y aplica el daño
+	assert_false(goblin._dormida_por_camara, "Recibir daño la despierta")
+	assert_eq(goblin.health, vida_antes - 1, "Aplica el daño normalmente")
+
+	goblin.queue_free()
+	await get_tree().process_frame

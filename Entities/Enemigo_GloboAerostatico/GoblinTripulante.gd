@@ -32,6 +32,7 @@ var _player_ref: Node3D = null
 
 
 func _ready() -> void:
+	_ocultar_partes_explotadas()
 	_buscar_anim_player()
 	_player_ref = get_tree().get_first_node_in_group("player") as Node3D
 	_play_animation(ANIM_DISPARO)
@@ -43,6 +44,11 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if is_reloading:
+		return
+
+	# A bordo de un globo dormido/fuera de cámara: contener el disparo
+	# (ni flechas ni sonidos hasta que el globo aparezca).
+	if _globo_transporte_no_visible():
 		return
 
 	shoot_timer -= delta
@@ -57,6 +63,19 @@ func disparar() -> void:
 	_shoot_arrow()
 	_start_reload()
 	emit_signal("disparo_realizado")
+
+
+## True si va a bordo de un globo aún dormido o fuera de cámara.
+## Sin globo nodriza (uso independiente), dispara con normalidad.
+func _globo_transporte_no_visible() -> bool:
+	var p: Node = get_parent()
+	while is_instance_valid(p):
+		if p is GloboAerostatico:
+			if (p as GloboAerostatico)._dormido_por_camara:
+				return true
+			return not (p as GloboAerostatico)._globo_visible_en_pantalla()
+		p = p.get_parent()
+	return false
 
 
 func _shoot_arrow() -> void:
@@ -180,6 +199,12 @@ func _eyectar_partes_explotadas(root_scene: Node) -> void:
 		contenedor.add_child(p_nodo)
 
 		contenedor.iniciar_vuelo(data["vel"], data["rot"])
+
+
+func _ocultar_partes_explotadas() -> void:
+	var partes_root: Node3D = get_node_or_null("PartesExplotadas") as Node3D
+	if partes_root:
+		partes_root.visible = false
 
 
 func _buscar_anim_player() -> void:

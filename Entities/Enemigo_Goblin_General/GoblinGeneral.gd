@@ -412,6 +412,15 @@ func _on_state_shooting() -> void:
 	ha_iniciado_tensado = false
 	_mano_visible_ult = false
 
+	if not puede_atacar():
+		_play_bow_animation("ARCO_IDLE", 0.1)
+		_actualizar_visibilidad_flecha_mano(false)
+		if anim_player and anim_player.has_animation("Idle"):
+			_play_animation("Idle", 0.2)
+		else:
+			_play_animation("Correr", -1.0, 0.0)
+		return
+
 	# El 6º disparo es el Ataque Definitivo (Ult)
 	en_animacion_ult = (contador_disparos + 1) >= DISPAROS_PARA_ULT
 	shoot_timer = pausa_recuperacion_post_ult if en_animacion_ult else pausa_entre_disparos
@@ -429,6 +438,22 @@ func _on_state_shooting() -> void:
 
 func _process_shooting(delta: float) -> void:
 	velocity.x = 0
+
+	if not puede_atacar():
+		_actualizar_visibilidad_flecha_mano(false)
+		_play_bow_animation("ARCO_IDLE", 0.1)
+		return
+
+	if anim_timer == 0.0 and not ha_iniciado_tensado and anim_player and anim_player.current_animation != "disparo" and anim_player.current_animation != "Ult":
+		en_animacion_ult = (contador_disparos + 1) >= DISPAROS_PARA_ULT
+		shoot_timer = pausa_recuperacion_post_ult if en_animacion_ult else pausa_entre_disparos
+		_recupero_post_ult = false
+		if en_animacion_ult:
+			_play_animation("Ult", 0.2)
+			AudioManager.play_sfx("ult_goblin_general")
+		else:
+			_play_animation("disparo", 0.2)
+
 	anim_timer += delta
 
 	var tiempo_inicio_tensa: float = tiempo_inicio_tensa_ult if en_animacion_ult else tiempo_inicio_tensa_normal
@@ -507,6 +532,8 @@ func _soltar_cuerda_arco() -> void:
 
 
 func _disparar_flecha_normal() -> void:
+	if not puede_atacar():
+		return
 	if not goblin_girl_arrow_scene:
 		return
 	if not player_ref:
@@ -531,6 +558,8 @@ func _disparar_flecha_normal() -> void:
 
 
 func _disparar_ult() -> void:
+	if not puede_atacar():
+		return
 	if not goblin_girl_arrow_scene:
 		return
 	if not player_ref:
@@ -602,9 +631,10 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 		if flecha.has_meta("sobrecarga_max") and bool(flecha.get_meta("sobrecarga_max")):
 			return false
 
-	# 2. Flechas explosivas penetran y detonan
-	if is_instance_valid(flecha) and ("es_explosiva" in flecha and flecha.es_explosiva):
-		return false
+	# 2. Flechas explosivas o ult de Perrena penetran y detonan
+	if is_instance_valid(flecha):
+		if ("es_explosiva" in flecha and bool(flecha.get("es_explosiva"))) or ("es_hacha_especial" in flecha and bool(flecha.get("es_hacha_especial"))) or (flecha.has_meta("es_explosiva") and bool(flecha.get_meta("es_explosiva"))):
+			return false
 
 	# 3. Flecha normal durante la voltereta: la atraviesa sin daño y sale "Fallaste"
 	if is_instance_valid(flecha) and flecha.has_method("set_meta"):
@@ -742,37 +772,12 @@ func _process_dying(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, delta * 0.8)
 
 
-## Charco de sangre en el piso al morir por flecha explosiva.
+## Charco de sangre en el piso al morir por flecha explosiva: la misma mancha
+## del Imp (Mancha_Sangre_Suelo con desvanecido en el tiempo).
 func _crear_charco_sangre() -> void:
-	if get_tree() == null:
-		return
-	var tex: Texture2D = load("res://VFX/Textures/SANGRE_NORMAL.png") as Texture2D
-	if tex == null:
-		return
-	var mesh_inst := MeshInstance3D.new()
-	mesh_inst.name = "CharcoSangreGeneral"
-	var quad := QuadMesh.new()
-	quad.size = tamano_charco_sangre
-	mesh_inst.mesh = quad
-	var mat := StandardMaterial3D.new()
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color(0.55, 0.05, 0.08, 0.9)
-	mat.albedo_texture = tex
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.render_priority = -2
-	mesh_inst.material_override = mat
-	var raiz: Node = get_tree().current_scene
-	if raiz == null:
-		raiz = get_tree().root
-	raiz.add_child(mesh_inst)
-	VFXFactory.align_decal_to_surface(mesh_inst, global_position, Vector3.UP, 0.02)
-	var tween := mesh_inst.create_tween()
-	tween.tween_interval(vida_charco_sangre)
-	tween.tween_property(mat, "albedo_color:a", 0.0, 2.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.finished.connect(func() -> void:
-		if is_instance_valid(mesh_inst):
-			mesh_inst.queue_free()
+	VFXFactory.spawn_ground_blood_splatter(
+		self, global_position, Color(0.85, 0.3, 1.0, 0.95),
+		tamano_charco_sangre, vida_charco_sangre, 2.5
 	)
 
 

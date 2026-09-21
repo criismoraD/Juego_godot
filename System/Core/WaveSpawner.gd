@@ -22,11 +22,11 @@ const INTERVALO_MINIMO_ABSOLUTO: float = 0.25
 @export var escena_goblina_escudo: PackedScene = preload("res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.tscn")  ## Escena de Guardiana Moradita (antes Goblina Escudo Pesado)
 @export var escena_azulina: PackedScene  ## Escena de la enemiga Azulina (lanza precisa desde el agua)
 @export var escena_goblin_general: PackedScene  ## Escena del nuevo enemigo Goblin General
+@export var escena_pirata_goblin: PackedScene  ## Escena del Pirata Goblin (variante del Imp, solo debug)
 @export var intervalo_aparicion: float = 5.0  # Segundos entre spawns base (más lento)
 @export var intervalo_minimo_aparicion: float = 0.5  ## Segundos mínimos entre spawns cuando quedan pocos enemigos en la barra de progreso
 @export var umbral_rafaga_final: int = 10  ## Cantidad de enemigos restantes en la barra para activar la ráfaga final casi de golpe
 @export var intervalo_rafaga_final: float = 0.30  ## Intervalo ultrarrápido (segundos) durante la ráfaga final
-@export var umbral_proporcion_rafaga: float = 0.35  ## Proporción máxima de la oleada (35%) para evitar ráfaga prematura en oleadas muy cortas
 @export var enemigos_por_oleada: int = 6  # Cantidad de enemigos por oleada
 @export var tiempo_entre_oleadas: float = 5.0  # Descanso entre oleadas
 @export var altura_spawn: float = 0.0  # Altura extra para spawnar sobre el suelo
@@ -43,7 +43,7 @@ const INTERVALO_MINIMO_ABSOLUTO: float = 0.25
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === ESTADO ===
-var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa, 8=globo_aerostatico, 9=limo_cuadrado, 10=goblina_escudo, 11=azulina, 12=goblin_general
+var forzar_tipo_enemigo: int = -1  ## -1=normal, 0=goblin, 1=goblin_girl, 2=imp, 3=canonero, 4=imp_escudo, 5=gargola, 6=lonko, 7=arquera_rosa, 8=globo_aerostatico, 9=limo_cuadrado, 10=goblina_escudo, 11=azulina, 12=goblin_general, 13=pirata_goblin
 var current_wave: int = 0
 var goblins_spawned_in_wave: int = 0
 var spawn_timer: float = 0.0
@@ -103,6 +103,8 @@ func _ready():
 
 	if not escena_goblin_general:
 		escena_goblin_general = preload("res://Entities/Enemigo_Goblin_General/GoblinGeneral.tscn")
+	if not escena_pirata_goblin:
+		escena_pirata_goblin = preload("res://Entities/Enemigo_Pirata_Goblin/PirataGoblin.tscn")
 
 	# Iniciar primera oleada después de un delay
 	wave_cooldown = 2.0
@@ -128,14 +130,17 @@ func _process(delta):
 
 
 ## Retorna true si la ráfaga final está activa (pocos enemigos restantes en la barra de progreso).
+## Umbral absoluto: con 10 o menos restantes, los que faltan por spawnear salen casi de golpe.
+## En oleadas cortas (total <= umbral) no hay ráfaga: el ritmo base ya es intenso desde el inicio.
 func es_rafaga_final() -> bool:
 	if spawn_infinito or enemigos_por_oleada <= 0:
+		return false
+	if enemigos_por_oleada <= umbral_rafaga_final:
 		return false
 	var restantes_barra: int = max(0, enemigos_por_oleada - enemigos_muertos_en_oleada)
 	if restantes_barra <= 0:
 		return false
-	var factor: float = float(restantes_barra) / float(enemigos_por_oleada)
-	return restantes_barra <= umbral_rafaga_final and factor <= umbral_proporcion_rafaga
+	return restantes_barra <= umbral_rafaga_final
 
 
 ## Calcula el intervalo de aparición dinámico según los enemigos restantes en la barra de progreso.
@@ -454,6 +459,8 @@ func _elegir_escena_probabilidades() -> PackedScene:
 			return escena_azulina
 		elif forzar_tipo_enemigo == 12:
 			return escena_goblin_general
+		elif forzar_tipo_enemigo == 13:
+			return escena_pirata_goblin
 		elif probabilidad_igual:
 			# Probabilidad igual: 20% cada tipo (5 tipos)
 			var roll = randf()

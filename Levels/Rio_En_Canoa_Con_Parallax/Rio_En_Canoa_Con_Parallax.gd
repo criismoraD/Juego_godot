@@ -108,6 +108,12 @@ func _process(_delta: float) -> void:
 			camara_principal.global_position.x = canoa_x + _offset_camara_x
 		if is_instance_valid(water_plane):
 			water_plane.global_position.x = canoa_x + _offset_water_x
+
+	if is_instance_valid(parallax_fondo) and is_instance_valid(canoa_protagonista):
+		var factor: float = canoa_protagonista.obtener_factor_velocidad_actual() if canoa_protagonista.has_method("obtener_factor_velocidad_actual") else 1.0
+		var vel_parallax_efectiva: float = velocidad_parallax * factor
+		parallax_fondo.set("velocidad_terroso", vel_parallax_efectiva)
+
 	_actualizar_focos_fijos()
 
 
@@ -161,6 +167,9 @@ func set_aceleracion_debug(activa: bool) -> void:
 	var nueva_parallax: float = _velocidad_parallax_base * mult
 
 	fijar_velocidad_travesia(nueva_canoa, nueva_parallax)
+
+	if is_instance_valid(canoa_protagonista) and canoa_protagonista.has_method("set_efecto_viento_activo"):
+		canoa_protagonista.call("set_efecto_viento_activo", activa)
 
 
 ## Indica si la aceleración debug con tecla Z está actualmente activa.
@@ -314,8 +323,44 @@ func _inicializar_escenario() -> void:
 		else:
 			if canoa_protagonista.has_method("detener"):
 				canoa_protagonista.call("detener")
+		if canoa_protagonista.has_method("set_efecto_viento_activo"):
+			canoa_protagonista.call("set_efecto_viento_activo", _acelerando_debug)
 
 	if is_instance_valid(parallax_fondo):
 		parallax_fondo.set("velocidad_terroso", velocidad_parallax)
 		if parallax_fondo.has_method("set_desplazamiento_activo"):
 			parallax_fondo.call("set_desplazamiento_activo", travesia_activa)
+
+	_configurar_enemigos_para_camara()
+
+
+## Configura a todos los enemigos del nivel río para que solo puedan atacar cuando estén en pantalla/rango de cámara.
+func _configurar_enemigos_para_camara() -> void:
+	var enemigos := find_children("*", "EnemyBase", true, false)
+	for e in enemigos:
+		if is_instance_valid(e) and e is EnemyBase:
+			e.solo_atacar_en_pantalla = true
+			if "activar_al_entrar_en_camara" in e:
+				e.set("activar_al_entrar_en_camara", true)
+			if is_instance_valid(camara_principal):
+				e.set("_camara_cache_pantalla", camara_principal)
+
+	if get_tree():
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if is_instance_valid(e) and e is EnemyBase:
+				e.solo_atacar_en_pantalla = true
+				if "activar_al_entrar_en_camara" in e:
+					e.set("activar_al_entrar_en_camara", true)
+				if is_instance_valid(camara_principal):
+					e.set("_camara_cache_pantalla", camara_principal)
+		if not get_tree().node_added.is_connected(_on_node_added_nivel_rio):
+			get_tree().node_added.connect(_on_node_added_nivel_rio)
+
+
+func _on_node_added_nivel_rio(node: Node) -> void:
+	if node is EnemyBase:
+		(node as EnemyBase).solo_atacar_en_pantalla = true
+		if "activar_al_entrar_en_camara" in node:
+			node.set("activar_al_entrar_en_camara", true)
+		if is_instance_valid(camara_principal):
+			node.set("_camara_cache_pantalla", camara_principal)

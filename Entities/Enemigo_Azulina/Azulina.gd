@@ -9,7 +9,7 @@ extends EnemyBase
 signal emergencia_completada
 
 const ESCENA_LANZA: PackedScene = preload("res://Entities/Proyectil_Lanza_Azulina/LanzaAzulinaProjectile.tscn")
-const ESCENA_SALPICADURA: PackedScene = preload("res://Entities/Enemigo_Azulina/SalpicaduraAgua.tscn")
+const ESCENA_SALPICADURA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
 const ESCENA_LANZA_SUELTA: PackedScene = preload("res://TEST_/Lanza Azulina/Lanza Azulina.glb")
 const MATERIAL_AZULINA: Material = preload("res://Entities/Enemigo_Azulina/Azulina_MAT.tres")
 const MATERIAL_LANZA: StandardMaterial3D = preload("res://Entities/Enemigo_Azulina/LanzaAzulina_MAT.tres")
@@ -39,6 +39,16 @@ const ANIM_SALTO_AGUA: String = "Ataque salto del agua"  ## Nombre exacto en el 
 @export var profundidad_rotura: float = 0.2  ## Metros bajo el destino (orilla) donde nace el splash
 @export var adelanto_camara_salpicadura: float = 1.5  ## Metros hacia la camara desde el origen para que el ledge no lo tape
 @export var desplazamiento_lateral_salpicadura: float = -0.5  ## Metros en X desde el origen (negativo = izquierda en pantalla)
+@export var escala_salpicadura: float = 0.35  ## Tamaño del splash 3D al emerger (a 1.0 ocupa media pantalla)
+@export var duracion_salpicadura: float = 3.0  ## Segundos visible el splash antes de liberarse (su animación es en loop)
+
+@export_category("Activación por Cámara (Nivel Río)")
+@export var activar_al_entrar_en_camara: bool = false  ## Si true, espera dormida (Mirar) y se activa al entrar en cuadro
+@export var animacion_dormida: String = "Mirar"  ## Pose quieta mientras espera fuera de cámara
+@export var pausa_antes_primer_ataque: float = 0.5  ## Al detenerse ataca casi de inmediato en vez de correr en el sitio
+var _dormida_por_camara: bool = false  ## Enemiga dormida hasta entrar en cuadro
+var _emergencia_pendiente: bool = false  ## Emergencia diferida hasta la activación
+var _notificador_camara: VisibleOnScreenNotifier3D = null
 
 @export_category("Remate al aterrizar")
 @export var disparar_al_aterrizar: bool = true  ## Si true, al caer al terreno pasa a SHOOTING y lanza de inmediato
@@ -221,7 +231,52 @@ func _on_enemy_ready() -> void:
 	_crear_circulo_parry()
 	_crear_aura_celeste()
 	_mostrar_lanza(false)
-	if emerger_del_agua:
+	if activar_al_entrar_en_camara or solo_atacar_en_pantalla:
+		_iniciar_dormida_camara()
+	elif emerger_del_agua:
+		_iniciar_emergencia()
+	else:
+		_play_animation("Correr", fundido_transiciones)
+
+
+## Al detenerse a distancia de tiro: quieta en vez de correr en el sitio,
+## y primer ataque casi inmediato.
+func _on_state_shooting() -> void:
+	velocity.x = 0
+	if not _lanzando:
+		_pausa_lanzamiento = pausa_antes_primer_ataque
+	_play_animation(animacion_quieta, fundido_transiciones)
+
+
+## Espera dormida fuera de cámara: quieta, sin física, hasta entrar en cuadro
+## (o hasta recibir daño). Al activarse entra corriendo, o emerge si corresponde.
+func _iniciar_dormida_camara() -> void:
+	_dormida_por_camara = true
+	_emergencia_pendiente = emerger_del_agua
+	if animacion_dormida != "" and _tiene_animacion(animacion_dormida):
+		_play_animation(animacion_dormida, fundido_transiciones)
+	set_physics_process(false)
+	if not _notificador_camara:
+		_notificador_camara = VisibleOnScreenNotifier3D.new()
+		_notificador_camara.name = "NotificadorCamara"
+		_notificador_camara.aabb = AABB(Vector3(-1, 0, -1), Vector3(2, 3, 2))
+		add_child(_notificador_camara)
+		_notificador_camara.screen_entered.connect(_activar_por_camara)
+	# Si ya está en cuadro al aparecer, activar sin esperar
+	await get_tree().process_frame
+	if is_instance_valid(self) and _dormida_por_camara \
+	and is_instance_valid(_notificador_camara) and _notificador_camara.is_on_screen():
+		_activar_por_camara()
+
+
+## Activa la enemiga al entrar en el cuadro de la cámara.
+func _activar_por_camara() -> void:
+	if not _dormida_por_camara:
+		return
+	_dormida_por_camara = false
+	set_physics_process(true)
+	if _emergencia_pendiente:
+		_emergencia_pendiente = false
 		_iniciar_emergencia()
 	else:
 		_play_animation("Correr", fundido_transiciones)
@@ -289,6 +344,9 @@ func _process_shooting(delta: float) -> void:
 			_pausa_lanzamiento = randf_range(pausa_entre_lanzamientos_min, pausa_entre_lanzamientos_max)
 			_play_animation(animacion_quieta, fundido_transiciones)
 	else:
+		if not puede_atacar():
+			_pausa_lanzamiento = maxf(_pausa_lanzamiento, pausa_antes_primer_ataque)
+			return
 		_pausa_lanzamiento -= delta
 		if _pausa_lanzamiento <= 0.0:
 			_iniciar_ataque()
@@ -503,9 +561,10 @@ func _on_state_dying() -> void:
 	_aplicar_squash_stretch(0.0)
 
 	# Muerte por explosión: reactiva física y aplica el impulso cinético lateral
-	# igual que la arquera goblin
+	# igual que la arquera goblin, y deja la mancha de sangre del Imp
 	if murio_por_explosion:
 		_aplicar_impulso_explosivo()
+		VFXFactory.spawn_ground_blood_splatter(self, global_position, Color(0.85, 0.3, 1.0, 0.95))
 		murio_por_explosion = false
 
 	var anim_muerte := elegir_animacion_muerte()
@@ -571,6 +630,9 @@ func _process_dying(delta: float) -> void:
 
 
 func take_damage(amount: float) -> void:
+	# Ser alcanzada la despierta aunque aún no haya entrado en cuadro
+	if _dormida_por_camara:
+		_activar_por_camara()
 	if _bajo_agua_esperando:
 		return
 	if _reposicionando:
@@ -660,10 +722,15 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 		if flecha.has_meta("fuego_rapido") and bool(flecha.get_meta("fuego_rapido")):
 			es_fuego_rapido = true
 
-	# 1c. Las explosivas no se desvían ni desintegran: penetran y detonan al impactar (como con la rosa)
+	# 1c. Las explosivas o ult de Perrena no se desvían ni desintegran: penetran y detonan al impactar
 	var es_explosiva: bool = false
-	if is_instance_valid(flecha) and ("es_explosiva" in flecha):
-		es_explosiva = bool(flecha.get("es_explosiva"))
+	if is_instance_valid(flecha):
+		if "es_explosiva" in flecha and bool(flecha.get("es_explosiva")):
+			es_explosiva = true
+		elif "es_hacha_especial" in flecha and bool(flecha.get("es_hacha_especial")):
+			es_explosiva = true
+		elif flecha.has_meta("es_explosiva") and bool(flecha.get_meta("es_explosiva")):
+			es_explosiva = true
 
 	# 2. Si el parry prolongado (Lanza casteo + círculo protector) está activo: repele y desintegra proyectiles
 	if _parry_activo:
@@ -677,7 +744,7 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 
 	# 3. Si ya está ejecutando el giro de desvío: repele proyectiles simultáneos hasta el límite
 	if _desviando_giro:
-		if es_fuego_rapido:
+		if es_explosiva or es_fuego_rapido:
 			_desviando_giro = false
 			if not _parry_activo:
 				_mostrar_lanza(false)
@@ -1519,14 +1586,22 @@ func _spawnear_salpicadura_en(punto_rotura: Vector3) -> void:
 		return
 	if not is_inside_tree() or get_tree() == null:
 		return
-	var sal := ESCENA_SALPICADURA.instantiate() as SalpicaduraAgua
+	var sal := ESCENA_SALPICADURA.instantiate() as Node3D
 	if sal == null:
 		return
 	var raiz: Node = get_tree().current_scene
 	if raiz == null:
 		raiz = get_tree().root
 	raiz.add_child(sal)
-	sal.disparar_impacto(punto_rotura, false)
+	sal.global_position = punto_rotura
+	sal.scale = Vector3(escala_salpicadura, escala_salpicadura, escala_salpicadura)
+	if sal.has_method("play_splash"):
+		sal.play_splash()
+	# Su animación es en loop: liberar tras mostrarse
+	get_tree().create_timer(duracion_salpicadura).timeout.connect(func():
+		if is_instance_valid(sal):
+			sal.queue_free()
+	)
 
 
 ## Punto más alto del salto: mitad del recorrido + altura del arco.
@@ -1705,11 +1780,15 @@ func _al_aterrizar() -> void:
 	if disparar_al_aterrizar:
 		_change_state(State.SHOOTING)
 		_iniciar_ataque()
+	elif current_state == State.SHOOTING:
+		_play_animation(animacion_quieta, fundido_transiciones)
 	else:
 		_play_animation("Correr", fundido_transiciones)
 
 
 func _iniciar_ataque() -> void:
+	if not puede_atacar():
+		return
 	_lanzando = true
 	_lanzo_proyectil = false
 	_timer_lanzamiento = 0.0
@@ -1721,6 +1800,8 @@ func _duracion_anim_ataque() -> float:
 
 
 func _lanzar_lanza() -> void:
+	if not puede_atacar():
+		return
 	if _parry_activo:
 		return
 	var objetivo: Node3D = player_ref as Node3D

@@ -312,3 +312,43 @@ func test_impacto_flecha_en_canasta_y_globo():
 
 	# Assert: la flecha impactó y dañó al globo
 	assert_lt(globo.health, 3, "La flecha debe impactar y reducir la salud del globo")
+
+
+func test_globo_silencioso_fuera_de_pantalla():
+	# Arrange: globo en vuelo sin cámara (headless = fuera de cuadro)
+	var globo = GloboScript.new()
+	add_child_autofree(globo)
+	await get_tree().process_frame
+	assert_not_null(globo._sfx_movimiento, "Debe configurar su sonido de vuelo")
+	assert_not_null(globo._notificador_pantalla_globo, "Debe tener notificador de pantalla")
+	globo.velocity = Vector3(1.0, 0.0, 0.0)
+
+	# Act: actualizar sonido moviéndose fuera de pantalla
+	globo._actualizar_sonido_movimiento()
+
+	# Assert: no debe escucharse hasta aparecer en pantalla
+	assert_false(globo._globo_visible_en_pantalla(), "Sin cámara no se confirma visibilidad")
+	assert_false(globo._sfx_movimiento.playing, "Fuera de pantalla no debe sonar")
+
+
+func test_rio_dormido_hasta_entrar_en_camara():
+	# Arrange: globo del río fuera de cuadro (sin cámara en headless)
+	var globo = GloboScript.new()
+	globo.activar_al_entrar_en_camara = true
+	add_child_autofree(globo)
+	await get_tree().process_frame
+
+	# Assert: dormido, quieto y en silencio
+	assert_true(globo._dormido_por_camara, "Debe esperar dormido fuera de cámara")
+	globo.velocity = Vector3(1.0, 0.0, 0.0)
+	globo._physics_process(0.016)
+	assert_eq(globo.velocity, Vector3.ZERO, "Dormido no debe desplazarse")
+	globo._actualizar_sonido_movimiento()
+	assert_false(globo._sfx_movimiento.playing, "Dormido no debe sonar")
+
+	# Act: entra en cuadro
+	globo._activar_por_camara()
+
+	# Assert: en marcha
+	assert_false(globo._dormido_por_camara, "Debe activarse al entrar en cuadro")
+	assert_eq(globo.current_state, EnemyBase.State.WALKING, "Retoma el vuelo")

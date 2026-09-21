@@ -204,3 +204,24 @@ func test_ult_goblin_general_usa_sonido_ruedo() -> void:
 	assert_not_null(stream, "El stream de ult_goblin_general no debe ser nulo")
 	assert_true(stream.resource_path.ends_with("Ruedo goblin.mp3"), "El ult_goblin_general debe usar 'Ruedo goblin.mp3'")
 
+
+func test_recuperar_audio_continuar_limpia_pausas_y_reanuda_musica() -> void:
+	# Arrange: estado post-game-over (streams pausados, música detenida con stream)
+	audio_mgr.music_player.stream = audio_mgr.bgm_streams[2]
+	audio_mgr.music_player.stop()
+	audio_mgr.music_player.stream_paused = true
+	audio_mgr.sfx_pool[0].stream_paused = true
+	var extra := AudioStreamPlayer.new()
+	extra.add_to_group("pausable_audio")
+	extra.stream_paused = true
+	add_child_autofree(extra)
+
+	# Act: recuperación de Continuar
+	audio_mgr.recuperar_audio_continuar()
+
+	# Assert: todo despausado y música sonando
+	assert_false(audio_mgr.music_player.stream_paused, "La música no debe quedar pausada")
+	assert_true(audio_mgr.music_player.playing, "La música detenida debe reanudarse")
+	assert_false(audio_mgr.sfx_pool[0].stream_paused, "El pool no debe quedar pausado")
+	assert_false(extra.stream_paused, "El grupo pausable_audio no debe quedar pausado")
+

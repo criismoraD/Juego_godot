@@ -29,6 +29,7 @@ func before_each():
 	_spawner.escena_globo_aerostatico = _create_dummy_scene("GloboAerostaticoNode")
 	_spawner.escena_goblina_escudo = _create_dummy_scene("GoblinaEscudoNode")
 	_spawner.escena_goblin_general = _create_dummy_scene("GoblinGeneralNode")
+	_spawner.escena_pirata_goblin = _create_dummy_scene("PirataGoblinNode")
 
 	get_tree().root.add_child(_spawner)
 
@@ -196,6 +197,12 @@ func test_forzar_tipo_enemigo_goblin_general():
 	_spawner.forzar_spawn()
 	var spawned = _spawner.active_goblins.back()
 	assert_eq(spawned.name, "GoblinGeneralNode", "Should spawn a goblin general")
+
+func test_forzar_tipo_enemigo_pirata_goblin():
+	_spawner.forzar_tipo_enemigo = 13
+	_spawner.forzar_spawn()
+	var spawned = _spawner.active_goblins.back()
+	assert_eq(spawned.name, "PirataGoblinNode", "Should spawn a pirata goblin")
 
 func test_forzar_spawn_escudo():
 	var initial_spawned_in_wave = _spawner.goblins_spawned_in_wave
@@ -477,6 +484,52 @@ func test_rafaga_final_no_se_activa_con_barra_vacia():
 
 	# Act & Assert
 	assert_false(_spawner.es_rafaga_final(), "No debe haber ráfaga final si quedan 0 enemigos")
+
+
+func test_rafaga_final_se_activa_con_diez_restantes_en_oleada_corta():
+	# Arrange: Oleada 1 de NIVEL01 (15 enemigos) con 5 muertos (10 restantes: factor 0.67)
+	_spawner.enemigos_por_oleada = 15
+	_spawner.intervalo_aparicion = 3.0
+	_spawner.intervalo_minimo_aparicion = 0.5
+	_spawner.intervalo_rafaga_final = 0.30
+	_spawner.umbral_rafaga_final = 10
+	_spawner.enemigos_muertos_en_oleada = 5
+
+	# Act & Assert
+	assert_true(_spawner.es_rafaga_final(), "Con 10 restantes de 15 debe activarse la ráfaga final")
+	var intervalo: float = _spawner._calcular_intervalo_actual()
+	assert_almost_eq(intervalo, 0.30, 0.01, "Con 10 restantes el intervalo debe ser el de ráfaga final (0.30s)")
+
+
+func test_rafaga_final_no_se_activa_con_once_restantes():
+	# Arrange: Oleada de 15 con 4 muertos (11 restantes)
+	_spawner.enemigos_por_oleada = 15
+	_spawner.umbral_rafaga_final = 10
+	_spawner.enemigos_muertos_en_oleada = 4
+
+	# Act & Assert
+	assert_false(_spawner.es_rafaga_final(), "Con 11 restantes no debe haber ráfaga final")
+
+
+func test_rafaga_final_no_se_activa_en_oleada_menor_que_umbral():
+	# Arrange: Oleada corta de 8 enemigos (total <= umbral 10) con 3 restantes
+	_spawner.enemigos_por_oleada = 8
+	_spawner.umbral_rafaga_final = 10
+	_spawner.enemigos_muertos_en_oleada = 5
+
+	# Act & Assert
+	assert_false(_spawner.es_rafaga_final(), "En oleadas cortas no debe haber ráfaga prematura")
+
+
+func test_rafaga_final_no_se_activa_en_spawn_infinito():
+	# Arrange: Modo infinito (oleadas libres/debug) con pocos restantes en barra
+	_spawner.spawn_infinito = true
+	_spawner.enemigos_por_oleada = 50
+	_spawner.umbral_rafaga_final = 10
+	_spawner.enemigos_muertos_en_oleada = 45
+
+	# Act & Assert
+	assert_false(_spawner.es_rafaga_final(), "En spawn infinito no debe haber ráfaga final")
 
 
 

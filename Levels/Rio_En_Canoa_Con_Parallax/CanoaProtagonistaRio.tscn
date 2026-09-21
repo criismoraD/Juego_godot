@@ -4,10 +4,15 @@
 [ext_resource type="PackedScene" uid="uid://bduw0imvq6xeh" path="res://Entities/Ambiente_Canoa_Aliada/Canoa_aliada.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://cx4pa18v52pqr" path="res://Entities/Ambiente_Canoa_Aliada/Tripulante_barco_fondo_ally_archer.tscn" id="3_tripulante"]
 [ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Entities/Jugador_Arquera/Player.tscn" id="4_player"]
+[ext_resource type="PackedScene" uid="uid://d15gh8fw6jre1" path="res://Entities/Defensora_Perrena/DefensoraPerrena.tscn" id="5_74dm6"]
 [ext_resource type="AudioStream" uid="uid://d6g4qojn2ab4" path="res://TEST_/sonido_canoa_por_el_rio.mp3" id="5_audio"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/EfectoVientoCanoa.tscn" id="7_viento"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_suelo"]
 size = Vector3(1.1, 0.25, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape_detector"]
+size = Vector3(0.8, 0.8, 0.6)
 
 [node name="CanoaProtagonistaRio" type="Node3D" unique_id=2026998500]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
@@ -17,12 +22,17 @@ script = ExtResource("1_script")
 transform = Transform3D(2.0424726, 0, 0, 0, 1.9994787, 0, 0, 0, 1.782749, 0, 0.005566733, 0)
 
 [node name="Protagonista" parent="." unique_id=2026998502 instance=ExtResource("4_player")]
-transform = Transform3D(0.188, 0, 0, 0, 0.188, 0, 0, 0, 0.188, 0.31096578, 0.1553143, 0)
+transform = Transform3D(0.188, 0, 0, 0, 0.188, 0, 0, 0, 0.188, -0.325598, 0.1553143, 0)
 plano_profundidad_z = -7.5
 
 [node name="Acompanante" parent="." unique_id=2026998503 instance=ExtResource("3_tripulante")]
 transform = Transform3D(0.18, 0, 0, 0, 0.18, 0, 0, 0, 0.18, -0.7550017, 0.21778524, 0.10152596)
 esta_sentada = true
+
+[node name="DefensoraPerrena" parent="." unique_id=1323239522 instance=ExtResource("5_74dm6")]
+transform = Transform3D(0.18, 0, 0, 0, 0.18, 0, 0, 0, 0.18, 0.6657138, 0.15530086, 0)
+vida_maxima = 22
+health = 22
 
 [node name="SueloCanoa" type="StaticBody3D" parent="." unique_id=2026998504]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05, 0.175, 0)
@@ -34,3 +44,15 @@ shape = SubResource("BoxShape_suelo")
 [node name="SonidoNavegacion" type="AudioStreamPlayer" parent="." unique_id=2026998506]
 stream = ExtResource("5_audio")
 volume_db = -3.0
+
+[node name="EfectoVientoCanoa" parent="." unique_id=2026998507 instance=ExtResource("7_viento")]
+ 
+[node name="DetectorContactoEnemigos" type="Area3D" parent="." unique_id=2026998508]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.2, 0)
+collision_layer = 0
+collision_mask = 4
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectorContactoEnemigos" unique_id=2026998509]
+shape = SubResource("BoxShape_detector")

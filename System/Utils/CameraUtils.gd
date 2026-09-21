@@ -41,5 +41,15 @@ static func obtener_camara_juego(contexto: Node) -> Camera3D:
 		_cached_camera = camara_principal
 		return _cached_camera
 
+	var camara_rio := escena_actual.find_child("CamaraPrincipal", true, false)
+	if camara_rio is Camera3D:
+		_cached_camera = camara_rio
+		return _cached_camera
+
+	for cam in escena_actual.find_children("*", "Camera3D", true, false):
+		if cam is Camera3D and (cam.current or cam.name == "CamaraPrincipal"):
+			_cached_camera = cam
+			return _cached_camera
+
 	_cached_camera = null
 	return null

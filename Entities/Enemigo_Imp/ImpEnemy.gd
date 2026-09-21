@@ -496,6 +496,9 @@ func _process_shooting(delta):
 	if rastrear_jugador:
 		_track_player()
 
+	if not puede_atacar():
+		return
+
 	if is_throwing:
 		# === FASE LANZAMIENTO: esperando el momento exacto del proyectil ===
 		throw_anim_timer += delta
@@ -514,6 +517,8 @@ func _process_shooting(delta):
 		if shoot_timer <= 0:
 			is_idle_pause = false
 			_start_throw_animation()
+	else:
+		_start_throw_animation()
 
 
 func _start_throw_animation():

@@ -155,6 +155,27 @@ func test_suelta_pocion_con_curacion_configurada() -> void:
 	assert_eq(int(item.get("vida_a_restaurar")), 2, "Con la curación configurada")
 
 
+func test_suelta_fuego_rapido_con_duracion_configurada() -> void:
+	# Arrange
+	var vasija := _crear_vasija()
+	vasija.item_soltado = VasijaContenedor.ItemSoltado.FUEGO_RAPIDO
+	vasija.duracion_fuego_rapido = 12.0
+
+	# Act
+	vasija.recibir_golpe(1.0)
+	vasija.recibir_golpe(1.0)
+
+	# Assert: aparece el pickup de fuego rápido con la duración configurada
+	var item: Node = null
+	for hijo in vasija.get_parent().get_children():
+		if hijo is Area3D and "duracion_buff" in hijo:
+			item = hijo
+			break
+	assert_not_null(item, "Debe soltar el fuego rápido visible")
+	assert_almost_eq(float(item.get("duracion_buff")), 12.0, 0.001, "Con la duración configurada")
+	assert_true(item.is_in_group("power_ups_fuego_rapido"), "Debe ser el pickup de fuego rápido")
+
+
 func test_destruir_sin_jugadora_no_rompe() -> void:
 	# Arrange
 	var vasija := _crear_vasija()
@@ -208,3 +229,20 @@ func test_sonido_vasija_quebrada_registrado() -> void:
 	var sonidos: Array = AudioManager.sfx_streams["vasija_quebrada"]
 	assert_gt(sonidos.size(), 0, "Debe tener al menos un stream")
 	assert_not_null(sonidos[0], "El stream debe cargar correctamente")
+
+
+# === CANASTO DEL GLOBO ===
+func test_canasto_que_cae_rompe_vasija() -> void:
+	# Arrange: canasto 4m sobre la vasija, en caída libre
+	var vasija := _crear_vasija()
+	var canasta := CanastaCaida.new()
+	add_child_autofree(canasta)
+	canasta.global_position = vasija.global_position + Vector3(0, 4, 0)
+	canasta.iniciar_vuelo(Vector3.ZERO, 0.0)
+
+	# Act: dejar caer con física real (~1.5s)
+	for i in range(90):
+		await get_tree().physics_frame
+
+	# Assert: el peso la rompe y suelta su item con el flujo natural
+	assert_true(vasija.esta_destruido(), "El canasto debe romper la vasija al caer encima")

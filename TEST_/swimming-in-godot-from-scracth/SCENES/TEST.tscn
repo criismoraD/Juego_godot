@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://7hoemaoskr0v"]
+
+[ext_resource type="Script" uid="uid://8uwfiuvyoc3j" path="res://TEST_/swimming-in-godot-from-scracth/scripts/path_3d_creator.gd" id="1_toaid"]
+
+[sub_resource type="Curve3D" id="Curve3D_j7y12"]
+closed = true
+_data = {
+"points": PackedVector3Array(0.32103157, 1.6243252, 0.2773196, -0.32103157, -1.6243252, -0.2773196, 5.1441193, -1.6974014, -0.69905555, -1.0164042, -1.2411464, -0.12510157, 1.0164042, 1.2411464, 0.12510157, -2.5602994, 1.5012349, 0.37073272),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curve3D_utqi4"]
+_data = {
+"points": PackedVector3Array(-1.0074375, -1.0863643, 0.31373638, 1.0074375, 1.0863643, -0.31373638, 0.9450186, -0.053734954, -1.3052993, 1.1155094, 1.322186, -0.39519522, -1.1155094, -1.322186, 0.39519522, -0.9636926, 0.02395035, 1.1758674, -0.3270421, -0.39007425, -0.08137363, 0.3270421, 0.39007425, 0.08137363, -0.88043374, -0.04774712, -1.3606921),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+[sub_resource type="Curve3D" id="Curve3D_pnb2x"]
+_data = {
+"points": PackedVector3Array(0.32103157, 1.6243252, 0.2773196, -0.32103157, -1.6243252, -0.2773196, 4.075601, -1.6974018, 1.2260762, -1.0164042, -1.2411464, -0.12510157, 1.0164042, 1.2411464, 0.12510157, -1.8122967, 1.5012352, 0.97223127),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curve3D_mpyaf"]
+_data = {
+"points": PackedVector3Array(-1.0074375, -1.0863643, 0.31373638, 1.0074375, 1.0863643, -0.31373638, 2.2531562, -3.329716, 0.3751011, 1.1155094, 1.322186, -0.39519522, -1.1155094, -1.322186, 0.39519522, -2.351756, -3.142184, -0.4831006, -0.3270421, -0.39007425, -0.08137363, 0.3270421, 0.39007425, 0.08137363, -2.0365844, -3.3152614, 0.34723273),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+[node name="Node3D" type="Node3D" unique_id=1253725072]
+
+[node name="Path3D" type="Path3D" parent="." unique_id=1390627139 node_paths=PackedStringArray("target_outer_path", "target_inner_path", "target_lower_paths")]
+transform = Transform3D(0.82241124, 0, 2.005652, 0, 1, 0, -0.5603592, 0, 2.9435961, 0, 0, 0)
+curve = SubResource("Curve3D_j7y12")
+script = ExtResource("1_toaid")
+target_outer_path = NodePath("outer")
+target_inner_path = NodePath("inner")
+target_lower_paths = [NodePath("lower")]
+expansion_distance = -1.38
+generate_parallel_path = false
+
+[node name="inner" type="Path3D" parent="Path3D" unique_id=1500159665]
+transform = Transform3D(1.8304883, 0, 0, 0, 2.4139953, 0, 0, 0, 1.0000002, 0, 0, 0)
+curve = SubResource("Curve3D_utqi4")
+
+[node name="outer" type="Path3D" parent="Path3D" unique_id=1089245376]
+transform = Transform3D(0.97781986, 0, 0.20944786, 0, 0.99999994, 0, -0.2094479, 0, 0.9778198, 0, 0, 0)
+curve = SubResource("Curve3D_pnb2x")
+
+[node name="lower" type="Path3D" parent="Path3D" unique_id=2059212428]
+visible = false
+curve = SubResource("Curve3D_mpyaf")
+

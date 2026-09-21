@@ -1,0 +1,41 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+---  GUT  ---
+[1m[INFO]:  [0musing [C:/Users/MAQUINA2/AppData/Roaming/Godot/app_userdata/Arrow of Anathema] for temporary output.
+Godot version:  4.7.2
+GUT version:  9.6.0
+[4m
+
+res://Tests/Unit/test_submarino_rio.gd
+[0m* test_submarino_inicia_sumergido
+* test_submarino_emerge_a_altura_configurada
+* test_submarino_plataforma_cubierta_tiene_colision
+* test_submarino_spawn_enemigos_goblin_arquera
+* test_submarino_spawn_enemigos_imp
+* test_submarino_se_sumerge_al_morir_enemigos
+* test_submarino_flotacion_suave
+* test_submarino_enemigos_entran_en_modo_ataque
+* test_submarino_emerge_cuando_camara_entra_en_rango_visible
+* test_submarino_deja_de_contar_como_enemigo_al_hundirse_para_que_canoa_avance
+* test_emerger_reproduce_sonido_submarino_emergiendo
+* test_submarino_enemigos_caminan_se_orientan_y_se_detienen_para_atacar
+[1m12/12 passed.
+[0m
+
+
+
+[33m==============================================
+[0m[33m= Run Summary
+[0m[33m==============================================
+[0m
+Totals
+------
+Scripts               1
+Tests                12
+Passing Tests        12
+Asserts              49
+Time              3.775s
+
+
+[32m---- All tests passed! ----
+[0m

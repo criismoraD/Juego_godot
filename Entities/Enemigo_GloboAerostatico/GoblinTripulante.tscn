@@ -28,6 +28,7 @@ transform = Transform3D(16.282375, 92.0973, -35.397396, 77.93626, 9.994986, 61.8
 
 [node name="PartesExplotadas" type="Node3D" parent="." unique_id=79371898]
 transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
+visible = false
 
 [node name="Piernas" parent="PartesExplotadas" unique_id=1530017459 instance=ExtResource("4_piernas")]
 transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, -0.0647761, 0)

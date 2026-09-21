@@ -10,7 +10,7 @@ extends StaticBody3D
 
 signal destruida
 
-enum ItemSoltado { DISPARO_MULTIPLE, FLECHA_EXPLOSIVA, POCION_CURATIVA }
+enum ItemSoltado { DISPARO_MULTIPLE, FLECHA_EXPLOSIVA, POCION_CURATIVA, FUEGO_RAPIDO }
 
 # === CONSTANTES ===
 const TEXTURA_PIEDRITAS: String = "res://Entities/Enemigo_Lonko/ROCAS.png"
@@ -21,6 +21,7 @@ const SHADER_DISOLVER: Shader = preload("res://System/Shaders/dissolve.gdshader"
 const ESCENA_DISPARO_MULTIPLE: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
 const ESCENA_FLECHA_EXPLOSIVA: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 const ESCENA_POCION: PackedScene = preload("res://Entities/Item_Pocion/Posion.tscn")
+const ESCENA_FUEGO_RAPIDO: PackedScene = preload("res://Entities/Item_Fuego_Rapido/PowerUpFuegoRapido.tscn")
 const TIEMPO_VER_ITEM: float = 1.0  ## Segundos visible el item antes de auto-consumirse
 const COLOR_DISOLVER_CELESTE: Color = Color(0.4, 0.85, 1.0, 1.0)  ## Tinte de disolución como los enemigos
 
@@ -30,6 +31,7 @@ const COLOR_DISOLVER_CELESTE: Color = Color(0.4, 0.85, 1.0, 1.0)  ## Tinte de di
 @export var item_soltado: ItemSoltado = ItemSoltado.DISPARO_MULTIPLE  ## Item que otorga al instante al destruirse
 @export var cantidad_municion: int = 10  ## Flechas a otorgar (múltiple o explosiva)
 @export var curacion_pocion: int = 1  ## Vida a restaurar si suelta poción
+@export var duracion_fuego_rapido: float = 15.0  ## Segundos del buff si suelta fuego rápido
 
 @export_category("Deriva")
 @export_enum("Derecha", "Izquierda") var direccion_viaje: String = "Derecha"  ## Sentido del desplazamiento sobre el río
@@ -216,6 +218,8 @@ func _soltar_item_visible() -> void:
 			escena_item = ESCENA_FLECHA_EXPLOSIVA
 		ItemSoltado.POCION_CURATIVA:
 			escena_item = ESCENA_POCION
+		ItemSoltado.FUEGO_RAPIDO:
+			escena_item = ESCENA_FUEGO_RAPIDO
 	if escena_item == null:
 		return
 	var item := escena_item.instantiate() as Node3D
@@ -227,6 +231,8 @@ func _soltar_item_visible() -> void:
 		item.set("municion_a_otorgar_jugador", cantidad_municion)
 	if "vida_a_restaurar" in item:
 		item.set("vida_a_restaurar", curacion_pocion)
+	if "duracion_buff" in item:
+		item.set("duracion_buff", duracion_fuego_rapido)
 	get_parent().add_child(item)
 	item.global_position = global_position + Vector3(0.0, 0.6, 0.0)
 

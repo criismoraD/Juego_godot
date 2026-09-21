@@ -532,8 +532,8 @@ func test_muerte_explosiva_deja_charco() -> void:
 	add_child_autofree(general)
 	general.murio_por_explosion = true
 	general.take_damage(99.0)
-	var charcos := get_tree().root.find_children("CharcoSangreGeneral", "", true, false)
-	assert_false(charcos.is_empty(), "Charco de sangre al morir por explosiva")
+	var charcos := get_tree().root.find_children("ManchaSangreSuelo", "", true, false)
+	assert_false(charcos.is_empty(), "Mancha de sangre del Imp al morir por explosiva")
 	for c in charcos:
 		(c as Node).queue_free()
 

@@ -128,6 +128,9 @@ func _physics_process(delta: float) -> void:
 		rot_speed_z = 0.0
 		resting = true
 		active = false
+		# Si cayó encima de una vasija contenedora, romperla con el peso
+		if hit.has("collider"):
+			_romper_vasija_si_cae_encima(hit["collider"])
 	else:
 		global_position = target_pos
 		# Caída libre sobre agua/vacío: dejar caer sin forzar y=0, disolverá a los 4s igualmente
@@ -165,6 +168,20 @@ func _physics_process(delta: float) -> void:
 func _chequear_area() -> void:
 	# No usado continuo para evitar explosiones espontáneas en esquina con nuevos spawns
 	return
+
+
+## Si el canasto aterriza sobre una vasija contenedora, la rompe con su peso
+## (daño letal para que suelte su item con todo el flujo natural).
+func _romper_vasija_si_cae_encima(col: Object) -> void:
+	if not (col is Node) or not is_instance_valid(col):
+		return
+	var nodo := col as Node
+	if not (nodo is VasijaContenedor):
+		return
+	if (nodo as VasijaContenedor).esta_destruido():
+		return
+	var dmg: float = maxf((nodo as VasijaContenedor).vida_contenedor, 1.0)
+	(nodo as VasijaContenedor).recibir_golpe(dmg)
 
 func _chequear_area_impacto_once() -> void:
 	# Recolectar candidatos dentro del radio con su distancia

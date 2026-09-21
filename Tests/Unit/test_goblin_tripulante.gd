@@ -70,3 +70,49 @@ func test_globo_integra_tripulante_y_lo_mata_al_destruirse() -> void:
 	# Cleanup
 	if is_instance_valid(globo):
 		globo.queue_free()
+
+
+func test_partes_explotadas_ocultas_mientras_vivo() -> void:
+	# Arrange & Assert
+	var partes := _tripulante.get_node_or_null("PartesExplotadas") as Node3D
+	assert_not_null(partes, "Debe existir el nodo PartesExplotadas")
+	assert_false(partes.visible, "Las partes de muerte deben estar ocultas mientras el tripulante esté vivo")
+
+
+func test_partes_explotadas_ocultas_en_globo_vivo() -> void:
+	# Arrange
+	var globo: GloboAerostatico = GloboAerostaticoScene.instantiate() as GloboAerostatico
+	get_tree().root.add_child(globo)
+
+	# Assert
+	var partes := globo.find_children("PartesExplotadas", "Node3D", true, false).front() as Node3D
+	assert_not_null(partes, "Debe existir el nodo PartesExplotadas en el globo")
+	assert_false(partes.visible, "Las partes de muerte no deben ser visibles sobrepuestas en el globo vivo")
+
+	# Cleanup
+	if is_instance_valid(globo):
+		globo.queue_free()
+
+
+func test_tripulante_contiene_disparo_con_globo_dormido() -> void:
+	# Arrange: tripulante a bordo de un globo dormido fuera de cámara
+	var globo = GloboAerostaticoScene.instantiate()
+	get_tree().root.add_child(globo)
+	globo._dormido_por_camara = true
+	_tripulante.auto_disparar = true
+	_tripulante.shoot_timer = 0.0
+	var padre_previo := _tripulante.get_parent()
+	if padre_previo:
+		padre_previo.remove_child(_tripulante)
+	globo.add_child(_tripulante)
+
+	# Act: ciclo con el timer vencido
+	_tripulante._physics_process(0.016)
+
+	# Assert: no dispara ni recarga hasta que el globo aparezca
+	assert_false(_tripulante.is_reloading, "Con globo dormido no debe disparar")
+	assert_eq(_tripulante.shoot_timer, 0.0, "El timer no debe correr fuera de cámara")
+
+	# Cleanup (el after_each libera al tripulante)
+	if is_instance_valid(globo):
+		globo.queue_free()

@@ -411,6 +411,80 @@ func test_defensora_perrena_particulas_humo_pisadas_al_correr() -> void:
 	assert_false(defensora._particulas_pisada.emitting, "No debe emitir humo de pisadas en escaleras")
 
 
+func test_perrena_modo_canoa_usa_idle_sentada() -> void:
+	# Arrange: defensora en reposo fuera de canoa
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	assert_false(defensora.en_canoa, "Sin canoa no debe estar en modo canoa")
+	assert_eq(defensora._anim_reposo_nombres()[0], "Idle", "Fuera de canoa el reposo es Idle de pie")
+
+	# Act: subir a la canoa del nivel del río
+	defensora.fijar_modo_canoa(true)
+
+	# Assert: reposo sentado y animación cambiada en el acto (está en IDLE)
+	assert_true(defensora.en_canoa, "Debe activar el modo canoa")
+	assert_true(defensora.restringir_ataque_a_camara, "En canoa solo ataca lo visible en cámara")
+	assert_eq(defensora._anim_reposo_nombres()[0], defensora.anim_idle_canoa, "En canoa el reposo es el idle sentado")
+	if defensora.anim_player and defensora.anim_player.has_animation(defensora.anim_idle_canoa):
+		assert_true(defensora.anim_idle_canoa.to_lower() in defensora.anim_player.current_animation.to_lower(), "Debe estar reproduciendo el idle de canoa")
+
+	# Act: bajar de la canoa vuelve al Idle de pie
+	defensora.fijar_modo_canoa(false)
+	assert_false(defensora.en_canoa, "Debe desactivar el modo canoa")
+	assert_false(defensora.restringir_ataque_a_camara, "Fuera de canoa ataca sin restricción de cámara")
+	assert_eq(defensora._anim_reposo_nombres()[0], "Idle", "Fuera de canoa vuelve al Idle de pie")
+
+
+func test_perrena_sonido_ataque_cada_3_ataques() -> void:
+	# Arrange
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora.cada_cuantos_ataques_sonido = 3
+	var dummy_enemy := Node3D.new()
+	dummy_enemy.name = "ImpObjetivo"
+	dummy_enemy.add_to_group("enemies")
+	_root_test.add_child(dummy_enemy)
+	dummy_enemy.global_position = Vector3(5, 0, 0)
+
+	# Act 1-2: dos ataques normales sin grito
+	for i in range(2):
+		defensora._iniciar_ataque_normal()
+		defensora._tiempo_en_estado = 0.35
+		defensora._proceso_atacando(0.01)
+		defensora._tiempo_en_estado = 0.75
+		defensora._proceso_atacando(0.01)
+	assert_eq(defensora.contador_ataques, 2, "Debe haber lanzado 2 ataques")
+	assert_null(defensora.find_child("SfxAtaquePerrena", false, false), "Sin grito de ataque antes del 3er hachazo")
+
+	# Act 3: tercer ataque con grito
+	defensora._iniciar_ataque_normal()
+	defensora._tiempo_en_estado = 0.35
+	defensora._proceso_atacando(0.01)
+	defensora._tiempo_en_estado = 0.75
+	defensora._proceso_atacando(0.01)
+
+	# Assert: contador en 3 y reproductor del grito instanciado
+	assert_eq(defensora.contador_ataques, 3, "Debe haber lanzado 3 ataques")
+	assert_not_null(defensora.find_child("SfxAtaquePerrena", false, false), "Cada 3 ataques debe sonar el grito de ataque")
+
+
+func test_canoa_del_rio_fuerza_idle_canoa_en_perrena() -> void:
+	# Arrange: canoa del río con su DefensoraPerrena a bordo (como en la escena del nivel)
+	var CanoaScript = load("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.gd")
+	var canoa: Node3D = CanoaScript.new()
+	canoa.name = "CanoaProtagonistaRio"
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	defensora.name = "DefensoraPerrena"
+	canoa.add_child(defensora)
+
+	# Act: entrar al árbol (readys: primero la defensora, luego la canoa que refuerza)
+	_root_test.add_child(canoa)
+
+	# Assert: Idle Canoa como reposo, por autodetección y por refuerzo de la canoa
+	assert_true(defensora.en_canoa, "A bordo de la canoa debe estar en modo canoa")
+	assert_eq(defensora._anim_reposo_nombres()[0], defensora.anim_idle_canoa, "En el nivel río el reposo debe ser Idle Canoa")
+
+
 func test_defensora_perrena_fase_suelo_y_requisito_6_impactos() -> void:
 	# Arrange
 	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
@@ -465,7 +539,7 @@ func test_defensora_perrena_fase_suelo_y_requisito_6_impactos() -> void:
 
 
 func test_hacha_perrena_ignora_plataformas_aliadas() -> void:
-	# Arrange
+	# Arrange (gracia de lanzamiento: distancia 0 < 1.5m, atraviesa cobertura propia)
 	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
 	_root_test.add_child(hacha)
 
@@ -486,6 +560,237 @@ func test_hacha_perrena_ignora_plataformas_aliadas() -> void:
 	# Assert: No debe procesar impacto ni detenerse en la plataforma aliada
 	assert_false(hacha._impacto_procesado, "El hacha no debe procesar impacto al chocar con plataformas aliadas")
 	assert_false(hacha.is_stuck, "El hacha no debe clavarse en plataformas aliadas")
+
+
+func test_hacha_perrena_se_clava_en_plataforma_lejana() -> void:
+	# Arrange: hacha que ya voló más allá de la gracia (5m > 1.5m)
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha._distancia_recorrida = 5.0
+
+	var plataforma := StaticBody3D.new()
+	plataforma.name = "PlataformaOneway"
+	_root_test.add_child(plataforma)
+
+	# Act: Impactar plataforma lejana
+	hacha._procesar_impacto(plataforma, Vector3.ZERO, Vector3.UP)
+
+	# Assert: se clava como en cualquier superficie con colisión (igual que las flechas)
+	assert_true(hacha._impacto_procesado, "Fuera de la gracia debe procesar impacto en plataformas")
+	assert_true(hacha.is_stuck, "Fuera de la gracia debe clavarse en la plataforma")
+	assert_eq(hacha.velocity, Vector3.ZERO, "Su velocidad debe ser cero tras impactar")
+
+	# Act: dejar correr los deferreds de emparentado a geometría estática
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	# Assert: queda emparentada al cuerpo estático
+	assert_eq(hacha.get_parent(), plataforma, "Clavada en geometría estática debe emparentarse a ella")
+
+
+func test_hacha_perrena_no_se_emparenta_a_enemigos() -> void:
+	# Arrange: impacto a enemigo (los cadáveres se liberan y se llevarían el hacha)
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+
+	var enemy := Node3D.new()
+	enemy.name = "GoblinTest"
+	enemy.add_to_group("enemies")
+	_root_test.add_child(enemy)
+
+	# Act: Impactar enemigo
+	hacha._procesar_impacto(enemy, Vector3.ZERO, Vector3.UP)
+	assert_true(hacha.is_stuck, "Debe clavarse al impactar al enemigo")
+
+	# Act: dejar correr los deferreds
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	# Assert: NO emparentada al enemigo (queda fija en el mundo hasta desvanecerse)
+	assert_eq(hacha.get_parent(), _root_test, "No debe emparentarse al enemigo para no desaparecer con el cadáver")
+
+
+func test_hacha_desvanece_por_alfa_sin_encoger() -> void:
+	# Arrange (como las flechas: fade gradual, nada de encogido raro)
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	var enemy := Node3D.new()
+	enemy.name = "GoblinTest"
+	enemy.add_to_group("enemies")
+	_root_test.add_child(enemy)
+	hacha._procesar_impacto(enemy, Vector3.ZERO, Vector3.UP)
+	var escala_al_clavar: Vector3 = hacha.scale
+
+	# Act: iniciar el desvanecido
+	hacha._desvanecer_y_liberar()
+
+	# Assert: no se encoge; funde el alfa de copias de material por hacha
+	assert_true(hacha._desvaneciendose, "Debe marcar _desvaneciendose")
+	assert_eq(hacha.scale, escala_al_clavar, "No debe encogerse al desaparecer")
+	var con_alfa := 0
+	for mi in hacha.find_children("*", "MeshInstance3D", true, false):
+		var mat = (mi as MeshInstance3D).material_override
+		if mat is StandardMaterial3D and (mat as StandardMaterial3D).transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
+			con_alfa += 1
+	assert_gt(con_alfa, 0, "Las mallas deben fundirse por alfa (materiales con TRANSPARENCY_ALPHA)")
+
+
+func test_hacha_especial_levanta_piedras_en_terreno() -> void:
+	# Arrange: Ult contra suelo estático
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.initialize(Vector3.RIGHT, 1.0, null, true, null)
+	var terreno := StaticBody3D.new()
+	terreno.name = "TerrenoSuelo"
+	_root_test.add_child(terreno)
+
+	# Act: impactar terreno
+	hacha._procesar_impacto(terreno, Vector3.ZERO, Vector3.UP)
+
+	# Assert: ráfaga de rocas del pilar Lonko
+	assert_not_null(_root_test.find_child("ParticulasRocasHacha", true, false), "El Ult en terreno debe levantar pequeñas piedras")
+
+
+func test_hacha_normal_no_levanta_piedras_en_terreno() -> void:
+	# Arrange: hacha normal contra el mismo suelo
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	var terreno := StaticBody3D.new()
+	terreno.name = "TerrenoSuelo"
+	_root_test.add_child(terreno)
+
+	# Act: impactar terreno
+	hacha._procesar_impacto(terreno, Vector3.ZERO, Vector3.UP)
+
+	# Assert: sin rocas (efecto exclusivo del Ult)
+	assert_null(_root_test.find_child("ParticulasRocasHacha", true, false), "El hacha normal no debe levantar piedras")
+
+
+func _crear_enemigo_con_vida() -> Node3D:
+	var escript := GDScript.new()
+	escript.source_code = "extends Node3D\nvar health: int = 1\nfunc take_damage(d: float) -> void:\n\thealth -= int(d)\n"
+	escript.reload()
+	var enemy := Node3D.new()
+	enemy.set_script(escript)
+	enemy.name = "GoblinTest"
+	enemy.add_to_group("enemies")
+	_root_test.add_child(enemy)
+	return enemy
+
+
+func test_hacha_especial_suena_reventado_si_mata() -> void:
+	# Arrange: Ult contra enemigo de 1 HP
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.initialize(Vector3.RIGHT, 1.0, null, true, null)
+	var enemy := _crear_enemigo_con_vida()
+
+	# Act: el Ult lo mata (3 de daño)
+	hacha._procesar_impacto(enemy, Vector3.ZERO, Vector3.UP)
+
+	# Assert: suena el reventado
+	assert_eq(enemy.get("health"), -2, "El Ult debe dejar al enemigo sin vida")
+	assert_not_null(_root_test.find_child("SfxReventadoUlt", true, false), "Si el Ult mata debe sonar Sonido reventado")
+
+
+func test_hacha_normal_no_suena_reventado_si_mata() -> void:
+	# Arrange: hacha normal contra enemigo de 1 HP
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	var enemy := _crear_enemigo_con_vida()
+
+	# Act: lo mata con hacha normal (2 de daño)
+	hacha._procesar_impacto(enemy, Vector3.ZERO, Vector3.UP)
+
+	# Assert: sin reventado (exclusivo del Ult)
+	assert_lt(int(enemy.get("health")), 1, "El hacha normal debe dejarlo sin vida")
+	assert_null(_root_test.find_child("SfxReventadoUlt", true, false), "El hacha normal no debe sonar reventado")
+
+
+func test_hacha_flota_en_agua_hasta_desvanecerse() -> void:
+	# Arrange: plano de agua en y=0 y hacha cayendo al foso
+	var agua := Node3D.new()
+	agua.name = "AguaTest"
+	agua.add_to_group("agua")
+	_root_test.add_child(agua)
+	var mi := MeshInstance3D.new()
+	var plano := PlaneMesh.new()
+	plano.size = Vector2(60, 60)
+	mi.mesh = plano
+	agua.add_child(mi)
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.global_position = Vector3(0, 3, 0)
+	hacha.velocity = Vector3(2, -2, 0)
+
+	# Act: pasos de física hasta cruzar la superficie
+	for i in range(60):
+		if hacha.is_stuck:
+			break
+		hacha._physics_process(0.016)
+		await get_tree().physics_frame
+
+	# Assert: flota en superficie sin efectos, hasta el fade
+	assert_true(hacha.is_stuck, "Al caer al agua debe detenerse flotando")
+	assert_almost_eq(hacha.global_position.y, 0.03, 0.05, "Flota sobre la superficie")
+	assert_eq(hacha.get_parent(), _root_test, "Sin emparentados raros")
+	assert_true(is_instance_valid(hacha), "Sigue visible hasta desvanecerse")
+
+
+func test_hacha_especial_fallida_en_terreno_suena_fallo_tierra() -> void:
+	# Arrange: Ult contra suelo (sin enemigos)
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.initialize(Vector3.RIGHT, 1.0, null, true, null)
+	var terreno := StaticBody3D.new()
+	terreno.name = "TerrenoSuelo"
+	_root_test.add_child(terreno)
+
+	# Act: el Ult impacta en terreno
+	hacha._procesar_impacto(terreno, Vector3.ZERO, Vector3.UP)
+
+	# Assert: suena el fallo a tierra
+	assert_not_null(_root_test.find_child("SfxFalloTierraUlt", true, false), "El Ult fallido en terreno debe sonar impacto fallo tierra")
+
+
+func test_hacha_especial_en_pilar_lonko_suena_fallo_tierra() -> void:
+	# Arrange: Ult contra el pilar de la arquera Lonko
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.initialize(Vector3.RIGHT, 1.0, null, true, null)
+	var pilar := StaticBody3D.new()
+	pilar.name = "PilarLonko"
+	pilar.set_meta("es_pilar_enemigo", true)
+	_root_test.add_child(pilar)
+
+	# Act: el Ult impacta en el pilar (no es enemigo)
+	hacha._procesar_impacto(pilar, Vector3.ZERO, Vector3.UP)
+
+	# Assert: suena el fallo a tierra (el pilar no cuenta como enemigo)
+	assert_not_null(_root_test.find_child("SfxFalloTierraUlt", true, false), "El Ult en el pilar de Lonko debe sonar impacto fallo tierra")
+
+
+func test_hacha_especial_en_enemigo_no_suena_fallo_tierra() -> void:
+	# Arrange: Ult contra enemigo vivo (no lo mata: 10 HP)
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.initialize(Vector3.RIGHT, 1.0, null, true, null)
+	var escript := GDScript.new()
+	escript.source_code = "extends Node3D\nvar health: int = 10\nfunc take_damage(d: float) -> void:\n\thealth -= int(d)\n"
+	escript.reload()
+	var enemy := Node3D.new()
+	enemy.set_script(escript)
+	enemy.name = "GoblinTest"
+	enemy.add_to_group("enemies")
+	_root_test.add_child(enemy)
+
+	# Act: impacta al enemigo sin matarlo
+	hacha._procesar_impacto(enemy, Vector3.ZERO, Vector3.UP)
+
+	# Assert: sin fallo (sí dio en un enemigo) y sin reventado (no murió)
+	assert_gt(int(enemy.get("health")), 0, "El enemigo debe seguir vivo")
+	assert_null(_root_test.find_child("SfxFalloTierraUlt", true, false), "El Ult que da en enemigo no debe sonar fallo")
+	assert_null(_root_test.find_child("SfxReventadoUlt", true, false), "Sin muerte no debe sonar reventado")
 
 
 func test_hacha_perrena_tiempo_pegada_3_segundos() -> void:
@@ -592,6 +897,73 @@ func test_hacha_perrena_dano_imp_escudo_y_guardiana_moradita() -> void:
 	assert_eq(hacha_esp.calcular_dano_para(guardiana), 9.0, "Hacha especial debe hacer 9 de daño (3 + 6 bono) a GuardianaMoradita")
 
 
+func test_hacha_perrena_no_ignora_guardiana_en_defensa() -> void:
+	# Arrange
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+
+	var guardiana := GuardianaMoradita.new()
+	guardiana.name = "GuardianaMoradita"
+	guardiana.add_to_group("enemies")
+	guardiana.add_to_group("guardians")
+	guardiana.health = 10
+	_root_test.add_child(guardiana)
+
+	# Act & Assert:
+	guardiana.current_state = GuardianaMoradita.State.DEFENDING
+	assert_false(hacha._es_entidad_a_ignorar(guardiana), "No debe ignorar a GuardianaMoradita cuando está en estado DEFENDING")
+
+	guardiana.current_state = GuardianaMoradita.State.SHIELD_HIT
+	assert_false(hacha._es_entidad_a_ignorar(guardiana), "No debe ignorar a GuardianaMoradita cuando está en estado SHIELD_HIT")
+
+	guardiana.current_state = GuardianaMoradita.State.RUNNING
+	assert_false(hacha._es_entidad_a_ignorar(guardiana), "No debe ignorar a GuardianaMoradita cuando está en estado RUNNING")
+
+	guardiana.current_state = GuardianaMoradita.State.ATTACKING
+	assert_false(hacha._es_entidad_a_ignorar(guardiana), "No debe ignorar a GuardianaMoradita cuando está en estado ATTACKING")
+
+	guardiana.current_state = GuardianaMoradita.State.DYING
+	assert_true(hacha._es_entidad_a_ignorar(guardiana), "Debe ignorar a GuardianaMoradita cuando está en estado DYING")
+
+	guardiana.current_state = GuardianaMoradita.State.DEAD
+	assert_true(hacha._es_entidad_a_ignorar(guardiana), "Debe ignorar a GuardianaMoradita cuando está en estado DEAD")
+
+
+func test_hacha_perrena_impacto_fisico_guardiana_en_defensa() -> void:
+	# Arrange
+	var guardiana_scene := load("res://Entities/Enemigo_Goblina_Escudo_Pesado/GuardianaMoradita.tscn") as PackedScene
+	var guardiana: GuardianaMoradita = guardiana_scene.instantiate() as GuardianaMoradita
+	_root_test.add_child(guardiana)
+	guardiana.global_position = Vector3(4.0, 0.185, 0.0)
+	guardiana.current_state = GuardianaMoradita.State.DEFENDING
+	var hp_inicial: int = guardiana.health
+
+	# Esperar a que la física registre a la guardiana en el espacio
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	# Crear hacha volando hacia Guardiana a la altura de su pecho/escudo
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.gravedad_escala = 0.0
+	hacha._gravity = 0.0
+	hacha.global_position = Vector3(3.0, 0.58, 0.0)
+	hacha.velocity = Vector3(15.0, 0.0, 0.0)
+
+	# Act: avanzar física
+	for i in range(25):
+		if hacha._impacto_procesado:
+			break
+		hacha._physics_process(0.016)
+		await get_tree().physics_frame
+
+	# Assert: El hacha debe haber impactado y dañado a Guardiana
+	assert_true(hacha.is_stuck or hacha._impacto_procesado, "El hacha debe impactar a Guardiana en estado DEFENDING")
+	assert_lt(guardiana.health, hp_inicial, "Guardiana debe haber recibido daño del hacha")
+
+
+
+
 func test_hacha_perrena_impacta_siempre_por_el_lado_del_filo() -> void:
 	# Arrange: Hacha volando en diagonal hacia abajo y derecha
 	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
@@ -678,8 +1050,8 @@ func test_proceso_atacando_reapunta_si_objetivo_muere() -> void:
 	var vivo := Node3D.new()	
 	vivo.name = "GoblinVivo"
 	vivo.add_to_group("enemies")
-	vivo.global_position = Vector3(5.0, 0.0, 0.0)
 	_root_test.add_child(vivo)
+	vivo.global_position = Vector3(5.0, 0.0, 0.0)
 	defensora._objetivo_actual = muerto	
 	defensora._hacha_arrojada_en_ciclo = false	
 	defensora._tiempo_en_estado = 0.35	
@@ -700,3 +1072,182 @@ func test_initialize_hacha_con_objetivo_liberado_no_rompe() -> void:
 		# Assert: lo guarda sin romper; el homing lo filtra con is_instance_valid	
 	assert_false(is_instance_valid(hacha.objetivo_fijado), "El objetivo fijado debe seguir invalido")
 
+
+func test_defensora_perrena_respeta_escala_colocada_en_escena() -> void:
+	# Arrange (bug canoa del río: el _ready pisaba el 0.18 colocado en el editor con 0.3
+	# y Perrena se veía ~67% más grande en juego que en el editor)
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	defensora.scale = Vector3(0.18, 0.18, 0.18)
+	_root_test.add_child(defensora)
+
+	# Assert: la escala colocada se conserva tras el _ready
+	assert_almost_eq(defensora.scale.x, 0.18, 0.001, "Debe conservar la escala 0.18 colocada en la escena (canoa)")
+	assert_almost_eq(defensora.scale.y, 0.18, 0.001, "Debe conservar la escala 0.18 colocada en la escena (canoa)")
+
+
+func test_defensora_perrena_normaliza_escala_identidad_a_03() -> void:
+	# Arrange: instancia a escala identidad (ej. creada por código del ítem de refuerzo)
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	defensora.scale = Vector3.ONE
+	_root_test.add_child(defensora)
+
+	# Assert: se normaliza a la paridad visual del modelo jugable (0.3)
+	assert_almost_eq(defensora.scale.x, 0.3, 0.001, "A escala identidad debe normalizarse a 0.3")
+
+
+func test_sonido_perrena_ult_en_habilidad_especial() -> void:
+	# Arrange
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+
+	# Assert constante y recurso
+	assert_eq(DefensoraPerrena.SFX_ULT, "res://TEST_/Perrena ult.mp3", "La constante SFX_ULT debe apuntar a Perrena ult.mp3")
+	assert_true(ResourceLoader.exists(DefensoraPerrena.SFX_ULT), "El archivo Perrena ult.mp3 debe existir en disco")
+
+	# Act: Iniciar habilidad especial / ult
+	defensora._iniciar_habilidad_especial()
+
+	# Assert: Debe crear y reproducir el nodo de sonido de ult
+	assert_gte(defensora.volumen_ult_db, 10.0, "El volumen base configurado para ult debe ser >= 10.0 dB")
+	var audio_ult: AudioStreamPlayer3D = defensora.find_child("SfxUltPerrena", true, false) as AudioStreamPlayer3D
+	assert_not_null(audio_ult, "Debe instanciar el AudioStreamPlayer3D para el ult")
+	if audio_ult:
+		assert_not_null(audio_ult.stream, "El reproductor de audio del ult debe tener stream asignado")
+		assert_true(audio_ult.playing, "El sonido de ult debe estar reproduciéndose")
+		assert_gte(audio_ult.volume_db, 10.0, "El volumen de reproducción debe ser potente (>= 10.0 dB)")
+
+
+func test_velocidades_despliegue_reducidas_caminar_y_escaleras() -> void:
+	# Arrange
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+
+	# Assert: Las velocidades por defecto al ser invocada con su ítem deben ser menores
+	# que los valores originales hardcodeados (2.8 correr, 1.5 escaleras)
+	assert_lt(defensora.velocidad_caminar, 2.0, "La velocidad al correr/caminar debe ser menor a 2.0 (reducida)")
+	assert_lt(defensora.velocidad_escaleras, 1.0, "La velocidad en escaleras debe ser menor a 1.0 (reducida)")
+	assert_almost_eq(defensora.velocidad_caminar, 1.4, 0.01, "Velocidad caminar configurada en 1.4")
+	assert_almost_eq(defensora.velocidad_escaleras, 0.7, 0.01, "Velocidad escaleras configurada en 0.7")
+
+
+func _crear_pilar_dummy(vida: float) -> PilarLonkoBody:
+	var pilar := PilarLonkoBody.new()
+	pilar.name = "PilarLonko"
+	_root_test.add_child(pilar)
+	pilar.vida_pilar = vida
+	return pilar
+
+
+func test_perrena_ignora_pilar_destruido() -> void:
+	# Arrange (bug debug: destruía un pilar que no debería ser visible/atacable)
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3.ZERO
+	var pilar := _crear_pilar_dummy(0.0)
+	pilar.global_position = Vector3(5, 0, 0)
+	var basico := Node3D.new()
+	basico.name = "GoblinArquero"
+	basico.add_to_group("enemies")
+	_root_test.add_child(basico)
+	basico.global_position = Vector3(8, 0, 0)
+
+	# Act 1: pilar destruido no es objetivo aunque sea Prioridad 2
+	var obj1: Node = defensora._buscar_mejor_objetivo()
+	assert_eq(obj1, basico, "El pilar destruido (vida 0) no debe seleccionarse")
+
+	# Act 2: pilar con vida sí es Prioridad 2 sobre el básico
+	pilar.vida_pilar = 5.0
+	var obj2: Node = defensora._buscar_mejor_objetivo()
+	assert_eq(obj2, pilar, "El pilar con vida debe priorizarse (P2)")
+
+
+func test_perrena_ignora_escudo_invisible() -> void:
+	# Arrange: escudo enemigo oculto + básico visible
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3.ZERO
+	var escudo := StaticBody3D.new()
+	escudo.name = "EscudoEnemigo"
+	escudo.set_meta("es_escudo_enemigo", true)
+	escudo.add_to_group("escudos")
+	_root_test.add_child(escudo)
+	escudo.global_position = Vector3(5, 0, 0)
+	escudo.visible = false
+	var basico := Node3D.new()
+	basico.name = "GoblinArquero"
+	basico.add_to_group("enemies")
+	_root_test.add_child(basico)
+	basico.global_position = Vector3(8, 0, 0)
+
+	# Act 1: escudo invisible no es objetivo
+	var obj1: Node = defensora._buscar_mejor_objetivo()
+	assert_eq(obj1, basico, "El escudo invisible no debe seleccionarse")
+
+	# Act 2: al visibilizarse vuelve a ser Prioridad 2
+	escudo.visible = true
+	var obj2: Node = defensora._buscar_mejor_objetivo()
+	assert_eq(obj2, escudo, "El escudo visible debe priorizarse (P2)")
+
+
+func test_hacha_especial_perrena_no_se_parrea_ni_desvia_por_azulina() -> void:
+	# Arrange
+	var azulina := Azulina.new()
+	_root_test.add_child(azulina)
+	azulina.parry_habilitado = true
+	azulina._parry_activo = true
+
+	var hacha_esp: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha_esp)
+	hacha_esp.initialize(Vector3.RIGHT, 1.0, null, true, azulina)
+
+	# Act 1: Azulina intenta parrear con parry activo
+	var repelido_parry: bool = azulina.manejar_impacto_aura(hacha_esp)
+
+	# Assert 1: El parry activo NO debe repeler el hacha gigante
+	assert_false(repelido_parry, "Azulina con parry activo NO debe repeler el ult de Perrena")
+
+	# Act 2: Azulina con giro de desvío activo
+	azulina._parry_activo = false
+	azulina._desviando_giro = true
+	var repelido_desvio: bool = azulina.manejar_impacto_aura(hacha_esp)
+
+	# Assert 2: El giro de desvío NO debe desviar el hacha gigante
+	assert_false(repelido_desvio, "Azulina con giro de desvío NO debe desviar el ult de Perrena")
+
+	# Act 3: Procesar impacto directo de hacha especial en Azulina
+	hacha_esp._procesar_impacto(azulina, azulina.global_position, Vector3.LEFT)
+	assert_false(hacha_esp.is_queued_for_deletion(), "El hacha especial no debe destruirse por parry")
+	assert_true(hacha_esp.is_stuck, "El hacha especial debe clavarse e impactar")
+
+
+func test_hacha_especial_perrena_rompe_aura_rosa_sin_rebotar() -> void:
+	# Arrange
+	var arquera := ArqueraRosa.new()
+	_root_test.add_child(arquera)
+	arquera.aura_vida = 3
+
+	var hacha_esp: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha_esp)
+	hacha_esp.initialize(Vector3.RIGHT, 1.0, null, true, arquera)
+
+	# Act: comprobar manejo de aura
+	var repelido: bool = arquera.manejar_impacto_aura(hacha_esp)
+
+	# Assert: Debe romper el aura y no repeler el proyectil
+	assert_false(repelido, "El ult de Perrena NO debe ser repelido por el aura de Arquera Rosa")
+	assert_lte(arquera.aura_vida, 0, "El ult de Perrena debe romper el aura de Arquera Rosa como flecha explosiva")
+
+
+func test_hacha_normal_perrena_si_rebota_con_aura() -> void:
+	# Arrange
+	var arquera := ArqueraRosa.new()
+	_root_test.add_child(arquera)
+	arquera.aura_vida = 3
+
+	var hacha_norm: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha_norm)
+	hacha_norm.initialize(Vector3.RIGHT, 1.0, null, false, arquera)
+
+	# Act: el hacha normal sí es repelida por el aura activa
+	var repelido: bool = arquera.manejar_impacto_aura(hacha_norm)
+	assert_true(repelido, "El hacha normal de Perrena SÍ debe ser repelida por el aura activa")

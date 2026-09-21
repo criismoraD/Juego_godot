@@ -50,6 +50,17 @@ enum State { WALKING, SHOOTING, DYING, DEAD }
 @export var escena_sangre: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
 @export var escena_sangre_no_letal: PackedScene = preload("res://VFX/Scenes/BloodSplashNoLetal.tscn")
 @export var offset_sangre: Vector3 = Vector3.ZERO  ## Offset adicional de ajuste para el spawn de la sangre
+# === CONFIGURACIÓN - CÁMARA / PANTALLA ===
+@export_category("Control de Pantalla / Cámara")
+@export var solo_atacar_en_pantalla: bool = false:
+	set(v):
+		solo_atacar_en_pantalla = v
+		if v and is_node_ready():
+			_asegurar_notificador_pantalla()
+@export var margen_camara_ataque_x: float = 8.0  ## Distancia máxima en X respecto a la cámara para considerarse dentro de rango
+@export var margen_camara_salida_x: float = 7.0  ## Distancia mínima tras la cámara (-X) donde aún puede atacar
+var _notificador_pantalla: VisibleOnScreenNotifier3D = null
+var _camara_cache_pantalla: Camera3D = null
 # === CONFIGURACIÓN - SOMBRA ===
 @export_category("Sombra")
 @export var sombra_opacidad: float = 1.0
@@ -158,6 +169,10 @@ func _ready():
 	_store_original_materials()
 	_buscar_skeleton()
 	_buscar_jugador()
+	if not solo_atacar_en_pantalla:
+		_auto_detectar_nivel_rio()
+	if solo_atacar_en_pantalla:
+		_asegurar_notificador_pantalla()
 	_on_enemy_ready()  # Hook para subclases
 
 	# Sombra procedural debajo del personaje
@@ -351,6 +366,8 @@ func _process_walking(delta):
 	if global_position.x <= limite_izq:
 		velocity.x = 0
 		global_position.x = max(global_position.x, limite_izq)
+		if solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara():
+			return
 		_change_state(State.SHOOTING)
 		return
 
@@ -358,6 +375,17 @@ func _process_walking(delta):
 	walked_distance += velocidad_caminar * delta
 
 	if walked_distance >= target_walk_distance:
+		if velocidad_caminar <= 0.0:
+			# Tirador fijo (ej. arquera apostada): no puede espaciarse caminando;
+			# pasa a tiro directo en vez de quedarse en bucle de caminata.
+			# (Los paseos con tween, como la cubierta del submarino, usan
+			# target_walk_distance enorme y no entran por esta rama.)
+			velocity.x = 0
+			_change_state(State.SHOOTING)
+			return
+		if solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara():
+			velocity.x = 0
+			return
 		if _check_spacing():
 			_change_state(State.SHOOTING)
 		else:
@@ -376,6 +404,91 @@ func _process_dying(_delta):
 ## Override en subclases para lógica de disparo específica
 func _process_shooting(_delta):
 	velocity.x = 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTROL DE ATAQUE EN PANTALLA Y RANGO DE CÁMARA (NIVEL RÍO Y GENERAL)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func _auto_detectar_nivel_rio() -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	if scene.has_method("obtener_canoa") or "Rio" in scene.name or (scene.scene_file_path and "Rio" in scene.scene_file_path):
+		solo_atacar_en_pantalla = true
+		_asegurar_notificador_pantalla()
+
+
+func _asegurar_notificador_pantalla() -> void:
+	if is_instance_valid(_notificador_pantalla):
+		return
+	var notif := find_child("NotificadorCamara", true, false) as VisibleOnScreenNotifier3D
+	if not notif:
+		notif = find_child("NotificadorPantalla", true, false) as VisibleOnScreenNotifier3D
+	if not notif:
+		notif = VisibleOnScreenNotifier3D.new()
+		notif.name = "NotificadorPantalla"
+		notif.aabb = AABB(Vector3(-1.0, 0.0, -1.0), Vector3(2.0, 2.5, 2.0))
+		add_child(notif)
+	_notificador_pantalla = notif
+
+
+## Comprueba si el enemigo está visible en pantalla o dentro del rango del encuadre de la cámara.
+func esta_en_pantalla_o_rango_camara() -> bool:
+	if not solo_atacar_en_pantalla:
+		return true
+
+	# 1. Notificador en pantalla de Godot (culling del motor)
+	if is_instance_valid(_notificador_pantalla) and _notificador_pantalla.is_on_screen():
+		return true
+
+	# 2. Cámara activa de juego
+	var cam := _obtener_camara_para_pantalla()
+	if not is_instance_valid(cam):
+		return true  # Sin cámara no se bloquea en pruebas o entornos aislados
+
+	# 3. Comprobación de encuadre en el eje horizontal 2.5D
+	var dx: float = global_position.x - cam.global_position.x
+	if dx > margen_camara_ataque_x or dx < -margen_camara_salida_x:
+		return false
+
+	# 4. Verificar que no esté detrás del plano de la cámara
+	if cam.is_position_behind(global_position):
+		return false
+
+	return true
+
+
+## Determina si el enemigo tiene permitido atacar según su estado y posición de cámara.
+func puede_atacar() -> bool:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return false
+	if solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara():
+		return false
+	return true
+
+
+func _obtener_camara_para_pantalla() -> Camera3D:
+	if is_instance_valid(_camara_cache_pantalla):
+		return _camara_cache_pantalla
+
+	_camara_cache_pantalla = CameraUtils.obtener_camara_juego(self)
+	if is_instance_valid(_camara_cache_pantalla):
+		return _camara_cache_pantalla
+
+	var vp := get_viewport()
+	if vp:
+		_camara_cache_pantalla = vp.get_camera_3d()
+		if is_instance_valid(_camara_cache_pantalla):
+			return _camara_cache_pantalla
+
+	if get_tree() and get_tree().current_scene:
+		_camara_cache_pantalla = get_tree().current_scene.find_child("CamaraPrincipal", true, false) as Camera3D
+
+	return _camara_cache_pantalla
+
 
 
 func _get_cached_wave_spawner() -> Node:

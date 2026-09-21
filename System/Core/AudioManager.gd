@@ -186,9 +186,12 @@ func _load_all_sounds():
 	sfx_streams["azulina_muerte"] = [load("res://TEST_/azulina muerte.mp3")]
 	sfx_streams["hit_azulina"] = [load("res://TEST_/Hit azulina.mp3")]
 	sfx_streams["fire_fire_rapido"] = [load("res://TEST_/fire fire rapido.mp3")]
-	sfx_streams["muerte_goblin_general"] = [load("res://TEST_/Muerte goblin general.mp3")]
+	if ResourceLoader.exists("res://TEST_/Muerte goblin general.mp3"):
+		sfx_streams["muerte_goblin_general"] = [load("res://TEST_/Muerte goblin general.mp3")]
 	sfx_streams["ult_goblin_general"] = [load("res://TEST_/Ruedo goblin.mp3")]
 	sfx_streams["entrada_azulina"] = [load("res://TEST_/Entrada azulina.mp3")]
+	if ResourceLoader.exists("res://TEST_/Perrena ult.mp3"):
+		sfx_streams["perrena_ult"] = [load("res://TEST_/Perrena ult.mp3")]
 
 	sfx_streams["shield_imp_impact"] = [
 		load("res://Entities/Enemigo_Imp_Escudo/IMPACTO_IMP_ESCUDO_01.mp3"),
@@ -706,6 +709,35 @@ func stop_all():
 		for node in tree.get_nodes_in_group("pausable_audio"):
 			if is_instance_valid(node) and (node is AudioStreamPlayer or node is AudioStreamPlayer3D):
 				node.stop()
+
+
+## Recupera el audio tras Game Over → Continuar: limpia pausas de streams
+## pendientes y reanuda la música actual si quedó detenida con stream asignado.
+## Idempotente: si todo está bien no cambia nada audible.
+func recuperar_audio_continuar() -> void:
+	var jugadores: Array = []
+	if is_instance_valid(sfx_player):
+		jugadores.append(sfx_player)
+	if is_instance_valid(sfx_player_3d):
+		jugadores.append(sfx_player_3d)
+	if is_instance_valid(music_player):
+		jugadores.append(music_player)
+	for p in sfx_pool:
+		if is_instance_valid(p):
+			jugadores.append(p)
+	for p in sfx_3d_pool:
+		if is_instance_valid(p):
+			jugadores.append(p)
+	for p in jugadores:
+		if "stream_paused" in p:
+			p.stream_paused = false
+	var tree := get_tree()
+	if tree:
+		for node in tree.get_nodes_in_group("pausable_audio"):
+			if is_instance_valid(node) and (node is AudioStreamPlayer or node is AudioStreamPlayer3D):
+				node.stream_paused = false
+	if is_instance_valid(music_player) and music_player.stream and not music_player.playing:
+		music_player.play()
 
 
 ## Pausa o reanuda todos los sonidos y la música activas en el juego

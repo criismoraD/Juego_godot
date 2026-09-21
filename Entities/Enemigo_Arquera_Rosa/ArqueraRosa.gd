@@ -221,8 +221,16 @@ func manejar_impacto_aura(flecha: Node) -> bool:
 	if aura_vida <= 0:
 		return false  # Aura rota, pasa daño normal
 
-	# Si es flecha explosiva, penetra / detona inmediatamente y rompe el aura
-	if flecha and ("es_explosiva" in flecha and flecha.es_explosiva):
+	# Si es flecha explosiva o ult de Perrena, penetra / detona inmediatamente y rompe el aura
+	var es_exp: bool = false
+	if is_instance_valid(flecha):
+		if "es_explosiva" in flecha and bool(flecha.get("es_explosiva")):
+			es_exp = true
+		elif "es_hacha_especial" in flecha and bool(flecha.get("es_hacha_especial")):
+			es_exp = true
+		elif flecha.has_meta("es_explosiva") and bool(flecha.get_meta("es_explosiva")):
+			es_exp = true
+	if es_exp:
 		_romper_aura()
 		return false
 

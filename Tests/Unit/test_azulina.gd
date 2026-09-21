@@ -363,14 +363,14 @@ func _limpiar_lanzas() -> void:
 func _contar_salpicaduras() -> int:
 	var conteo: int = 0
 	for n in get_tree().root.get_children():
-		if n is SalpicaduraAzulina and not (n as Node).is_queued_for_deletion():
+		if (n is SalpicaduraAzulina or (n is Node and (n as Node).has_method("play_splash"))) and not (n as Node).is_queued_for_deletion():
 			conteo += 1
 	return conteo
 
 
 func _limpiar_salpicaduras() -> void:
 	for n in get_tree().root.get_children():
-		if n is SalpicaduraAzulina:
+		if n is SalpicaduraAzulina or (n is Node and (n as Node).has_method("play_splash")):
 			(n as Node).free()
 
 
@@ -517,9 +517,9 @@ func test_emerger_genera_salpicadura_en_origen() -> void:
 
 	# Assert: una salpicadura en el punto de rotura (XZ del origen, Y a nivel de orilla)
 	assert_eq(_contar_salpicaduras(), 1, "Emerger genera su splash")
-	var sal: SalpicaduraAzulina = null
+	var sal: Node3D = null
 	for n in get_tree().root.get_children():
-		if n is SalpicaduraAzulina and not (n as Node).is_queued_for_deletion():
+		if n is Node3D and (n as Node).has_method("play_splash") and not (n as Node).is_queued_for_deletion():
 			sal = n
 			break
 	assert_not_null(sal, "Debe existir la salpicadura")
@@ -1818,6 +1818,23 @@ func test_azulina_muerte_pierde_colision_y_desactiva_capas() -> void:
 	_limpiar_salpicaduras()
 
 
+func test_muerte_explosiva_deja_mancha_del_imp() -> void:
+	# Arrange: marcada por explosión
+	var azulina := _crear_azulina()
+	azulina.emerger_del_agua = false
+	azulina.murio_por_explosion = true
+
+	# Act: daño letal
+	azulina.take_damage(99.0)
+
+	# Assert: misma mancha de sangre del Imp con desvanecido
+	var manchas := get_tree().root.find_children("ManchaSangreSuelo", "", true, false)
+	assert_false(manchas.is_empty(), "Debe dejar la mancha de sangre del Imp")
+	for m in manchas:
+		(m as Node).queue_free()
+	_limpiar_salpicaduras()
+
+
 func test_flechas_atraviesan_enemigo_muerto_sin_colisionar_ni_destruirse() -> void:
 	# Arrange: Azulina muerta y una flecha del jugador
 	var azulina := _crear_azulina()
@@ -1840,3 +1857,72 @@ func test_flechas_atraviesan_enemigo_muerto_sin_colisionar_ni_destruirse() -> vo
 	assert_false(flecha.is_stuck, "La flecha no debe clavarse en el cadáver")
 	assert_false(flecha.is_queued_for_deletion(), "La flecha no debe destruirse contra el cadáver")
 	_limpiar_salpicaduras()
+
+
+# === ACTIVACIÓN POR CÁMARA (NIVEL RÍO) ===
+func _crear_azulina_rio() -> Azulina:
+	var packed := load(ESCENA_AZULINA) as PackedScene
+	var azulina := packed.instantiate() as Azulina
+	azulina.emerger_del_agua = false
+	azulina.activar_al_entrar_en_camara = true
+	add_child_autofree(azulina)
+	return azulina
+
+
+func test_rio_espera_dormida_y_activa_en_cuadro() -> void:
+	# Arrange: versión terrestre del río, fuera de cámara (sin cámara en headless)
+	var azulina := _crear_azulina_rio()
+	await get_tree().process_frame
+
+	# Assert: dormida, quieta y sin física hasta entrar en cuadro
+	assert_true(azulina._dormida_por_camara, "Debe esperar dormida fuera de cámara")
+	assert_false(azulina.is_physics_processing(), "Dormida no debe correr física")
+	assert_false(azulina._emergiendo, "Sin emerger_del_agua no debe emerger")
+
+	# Act: entra en el cuadro de la cámara
+	azulina._activar_por_camara()
+
+	# Assert: activa y corriendo
+	assert_false(azulina._dormida_por_camara, "Debe activarse al entrar en cuadro")
+	assert_true(azulina.is_physics_processing(), "Activa debe correr física")
+	assert_true(String(azulina.anim_player.current_animation).contains("Correr"), "Al activarse entra corriendo")
+
+
+func test_rio_recibir_dano_despierta() -> void:
+	# Arrange: dormida fuera de cámara
+	var azulina := _crear_azulina_rio()
+	await get_tree().process_frame
+	assert_true(azulina._dormida_por_camara, "Precondición: dormida")
+
+	# Act: la alcanzan antes de entrar en cuadro
+	azulina.take_damage(1.0)
+
+	# Assert: despierta y sigue viva (3 HP base)
+	assert_false(azulina._dormida_por_camara, "Recibir daño la despierta")
+	assert_eq(azulina.health, 2, "Aplica el daño normalmente")
+
+
+func test_al_detenerse_queda_quieta_y_ataca() -> void:
+	# Arrange: corriendo hacia su distancia de tiro (sin emergencia)
+	var packed := load(ESCENA_AZULINA) as PackedScene
+	var azulina := packed.instantiate() as Azulina
+	azulina.emerger_del_agua = false
+	add_child_autofree(azulina)
+	await get_tree().process_frame
+	azulina._change_state(EnemyBase.State.WALKING)
+	azulina._play_animation("Correr", 0.1)
+
+	# Act: llega a distancia y se detiene
+	azulina._change_state(EnemyBase.State.SHOOTING)
+
+	# Assert: quieta en vez de correr en el sitio, y ataca casi de inmediato
+	assert_eq(azulina.velocity.x, 0.0, "Al detenerse frena en seco")
+	assert_true(String(azulina.anim_player.current_animation).contains("Idle"), "Detenida debe quedar en idle, no corriendo")
+	assert_lte(azulina._pausa_lanzamiento, 0.6, "El primer ataque debe venir casi de inmediato")
+
+	# Act: pasa la pausa inicial
+	azulina._process_shooting(0.6)
+
+	# Assert: ya está atacando
+	assert_true(azulina._lanzando, "Tras la pausa inicial debe estar lanzando")
+	assert_true(String(azulina.anim_player.current_animation).contains("Ataque"), "Debe reproducir el ataque")

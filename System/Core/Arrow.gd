@@ -20,6 +20,9 @@ enum TipoFlecha { JUGADOR, ENEMIGO }
 @export var tipo_dueño: TipoFlecha = TipoFlecha.JUGADOR
 @export var multiplicador_dano_sobrecarga: float = 2.0  ## Daño x2 solo con flecha de sobrecarga morada al 100% (meta "sobrecarga_max")
 const MULTIPLICADOR_DANO_FUEGO_RAPIDO: float = 2.0  ## Daño x2 en flechas normales con fuego rápido (meta "fuego_rapido")
+const ESCENA_SPLASH_AGUA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const ESCALA_SPLASH_AGUA_FLECHA: float = 0.3  ## Versión pequeña y contenida para flechas
+const DURACION_SPLASH_AGUA_FLECHA: float = 2.0  ## Segundos visible antes de liberarse
 
 ## SISTEMA GOLPE CRÍTICO: daño letal instantáneo cuando la sobrecarga al 100%
 ## impacta a un enemigo en su momento vulnerable (es_momento_golpe_critico).
@@ -48,6 +51,8 @@ var _last_ccd_pos: Vector3 = Vector3.ZERO  # OPT: Posición del último CCD chec
 const CCD_MIN_MOVE: float = 0.05  # OPT: Distancia mínima antes de re-chequear CCD
 var gameplay_z_plane: float = 0.0
 var _destello_punta_creado: bool = false
+var _y_previa_agua: float = 9999.0  ## Y del frame anterior para detectar cruce de agua
+var _agua_rect: Dictionary = {}  ## Superficie de agua cacheada (vacío = sin agua/buscada)
 
 var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
@@ -164,7 +169,11 @@ func _physics_process(delta):
 	# -------------------------------
 
 	# 3. Mover
+	_y_previa_agua = global_position.y
 	global_position += velocity * delta
+	_chequear_impacto_agua()
+	if _destroying:
+		return
 
 	# 4. Rotar para apuntar hacia la dirección de movimiento
 	if velocity.length_squared() > 0.01:
@@ -201,6 +210,80 @@ func _check_off_screen() -> void:
 		_safe_destroy()
 
 
+## Detecta el cruce de la superficie del agua en este paso: chapoteo pequeño
+## y la flecha termina ahí (no sigue volando bajo el agua).
+func _chequear_impacto_agua() -> void:
+	if _y_previa_agua > 9000.0 or velocity.y >= -2.0:
+		return
+	_rect_agua_lazy()
+	if _agua_rect.is_empty() or _agua_rect.has("vacio") or not _agua_rect.has("minx"):
+		return
+	var p := global_position
+	if p.x < float(_agua_rect["minx"]) or p.x > float(_agua_rect["maxx"]):
+		return
+	if p.z < float(_agua_rect["minz"]) or p.z > float(_agua_rect["maxz"]):
+		return
+	var sup_y := float(_agua_rect["y"])
+	if _y_previa_agua > sup_y and p.y <= sup_y:
+		_generar_mini_splash(Vector3(p.x, sup_y + 0.05, p.z))
+		_safe_destroy()
+
+
+## Busca el plano de agua (grupo "agua") una sola vez y cachea su rectángulo.
+func _rect_agua_lazy() -> void:
+	if not _agua_rect.is_empty() or get_tree() == null:
+		return
+	# Marcar buscada aunque no haya agua para no repetir la búsqueda
+	_agua_rect["vacio"] = true
+	var minx := INF
+	var maxx := -INF
+	var minz := INF
+	var maxz := -INF
+	var supy := 0.0
+	var hay := false
+	for nodo in get_tree().get_nodes_in_group("agua"):
+		if not (nodo is Node3D):
+			continue
+		supy = (nodo as Node3D).global_position.y
+		for m in (nodo as Node).find_children("*", "MeshInstance3D", true, false):
+			var mi := m as MeshInstance3D
+			if mi == null or mi.mesh == null:
+				continue
+			var a: AABB = mi.global_transform * mi.mesh.get_aabb()
+			minx = minf(minx, a.position.x)
+			maxx = maxf(maxx, a.position.x + a.size.x)
+			minz = minf(minz, a.position.z)
+			maxz = maxf(maxz, a.position.z + a.size.z)
+			hay = true
+	if hay:
+		_agua_rect = {"minx": minx, "maxx": maxx, "minz": minz, "maxz": maxz, "y": supy}
+
+
+## Mini chapoteo contenido con el efecto de TomAzod (solo ondas + burbujas).
+func _generar_mini_splash(pos: Vector3) -> void:
+	if get_tree() == null:
+		return
+	var splash = ESCENA_SPLASH_AGUA.instantiate()
+	if splash == null:
+		return
+	var raiz: Node = get_tree().current_scene
+	if raiz == null:
+		raiz = get_tree().root
+	raiz.add_child(splash)
+	splash.global_position = pos
+	splash.scale = Vector3(ESCALA_SPLASH_AGUA_FLECHA, ESCALA_SPLASH_AGUA_FLECHA, ESCALA_SPLASH_AGUA_FLECHA)
+	# Solo ondas y burbujas (1 y 2); fuera pilar, gotas, impacto y remate
+	if splash.has_method("toggle_layer_index"):
+		for i in range(6):
+			splash.toggle_layer_index(i, i == 1 or i == 2)
+	if splash.has_method("play_splash"):
+		splash.play_splash()
+	get_tree().create_timer(DURACION_SPLASH_AGUA_FLECHA).timeout.connect(func():
+		if is_instance_valid(splash):
+			splash.queue_free()
+	)
+
+
 func _on_body_entered(body):
 	if is_stuck or _destroying or desintegrando_celeste:
 		return
@@ -208,7 +291,7 @@ func _on_body_entered(body):
 	# Flechas que están rebotando no causan daño; se clavan si tocan superficies
 	if esta_rebotando:
 		if body is StaticBody3D or body is AnimatableBody3D:
-			_stick_to_surface()
+			_stick_to_surface(body)
 		return
 
 	# Ignorar cuerpos ocultos o desactivados
@@ -320,7 +403,7 @@ func _on_body_entered(body):
 	# Verificar si es un suelo o plataforma (StaticBody3D o AnimatableBody3D)
 	# Las flechas del jugador se pegan a plataformas desde cualquier dirección
 	if body is StaticBody3D or body is AnimatableBody3D:
-		_stick_to_surface()
+		_stick_to_surface(body)
 		return
 
 	# Verificar si es un objetivo válido
@@ -395,7 +478,7 @@ func _on_area_entered(area: Area3D):
 		# Buscar el AnimatableBody3D padre (la plataforma)
 		var platform = area.get_parent()
 		if platform and (platform is AnimatableBody3D or platform is StaticBody3D):
-			_stick_to_surface()
+			_stick_to_surface(platform)
 			return
 
 	# Interacción con escudos o áreas enemigas (ej: EscudoPesadoArea de GuardianaMoradita)
@@ -482,7 +565,7 @@ func _area_pertenece_a_golpe_critico(area: Object) -> bool:
 	return false
 
 
-func _stick_to_surface():
+func _stick_to_surface(surface: Node3D = null) -> void:
 	is_stuck = true
 	velocity = Vector3.ZERO
 	AudioManager.play_sfx("arrow_impact")
@@ -498,12 +581,31 @@ func _stick_to_surface():
 
 	_preservar_brillo_clavada()
 
+	# Emparentarse a la superficie impactada para acompañar plataformas móviles o la canoa en el río
+	if is_instance_valid(surface) and surface is Node3D and not surface.is_queued_for_deletion():
+		var s_trans: Transform3D = surface.global_transform
+		if not is_zero_approx(s_trans.basis.determinant()):
+			var local_trans: Transform3D = s_trans.affine_inverse() * global_transform
+			call_deferred("_reparent_to_surface", surface, local_trans)
+
 	# Programar desvanecimiento después de un tiempo clavada (sin borrado brusco)
 	get_tree().create_timer(tiempo_pegada).timeout.connect(
 		func():
 			if is_instance_valid(self) and is_inside_tree():
 				_desvanecer_y_liberar()
 	)
+
+
+func _reparent_to_surface(surface: Node3D, local_trans: Transform3D) -> void:
+	if not is_instance_valid(surface) or surface.is_queued_for_deletion() or not is_instance_valid(self) or not is_inside_tree():
+		return
+
+	var current_parent: Node = get_parent()
+	if current_parent != surface:
+		if current_parent:
+			current_parent.remove_child(self)
+		surface.add_child(self)
+	transform = local_trans
 
 
 ## Al clavarse pierde la estela y en sombra se lee negra: le deja un brillo
