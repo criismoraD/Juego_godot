@@ -113,7 +113,7 @@ func recibir_golpe(_amount: float = 1.0) -> void:
 	pass
 
 
-func iniciar_disolucion(duracion: float = 1.2, color_disolucion: Color = Color(0.2, 0.85, 0.2)) -> void:
+func iniciar_disolucion(duracion: float = 1.2, color_disolucion: Color = Color(0.2, 0.85, 0.2), con_efectos: bool = true) -> void:
 	_dissolve_materials.clear()
 	var meshes := find_children("*", "MeshInstance3D", true, false)
 
@@ -126,7 +126,7 @@ func iniciar_disolucion(duracion: float = 1.2, color_disolucion: Color = Color(0
 		mat.shader = DISSOLVE_SHADER
 		mat.set_shader_parameter("dissolve_amount", 0.0)
 		mat.set_shader_parameter("glow_color", color_disolucion)
-		mat.set_shader_parameter("glow_intensity", 6.0)
+		mat.set_shader_parameter("glow_intensity", 6.0 if con_efectos else 0.0)
 		mat.set_shader_parameter("edge_thickness", 0.05)
 		mat.set_shader_parameter("noise_scale", 20.0)
 
@@ -144,7 +144,8 @@ func iniciar_disolucion(duracion: float = 1.2, color_disolucion: Color = Color(0
 		_dissolve_materials.append({"mesh": mesh_inst, "mat": mat})
 
 	# Crear partículas de disolución individuales para esta pieza
-	_crear_particulas_disolucion(color_disolucion, duracion)
+	if con_efectos:
+		_crear_particulas_disolucion(color_disolucion, duracion)
 
 	# Animar disolución de 0 a 1 y desvanecer escala
 	var tween := create_tween()

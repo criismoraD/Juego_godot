@@ -501,3 +501,38 @@ func test_disparo_normal_alcanza_al_jugador_a_distancia() -> void:
 	lonko.queue_free()
 	await get_tree().process_frame
 
+
+func test_ult_no_se_duplica_por_reentrada() -> void:
+	# Arrange: Lonko en turno de tiro eléctrico (2 realizados, el 3.º es ult cada 3).
+	var lonko := LONKO_SCENE.instantiate() as Lonko
+	scene_root.add_child(lonko)
+	await get_tree().process_frame
+	lonko._pilar_desplegado = true
+	lonko.current_state = Lonko.State.SHOOTING
+	lonko.solo_atacar_en_pantalla = false
+	lonko.pausa_entre_disparos = 0.05
+	lonko._tiros_realizados = 2
+	lonko._is_shooting = false
+	lonko._is_taking_damage = false
+
+	# Act: doble llamada el mismo frame (lo que hacía _process_shooting en la cola).
+	lonko._iniciar_secuencia_disparo()
+	var id_primera: int = lonko._seq_disparo_id
+	lonko._iniciar_secuencia_disparo()
+
+	# Assert: la reentrada no abre segunda secuencia (era el doble ult).
+	assert_eq(lonko._seq_disparo_id, id_primera, "Solo una secuencia de disparo vigente")
+
+	# Act: esperar el pistoletazo (recarga eléctrica 2 s + 0.35 s + 0.45 s).
+	var espera := 0.0
+	while lonko._tiros_realizados < 3 and espera < 8.0 and is_instance_valid(lonko):
+		await get_tree().process_frame
+		espera += get_process_delta_time()
+	lonko._is_taking_damage = true  # Frena la cola/recursión para un conteo estable.
+
+	# Assert: el ult del turno 3 sale una sola vez.
+	assert_eq(lonko._tiros_realizados, 3, "El ult debe contabilizar un solo tiro")
+
+	lonko.queue_free()
+	await get_tree().process_frame
+

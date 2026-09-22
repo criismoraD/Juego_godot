@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/Proyectil_Bala_Canon/BalaCanon.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://TEST_/Bala cañon.png" id="2_tex"]
+
+[sub_resource type="SphereShape3D" id="SphereShape_bala"]
+radius = 0.09
+
+[node name="BalaCanon" type="Area3D"]
+collision_layer = 4
+collision_mask = 67
+monitorable = false
+script = ExtResource("1_script")
+
+[node name="BalaSprite" type="Sprite3D" parent="."]
+texture = ExtResource("2_tex")
+pixel_size = 0.0003
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape_bala")

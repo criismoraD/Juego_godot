@@ -566,4 +566,145 @@ func test_emerger_gotea_cubierta_hasta_secarse() -> void:
 	assert_false(submarino._goteo_cubierta.emitting, "Al secarse deja de gotear")
 
 
+func _crear_submarino_mezcla(piratas: int, embajadores: int, arqueras: int, imps: int, aleatorio: bool) -> SubmarinoRio:
+	var submarino: SubmarinoRio = SubmarinoScene.instantiate() as SubmarinoRio
+	submarino.cantidad_pirata = piratas
+	submarino.cantidad_imp_embajador = embajadores
+	submarino.cantidad_goblin_arquera = arqueras
+	submarino.cantidad_imp = imps
+	submarino.mezclar_orden_aleatorio = aleatorio
+	submarino.activar_al_entrar_en_camara = false
+	return submarino
+
+
+## La mezcla arma la cola en orden por tipo si no se aleatoriza
+func test_mezcla_cola_ordenada_por_tipo() -> void:
+	# Arrange & Act
+	var submarino := _crear_submarino_mezcla(2, 1, 1, 0, false)
+	_root_test.add_child(submarino)
+
+	# Assert: 2 piratas + 1 arquera + 1 embajador en orden
+	var esperada := [
+		SubmarinoRio.TipoEnemigo.PIRATA,
+		SubmarinoRio.TipoEnemigo.PIRATA,
+		SubmarinoRio.TipoEnemigo.GOBLIN_ARQUERA,
+		SubmarinoRio.TipoEnemigo.IMP_EMBAJADOR,
+	]
+	assert_eq(submarino._cola_mezcla, esperada, "La cola debe respetar el orden por tipo")
+	assert_eq(submarino._total_oleada, 4, "El total debe ser la suma de la mezcla")
+	assert_eq(submarino._enemigos_restantes_por_spawnear, 4, "Los restantes deben cubrir la mezcla")
+
+
+## Sin cantidades, rige el modo clásico de un solo tipo
+func test_mezcla_vacia_usa_modo_clasico() -> void:
+	# Arrange & Act
+	var submarino := _crear_submarino_mezcla(0, 0, 0, 0, false)
+	submarino.tipo_enemigo = SubmarinoRio.TipoEnemigo.IMP
+	submarino.cantidad_enemigos = 3
+	_root_test.add_child(submarino)
+
+	# Assert: 3 imps del modo clásico
+	assert_eq(submarino._cola_mezcla.size(), 3, "Modo clásico: 3 en cola")
+	for tipo in submarino._cola_mezcla:
+		assert_eq(tipo, SubmarinoRio.TipoEnemigo.IMP, "Modo clásico: todo del tipo configurado")
+
+
+## Aleatorizar conserva la composición de la mezcla
+func test_mezcla_aleatoria_conserva_composicion() -> void:
+	# Arrange & Act
+	var submarino := _crear_submarino_mezcla(1, 1, 1, 1, true)
+	_root_test.add_child(submarino)
+
+	# Assert: mismo multiconjunto (orden libre)
+	var copia: Array = submarino._cola_mezcla.duplicate()
+	copia.sort()
+	assert_eq(copia, [0, 2, 3, 4], "Aleatoria debe conservar 1 imp, 1 pirata, 1 arquera y 1 embajador")
+
+
+## La mezcla despliega un pirata real embarcado en la plataforma
+func test_mezcla_spawnea_pirata_embarcado() -> void:
+	# Arrange
+	var submarino := _crear_submarino_mezcla(1, 0, 0, 0, false)
+	submarino.altura_emergido_y = 0.0
+	submarino.profundidad_sumergido = 0.0
+	submarino.velocidad_emerger = 50.0
+	submarino.intervalo_spawn = 0.0
+	_root_test.add_child(submarino)
+
+	# Act: emerger y spawnear
+	submarino.emerger()
+	submarino._process(0.1)
+	submarino._process(0.1)
+
+	# Assert: un PirataGoblin colgando del pivot
+	var piratas := []
+	for n in _root_test.find_children("*", "PirataGoblin", true, false):
+		if n is PirataGoblin:
+			piratas.append(n)
+	assert_eq(piratas.size(), 1, "Debe haberse spawneado 1 pirata de la mezcla")
+	assert_eq((piratas[0] as Node3D).get_parent(), submarino.pivot_flotacion, "El pirata debe embarcar en la plataforma")
+
+
+## La mezcla despliega un imp embajador que entra en combate
+func test_mezcla_spawnea_embajador_en_combate() -> void:
+	# Arrange
+	var submarino := _crear_submarino_mezcla(0, 1, 0, 0, false)
+	submarino.altura_emergido_y = 0.0
+	submarino.profundidad_sumergido = 0.0
+	submarino.velocidad_emerger = 50.0
+	submarino.intervalo_spawn = 0.0
+	_root_test.add_child(submarino)
+
+	# Act: emerger y spawnear
+	submarino.emerger()
+	submarino._process(0.1)
+	submarino._process(0.1)
+
+	# Assert: un ImpEstandarte embarcado
+	var embajador := _root_test.find_child("ImpEnemyEstandarte", true, false) as Node3D
+	if embajador == null:
+		for n in _root_test.find_children("*", "CharacterBody3D", true, false):
+			if n is ImpEstandarte:
+				embajador = n as Node3D
+				break
+	assert_not_null(embajador, "Debe haberse spawneado el embajador de la mezcla")
+	assert_eq(embajador.get_parent(), submarino.pivot_flotacion, "El embajador debe embarcar en la plataforma")
+
+	# Cleanup: fuera del after_each genérico
+	embajador.free()
+
+
+## Los enemigos (vivos y cadáveres) viajan embarcados en la plataforma para
+## seguir su vaivén y su hundimiento en vez de flotar en el aire.
+func test_enemigos_embarcados_siguen_plataforma() -> void:
+	# Arrange: submarino con 1 enemiga
+	var submarino: SubmarinoRio = SubmarinoScene.instantiate() as SubmarinoRio
+	submarino.altura_emergido_y = 0.0
+	submarino.profundidad_sumergido = 2.0
+	submarino.velocidad_emerger = 50.0
+	submarino.cantidad_enemigos = 1
+	submarino.intervalo_spawn = 0.0
+	submarino.activar_al_entrar_en_camara = false
+	submarino.canon_disparo_final = false
+	_root_test.add_child(submarino)
+
+	# Act: emerger y spawnear
+	submarino.emerger()
+	submarino._process(0.1)
+	submarino._process(0.1)
+	var enemigas := _root_test.find_children("*", "GoblinGirl", true, false)
+	assert_eq(enemigas.size(), 1, "Debe haberse spawneado 1 enemiga")
+	var enemiga := enemigas[0] as Node3D
+
+	# Assert: embarcada en el pivot de flotación, no en el nivel
+	assert_eq(enemiga.get_parent(), submarino.pivot_flotacion, "La enemiga debe colgar de PivotFlotacion")
+
+	# Act: mover la plataforma a mano (vaivén/hundimiento)
+	var y_antes: float = enemiga.global_position.y
+	submarino.pivot_flotacion.position.y += 0.5
+
+	# Assert: la enemiga sigue rígidamente a la plataforma
+	assert_almost_eq(enemiga.global_position.y - y_antes, 0.5, 0.05, "La enemiga debe subir con la plataforma")
+
+
 

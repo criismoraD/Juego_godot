@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://TEST_/Barco Combate Pirata/Barco Combate Pirata_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "MAT_BARCO_COMBATE_PIRATA"
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")
+emission_texture = ExtResource("1_tex")

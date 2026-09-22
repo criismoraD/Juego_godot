@@ -65,7 +65,7 @@ const HUMO_PISADAS_FRAMES_V: int = 1
 
 @export_category("Drops - Lonko")
 @export var power_up_explosivo_scene: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
-@export_range(0.0, 1.0, 0.01) var drop_chance_flecha_explosiva: float = 0.30  ## 30% de probabilidad de dropear power-up
+@export_range(0.0, 1.0, 0.01) var drop_chance_flecha_explosiva: float = 0.20  ## 20% de probabilidad de dropear power-up
 @export var municion_drop_jugador: int = 6  ## Su drop suma 6 al contador del jugador
 
 @export_category("Debug Tracking - Lonko")
@@ -99,6 +99,7 @@ var bow_anim_player: AnimationPlayer = null
 
 # Estado interno
 var _is_shooting: bool = false
+var _seq_disparo_id: int = 0  ## Generación de la secuencia de disparo vigente (anti-doble-ult por reentrada)
 var _has_released_arrow: bool = false
 var _is_taking_damage: bool = false
 var _is_invulnerable: bool = false
@@ -1104,6 +1105,14 @@ func _reset_camera_offset() -> void:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _iniciar_secuencia_disparo() -> void:
+	# Guarda anti-reentrada: _process_shooting corre cada frame y la cola de la
+	# secuencia (recuperación + pausa con awaits) dejaba _is_shooting en false,
+	# así dos secuencias convivían, calculaban el mismo tiro eléctrico y el ult
+	# salía duplicado. Solo una secuencia vigente a la vez.
+	if _is_shooting:
+		return
+	_seq_disparo_id += 1
+	var mi_seq: int = _seq_disparo_id
 	_is_shooting = true
 	_has_released_arrow = false
 	_correccion_idle_activa = false
@@ -1135,11 +1144,15 @@ func _iniciar_secuencia_disparo() -> void:
 		_reproducir_sonido_tensado_arco()
 
 	await get_tree().create_timer(tiempo_recarga_actual, false).timeout
+	if mi_seq != _seq_disparo_id:
+		return
 	_detener_vfx_carga_ult()
 	if current_state != State.SHOOTING or _is_taking_damage or not is_instance_valid(self):
 		_detener_temblor_pilar_ult(true)
 		if _apuntar_arriba:
 			_is_invulnerable = false
+		_apuntar_arriba = false
+		_is_shooting = false
 		return
 
 	# Capturar posición de spawn al final de RECARGA
@@ -1153,9 +1166,13 @@ func _iniciar_secuencia_disparo() -> void:
 	_play_bow_animation("ARCO_DISPARO")
 
 	await get_tree().create_timer(TIEMPO_LANZAR_FLECHA, false).timeout
+	if mi_seq != _seq_disparo_id:
+		return
 	if current_state != State.SHOOTING or _is_taking_damage or not is_instance_valid(self):
 		if _apuntar_arriba:
 			_is_invulnerable = false
+		_apuntar_arriba = false
+		_is_shooting = false
 		return
 
 	_disparar_proyectil()
@@ -1163,13 +1180,19 @@ func _iniciar_secuencia_disparo() -> void:
 	var tiempo_restante: float = max(0.05, TIEMPO_DISPARO - TIEMPO_LANZAR_FLECHA)
 	await get_tree().create_timer(tiempo_restante, false).timeout
 
+	if mi_seq != _seq_disparo_id:
+		return
 	if not is_instance_valid(self) or current_state != State.SHOOTING:
 		if _apuntar_arriba:
 			_is_invulnerable = false
+		_apuntar_arriba = false
+		_is_shooting = false
 		return
 
 	var era_ult: bool = _apuntar_arriba
-	_is_shooting = false
+	# _is_shooting se mantiene en true durante la cola (recuperación + pausa):
+	# liberarlo aquí permitía que _process_shooting arrancase una segunda
+	# secuencia duplicada del ult. Se libera justo antes de reencolar.
 	if _apuntar_arriba:
 		_is_invulnerable = false
 	_apuntar_arriba = false
@@ -1184,7 +1207,10 @@ func _iniciar_secuencia_disparo() -> void:
 			_play_animation("IDLE", 0.25, 1.0)
 			_play_bow_animation("ARCO_IDLE")
 
+		if mi_seq != _seq_disparo_id:
+			return
 		if not is_instance_valid(self) or current_state != State.SHOOTING:
+			_is_shooting = false
 			return
 
 		var tiempo_pausa: float = pausa_entre_disparos
@@ -1192,12 +1218,22 @@ func _iniciar_secuencia_disparo() -> void:
 			tiempo_pausa = maxf(0.35, pausa_entre_disparos - 0.55)
 
 		await get_tree().create_timer(tiempo_pausa, false).timeout
+		if mi_seq != _seq_disparo_id:
+			return
 		if not is_instance_valid(self) or current_state != State.SHOOTING:
+			_is_shooting = false
 			return
 		while solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara() and is_instance_valid(self) and current_state == State.SHOOTING and not _is_taking_damage and not _dormido_por_camara:
 			await get_tree().create_timer(0.2, false).timeout
+			if mi_seq != _seq_disparo_id:
+				return
 		if not _is_taking_damage and not _dormido_por_camara and is_instance_valid(self) and current_state == State.SHOOTING:
+			# Liberar y reencolar en el mismo frame (sin await entre medio):
+			# _process_shooting no puede colar una secuencia duplicada.
+			_is_shooting = false
 			_iniciar_secuencia_disparo()
+		else:
+			_is_shooting = false
 
 
 ## Transición suave y orgánica de retorno a IDLE tras disparar el ult especial al cielo.
@@ -2432,7 +2468,7 @@ func _reproducir_sonido_dano() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_dano_stream
-	player.volume_db = -5.0  # -2.5 dB previo -2.5 dB adicionales = -25% extra
+	player.volume_db = -9.0  ## Daño bien bajo (no es ult)
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:
@@ -2449,7 +2485,7 @@ func _reproducir_sonido_muerte() -> void:
 	var player := AudioStreamPlayer.new()
 	player.add_to_group("pausable_audio")
 	player.stream = sfx_muerte_stream
-	player.volume_db = -5.0  # -2.5 dB previo -2.5 dB adicionales = -25% extra
+	player.volume_db = -9.0  ## Muerte bien baja (no es ult)
 	player.bus = "Master"
 	var root := get_tree().current_scene
 	if root:

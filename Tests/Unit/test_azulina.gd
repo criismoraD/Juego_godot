@@ -1926,3 +1926,20 @@ func test_al_detenerse_queda_quieta_y_ataca() -> void:
 	# Assert: ya está atacando
 	assert_true(azulina._lanzando, "Tras la pausa inicial debe estar lanzando")
 	assert_true(String(azulina.anim_player.current_animation).contains("Ataque"), "Debe reproducir el ataque")
+
+
+func test_lanza_disolucion_sin_cambio_de_color() -> void:
+	# Arrange: lanza clavada con malla propia
+	var voladora := LanzaVoladora.new()
+	add_child_autofree(voladora)
+	var malla := MeshInstance3D.new()
+	malla.mesh = BoxMesh.new()
+	voladora.add_child(malla)
+
+	# Act: disolverse al clavarse
+	voladora.iniciar_disolucion(1.2)
+
+	# Assert: disolver con su apariencia, sin brillo de color
+	var mat := malla.material_override as ShaderMaterial
+	assert_not_null(mat, "Debe aplicar el shader de disolución")
+	assert_almost_eq(float(mat.get_shader_parameter("glow_intensity")), 0.0, 0.001, "Sin brillo: la lanza no debe cambiar de color")

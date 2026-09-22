@@ -16,8 +16,10 @@ func _ready() -> void:
 	_tiempo_para_disolver = 2.5
 
 
-func iniciar_disolucion(duracion: float = 1.2, _color_disolucion: Color = Color(0.2, 0.85, 0.2)) -> void:
-	super.iniciar_disolucion(duracion, COLOR_DISOLUCION_LANZA)
+func iniciar_disolucion(duracion: float = 1.2, _color_disolucion: Color = Color(0.2, 0.85, 0.2), con_efectos: bool = false) -> void:
+	# Sin brillo ni partículas de color: la lanza se disuelve con su textura
+	# original para no cambiar de color al clavarse.
+	super.iniciar_disolucion(duracion, COLOR_DISOLUCION_LANZA, con_efectos)
 
 
 func _physics_process(delta: float) -> void:

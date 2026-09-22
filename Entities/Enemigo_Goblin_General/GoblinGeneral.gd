@@ -50,7 +50,7 @@ const EnemyProjectileBaseRef = preload("res://System/Core/EnemyProjectileBase.gd
 
 @export_category("Drops")
 @export var power_up_fuego_rapido_scene: PackedScene = preload("res://Entities/Item_Fuego_Rapido/PowerUpFuegoRapido.tscn")
-@export_range(0.0, 1.0, 0.01) var probabilidad_drop_fuego_rapido: float = 0.05  ## 5% de probabilidad de drop de Fuego Rápido al morir
+@export_range(0.0, 1.0, 0.01) var probabilidad_drop_fuego_rapido: float = 0.03  ## 3% de probabilidad de drop de Fuego Rápido al morir
 
 @export_category("Efectos Muerte")
 @export var tamano_charco_sangre: Vector2 = Vector2(1.2, 1.2)

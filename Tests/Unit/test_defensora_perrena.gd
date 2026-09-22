@@ -1251,3 +1251,55 @@ func test_hacha_normal_perrena_si_rebota_con_aura() -> void:
 	# Act: el hacha normal sí es repelida por el aura activa
 	var repelido: bool = arquera.manejar_impacto_aura(hacha_norm)
 	assert_true(repelido, "El hacha normal de Perrena SÍ debe ser repelida por el aura activa")
+
+
+func _limpiar_estelas_hacha() -> void:
+	for n in get_tree().get_nodes_in_group("estela_hacha"):
+		if is_instance_valid(n):
+			n.free()
+
+
+func test_hacha_ult_deja_estela_morada() -> void:
+	# Arrange: hacha gigante del ult en vuelo
+	_limpiar_estelas_hacha()
+	var hacha_esp: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha_esp)
+	hacha_esp.global_position = Vector3(0.0, 5.0, 0.0)
+	hacha_esp.initialize(Vector3.RIGHT, 1.0, null, true, null)
+
+	# Act: 6 frames en vuelo
+	for i in range(6):
+		hacha_esp._physics_process(0.016)
+
+	# Assert: fantasmas morados con la forma del hacha
+	var fantasmas := get_tree().get_nodes_in_group("estela_hacha")
+	assert_gt(fantasmas.size(), 0, "El ult debe dejar estela")
+	var mat := (fantasmas[0] as MeshInstance3D).material_override as StandardMaterial3D
+	assert_not_null(mat, "El fantasma debe tener material propio")
+	assert_almost_eq(mat.albedo_color.r, 0.6, 0.05, "Tono morado R")
+	assert_almost_eq(mat.albedo_color.b, 1.0, 0.05, "Tono morado B")
+	assert_lte(mat.albedo_color.a, 0.35, "Transparente y sutil")
+
+	# Cleanup
+	_limpiar_estelas_hacha()
+	hacha_esp.free()
+
+
+func test_hacha_normal_no_deja_estela() -> void:
+	# Arrange: hacha normal en vuelo
+	_limpiar_estelas_hacha()
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	hacha.global_position = Vector3(0.0, 5.0, 0.0)
+	hacha.initialize(Vector3.RIGHT, 1.0, null, false, null)
+
+	# Act: 6 frames en vuelo
+	for i in range(6):
+		hacha._physics_process(0.016)
+
+	# Assert: la normal vuela limpia, sin fantasmas
+	assert_eq(get_tree().get_nodes_in_group("estela_hacha").size(), 0, "El hacha normal no debe dejar estela")
+
+	# Cleanup
+	_limpiar_estelas_hacha()
+	hacha.free()

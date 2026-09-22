@@ -27,7 +27,7 @@ const ELEV_FOGUEO_MAX_DEG: float = -4.0
 
 @export_category("Activación")
 @export var enemigos_minimos: int = 1  ## Cantidad mínima de enemigos hostiles para empezar a disparar
-@export var es_movil: bool = false  ## Defensora móvil asignada a plataformas (no refuerza escudos, suelta ballesta al morir)
+@export var es_movil: bool = false  ## Defensora móvil asignada a plataformas (refuerza escudos una vez apostada; suelta ballesta al morir)
 @export var es_mensajera: bool = false  ## Mensajera temporal que entrega items y se retira
 @export var plano_profundidad_z: float = 0.02  ## Plano Z prioritario frente a arqueras aliadas
 var en_despliegue: bool = false  ## Bloquea la FSM de combate y apuntado mientras camina o escala hacia su puesto
@@ -510,8 +510,19 @@ func probar_animacion_victoria() -> void:
 	celebrar_victoria()
 
 
+## REGLA de refuerzo: la mensajera nunca refuerza; las móviles solo cuando ya
+## están apostadas en su plataforma (en_despliegue == false). En marcha
+## (despliegue o retirada) no vinculan ni regeneran: su piso aún no es el final.
+func _puede_reforzar_escudo() -> bool:
+	if es_mensajera:
+		return false
+	if es_movil and en_despliegue:
+		return false
+	return true
+
+
 func _vincular_escudo_piso() -> void:
-	if es_movil or es_mensajera:
+	if not _puede_reforzar_escudo():
 		_escudo_piso_ref = null
 		_tiene_escudo_frente = false
 		return
@@ -1285,9 +1296,10 @@ func _spawnear_virote(spawn_pos: Vector3, dir: Vector3, speed: float):
 
 
 func _aplicar_efecto_escudo_piso():
-	if es_movil or es_mensajera:
+	if not _puede_reforzar_escudo():
 		return
-	# REGLA: las fijas solo refuerzan su escudo propio al frente y de su piso.
+	# REGLA: solo refuerzan su escudo propio al frente y de su piso
+	# (fijas y móviles ya apostadas; nunca la mensajera ni en marcha).
 	# Si la referencia actual ya no cumple (murió, fue reconstruida, quedó detrás
 	# o pertenece a otro piso), se descarta y se re-vincula solo dentro del piso.
 	if _escudo_piso_ref and is_instance_valid(_escudo_piso_ref) and (_escudo_piso_ref as Node).is_inside_tree():
@@ -1959,6 +1971,11 @@ func desplegar_a_plataforma(indice_plataforma: int, destino_x: float = NAN) -> v
 	es_movil = true
 	en_despliegue = true
 	plataforma_asignada = indice_plataforma
+	# Puesto nuevo: soltar el vínculo anterior para no reforzar ni regenerar
+	# el escudo de la plataforma abandonada con un marco obsoleto.
+	_escudo_piso_ref = null
+	_marco_escudo_es_real = false
+	_tiene_escudo_frente = false
 	vida_maxima = 2
 	health = 2
 	scale = Vector3(0.32, 0.32, 0.32)

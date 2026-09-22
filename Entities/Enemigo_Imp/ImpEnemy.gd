@@ -43,6 +43,9 @@ const FACTOR_DETENER_EMISION: float = 0.5
 static var sangre_morada: bool = true  ## Toggle rojo/morado para la sangre (morada por defecto)
 # === REFERENCIAS ESPECÍFICAS ===
 var imp_arrow_scene = preload("res://Entities/Proyectil_Tridente_Imp/ImpTrident.tscn")
+var sfx_lanzamiento: String = "trident_shot"  ## Clave en AudioManager al lanzar (el Pirata Goblin usa la espada)
+var sfx_muerte: String = "imp_death"  ## Voz de muerte (el Pirata Goblin usa la suya propia)
+var sfx_muerte_explosion: String = "explosion_muerte"  ## Estallido que acompaña a la muerte normal ("" para silenciarlo)
 var material_imp: Material = preload("res://Entities/Enemigo_Imp/MAT_IMP.tres")
 var is_throwing: bool = false  ## True durante la animación de lanzar
 var has_thrown: bool = false  ## True después de lanzar en este ciclo
@@ -203,9 +206,11 @@ func _on_state_dying():
 		return
 
 	super._on_state_dying()
-	# Sonido de muerte del Imp + explosión
-	AudioManager.play_sfx("imp_death")
-	AudioManager.play_sfx("explosion_muerte")
+	# Sonido de muerte + explosión (claves overridables por variante, ej. Pirata Goblin)
+	if sfx_muerte != "":
+		AudioManager.play_sfx(sfx_muerte)
+	if sfx_muerte_explosion != "" and sfx_muerte_explosion != sfx_muerte:
+		AudioManager.play_sfx(sfx_muerte_explosion)
 
 	# === ANIMACIÓN DE MUERTE ALEATORIA ===
 	var death_anims = ["IMP_MUERTE01", "IMP_MUERTE02"]
@@ -244,7 +249,8 @@ func _ejecutar_desmembramiento_explosivo() -> void:
 		model.visible = false
 
 	# 2. Audio + sangre (mismo efecto de sangre que el Goblin ballestero al explotar)
-	AudioManager.play_sfx("explosion_muerte")
+	if sfx_muerte_explosion != "":
+		AudioManager.play_sfx(sfx_muerte_explosion)
 	AudioManager.play_sfx("sangre_splash")
 	_spawn_sangre_animada(global_position)
 	var blood_modulate: Color = Color(0.85, 0.3, 1.0, 0.95) if sangre_morada else Color(1.0, 1.0, 1.0, 0.95)
@@ -542,8 +548,9 @@ func _throw_projectile():
 	if not imp_arrow_scene:
 		return
 
-	# Sonido de lanzamiento del tridente
-	AudioManager.play_sfx("trident_shot")
+	# Sonido de lanzamiento (tridente por defecto, espada en el Pirata Goblin)
+	if sfx_lanzamiento != "":
+		AudioManager.play_sfx(sfx_lanzamiento)
 
 	if not player_ref:
 		player_ref = get_tree().get_first_node_in_group("player")

@@ -197,7 +197,7 @@ func test_probabilidades_drop_lonko_y_goblin():
 	add_child_autofree(goblin)
 
 	# Assert
-	assert_eq(lonko.drop_chance_flecha_explosiva, 0.30, "La Arquera Lonko debe tener 30% de probabilidad de drop")
+	assert_eq(lonko.drop_chance_flecha_explosiva, 0.20, "La Arquera Lonko debe tener 20% de probabilidad de drop")
 	assert_eq(goblin.drop_chance_flecha_explosiva, 0.05, "El Goblin Ballestero debe tener 5% de probabilidad de drop")
 	assert_not_null(lonko.power_up_explosivo_scene, "Lonko debe tener asignada la escena del power-up")
 

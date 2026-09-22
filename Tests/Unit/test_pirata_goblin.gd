@@ -133,6 +133,209 @@ func test_disparo_gira_modelo_y_demas_anims_restauran_base() -> void:
 	assert_almost_eq(modelo.rotation.y, yaw_base, 0.001, "CAMINAR debe mantener la base sin girar")
 
 
+func test_pirata_dispara_espada_en_vez_de_tridente() -> void:
+	# Arrange & Act
+	var pirata := await _crear_pirata()
+
+	# Assert: el proyectil configurado es la espada pirata
+	assert_not_null(pirata.imp_arrow_scene, "Debe tener escena de proyectil configurada")
+	var espada := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
+	assert_not_null(espada, "El proyectil del pirata debe instanciar EspadaPirata")
+	assert_true(espada is ImpTridentProjectile, "La espada debe ser compatible con el pool/cast del tridente del Imp")
+	espada.free()
+
+
+func test_pirata_usa_sonido_lanzar_espada_al_atacar() -> void:
+	# Arrange & Act
+	var pirata := await _crear_pirata()
+
+	# Assert: el ataque suena a espada, no a tridente
+	assert_eq(pirata.sfx_lanzamiento, "lanzar_espada_pirata", "El pirata debe lanzar con sonido de espada")
+	assert_true(ResourceLoader.exists("res://TEST_/lanzar espada pirata.mp3"), "Debe existir el audio de lanzar espada")
+
+
+func test_pistola_usa_sonido_disparo_propio() -> void:
+	# Arrange
+	var am := get_tree().root.get_node_or_null("AudioManager")
+	assert_not_null(am, "Debe existir el AudioManager autoload en tests")
+
+	# Assert: clave registrada con el mp3 de la pistola
+	assert_true(am.sfx_streams.has("disparo_pistola_pirata_gob"), "AudioManager debe registrar el disparo de pistola pirata")
+	assert_true(ResourceLoader.exists("res://TEST_/disparo pistola pirata gob.mp3"), "Debe existir el audio del pistoletazo")
+
+
+func test_espada_gira_rapido_en_vuelo_y_lento_al_caer() -> void:
+	# Arrange: espada en vuelo ascendente
+	var pirata := await _crear_pirata()
+	var espada := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
+	_root_test.add_child(espada)
+	espada.global_position = Vector3(0.0, 5.0, 0.0)
+	espada.initialize(Vector3(1.0, 0.5, 0.0).normalized(), 1.0)
+	var modelo := espada.get_node_or_null("EspadaModel") as Node3D
+	assert_not_null(modelo, "Debe existir el nodo EspadaModel")
+
+	# Act: 10 frames en vuelo
+	var z0: float = modelo.rotation.z
+	for i in range(10):
+		espada._physics_process(0.016)
+	var giro_vuelo: float = absf(modelo.rotation.z - z0)
+
+	# Assert: giro rápido como el hacha (16 rad/s * 0.16s ≈ 2.56 rad)
+	assert_gt(giro_vuelo, 1.5, "En vuelo la espada debe girar rápido como el hacha")
+
+	# Act: 40 frames cayendo (direction.y negativa)
+	espada.direction.y = -5.0
+	for i in range(40):
+		espada._physics_process(0.016)
+
+	# Assert: cae siempre con la punta hacia abajo (+X -> -Y) y estable
+	assert_almost_eq(modelo.rotation.z, -PI * 0.5, 0.15, "Cayendo debe orientarse con la punta hacia abajo")
+	var zf: float = modelo.rotation.z
+	for i in range(10):
+		espada._physics_process(0.016)
+	assert_almost_eq(modelo.rotation.z, zf, 0.05, "Ya orientada no debe seguir girando")
+
+
+func _contar_proyectiles() -> Dictionary:
+	var cuenta := {"bala": 0, "espada": 0}
+	for n in get_tree().root.find_children("*", "Area3D", true, false):
+		if n is BalaCanonProjectile:
+			cuenta["bala"] += 1
+		elif n is EspadaPirataProjectile:
+			cuenta["espada"] += 1
+	return cuenta
+
+
+func _crear_jugador_falso() -> Node3D:
+	var player := Node3D.new()
+	player.name = "PlayerFalsoPirata"
+	player.add_to_group("player")
+	get_tree().root.add_child(player)
+	return player
+
+
+func _liberar_jugador_falso(player: Node) -> void:
+	if is_instance_valid(player):
+		player.remove_from_group("player")
+		player.free()
+
+
+func test_disparo_pistola_lanza_bala_canon_recta() -> void:
+	# Arrange: pirata + jugadora a la izquierda
+	var pirata := await _crear_pirata()
+	var player := _crear_jugador_falso()
+	player.global_position = pirata.global_position + Vector3(-5.0, 0.0, 0.0)
+	pirata.player_ref = player
+	var antes: Dictionary = _contar_proyectiles()
+
+	# Act: ataque Disparo (LANZAR2 = pistola pirata)
+	pirata.current_throw_anim = "LANZAR2"
+	pirata._throw_projectile()
+
+	# Assert: aparece una bala de cañón y ninguna espada extra
+	var despues: Dictionary = _contar_proyectiles()
+	assert_eq(despues["bala"], antes["bala"] + 1, "Disparo debe lanzar una bala de cañón")
+	assert_eq(despues["espada"], antes["espada"], "Disparo no debe arrojar espadas")
+
+	# Act & Assert: la bala vuela en línea recta (direction.y no decae)
+	var bala := _ultima_bala()
+	assert_not_null(bala, "Debe existir la bala disparada")
+	var dy0: float = bala.direction.y
+	for i in range(5):
+		bala._physics_process(0.016)
+	assert_almost_eq(bala.direction.y, dy0, 0.001, "La bala debe volar en línea recta, sin parábola")
+
+	_liberar_jugador_falso(player)
+
+
+func test_arrojar_lanza_espada_no_bala() -> void:
+	# Arrange: pirata + jugadora a la izquierda
+	var pirata := await _crear_pirata()
+	var player := _crear_jugador_falso()
+	player.global_position = pirata.global_position + Vector3(-5.0, 0.0, 0.0)
+	pirata.player_ref = player
+	var antes: Dictionary = _contar_proyectiles()
+
+	# Act: ataque arrojar (LANZAR01 = espada)
+	pirata.current_throw_anim = "LANZAR01"
+	pirata._throw_projectile()
+
+	# Assert: aparece una espada y ninguna bala extra
+	var despues: Dictionary = _contar_proyectiles()
+	assert_eq(despues["espada"], antes["espada"] + 1, "Arrojar debe lanzar la espada")
+	assert_eq(despues["bala"], antes["bala"], "Arrojar no debe disparar balas")
+
+	_liberar_jugador_falso(player)
+
+
+func _ultima_bala() -> BalaCanonProjectile:
+	var ultima: BalaCanonProjectile = null
+	for n in get_tree().root.find_children("*", "Area3D", true, false):
+		if n is BalaCanonProjectile:
+			ultima = n as BalaCanonProjectile
+	return ultima
+
+
+func test_pistola_fijada_a_mano_izquierda_y_oculta() -> void:
+	# Arrange & Act
+	var pirata := await _crear_pirata()
+	var pistola := pirata._buscar_pistola()
+
+	# Assert: existe, cuelga del hueso de la mano izquierda y nace oculta
+	assert_not_null(pistola, "Debe existir la pistola colocada en el editor")
+	var attach := pistola.get_parent()
+	assert_true(attach is BoneAttachment3D, "La pistola debe seguir a la mano vía BoneAttachment3D")
+	var skel := pirata.find_child("Skeleton3D", true, false) as Skeleton3D
+	assert_not_null(skel, "Debe existir el esqueleto")
+	var nombre_hueso: String = skel.get_bone_name((attach as BoneAttachment3D).bone_idx)
+	assert_true("LeftHand" in nombre_hueso, "La pistola debe ir en la mano izquierda, no en: " + nombre_hueso)
+	assert_false(pistola.visible, "La pistola nace oculta")
+
+
+func test_pistola_solo_visible_en_disparo() -> void:
+	# Arrange
+	var pirata := await _crear_pirata()
+	var pistola := pirata._buscar_pistola()
+	assert_not_null(pistola, "Debe existir la pistola")
+	pirata.throw_anim_duration = 5.0
+
+	# Act & Assert: al iniciar el Disparo aún está en funda
+	pirata._play_animation("LANZAR2")
+	pirata.is_throwing = true
+	pirata.current_throw_anim = "LANZAR2"
+	pirata.throw_anim_timer = 0.0
+	pirata._process(0.016)
+	assert_false(pistola.visible, "Al iniciar el Disparo la pistola sigue en funda")
+
+	# Act & Assert: desde su frame sale de la funda
+	pirata.throw_anim_timer = 1.0
+	pirata._process(0.016)
+	assert_true(pistola.visible, "Desde el frame 0.9 la pistola debe verse")
+
+	# Act & Assert: otras animaciones la ocultan
+	pirata._play_animation("LANZAR01")
+	assert_false(pistola.visible, "La pistola debe ocultarse al arrojar la espada")
+	pirata._play_animation("IDLE")
+	assert_false(pistola.visible, "La pistola debe ocultarse en IDLE")
+	pirata._play_animation("IMP_MUERTE01")
+	assert_false(pistola.visible, "La pistola debe ocultarse al morir")
+
+
+func test_pistola_con_textura_propia() -> void:
+	# Arrange & Act
+	var pirata := await _crear_pirata()
+	var pistola := pirata._buscar_pistola()
+	assert_not_null(pistola, "Debe existir la pistola")
+
+	# Assert: alguna malla con el material de la pistola
+	var con_material := false
+	for m in pistola.find_children("*", "MeshInstance3D", true, false):
+		if (m as MeshInstance3D).material_override == PirataGoblin.MAT_PISTOLA:
+			con_material = true
+			break
+	assert_true(con_material, "La pistola debe usar MAT_PISTOLA_PIRATA")
+
+
 func test_disparo_apunta_hacia_el_jugador() -> void:
 	# Arrange: pirata en throw de Disparo, sin compensación, jugador ficticio a +Z
 	var pirata := await _crear_pirata()
@@ -159,3 +362,262 @@ func test_disparo_apunta_hacia_el_jugador() -> void:
 	# Cleanup: el jugador falso no debe fugarse a otros tests
 	player_falso.remove_from_group("player")
 	player_falso.free()
+
+
+func test_attachment_de_escena_es_usado_y_valido() -> void:
+	# Arrange & Act
+	var pirata := await _crear_pirata()
+	var skel := pirata.find_child("Skeleton3D", true, false) as Skeleton3D
+	assert_not_null(skel, "Debe existir el esqueleto")
+
+	# Assert: el PistolaAttachment de la escena se usa y apunta a un hueso válido
+	var attach := pirata._buscar_attachment_pistola(skel)
+	assert_not_null(attach, "Debe existir PistolaAttachment en la escena")
+	assert_true(attach.bone_idx >= 0 and attach.bone_idx < skel.get_bone_count(), "El attachment debe apuntar a un hueso válido")
+
+
+func test_disparo_genera_vfx_reducido_en_punta() -> void:
+	# Arrange: pirata + jugadora a la izquierda (fogonazo VFXHit_01 reducido)
+	var pirata := await _crear_pirata()
+	var player := _crear_jugador_falso()
+	player.global_position = pirata.global_position + Vector3(-5.0, 0.0, 0.0)
+	pirata.player_ref = player
+	var pistola := pirata._buscar_pistola()
+	assert_not_null(pistola, "Debe existir la pistola")
+	assert_lte(pirata.escala_vfx_impacto, 2.0, "Fogonazo visible sin tapar al pirata")
+	var antes: int = _contar_vfx_impacto()
+
+	# Act: pistoletazo
+	pirata.current_throw_anim = "LANZAR2"
+	pirata._throw_projectile()
+
+	# Assert: nace un impacto reducido junto a la punta
+	assert_eq(_contar_vfx_impacto(), antes + 1, "El pistoletazo debe generar VFXHit_01")
+	var vfx := _ultimo_vfx_impacto()
+	assert_not_null(vfx, "Debe existir el impacto generado")
+	assert_lte(vfx.scale.x, 2.0, "El efecto debe ser version contenida")
+	for n in vfx.find_children("*", "GPUParticles3D", true, false):
+		var gpu := n as GPUParticles3D
+		assert_true(gpu.local_coords, "Coordenadas locales para que la escala aplique: " + (n as Node).name)
+		var pm := gpu.process_material as ParticleProcessMaterial
+		if pm:
+			assert_lt(absf(pm.initial_velocity_max), 1.0, "Velocidades reducidas a version diminuta: " + (n as Node).name)
+	var punta: Vector3 = pistola.to_global(pirata.punta_pistola_local)
+	assert_lt(vfx.global_position.distance_to(punta), 0.5, "El efecto debe nacer en la punta de la pistola")
+
+	# Cleanup
+	if is_instance_valid(vfx):
+		vfx.queue_free()
+	_liberar_jugador_falso(player)
+
+
+func test_humo_disparo_flipbook_y_autodestruccion() -> void:
+	# Arrange & Act: humo Smoke VFX 2 (fondo transparente, sin cuadrados)
+	var humo := HumoDisparoPirata.new()
+	_root_test.add_child(humo)
+	await get_tree().process_frame
+
+	# Assert: 13 cuadros 64x64, sin loop, sin material que tape
+	assert_not_null(humo.sprite_frames, "Debe construir sus SpriteFrames")
+	assert_true(humo.sprite_frames.has_animation("humo"), "Debe tener animación humo")
+	assert_eq(humo.sprite_frames.get_frame_count("humo"), 13, "Smoke VFX 2 trae 13 cuadros")
+	assert_false(humo.sprite_frames.get_animation_loop("humo"), "Un solo disparo: sin loop")
+	assert_null(humo.material_override, "Sin material: evita cuadrados blancos/negros")
+
+	# Act & Assert: al terminar se libera solo (13 cuadros a 24fps ≈ 0.54s)
+	await get_tree().create_timer(1.5).timeout
+	assert_false(is_instance_valid(humo) and humo.is_inside_tree(), "El humo debe liberarse al terminar")
+
+
+func test_disparo_genera_humo_en_punta_de_pistola() -> void:
+	# Arrange: pirata + jugadora a la izquierda
+	var pirata := await _crear_pirata()
+	var player := _crear_jugador_falso()
+	player.global_position = pirata.global_position + Vector3(-5.0, 0.0, 0.0)
+	pirata.player_ref = player
+	var pistola := pirata._buscar_pistola()
+	assert_not_null(pistola, "Debe existir la pistola")
+	var humos_antes: int = _contar_humos_disparo()
+
+	# Act: pistoletazo
+	pirata.current_throw_anim = "LANZAR2"
+	pirata._throw_projectile()
+
+	# Assert: nace un humo junto a la punta de la pistola
+	assert_eq(_contar_humos_disparo(), humos_antes + 1, "El pistoletazo debe generar el humo")
+	var humo := _ultimo_humo_disparo()
+	assert_not_null(humo, "Debe existir el humo generado")
+	var punta: Vector3 = pistola.to_global(pirata.punta_pistola_local)
+	assert_lt(humo.global_position.distance_to(punta), 0.5, "El humo debe nacer en la punta de la pistola")
+
+	_liberar_jugador_falso(player)
+
+
+func _contar_humos_disparo() -> int:
+	var total := 0
+	for n in get_tree().root.find_children("*", "AnimatedSprite3D", true, false):
+		if n is HumoDisparoPirata:
+			total += 1
+	return total
+
+
+func _ultimo_humo_disparo() -> HumoDisparoPirata:
+	var ultimo: HumoDisparoPirata = null
+	for n in get_tree().root.find_children("*", "AnimatedSprite3D", true, false):
+		if n is HumoDisparoPirata:
+			ultimo = n as HumoDisparoPirata
+	return ultimo
+
+
+func _contar_vfx_impacto() -> int:
+	var total := 0
+	for n in get_tree().root.find_children("*", "Node3D", true, false):
+		if n is VFXImpactBB:
+			total += 1
+	return total
+
+
+func _ultimo_vfx_impacto() -> VFXImpactBB:
+	var ultimo: VFXImpactBB = null
+	for n in get_tree().root.find_children("*", "Node3D", true, false):
+		if n is VFXImpactBB:
+			ultimo = n as VFXImpactBB
+	return ultimo
+
+
+func test_forzar_pistola_visible_debug() -> void:
+	# Arrange
+	var pirata := await _crear_pirata()
+	var pistola := pirata._buscar_pistola()
+	assert_not_null(pistola, "Debe existir la pistola")
+
+	# Act: forzar visibilidad fuera de timing
+	pirata.forzar_pistola_visible = true
+	pirata._play_animation("IDLE")
+	pirata._process(0.016)
+
+	# Assert: se muestra aunque no sea Disparo
+	assert_true(pistola.visible, "Forzada debe verse incluso en IDLE")
+	pirata.forzar_pistola_visible = false
+
+
+func test_pistola_escala_visible_en_mano() -> void:
+	# Arrange: la pistola nativa mide ~1.0m pero cuelga de un esqueleto con
+	# Armature a escala 0.01 bajo un CharacterBody a 0.8 (factor 0.008).
+	# Una escala local 0.01 la dejaba en 0.08mm (invisible en camara).
+	var pirata := await _crear_pirata()
+	await get_tree().process_frame
+	var pistola := pirata._buscar_pistola()
+	assert_not_null(pistola, "Debe existir la pistola")
+
+	# Act: tamano mundial = AABB local de la malla * escala global acumulada
+	var escala_global: Vector3 = pistola.global_transform.basis.get_scale()
+	var largo_mundo_max: float = 0.0
+	for m in pistola.find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		if mi == null or mi.mesh == null:
+			continue
+		var mundo: Vector3 = mi.mesh.get_aabb().size * escala_global
+		largo_mundo_max = maxf(largo_mundo_max, mundo.x)
+		largo_mundo_max = maxf(largo_mundo_max, mundo.y)
+		largo_mundo_max = maxf(largo_mundo_max, mundo.z)
+
+	# Assert: legible en camara (15cm-60cm) sin superar al goblin (~56cm)
+	assert_gt(largo_mundo_max, 0.15, "La pistola debe medir mas de 15cm en el mundo")
+	assert_lt(largo_mundo_max, 0.60, "La pistola no debe superar el tamano del goblin")
+
+
+func _limpiar_estelas() -> void:
+	for n in get_tree().get_nodes_in_group("estela_espada"):
+		if is_instance_valid(n):
+			n.free()
+
+
+func test_espada_deja_estela_morada_sutil() -> void:
+	# Arrange: espada en vuelo
+	_limpiar_estelas()
+	var pirata := await _crear_pirata()
+	var espada := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
+	_root_test.add_child(espada)
+	espada.global_position = Vector3(0.0, 5.0, 0.0)
+	espada.initialize(Vector3(1.0, 0.3, 0.0).normalized(), 1.0)
+
+	# Act: 6 frames en vuelo
+	for i in range(6):
+		espada._physics_process(0.016)
+
+	# Assert: fantasmas con la forma (malla) en morado transparente y sutil
+	var fantasmas := get_tree().get_nodes_in_group("estela_espada")
+	assert_gt(fantasmas.size(), 0, "Volando debe dejar estela")
+	var mat := (fantasmas[0] as MeshInstance3D).material_override as StandardMaterial3D
+	assert_not_null(mat, "El fantasma debe tener material propio")
+	assert_almost_eq(mat.albedo_color.r, 0.6, 0.05, "Tono morado R")
+	assert_almost_eq(mat.albedo_color.g, 0.2, 0.05, "Tono morado G")
+	assert_almost_eq(mat.albedo_color.b, 1.0, 0.05, "Tono morado B")
+	assert_lte(mat.albedo_color.a, 0.35, "Transparente y sutil")
+
+	# Cleanup
+	_limpiar_estelas()
+	espada.free()
+
+
+func test_estela_se_detiene_al_clavar() -> void:
+	# Arrange: espada en vuelo con estela activa
+	_limpiar_estelas()
+	var pirata := await _crear_pirata()
+	var espada := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
+	_root_test.add_child(espada)
+	espada.global_position = Vector3(0.0, 5.0, 0.0)
+	espada.initialize(Vector3(1.0, 0.0, 0.0).normalized(), 1.0)
+	for i in range(6):
+		espada._physics_process(0.016)
+	var antes: int = get_tree().get_nodes_in_group("estela_espada").size()
+	assert_gt(antes, 0, "Debe haber estela en vuelo")
+
+	# Act: se clava y sigue pasando el tiempo sin moverse
+	espada.is_stuck = true
+	for i in range(6):
+		espada._physics_process(0.016)
+
+	# Assert: no nacen más fantasmas (los viejos siguen su fade sin tiempo real)
+	assert_eq(get_tree().get_nodes_in_group("estela_espada").size(), antes, "Clavada no debe generar más estela")
+
+	# Cleanup
+	_limpiar_estelas()
+	espada.free()
+
+
+func test_espada_cae_mas_lento_con_factor_gravedad() -> void:
+	# Arrange: dos espadas iguales, una con gravedad completa y otra reducida
+	var pirata := await _crear_pirata()
+	var rapida := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
+	var lenta := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
+	_root_test.add_child(rapida)
+	_root_test.add_child(lenta)
+	rapida.factor_gravedad = 1.0
+	assert_almost_eq(lenta.factor_gravedad, 0.6, 0.001, "La espada debe caer con gravedad reducida por defecto")
+	rapida.global_position = Vector3(0.0, 5.0, 0.0)
+	lenta.global_position = Vector3(0.0, 5.0, 0.0)
+	rapida.initialize(Vector3(1.0, -0.2, 0.0).normalized(), 1.0)
+	lenta.initialize(Vector3(1.0, -0.2, 0.0).normalized(), 1.0)
+
+	# Act: 40 frames de caída
+	for i in range(40):
+		rapida._physics_process(0.016)
+		lenta._physics_process(0.016)
+
+	# Assert: la de gravedad reducida permanece más tiempo en el aire (más alta)
+	assert_gt(lenta.global_position.y, rapida.global_position.y, "Con factor 0.6 debe caer más lento")
+
+	# Cleanup
+	rapida.free()
+	lenta.free()
+
+
+func test_pirata_cadencia_mas_baja_que_imp() -> void:
+	# Arrange & Act
+	var pirata := await _crear_pirata()
+
+	# Assert: pausas mínimas garantizadas (respeta ajustes mayores del editor)
+	assert_gte(pirata.pausa_idle_min, 2.0, "Pausa mínima al menos 2.0s")
+	assert_gte(pirata.pausa_idle_max, 3.5, "Pausa máxima al menos 3.5s")

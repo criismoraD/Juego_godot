@@ -320,3 +320,88 @@ func test_icono_mensajera_particulas_moradas_al_activar():
 		var pmat = found_particles.process_material as ParticleProcessMaterial
 		assert_not_null(pmat.color_ramp, "Las partículas deben tener rampa de color morada")
 	player.free()
+
+
+func _crear_escudo_frente() -> Node3D:
+	var escena_escudo: PackedScene = load("res://Entities/Ambiente_Escudo/Escudo.tscn")
+	var escudo := escena_escudo.instantiate() as Node3D
+	get_tree().root.add_child(escudo)
+	escudo.global_position = Vector3(0.55, 0.0, 0.0)
+	return escudo
+
+
+func _crear_movil_apostada() -> AllyBallestera:
+	# Arrange: móvil ya apostada en plataforma (despliegue finalizado).
+	_ballestera = AllyBallesteraScript.new()
+	_agregar_animacion_minima(_ballestera)
+	_ballestera.es_movil = true
+	_ballestera.en_despliegue = false
+	get_tree().root.add_child(_ballestera)
+	_ballestera.global_position = Vector3(0, 0, 0)
+	return _ballestera
+
+
+func test_ballestera_movil_apostada_vincula_y_refuerza_escudo():
+	# Arrange
+	var movil := _crear_movil_apostada()
+	var escudo := _crear_escudo_frente()
+
+	# Act
+	movil._vincular_escudo_piso()
+	movil.fase_agachada = true
+	movil.disparos_en_fase = 0
+	movil._aplicar_efecto_escudo_piso()
+
+	# Assert: como una fija, refuerza el escudo propio al frente del mismo piso.
+	assert_eq(movil._escudo_piso_ref, escudo, "La móvil apostada debe vincular su escudo")
+	assert_true(escudo.get("es_metalico"), "El escudo debe quedar metálico")
+	assert_eq(escudo.get("aguante_metalico"), 2, "Aguante metálico = 2")
+
+	escudo.queue_free()
+
+
+func test_ballestera_movil_en_marcha_no_refuerza():
+	# Arrange: móvil aún caminando/escalando hacia su puesto.
+	_ballestera = AllyBallesteraScript.new()
+	_agregar_animacion_minima(_ballestera)
+	_ballestera.es_movil = true
+	_ballestera.en_despliegue = true
+	get_tree().root.add_child(_ballestera)
+	_ballestera.global_position = Vector3(0, 0, 0)
+	var escudo := _crear_escudo_frente()
+
+	# Act
+	_ballestera._vincular_escudo_piso()
+	_ballestera.fase_agachada = true
+	_ballestera.disparos_en_fase = 0
+	_ballestera._aplicar_efecto_escudo_piso()
+
+	# Assert: en marcha no vincula ni metaliza (su piso aún no es el final).
+	assert_null(_ballestera._escudo_piso_ref, "En marcha no debe vincular escudo")
+	assert_false(escudo.get("es_metalico"), "En marcha no debe metalizar")
+
+	escudo.queue_free()
+
+
+func test_ballestera_movil_apostada_regenera_escudo_destruido():
+	# Arrange
+	var movil := _crear_movil_apostada()
+	var escudo := _crear_escudo_frente()
+	movil._vincular_escudo_piso()
+	assert_eq(movil._escudo_piso_ref, escudo, "Precondición: escudo vinculado")
+
+	# Act: destruirlo y aplicar la habilidad (vía exacta del juego).
+	escudo.queue_free()
+	await get_tree().process_frame
+	movil.fase_agachada = true
+	movil.disparos_en_fase = 0
+	movil._aplicar_efecto_escudo_piso()
+
+	# Assert: regenera con 1 de vida y refuerzo a 1.
+	var nuevo: Node = movil._escudo_piso_ref
+	assert_not_null(nuevo, "La móvil apostada debe regenerar su escudo destruido")
+	if nuevo and is_instance_valid(nuevo):
+		assert_eq(nuevo.get("golpes_para_destruir"), 1, "Reconstruido con 1 de vida")
+		assert_true(nuevo.get("es_metalico"), "Reconstruido con refuerzo metálico")
+		assert_eq(nuevo.get("aguante_metalico"), 1, "Reconstruido con 1 de refuerzo")
+		nuevo.queue_free()

@@ -180,6 +180,10 @@ func _load_all_sounds():
 	]
 
 	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]
+	sfx_streams["lanzar_espada_pirata"] = [load("res://TEST_/lanzar espada pirata.mp3")]
+	sfx_streams["disparo_pistola_pirata_gob"] = [load("res://TEST_/disparo pistola pirata gob.mp3")]
+	if ResourceLoader.exists("res://TEST_/Muerte pirata goblin.mp3"):
+		sfx_streams["muerte_pirata_goblin"] = [load("res://TEST_/Muerte pirata goblin.mp3")]
 
 	sfx_streams["splash_agua"] = [load("res://TEST_/splash sonido.mp3")]
 	sfx_streams["girar_lanza"] = [load("res://TEST_/girar lanza azulina.mp3")]
@@ -483,6 +487,9 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: 
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 3.5
 		elif sound_name == "imp_death":
 			# Imp muerte al doble de volumen
+			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 6.0
+		elif sound_name == "muerte_pirata_goblin":
+			# Voz de muerte de la pirata goblin, al mismo nivel que el Imp
 			volume_to_use = _get_specific_volume_db(enemy_damage_volume) + 6.0
 		elif sound_name == "gargola_death":
 			# Muerte de gárgola reducida un 30% (-3.1 dB)

@@ -25,7 +25,9 @@ signal canon_disparo_final_realizado
 enum TipoEnemigo {
 	IMP,
 	PIRATA_GOBLIN,
-	GOBLIN_ARQUERA
+	GOBLIN_ARQUERA,
+	PIRATA,
+	IMP_EMBAJADOR
 }
 
 enum State {
@@ -41,6 +43,8 @@ enum State {
 const ESCENA_IMP: String = "res://Entities/Enemigo_Imp/ImpEnemy.tscn"
 const ESCENA_GOBLIN_ARQUERA: String = "res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn"
 const ESCENA_GOBLIN_BASE: String = "res://Entities/Enemigo_Goblin/Goblin.tscn"
+const ESCENA_PIRATA: String = "res://Entities/Enemigo_Pirata_Goblin/PirataGoblin.tscn"
+const ESCENA_IMP_EMBAJADOR: String = "res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn"
 const ESCENA_FLECHA_LONKO: PackedScene = preload("res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.tscn")
 const SFX_CANON_DISPARO: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION01.mp3")
 const SFX_CANON_ENGRANAJE: AudioStream = preload("res://TEST_/Engranaje cañon.mp3")
@@ -65,6 +69,15 @@ const TIEMPO_DETENCION_PREVIO_ATAQUE: float = 0.15
 
 ## Escena personalizada opcional para Pirata Goblin cuando esté lista
 @export var escena_pirata_custom: PackedScene = null
+
+@export_category("Mezcla de Enemigos")
+## Cantidades por tipo para mezclar el despliegue (ej: 3 piratas + 1 embajador + 1 arquera).
+## Si todas están en 0 se usa el modo clásico (tipo_enemigo x cantidad_enemigos).
+@export_range(0, 6, 1) var cantidad_imp: int = 0
+@export_range(0, 6, 1) var cantidad_pirata: int = 0
+@export_range(0, 6, 1) var cantidad_goblin_arquera: int = 0
+@export_range(0, 6, 1) var cantidad_imp_embajador: int = 0
+@export var mezclar_orden_aleatorio: bool = true  ## Si false, salen agrupados por tipo en orden de la lista
 
 @export_category("Inmersión y Emergencia")
 ## Si está activo, el submarino emergerá exactamente a la altura Y en la que lo coloques en el editor.
@@ -157,6 +170,8 @@ var _canon_escala_base: Vector3 = Vector3.ONE  ## Escala del cañón tal como qu
 var _boca_canon: Marker3D = null  ## Punto de salida del ult en la punta del cañón (creado por código)
 var _boca_canon_manual: bool = false  ## True si BocaCanon ya venía en la escena: se respeta tal cual, sin reposicionar
 var _tween_canon: Tween = null
+var _cola_mezcla: Array = []  ## Cola de TipoEnemigo a desplegar (mezcla o modo clásico)
+var _total_oleada: int = 0  ## Total de enemigos del despliegue actual (para repartir puestos)
 
 # === ONREADY ===
 @onready var pivot_flotacion: Node3D = find_child("PivotFlotacion", true, false) as Node3D
@@ -177,9 +192,31 @@ func _ready() -> void:
 		return
 	_configurar_altura_inicial()
 	_enemigos_restantes_por_spawnear = cantidad_enemigos
+	_construir_cola_mezcla()
 	_configurar_notificador_camara()
 	_crear_goteo_cubierta()
 	_preparar_canon()
+
+
+## Arma la cola de despliegue: mezcla por cantidades o modo clásico.
+## Si todas las cantidades están en 0, repite tipo_enemigo x cantidad_enemigos.
+func _construir_cola_mezcla() -> void:
+	_cola_mezcla.clear()
+	for i in range(maxi(cantidad_imp, 0)):
+		_cola_mezcla.append(TipoEnemigo.IMP)
+	for i in range(maxi(cantidad_pirata, 0)):
+		_cola_mezcla.append(TipoEnemigo.PIRATA)
+	for i in range(maxi(cantidad_goblin_arquera, 0)):
+		_cola_mezcla.append(TipoEnemigo.GOBLIN_ARQUERA)
+	for i in range(maxi(cantidad_imp_embajador, 0)):
+		_cola_mezcla.append(TipoEnemigo.IMP_EMBAJADOR)
+	if _cola_mezcla.is_empty():
+		for i in range(maxi(cantidad_enemigos, 0)):
+			_cola_mezcla.append(tipo_enemigo)
+	elif mezclar_orden_aleatorio:
+		_cola_mezcla.shuffle()
+	_total_oleada = _cola_mezcla.size()
+	_enemigos_restantes_por_spawnear = _total_oleada
 
 
 ## Localiza el cañón de cubierta, guarda su transformada base del editor y crea
@@ -318,7 +355,10 @@ func _procesar_spawn_enemigos(delta: float) -> void:
 
 
 func _spawnear_un_enemigo() -> void:
-	var packed := _resolver_escena_enemigo()
+	var tipo: TipoEnemigo = tipo_enemigo
+	if not _cola_mezcla.is_empty():
+		tipo = _cola_mezcla.pop_front()
+	var packed := _resolver_escena_enemigo(tipo)
 	if not packed:
 		return
 
@@ -343,12 +383,18 @@ func _spawnear_un_enemigo() -> void:
 	# Ajustar plano Z al del submarino
 	enemigo.global_position.z = global_position.z
 
+	# Embarcar en la plataforma: vivos y cadáveres siguen el vaivén de flotación
+	# y el hundimiento (si no, quedan flotando en el aire y se ve irreal).
+	if is_instance_valid(pivot_flotacion):
+		enemigo.reparent(pivot_flotacion)
+
 	# Configuración de comportamiento en río una vez dentro del árbol
 	_configurar_enemigo_para_rio(enemigo)
 
 	# Distribuir a los enemigos a lo largo de la plataforma de la cubierta (zona rosada)
-	var indice: int = cantidad_enemigos - _enemigos_restantes_por_spawnear
-	var offset_x: float = _calcular_offset_deck_x(indice, cantidad_enemigos)
+	var total: int = _total_oleada if _total_oleada > 0 else cantidad_enemigos
+	var indice: int = total - _enemigos_restantes_por_spawnear
+	var offset_x: float = _calcular_offset_deck_x(indice, total)
 	var pos_destino: Vector3 = pos_origen + Vector3(offset_x, 0.0, 0.0)
 
 	# Orientación durante la caminata según dirección del desplazamiento
@@ -553,8 +599,8 @@ func _configurar_enemigo_para_rio(enemigo: Node3D) -> void:
 		enemigo.set("_camara_cache_pantalla", cam)
 
 
-func _resolver_escena_enemigo() -> PackedScene:
-	match tipo_enemigo:
+func _resolver_escena_enemigo(tipo: TipoEnemigo) -> PackedScene:
+	match tipo:
 		TipoEnemigo.IMP:
 			if ResourceLoader.exists(ESCENA_IMP):
 				return load(ESCENA_IMP) as PackedScene
@@ -566,6 +612,12 @@ func _resolver_escena_enemigo() -> PackedScene:
 		TipoEnemigo.GOBLIN_ARQUERA:
 			if ResourceLoader.exists(ESCENA_GOBLIN_ARQUERA):
 				return load(ESCENA_GOBLIN_ARQUERA) as PackedScene
+		TipoEnemigo.PIRATA:
+			if ResourceLoader.exists(ESCENA_PIRATA):
+				return load(ESCENA_PIRATA) as PackedScene
+		TipoEnemigo.IMP_EMBAJADOR:
+			if ResourceLoader.exists(ESCENA_IMP_EMBAJADOR):
+				return load(ESCENA_IMP_EMBAJADOR) as PackedScene
 	# Fallback seguro
 	if ResourceLoader.exists(ESCENA_GOBLIN_ARQUERA):
 		return load(ESCENA_GOBLIN_ARQUERA) as PackedScene

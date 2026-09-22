@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_Balsa_Pirata/BalsaPirataCombate.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cfnhjov8psn34" path="res://TEST_/Balsa piarata/Balsa piarata.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_casco_balsa"]
+size = Vector3(1.15, 0.3, 0.85)
+
+[sub_resource type="BoxShape3D" id="BoxShape_cubierta_balsa"]
+size = Vector3(1.1, 0.1, 0.65)
+
+[node name="BalsaPirataCombate" type="Node3D"]
+transform = Transform3D(3.928, 0, 0, 0, 3.0, 0, 0, 0, 3.0, 0, 0, 0)
+script = ExtResource("1_script")
+flotar_al_iniciar = false
+capa_visual = 1
+
+[node name="BalsaPirataModel" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 0, -0.08, 0)
+
+[node name="CascoBalsa" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CascoBalsa"]
+shape = SubResource("BoxShape_casco_balsa")
+
+[node name="PlataformaCubierta" type="AnimatableBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+collision_layer = 1
+collision_mask = 0
+sync_to_physics = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaCubierta"]
+shape = SubResource("BoxShape_cubierta_balsa")
+debug_color = Color(0.9, 0.2, 0.6, 0.5)

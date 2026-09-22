@@ -43,6 +43,12 @@ const ANGULO_FILO_OFFSET_RAD: float = deg_to_rad(73.35)
 @export var es_explosiva: bool = false  ## Compatible con lógica de flecha explosiva (no puede parrearse ni desviarse)
 var objetivo_fijado = null
 
+@export_category("Estela Fantasma (Ult)")
+@export var estela_ult_activa: bool = true  ## Rastro morado sutil del hacha gigante, como la espada pirata
+@export var intervalo_estela: float = 0.05  ## Segundos entre fantasmas
+@export var vida_estela: float = 0.35  ## Duración del desvanecido de cada fantasma
+@export var color_estela: Color = Color(0.6, 0.2, 1.0, 0.3)  ## Morado transparente y sutil
+
 var velocity: Vector3 = Vector3.ZERO
 var tirador: Node = null
 var is_stuck: bool = false
@@ -52,6 +58,7 @@ var _desvaneciendose: bool = false
 var _modelo_hacha: Node3D = null
 var _ray_ccd: RayCast3D = null
 var _vida_acumulada: float = 0.0
+var _tiempo_estela: float = 0.0
 var _distancia_recorrida: float = 0.0  ## Metros volados desde el lanzamiento (gracia de plataformas)
 var _y_previa_agua: float = 9999.0  ## Y del paso anterior para detectar entrada al agua
 var _agua_rect: Dictionary = {}  ## Rectángulo del plano de agua cacheado (vacío = sin agua)
@@ -100,6 +107,7 @@ func initialize(
 	_impacto_procesado = false
 	is_stuck = false
 	_distancia_recorrida = 0.0
+	_tiempo_estela = 0.0
 
 	var dir_norm := direccion_disparo.normalized()
 	if es_hacha_especial:
@@ -219,6 +227,57 @@ func _physics_process(delta: float) -> void:
 	var vel_giro: float = VELOCIDAD_GIRO * (1.5 if es_hacha_especial else 1.0)
 	if _modelo_hacha and is_instance_valid(_modelo_hacha):
 		_modelo_hacha.rotate_z(-vel_giro * delta)
+	_actualizar_estela(delta)
+
+
+## Solo el hacha gigante del ult deja fantasmas morados con su silueta exacta.
+func _actualizar_estela(delta: float) -> void:
+	if not estela_ult_activa or not es_hacha_especial:
+		return
+	if is_stuck or _impacto_procesado:
+		return
+	if not is_inside_tree() or get_tree() == null:
+		return
+	_tiempo_estela += delta
+	if _tiempo_estela < intervalo_estela:
+		return
+	_tiempo_estela = 0.0
+	_generar_fantasma_estela()
+
+
+func _generar_fantasma_estela() -> void:
+	var raiz: Node = _modelo_hacha if is_instance_valid(_modelo_hacha) else self
+	var padre: Node = get_parent()
+	if padre == null:
+		return
+	for m in raiz.find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		if mi == null or mi.mesh == null:
+			continue
+		var fantasma := mi.duplicate() as MeshInstance3D
+		fantasma.name = "EstelaHacha"
+		fantasma.add_to_group("estela_hacha")
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color = color_estela
+		fantasma.material_override = mat
+		fantasma.set_surface_override_material(0, null)
+		padre.add_child(fantasma)
+		fantasma.global_transform = mi.global_transform
+		_desvanecer_fantasma(fantasma, mat)
+
+
+func _desvanecer_fantasma(fantasma: MeshInstance3D, mat: StandardMaterial3D) -> void:
+	var tw := fantasma.create_tween()
+	tw.tween_method(
+		func(alfa: float):
+			if is_instance_valid(mat):
+				var c := mat.albedo_color
+				c.a = alfa
+				mat.albedo_color = c
+	, color_estela.a, 0.0, maxf(vida_estela, 0.05))
+	tw.tween_callback(fantasma.queue_free)
 
 
 ## Si cae al agua (fosos entre islas): flota en superficie hasta desvanecerse

@@ -1,0 +1,52 @@
+[gd_scene format=3 uid="uid://c56e8qm7yim67"]
+
+[ext_resource type="Script" uid="uid://d12vrxo8ofn1j" path="res://Entities/Ambiente_Barco_Combate_Pirata/BarcoCombatePirata.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cwcp4jioa0bd6" path="res://TEST_/Barco combate Pirata/Barco Combate Pirata.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_casco_barco"]
+size = Vector3(1.4, 0.5, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape_cubierta_a"]
+size = Vector3(0.4838623, 0.1, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape_cubierta_b"]
+size = Vector3(0.42, 0.1, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape_cubierta_c"]
+size = Vector3(0.13904785, 0.059277344, 0.39284667)
+
+[node name="BarcoCombatePirata" type="Node3D" unique_id=1089299743]
+transform = Transform3D(3.5, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0)
+script = ExtResource("1_script")
+capa_visual = 1
+flotar_al_iniciar = false
+
+[node name="BarcoModel" parent="." unique_id=1379657934 instance=ExtResource("2_model")]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 0, -0.08, 0)
+
+[node name="CascoBarco" type="StaticBody3D" parent="." unique_id=1746270982]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CascoBarco" unique_id=161024717]
+shape = SubResource("BoxShape_casco_barco")
+
+[node name="PlataformaCubierta" type="AnimatableBody3D" parent="." unique_id=911501231]
+collision_mask = 0
+sync_to_physics = false
+
+[node name="CubiertaProa" type="CollisionShape3D" parent="PlataformaCubierta" unique_id=1108200513]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.36, 0.10278421, 0)
+shape = SubResource("BoxShape_cubierta_a")
+debug_color = Color(0.9, 0.2, 0.6, 0.5)
+
+[node name="CubiertaCentro" type="CollisionShape3D" parent="PlataformaCubierta" unique_id=642391658]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.046364974, 0.05719078, 0)
+shape = SubResource("BoxShape_cubierta_b")
+debug_color = Color(0.9, 0.2, 0.6, 0.5)
+
+[node name="CubiertaPopa" type="CollisionShape3D" parent="PlataformaCubierta" unique_id=676009778]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4005574, 0.2622777, -0.028576657)
+shape = SubResource("BoxShape_cubierta_c")
+debug_color = Color(0.9, 0.2, 0.6, 0.5)

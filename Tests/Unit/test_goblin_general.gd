@@ -428,7 +428,7 @@ func test_drop_fuego_rapido_al_morir() -> void:
 	await get_tree().process_frame
 
 	# Assert 1: Configuración de probabilidad 5% y escena asignada
-	assert_almost_eq(general.probabilidad_drop_fuego_rapido, 0.05, 0.001, "La probabilidad de drop debe ser 5% (0.05)")
+	assert_almost_eq(general.probabilidad_drop_fuego_rapido, 0.03, 0.001, "La probabilidad de drop debe ser 3% (0.03)")
 	assert_not_null(general.power_up_fuego_rapido_scene, "Debe tener asignada la escena de PowerUpFuegoRapido")
 
 	# Act: Forzar probabilidad al 100% para verificar instanciación al morir
