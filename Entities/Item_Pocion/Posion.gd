@@ -38,6 +38,8 @@ enum State { IDLE, DISSOLVING }
 const ESCALA_BASE: float = 0.5
 const SONIDO_POSION: String = "res://TEST_/Posion curativa.wav"
 const SONIDO_APARECE_POCION: String = "res://TEST_/Aparece pocion.wav"
+const RADIO_PICKUP_JUGADOR: float = 2.0  ## Detección amplia en 2.5D
+const RADIO_PICKUP_Y: float = 2.5
 
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 
@@ -62,6 +64,10 @@ func _ready() -> void:
 	
 	add_to_group("pickups")
 	add_to_group("pociones")
+
+	collision_mask = 1 | 2
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
 
 	if model_root:
 		_initial_model_y = model_root.position.y
@@ -137,8 +143,10 @@ func _process(_delta: float) -> void:
 
 	_bucle_parpadeo_luz()
 
-	if current_state == State.IDLE and not _is_falling:
-		_bucle_animacion_squash_and_stretch()
+	if current_state == State.IDLE:
+		_verificar_proximidad_jugador()
+		if not _is_falling:
+			_bucle_animacion_squash_and_stretch()
 
 
 func _bucle_parpadeo_luz() -> void:
@@ -163,8 +171,27 @@ func _bucle_animacion_squash_and_stretch() -> void:
 		ESCALA_BASE * (1.0 - sq * 0.6))
 
 
+func _on_body_entered(body: Node3D) -> void:
+	if current_state == State.DISSOLVING:
+		return
+	if body.is_in_group("player") or body.is_in_group("jugador") or body.name == "Player" or body.has_method("curar"):
+		_auto_consumir()
+
+
+func _verificar_proximidad_jugador() -> void:
+	if current_state != State.IDLE or not is_inside_tree() or get_tree() == null:
+		return
+	var player: Node3D = _buscar_jugador()
+	if not is_instance_valid(player):
+		return
+	var diff_x: float = absf(global_position.x - player.global_position.x)
+	var diff_y: float = absf(global_position.y - player.global_position.y)
+	if diff_x <= RADIO_PICKUP_JUGADOR and diff_y <= RADIO_PICKUP_Y:
+		_auto_consumir()
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# AUTO-CONSUMO DESPUÉS DE 3 SEGUNDOS
+# AUTO-CONSUMO (POR CONTACTO, PROXIMIDAD O TEMPORIZADOR)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 func _auto_consumir() -> void:
@@ -175,12 +202,13 @@ func _auto_consumir() -> void:
 	var player: Node3D = _buscar_jugador()
 
 	var curo: bool = false
+	var cantidad_a_curar: int = vida_a_restaurar if vida_a_restaurar > 0 else 1
 	if is_instance_valid(player) and "health" in player and "vida_maxima" in player:
 		if int(player.health) < int(player.vida_maxima):
 			if player.has_method("curar"):
-				player.curar(vida_a_restaurar)
+				player.curar(cantidad_a_curar)
 			else:
-				player.health = min(player.health + vida_a_restaurar, player.vida_maxima)
+				player.health = min(player.health + cantidad_a_curar, player.vida_maxima)
 				if player.has_signal("health_changed"):
 					player.health_changed.emit(player.health)
 			curo = true
@@ -192,9 +220,22 @@ func _auto_consumir() -> void:
 
 
 func _buscar_jugador() -> Node3D:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.size() > 0:
-		return players[0] as Node3D
+	if not is_inside_tree() or get_tree() == null:
+		return null
+	var players: Array[Node] = get_tree().get_nodes_in_group("player")
+	for p in players:
+		if is_instance_valid(p) and p is Node3D:
+			return p as Node3D
+	var jugadores: Array[Node] = get_tree().get_nodes_in_group("jugador")
+	for j in jugadores:
+		if is_instance_valid(j) and j is Node3D:
+			return j as Node3D
+	var root: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	if root:
+		for target_name in ["Player", "Perrena"]:
+			var prota: Node = root.find_child(target_name, true, false)
+			if is_instance_valid(prota) and prota is Node3D:
+				return prota as Node3D
 	return null
 
 

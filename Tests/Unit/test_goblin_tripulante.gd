@@ -116,3 +116,61 @@ func test_tripulante_contiene_disparo_con_globo_dormido() -> void:
 	# Cleanup (el after_each libera al tripulante)
 	if is_instance_valid(globo):
 		globo.queue_free()
+
+
+func test_tripulante_apunta_hacia_abajo_a_la_canoa() -> void:
+	# Arrange: jugadora 5 m a la izquierda y 2 m abajo del tripulante
+	var jug := Node3D.new()
+	jug.name = "JugadoraApuntamiento"
+	get_tree().root.add_child(jug)
+	jug.global_position = Vector3(-5.0, -2.0, 0.0)
+	_tripulante.global_position = Vector3.ZERO
+	_tripulante._player_ref = jug
+
+	# Act: dejar converger el apuntado
+	for i in range(40):
+		_tripulante._actualizar_apuntado(0.016)
+
+	# Assert: picado hacia abajo acotado (atan2(2,5) ~= 21.8 grados)
+	assert_gt(_tripulante.rotation.z, 0.1, "Debe inclinar el cuerpo hacia abajo")
+	assert_lte(rad_to_deg(_tripulante.rotation.z), 30.0, "Sin pasar el maximo")
+	assert_almost_eq(rad_to_deg(_tripulante.rotation.z), 21.8, 2.0, "Apunta a la canoa")
+	jug.queue_free()
+
+
+func test_tripulante_no_apunta_hacia_arriba() -> void:
+	# Arrange: jugadora 2 m arriba
+	var jug := Node3D.new()
+	jug.name = "JugadoraArriba"
+	get_tree().root.add_child(jug)
+	jug.global_position = Vector3(-5.0, 2.0, 0.0)
+	_tripulante.global_position = Vector3.ZERO
+	_tripulante._player_ref = jug
+
+	# Act
+	for i in range(10):
+		_tripulante._actualizar_apuntado(0.016)
+
+	# Assert: se queda horizontal
+	assert_almost_eq(_tripulante.rotation.z, 0.0, 0.001, "No debe apuntar hacia arriba")
+	jug.queue_free()
+
+
+func test_tripulante_sin_apuntado_con_flag_off() -> void:
+	# Arrange
+	var jug := Node3D.new()
+	jug.name = "JugadoraFlagOff"
+	get_tree().root.add_child(jug)
+	jug.global_position = Vector3(-5.0, -2.0, 0.0)
+	_tripulante.global_position = Vector3.ZERO
+	_tripulante._player_ref = jug
+	_tripulante.apuntar_abajo_activo = false
+
+	# Act
+	for i in range(10):
+		_tripulante._actualizar_apuntado(0.016)
+
+	# Assert
+	assert_almost_eq(_tripulante.rotation.z, 0.0, 0.001, "Con flag off no se inclina")
+	_tripulante.apuntar_abajo_activo = true
+	jug.queue_free()

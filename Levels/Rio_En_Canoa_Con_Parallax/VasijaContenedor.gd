@@ -245,7 +245,8 @@ func _soltar_item_visible() -> void:
 	if "municion_a_otorgar_jugador" in item:
 		item.set("municion_a_otorgar_jugador", cantidad_municion)
 	if "vida_a_restaurar" in item:
-		item.set("vida_a_restaurar", curacion_pocion)
+		var cura: int = curacion_pocion if curacion_pocion > 0 else 1
+		item.set("vida_a_restaurar", cura)
 	if "duracion_buff" in item:
 		item.set("duracion_buff", duracion_fuego_rapido)
 	get_parent().add_child(item)

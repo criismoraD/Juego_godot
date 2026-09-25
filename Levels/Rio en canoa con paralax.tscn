@@ -2028,33 +2028,33 @@ transform = Transform3D(4.236665, 0, 0, 0, 5.5947185, 0, 0, 0, 3.6033034, 77.621
 [node name="VasijaContenedor" parent="." unique_id=1408794739 instance=ExtResource("38_vasija")]
 transform = Transform3D(1.0937164, 0.11740823, 0, -0.11740823, 1.0937164, 0, 0, 0, 1.1, 9.137882, -0.5449705, -7.6689835)
 cantidad_municion = 5
-curacion_pocion = 0
+curacion_pocion = 1
 direccion_viaje = "Izquierda"
 
 [node name="VasijaContenedor2" parent="." unique_id=451215311 instance=ExtResource("38_vasija")]
 transform = Transform3D(1.0998485, -0.018258728, 0, 0.018258728, 1.0998485, 0, 0, 0, 1.1, 76.08002, -0.34072188, -7.6689835)
 cantidad_municion = 5
-curacion_pocion = 0
+curacion_pocion = 1
 direccion_viaje = "Izquierda"
 
 [node name="VasijaContenedor3" parent="." unique_id=535213424 instance=ExtResource("38_vasija")]
 transform = Transform3D(1.0998485, -0.018258728, 0, 0.018258728, 1.0998485, 0, 0, 0, 1.1, 132.56355, -0.30171016, -7.6689835)
 item_soltado = 2
 cantidad_municion = 2
-curacion_pocion = 0
+curacion_pocion = 1
 direccion_viaje = "Izquierda"
 
 [node name="VasijaContenedor5" parent="." unique_id=1233745821 instance=ExtResource("38_vasija")]
 transform = Transform3D(1.0998485, -0.018258728, 0, 0.018258728, 1.0998485, 0, 0, 0, 1.1, 151.39514, -0.24285647, -7.6689835)
 item_soltado = 1
-curacion_pocion = 0
+curacion_pocion = 1
 direccion_viaje = "Izquierda"
 
 [node name="VasijaContenedor4" parent="." unique_id=640216230 instance=ExtResource("38_vasija")]
 transform = Transform3D(1.0295323, 0.38737997, 0, -0.38737997, 1.0295323, 0, 0, 0, 1.1, 96.04309, -0.69288564, -7.6689835)
 item_soltado = 2
 cantidad_municion = 1
-curacion_pocion = 0
+curacion_pocion = 1
 direccion_viaje = "Izquierda"
 deriva_activa = false
 velocidad_desplazamiento = 0.0
@@ -2064,7 +2064,7 @@ flotacion_activa = false
 transform = Transform3D(1.0835876, -0.18562678, -0.037155654, 0.17314328, 1.0590775, -0.24161193, 0.07654579, 0.23215854, 1.072494, 170.48486, -0.38063538, -7.6689835)
 item_soltado = 1
 cantidad_municion = 6
-curacion_pocion = 0
+curacion_pocion = 1
 direccion_viaje = "Izquierda"
 deriva_activa = false
 velocidad_desplazamiento = 0.0

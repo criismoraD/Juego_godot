@@ -45,7 +45,12 @@ const ESCENAS_CRITICAS: Array[String] = [
 	"res://VFX/Scenes/BloodSplashNoLetal.tscn",
 	"res://VFX/Scenes/BloodSplashEmbajador.tscn",
 	"res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb",
-	"res://TEST_/Balsa pirata destruida/Balsa pirata destruida.glb"
+	"res://TEST_/Balsa pirata destruida/Balsa pirata destruida.glb",
+	"res://Entities/Enemigo_Pirata_Goblin/PirataGoblin.tscn",
+	"res://Levels/Rio_En_Canoa_Con_Parallax/PezDeRio.tscn",
+	"res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn",
+	"res://Entities/Proyectil_Misil_Submarino/MisilSubmarino.tscn",
+	"res://Entities/Proyectil_Mina_Acuatica/MinaAcuatica.tscn"
 ]
 
 const MATERIALES_CRITICOS: Array[String] = [
@@ -55,7 +60,9 @@ const MATERIALES_CRITICOS: Array[String] = [
 	"res://System/Shaders/sombra_falsa.gdshader",
 	"res://System/Shaders/cortinilla_circular.gdshader",
 	"res://System/Shaders/TOON_PROYECTIL_LINEA.gdshader",
-	"res://System/Shaders/TRAYECTORIA_FLECHA_PUNTEADA.gdshader"
+	"res://System/Shaders/TRAYECTORIA_FLECHA_PUNTEADA.gdshader",
+	"res://Levels/Rio_En_Canoa_Con_Parallax/PezDeRio.gdshader",
+	"res://Levels/Rio_En_Canoa_Con_Parallax/HumoEstilizadoSubmarino.gdshader"
 ]
 
 

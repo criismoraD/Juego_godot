@@ -144,8 +144,19 @@ func _finalizar_carga_fallida(target_path: String) -> void:
 	ShaderGlobals.asegurar_outline_proyectiles(true)
 
 
-## Transición cinemática con cortinilla circular (Iris in/out)
+## Transición cinemática con cortinilla circular (Iris in/out) optimizada
+## Carga en segundo plano durante el cierre y precalienta shaders en negro antes de abrir.
 func cambiar_escena_cortinilla_circular(target_path: String, duracion: float = 0.75, centro: Vector2 = Vector2(0.5, 0.5)) -> void:
+	if _is_loading:
+		push_warning("[SceneManager] Ya hay una carga en progreso hacia: " + _loading_path)
+		return
+
+	_is_loading = true
+	_loading_path = target_path
+
+	if not target_path.to_lower().contains("rio"):
+		RioEnCanoaConParallax.reset_checkpoint()
+
 	var canvas := CanvasLayer.new()
 	canvas.layer = 128
 	var rect := ColorRect.new()
@@ -163,21 +174,55 @@ func cambiar_escena_cortinilla_circular(target_path: String, duracion: float = 0
 	canvas.add_child(rect)
 	get_tree().root.add_child(canvas)
 
-	# 1. Cierre de cortinilla
+	scene_load_started.emit(target_path)
+
+	# 1. Iniciar la carga asíncrona en segundo plano inmediatamente mientras la cortinilla se cierra
+	var request_ok: bool = (ResourceLoader.load_threaded_request(target_path, "", false) == OK)
+
+	# 2. Cierre suave de cortinilla hacia negro
 	var tween_close := get_tree().create_tween()
 	tween_close.tween_property(mat, "shader_parameter/radio_apertura", 0.0, duracion)\
 		.set_trans(Tween.TRANS_CUBIC)\
 		.set_ease(Tween.EASE_IN_OUT)
 	await tween_close.finished
 
-	# 2. Cambio de escena
-	get_tree().change_scene_to_file(target_path)
+	# 3. Pantalla 100% negra: asegurar que la carga en segundo plano haya terminado
+	var packed_scene: PackedScene = null
+	if request_ok:
+		var progress_arr: Array = []
+		var status: ResourceLoader.ThreadLoadStatus = ResourceLoader.load_threaded_get_status(target_path, progress_arr)
+		var max_wait: float = 30.0
+		var elapsed: float = 0.0
+
+		while status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			await get_tree().process_frame
+			elapsed += get_process_delta_time()
+			status = ResourceLoader.load_threaded_get_status(target_path, progress_arr)
+			if elapsed > max_wait:
+				push_warning("[SceneManager] Tiempo límite de carga en cortinilla alcanzado para: " + target_path)
+				break
+
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			packed_scene = ResourceLoader.load_threaded_get(target_path) as PackedScene
+
+	# 4. Precalentar shaders y pipelines de Vulkan en el SubViewport invisible tras el telón negro
+	await ShaderPrewarmer.prewarm(get_tree())
+
+	# 5. Cambiar a la nueva escena detrás del negro absoluto
+	if packed_scene:
+		get_tree().change_scene_to_packed(packed_scene)
+	else:
+		get_tree().change_scene_to_file(target_path)
+
 	ShaderGlobals.asegurar_outline_global(true)
 	ShaderGlobals.asegurar_outline_proyectiles(true)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	scene_load_completed.emit(target_path)
 
-	# 3. Apertura de cortinilla en la nueva escena
+	# Esperar 3 fotogramas para que _ready(), físicas y primeros pases de render se asienten en VRAM
+	for i in range(3):
+		await get_tree().process_frame
+
+	# 6. Apertura de cortinilla sobre la escena ya estabilizada y corriendo a 60 FPS
 	var tween_open := get_tree().create_tween()
 	tween_open.tween_property(mat, "shader_parameter/radio_apertura", 1.5, duracion)\
 		.set_trans(Tween.TRANS_CUBIC)\
@@ -185,3 +230,5 @@ func cambiar_escena_cortinilla_circular(target_path: String, duracion: float = 0
 	await tween_open.finished
 
 	canvas.queue_free()
+	_is_loading = false
+	_loading_path = ""

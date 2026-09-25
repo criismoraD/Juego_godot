@@ -23,17 +23,25 @@ const ANIM_RECARGA: String = "Armature|Armature|ENEMIGO_GOBLING_RECARGA"
 @export_category("Referencias")
 @export var goblin_arrow_scene: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
 
+@export_category("Apuntado hacia abajo")
+@export var apuntar_abajo_activo: bool = true  ## Inclina el cuerpo hacia la canoa para disparar más natural
+@export_range(0.0, 60.0, 1.0) var angulo_max_abajo_grados: float = 30.0  ## Tope de picado hacia la canoa
+@export_range(1.0, 12.0, 0.5) var suavidad_apuntado: float = 5.0  ## Qué tan rápido sigue a la canoa
+
 var is_reloading: bool = false
 var is_dead: bool = false
 var shoot_timer: float = 1.0
 
 var _anim_player: AnimationPlayer = null
 var _player_ref: Node3D = null
+var _rot_base_z: float = 0.0
+var _pitch_actual: float = 0.0
 
 
 func _ready() -> void:
 	_ocultar_partes_explotadas()
 	_buscar_anim_player()
+	_rot_base_z = rotation.z
 	_player_ref = get_tree().get_first_node_in_group("player") as Node3D
 	_play_animation(ANIM_DISPARO)
 	shoot_timer = randf_range(1.0, 2.0)
@@ -51,6 +59,8 @@ func _physics_process(delta: float) -> void:
 	if _globo_transporte_no_visible():
 		return
 
+	_actualizar_apuntado(delta)
+
 	shoot_timer -= delta
 	if shoot_timer <= 0.0:
 		disparar()
@@ -63,6 +73,23 @@ func disparar() -> void:
 	_shoot_arrow()
 	_start_reload()
 	emit_signal("disparo_realizado")
+
+
+## Inclina el cuerpo hacia abajo siguiendo a la canoa (mira a la izquierda,
+## picar = +Z). Solo picado (0 = horizontal); si la canoa está arriba, no se
+## apunta hacia arriba. Suave para que no dé tirones.
+func _actualizar_apuntado(delta: float) -> void:
+	var objetivo_grados: float = 0.0
+	if apuntar_abajo_activo and not is_dead:
+		if not is_instance_valid(_player_ref):
+			_player_ref = get_tree().get_first_node_in_group("player") as Node3D
+		if is_instance_valid(_player_ref):
+			var dx: float = absf(_player_ref.global_position.x - global_position.x)
+			var dy: float = global_position.y - _player_ref.global_position.y
+			if dx > 0.05 and dy > 0.0:
+				objetivo_grados = clampf(rad_to_deg(atan2(dy, dx)), 0.0, angulo_max_abajo_grados)
+	_pitch_actual = lerp_angle(_pitch_actual, deg_to_rad(objetivo_grados), clampf(suavidad_apuntado * delta, 0.0, 1.0))
+	rotation.z = _rot_base_z + _pitch_actual
 
 
 ## True si va a bordo de un globo aún dormido o fuera de cámara.

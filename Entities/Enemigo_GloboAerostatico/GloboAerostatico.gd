@@ -34,6 +34,10 @@ extends EnemyBase
 @export_range(0.005, 0.05, 0.005) var deformacion_escala: float = 0.018
 ## Período de la deformación de escala (segundos, asimétrico al bamboleo)
 @export_range(1.0, 5.0, 0.1) var periodo_deformacion: float = 2.1
+## Inclinación constante proa-abajo al avanzar (moviéndose a la izquierda = +Z)
+@export_range(0.0, 8.0, 0.5) var inclinacion_avance_z: float = 3.0
+## Qué tan rápido se inclina al arrancar y se nivela al detenerse
+@export_range(0.5, 5.0, 0.1) var suavidad_inclinacion: float = 2.0
 
 @export_category("Combate - Globo")
 ## Sin combate — globo sin tripulante
@@ -174,6 +178,19 @@ func _on_state_walking() -> void:
 	pass
 
 
+## Inclinación objetivo hacia adelante (avanza a la izquierda = +Z).
+## 0.0 detenido, en pausa de isla, muriendo o muerto.
+func _objetivo_inclinacion_avance() -> float:
+	if current_state != State.WALKING or _fase_vuelo != FaseVuelo.AVANZANDO:
+		return 0.0
+	return inclinacion_avance_z
+
+
+## Aplica la inclinación con suavizado (proa-abajo al avanzar, nivelado al parar).
+func _aplicar_inclinacion_avance(delta: float) -> void:
+	rotation_degrees.z = lerpf(rotation_degrees.z, _objetivo_inclinacion_avance(), clampf(suavidad_inclinacion * delta, 0.0, 1.0))
+
+
 func _on_state_shooting() -> void:
 	_fase_vuelo = FaseVuelo.DETENIDO
 
@@ -214,6 +231,10 @@ func _physics_process(delta: float) -> void:
 	var player = get_tree().get_first_node_in_group("player")
 	var z_juego: float = player.global_position.z if player else 0.05
 	global_position.z = z_juego
+
+	# Inclinación leve hacia adelante al avanzar (anti-tieso); se nivela solo al detenerse.
+	# No pelea con el bamboleo (ese va en el pivot hijo, esto en la raíz).
+	_aplicar_inclinacion_avance(delta)
 
 	match current_state:
 		State.WALKING:

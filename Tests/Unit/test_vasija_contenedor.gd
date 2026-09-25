@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 ## Tests unitarios de la vasija contenedora del nivel del rio.
 ## Cubren valores por defecto, daño con parpadeo rojo, destrucción con
@@ -184,6 +184,32 @@ func test_suelta_pocion_con_curacion_configurada() -> void:
 			break
 	assert_not_null(item, "Debe soltar la poción visible")
 	assert_eq(int(item.get("vida_a_restaurar")), 2, "Con la curación configurada")
+
+
+func test_suelta_pocion_con_curacion_cero_garantiza_al_menos_uno_y_cura() -> void:
+	# Arrange
+	var jugadora := _crear_jugadora()
+	jugadora.health = 2
+	var vasija := _crear_vasija()
+	vasija.item_soltado = VasijaContenedor.ItemSoltado.POCION_CURATIVA
+	vasija.curacion_pocion = 0  # Caso extremo / bug reportado
+
+	# Act
+	vasija.recibir_golpe(1.0)
+	vasija.recibir_golpe(1.0)
+
+	# Assert
+	var item: Node = null
+	for hijo in vasija.get_parent().get_children():
+		if hijo is Area3D and "vida_a_restaurar" in hijo:
+			item = hijo
+			break
+	assert_not_null(item, "Debe soltar la poción visible")
+	assert_true(int(item.get("vida_a_restaurar")) >= 1, "Debe garantizar al menos 1 de curación aunque curacion_pocion sea 0")
+	# Act 2: Auto-consumo o proximidad de la poción
+	item.call("_auto_consumir")
+	# Assert 2: La jugadora debe haber recibido la salud
+	assert_gt(jugadora.health, 2, "La jugadora debe haber recuperado salud")
 
 
 func test_suelta_fuego_rapido_con_duracion_configurada() -> void:

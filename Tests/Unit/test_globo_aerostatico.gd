@@ -352,3 +352,42 @@ func test_rio_dormido_hasta_entrar_en_camara():
 	# Assert: en marcha
 	assert_false(globo._dormido_por_camara, "Debe activarse al entrar en cuadro")
 	assert_eq(globo.current_state, EnemyBase.State.WALKING, "Retoma el vuelo")
+
+
+func test_inclinacion_avance_solo_avanzando() -> void:
+	# Arrange
+	var globo = GloboScript.new()
+	add_child_autofree(globo)
+
+	# Assert: por defecto avanzando -> objetivo 3 grados
+	assert_almost_eq(globo._objetivo_inclinacion_avance(), 3.0, 0.001, "Avanzando se inclina 3 grados")
+
+	# Act: pausa de isla y detenido -> 0
+	globo._fase_vuelo = globo.FaseVuelo.PAUSA_ISLA
+	assert_almost_eq(globo._objetivo_inclinacion_avance(), 0.0, 0.001, "En pausa se nivela")
+	globo._fase_vuelo = globo.FaseVuelo.AVANZANDO
+	globo._change_state(globo.State.SHOOTING)
+	assert_almost_eq(globo._objetivo_inclinacion_avance(), 0.0, 0.001, "Detenido se nivela")
+
+
+func test_inclinacion_se_aplica_y_nivela_suave() -> void:
+	# Arrange
+	var globo = GloboScript.new()
+	add_child_autofree(globo)
+	globo._fase_vuelo = globo.FaseVuelo.AVANZANDO
+
+	# Act: aplicar varias veces (converge a 3 grados)
+	for i in range(60):
+		globo._aplicar_inclinacion_avance(0.05)
+
+	# Assert
+	assert_almost_eq(globo.rotation_degrees.z, 3.0, 0.3, "Converge a la inclinacion de avance")
+
+	# Act: detener -> vuelve a 0 suave, sin salto
+	var antes: float = globo.rotation_degrees.z
+	globo._fase_vuelo = globo.FaseVuelo.DETENIDO
+	globo._aplicar_inclinacion_avance(0.05)
+
+	# Assert
+	assert_lt(globo.rotation_degrees.z, antes, "Empieza a nivelarse")
+	assert_gte(globo.rotation_degrees.z, 0.0, "Sin pasarse a negativo de golpe")
