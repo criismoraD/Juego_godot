@@ -29,8 +29,9 @@ var _opcion_foco: int = 0
 var _botones_menu: Array[Button] = []
 
 
-## Oculta/muestra la opción SALIR (post-misión 5: sin salidas de la torre
-## hasta escuchar el Plan de asalto). La navegación ignora botones ocultos.
+## Visibilidad de la opción SALIR. Se conserva como API (tests y torre):
+## el flujo de juego la mantiene siempre visible — SALIR solo cierra
+## este menú, no sale de la torre. La navegación ignora botones ocultos.
 func set_salir_visible(v: bool) -> void:
 	if btn_salir:
 		btn_salir.visible = v
@@ -93,12 +94,24 @@ func _ready() -> void:
 	if menu_bestiario:
 		menu_bestiario.cerrado.connect(_on_menu_bestiario_cerrado)
 
-	# Sin dependencia de orden de _ready con la torre: en modo post-misión 5
-	# SALIR nace oculto (Interio lo refuerza al estar listo).
-	if NivelInterior.es_modo_post_mision5():
-		set_salir_visible(false)
+	# SALIR siempre visible (incluso con Perrena en la torre): solo cierra
+	# este menú; la salida de la torre la gobierna BtnRegresar de Interio.
+	set_salir_visible(true)
+	_refrescar_textos()
 
 	_cerrar_menu(false)
+
+
+## Todos los textos del mueble pasan por el sistema de traducción.
+func _refrescar_textos() -> void:
+	if prompt_e:
+		prompt_e.text = "[E] " + tr("PROMPT_INTERACTUAR")
+	if btn_defensoras:
+		btn_defensoras.text = tr("MENU_DEFENSORAS")
+	if btn_bestiario:
+		btn_bestiario.text = tr("MENU_BESTIARIO")
+	if btn_salir:
+		btn_salir.text = tr("MENU_SALIR")
 
 
 func _configurar_tinte_mueble() -> void:
@@ -235,6 +248,7 @@ func _abrir_menu() -> void:
 		return
 	_set_player_movimiento(false)
 	AudioManager.play_sfx("seleccion_menu")
+	_refrescar_textos()
 	if prompt_e:
 		prompt_e.visible = false
 

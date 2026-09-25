@@ -29,6 +29,9 @@ func _ready() -> void:
 	# Estado inicial de iluminación: restaurar la iluminación completa de la torre
 	# (antorchas, mesa de alquimia, cama y relleno; L/F7 alternan para comparar).
 	_aplicar_modo_iluminacion(false)
+	# Torre normal: el botón de salida usa texto traducible.
+	if not es_modo_post_mision5() and btn_regresar:
+		btn_regresar.text = tr("BTN_VOLVER")
 	_aplicar_estado_mision()
 
 
@@ -43,14 +46,15 @@ static func mision_rio_desbloqueada() -> bool:
 	return es_modo_post_mision5() and GameUI.plan_asalto_escuchado
 
 
-## Post-misión 5: sin salidas a NIVEL01 (ni WIP regresar ni SALIR de la mesa)
-## hasta escuchar el Plan de asalto; entonces el botón se vuelve "Iniciar misión".
+## Post-misión 5: sin salidas a NIVEL01 (BtnRegresar oculto) hasta escuchar
+## el Plan de asalto; entonces el botón se vuelve "Iniciar misión".
+## SALIR del mueble siempre visible: solo cierra su menú, no sale de la torre.
 func _aplicar_estado_mision() -> void:
 	if not es_modo_post_mision5():
 		return
 	if btn_regresar:
 		btn_regresar.visible = false
-	_set_mesa_salir_visible(false)
+	_set_mesa_salir_visible(true)
 	if mision_rio_desbloqueada():
 		_mostrar_boton_iniciar_mision()
 
@@ -59,6 +63,7 @@ func _aplicar_estado_mision() -> void:
 func desbloquear_mision_rio() -> void:
 	if not es_modo_post_mision5():
 		return
+	_set_mesa_salir_visible(true)
 	_mostrar_boton_iniciar_mision()
 
 
@@ -105,7 +110,7 @@ func _iniciar_mision_rio() -> void:
 
 ## SFX de puerta al salir de la torre.
 func _reproducir_sonido_puerta() -> void:
-	var stream: AudioStream = load("res://TEST_/abrir_puerta.wav")
+	var stream: AudioStream = load("res://System/Audio/SFX/abrir_puerta.wav")
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()

@@ -49,8 +49,8 @@ const MARGEN_ALTO: float = 0.02
 const ESCENA_DIALOGO_TORRE: PackedScene = preload("res://UI/DialogoConversacionNivel5.tscn")
 ## Altura sobre sus pies a la que el prompt la sigue cada frame.
 const ALTURA_PROMPT: float = 0.9
-const RUTA_SFX_SALIR := "res://TEST_/Guaf perrena exit menu.wav"
-const ICONO_PERRENA: Texture2D = preload("res://TEST_/Perrena Icon.png")
+const RUTA_SFX_SALIR := "res://Entities/Defensora_Perrena/Audio/Guaf perrena exit menu.wav"
+const ICONO_PERRENA: Texture2D = preload("res://UI/Assets/Perrena Icon.png")
 ## Radio amplio: Perrena está tras el corral de colisiones y el jugador no
 ## puede pegarse a ella; debe poder hablar desde fuera del corral.
 ## Solapa con la zona de la mesa (a 0.42 m): si su menú está abierto la
@@ -71,6 +71,8 @@ const ALTO_ICONO_MENU: float = 227.0
 const SUBIDA_ICONO: float = 75.0
 const HABLANTE_PERRENA := "perrena"
 const HABLANTE_ERYN := "eryn"
+## "Plan de asalto" (opción 0) va en amarillo para destacarla.
+const COLOR_OPCION_ASALTO := Color.YELLOW
 const OPCIONES_CLAVES: Array[String] = [
 	"PERRENA_OPCION_ASALTO",
 	"PERRENA_OPCION_CIVILES",
@@ -532,6 +534,7 @@ func _construir_menu_conversacion(raiz: Node) -> void:
 		boton.mouse_entered.connect(_on_mouse_entra_opcion.bind(i))
 		caja.add_child(boton)
 		_botones_opciones.append(boton)
+	_aplicar_color_opciones()
 	_menu_conversacion = capa
 	_refrescar_textos_menu()
 
@@ -558,6 +561,22 @@ func _refrescar_textos_menu() -> void:
 	for i in _botones_opciones.size():
 		if i < OPCIONES_CLAVES.size():
 			_botones_opciones[i].text = tr(OPCIONES_CLAVES[i])
+	_aplicar_color_opciones()
+
+
+## La opción 0 ("Plan de asalto") siempre en amarillo, en todos los
+## estados del botón (el foco usa font_focus_color al navegar con W/S).
+func _aplicar_color_opciones() -> void:
+	for i in _botones_opciones.size():
+		var boton := _botones_opciones[i]
+		if not is_instance_valid(boton):
+			continue
+		var color := COLOR_OPCION_ASALTO if i == 0 else Color.WHITE
+		boton.add_theme_color_override("font_color", color)
+		boton.add_theme_color_override("font_hover_color", color)
+		boton.add_theme_color_override("font_pressed_color", color)
+		boton.add_theme_color_override("font_focus_color", color)
+		boton.add_theme_color_override("font_disabled_color", color)
 
 
 ## Proximidad por distancia (matemática pura, sin física): se evalúa en
