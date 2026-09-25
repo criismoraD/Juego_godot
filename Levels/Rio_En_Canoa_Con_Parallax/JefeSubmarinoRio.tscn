@@ -1,0 +1,75 @@
+[gd_scene format=3 uid="uid://dp10k68jou6qm"]
+
+[ext_resource type="Script" uid="uid://bgsvl3cjctvtm" path="res://Levels/Rio_En_Canoa_Con_Parallax/JefeSubmarinoRio.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bhp7geovbkcnr" path="res://TEST_/Submarino/Submarino.glb" id="2_model"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/Submarino_Mat.tres" id="3_mat"]
+[ext_resource type="AudioStream" uid="uid://rflvfwmr1wm5" path="res://TEST_/splash sonido.mp3" id="4_audio"]
+[ext_resource type="PackedScene" uid="uid://xh8qpha3tyeo" path="res://TEST_/Cañon submarino/cañon submarino.glb" id="5_canon"]
+[ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanonSubmarino_Mat.tres" id="6_canon_mat"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/HumoEstilizadoJefe.tscn" id="7_humo"]
+[ext_resource type="PackedScene" uid="uid://f5jx3tltdu1x" path="res://TEST_/Submarino destruido/Submarino destruido.glb" id="8_d36xo"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cubierta"]
+size = Vector3(5.3, 0.25, 2.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_casco"]
+size = Vector3(6.0793943, 1.4766114, 3.2)
+
+[node name="JefeSubmarinoRio" type="Node3D" unique_id=461192421]
+script = ExtResource("1_script")
+material_submarino = ExtResource("3_mat")
+canon_margen_boca = 0.3
+
+[node name="PivotFlotacion" type="Node3D" parent="." unique_id=996781076]
+
+[node name="Model" parent="PivotFlotacion" unique_id=1032200888 instance=ExtResource("2_model")]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0)
+
+[node name="Submarino" parent="PivotFlotacion/Model" index="0" unique_id=870584487]
+material_override = ExtResource("3_mat")
+surface_material_override/0 = ExtResource("3_mat")
+
+[node name="PlataformaCubierta" type="AnimatableBody3D" parent="PivotFlotacion" unique_id=1622437141]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 1.75, 0)
+collision_mask = 0
+sync_to_physics = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PivotFlotacion/PlataformaCubierta" unique_id=619281582]
+shape = SubResource("BoxShape3D_cubierta")
+debug_color = Color(0.9, 0.2, 0.6, 0.5)
+
+[node name="CascoColision" type="StaticBody3D" parent="PivotFlotacion" unique_id=2020214487]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PivotFlotacion/CascoColision" unique_id=1805975075]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.78676724, 0.16169417, 0)
+shape = SubResource("BoxShape3D_casco")
+
+[node name="SpawnPoint" type="Marker3D" parent="PivotFlotacion" unique_id=1541168646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.48, 1.9, 0)
+
+[node name="AudioSplash" type="AudioStreamPlayer3D" parent="PivotFlotacion" unique_id=370240808]
+stream = ExtResource("4_audio")
+volume_db = 2.0
+unit_size = 25.0
+
+[node name="CanonModel" parent="PivotFlotacion" unique_id=488647061 instance=ExtResource("5_canon")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 1.2, 1.85, 0)
+
+[node name="cañon submarino" parent="PivotFlotacion/CanonModel" index="0" unique_id=746250833]
+transform = Transform3D(-0.9949477, -0.09735769, -0.020050148, -0.09857872, 0.99361545, 0.044888794, 0.019008977, 0.057006154, -0.8166519, 0.06463623, -0.27995586, -0.27738756)
+surface_material_override/0 = ExtResource("6_canon_mat")
+
+[node name="HumoEstilizadoJefe" parent="PivotFlotacion" unique_id=987654321 instance=ExtResource("7_humo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 2.15, 0)
+
+[node name="NotificadorCamaraSubmarino" type="VisibleOnScreenNotifier3D" parent="." unique_id=305331168]
+aabb = AABB(-4.5, -4.5, -2.5, 9, 8, 5)
+
+[node name="Submarino destruido2" parent="." unique_id=287241019 instance=ExtResource("8_d36xo")]
+transform = Transform3D(7.3715463, 0, 0.70470095, 0, 7.001414, 0, -0.5625758, 0, 9.233838, -0.31357026, 0.022196293, -0.015754461)
+visible = false
+
+[editable path="PivotFlotacion/Model"]
+[editable path="PivotFlotacion/CanonModel"]

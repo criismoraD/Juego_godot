@@ -23,6 +23,8 @@ const CANTIDAD_SEGMENTOS: int = 3
 const CANTIDAD_SEGMENTOS_CORDILLERA: int = 12
 const CANTIDAD_SEGMENTOS_ARBOLES: int = 8
 const CANTIDAD_SEGMENTOS_NUBES: int = 5
+const CANTIDAD_SEGMENTOS_BOSQUE_ROJO: int = 7
+const CANTIDAD_SEGMENTOS_NIEBLA: int = 3
 const CANTIDAD_SEGMENTOS_ATARDECER: int = 1
 const PROFUNDIDAD_ATARDECER: float = -38.0
 const PROFUNDIDAD_CORDILLERA: float = -28.0
@@ -80,12 +82,12 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 @export var sincronizar_casa_boneta_con_cordillera: bool = true  ## Si true, la CasaBoneta se desplaza a la misma velocidad de la cordillera
 
 @export_category("Reciclaje parallax")
-@export var margen_reciclaje_atras: float = 30.0  ## Distancia tras la cámara donde se recicla
+@export var margen_reciclaje_atras: float = 35.0  ## Distancia tras la cámara donde se recicla
 @export var margen_reciclaje_adelante: float = 55.0  ## Distancia delante de la cámara donde reaparece (fuera de vista)
 
 @export_category("Bosque rojo")
 @export var sincronizar_bosque_rojo_con_fondo: bool = true  ## Si true, el BosqueRojo hace scroll parallax detrás de la cordillera
-@export var factor_bosque_rojo: float = 0.15  ## Entre nubes (0.08) y árboles (0.18): es lo más lejano
+@export var factor_bosque_rojo: float = 0.25  ## Detrás de la cordillera (0.35) y por delante de árboles lejanos (0.18)
 @export var ancho_segmento_bosque_rojo: float = 40.0  ## Ancho de cada franja de bosque para el wrap del loop (solape continuo)
 
 @export_category("Montaña beta")
@@ -128,6 +130,8 @@ var _nodo_capa_atardecer: Node3D = null
 var _nodo_capa_cordillera: Node3D = null
 var _camara_referencia: Camera3D = null
 var _offset_fondo_video_x: float = 8.06
+var _frame_video_counter: int = 0  ## Contador para throttle de actualización de textura de video
+var _x_camara_cache: float = 0.0   ## Caché de posición X de cámara (1 acceso por frame)
 
 
 # === FUNCIONES BUILT-IN ===
@@ -142,8 +146,13 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 
-	# Actualizar frame de video en Sprite3D
-	_actualizar_video_frame()
+	# Cachear posición X de cámara una sola vez por frame (evita 11+ llamadas)
+	_x_camara_cache = _obtener_x_camara()
+
+	# Actualizar frame de video: solo cada 5 frames (vídeo va a 0.03x, imperceptible)
+	_frame_video_counter = (_frame_video_counter + 1) % 5
+	if _frame_video_counter == 0:
+		_actualizar_video_frame()
 
 	# El fondo de video es 100% estático en el encuadre de la cámara
 	_mantener_fondo_video_estatico()
@@ -525,17 +534,9 @@ func _actualizar_loop_reflejo(delta: float) -> void:
 
 	var x_cam: float = _obtener_x_camara()
 	var x_cam_local: float = _nodo_capa_reflejo.to_local(Vector3(x_cam, 0.0, 0.0)).x if _nodo_capa_reflejo else x_cam
-	var limite_izquierdo: float = x_cam_local - 30.0
+	var limite_izquierdo: float = x_cam_local - 40.0
 
-	var x_maxima: float = -INF
-	for seg in _segmentos_reflejo:
-		if is_instance_valid(seg) and seg.position.x > x_maxima:
-			x_maxima = seg.position.x
-
-	for seg in _segmentos_reflejo:
-		if is_instance_valid(seg) and seg.position.x <= limite_izquierdo:
-			seg.position.x = x_maxima + ancho_segmento_cordillera
-			x_maxima = seg.position.x
+	_envolver_segmentos(_segmentos_reflejo, ancho_segmento_cordillera, limite_izquierdo)
 
 
 func _inicializar_capa_piso_aliado() -> void:
@@ -748,17 +749,9 @@ func _actualizar_loop_cordillera(delta: float) -> void:
 
 	var x_cam: float = _obtener_x_camara()
 	var x_cam_local: float = _nodo_capa_cordillera.to_local(Vector3(x_cam, 0.0, 0.0)).x if _nodo_capa_cordillera else x_cam
-	var limite_izquierdo: float = x_cam_local - 30.0
+	var limite_izquierdo: float = x_cam_local - 40.0
 
-	var x_maxima: float = -INF
-	for seg in _segmentos_cordillera:
-		if seg.position.x > x_maxima:
-			x_maxima = seg.position.x
-
-	for seg in _segmentos_cordillera:
-		if seg.position.x <= limite_izquierdo:
-			seg.position.x = x_maxima + ancho_segmento_cordillera
-			x_maxima = seg.position.x
+	_envolver_segmentos(_segmentos_cordillera, ancho_segmento_cordillera, limite_izquierdo)
 
 
 func _actualizar_loop_piso_aliado(delta: float) -> void:
@@ -774,17 +767,9 @@ func _actualizar_loop_piso_aliado(delta: float) -> void:
 	var x_cam: float = _obtener_x_camara()
 	var contenedor: Node = _segmentos_piso_aliado[0].get_parent() if is_instance_valid(_segmentos_piso_aliado[0]) else null
 	var x_cam_local: float = (contenedor as Node3D).to_local(Vector3(x_cam, 0.0, 0.0)).x if (contenedor is Node3D and contenedor != self and contenedor != get_parent()) else x_cam
-	var limite_izquierdo: float = x_cam_local - 30.0
+	var limite_izquierdo: float = x_cam_local - 40.0
 
-	var x_maxima: float = -INF
-	for piso in _segmentos_piso_aliado:
-		if is_instance_valid(piso) and piso.position.x > x_maxima:
-			x_maxima = piso.position.x
-
-	for piso in _segmentos_piso_aliado:
-		if is_instance_valid(piso) and piso.position.x <= limite_izquierdo:
-			piso.position.x = x_maxima + ancho_segmento_piso
-			x_maxima = piso.position.x
+	_envolver_segmentos(_segmentos_piso_aliado, ancho_segmento_piso, limite_izquierdo)
 
 
 func _inicializar_capa_agua_textura() -> void:
@@ -999,6 +984,37 @@ func _actualizar_loop_niebla(delta: float) -> void:
 	_reciclar_fuera_de_vista(_segmentos_niebla, ancho_segmento_niebla)
 
 
+## Envoltura modular continua: los segmentos que quedan tras limite_izq
+## reaparecen de forma contigua y ordenada a la derecha de x_maxima sin saltos ni huecos.
+func _envolver_segmentos(segmentos: Array, ancho: float, limite_izq: float) -> void:
+	if segmentos.is_empty():
+		return
+
+	var x_maxima: float = -INF
+	for seg in segmentos:
+		var nodo := seg as Node3D
+		if is_instance_valid(nodo) and nodo.position.x > x_maxima:
+			x_maxima = nodo.position.x
+
+	var para_envolver: Array[Node3D] = []
+	for seg in segmentos:
+		var nodo := seg as Node3D
+		if is_instance_valid(nodo) and nodo.position.x <= limite_izq:
+			para_envolver.append(nodo)
+
+	if para_envolver.is_empty():
+		return
+
+	# Ordenar de izquierda a derecha por posición X para preservar el orden espacial
+	para_envolver.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		return a.position.x < b.position.x
+	)
+
+	for nodo in para_envolver:
+		nodo.position.x = x_maxima + ancho
+		x_maxima = nodo.position.x
+
+
 ## Reciclaje genérico sin pops: lo que sale por la izquierda reaparece
 ## fuera de vista a la derecha (conserva el grupo si sigue delante).
 func _reciclar_fuera_de_vista(segmentos: Array, ancho: float) -> void:
@@ -1151,15 +1167,7 @@ func _actualizar_loop_arboles(delta: float) -> void:
 	var x_cam_local: float = contenedor.to_local(Vector3(x_cam, 0.0, 0.0)).x if contenedor else x_cam
 	var limite_izq: float = x_cam_local - 35.0
 
-	var x_max: float = -INF
-	for s in _sprites_arboles:
-		if s.position.x > x_max:
-			x_max = s.position.x
-
-	for s in _sprites_arboles:
-		if s.position.x <= limite_izq:
-			s.position.x = x_max + ancho_segmento_arboles
-			x_max = s.position.x
+	_envolver_segmentos(_sprites_arboles, ancho_segmento_arboles, limite_izq)
 
 
 func _actualizar_loop_nubes(delta: float) -> void:
@@ -1175,15 +1183,7 @@ func _actualizar_loop_nubes(delta: float) -> void:
 	var x_cam_local: float = contenedor.to_local(Vector3(x_cam, 0.0, 0.0)).x if contenedor else x_cam
 	var limite_izq: float = x_cam_local - 55.0
 
-	var x_max: float = -INF
-	for s in _sprites_nubes:
-		if s.position.x > x_max:
-			x_max = s.position.x
-
-	for s in _sprites_nubes:
-		if s.position.x <= limite_izq:
-			s.position.x = x_max + ancho_segmento_nubes
-			x_max = s.position.x
+	_envolver_segmentos(_sprites_nubes, ancho_segmento_nubes, limite_izq)
 
 
 func _actualizar_loop_terroso(delta: float) -> void:

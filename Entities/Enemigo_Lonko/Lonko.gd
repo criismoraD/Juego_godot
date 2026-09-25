@@ -685,9 +685,11 @@ func _process_walking(delta: float) -> void:
 		return
 
 	var limite_izq: float = _obtener_limite_izquierdo_x()
-	if global_position.x <= limite_izq:
+	var en_borde_plataforma: bool = evitar_caer_plataformas and is_on_floor() and not hay_suelo_adelante(-1.0)
+	if (limite_izq != -INF and global_position.x <= limite_izq) or en_borde_plataforma:
 		velocity.x = 0
-		global_position.x = max(global_position.x, limite_izq)
+		if limite_izq != -INF:
+			global_position.x = max(global_position.x, limite_izq)
 		_reached_position = true
 		_base_pos_pilar = global_position
 		_detener_sonido_correr()
@@ -811,7 +813,7 @@ func _iniciar_secuencia_pilar() -> void:
 				var col_shape := CollisionShape3D.new()
 				var cylinder := CylinderShape3D.new()
 				cylinder.height = altura_pilar
-				cylinder.radius = 0.85
+				cylinder.radius = 1.35
 				col_shape.shape = cylinder
 				col_shape.position = Vector3(0, altura_pilar * 0.5, 0)
 				pilar_body.add_child(col_shape)
@@ -2095,6 +2097,9 @@ func _lanzar_arco_explosivo() -> void:
 
 
 func _drop_power_up() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if not power_up_explosivo_scene:
 		return
 	var chance_efectiva := _get_effective_drop_chance(drop_chance_flecha_explosiva)

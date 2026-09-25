@@ -34,7 +34,7 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(45.0)
 	safe_margin = 0.001
 
-	_ajustar_linea_negra_minima()
+	_quitar_linea_negra()
 
 
 	_arquera_modelo = find_child("ArqueraModel", true, false) as Node3D
@@ -62,19 +62,20 @@ func _ready() -> void:
 		_anim_tree.set("parameters/Locomocion/transition_request", "idle")
 
 
-func _ajustar_linea_negra_minima() -> void:
+## Sin línea negra en la torre: se retira el next_pass de contorno y las mallas
+## salen del grupo outline_meshes (para que el toggle global de bordes no lo
+## reponga). Solo duplica el material si hay contorno que quitar.
+func _quitar_linea_negra() -> void:
 	for node in find_children("*", "MeshInstance3D", true, false):
 		var mesh_instance := node as MeshInstance3D
 		if not mesh_instance:
 			continue
-
+		if mesh_instance.is_in_group("outline_meshes"):
+			mesh_instance.remove_from_group("outline_meshes")
 		var mat: Material = mesh_instance.material_override if mesh_instance.material_override else mesh_instance.get_active_material(0)
-		if mat and mat is StandardMaterial3D:
-			var dup_mat: StandardMaterial3D = mat.duplicate() as StandardMaterial3D
-			if dup_mat.next_pass and dup_mat.next_pass is ShaderMaterial:
-				var next_p: ShaderMaterial = dup_mat.next_pass.duplicate() as ShaderMaterial
-				next_p.set_shader_parameter("outline_width", 2.0)
-				dup_mat.next_pass = next_p
+		if mat and mat is StandardMaterial3D and (mat as StandardMaterial3D).next_pass != null:
+			var dup_mat: StandardMaterial3D = (mat as StandardMaterial3D).duplicate() as StandardMaterial3D
+			dup_mat.next_pass = null
 			mesh_instance.material_override = dup_mat
 
 

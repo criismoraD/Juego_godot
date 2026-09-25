@@ -29,6 +29,9 @@ func change_scene(target_path: String, _extra_prewarms: Array = []) -> void:
 	_is_loading = true
 	_loading_path = target_path
 
+	if not target_path.to_lower().contains("rio"):
+		RioEnCanoaConParallax.reset_checkpoint()
+
 	# 1. Instanciar y mostrar pantalla de carga
 	if loading_screen_scene:
 		_current_loading_screen = loading_screen_scene.instantiate() as CanvasLayer

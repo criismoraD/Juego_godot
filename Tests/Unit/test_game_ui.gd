@@ -8,7 +8,7 @@ class MockAudioManager extends Node:
 	func play_music(_index): pass
 	func set_music_volume(_value): pass
 	func set_sfx_volume(_value): pass
-	func stop_all(): pass
+	func stop_all(_incluir_musica: bool = true): pass
 
 var _mock_audio_created: bool = false
 
@@ -301,5 +301,40 @@ func test_ejecutar_cambio_oleada_6_guarda_solicitud() -> void:
 	assert_eq(GameUIScript.oleada_inicial_solicitada, 6, "Debe registrar oleada 6 al solicitar cambio")
 	GameUIScript.oleada_inicial_solicitada = 0
 	remove_child(_game_ui)
+
+
+func test_textos_hud_y_pausa_sujetos_a_traduccion() -> void:
+	# Arrange: claves de jugador (HUD + pausa + gráficos) con es/en obligatorios
+	var claves: Array[String] = [
+		"HUD_OLEADA_EN_PROGRESO", "HUD_ENEMIGOS_RESTANTES",
+		"HUD_BTN_PLAY", "HUD_BTN_PAUSA",
+		"PAUSA_TITULO", "PAUSA_CONTINUAR", "PAUSA_REINICIAR",
+		"PAUSA_MENU_PRINCIPAL", "PAUSA_SALIR_JUEGO", "PAUSA_CONTROLAR_PERRENA",
+		"PAUSA_AUDIO", "PAUSA_VOLUMEN_GENERAL", "PAUSA_MUSICA",
+		"PAUSA_CALIDAD_GRAFICA", "PAUSA_CALIDAD_BAJA", "PAUSA_CALIDAD_MEDIA",
+		"PAUSA_CALIDAD_ALTA", "PAUSA_RESOLUCION", "PAUSA_PANTALLA_COMPLETA",
+		"BTN_REINICIAR_PARTIDA", "GALERIA_VIDEO",
+		"RIO_ASALTO_SUPERADO", "MENU_INICIAR_MISION",
+	]
+	var acceso := FileAccess.open("res://Translations/translations.csv", FileAccess.READ)
+	assert_not_null(acceso, "Debe poder leerse translations.csv")
+	var texto: String = acceso.get_as_text()
+
+	# Act & Assert
+	for clave in claves:
+		var fila: String = ""
+		for linea in texto.split("\n"):
+			if linea.begins_with(clave + ","):
+				fila = linea.strip_edges()
+				break
+		assert_ne(fila, "", "translations.csv debe contener la fila " + clave)
+		if fila == "":
+			continue
+		var campos := fila.split(",")
+		assert_gte(campos.size(), 3, "La fila " + clave + " debe tener al menos 3 campos")
+		if campos.size() < 3:
+			continue
+		assert_ne(campos[1].strip_edges(), "", "La fila " + clave + " debe tener texto en español")
+		assert_ne(campos[2].strip_edges(), "", "La fila " + clave + " debe tener texto en inglés")
 
 

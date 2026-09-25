@@ -146,16 +146,38 @@ var _rng := RandomNumberGenerator.new()
 var _tween_prompt: Tween
 var _tween_icono: Tween
 var _prompt_hablar: Node3D
+## El NPC solo existe tras terminar la misión 5 (antes queda oculto e inactivo).
+var npc_disponible: bool = true
+## True mientras el diálogo en curso es el Plan de asalto (opción 0).
+var _dialogo_actual_es_asalto: bool = false
 
 
 func _ready() -> void:
 	_aplicar_material()
-	_ajustar_linea_negra()
+	_quitar_linea_negra()
 	_construir_arbol()
 	_construir_colision()
 	_rng.randomize()
 	_rellenar_consejos()
 	_construir_interaccion()
+	aplicar_visibilidad_progresion()
+
+
+## Perrena solo aparece en la torre después de terminar la misión 5.
+## Sin progresión: oculta, sin proceso, sin input y sin detección por área.
+func aplicar_visibilidad_progresion() -> void:
+	npc_disponible = GameUI.regreso_conversacion_nivel5
+	visible = npc_disponible
+	set_process(npc_disponible)
+	set_process_unhandled_input(npc_disponible)
+	_jugador_cerca = false
+	var area := area_interaccion if area_interaccion else find_child("AreaInteraccion", true, false) as Area3D
+	if area:
+		area.set_deferred("monitoring", npc_disponible)
+	if _prompt_hablar:
+		_prompt_hablar.visible = false
+	if not npc_disponible:
+		_cerrar_menu_conversacion()
 
 
 func _exit_tree() -> void:
@@ -224,19 +246,19 @@ func _aplicar_material() -> void:
 		(mesh as MeshInstance3D).material_override = MAT_PERRENA
 
 
-## Contorno fino dentro de la torre (mismo criterio que PlayerInterior).
-func _ajustar_linea_negra() -> void:
+## Sin línea negra en la torre (mismo criterio que PlayerInterior): se retira
+## el next_pass de contorno y las mallas salen del grupo outline_meshes.
+func _quitar_linea_negra() -> void:
 	for node in find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if not mi:
 			continue
+		if mi.is_in_group("outline_meshes"):
+			mi.remove_from_group("outline_meshes")
 		var mat: Material = mi.material_override if mi.material_override else mi.get_active_material(0)
-		if mat and mat is StandardMaterial3D:
-			var dup := mat.duplicate() as StandardMaterial3D
-			if dup.next_pass and dup.next_pass is ShaderMaterial:
-				var np := dup.next_pass.duplicate() as ShaderMaterial
-				np.set_shader_parameter("outline_width", 2.0)
-				dup.next_pass = np
+		if mat and mat is StandardMaterial3D and (mat as StandardMaterial3D).next_pass != null:
+			var dup := (mat as StandardMaterial3D).duplicate() as StandardMaterial3D
+			dup.next_pass = null
 			mi.material_override = dup
 
 
@@ -404,6 +426,8 @@ func _conectar_area_interaccion() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
+	if not npc_disponible:
+		return
 	if body.is_in_group("player_interior") or body is CharacterBody3D:
 		_jugador_cerca = true
 		_animar_prompt(true)
@@ -539,6 +563,8 @@ func _refrescar_textos_menu() -> void:
 ## Proximidad por distancia (matemática pura, sin física): se evalúa en
 ## cada _process y conmuta prompt/menú solo al cruzar el umbral.
 func _actualizar_proximidad() -> void:
+	if not npc_disponible:
+		return
 	var jugador := _obtener_jugador()
 	if jugador == null:
 		return
@@ -563,6 +589,8 @@ func _obtener_jugador() -> Node3D:
 
 
 func _unhandled_input(evento: InputEvent) -> void:
+	if not npc_disponible:
+		return
 	if _dialogo_activo:
 		return
 	if not (evento is InputEventKey):
@@ -696,7 +724,7 @@ func _on_opcion_conversacion(indice: int) -> void:
 		AudioManager.play_sfx("seleccion_menu")
 	match indice:
 		0:
-			_mostrar_dialogo_torre(DIALOGO_ASALTO_PAGINAS, DIALOGO_ASALTO_HABLANTES)
+			_mostrar_dialogo_torre(DIALOGO_ASALTO_PAGINAS, DIALOGO_ASALTO_HABLANTES, true)
 		1:
 			_mostrar_dialogo_torre(DIALOGO_CIVILES_PAGINAS, DIALOGO_CIVILES_HABLANTES)
 		2:
@@ -710,13 +738,14 @@ func _on_opcion_conversacion(indice: int) -> void:
 ## su escena (DialogoComic dual Eryn-Perrena) con páginas propias por
 ## clave. Al terminar vuelve al menú de opciones (no lo cierra), para
 ## poder pedir otro tema u otro consejo sin reabrir con E.
-func _mostrar_dialogo_torre(paginas: Array[String], hablantes: Array[String]) -> void:
+func _mostrar_dialogo_torre(paginas: Array[String], hablantes: Array[String], es_plan_asalto: bool = false) -> void:
 	if _dialogo_activo or paginas.is_empty():
 		return
 	if get_tree() == null:
 		push_warning("[PerrenaNPC] Sin árbol para mostrar el diálogo.")
 		return
 	_dialogo_activo = true
+	_dialogo_actual_es_asalto = es_plan_asalto
 	if _menu_conversacion:
 		_menu_conversacion.visible = false
 	if _prompt_hablar:
@@ -744,6 +773,9 @@ func _on_dialogo_torre_terminado(dialogo: DialogoComic) -> void:
 	if is_instance_valid(dialogo):
 		dialogo.queue_free()
 	_dialogo_activo = false
+	if _dialogo_actual_es_asalto:
+		_dialogo_actual_es_asalto = false
+		_marcar_plan_asalto_escuchado()
 	if _menu_abierto:
 		if _menu_conversacion:
 			_menu_conversacion.visible = true
@@ -785,6 +817,15 @@ func _mostrar_consejo_perrena() -> void:
 	var paginas: Array[String] = [clave]
 	var hablantes: Array[String] = [HABLANTE_PERRENA]
 	_mostrar_dialogo_torre(paginas, hablantes)
+
+
+## Al terminar de escuchar el Plan de asalto se desbloquea "Iniciar misión"
+## al Río: marca persistente de sesión + aviso a la torre.
+func _marcar_plan_asalto_escuchado() -> void:
+	GameUI.plan_asalto_escuchado = true
+	var arbol := get_tree()
+	if arbol:
+		arbol.call_group("torre_interior", "desbloquear_mision_rio")
 
 
 ## SFX de salida del menú (solo en salida explícita: opción Salir o ESC;

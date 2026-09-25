@@ -43,7 +43,7 @@ func _ready() -> void:
 func _crear_boton_saltar() -> void:
 	var skip_btn = Button.new()
 	skip_btn.name = "SkipButton"
-	skip_btn.text = "SKIP ⏭"
+	skip_btn.text = tr("BTN_SKIP")
 	skip_btn.custom_minimum_size = Vector2(120, 40)
 	skip_btn.focus_mode = Control.FOCUS_NONE  # Evita que tome el foco de teclado por defecto
 

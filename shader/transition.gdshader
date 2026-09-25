@@ -44,13 +44,24 @@ void fragment() {
 
 	vec2 aspect_uv = ((UV-vec2(0.0,0.5)) * vec2(1.0, aspect))+vec2(0.0,0.5);
 
-	float value = clamp((gradient(UV, aspect_uv, gradient_fixed) - progress) / (width), 0.0, 1.0);
+	float grad_val = gradient(UV, aspect_uv, gradient_fixed);
+	float raw_value = (grad_val - progress) / width;
+	float value = clamp(raw_value, 0.0, 1.0);
 
 	vec2 tiled_uv = rotate(mod((aspect_uv + vec2(TIME)*shape_scroll) * shape_tiling, 1.0), vec2(0.5), radians(shape_rotation));
 	float shape_value = 1.0 - texture(shape_texture, tiled_uv).r;
 
-	shape_value = mix(shape_feathering * 0.5, 1.0 - shape_feathering * 0.5, shape_value);
-	float shaped_gradient = smoothstep(value - (shape_feathering * 0.5), value + (shape_feathering * 0.5), shape_treshold - shape_value);
+	// Expansión suave de los círculos hacia las 4 esquinas de cada celda para evitar huecos en la estela:
+	float umbral_efectivo = mix(shape_treshold + 0.45, shape_treshold, smoothstep(0.0, 0.35, value));
+
+	float feather = max(shape_feathering, 0.001);
+	shape_value = mix(feather * 0.5, 1.0 - feather * 0.5, shape_value);
+	float shaped_gradient = smoothstep(value - (feather * 0.5), value + (feather * 0.5), umbral_efectivo - shape_value);
+
+	// Consolidación en negro total en la estela del barrido y al completarse la transición:
+	if (raw_value <= 0.0 || factor >= 1.0) {
+		shaped_gradient = 1.0;
+	}
 
 	COLOR.rgb = base_color.rgb;
 	COLOR.a = shaped_gradient;

@@ -167,6 +167,10 @@ var _trajectory_immediate_mesh: ImmediateMesh = null
 var _trajectory_material: Material = null
 var _trajectory_impact_marker: Node3D = null
 var _trajectory_fade_timer: float = 0.0
+const INTERVALO_TRAYECTORIA: float = 1.0 / 30.0  ## OPT: la predicción con raycasts se recalcula a 30 Hz
+var _tiempo_desde_trayectoria: float = 99.0
+var _trajectory_reticle: Sprite3D = null  ## OPT: caché para no buscarlo cada frame
+var _trajectory_center_dot: MeshInstance3D = null  ## OPT: caché para no buscarlo cada frame
 # === HITBOX ===
 var collision_shape_node: CollisionShape3D
 var hitbox_altura_original: float = 1.8
@@ -2673,6 +2677,7 @@ func _setup_trayectoria_visual() -> void:
 	dot_mat.render_priority = 101
 	dot_mesh_inst.material_override = dot_mat
 	_trajectory_impact_marker.add_child(dot_mesh_inst)
+	_trajectory_center_dot = dot_mesh_inst
 
 	# 2. Puntero / Mira de la flecha regular (Sprite3D con Mira mouse.png)
 	var reticle_sprite := Sprite3D.new()
@@ -2686,6 +2691,7 @@ func _setup_trayectoria_visual() -> void:
 	reticle_sprite.no_depth_test = true
 	reticle_sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	_trajectory_impact_marker.add_child(reticle_sprite)
+	_trajectory_reticle = reticle_sprite
 
 	add_child(_trajectory_impact_marker)
 
@@ -2694,6 +2700,12 @@ func _actualizar_trayectoria_explosiva() -> void:
 	if municion_activa != TipoMunicion.EXPLOSIVA or flechas_explosivas <= 0 or current_aim_state == AimState.NONE or current_aim_state == AimState.SHOOTING:
 		_ocultar_trayectoria_explosiva()
 		return
+
+	# OPT: la predicción con cientos de raycasts corre a 30 Hz, no cada frame
+	_tiempo_desde_trayectoria += get_process_delta_time()
+	if _tiempo_desde_trayectoria < INTERVALO_TRAYECTORIA:
+		return
+	_tiempo_desde_trayectoria = 0.0
 
 	# Ocultar el cursor del ratón mientras se apunta con flecha explosiva
 	if Input.mouse_mode != Input.MOUSE_MODE_HIDDEN:
@@ -2858,16 +2870,15 @@ func _actualizar_trayectoria_explosiva() -> void:
 	if _trajectory_impact_marker:
 		_trajectory_impact_marker.global_position = punto_impacto
 		_trajectory_impact_marker.visible = true
-		var reticle := _trajectory_impact_marker.find_child("ReticleSprite", true, false) as Sprite3D
-		if reticle:
-			reticle.modulate.a = 0.95 * fade_in_alpha
-		var center_dot := _trajectory_impact_marker.find_child("CenterDot", true, false) as MeshInstance3D
-		if center_dot and center_dot.material_override is StandardMaterial3D:
-			center_dot.material_override.albedo_color.a = 0.95 * fade_in_alpha
+		if is_instance_valid(_trajectory_reticle):
+			_trajectory_reticle.modulate.a = 0.95 * fade_in_alpha
+		if is_instance_valid(_trajectory_center_dot) and _trajectory_center_dot.material_override is StandardMaterial3D:
+			_trajectory_center_dot.material_override.albedo_color.a = 0.95 * fade_in_alpha
 
 
 func _ocultar_trayectoria_explosiva() -> void:
 	_trajectory_fade_timer = 0.0
+	_tiempo_desde_trayectoria = 99.0  # OPT: la próxima vez se calcula al instante
 	if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		if not _cursor_sistema_activo:

@@ -12,6 +12,7 @@ const TEXTURA_ROCAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS
 const SFX_IMPACTO_PESADO: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Impacto_pesado.mp3")
 const TEXTURA_SANGRE_DECAL: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png")
 const TEXTURA_HUMO_CANASTA: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_2A-2.png")
+const ESCENA_SPLASH_AGUA_AZULINA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
 
 # === CONFIGURACIÓN - SQUASH AND STRETCH ===
 @export_category("Squash and Stretch")
@@ -20,6 +21,13 @@ const TEXTURA_HUMO_CANASTA: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_
 @export_range(0.0, 0.80, 0.01) var squash_maximo_impacto: float = 0.55  ## Compresión vertical extrema al golpear el suelo (hasta -55% de altura)
 @export var velocidad_stretch_aire: float = 14.0  ## Rapidez con la que se deforma durante la aceleración en el aire
 @export var offset_entierro_suelo: float = -0.05  ## Desplazamiento vertical al impactar para enterrarse en el suelo (evita flotar)
+
+# === CONFIGURACIÓN - SALPICADURA AL CAER AL AGUA ===
+@export_category("Salpicadura al caer al agua")
+@export var salpicadura_al_cair_agua: bool = true  ## Si true, genera el splash del enemigo Azulina al cruzar la superficie del agua
+@export_range(0.0, 2.0, 0.05) var escala_salpicadura_agua: float = 0.45  ## Tamaño del splash (Azulina usa 0.35 al emerger; el canasto es más grande)
+@export var duracion_salpicadura_agua: float = 3.0  ## Segundos visible el splash antes de liberarse (su animación es en loop)
+@export_range(0.0, 1.0, 0.01) var profundidad_rotura_agua: float = 0.1  ## Metros bajo la superficie donde nace el splash
 
 var _area_dano: Area3D = null
 var _golpeados: Dictionary = {}
@@ -33,6 +41,8 @@ var _squash_stretch_current: Vector3 = Vector3.ONE
 var _squash_tween: Tween = null
 var _is_squash_tween_active: bool = false
 var _fall_start_y: float = 0.0
+var _agua_rect: Dictionary = {}  ## Superficie de agua cacheada (vacío = sin agua/buscada)
+var _splash_agua_hecho: bool = false  ## True si ya cruzó el agua y generó su splash
 
 func _ready() -> void:
 	super._ready()
@@ -93,6 +103,7 @@ func _physics_process(delta: float) -> void:
 	var prev_vel_y: float = velocity.y
 	velocity.y -= gravity * delta
 	velocity.z = 0.0
+	var pos_previa: Vector3 = global_position
 	var move_step := velocity * delta
 	var target_pos := global_position + move_step
 	var space_state := get_world_3d().direct_space_state
@@ -140,6 +151,8 @@ func _physics_process(delta: float) -> void:
 			rot_speed_z = 0.0
 			resting = true
 			active = false
+	# Splash de agua al cruzar la superficie (efecto del enemigo Azulina)
+	_chequear_entrada_agua(pos_previa)
 	if not resting:
 		# Caer más recta y sin girar descontrolada (amortiguación suave de inclinación)
 		rot_speed_z = move_toward(rot_speed_z, 0.0, delta * 3.0)
@@ -283,6 +296,9 @@ func _manchar_canasta_con_sangre() -> void:
 			tw_d.tween_callback(decal.queue_free)
 
 func _spawn_humo_y_piedras_impacto() -> void:
+	# Si cayó al agua, su efecto es el splash (sin humo/piedras bajo el agua)
+	if _splash_agua_hecho:
+		return
 	# Humo de destrucción de escudo a ambos lados — mismo efecto pero un poco más grande (x1.25)
 	VFXFactory.spawn_shield_break_smoke(self, global_position)
 	_crear_humo_escalado(1.28)
@@ -428,6 +444,84 @@ func _obtener_limite_enemigos_x() -> float:
 		if b is Node3D:
 			limite = max(limite, (b as Node3D).global_position.x)
 	return limite
+
+
+# ==============================================================================
+# SALPICADURA DE AGUA AL CAER (EFECTO DEL ENEMIGO AZULINA)
+# ==============================================================================
+
+## Detecta el cruce de la superficie del agua (grupo "agua") en este paso y
+## genera el splash de la emergencia de Azulina en el punto de rotura.
+func _chequear_entrada_agua(pos_previa: Vector3) -> void:
+	if not salpicadura_al_cair_agua or _splash_agua_hecho:
+		return
+	_rect_agua_lazy()
+	if _agua_rect.is_empty() or _agua_rect.has("vacio") or not _agua_rect.has("minx"):
+		return
+	var p := global_position
+	if p.x < float(_agua_rect["minx"]) or p.x > float(_agua_rect["maxx"]):
+		return
+	if p.z < float(_agua_rect["minz"]) or p.z > float(_agua_rect["maxz"]):
+		return
+	var sup_y := float(_agua_rect["y"])
+	# Solo si este frame cruzó la superficie de arriba hacia abajo
+	if pos_previa.y <= sup_y or p.y > sup_y:
+		return
+	_spawnear_salpicadura_agua(Vector3(p.x, sup_y - profundidad_rotura_agua, p.z))
+
+
+## Busca el plano de agua (grupo "agua") una sola vez y cachea su rectángulo.
+func _rect_agua_lazy() -> void:
+	if not _agua_rect.is_empty() or get_tree() == null:
+		return
+	# Marcar buscada aunque no haya agua para no repetir la búsqueda
+	_agua_rect["vacio"] = true
+	var minx := INF
+	var maxx := -INF
+	var minz := INF
+	var maxz := -INF
+	var supy := 0.0
+	var hay := false
+	for nodo in get_tree().get_nodes_in_group("agua"):
+		if not (nodo is Node3D):
+			continue
+		supy = (nodo as Node3D).global_position.y
+		for m in (nodo as Node).find_children("*", "MeshInstance3D", true, false):
+			var mi := m as MeshInstance3D
+			if mi == null or mi.mesh == null:
+				continue
+			var a: AABB = mi.global_transform * mi.mesh.get_aabb()
+			minx = minf(minx, a.position.x)
+			maxx = maxf(maxx, a.position.x + a.size.x)
+			minz = minf(minz, a.position.z)
+			maxz = maxf(maxz, a.position.z + a.size.z)
+			hay = true
+	if hay:
+		_agua_rect = {"minx": minx, "maxx": maxx, "minz": minz, "maxz": maxz, "y": supy}
+
+
+## Splash de agua idéntico al de la emergencia del enemigo Azulina
+## (splash_vfx.tscn + play_splash, liberado tras mostrarse).
+func _spawnear_salpicadura_agua(punto_rotura: Vector3) -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
+	var sal := ESCENA_SPLASH_AGUA_AZULINA.instantiate() as Node3D
+	if sal == null:
+		return
+	var raiz: Node = get_tree().current_scene
+	if raiz == null:
+		raiz = get_tree().root
+	raiz.add_child(sal)
+	sal.global_position = punto_rotura
+	sal.scale = Vector3(escala_salpicadura_agua, escala_salpicadura_agua, escala_salpicadura_agua)
+	if sal.has_method("play_splash"):
+		sal.play_splash()
+	_splash_agua_hecho = true
+	# Su animación es en loop: liberar tras mostrarse
+	get_tree().create_timer(duracion_salpicadura_agua).timeout.connect(func():
+		if is_instance_valid(sal):
+			sal.queue_free()
+	)
 
 
 # ==============================================================================

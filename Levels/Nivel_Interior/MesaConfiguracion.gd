@@ -29,6 +29,23 @@ var _opcion_foco: int = 0
 var _botones_menu: Array[Button] = []
 
 
+## Oculta/muestra la opción SALIR (post-misión 5: sin salidas de la torre
+## hasta escuchar el Plan de asalto). La navegación ignora botones ocultos.
+func set_salir_visible(v: bool) -> void:
+	if btn_salir:
+		btn_salir.visible = v
+	_opcion_foco = 0
+
+
+## Solo botones visibles para W/S y activación (SALIR puede estar oculto).
+func _botones_navegables() -> Array[Button]:
+	var lista: Array[Button] = []
+	for boton in _botones_menu:
+		if is_instance_valid(boton) and boton.visible:
+			lista.append(boton)
+	return lista
+
+
 func _ready() -> void:
 	_configurar_tinte_mueble()
 
@@ -75,6 +92,11 @@ func _ready() -> void:
 
 	if menu_bestiario:
 		menu_bestiario.cerrado.connect(_on_menu_bestiario_cerrado)
+
+	# Sin dependencia de orden de _ready con la torre: en modo post-misión 5
+	# SALIR nace oculto (Interio lo refuerza al estar listo).
+	if NivelInterior.es_modo_post_mision5():
+		set_salir_visible(false)
 
 	_cerrar_menu(false)
 
@@ -192,17 +214,20 @@ func _otro_submenu_abierto() -> bool:
 
 ## Navegación W/S con vuelta al llegar al extremo, como el menú de la torre.
 func _mover_foco(direccion: int) -> void:
-	if _botones_menu.is_empty():
+	var navegables := _botones_navegables()
+	if navegables.is_empty():
 		return
-	_opcion_foco = wrapi(_opcion_foco + direccion, 0, _botones_menu.size())
-	_botones_menu[_opcion_foco].grab_focus()
+	_opcion_foco = wrapi(_opcion_foco + direccion, 0, navegables.size())
+	navegables[_opcion_foco].grab_focus()
 
 
 ## Activa con E/ENTER la opción con foco (el ratón sigue igual).
 func _activar_foco() -> void:
-	if _botones_menu.is_empty():
+	var navegables := _botones_navegables()
+	if navegables.is_empty():
 		return
-	_botones_menu[_opcion_foco].emit_signal("pressed")
+	_opcion_foco = clampi(_opcion_foco, 0, navegables.size() - 1)
+	navegables[_opcion_foco].emit_signal("pressed")
 
 
 func _abrir_menu() -> void:

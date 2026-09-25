@@ -509,6 +509,10 @@ func _dropear_power_up() -> void:
 		return
 	_drop_realizado = true
 
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
+
 	if not power_up_fuego_rapido_scene:
 		return
 

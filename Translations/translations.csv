@@ -7,6 +7,7 @@ DIALOGO_PACIFISTA,"Mi señora Vesara no tiene interés en arrasar esta tierra, s
 RESULTADO_PACIFISTA,"La diplomacia se impuso y la paz se logró sin disparar ninguna flecha… La maestra oscura Vesara triunfó en su campaña y tras haber saqueado ricas ciudades volvió a cruzar el paso de Medea dejando parte de su botín, desde animales de carga hasta prendas de lujo. Al parecer tu hogar dejará de ser una pequeña aldea oculta para convertirse en un próspero punto comercial.","Diplomacy prevailed and peace was achieved without firing a single arrow… The dark mistress Vesara triumphed in her campaign and after sacking rich cities crossed the pass of Medea again, leaving part of her plunder—from pack animals to luxury garments. It seems your home will no longer be a small hidden village but a prosperous trading post.",,,,「外交が勝利し、一本の矢も放たずに平和が達成された…闇の女主ヴェサラは遠征に勝利し、豊かな都市を略奪した後、メデアの峠を再び越えていった。荷馬から高級衣服まで戦利品の一部を残して。あなたの故郷は小さな隠れ村から繁栄する交易拠点へと変わるだろう。」,"Дипломатия восторжествовала, и мир был достигнут без единого выстрела… Тёмная владычица Весара одержала победу в своём походе, и после разграбления богатых городов вновь пересекла перевал Медеи, оставив часть своей добычи — от вьючных животных до роскошных одежд. Похоже, ваш дом перестанет быть маленькой скрытой деревней и станет процветающим торговым пунктом.",,,,,,,
 TEXTO_GUERRA,"La paz no es una opción, comenzará la verdadera oleada.","Peace is not an option, the true wave will begin.",,,,「平和は選択肢にない。真の襲撃が始まる。」,"Мир — не вариант, начнётся настоящая волна.",,,,,,,
 NIVEL_1_COMPLETADO,¡Nivel 1 completado!,Level 1 complete,,,,レベル1クリア！,Уровень 1 пройден!,,,,,,,
+RIO_ASALTO_SUPERADO,Asalto al rio - Superado,River assault - completed,,,,,,,,,,,,
 BOTON_CONTINUAR,Continuar,Continue,,,,続ける,Продолжить,,,,,,,
 CARTEL_LEVEL_01,Level 01,Level 01,,,,,,,,,,,,
 CARTEL_LEVEL_02,Level 02,Level 02,,,,,,,,,,,,
@@ -47,6 +48,7 @@ PROMPT_INTERACTUAR,Interactuar,Interact,Interagir,Interagir,互动,調べる,В�
 MENU_DEFENSORAS,DEFENSORAS,DEFENDERS,DEFENSORAS,DÉFENSEUSES,防御者,防衛者,ЗАЩИТНИЦЫ,VERTEIDIGERINNEN,방어자,DIFENSORE,OBROŃCZYNIE,المدافعات,HARK'AQKUNA,01000100 01000101 01000110 01000101 01001110 01010011 01001111 01010010 01000001 01010011
 MENU_BESTIARIO,BESTIARIO,BESTIARY,BESTIÁRIO,BESTIAIRE,图鉴,魔物図鑑,БЕСТИАРИЙ,BESTIARIUM,도감,BESTIARIO,BESTIARIUSZ,دليل الوحوش,UYWAKUNA QILLQA,01000010 01000101 01010011 01010100 01001001 01000001 01010010 01011001
 MENU_SALIR,SALIR,EXIT,SAIR,QUITTER,退出,戻る,ВЫЙТИ,VERLASSEN,나가기,ESCI,WYJDŹ,خروج,LLUQSIY,01000101 01011000 01001001 01010100
+MENU_INICIAR_MISION,Iniciar misión,Start mission,,,,,,,,,,,,
 MENU_DEFENSORAS_TITULO,ASIGNACIÓN DE DEFENSORAS,DEFENDER ASSIGNMENT,ATRIBUIÇÃO DE DEFENSORAS,AFFECTATION DES DÉFENSEUSES,配置防守人员,防衛者の配置,НАЗНАЧЕНИЕ ЗАЩИТНИЦ,VERTEIDIGER-ZUWEISUNG,방어자 배치,ASSEGNAZIONE DIFENSORI,PRZYDZIAŁ OBROŃCZYŃ,تعيين المدافعات,HARK'AQKUNATA CHURAY,01000001 01010011 01001001 01000111 01001110
 MENU_DEFENSORAS_SUBTITULO,"Usa W / S para seleccionar piso y A / D para alternar entre Arquera y Ballestera","Use W / S to select floor and A / D to toggle between Archer and Crossbow woman","Use W / S para selecionar o andar e A / D para alternar entre Arqueira e Balesteira","Utilisez Z / S pour choisir l'étage et Q / D pour alterner entre Archère et Arbalétrière","使用 W / S 选择平台，使用 A / D 切换弓箭手与弩手","W/Sでフロアを選択、A/Dで弓兵と弩兵を切り替え","Используйте W / S для выбора этажа и A / D для переключения лучницы и арбалетчицы","Nutze W / S zur Stockwerkwahl und A / D zum Wechseln zwischen Bogenschützin und Armbrustschützin","W / S로 층 선택, A / D로 궁수와 석궁병 전환","Usa W / S per selezionare il piano e A / D per alternare tra Arciera e Balestriera","Użyj W / S aby wybrać piętro oraz A / D aby przełączać między Łuczniczką a Kuszniczką","استخدم W / S لاختيار الطابق و A / D للتبديل بين رامية السهام ورامية القوس","W / S wan patata akllay, A / D wan wach'iq warmita utaq korbata tikray","01010111 00100000 01010011 00100000 01000001 00100000 01000100"
 MENU_DEFENSORAS_PISO_SUPERIOR,PISO SUPERIOR,UPPER FLOOR,ANDAR SUPERIOR,ÉTAGE SUPÉRIEUR,上层平台,上層フロア,ВЕРХНИЙ ЭТАЖ,OBERES STOCKWERK,상층,PIANO SUPERIORE,GÓRNE PIĘTRO,الطابق العلوي,HAWA PATA,01010101 01010000 01010000 01000101 01010010
@@ -123,3 +125,27 @@ TITULO_RIO_TULEMAKI,Rio Tulemaki,Tulemaki River,Rio Tulemaki,Rio Tulemaki,Rio Tu
 
 
 Fallaste,Fallaste,MISS,Falhou,Rate,,,,Daneben,,Mancato,,,,
+PUNTO_DE_GUARDADO,Punto de guardado,Checkpoint,Ponto de salvamento,Point de contrôle,检查点,チェックポイント,Контрольная точка,Kontrollpunkt,체크포인트,Punto di controllo,Punkt kontrolny,نقطة حفظ,Waqaychana pata,01000011 01101000 01100101 01100011 01101011 01110000 01101111 01101001 01101110 01110100
+Punto de guardado,Punto de guardado,Checkpoint,Ponto de salvamento,Point de contrôle,检查点,チェックポイント,Контрольная точка,Kontrollpunkt,체크포인트,Punto di controllo,Punkt kontrolny,نقطة حفظ,Waqaychana pata,01000011 01101000 01100101 01100011 01101011 01110000 01101111 01101001 01101110 01110100
+
+HUD_OLEADA_EN_PROGRESO,Oleada en progreso...,Wave in progress...,,,,,,,,,,,,
+HUD_ENEMIGOS_RESTANTES,ENEMIGOS RESTANTES: %d / %d,REMAINING ENEMIES: %d / %d,,,,,,,,,,,,
+PAUSA_TITULO,⏸️ PAUSA,⏸️ PAUSE,,,,,,,,,,,,
+PAUSA_CONTINUAR,▶️ CONTINUAR,▶️ RESUME,,,,,,,,,,,,
+PAUSA_REINICIAR,🔄 REINICIAR,🔄 RESTART,,,,,,,,,,,,
+PAUSA_MENU_PRINCIPAL,🏠 MENÚ PRINCIPAL,🏠 MAIN MENU,,,,,,,,,,,,
+PAUSA_SALIR_JUEGO,❌ SALIR DEL JUEGO,❌ QUIT GAME,,,,,,,,,,,,
+PAUSA_CONTROLAR_PERRENA,🦊 CONTROLAR PERRENA,🦊 CONTROL PERRENA,,,,,,,,,,,,
+PAUSA_AUDIO,🔊 AUDIO,🔊 AUDIO,,,,,,,,,,,,
+PAUSA_VOLUMEN_GENERAL,Volumen general,Master volume,,,,,,,,,,,,
+PAUSA_MUSICA,Música,Music,,,,,,,,,,,,
+PAUSA_CALIDAD_GRAFICA,⚙️ CALIDAD GRáFICA,⚙️ GRAPHIC QUALITY,,,,,,,,,,,,
+PAUSA_CALIDAD_BAJA,Bajo (Mínimo - 30 FPS),Low (Minimum - 30 FPS),,,,,,,,,,,,
+PAUSA_CALIDAD_MEDIA,Medio (60 FPS),Medium (60 FPS),,,,,,,,,,,,
+PAUSA_CALIDAD_ALTA,Alto (Sin Límite),High (Uncapped),,,,,,,,,,,,
+PAUSA_RESOLUCION,🖥️ RESOLUCIóN,🖥️ RESOLUTION,,,,,,,,,,,,
+PAUSA_PANTALLA_COMPLETA,Pantalla Completa,Fullscreen,,,,,,,,,,,,
+HUD_BTN_PLAY,▶️ PLAY,▶️ PLAY,,,,,,,,,,,,
+HUD_BTN_PAUSA,⏸️ PAUSA,⏸️ PAUSE,,,,,,,,,,,,
+BTN_REINICIAR_PARTIDA,Reiniciar,Restart,,,,,,,,,,,,
+GALERIA_VIDEO,▶ VIDEO,▶ VIDEO,,,,,,,,,,,,

@@ -213,8 +213,8 @@ func test_submarino_enemigos_entran_en_modo_ataque() -> void:
 	assert_eq(goblins.size(), 1)
 	var goblin := goblins[0] as GoblinGirl
 
-	# Simular avance del tween (0.6s)
-	await get_tree().create_timer(0.7).timeout
+	# Simular avance del tween (duración caminata + pausa previo ataque)
+	await get_tree().create_timer(1.5).timeout
 
 	# Assert: debe estar en modo SHOOTING y no dormida
 	assert_false(goblin.get("_dormida_por_camara"), "El enemigo en cubierta no debe estar dormido")

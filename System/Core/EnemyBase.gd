@@ -12,6 +12,7 @@ enum State { WALKING, SHOOTING, DYING, DEAD }
 @export var velocidad_caminar: float = 1.0
 @export var distancia_minima_caminar: float = 1.0
 @export var distancia_maxima_caminar: float = 6.0
+@export var evitar_caer_plataformas: bool = true  ## Si true, no camina ni se cae de bordes/plataformas mientras está vivo
 # === CONFIGURACIÓN - COMBATE ===
 @export_category("Combate")
 @export var vida_maxima: int = 1
@@ -137,6 +138,7 @@ var _cached_mesh_instances: Array[Node] = []
 var _cached_particles: Array[Node] = []
 var _red_flash_material: StandardMaterial3D = null
 var sombra_nodo: Node3D = null  ## Sombra circular procedural (desactivable para spawns de torre)
+var _test_hay_suelo_adelante_override: Variant = null
 # === SEÑALES ===
 var game_feel: Node = null
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -313,8 +315,12 @@ func _store_original_materials():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+func _esta_en_piso() -> bool:
+	return is_on_floor() if _test_floor_normal_override == null else true
+
+
 func _physics_process(delta):
-	if not is_on_floor():
+	if not _esta_en_piso():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
 
 	match current_state:
@@ -341,6 +347,15 @@ func _physics_process(delta):
 					_on_state_walking()
 			velocity.x = -velocidad_caminar
 
+	# Evitar caerse de plataformas mientras el enemigo está vivo
+	if evitar_caer_plataformas and current_state != State.DYING and current_state != State.DEAD and _esta_en_piso():
+		if absf(velocity.x) > 0.01:
+			var dir_avance: float = signf(velocity.x)
+			if not hay_suelo_adelante(dir_avance):
+				velocity.x = 0.0
+				if current_state == State.WALKING:
+					_change_state(State.SHOOTING)
+
 	move_and_slide()
 
 
@@ -361,11 +376,13 @@ func _process_walking(delta):
 				_on_pacifico_detenido()
 		return
 
-	# Límite infranqueable de la isla enemiga
+	# Límite infranqueable de la isla enemiga o borde de plataforma
 	var limite_izq: float = _obtener_limite_izquierdo_x()
-	if global_position.x <= limite_izq:
+	var en_borde_plataforma: bool = evitar_caer_plataformas and _esta_en_piso() and not hay_suelo_adelante(-1.0)
+	if (limite_izq != -INF and global_position.x <= limite_izq) or en_borde_plataforma:
 		velocity.x = 0
-		global_position.x = max(global_position.x, limite_izq)
+		if limite_izq != -INF:
+			global_position.x = max(global_position.x, limite_izq)
 		if solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara():
 			return
 		_change_state(State.SHOOTING)
@@ -421,6 +438,18 @@ func _auto_detectar_nivel_rio() -> void:
 		_asegurar_notificador_pantalla()
 
 
+## En el nivel del río los enemigos NO dropean power-ups: solo la vasija
+## contenedora los otorga. Misma detección de nivel que _auto_detectar_nivel_rio().
+## Cada función de drop de las subclases debe respetar esta guarda.
+static func drops_bloqueados_en_nivel(tree: SceneTree) -> bool:
+	if tree == null:
+		return false
+	var scene := tree.current_scene
+	if scene == null:
+		return false
+	return scene.has_method("obtener_canoa") or "Rio" in scene.name or (scene.scene_file_path != null and "Rio" in scene.scene_file_path)
+
+
 func _asegurar_notificador_pantalla() -> void:
 	if is_instance_valid(_notificador_pantalla):
 		return
@@ -440,23 +469,22 @@ func esta_en_pantalla_o_rango_camara() -> bool:
 	if not solo_atacar_en_pantalla:
 		return true
 
-	# 1. Notificador en pantalla de Godot (culling del motor)
+	# 1. Cámara activa de juego (comprobación estricta de encuadre horizontal 2.5D)
+	var cam := _obtener_camara_para_pantalla()
+	if is_instance_valid(cam):
+		var dx: float = global_position.x - cam.global_position.x
+		if dx > margen_camara_ataque_x or dx < -margen_camara_salida_x:
+			return false
+		if cam.is_position_behind(global_position):
+			return false
+
+	# 2. Notificador en pantalla de Godot (culling del motor)
 	if is_instance_valid(_notificador_pantalla) and _notificador_pantalla.is_on_screen():
 		return true
 
-	# 2. Cámara activa de juego
-	var cam := _obtener_camara_para_pantalla()
+	# 3. Sin cámara no se bloquea en pruebas o entornos aislados
 	if not is_instance_valid(cam):
-		return true  # Sin cámara no se bloquea en pruebas o entornos aislados
-
-	# 3. Comprobación de encuadre en el eje horizontal 2.5D
-	var dx: float = global_position.x - cam.global_position.x
-	if dx > margen_camara_ataque_x or dx < -margen_camara_salida_x:
-		return false
-
-	# 4. Verificar que no esté detrás del plano de la cámara
-	if cam.is_position_behind(global_position):
-		return false
+		return true
 
 	return true
 
@@ -468,6 +496,28 @@ func puede_atacar() -> bool:
 	if solo_atacar_en_pantalla and not esta_en_pantalla_o_rango_camara():
 		return false
 	return true
+
+
+## Comprueba si hay superficie/suelo delante del enemigo en la dirección horizontal de avance.
+## Retorna false si hay un precipicio o agua (evita que los enemigos vivos caminen o caigan de plataformas).
+func hay_suelo_adelante(dir_x: float = -1.0, distancia_adelante: float = 0.45, profundidad_chequeo: float = 1.0) -> bool:
+	if _test_hay_suelo_adelante_override != null:
+		return bool(_test_hay_suelo_adelante_override)
+	if not is_inside_tree():
+		return true
+	var space := get_world_3d().direct_space_state if get_world_3d() else null
+	if space == null:
+		return true
+
+	var d: float = -1.0 if dir_x <= 0.0 else 1.0
+	var origen: Vector3 = global_position + Vector3(d * distancia_adelante, 0.25, 0.0)
+	var destino: Vector3 = origen + Vector3(0.0, -profundidad_chequeo, 0.0)
+
+	var mask_to_use: int = collision_mask if collision_mask > 0 else 1
+	var query := PhysicsRayQueryParameters3D.create(origen, destino, mask_to_use)
+	query.exclude = [get_rid()]
+	var res := space.intersect_ray(query)
+	return not res.is_empty()
 
 
 func _obtener_camara_para_pantalla() -> Camera3D:
@@ -913,6 +963,9 @@ func _start_dissolve_effect():
 	for mesh in _cached_mesh_instances:
 		if not is_instance_valid(mesh):
 			continue
+		# Ignorar sombras procedurales a los pies (su shader no usa textura de cuerpo)
+		if mesh.name == "SombraMesh" or mesh.find_parent("SombraPersonaje") != null:
+			continue
 		if mesh is MeshInstance3D:
 			var material = ShaderMaterial.new()
 			material.shader = dissolve_shader
@@ -922,15 +975,29 @@ func _start_dissolve_effect():
 			material.set_shader_parameter("edge_thickness", 0.05)
 			material.set_shader_parameter("noise_scale", 20.0)
 
-			var original_mat = mesh.get_surface_override_material(0)
-			if original_mat == null and mesh.mesh:
+			var original_mat: Material = mesh.material_override
+			if original_mat == null:
+				original_mat = mesh.get_surface_override_material(0)
+			if original_mat == null and mesh.mesh and mesh.mesh.get_surface_count() > 0:
 				original_mat = mesh.mesh.surface_get_material(0)
+
 			if original_mat and original_mat is StandardMaterial3D:
-				var tex = original_mat.albedo_texture
+				var tex = (original_mat as StandardMaterial3D).albedo_texture
 				if tex:
 					material.set_shader_parameter("albedo_texture", tex)
-				var col = original_mat.albedo_color
+				var col = (original_mat as StandardMaterial3D).albedo_color
 				material.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+			elif original_mat and original_mat is ShaderMaterial:
+				var tex = (original_mat as ShaderMaterial).get_shader_parameter("albedo_texture")
+				if tex and tex is Texture2D:
+					material.set_shader_parameter("albedo_texture", tex)
+
+			# Fallback de textura para variantes como Pirata Goblin o Imp si la malla no la expuso directamente
+			if material.get_shader_parameter("albedo_texture") == null and "material_imp" in self and self.material_imp is StandardMaterial3D:
+				var mat_fallback: StandardMaterial3D = self.material_imp as StandardMaterial3D
+				if mat_fallback.albedo_texture:
+					material.set_shader_parameter("albedo_texture", mat_fallback.albedo_texture)
+					material.set_shader_parameter("albedo_tint", Vector3(mat_fallback.albedo_color.r, mat_fallback.albedo_color.g, mat_fallback.albedo_color.b))
 
 			mesh.material_override = material
 			dissolve_materials.append({"mesh": mesh, "material": material})

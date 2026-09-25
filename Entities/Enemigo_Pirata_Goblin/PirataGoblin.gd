@@ -37,9 +37,10 @@ const MAPA_ANIMACIONES: Dictionary = {
 const ANIMACIONES_LOOP: Array[String] = ["CAMINAR", "CORRER", "IDLE"]
 
 ## Giro extra de yaw aplicado SOLO mientras se reproduce el disparo "Disparo"
-## (alias LANZAR2). El clip ya apunta de perfil: 0 lo deja como sale del
-## submarino (referencia válida para todos). Ajustable en el Inspector.
-@export var grados_extra_disparo: float = 0.0
+## (alias LANZAR2). +90° deja el modelo de perfil a la izquierda (-X, hacia
+## la jugadora); el seguimiento converge al mismo valor. Las demás
+## animaciones quedan intactas.
+@export var grados_extra_disparo: float = 90.0
 ## Velocidad con que el modelo gira para seguir al jugador durante el disparo.
 @export var suavizado_aim_disparo: float = 10.0
 ## Segundo del Disparo en que la pistola sale de la funda (visible desde este frame).
@@ -48,13 +49,15 @@ const ANIMACIONES_LOOP: Array[String] = ["CAMINAR", "CORRER", "IDLE"]
 ## Debug: si true, la pistola queda siempre visible (ignora el timing).
 @export var forzar_pistola_visible: bool = false
 ## Punta del cañón en local de la pistola (ahí nace el fogonazo).
-## Con escala 0.01 el local de la pistola ya es mundo: (0.55,0.30,0) ≈ 55cm delante del puño.
-@export var punta_pistola_local: Vector3 = Vector3(0.55, 0.3, 0.0)
+## Con la malla volteada, la boca quedó en -X.
+@export var punta_pistola_local: Vector3 = Vector3(-0.55, 0.3, 0.0)
 ## Escala del fogonazo VFXHit_01 en la punta (grande y legible pero sin
 ## tapar al pirata ni la bala: ~45cm sobre un pirata de ~56cm).
 @export var escala_vfx_impacto: float = 1.8
 ## Tamaño del humo Smoke VFX 2 que acompaña al pistoletazo.
 @export var escala_humo_disparo: float = 0.7
+## Si está activo o el pirata está sobre un submarino, siempre usará la animación de correr
+@export var esta_en_submarino: bool = false
 
 var _yaw_base_modelo: float = 0.0
 var _yaw_base_guardado: bool = false
@@ -64,6 +67,7 @@ func _on_enemy_ready() -> void:
 	material_imp = MAT_PIRATA
 	_aliasar_animaciones()
 	super._on_enemy_ready()
+	color_borde_disolucion = Color(0.44705883, 0.0, 0.06666667)
 	# El pirata arroja su espada en vez del tridente del Imp (mismo daño/pool).
 	if ESCENA_ESPADA_PIRATA:
 		imp_arrow_scene = ESCENA_ESPADA_PIRATA
@@ -157,6 +161,10 @@ func _reparar_transform_pistola(pistola: Node3D) -> void:
 			Basis.from_scale(Vector3(35.0, 35.0, 35.0)),
 			Vector3(0.0, 2.0, 1.0)
 		)
+	# La boca miraba al revés: voltear la malla 180° en su eje local
+	# (no toca tu colocación, solo invierte cañón/culata).
+	for m in pistola.find_children("*", "MeshInstance3D", true, false):
+		(m as MeshInstance3D).rotate_y(PI)
 
 
 var _anim_previa_nombre := ""
@@ -358,16 +366,39 @@ func _aliasar_animaciones() -> void:
 				a.loop_mode = Animation.LOOP_LINEAR
 
 
+func _on_state_walking() -> void:
+	if va_a_correr or es_en_submarino():
+		_play_animation("CORRER")
+	else:
+		_play_animation("CAMINAR")
+
+
+## Determina si el pirata está ubicado sobre un submarino
+func es_en_submarino() -> bool:
+	if esta_en_submarino or is_in_group("piratas_submarino") or has_meta("en_submarino"):
+		return true
+	var p: Node = get_parent()
+	while p:
+		if p is SubmarinoRio or p.name.to_lower().contains("submarino"):
+			return true
+		p = p.get_parent()
+	return false
+
+
 ## Todo el playback del Imp pasa por _play_animation: aquí se gira el modelo
 ## solo durante LANZAR2 ("Disparo") y se restaura la base en cualquier otra
 ## animación (caminar, correr, idle, arrojar, muerte). El giro se aplica al
 ## nodo ImpModel, así el facing del cuerpo (CharacterBody3D) no se altera.
 func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float = 1.0):
-	_aplicar_yaw_disparo(anim_name)
+	var anim_final: String = anim_name
+	# Si está sobre un submarino, siempre debe usar la animación de correr en lugar de caminar
+	if (anim_final == "CAMINAR" or anim_final == "Strut Walking") and es_en_submarino():
+		anim_final = "CORRER"
+	_aplicar_yaw_disparo(anim_final)
 	# La pistola sale de la funda a su frame (lo decide _process); cualquier
 	# otra animación la oculta de inmediato.
 	_ocultar_pistola()
-	super._play_animation(anim_name, custom_blend, speed)
+	super._play_animation(anim_final, custom_blend, speed)
 
 
 ## Al morir se oculta la pistola también en la vía explosiva (que no reproduce animación).

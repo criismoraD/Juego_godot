@@ -520,6 +520,109 @@ func test_velocidad_crucero_lenta() -> void:
 	assert_almost_eq(balsa.velocidad_navegacion_combate, 0.8, 0.001, "Velocidad de crucero 0.8 m/s")
 
 
+func test_encuentro_completo_sin_contacto_y_con_ataques() -> void:
+	# Arrange: réplica fiel del nivel (balsa en x=5.2 con 3+2, canoa en x=-6.7)
+	var balsa := _crear_balsa()
+	balsa.position = Vector3(5.2, 0.0, -7.75)
+	balsa._posicion_base = balsa.position
+	balsa.cantidad_pirata = 3
+	balsa.cantidad_goblin_arquera = 2
+	balsa.mezclar_orden_aleatorio = true
+	balsa.intervalo_spawn = 1.0
+	var canoa: CanoaProtagonistaRio = CANOA_ESCENA.instantiate() as CanoaProtagonistaRio
+	_root_test.add_child(canoa)
+	canoa.global_position = Vector3(-6.7, 0.0, -7.5)
+	canoa._posicion_base = canoa.global_position
+	var cam := Camera3D.new()
+	get_tree().root.add_child(cam)
+	cam.make_current()
+	var player := Node3D.new()
+	player.name = "PlayerEncuentroTotal"
+	player.add_to_group("player")
+	get_tree().root.add_child(player)
+	var tiros_antes: int = _contar_proyectiles_enemigos()
+
+	# Act: 30 segundos simulados; la canoa avanza solo lo que su freno permite
+	var dx_minima := 9999.0
+	for i in range(120):
+		canoa._actualizar_reaccion_enemigos()
+		canoa._aplicar_freno_contacto_enemigos()
+		canoa._posicion_base.x += 0.2 * canoa.obtener_factor_velocidad_actual()
+		canoa.global_position.x = canoa._posicion_base.x
+		cam.global_position = Vector3(canoa.global_position.x, 3.0, 30.0)
+		player.global_position = canoa.global_position
+		balsa._process(0.25)
+		for n in balsa.find_children("*", "CharacterBody3D", true, false):
+			if n is EnemyBase and is_instance_valid(n):
+				(n as EnemyBase)._process(0.25)
+		dx_minima = minf(dx_minima, absf(balsa.global_position.x - canoa.global_position.x))
+
+	# Assert: la balsa despertó sola, frenó antes de tocar y combatieron
+	assert_true(balsa._activa, "La balsa debe activarse al acercarse la canoa")
+	assert_gte(dx_minima, 2.0, "Jamás deben tocarse")
+	assert_false(balsa.esta_navegando(), "La balsa debe haberse detenido")
+	assert_gt(_contar_proyectiles_enemigos(), tiros_antes, "La tripulación debe haber disparado")
+
+	# Cleanup
+	player.remove_from_group("player")
+	player.free()
+	cam.queue_free()
+	canoa.free()
+
+
+func _contar_proyectiles_enemigos() -> int:
+	var total := 0
+	for n in get_tree().root.find_children("*", "Area3D", true, false):
+		if n is EspadaPirataProjectile or n is BalaCanonProjectile or n is GoblinGirlArrowProjectile:
+			total += 1
+	return total
+
+
+func _contar_proyectiles_enemigos() -> int:
+	var total := 0
+	for n in get_tree().root.find_children("*", "Area3D", true, false):
+		if n is EspadaPirataProjectile or n is BalaCanonProjectile or n is GoblinGirlArrowProjectile:
+			total += 1
+	return total
+
+
+func test_encuentro_barco_canoa_sin_contacto_y_con_ataques() -> void:
+	# Arrange: barco con pirata + arquera navegando hacia canoa quieta con jugadora
+	var balsa := _crear_balsa()
+	balsa.cantidad_pirata = 1
+	balsa.cantidad_goblin_arquera = 1
+	balsa.mezclar_orden_aleatorio = false
+	balsa.intervalo_spawn = 0.0
+	balsa.navegar_al_activar = true
+	balsa.x_destino_navegacion = -30.0
+	balsa.velocidad_navegacion_combate = 0.8
+	balsa.activar()
+	var player := Node3D.new()
+	player.name = "PlayerEncuentro"
+	player.add_to_group("player")
+	get_tree().root.add_child(player)
+	player.global_position = Vector3(20.0, 0.0, -7.5)
+	var tiros_antes: int = _contar_proyectiles_enemigos()
+
+	# Act: 20 segundos simulados paso a paso
+	var dx_minima := 9999.0
+	for i in range(80):
+		balsa._process(0.25)
+		for n in balsa.find_children("*", "CharacterBody3D", true, false):
+			if n is EnemyBase and is_instance_valid(n):
+				(n as EnemyBase)._process(0.25)
+		dx_minima = minf(dx_minima, balsa.global_position.x - player.global_position.x)
+
+	# Assert: se detuvo antes de tocar y la tripulación disparó
+	assert_gte(dx_minima, 2.5, "Nunca debe tocar a la canoa")
+	assert_false(balsa.esta_navegando(), "Debe haberse detenido ante la canoa")
+	assert_gt(_contar_proyectiles_enemigos(), tiros_antes, "La tripulación debe haber disparado")
+
+	# Cleanup
+	player.remove_from_group("player")
+	player.free()
+
+
 func test_destruir_oscurece_y_desintegra_como_enemigos() -> void:
 	# Arrange
 	var balsa := _crear_balsa()
@@ -573,3 +676,65 @@ func test_tripulacion_viaja_con_balsa_en_marcha() -> void:
 	assert_lt(arquera.global_position.x, x_antes - 1.0, "La tripulante viaja con la balsa")
 	var offset_despues: Vector3 = arquera.global_position - balsa.global_position
 	assert_almost_eq((offset_despues - offset_antes).length(), 0.0, 0.1, "Mantiene su puesto relativo")
+
+
+func _crear_falsa_tripulante() -> Node3D:
+	# Sosias de tripulante: malla con textura estandar (palo) + malla con
+	# shader de viento con textura (tela del estandarte) + sombra sin textura.
+	var falso := Node3D.new()
+	falso.name = "FalsoTripulante"
+	var tex: Texture2D = load("res://Entities/Ambiente_Estandarte/estandarte_D.jpg") as Texture2D
+	assert_not_null(tex, "La textura del estandarte debe existir")
+	var palo := MeshInstance3D.new()
+	palo.name = "PALO"
+	var quad_palo := QuadMesh.new()
+	quad_palo.size = Vector2(0.2, 1.0)
+	var mat_palo := StandardMaterial3D.new()
+	mat_palo.albedo_texture = tex
+	quad_palo.material = mat_palo
+	palo.mesh = quad_palo
+	falso.add_child(palo)
+	var tela := MeshInstance3D.new()
+	tela.name = "TELA"
+	var quad_tela := QuadMesh.new()
+	quad_tela.size = Vector2(0.5, 0.4)
+	tela.mesh = quad_tela
+	var mat_viento := ShaderMaterial.new()
+	mat_viento.shader = load("res://Entities/Ambiente_Estandarte/wind_flag.gdshader") as Shader
+	tela.set_surface_override_material(0, mat_viento)
+	falso.add_child(tela)
+	mat_viento.set_shader_parameter("albedo_texture", tex)
+	mat_viento.set_shader_parameter("albedo_color", Color(1, 1, 1, 1))
+	var sombra := MeshInstance3D.new()
+	sombra.name = "SombraPersonaje"
+	var quad_sombra := QuadMesh.new()
+	quad_sombra.size = Vector2(0.3, 0.3)
+	sombra.mesh = quad_sombra
+	var mat_sombra := ShaderMaterial.new()
+	mat_sombra.shader = load("res://System/Shaders/dissolve.gdshader") as Shader
+	sombra.set_surface_override_material(0, mat_sombra)
+	falso.add_child(sombra)
+	return falso
+
+
+func test_aparicion_tripulante_conserva_texturas_y_omite_sombra() -> void:
+	# Arrange: balsa + falsa tripulante (palo texturizado, tela con viento
+	# texturizado, sombra sin textura)
+	var balsa := _crear_balsa()
+	var falso := _crear_falsa_tripulante()
+	_root_test.add_child(falso)
+	var palo := falso.find_child("PALO", true, false) as MeshInstance3D
+	var tela := falso.find_child("TELA", true, false) as MeshInstance3D
+	var sombra := falso.find_child("SombraPersonaje", true, false) as MeshInstance3D
+
+	# Act: animacion de aparicion morada
+	balsa._animar_aparicion_tripulante(falso)
+
+	# Assert: ambas mallas con textura disuelven CON su textura (no en blanco)
+	var dis_palo := palo.material_override as ShaderMaterial
+	assert_not_null(dis_palo, "El palo debe tener dissolve durante la aparicion")
+	assert_not_null(dis_palo.get_shader_parameter("albedo_texture"), "El dissolve del palo debe llevar su textura")
+	var dis_tela := tela.material_override as ShaderMaterial
+	assert_not_null(dis_tela, "La tela debe tener dissolve durante la aparicion")
+	assert_not_null(dis_tela.get_shader_parameter("albedo_texture"), "El dissolve de la tela debe llevar su textura (no blanco)")
+	assert_null(sombra.material_override, "La sombra sin textura no debe disolverse")

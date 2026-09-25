@@ -11,12 +11,17 @@ const MAX_3D_POOL_SIZE = 16
 var sfx_player: AudioStreamPlayer
 var sfx_player_3d: AudioStreamPlayer3D
 var music_player: AudioStreamPlayer
+var music_player_b: AudioStreamPlayer
+var _active_music_player: AudioStreamPlayer = null
+var _current_bgm_index: int = 0
+var _music_tween: Tween = null
 # === STREAMS DE AUDIO ===
 var sfx_streams: Dictionary = {}
 var bgm_streams: Array[AudioStream] = []
 # === CONFIGURACIÓN ===
 var sfx_volume_db: float = -5.0
 var music_volume_db: float = -15.0
+var bow_tension_atenuacion_db: float = -6.0  ## El tensado del arco suena más bajo que el resto de SFX
 # === OBJECT POOLING PARA AUDIO ===
 var sfx_pool: Array[AudioStreamPlayer] = []
 var sfx_3d_pool: Array[AudioStreamPlayer3D] = []
@@ -58,12 +63,21 @@ func _setup_players():
 	sfx_player_3d.max_db = 0.0
 	add_child(sfx_player_3d)
 
-	# Reproductor de música
+	# Reproductor de música principal
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "Music_Player"
 	music_player.volume_db = music_volume_db
 	music_player.bus = "Master"
 	add_child(music_player)
+
+	# Reproductor de música secundario (para transiciones y crossfade suave)
+	music_player_b = AudioStreamPlayer.new()
+	music_player_b.name = "Music_Player_B"
+	music_player_b.volume_db = -80.0
+	music_player_b.bus = "Master"
+	add_child(music_player_b)
+
+	_active_music_player = music_player
 
 	# Inicializar pools
 	for i in range(MAX_POOL_SIZE):
@@ -167,6 +181,10 @@ func _load_all_sounds():
 		load("res://System/Audio/SFX/explocion_flecha_explociva.mp3")
 	]
 
+	sfx_streams["explosion_acuatica_potente"] = [
+		load("res://TEST_/explosion_acuatica_potente P.mp3")
+	]
+
 	sfx_streams["cuerno_guerra"] = [
 		load("res://System/Audio/SFX/Cuerno de guerra.mp3")
 	]
@@ -182,6 +200,8 @@ func _load_all_sounds():
 	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]
 	sfx_streams["lanzar_espada_pirata"] = [load("res://TEST_/lanzar espada pirata.mp3")]
 	sfx_streams["disparo_pistola_pirata_gob"] = [load("res://TEST_/disparo pistola pirata gob.mp3")]
+	sfx_streams["hundimiento_barco_pirata"] = [load("res://TEST_/Barco pirata hundimiento.mp3")]
+	sfx_streams["nadar_pirata"] = [load("res://TEST_/Nadar pirata.mp3")]
 	if ResourceLoader.exists("res://TEST_/Muerte pirata goblin.mp3"):
 		sfx_streams["muerte_pirata_goblin"] = [load("res://TEST_/Muerte pirata goblin.mp3")]
 
@@ -397,6 +417,8 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://System/Audio/Music/Noche Aplastante.mp3"))  # Índice 5 - Noche Aplastante (Oleada 5)
 	bgm_streams.append(load("res://TEST_/Torre interior.mp3"))  # Índice 6 - Torre interior
 	bgm_streams.append(load("res://TEST_/Viaje por el rio.mp3"))  # Índice 7 - Viaje por el rio
+	bgm_streams.append(load("res://TEST_/Jefe rio.mp3"))  # Índice 8 - Jefe rio
+	bgm_streams.append(load("res://TEST_/Jefe destruido.mp3"))  # Índice 9 - Jefe destruido
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -513,6 +535,9 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: 
 			# Habilidad de la ballestera: clip corto (~0.5s) que debe percibirse
 			# claramente sobre el combate (disparos, impactos de escudo)
 			volume_to_use = sfx_volume_db + 6.0
+		elif sound_name in ["player_shoot", "disparo_flecha", "goblin_girl_shoot"]:
+			# Disparo de flechas más sutil (el ataque por defecto suena demasiado)
+			volume_to_use = sfx_volume_db - 6.0
 
 
 		temp_player.volume_db = volume_to_use + volume_boost_db
@@ -576,13 +601,22 @@ var bgm_volume_offsets: Dictionary = {
 	5: 2.0,   ## Noche Aplastante (Oleada 5: -13.0 dB base, aumentado +4.0 dB)
 	6: 0.0,   ## Torre interior (-15.0 dB base)
 	7: 0.0,   ## Viaje por el rio (-15.0 dB base)
+	8: 6.0,   ## Jefe rio (-9.0 dB pista, elevada sobre el combate: flecha/tensado bajaron -6 dB)
+	9: 3.5,   ## Jefe destruido (-11.5 dB base, fanfarria triunfal clara)
 }
 
 
-## Reproduce música de fondo
+## Reproduce música de fondo de forma inmediata
 func play_music(index: int, loop: bool = true, volume_boost_db: float = 0.0):
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+
 	if index == 0:
-		music_player.stop()
+		if is_instance_valid(music_player):
+			music_player.stop()
+		if is_instance_valid(music_player_b):
+			music_player_b.stop()
+		_current_bgm_index = 0
 		return
 
 	if index < 0 or index >= bgm_streams.size():
@@ -597,13 +631,98 @@ func play_music(index: int, loop: bool = true, volume_boost_db: float = 0.0):
 			stream.loop = loop
 		elif stream is AudioStreamWAV:
 			stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if loop else AudioStreamWAV.LOOP_DISABLED
+
+		# Detener el reproductor secundario si estuviese activo
+		var inactive_player: AudioStreamPlayer = music_player_b if _active_music_player == music_player else music_player
+		if is_instance_valid(inactive_player):
+			inactive_player.stop()
+
+		if not is_instance_valid(_active_music_player):
+			_active_music_player = music_player
+
 		var track_offset: float = bgm_volume_offsets.get(index, 0.0)
-		music_player.volume_db = music_volume_db + track_offset + volume_boost_db
-		if music_player.stream != stream:
-			music_player.stream = stream
-			music_player.play()
-		elif not music_player.playing:
-			music_player.play()
+		_active_music_player.volume_db = music_volume_db + track_offset + volume_boost_db
+		if _active_music_player.stream != stream:
+			_active_music_player.stream = stream
+			_active_music_player.play()
+		elif not _active_music_player.playing:
+			_active_music_player.play()
+		_current_bgm_index = index
+
+
+## Transición suave hacia una nueva pista musical o silencio (index = 0).
+## Disminuye progresivamente la pista actual y eleva la nueva.
+func crossfade_music(target_index: int, duration_out: float = 1.8, duration_in: float = 1.8, delay_in: float = 0.0, loop: bool = true, volume_boost_db: float = 0.0) -> void:
+	if _current_bgm_index == target_index and target_index != 0:
+		if is_instance_valid(_active_music_player) and _active_music_player.playing and _active_music_player.volume_db > -35.0:
+			return
+
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+
+	if not is_instance_valid(_active_music_player):
+		_active_music_player = music_player
+
+	var outgoing_player: AudioStreamPlayer = _active_music_player
+	var incoming_player: AudioStreamPlayer = music_player_b if outgoing_player == music_player else music_player
+
+	_music_tween = create_tween()
+	_music_tween.set_parallel(true)
+
+	# 1. Disminuir la pista saliente hasta desaparecer (-80 dB)
+	if is_instance_valid(outgoing_player) and outgoing_player.playing:
+		_music_tween.tween_property(outgoing_player, "volume_db", -80.0, duration_out)\
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		_music_tween.chain().tween_callback(func() -> void:
+			if is_instance_valid(outgoing_player):
+				outgoing_player.stop()
+		)
+
+	# 2. Si target_index == 0, solo se apaga la música
+	if target_index == 0 or target_index < 0 or target_index >= bgm_streams.size() or bgm_streams[target_index] == null:
+		_current_bgm_index = 0
+		return
+
+	# 3. Preparar e iniciar la pista entrante
+	var stream = bgm_streams[target_index]
+	if stream is AudioStreamMP3:
+		stream.loop = loop
+	elif stream is AudioStreamOggVorbis:
+		stream.loop = loop
+	elif stream is AudioStreamWAV:
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if loop else AudioStreamWAV.LOOP_DISABLED
+
+	var track_offset: float = bgm_volume_offsets.get(target_index, 0.0)
+	var target_vol: float = music_volume_db + track_offset + volume_boost_db
+
+	incoming_player.stream = stream
+	incoming_player.volume_db = -80.0
+	incoming_player.play()
+
+	_active_music_player = incoming_player
+	_current_bgm_index = target_index
+
+	# Iniciar rampa de subida de la nueva pista
+	var tween_in: Tween = create_tween()
+	if delay_in > 0.0:
+		tween_in.tween_interval(delay_in)
+	tween_in.tween_property(incoming_player, "volume_db", target_vol, duration_in)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+## Disminuye la música actual hasta desaparecer (-80 dB) y la detiene.
+func fade_out_music(duration: float = 1.8) -> void:
+	crossfade_music(0, duration, 0.0)
+
+
+## Detiene inmediatamente la música activa.
+func stop_music() -> void:
+	play_music(0)
+
+
+## Retorna el índice de la pista de música que está sonando actualmente.
+func get_current_music_index() -> int:
+	return _current_bgm_index
 
 
 ## Ajustar volumen de SFX (0-100)
@@ -619,12 +738,15 @@ func set_music_volume(value: float):
 	music_volume_db = lerp(-40.0, 0.0, value / 100.0)
 	if value == 0:
 		music_volume_db = -80
-	music_player.volume_db = music_volume_db
+	if is_instance_valid(music_player):
+		music_player.volume_db = music_volume_db
+	if is_instance_valid(music_player_b):
+		music_player_b.volume_db = music_volume_db
 
 
 ## Obtener el reproductor de música (para UI)
 func get_music_player() -> AudioStreamPlayer:
-	return music_player
+	return _active_music_player if is_instance_valid(_active_music_player) else music_player
 
 
 ## Obtener el reproductor de SFX (para UI)
@@ -690,6 +812,7 @@ func play_bow_tension():
 	var sound = sounds[randi() % sounds.size()]
 	if sound:
 		sfx_player.stream = sound
+		sfx_player.volume_db = sfx_volume_db + bow_tension_atenuacion_db
 		sfx_player.play()
 
 
@@ -699,9 +822,16 @@ func stop_bow_tension():
 		sfx_player.stop()
 
 
-## Detener todos los sonidos (música + SFX + temporales)
-func stop_all():
-	music_player.stop()
+## Detener todos los sonidos (música + SFX + temporales).
+## Con incluir_musica=false se deja la música sonando (fin de nivel: la
+## música continúa bajo la cortinilla) y no se resetea su índice.
+func stop_all(incluir_musica: bool = true):
+	if incluir_musica:
+		if is_instance_valid(music_player):
+			music_player.stop()
+		if is_instance_valid(music_player_b):
+			music_player_b.stop()
+		_current_bgm_index = 0
 	sfx_player.stop()
 	if is_instance_valid(sfx_player_3d):
 		sfx_player_3d.stop()
@@ -729,6 +859,8 @@ func recuperar_audio_continuar() -> void:
 		jugadores.append(sfx_player_3d)
 	if is_instance_valid(music_player):
 		jugadores.append(music_player)
+	if is_instance_valid(music_player_b):
+		jugadores.append(music_player_b)
 	for p in sfx_pool:
 		if is_instance_valid(p):
 			jugadores.append(p)

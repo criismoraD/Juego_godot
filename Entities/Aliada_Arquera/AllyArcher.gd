@@ -23,8 +23,8 @@ var plataforma_asignada: int = 0
 @export var tiempo_apuntado_min: float = 0.3  ## Segundos mínimos en IDLE_APUNTANDO (carga mínima)
 @export var tiempo_apuntado_max: float = 1.2  ## Segundos máximos en IDLE_APUNTANDO (más tiempo = más potencia)
 @export_range(0.0, 30.0, 1.0) var angulo_disparo_min: float = 5.0  ## Ángulo mínimo de elevación (grados)
-@export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 35.0  ## Ángulo máximo de elevación (grados)
-@export_range(45.0, 80.0, 1.0) var elevacion_maxima_absoluta: float = 65.0  ## Tope de elevación de CUALQUIER disparo (nunca 90° vertical)
+@export_range(0.0, 60.0, 1.0) var angulo_disparo_max: float = 22.0  ## Ángulo máximo de elevación (grados) — reducido de 35 a 22 para evitar disparos demasiado altos contra objetivos terrestres
+@export_range(45.0, 80.0, 1.0) var elevacion_maxima_absoluta: float = 45.0  ## Tope de elevación de CUALQUIER disparo — reducido de 65 a 45 para evitar disparos casi verticales
 @export_range(0.0, 0.2, 0.005) var dispersion_azar: float = 0.06  ## Dispersión del tiro al azar (mucho mayor que la del apuntado: cae POR la zona, no EN el blanco)
 @export_range(1.0, 3.0, 0.05) var multiplicador_potencia_volador: float = 1.6  ## Fuerza extra al disparar a enemigos voladores (trayectoria más plana)
 @export_range(12.0, 24.0, 0.5) var potencia_maxima_azar: float = 18.0  ## Tope de potencia SOLO del tiro al azar (alcanza enemigos lejanos sin tocar el balance apuntado)
@@ -1452,13 +1452,21 @@ func prioridad_de(enemy: Node) -> int:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-## Almacena flechas múltiples sin resetear las explosivas en reserva
+## Almacena flechas múltiples sin resetear las explosivas en reserva.
+## Solo disponible para defensoras de piso (es_aliada_inicial) o móviles
+## ya apostadas (es_movil pero not en_despliegue). Las refuerzos en marcha
+## no reciben power-ups para no distorsionar el balance de nivel.
 func agregar_flechas_multiples(cantidad: int = 3) -> void:
+	if es_movil and (en_despliegue or not es_aliada_inicial):
+		return
 	flechas_multiples += cantidad
 
 
-## Almacena flechas explosivas sin resetear las múltiples en reserva
+## Almacena flechas explosivas sin resetear las múltiples en reserva.
+## Misma restricción que agregar_flechas_multiples.
 func agregar_flechas_explosivas(cantidad: int = 5) -> void:
+	if es_movil and (en_despliegue or not es_aliada_inicial):
+		return
 	flechas_explosivas += cantidad
 
 

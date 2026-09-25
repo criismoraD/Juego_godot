@@ -1303,3 +1303,87 @@ func test_hacha_normal_no_deja_estela() -> void:
 	# Cleanup
 	_limpiar_estelas_hacha()
 	hacha.free()
+
+
+func test_defensora_perrena_ignora_mina_submarina() -> void:
+	# Arrange: defensora en X=0 con mina (solo grupo) en X=4, mina real en X=6 y básico en X=10
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3(0, 0, 0)
+
+	var mina_grupo := Node3D.new()
+	mina_grupo.name = "MinaAcuatica"
+	mina_grupo.add_to_group("enemies")
+	mina_grupo.add_to_group("mina_acuatica")
+	_root_test.add_child(mina_grupo)
+	mina_grupo.global_position = Vector3(4, 0, 0)
+
+	var MinaScene: PackedScene = load("res://Entities/Proyectil_Mina_Acuatica/MinaAcuatica.tscn") as PackedScene
+	var mina_real := MinaScene.instantiate() as Node3D
+	_root_test.add_child(mina_real)
+	mina_real.global_position = Vector3(6, 0, 0)
+
+	var basico := Node3D.new()
+	basico.name = "GoblinArquero"
+	basico.add_to_group("enemies")
+	_root_test.add_child(basico)
+	basico.global_position = Vector3(10, 0, 0)
+
+	# Act 1: ataque normal debe saltar ambas minas y fijar el básico
+	var obj_normal: Node = defensora._buscar_mejor_objetivo(false)
+	assert_eq(obj_normal, basico, "Perrena no debe reconocer la mina submarina como enemiga")
+
+	# Act 2: el ataque especial tampoco debe fijar la mina
+	var obj_especial: Node = defensora._buscar_mejor_objetivo(true)
+	assert_eq(obj_especial, basico, "Ni el especial de Perrena debe apuntar a la mina")
+
+	# Act 3: solo minas en escena => sin objetivo
+	basico.queue_free()
+	await get_tree().process_frame
+	assert_null(defensora._buscar_mejor_objetivo(false), "Solo con minas no debe haber objetivo normal")
+	assert_null(defensora._buscar_mejor_objetivo(true), "Solo con minas no debe haber objetivo especial")
+
+
+class JugadoraFalsa extends CharacterBody3D:
+	var salud: int = 4
+	var golpes: int = 0
+	func take_damage(amount: float) -> void:
+		golpes += 1
+		salud -= int(amount)
+
+
+func test_hacha_ignora_jugadora_y_aliadas() -> void:
+	# Arrange: hacha de la defensora + jugadora y aliada
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	var jugadora := CharacterBody3D.new()
+	jugadora.name = "JugadoraFalsaIgnorar"
+	jugadora.add_to_group("player")
+	_root_test.add_child(jugadora)
+	var aliada := Node3D.new()
+	aliada.name = "AliadaFalsaIgnorar"
+	aliada.add_to_group("allies")
+	_root_test.add_child(aliada)
+
+	# Assert: fuego amigo imposible, las atraviesa
+	assert_true(hacha._es_entidad_a_ignorar(jugadora), "El hacha debe ignorar a la jugadora")
+	assert_true(hacha._es_entidad_a_ignorar(aliada), "El hacha debe ignorar a las aliadas")
+
+
+func test_hacha_atraviesa_jugadora_sin_dano_ni_clavarse() -> void:
+	# Arrange: hacha + jugadora con vida contable
+	var hacha: HachaPerrenaProjectile = HachaScene.instantiate() as HachaPerrenaProjectile
+	_root_test.add_child(hacha)
+	var jugadora := JugadoraFalsa.new()
+	jugadora.name = "JugadoraFalsaImpacto"
+	jugadora.add_to_group("player")
+	_root_test.add_child(jugadora)
+
+	# Act: impacto directo contra la jugadora
+	hacha._procesar_impacto(jugadora, Vector3.ZERO, Vector3.RIGHT)
+
+	# Assert: sin dano, sin procesar, sin clavar (la atraviesa)
+	assert_eq(jugadora.golpes, 0, "La jugadora no debe recibir golpes del hacha aliada")
+	assert_eq(jugadora.salud, 4, "La vida de la jugadora no debe bajar")
+	assert_false(hacha._impacto_procesado, "No debe procesar impacto en aliadas")
+	assert_false(hacha.is_stuck, "No debe clavarse en aliadas")

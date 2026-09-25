@@ -40,6 +40,8 @@ const INTERVALO_MINIMO_ABSOLUTO: float = 0.25
 @export var max_imp_escudo_activos: int = 1  ## Máximo de ImpShieldGirl simultáneas
 @export var enemigos_minimos_para_escudo: int = 1  ## Enemigos vivos necesarios para spawnear escudo
 @export var intervalo_check_escudo: float = 8.0  ## Segundos entre checks de spawn de escudo
+@export_category("Lonko")
+@export var max_lonkos_activos: int = 2  ## Máximo de arqueras Lonko vivas simultáneas en pantalla para no abrumar al jugador
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === ESTADO ===
@@ -290,7 +292,7 @@ func _generar_cola_spawn() -> void:
 			pool.remove_at(idx_gargola)
 			pool.push_front(escena_gargola)
 
-	# En Oleada 5: distribuir los 12 Lonko uniformemente para garantizar que aparezcan 12 visibles (cada ~3-4 spawns)
+	# En Oleada 5: distribuir los 12 Lonko uniformemente para que no aparezcan seguidas ni se acumulen al final
 	if wave_num == 5 and escena_lonko:
 		var lonkos: Array[PackedScene] = []
 		var otros: Array[PackedScene] = []
@@ -299,19 +301,35 @@ func _generar_cola_spawn() -> void:
 				lonkos.append(p)
 			else:
 				otros.append(p)
-		# Intercalar: cada 3 otros, 1 lonko
+		otros.shuffle()
+
+		# Reservar los últimos 4 enemigos de la oleada estrictamente para no-Lonkos (cierre limpio de nivel)
+		var cola_cierre: Array[PackedScene] = []
+		for k in range(mini(4, otros.size())):
+			cola_cierre.append(otros.pop_back())
+
+		# Intercalar los Lonko entre los otros restantes: 2 otros por cada lonko (24 otros + 12 lonkos = 36)
 		pool.clear()
 		var idx_o: int = 0
 		var idx_l: int = 0
-		while idx_o < otros.size() or idx_l < lonkos.size():
-			for k in range(3):
+		while idx_l < lonkos.size() or idx_o < otros.size():
+			for k in range(2):
 				if idx_o < otros.size():
 					pool.append(otros[idx_o])
 					idx_o += 1
 			if idx_l < lonkos.size():
 				pool.append(lonkos[idx_l])
 				idx_l += 1
-		# Asegurar que el primer Lonko esté entre los 3 primeros spawns
+
+		# Si quedó algún otro residual
+		while idx_o < otros.size():
+			pool.append(otros[idx_o])
+			idx_o += 1
+
+		# Agregar el cierre garantizado de 4 enemigos no-Lonko al final
+		pool.append_array(cola_cierre)
+
+		# Asegurar que el primer Lonko esté exactamente entre los primeros 3 spawns
 		var idx_first_lonko: int = pool.find(escena_lonko)
 		if idx_first_lonko > 2:
 			pool.remove_at(idx_first_lonko)
@@ -400,12 +418,18 @@ func _preparar_enemigos_en_espera() -> void:
 func _es_valida_cola(pool: Array[PackedScene]) -> bool:
 	if pool.is_empty():
 		return true
-	if pool.back() == escena_imp_escudo or pool.back() == escena_goblina_escudo:
+	if pool.back() == escena_imp_escudo or pool.back() == escena_goblina_escudo or (escena_lonko and pool.back() == escena_lonko):
 		return false
+	if escena_lonko and pool.size() >= 4:
+		for k in range(pool.size() - 4, pool.size()):
+			if pool[k] == escena_lonko:
+				return false
 	for i in range(pool.size() - 1):
 		if pool[i] == escena_imp_escudo and pool[i+1] == escena_imp_escudo:
 			return false
 		if pool[i] == escena_goblina_escudo and pool[i+1] == escena_goblina_escudo:
+			return false
+		if escena_lonko and pool[i] == escena_lonko and pool[i+1] == escena_lonko:
 			return false
 	return true
 
@@ -550,7 +574,23 @@ func _spawn_goblin():
 	if forzar_tipo_enemigo != -1:
 		scene_to_spawn = _elegir_escena_probabilidades()
 	elif not cola_spawn.is_empty():
-		scene_to_spawn = cola_spawn.pop_front()
+		# Control de concurrencia de Lonko: si la siguiente en cola es Lonko y ya hay el máximo activo,
+		# posponerla buscando el siguiente enemigo no-Lonko para no abrumar al jugador.
+		if escena_lonko and cola_spawn[0] == escena_lonko and _contar_lonkos_activos() >= max_lonkos_activos:
+			var idx_alternativo: int = -1
+			for idx in range(1, cola_spawn.size()):
+				if cola_spawn[idx] != escena_lonko:
+					idx_alternativo = idx
+					break
+			if idx_alternativo != -1:
+				scene_to_spawn = cola_spawn[idx_alternativo]
+				cola_spawn.remove_at(idx_alternativo)
+			else:
+				# Solo quedan Lonkos en cola y ya se alcanzó el límite simultáneo: esperar a que muera una
+				spawn_timer = 1.0
+				return
+		else:
+			scene_to_spawn = cola_spawn.pop_front()
 	elif not spawn_infinito:
 		_check_wave_complete()
 		return
@@ -623,6 +663,28 @@ func _on_goblin_died(goblin):
 		emit_signal("enemigo_eliminado", goblin, enemigos_muertos_en_oleada)
 	AudioManager.on_enemy_killed()
 	_check_wave_complete()
+
+
+## Cuenta cuántas arqueras Lonko están vivas actualmente en el combate
+func _contar_lonkos_activos() -> int:
+	var count: int = 0
+	for g in active_goblins:
+		if is_instance_valid(g) and not g.is_queued_for_deletion():
+			var es_lonko: bool = false
+			if g is Lonko:
+				es_lonko = true
+			elif g.get_script() and "Lonko" in g.get_script().resource_path:
+				es_lonko = true
+			elif g.is_in_group("lonko") or g.name.to_lower().contains("lonko"):
+				es_lonko = true
+
+			if es_lonko:
+				if "current_state" in g:
+					if g.current_state != EnemyBase.State.DYING and g.current_state != EnemyBase.State.DEAD:
+						count += 1
+				else:
+					count += 1
+	return count
 
 
 func _check_wave_complete():

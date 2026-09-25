@@ -40,11 +40,11 @@ enum State {
 	DESAPARECIDO
 }
 
-const ESCENA_IMP: String = "res://Entities/Enemigo_Imp/ImpEnemy.tscn"
-const ESCENA_GOBLIN_ARQUERA: String = "res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn"
-const ESCENA_GOBLIN_BASE: String = "res://Entities/Enemigo_Goblin/Goblin.tscn"
-const ESCENA_PIRATA: String = "res://Entities/Enemigo_Pirata_Goblin/PirataGoblin.tscn"
-const ESCENA_IMP_EMBAJADOR: String = "res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn"
+const ESCENA_IMP: PackedScene = preload("res://Entities/Enemigo_Imp/ImpEnemy.tscn")
+const ESCENA_GOBLIN_ARQUERA: PackedScene = preload("res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn")
+const ESCENA_GOBLIN_BASE: PackedScene = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
+const ESCENA_PIRATA: PackedScene = preload("res://Entities/Enemigo_Pirata_Goblin/PirataGoblin.tscn")
+const ESCENA_IMP_EMBAJADOR: PackedScene = preload("res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn")
 const ESCENA_FLECHA_LONKO: PackedScene = preload("res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.tscn")
 const SFX_CANON_DISPARO: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION01.mp3")
 const SFX_CANON_ENGRANAJE: AudioStream = preload("res://TEST_/Engranaje cañon.mp3")
@@ -73,10 +73,11 @@ const TIEMPO_DETENCION_PREVIO_ATAQUE: float = 0.15
 @export_category("Mezcla de Enemigos")
 ## Cantidades por tipo para mezclar el despliegue (ej: 3 piratas + 1 embajador + 1 arquera).
 ## Si todas están en 0 se usa el modo clásico (tipo_enemigo x cantidad_enemigos).
-@export_range(0, 6, 1) var cantidad_imp: int = 0
-@export_range(0, 6, 1) var cantidad_pirata: int = 0
-@export_range(0, 6, 1) var cantidad_goblin_arquera: int = 0
-@export_range(0, 6, 1) var cantidad_imp_embajador: int = 0
+## Máximo 13 por tipo para soportar al Jefe Submarino (7 piratas + 3 arqueras + 3 imp).
+@export_range(0, 13, 1) var cantidad_imp: int = 0
+@export_range(0, 13, 1) var cantidad_pirata: int = 0
+@export_range(0, 13, 1) var cantidad_goblin_arquera: int = 0
+@export_range(0, 13, 1) var cantidad_imp_embajador: int = 0
 @export var mezclar_orden_aleatorio: bool = true  ## Si false, salen agrupados por tipo en orden de la lista
 
 @export_category("Inmersión y Emergencia")
@@ -125,6 +126,8 @@ var _offsets_deck_usados: Array[float] = []  ## Puestos ya asignados en este des
 @export_category("Material")
 @export var material_submarino: StandardMaterial3D:
 	set(nuevo_material):
+		if material_submarino == nuevo_material:
+			return
 		material_submarino = nuevo_material
 		_aplicar_material()
 
@@ -172,6 +175,8 @@ var _boca_canon_manual: bool = false  ## True si BocaCanon ya venía en la escen
 var _tween_canon: Tween = null
 var _cola_mezcla: Array = []  ## Cola de TipoEnemigo a desplegar (mezcla o modo clásico)
 var _total_oleada: int = 0  ## Total de enemigos del despliegue actual (para repartir puestos)
+var _amplitudes_oleaje_base: Dictionary = {}
+var _tween_oleaje: Tween = null
 
 # === ONREADY ===
 @onready var pivot_flotacion: Node3D = find_child("PivotFlotacion", true, false) as Node3D
@@ -184,6 +189,8 @@ var _total_oleada: int = 0  ## Total de enemigos del despliegue actual (para rep
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
 	_aplicar_material()
+	add_to_group("submarinos")
+	add_to_group("submarino")
 	if is_in_group("enemies"):
 		remove_from_group("enemies")
 	if is_in_group("enemigos"):
@@ -235,6 +242,10 @@ func _preparar_canon() -> void:
 	else:
 		_boca_canon_manual = true
 	_actualizar_posicion_boca_canon()
+	for m in _canon_modelo.find_children("*", "MeshInstance3D", true, false):
+		if m is MeshInstance3D and not m.is_in_group("outline_meshes"):
+			m.add_to_group("outline_meshes")
+
 
 
 func _configurar_notificador_camara() -> void:
@@ -297,6 +308,63 @@ func esta_en_superficie() -> bool:
 ## Retorna true si el submarino debe considerarse una entidad hostil / obstáculo activo en el río
 func es_enemigo_activo() -> bool:
 	return esta_en_superficie()
+
+
+## Sacudida de oleaje ante impacto potente (ej. Ult de Perrena):
+## eleva las amplitudes de flotación y balanceo del submarino inmediatamente
+## y las retorna de forma suave, natural y fluida a sus valores base con amortiguación gradual (EASE_OUT).
+func sacudida_oleaje(duracion: float = 2.0, multiplicador: float = 4.5) -> void:
+	if _amplitudes_oleaje_base.is_empty():
+		_amplitudes_oleaje_base = {
+			"floteo": amplitud_floteo,
+			"bal": amplitud_balanceo,
+			"cab": amplitud_cabeceo,
+			"vel": velocidad_floteo,
+		}
+
+	var base_floteo: float = float(_amplitudes_oleaje_base["floteo"])
+	var base_bal: float = float(_amplitudes_oleaje_base["bal"])
+	var base_cab: float = float(_amplitudes_oleaje_base["cab"])
+	var base_vel: float = float(_amplitudes_oleaje_base["vel"])
+
+	amplitud_floteo = base_floteo * multiplicador
+	amplitud_balanceo = base_bal * multiplicador
+	amplitud_cabeceo = base_cab * multiplicador
+	velocidad_floteo = base_vel * 1.35
+	flotacion_activa = true
+
+	_generar_onda_emerger()
+
+	if not is_inside_tree() or get_tree() == null:
+		return
+
+	if is_instance_valid(_tween_oleaje) and _tween_oleaje.is_valid():
+		_tween_oleaje.kill()
+
+	# Distribución temporal: sostenido breve del impacto y retorno gradual/amortiguado (EASE_OUT)
+	var dur_total: float = maxf(duracion, 0.4)
+	var tiempo_sostenido: float = maxf(0.1, dur_total * 0.3)
+	var tiempo_retorno: float = maxf(0.6, dur_total * 0.8)
+
+	_tween_oleaje = create_tween()
+	_tween_oleaje.set_parallel(true)
+
+	_tween_oleaje.tween_property(self, "amplitud_floteo", base_floteo, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_balanceo", base_bal, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_cabeceo", base_cab, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "velocidad_floteo", base_vel, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	_tween_oleaje.chain().tween_callback(func() -> void:
+		if is_instance_valid(self):
+			amplitud_floteo = base_floteo
+			amplitud_balanceo = base_bal
+			amplitud_cabeceo = base_cab
+			velocidad_floteo = base_vel
+	)
 
 
 # === FUNCIONES PRIVADAS ===
@@ -415,52 +483,67 @@ func _spawnear_un_enemigo() -> void:
 	tw.tween_property(enemigo, "global_position:x", pos_destino.x, duracion_caminata).set_trans(Tween.TRANS_LINEAR)
 
 	# Al llegar al destino: orientarse hacia el jugador y detener la caminata
-	tw.tween_callback(func():
-		if not is_instance_valid(enemigo):
-			return
-		enemigo.rotation.y = 0.0
-		_detener_animacion_caminata(enemigo)
-	)
+	tw.tween_callback(_al_llegar_enemigo_a_destino.bind(enemigo))
 
 	# Breve pausa natural de detención ("detenerse para atacar")
 	tw.tween_interval(TIEMPO_DETENCION_PREVIO_ATAQUE)
 
 	# Pasar formalmente al estado de ataque / disparo
-	tw.tween_callback(func():
-		_iniciar_combate_enemigo(enemigo)
-	)
+	tw.tween_callback(_al_iniciar_combate_enemigo_en_deck.bind(enemigo))
 
-	enemigo.tree_exiting.connect(func():
-		if is_instance_valid(tw) and tw.is_valid():
-			tw.kill()
-	)
 	if enemigo.has_signal("died"):
-		enemigo.connect("died", func():
-			if is_instance_valid(tw) and tw.is_valid():
-				tw.kill()
-		)
+		enemigo.connect("died", tw.kill, CONNECT_ONE_SHOT)
+
+
 
 	_enemigos_vivos.append(enemigo)
 	enemigo.tree_exited.connect(_verificar_enemigos_vivos)
 	enemigo_desplegado.emit(enemigo)
 
 
+func _al_llegar_enemigo_a_destino(enemigo: Node3D) -> void:
+	if not is_instance_valid(enemigo):
+		return
+	enemigo.rotation.y = 0.0
+	_detener_animacion_caminata(enemigo)
+
+
+func _al_iniciar_combate_enemigo_en_deck(enemigo: Node3D) -> void:
+	if not is_instance_valid(enemigo):
+		return
+	_iniciar_combate_enemigo(enemigo)
+
+
 func _iniciar_animacion_caminata(enemigo: Node3D) -> void:
 	if not is_instance_valid(enemigo):
+
 		return
 	if enemigo is EnemyBase:
 		var eb := enemigo as EnemyBase
 		if eb.current_state >= EnemyBase.State.DYING:
 			return
 		eb.current_state = EnemyBase.State.WALKING
+	if "esta_en_submarino" in enemigo:
+		enemigo.set("esta_en_submarino", true)
+	if "va_a_correr" in enemigo:
+		enemigo.set("va_a_correr", true)
+	if "pasivo_hasta_ser_atacado" in enemigo:
+		enemigo.set("pacifico_detenido", false)
+		if enemigo.has_method("_play_animation"):
+			enemigo.call("_play_animation", "IMP_IDLE", 0.2, 1.0)
+			return
+	if enemigo is PirataGoblin or enemigo.is_in_group("piratas_submarino") or enemigo.has_meta("en_submarino"):
+		if enemigo.has_method("_play_animation"):
+			enemigo.call("_play_animation", "CORRER")
+			return
 	if enemigo.has_method("_on_state_walking"):
 		enemigo.call("_on_state_walking")
 	elif enemigo.has_method("_play_animation"):
 		var anims_posibles: Array[String] = [
 			"GIRL_GOB_CAMINA",
 			"ENEMIGO_GOBLING_CORRER",
-			"CAMINAR",
 			"CORRER",
+			"CAMINAR",
 			"WALK"
 		]
 		for anim in anims_posibles:
@@ -477,7 +560,15 @@ func _detener_animacion_caminata(enemigo: Node3D) -> void:
 		if eb.current_state >= EnemyBase.State.DYING:
 			return
 
-	if enemigo is GoblinGirl:
+	if "pasivo_hasta_ser_atacado" in enemigo:
+		if enemigo.has_method("_on_pacifico_detenido"):
+			enemigo.call("_on_pacifico_detenido")
+		else:
+			enemigo.call("_play_animation", "IMP_IDLE_001", 0.2, 1.0)
+			enemigo.call("_play_bow_animation", "ARCO_IDLE")
+			enemigo.call("_actualizar_visual_arma", false)
+	elif enemigo is GoblinGirl:
+
 		enemigo.call("_play_animation", "GIRL_GOB_CAMINA", -1.0, 0.0)
 		enemigo.call("_play_bow_animation", "ARCO_IDLE")
 	elif enemigo is ImpEnemy:
@@ -571,6 +662,12 @@ func _preconfigurar_enemigo(enemigo: Node3D) -> void:
 		enemigo.set("solo_atacar_en_pantalla", true)
 	if "activar_al_entrar_en_camara" in enemigo:
 		enemigo.set("activar_al_entrar_en_camara", false)
+	if "esta_en_submarino" in enemigo:
+		enemigo.set("esta_en_submarino", true)
+	if "va_a_correr" in enemigo:
+		enemigo.set("va_a_correr", true)
+	enemigo.set_meta("en_submarino", true)
+	enemigo.add_to_group("piratas_submarino")
 
 
 func _configurar_enemigo_para_rio(enemigo: Node3D) -> void:
@@ -583,6 +680,14 @@ func _configurar_enemigo_para_rio(enemigo: Node3D) -> void:
 		enemigo.set("_dormida_por_camara", false)
 	if "_dormido_por_camara" in enemigo:
 		enemigo.set("_dormido_por_camara", false)
+	if "pasivo_hasta_ser_atacado" in enemigo:
+		enemigo.set("pasivo_hasta_ser_atacado", true)
+	if "esta_en_submarino" in enemigo:
+		enemigo.set("esta_en_submarino", true)
+	if "va_a_correr" in enemigo:
+		enemigo.set("va_a_correr", true)
+	enemigo.set_meta("en_submarino", true)
+	enemigo.add_to_group("piratas_submarino")
 
 	enemigo.set_physics_process(true)
 	enemigo.set_process(true)
@@ -600,28 +705,22 @@ func _configurar_enemigo_para_rio(enemigo: Node3D) -> void:
 
 
 func _resolver_escena_enemigo(tipo: TipoEnemigo) -> PackedScene:
+	## Todas las escenas son preload: sin load() en runtime, sin hitches al spawnear.
 	match tipo:
 		TipoEnemigo.IMP:
-			if ResourceLoader.exists(ESCENA_IMP):
-				return load(ESCENA_IMP) as PackedScene
+			return ESCENA_IMP
 		TipoEnemigo.PIRATA_GOBLIN:
 			if escena_pirata_custom != null:
 				return escena_pirata_custom
-			if ResourceLoader.exists(ESCENA_GOBLIN_BASE):
-				return load(ESCENA_GOBLIN_BASE) as PackedScene
+			return ESCENA_PIRATA
 		TipoEnemigo.GOBLIN_ARQUERA:
-			if ResourceLoader.exists(ESCENA_GOBLIN_ARQUERA):
-				return load(ESCENA_GOBLIN_ARQUERA) as PackedScene
+			return ESCENA_GOBLIN_ARQUERA
 		TipoEnemigo.PIRATA:
-			if ResourceLoader.exists(ESCENA_PIRATA):
-				return load(ESCENA_PIRATA) as PackedScene
+			return ESCENA_PIRATA
 		TipoEnemigo.IMP_EMBAJADOR:
-			if ResourceLoader.exists(ESCENA_IMP_EMBAJADOR):
-				return load(ESCENA_IMP_EMBAJADOR) as PackedScene
+			return ESCENA_IMP_EMBAJADOR
 	# Fallback seguro
-	if ResourceLoader.exists(ESCENA_GOBLIN_ARQUERA):
-		return load(ESCENA_GOBLIN_ARQUERA) as PackedScene
-	return null
+	return ESCENA_GOBLIN_ARQUERA
 
 
 func _on_enemigo_eliminado(enemigo: Node3D) -> void:
@@ -648,6 +747,9 @@ func _verificar_enemigos_vivos() -> void:
 		_iniciar_sumersion()
 
 
+## Virtual: las subclases (ej. JefeSubmarinoRio) pueden sobreescribirla para
+## encadenar fases en vez de hundirse y liberarse. La versión base mantiene
+## el comportamiento clásico: cañón final y luego hundimiento con queue_free.
 func _iniciar_sumersion() -> void:
 	if current_state == State.SUMERGIENDOSE or current_state == State.DESAPARECIDO or current_state == State.DISPARO_FINAL:
 		return
@@ -655,6 +757,13 @@ func _iniciar_sumersion() -> void:
 	if canon_disparo_final and not _disparo_canon_realizado and _canon_listo_para_disparo():
 		current_state = State.DISPARO_FINAL
 		_ejecutar_secuencia_canon_final()
+		return
+	_sumergirse_y_liberar()
+
+
+## Hundimiento real con queue_free (usado por la base y por la muerte final del jefe).
+func _sumergirse_y_liberar() -> void:
+	if current_state == State.SUMERGIENDOSE or current_state == State.DESAPARECIDO:
 		return
 	current_state = State.SUMERGIENDOSE
 	_detener_goteo_cubierta()
@@ -676,7 +785,28 @@ func _canon_listo_para_disparo() -> bool:
 
 ## La secuencia sigue vigente: sin esto, los awaits huérfanos no hacen nada.
 func _sigo_en_secuencia_canon() -> bool:
-	return is_instance_valid(self) and is_inside_tree() and current_state == State.DISPARO_FINAL
+	if not is_instance_valid(self):
+		return false
+	if not is_inside_tree():
+		return false
+	if get_tree() == null:
+		return false
+	return current_state == State.DISPARO_FINAL
+
+
+## Espera segura que sobrevive a reload_current_scene / queue_free.
+## Devuelve false si el nodo salió del árbol durante la espera.
+func _esperar_canon_segundos(segundos: float) -> bool:
+	if not _sigo_en_secuencia_canon():
+		return false
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return false
+	if segundos > 0.0:
+		await tree.create_timer(segundos).timeout
+	if not _sigo_en_secuencia_canon():
+		return false
+	return true
 
 
 ## Recalcula la boca en local del cañón (respeta cambios del Inspector en caliente).
@@ -717,31 +847,31 @@ func _ejecutar_secuencia_canon_final() -> void:
 	if not _canon_listo_para_disparo():
 		_iniciar_sumersion()
 		return
+	if not _sigo_en_secuencia_canon():
+		return
 	# 1. Elevar el cañón apuntando al cielo (el largo del cañón es el eje X).
 	if _tween_canon and _tween_canon.is_valid():
 		_tween_canon.kill()
 	var lado: float = 1.0 if canon_lado_boca >= 0.0 else -1.0
 	_reproducir_sfx_engranaje(_canon_modelo.global_position)
+	if not is_inside_tree():
+		return
 	_tween_canon = create_tween()
 	_tween_canon.tween_property(_canon_modelo, "rotation", _canon_rot_base + Vector3(0.0, 0.0, lado * PI * 0.5), maxf(canon_tiempo_apuntado, 0.05)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await get_tree().create_timer(maxf(canon_tiempo_apuntado, 0.05)).timeout
-	if not _sigo_en_secuencia_canon():
+	if not await _esperar_canon_segundos(maxf(canon_tiempo_apuntado, 0.05)):
 		return
 	# 2. Pausa de apuntado antes del disparo.
-	await get_tree().create_timer(maxf(canon_pausa_antes_disparo, 0.0)).timeout
-	if not _sigo_en_secuencia_canon():
+	if not await _esperar_canon_segundos(maxf(canon_pausa_antes_disparo, 0.0)):
 		return
 	# 3. Disparo del ult desde la boca + deformación sutil.
 	_disparar_ult_desde_canon()
 	canon_disparo_final_realizado.emit()
 	_deformar_canon_disparo()
-	await get_tree().create_timer(maxf(canon_duracion_deformacion, 0.05)).timeout
-	if not _sigo_en_secuencia_canon():
+	if not await _esperar_canon_segundos(maxf(canon_duracion_deformacion, 0.05)):
 		return
 	# 4. Regreso a la forma original y hundimiento normal.
 	_restaurar_canon()
-	await get_tree().create_timer(maxf(canon_tiempo_regreso, 0.05)).timeout
-	if not _sigo_en_secuencia_canon():
+	if not await _esperar_canon_segundos(maxf(canon_tiempo_regreso, 0.05)):
 		return
 	# La despedida terminó: salir del estado para que _iniciar_sumersion avance.
 	current_state = State.ESPERANDO_MUERTE
@@ -752,6 +882,8 @@ func _ejecutar_secuencia_canon_final() -> void:
 func _disparar_ult_desde_canon() -> void:
 	if not _canon_listo_para_disparo():
 		return
+	if not is_inside_tree() or get_tree() == null:
+		return
 	_actualizar_posicion_boca_canon()
 	var spawn_pos: Vector3 = _boca_canon.global_position
 	if not is_instance_valid(ESCENA_FLECHA_LONKO):
@@ -759,9 +891,14 @@ func _disparar_ult_desde_canon() -> void:
 	var arrow := ESCENA_FLECHA_LONKO.instantiate() as FlechaElectricaAtaque
 	if arrow == null:
 		return
-	var root: Node = get_tree().current_scene if get_tree() else get_parent()
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	var root: Node = tree.current_scene
 	if root == null:
-		root = get_tree().root
+		root = tree.root
+	if root == null:
+		return
 	root.add_child(arrow)
 	arrow.global_position = spawn_pos
 	arrow.initialize(Vector3.UP, 1.0)
@@ -772,6 +909,8 @@ func _disparar_ult_desde_canon() -> void:
 ## Expansión sutil del cañón al disparar para enfatizar el disparo.
 func _deformar_canon_disparo() -> void:
 	if not is_instance_valid(_canon_modelo):
+		return
+	if not is_inside_tree():
 		return
 	if _tween_canon and _tween_canon.is_valid():
 		_tween_canon.kill()
@@ -786,6 +925,8 @@ func _deformar_canon_disparo() -> void:
 ## Devuelve el cañón a su rotación y escala originales del editor.
 func _restaurar_canon() -> void:
 	if not is_instance_valid(_canon_modelo):
+		return
+	if not is_inside_tree() or get_tree() == null:
 		return
 	if _tween_canon and _tween_canon.is_valid():
 		_tween_canon.kill()
@@ -884,6 +1025,7 @@ func _asignar_material_recursivo(nodo: Node) -> void:
 		_asignar_material_recursivo(c)
 
 
+
 func _reproducir_sfx_splash() -> void:
 	if is_instance_valid(audio_splash) and audio_splash.stream != null:
 		audio_splash.play()
@@ -936,6 +1078,8 @@ func _generar_onda_emerger() -> void:
 	var raiz: Node = get_tree().current_scene
 	if raiz == null:
 		raiz = get_tree().root
+	if raiz == null:
+		return
 	raiz.add_child(onda)
 	onda.global_position = global_position
 	onda.scale = Vector3(escala_onda_emerger, escala_onda_emerger, escala_onda_emerger)
@@ -945,7 +1089,10 @@ func _generar_onda_emerger() -> void:
 			onda.toggle_layer_index(i, i == 1)
 	if onda.has_method("play_splash"):
 		onda.play_splash()
-	get_tree().create_timer(duracion_onda_emerger).timeout.connect(func():
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	tree.create_timer(duracion_onda_emerger).timeout.connect(func():
 		if is_instance_valid(onda):
 			onda.queue_free()
 	)

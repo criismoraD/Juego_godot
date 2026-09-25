@@ -585,6 +585,9 @@ const DROP_CHANCE_MUNICION_ALTA: float = 0.15
 
 
 func _dropear_power_up_multiple() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if drop_realizado:
 		return
 	drop_realizado = true

@@ -1,7 +1,15 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://bi75w45xtwdd5"]
 
 [ext_resource type="Texture2D" uid="uid://ciay5ej7qdq4k" path="res://Entities/Ambiente_Escudo/Escudonivel3_D.jpg" id="1_hl8io"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
 
 [resource]
+next_pass = SubResource("ShaderMaterial_outline")
 shading_mode = 0
 albedo_texture = ExtResource("1_hl8io")

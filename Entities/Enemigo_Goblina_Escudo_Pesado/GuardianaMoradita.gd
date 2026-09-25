@@ -1047,6 +1047,8 @@ func _setup_materiales() -> void:
 	var all_meshes: Array[Node] = find_children("*", "MeshInstance3D", true, false)
 	for m in all_meshes:
 		var mesh := m as MeshInstance3D
+		if not mesh.is_in_group("outline_meshes"):
+			mesh.add_to_group("outline_meshes")
 		if mesh.find_parent("EscudoPesado") != null:
 			mesh.material_override = MAT_ESCUDO
 			_escudo_meshes.append(mesh)

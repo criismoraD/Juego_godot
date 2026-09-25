@@ -18,12 +18,16 @@ const CANTIDAD_PIEDRITAS: int = 12
 const DURACION_FLASH: float = 0.1
 const COLOR_FLASH_DANO: Color = Color(1.0, 0.3, 0.3)
 const SHADER_DISOLVER: Shader = preload("res://System/Shaders/dissolve.gdshader")
+const SHADER_TOON_OUTLINE: Shader = preload("res://System/Shaders/TOON_LINEANEGRA.gdshader")
+const RUTA_MAT_CONTENEDOR: String = "res://Levels/Rio_En_Canoa_Con_Parallax/BasijaContenedor_Mat.tres"
+const RUTA_MAT_DESTRUIDO: String = "res://Levels/Rio_En_Canoa_Con_Parallax/BasijaDestruida_Mat.tres"
 const ESCENA_DISPARO_MULTIPLE: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
 const ESCENA_FLECHA_EXPLOSIVA: PackedScene = preload("res://Entities/Item_Flecha_Explosiva/PowerUpFlechaExplosiva.tscn")
 const ESCENA_POCION: PackedScene = preload("res://Entities/Item_Pocion/Posion.tscn")
 const ESCENA_FUEGO_RAPIDO: PackedScene = preload("res://Entities/Item_Fuego_Rapido/PowerUpFuegoRapido.tscn")
 const TIEMPO_VER_ITEM: float = 1.0  ## Segundos visible el item antes de auto-consumirse
 const COLOR_DISOLVER_CELESTE: Color = Color(0.4, 0.85, 1.0, 1.0)  ## Tinte de disolución como los enemigos
+const GROSOR_OUTLINE_TOON: float = 20.0
 
 # === EXPORTS ===
 @export_category("Contenedor")
@@ -37,6 +41,7 @@ const COLOR_DISOLVER_CELESTE: Color = Color(0.4, 0.85, 1.0, 1.0)  ## Tinte de di
 @export_enum("Derecha", "Izquierda") var direccion_viaje: String = "Derecha"  ## Sentido del desplazamiento sobre el río
 @export var deriva_activa: bool = true  ## Si false, no se desplaza
 @export var velocidad_desplazamiento: float = 0.35  ## Metros por segundo del desplazamiento
+@export var deriva_solo_en_pantalla: bool = true  ## No avanza hasta que la vasija aparece en el encuadre
 
 @export_category("Flotación")
 @export var flotacion_activa: bool = true  ## Si false, no bambolea
@@ -72,6 +77,8 @@ var _mallas: Array[MeshInstance3D] = []
 var _materiales_originales: Array = []
 var _materiales_disolver: Array = []
 var _textura_piedritas: Texture2D = null
+var _en_pantalla: bool = false  ## True cuando la vasija ya apareció en el encuadre (habilita la deriva)
+var _notificador_pantalla: VisibleOnScreenNotifier3D = null
 
 # === ONREADY ===
 @onready var modelo: Node3D = $Model
@@ -85,6 +92,8 @@ func _ready() -> void:
 	_pos_base_y = position.y
 	_aplicar_materiales()
 	_cachear_mallas()
+	asegurar_contorno_toon()
+	_configurar_notificador_pantalla()
 	_textura_piedritas = load(TEXTURA_PIEDRITAS) as Texture2D
 	if is_instance_valid(modelo_destruido):
 		modelo_destruido.visible = false
@@ -95,7 +104,7 @@ func _process(delta: float) -> void:
 		return
 	if delta <= 0.0:
 		return
-	if deriva_activa and not _destruido:
+	if deriva_activa and not _destruido and _puede_derivar():
 		var sentido: float = 1.0 if direccion_viaje == "Derecha" else -1.0
 		position.x += sentido * velocidad_desplazamiento * delta
 	if flotacion_activa and not _destruido:
@@ -145,6 +154,8 @@ func _flash_dano() -> void:
 		flash_mat.emission_enabled = true
 		flash_mat.emission = COLOR_FLASH_DANO
 		flash_mat.emission_energy_multiplier = 3.0
+		if material_contenedor != null and material_contenedor.next_pass != null:
+			flash_mat.next_pass = material_contenedor.next_pass
 		mi.material_override = flash_mat
 	get_tree().create_timer(DURACION_FLASH).timeout.connect(_restaurar_materiales)
 
@@ -164,10 +175,14 @@ func _cachear_mallas() -> void:
 		var mi := m as MeshInstance3D
 		if mi:
 			_mallas.append(mi)
-			_materiales_originales.append(mi.material_override)
+			_materiales_originales.append(mi.material_override if mi.material_override != null else material_contenedor)
 
 
 func _aplicar_materiales() -> void:
+	if material_contenedor == null and ResourceLoader.exists(RUTA_MAT_CONTENEDOR):
+		material_contenedor = load(RUTA_MAT_CONTENEDOR) as StandardMaterial3D
+	if material_destruido == null and ResourceLoader.exists(RUTA_MAT_DESTRUIDO):
+		material_destruido = load(RUTA_MAT_DESTRUIDO) as StandardMaterial3D
 	if is_instance_valid(modelo) and material_contenedor != null:
 		_aplicar_a_instancias(modelo, material_contenedor)
 	if is_instance_valid(modelo_destruido) and material_destruido != null:
@@ -250,6 +265,8 @@ func _hundir_y_disolver() -> void:
 			if material_destruido != null and material_destruido.albedo_texture != null:
 				mat.set_shader_parameter("albedo_texture", material_destruido.albedo_texture)
 			mat.set_shader_parameter("glow_color", COLOR_DISOLVER_CELESTE)
+			if material_destruido != null and material_destruido.next_pass != null:
+				mat.next_pass = material_destruido.next_pass
 			mi.material_override = mat
 			_materiales_disolver.append(mat)
 	var tw := create_tween()
@@ -263,3 +280,60 @@ func _actualizar_disolucion(valor: float) -> void:
 	for mat in _materiales_disolver:
 		if mat is ShaderMaterial:
 			(mat as ShaderMaterial).set_shader_parameter("dissolve_amount", valor)
+
+
+## Asegura que los meshes de la vasija (intacta y destruida) posean contorno toon negro.
+func asegurar_contorno_toon() -> void:
+	if not SHADER_TOON_OUTLINE:
+		return
+	var modelos: Array[Node3D] = []
+	if is_instance_valid(modelo):
+		modelos.append(modelo)
+	if is_instance_valid(modelo_destruido):
+		modelos.append(modelo_destruido)
+
+	for nodo_modelo: Node3D in modelos:
+		for child in nodo_modelo.find_children("*", "MeshInstance3D", true, false):
+			var mi := child as MeshInstance3D
+			if not mi:
+				continue
+			if not mi.is_in_group("outline_meshes"):
+				mi.add_to_group("outline_meshes")
+			if not mi.mesh:
+				continue
+			for i in range(mi.mesh.get_surface_count()):
+				var mat: Material = mi.get_active_material(i)
+				if mat is StandardMaterial3D:
+					var std_mat := mat as StandardMaterial3D
+					if std_mat.next_pass == null or not (std_mat.next_pass is ShaderMaterial):
+						var outline_mat := ShaderMaterial.new()
+						outline_mat.shader = SHADER_TOON_OUTLINE
+						outline_mat.set_shader_parameter("outline_color", Color(0.0, 0.0, 0.0, 1.0))
+						outline_mat.set_shader_parameter("outline_width", GROSOR_OUTLINE_TOON)
+						std_mat.next_pass = outline_mat
+					elif std_mat.next_pass is ShaderMaterial:
+						var outline_mat := std_mat.next_pass as ShaderMaterial
+						if outline_mat.shader == null:
+							outline_mat.shader = SHADER_TOON_OUTLINE
+						outline_mat.set_shader_parameter("outline_color", Color(0.0, 0.0, 0.0, 1.0))
+						outline_mat.set_shader_parameter("outline_width", GROSOR_OUTLINE_TOON)
+
+
+func _configurar_notificador_pantalla() -> void:
+	if Engine.is_editor_hint():
+		return
+	_notificador_pantalla = VisibleOnScreenNotifier3D.new()
+	_notificador_pantalla.name = "NotificadorPantalla"
+	_notificador_pantalla.aabb = AABB(Vector3(-0.4, -0.2, -0.4), Vector3(0.8, 1.2, 0.8))
+	add_child(_notificador_pantalla)
+	_notificador_pantalla.screen_entered.connect(_on_pantalla_cambiada.bind(true))
+	_notificador_pantalla.screen_exited.connect(_on_pantalla_cambiada.bind(false))
+
+
+func _on_pantalla_cambiada(v: bool) -> void:
+	_en_pantalla = v
+
+
+func _puede_derivar() -> bool:
+	return not deriva_solo_en_pantalla or _en_pantalla
+

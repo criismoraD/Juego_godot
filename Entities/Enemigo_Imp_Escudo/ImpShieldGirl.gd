@@ -1051,6 +1051,9 @@ func _reproducir_sonido_escudo_cayendo() -> void:
 
 
 func _drop_pocion() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if not posion_scene:
 		return
 	if randf() > posion_drop_chance:
@@ -1064,4 +1067,3 @@ func _drop_pocion() -> void:
 	elif get_parent():
 		get_parent().add_child(posion)
 	posion.global_position = global_position + Vector3(0.0, 0.4, 0.0)
-

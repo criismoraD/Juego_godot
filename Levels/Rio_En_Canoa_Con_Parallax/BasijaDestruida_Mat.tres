@@ -1,8 +1,16 @@
-[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dhkjjge1n01st"]
 
 [ext_resource type="Texture2D" uid="uid://bncln2mt3gbm5" path="res://TEST_/Basija destruida/Basija destruida_D.jpg" id="1_tex"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+render_priority = 0
+shader = ExtResource("2_toon")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 20.0
 
 [resource]
 resource_name = "BasijaDestruida_Mat"
+next_pass = SubResource("ShaderMaterial_outline")
 albedo_texture = ExtResource("1_tex")
 roughness = 0.95

@@ -151,25 +151,23 @@ func test_npc_no_muta_la_libreria_compartida_del_glb() -> void:
 	)
 
 
-func test_npc_material_de_perrena_y_contorno_fino() -> void:
+func test_npc_material_de_perrena_sin_linea_negra() -> void:
 	# Arrange
 	var nivel = ESCENA_NIVEL.instantiate()
 	add_child_autofree(nivel)
 	await get_tree().process_frame
 	var npc := _obtener_npc(nivel)
 
-	# Act & Assert: material de Perrena en las mallas y contorno 2.0.
-	var mats: Array[Material] = []
+	# Act & Assert: material de Perrena en las mallas y SIN contorno en la torre.
+	var total: int = 0
 	for m in npc.find_children("*", "MeshInstance3D", true, false):
 		var mi := m as MeshInstance3D
-		if mi.material_override:
-			mats.append(mi.material_override)
-	assert_false(mats.is_empty(), "El NPC aplica material_override en sus mallas")
-	for mat in mats:
-		assert_true(
-			mat == npc.MAT_PERRENA or (mat is StandardMaterial3D and (mat as StandardMaterial3D).next_pass != null),
-			"Material de Perrena o contorno fino duplicado"
-		)
+		total += 1
+		assert_false(mi.is_in_group("outline_meshes"), "La malla %s no debe estar en outline_meshes" % mi.name)
+		var mat: Material = mi.material_override if mi.material_override else mi.get_active_material(0)
+		if mat and mat is StandardMaterial3D:
+			assert_null((mat as StandardMaterial3D).next_pass, "La malla %s no debe tener next_pass de contorno" % mi.name)
+	assert_gt(total, 0, "El NPC debe tener mallas")
 
 
 func test_npc_ignora_alias_de_ataque_registrados_por_la_jugable() -> void:

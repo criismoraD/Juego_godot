@@ -86,6 +86,7 @@ var _tiempo_editor: float = 0.0
 var _tiempo_flicker: float = 0.0
 var _shader_material: ShaderMaterial = null
 static var _cache_sprite_frames: Dictionary = {}
+var _notifier_pantalla: VisibleOnScreenNotifier3D = null
 
 # === ONREADY ===
 @onready var luz_fuego: OmniLight3D = get_node_or_null("LuzFuego") as OmniLight3D
@@ -100,6 +101,10 @@ func _ready() -> void:
 	_iniciar_animacion()
 	if not frame_changed.is_connected(_on_frame_changed):
 		frame_changed.connect(_on_frame_changed)
+
+	# Optimización: pausar el proceso y apagar la luz cuando la antorcha está fuera de cámara
+	if not Engine.is_editor_hint():
+		_configurar_notifier_pantalla()
 
 
 func _process(delta: float) -> void:
@@ -282,3 +287,30 @@ func _procesar_animacion_editor(delta: float) -> void:
 			frame = (frame + 1) % total
 			if difuminado > 0.001:
 				_actualizar_textura_shader()
+
+
+func _configurar_notifier_pantalla() -> void:
+	_notifier_pantalla = VisibleOnScreenNotifier3D.new()
+	_notifier_pantalla.name = "NotifierPantalla"
+	# AABB que cubre la llama y su luz
+	_notifier_pantalla.aabb = AABB(Vector3(-0.6, -0.1, -0.6), Vector3(1.2, 2.0, 1.2))
+	add_child(_notifier_pantalla)
+	_notifier_pantalla.screen_entered.connect(_al_entrar_pantalla)
+	_notifier_pantalla.screen_exited.connect(_al_salir_pantalla)
+	# Estado inicial: si ya est� en pantalla, activar; si no, esperar se�al
+	if _notifier_pantalla.is_on_screen():
+		_al_entrar_pantalla()
+	else:
+		_al_salir_pantalla()
+
+
+func _al_entrar_pantalla() -> void:
+	set_process(true)
+	if is_instance_valid(luz_fuego):
+		luz_fuego.visible = luz_activa
+
+
+func _al_salir_pantalla() -> void:
+	set_process(false)
+	if is_instance_valid(luz_fuego):
+		luz_fuego.visible = false  ## Eliminar de los calculos de shading del GPU

@@ -150,7 +150,7 @@ func _crear_tarjeta_obra(obra: Dictionary) -> Control:
 
 	if str(obra.get("tipo", "imagen")) == "video":
 		var badge_video := Label.new()
-		badge_video.text = "▶ VIDEO"
+		badge_video.text = tr("GALERIA_VIDEO")
 		badge_video.add_theme_color_override("font_color", COLOR_CELESTE_ACENTO)
 		badge_video.add_theme_font_size_override("font_size", 13)
 		hbox_num.add_child(badge_video)

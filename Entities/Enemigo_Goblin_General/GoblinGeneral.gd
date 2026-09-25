@@ -248,16 +248,25 @@ func _process_walking(delta: float) -> void:
 				_on_pacifico_detenido()
 		return
 
-	# Límite infranqueable de la isla enemiga (borde izquierdo)
+	# Límite infranqueable de la isla enemiga (borde izquierdo) o borde de plataforma
 	var limite_izq: float = _obtener_limite_izquierdo_x()
-	if global_position.x <= limite_izq:
+	var en_borde_plataforma: bool = evitar_caer_plataformas and is_on_floor() and not hay_suelo_adelante(-1.0)
+	if (limite_izq != -INF and global_position.x <= limite_izq) or en_borde_plataforma:
 		velocity.x = 0
-		global_position.x = max(global_position.x, limite_izq)
+		if limite_izq != -INF:
+			global_position.x = max(global_position.x, limite_izq)
+		if esta_rodando:
+			_terminar_rodar()
 		_change_state(State.SHOOTING)
 		return
 
 	# Lógica de rodar durante la carrera con aceleración integrada
 	if esta_rodando:
+		if evitar_caer_plataformas and is_on_floor() and not hay_suelo_adelante(-1.0):
+			velocity.x = 0
+			_terminar_rodar()
+			_change_state(State.SHOOTING)
+			return
 		var restante: float = clampf(1.0 - anim_timer / maxf(_duracion_rodar, 0.01), 0.0, 1.0)
 		var objetivo: float = -velocidad_rodar * clampf(restante / frenado_final_rodar, 0.0, 1.0)
 		velocity.x = move_toward(velocity.x, objetivo, delta * 14.0)
@@ -722,6 +731,9 @@ func _on_state_dying() -> void:
 
 
 func _dropear_power_up() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if _drop_realizado:
 		return
 	_drop_realizado = true

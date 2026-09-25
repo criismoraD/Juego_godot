@@ -13,6 +13,7 @@ static var modo_debug_solicitado: bool = false  ## Activar panel debug en NIVEL0
 static var continuar_desde_oleada: int = 0  ## Game Over → Continuar desde la oleada donde se murió (histéresis 1-5)
 static var regreso_desde_interior_oleada: int = 0  ## Regreso desde el cuarto interior: oleada completada cuya cortinilla de continuar hay que restaurar (1-5, 0=desactivado)
 static var regreso_conversacion_nivel5: bool = false  ## Regreso tras la conversación del nivel 5: al volver empieza la oleada 6 (interludio en la torre)
+static var plan_asalto_escuchado: bool = false  ## La jugadora ya escuchó el Plan de asalto de Perrena en la torre: desbloquea "Iniciar misión" al Río
 static var regreso_flechas_explosivas: int = 0  ## Power-ups al entrar al interior: flechas explosivas del jugador
 static var regreso_flechas_multiples: int = 0  ## Power-ups al entrar al interior: flechas múltiples del jugador
 static var regreso_municion_activa: int = 0  ## Power-ups al entrar al interior: tipo de munición activa del jugador (enum como int)
@@ -156,9 +157,9 @@ var materials_with_outline: Array = []
 var Opcion_Calidad: OptionButton
 var Indice_Calidad_Actual: int = 1
 var Etiquetas_Calidad: Array = [
-	"Bajo (Mínimo - 30 FPS)",
-	"Medio (60 FPS)",
-	"Alto (Sin Límite)"
+	"PAUSA_CALIDAD_BAJA",
+	"PAUSA_CALIDAD_MEDIA",
+	"PAUSA_CALIDAD_ALTA"
 ]
 
 # === RESOLUCIÓN ===
@@ -329,7 +330,7 @@ func _create_ui():
 	add_child(wave_container)
 
 	wave_progress_label = Label.new()
-	wave_progress_label.text = "Oleada en progreso..."
+	wave_progress_label.text = tr("HUD_OLEADA_EN_PROGRESO")
 	wave_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wave_progress_label.add_theme_font_size_override("font_size", 20)
 	var label_outline = LabelSettings.new()
@@ -378,20 +379,20 @@ func _create_pause_panel():
 	pause_panel.add_child(vbox)
 
 	var title = Label.new()
-	title.text = "⏸️ PAUSA"
+	title.text = tr("PAUSA_TITULO")
 	title.add_theme_font_size_override("font_size", 48)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	var resume_btn = Button.new()
-	resume_btn.text = "▶️ CONTINUAR"
+	resume_btn.text = tr("PAUSA_CONTINUAR")
 	resume_btn.custom_minimum_size = Vector2(200, 50)
 	resume_btn.pressed.connect(_toggle_pause)
 	_style_button(resume_btn, Color(0.2, 0.6, 0.3))
 	vbox.add_child(resume_btn)
 
 	var restart_pause_btn = Button.new()
-	restart_pause_btn.text = "🔄 REINICIAR"
+	restart_pause_btn.text = tr("PAUSA_REINICIAR")
 	restart_pause_btn.custom_minimum_size = Vector2(200, 50)
 	restart_pause_btn.pressed.connect(
 		func():
@@ -402,14 +403,14 @@ func _create_pause_panel():
 	vbox.add_child(restart_pause_btn)
 
 	var menu_btn = Button.new()
-	menu_btn.text = "🏠 MENÚ PRINCIPAL"
+	menu_btn.text = tr("PAUSA_MENU_PRINCIPAL")
 	menu_btn.custom_minimum_size = Vector2(200, 50)
 	menu_btn.pressed.connect(_go_to_main_menu)
 	_style_button(menu_btn, Color(0.3, 0.4, 0.7))
 	vbox.add_child(menu_btn)
 
 	var quit_pause_btn = Button.new()
-	quit_pause_btn.text = "❌ SALIR DEL JUEGO"
+	quit_pause_btn.text = tr("PAUSA_SALIR_JUEGO")
 	quit_pause_btn.custom_minimum_size = Vector2(200, 50)
 	quit_pause_btn.pressed.connect(_quit_game)
 	_style_button(quit_pause_btn, Color(0.8, 0.2, 0.2))
@@ -422,7 +423,7 @@ func _create_pause_panel():
 
 	var btn_perrena := Button.new()
 	btn_perrena.name = "BtnControlarPerrena"
-	btn_perrena.text = "🦊 CONTROLAR PERRENA"
+	btn_perrena.text = tr("PAUSA_CONTROLAR_PERRENA")
 	btn_perrena.custom_minimum_size = Vector2(200, 44)
 	_style_button(btn_perrena, Color(0.55, 0.4, 0.25))
 	btn_perrena.pressed.connect(
@@ -438,7 +439,7 @@ func _create_pause_panel():
 	vbox.add_child(sep_audio)
 
 	var audio_label = Label.new()
-	audio_label.text = "🔊 AUDIO"
+	audio_label.text = tr("PAUSA_AUDIO")
 	audio_label.add_theme_font_size_override("font_size", 22)
 	audio_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(audio_label)
@@ -449,7 +450,7 @@ func _create_pause_panel():
 	vbox.add_child(_sfx_row)
 
 	var _sfx_label = Label.new()
-	_sfx_label.text = "Volumen general"
+	_sfx_label.text = tr("PAUSA_VOLUMEN_GENERAL")
 	_sfx_label.custom_minimum_size = Vector2(110, 0)
 	_sfx_row.add_child(_sfx_label)
 
@@ -473,7 +474,7 @@ func _create_pause_panel():
 	vbox.add_child(_musica_row)
 
 	var _musica_label = Label.new()
-	_musica_label.text = "Música"
+	_musica_label.text = tr("PAUSA_MUSICA")
 	_musica_label.custom_minimum_size = Vector2(110, 0)
 	_musica_row.add_child(_musica_label)
 
@@ -672,7 +673,7 @@ func _create_pause_panel():
 	vbox.add_child(sep_calidad)
 
 	var qual_label = Label.new()
-	qual_label.text = "⚙️ CALIDAD GRÁFICA"
+	qual_label.text = tr("PAUSA_CALIDAD_GRAFICA")
 	qual_label.add_theme_font_size_override("font_size", 22)
 	qual_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(qual_label)
@@ -682,7 +683,7 @@ func _create_pause_panel():
 	Opcion_Calidad.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	Opcion_Calidad.focus_mode = Control.FOCUS_NONE
 	for i in range(Etiquetas_Calidad.size()):
-		Opcion_Calidad.add_item(Etiquetas_Calidad[i], i)
+		Opcion_Calidad.add_item(tr(Etiquetas_Calidad[i]), i)
 	Opcion_Calidad.selected = Indice_Calidad_Actual
 	Opcion_Calidad.item_selected.connect(_Al_Cambiar_Calidad)
 	vbox.add_child(Opcion_Calidad)
@@ -694,7 +695,7 @@ func _create_pause_panel():
 
 	# ═══════════════ RESOLUCIÓN ═══════════════
 	var res_label = Label.new()
-	res_label.text = "🖥️ RESOLUCIÓN"
+	res_label.text = tr("PAUSA_RESOLUCION")
 	res_label.add_theme_font_size_override("font_size", 22)
 	res_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(res_label)
@@ -718,7 +719,7 @@ func _create_pause_panel():
 
 	# ═══════════════ PANTALLA COMPLETA ═══════════════
 	fullscreen_check = CheckButton.new()
-	fullscreen_check.text = "Pantalla Completa"
+	fullscreen_check.text = tr("PAUSA_PANTALLA_COMPLETA")
 	fullscreen_check.button_pressed = (
 		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
@@ -773,7 +774,7 @@ func _process(delta):
 
 			wave_progress.max_value = total
 			wave_progress.value = max(0, total - restantes)
-			wave_progress_label.text = "ENEMIGOS RESTANTES: %d / %d" % [restantes, total]
+			wave_progress_label.text = tr("HUD_ENEMIGOS_RESTANTES") % [restantes, total]
 			wave_container.visible = true
 	else:
 		if wave_container:
@@ -983,11 +984,11 @@ func _toggle_pause():
 
 	if is_instance_valid(pause_btn):
 		if is_paused:
-			pause_btn.text = "▶️ PLAY"
+			pause_btn.text = tr("HUD_BTN_PLAY")
 			_style_button(pause_btn, Color(0.2, 0.6, 0.3))
 			AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
 		else:
-			pause_btn.text = "⏸️ PAUSA"
+			pause_btn.text = tr("HUD_BTN_PAUSA")
 			_style_button(pause_btn, Color(0.5, 0.3, 0.6))
 			AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), false)
 
@@ -1038,6 +1039,7 @@ func _go_to_main_menu():
 		get_tree().paused = false
 	# Detener todos los sonidos del nivel
 	AudioManager.stop_all()
+	RioEnCanoaConParallax.reset_checkpoint()
 	get_tree().change_scene_to_file("res://Scenes/UI/MainMenu.tscn")
 
 

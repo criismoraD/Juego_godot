@@ -511,12 +511,14 @@ func probar_animacion_victoria() -> void:
 
 
 ## REGLA de refuerzo: la mensajera nunca refuerza; las móviles solo cuando ya
-## están apostadas en su plataforma (en_despliegue == false). En marcha
-## (despliegue o retirada) no vinculan ni regeneran: su piso aún no es el final.
+## La habilidad de refuerzo de escudo es exclusiva de la ballestera de piso
+## fija (es_movil == false). Las ballesteras de refuerzo (es_movil == true)
+## no tienen escudo de piso propio asignado, así que nunca aplican la habilidad
+## aunque ya estén apostadas (en_despliegue == false).
 func _puede_reforzar_escudo() -> bool:
 	if es_mensajera:
 		return false
-	if es_movil and en_despliegue:
+	if es_movil:
 		return false
 	return true
 

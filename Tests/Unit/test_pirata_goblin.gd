@@ -61,7 +61,7 @@ func test_animaciones_con_alias_del_imp() -> void:
 	}
 	for alias in esperados:
 		assert_true(pirata.anim_player.has_animation(alias), "Alias registrado: " + alias)
-		assert_eq(
+		assert_almost_eq(
 			pirata.anim_player.get_animation(alias).length,
 			pirata.anim_player.get_animation(esperados[alias]).length,
 			0.001, "El alias comparte el clip: " + alias
@@ -164,36 +164,72 @@ func test_pistola_usa_sonido_disparo_propio() -> void:
 	assert_true(ResourceLoader.exists("res://TEST_/disparo pistola pirata gob.mp3"), "Debe existir el audio del pistoletazo")
 
 
-func test_espada_gira_rapido_en_vuelo_y_lento_al_caer() -> void:
+func test_espada_gira_todo_el_trayecto() -> void:
 	# Arrange: espada en vuelo ascendente
 	var pirata := await _crear_pirata()
 	var espada := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
 	_root_test.add_child(espada)
 	espada.global_position = Vector3(0.0, 5.0, 0.0)
-	espada.initialize(Vector3(1.0, 0.5, 0.0).normalized(), 1.0)
+	espada.initialize(Vector3(-1.0, 0.5, 0.0).normalized(), 1.0)
 	var modelo := espada.get_node_or_null("EspadaModel") as Node3D
 	assert_not_null(modelo, "Debe existir el nodo EspadaModel")
 
-	# Act: 10 frames en vuelo
+	# Act: 10 frames subiendo (direction.y > 0)
 	var z0: float = modelo.rotation.z
 	for i in range(10):
 		espada._physics_process(0.016)
-	var giro_vuelo: float = absf(modelo.rotation.z - z0)
+	var giro_subiendo: float = absf(modelo.rotation.z - z0)
 
-	# Assert: giro rápido como el hacha (16 rad/s * 0.16s ≈ 2.56 rad)
-	assert_gt(giro_vuelo, 1.5, "En vuelo la espada debe girar rápido como el hacha")
+	# Assert: giro continuo en subida (16 rad/s * 0.16s ≈ 2.56 rad)
+	assert_gt(giro_subiendo, 1.5, "Subiendo la espada debe girar continuamente")
 
-	# Act: 40 frames cayendo (direction.y negativa)
-	espada.direction.y = -5.0
-	for i in range(40):
+	# Act: 20 frames cayendo (direction.y negativa)
+	espada.global_position = Vector3(0.0, 50.0, 0.0)
+	espada.direction = Vector3(-1.0, -0.5, 0.0).normalized()
+	var giro_cayendo: float = 0.0
+	var z_prev: float = modelo.rotation.z
+	for i in range(20):
 		espada._physics_process(0.016)
+		giro_cayendo += absf(angle_difference(modelo.rotation.z, z_prev))
+		z_prev = modelo.rotation.z
 
-	# Assert: cae siempre con la punta hacia abajo (+X -> -Y) y estable
-	assert_almost_eq(modelo.rotation.z, -PI * 0.5, 0.15, "Cayendo debe orientarse con la punta hacia abajo")
-	var zf: float = modelo.rotation.z
-	for i in range(10):
-		espada._physics_process(0.016)
-	assert_almost_eq(modelo.rotation.z, zf, 0.05, "Ya orientada no debe seguir girando")
+	# Assert: debe seguir girando todo el trayecto de caída sin detenerse (~5.12 rad)
+	assert_gt(giro_cayendo, 4.0, "Cayendo la espada debe seguir girando todo el trayecto")
+
+
+func test_espada_cae_clavada_con_punta_y_filo() -> void:
+	# Arrange: espada lanzada hacia abajo y a la izquierda
+	var pirata := await _crear_pirata()
+	var espada := (pirata.imp_arrow_scene as PackedScene).instantiate() as EspadaPirataProjectile
+	_root_test.add_child(espada)
+	espada.global_position = Vector3(0.0, 5.0, 0.0)
+	var dir_lanzamiento := Vector3(-1.0, -1.0, 0.0).normalized()
+	espada.initialize(dir_lanzamiento, 1.0)
+	var modelo := espada.get_node_or_null("EspadaModel") as Node3D
+	assert_not_null(modelo, "Debe existir el nodo EspadaModel")
+
+	# Simular suelo estático (canoa o terreno)
+	var suelo := StaticBody3D.new()
+	suelo.name = "SueloTest"
+	_root_test.add_child(suelo)
+
+	# Act: la espada impacta y se clava en la superficie
+	espada._stick_to_surface(suelo)
+
+	# Assert: queda clavada
+	assert_true(espada.is_stuck, "La espada debe quedar marcada como clavada (is_stuck)")
+
+	# Assert: la punta (local -X) debe apuntar en la dirección del impacto
+	var punta_mundo: Vector3 = modelo.basis * Vector3(-1, 0, 0)
+	assert_gt(punta_mundo.dot(dir_lanzamiento), 0.95, "La punta (-X) debe apuntar en la dirección de la caída")
+
+	# Assert: el filo de la hoja (local -Y) debe apuntar hacia abajo (hacia el suelo/corte)
+	var filo_mundo: Vector3 = modelo.basis * Vector3(0, -1, 0)
+	assert_lt(filo_mundo.y, 0.0, "El filo de la hoja (-Y) debe apuntar hacia abajo")
+
+	# Assert: la empuñadura (local +X) debe apuntar hacia arriba/afuera de la superficie
+	var empunadura_mundo: Vector3 = modelo.basis * Vector3(1, 0, 0)
+	assert_gt(empunadura_mundo.y, 0.0, "La empuñadura (+X) debe quedar hacia arriba")
 
 
 func _contar_proyectiles() -> Dictionary:
@@ -621,3 +657,76 @@ func test_pirata_cadencia_mas_baja_que_imp() -> void:
 	# Assert: pausas mínimas garantizadas (respeta ajustes mayores del editor)
 	assert_gte(pirata.pausa_idle_min, 2.0, "Pausa mínima al menos 2.0s")
 	assert_gte(pirata.pausa_idle_max, 3.5, "Pausa máxima al menos 3.5s")
+
+
+func test_pirata_en_submarino_siempre_usa_animacion_correr() -> void:
+	# Arrange: pirata con va_a_correr = false explícito
+	var pirata := await _crear_pirata()
+	pirata.va_a_correr = false
+	pirata.esta_en_submarino = true
+
+	# Act: intentar reproducir CAMINAR o ejecutar _on_state_walking
+	pirata._on_state_walking()
+
+	# Assert: debe haber ejecutado Correr (alias CORRER)
+	assert_eq(pirata.anim_player.current_animation, "CORRER", "En submarino debe usar CORRER en vez de Strut Walking")
+
+	# Act 2: llamar directamente _play_animation("CAMINAR")
+	pirata._play_animation("CAMINAR")
+
+	# Assert 2: se redirige a CORRER
+	assert_eq(pirata.anim_player.current_animation, "CORRER", "Llamar CAMINAR debe redirigirse a CORRER")
+
+
+func test_pirata_en_arbol_submarino_detecta_submarino_y_corre() -> void:
+	# Arrange: pirata dentro de un nodo SubmarinoRio
+	var pirata := await _crear_pirata()
+	pirata.va_a_correr = false
+	pirata.esta_en_submarino = false
+	var submarino_dummy := Node3D.new()
+	submarino_dummy.name = "SubmarinoRio"
+	_root_test.add_child(submarino_dummy)
+	pirata.reparent(submarino_dummy)
+
+	# Act: verificar detección y caminar
+	assert_true(pirata.es_en_submarino(), "Debe detectar que su ancestro es un submarino")
+	pirata._on_state_walking()
+
+	# Assert: corre automáticamente
+	assert_eq(pirata.anim_player.current_animation, "CORRER", "Por ser hijo de submarino debe correr")
+	submarino_dummy.free()
+
+
+func test_pirata_al_morir_no_se_vuelve_blanco() -> void:
+	# Arrange: pirata configurado sobre el submarino
+	var pirata := await _crear_pirata()
+	pirata.esta_en_submarino = true
+	var malla_cuerpo: MeshInstance3D = pirata.find_child("Piratiña", true, false) as MeshInstance3D
+	assert_not_null(malla_cuerpo, "Debe existir la malla del cuerpo Piratiña")
+	assert_eq(malla_cuerpo.material_override, PirataGoblin.MAT_PIRATA, "Malla debe nacer con MAT_PIRATA")
+
+	# Act: recibir daño letal
+	pirata.take_damage(1.0)
+
+	# Assert (Durante animación de muerte): entra en estado DYING con animación correspondiente
+	assert_eq(pirata.current_state, EnemyBase.State.DYING, "Estado debe ser DYING")
+	var anim_actual: String = pirata.anim_player.current_animation
+	assert_true(
+		anim_actual in ["IMP_MUERTE01", "IMP_MUERTE02", "Muerte 1", "Muerte 2"],
+		"Debe estar reproduciendo animación de muerte, no: " + anim_actual
+	)
+	assert_eq(malla_cuerpo.material_override, PirataGoblin.MAT_PIRATA, "Durante la animación de muerte debe conservar MAT_PIRATA")
+
+	# Act: esperar a que la animación de muerte termine e inicie la disolución
+	await get_tree().create_timer(3.0).timeout
+
+	# Assert (Durante disolución): la malla debe tener ShaderMaterial con la textura del pirata asignada (no null/blanco)
+	assert_true(malla_cuerpo.material_override is ShaderMaterial, "Al disolverse debe usar ShaderMaterial de disolución")
+	var sm := malla_cuerpo.material_override as ShaderMaterial
+	var tex_disolucion = sm.get_shader_parameter("albedo_texture")
+	assert_not_null(tex_disolucion, "La textura del ShaderMaterial NO debe ser null (evita que se vuelva blanco)")
+	assert_true(tex_disolucion is Texture2D, "El parámetro albedo_texture debe ser una Texture2D válida")
+	assert_true("PirataGoblin_D" in (tex_disolucion as Texture2D).resource_path, "Debe conservar la textura PirataGoblin_D al disolverse")
+	assert_eq(sm.get_shader_parameter("glow_color"), pirata.color_borde_disolucion, "El borde de disolución debe usar el color configurado del pirata")
+
+

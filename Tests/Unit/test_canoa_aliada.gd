@@ -249,8 +249,9 @@ func test_escena_canoa_tiene_script_y_modelo() -> void:
 
 # === NAVEGACIÓN ===
 func test_navegar_hacia_x_desplaza_canoa_hacia_derecha() -> void:
-	# Arrange
+	# Arrange (rampa desactivada para medir desplazamiento pleno)
 	var canoa := _crear_canoa_determinista()
+	canoa.aceleracion_navegacion = 100.0
 	canoa.fijar_posicion_base(Vector3(-14.0, 0.0, 0.0))
 	canoa.navegar_hacia_x(-6.5, 2.0)
 
@@ -264,8 +265,9 @@ func test_navegar_hacia_x_desplaza_canoa_hacia_derecha() -> void:
 	canoa.free()
 
 
-func test_canoa_alcanza_destino_y_emite_senal() -> void:	# Arrange
+func test_canoa_alcanza_destino_y_emite_senal() -> void:	# Arrange (rampa desactivada para llegada inmediata)
 	var canoa := _crear_canoa_determinista()
+	canoa.aceleracion_navegacion = 100.0
 	canoa.fijar_posicion_base(Vector3(-7.0, 0.0, 0.0))
 	canoa.navegar_hacia_x(-6.5, 2.0)
 	watch_signals(canoa)
@@ -279,6 +281,68 @@ func test_canoa_alcanza_destino_y_emite_senal() -> void:	# Arrange
 	assert_signal_emitted(canoa, "destino_alcanzado", "Debe emitirse destino_alcanzado")
 
 	canoa.free()
+
+
+# === NAVEGACIÓN SUAVE (sin reposicionamientos de golpe) ===
+func test_arranque_es_progresivo_por_rampa() -> void:
+	# Arrange: rampa por defecto
+	var canoa := _crear_canoa_determinista()
+	canoa.fijar_posicion_base(Vector3(-14.0, 0.0, 0.0))
+	canoa.navegar_hacia_x(100.0, 2.0)
+
+	# Act: paso corto de 0.1 s
+	canoa._actualizar_navegacion(0.1)
+
+	# Assert: velocidad efectiva a medio camino, sin salto al objetivo
+	assert_gt(canoa.obtener_velocidad_efectiva(), 0.0, "Debe empezar a moverse")
+	assert_lt(canoa.obtener_velocidad_efectiva(), 2.0, "El arranque debe ser progresivo, no instantáneo")
+	assert_almost_eq(canoa.obtener_velocidad_efectiva(), 0.15, MARGEN_FLOAT, "Rampa 1.5 m/s² x 0.1 s = 0.15 m/s")
+
+	canoa.free()
+
+
+func test_frenado_suave_mantiene_flotacion_y_no_reposiciona() -> void:
+	# Arrange: canoa navegando a velocidad plena
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	canoa.aceleracion_navegacion = 100.0
+	canoa.fijar_posicion_base(Vector3(0.0, 0.0, 0.0))
+	canoa.navegar_hacia_x(100.0, 0.65)
+	canoa._actualizar_navegacion(1.0)
+	canoa.aceleracion_navegacion = 1.5
+	var x_antes: float = canoa.obtener_posicion_base().x
+
+	# Act: frenado suave (fase de misiles del jefe)
+	canoa.detener_navegacion_suave()
+	canoa._actualizar_navegacion(0.1)
+
+	# Assert: sin reposicionamiento de golpe y flotación continua
+	assert_true(canoa.esta_flotando(), "El frenado suave debe mantener la flotación")
+	assert_true(canoa.esta_navegando(), "Sigue decelerando en el primer tramo")
+	assert_lt(absf(canoa.obtener_posicion_base().x - x_antes), 0.1, "Sin saltos de posición en un paso corto")
+
+	# Act: decelerar hasta reposo
+	for i in range(30):
+		canoa._actualizar_navegacion(0.1)
+
+	# Assert: reposo continuo con flotación activa
+	assert_false(canoa.esta_navegando(), "Debe alcanzar el reposo")
+	assert_almost_eq(canoa.obtener_velocidad_efectiva(), 0.0, MARGEN_FLOAT, "Velocidad efectiva en cero")
+	assert_true(canoa.esta_flotando(), "La flotación sigue activa en reposo")
+
+
+func test_detener_navegacion_suave_bloquea_reimposicion_de_velocidad() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	canoa.navegar_hacia_x(100.0, 0.65)
+
+	# Act
+	canoa.detener_navegacion_suave()
+
+	# Assert
+	assert_eq(canoa._velocidad_navegacion, 0.0, "El objetivo debe quedar en cero")
+	assert_true(canoa._navegacion_bloqueada, "La reacción a enemigos no debe reimponer velocidad")
 
 
 # === SONIDO DE NAVEGACIÓN ===
@@ -375,5 +439,51 @@ func test_detener_silencia_ambas_voces() -> void:
 
 	# Assert
 	assert_false(canoa.esta_reproduciendo_sonido_navegacion(), "Ambas voces deben callar al detener")
+
+
+# ==============================================================================
+# TESTS DE ESCOMBROS DE MADERA EN IMPACTO (MISIL / MINA)
+# ==============================================================================
+
+func test_canoa_expulsa_maderos_pequenos_al_recibir_impacto() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	canoa.global_position = Vector3(10.0, 0.0, 0.0)
+
+	# Act: Expulsar escombros desde el punto de impacto
+	var impacto_pos := Vector3(10.5, 0.2, 0.0)
+	var maderos: Array[Node3D] = canoa.expulsar_escombros_maderos(impacto_pos, 4)
+
+	# Assert
+	assert_eq(maderos.size(), 4, "Debe instanciar exactamente 4 escombros de maderos")
+	for madero: Node3D in maderos:
+		assert_not_null(madero, "El madero no debe ser nulo")
+		assert_almost_eq(float(madero.get("escala_modelo")), canoa.escala_maderos_canoa, MARGEN_FLOAT,
+			"La escala del madero debe ser la escala pequeña propia de la canoa (0.75 vs 2.4 del barco)")
+		assert_almost_eq(float(madero.get("escala_splash")), canoa.escala_splash_maderos_canoa, MARGEN_FLOAT,
+			"La escala de la onda debe ser la reducida propia de la canoa (0.22 vs 0.35 del barco)")
+		assert_true(bool(madero.call("esta_volando")), "El madero debe iniciar volando en el aire")
+		madero.queue_free()
+
+
+func test_canoa_sacudida_violenta_dispara_maderos_automaticamente() -> void:
+	# Arrange
+	var canoa := _crear_canoa_determinista()
+	add_child_autofree(canoa)
+	canoa.global_position = Vector3(5.0, 0.0, 0.0)
+
+	# Act: Sacudida con multiplicador alto (ej. impacto de mina fuerza 4.0 o misil 3.5)
+	canoa.sacudida_oleaje(2.0, 3.5)
+
+	# Assert: Buscar escombros generados en la escena
+	var escombros: Array[Node] = get_tree().root.find_children("*", "EscombroMaderoVolador", true, false)
+	assert_gt(escombros.size(), 0, "Debe haber generado maderos voladores ante una sacudida violenta")
+	for e: Node in escombros:
+		var escombro := e as Node3D
+		assert_almost_eq(float(escombro.get("escala_modelo")), canoa.escala_maderos_canoa, MARGEN_FLOAT,
+			"Los escombros deben tener escala reducida para la canoa")
+		e.queue_free()
+
 
 

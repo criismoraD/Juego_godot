@@ -126,6 +126,8 @@ func _resolver_entidad_objetivo(node: Node) -> Node:
 			return curr
 		if curr is EscudoPesadoArea:
 			return curr
+		if curr is SubmarinoRio or curr.is_in_group("submarinos") or curr.is_in_group("submarino") or curr.is_in_group("jefe_submarino"):
+			return curr
 		if curr.is_in_group("enemies") or curr.is_in_group("escudos") or curr.is_in_group("guardians") or curr.is_in_group("guardianes") or curr.is_in_group("shield_imps"):
 			return curr
 		curr = curr.get_parent()
@@ -353,6 +355,11 @@ func _es_entidad_a_ignorar(target: Node) -> bool:
 	if tirador and (target == tirador or target.is_ancestor_of(tirador) or tirador.is_ancestor_of(target)):
 		return true
 
+	# Fuego amigo imposible: el hacha solo la lanza Perrena defensora
+	# (aliada). Jamás daña a la jugadora ni a las aliadas: las atraviesa.
+	if target.is_in_group("player") or target.is_in_group("allies"):
+		return true
+
 	# Ignorar otros proyectiles
 	if target is Area3D and (target.name.begins_with("Arrow") or target.name.begins_with("Hacha") or target.name.begins_with("Proyectil")):
 		return true
@@ -553,6 +560,11 @@ func _procesar_impacto(target: Node, punto: Vector3, _normal: Vector3) -> void:
 		var game_feel = get_tree().root.get_node_or_null("GameFeel") if get_tree() else null
 		if game_feel and game_feel.has_method("on_player_shoot"):
 			game_feel.on_player_shoot()
+
+		# Sacudir el submarino con bamboleo de oleaje si el impacto del Ult fue hacia él o sobre su cubierta
+		_sacudir_submarino_si_aplica(real_target, target)
+		# Igual con el barco combate pirata: bamboleo de oleaje ante el Ult
+		_sacudir_barco_si_aplica(real_target, target)
 
 	# Aplicar daño al objetivo resuelto o al nodo directo
 	var vida_antes: float = _obtener_vida_enemigo(real_target, target)
@@ -790,14 +802,65 @@ func _fue_impacto_a_enemigo(real_target: Node, target: Node) -> bool:
 	for nodo in [real_target, target]:
 		if not is_instance_valid(nodo):
 			continue
-		if nodo.is_in_group("enemies") or nodo.is_in_group("enemigos"):
+		if nodo.is_in_group("enemies") or nodo.is_in_group("enemigos") or nodo.is_in_group("submarinos") or nodo.is_in_group("submarino") or nodo.is_in_group("jefe_submarino"):
 			return true
 		var script_obj = nodo.get_script()
 		if script_obj is Script:
 			var s_name: String = (script_obj as Script).get_global_name()
-			if s_name in ["EnemyBase", "Lonko", "ArqueraRosa", "Azulina", "ImpShieldGirl", "GuardianaMoradita", "ImpEnemy", "Goblin", "GoblinGirl", "GoblinGeneral", "LimoCuadrado"]:
+			if s_name in ["EnemyBase", "Lonko", "ArqueraRosa", "Azulina", "ImpShieldGirl", "GuardianaMoradita", "ImpEnemy", "Goblin", "GoblinGirl", "GoblinGeneral", "LimoCuadrado", "SubmarinoRio", "JefeSubmarinoRio"]:
 				return true
 	return false
+
+
+func _sacudir_submarino_si_aplica(real_target: Node, target: Node) -> void:
+	var sub: Node = _buscar_submarino(real_target)
+	if not is_instance_valid(sub):
+		sub = _buscar_submarino(target)
+	if is_instance_valid(sub) and sub.has_method("sacudida_oleaje"):
+		sub.call("sacudida_oleaje", 2.2, 4.5)
+
+
+## Bamboleo del barco combate pirata ante el Ult (casco o tripulación embarcada).
+func _sacudir_barco_si_aplica(real_target: Node, target: Node) -> void:
+	var barco: Node = _buscar_barco_combate(real_target)
+	if not is_instance_valid(barco):
+		barco = _buscar_barco_combate(target)
+	if is_instance_valid(barco) and barco.has_method("sacudida_oleaje"):
+		barco.call("sacudida_oleaje", 2.2, 4.5)
+
+
+## Sube por los padres hasta el barco/balsa de combate (cubre casco, cubierta
+## y tripulantes embarcados, como _buscar_submarino con el submarino).
+func _buscar_barco_combate(nodo: Node) -> Node:
+	if get_tree() == null:
+		return null
+	var curr: Node = nodo
+	while curr and curr != get_tree().root:
+		if curr is BalsaPirataCombate:
+			return curr
+		var s_name := ""
+		var scr = curr.get_script()
+		if scr is Script:
+			s_name = (scr as Script).get_global_name()
+		if s_name == "BalsaPirataCombate" or s_name == "BarcoCombatePirata":
+			return curr
+		curr = curr.get_parent()
+	return null
+
+
+func _buscar_submarino(nodo: Node) -> Node:
+	var curr: Node = nodo
+	while curr and curr != get_tree().root:
+		if curr is SubmarinoRio or curr.is_in_group("submarino") or curr.is_in_group("submarinos") or curr.is_in_group("jefe_submarino"):
+			return curr
+		var s_name := ""
+		var scr = curr.get_script()
+		if scr is Script:
+			s_name = (scr as Script).get_global_name()
+		if s_name == "SubmarinoRio" or s_name == "JefeSubmarinoRio":
+			return curr
+		curr = curr.get_parent()
+	return null
 
 
 ## Fallo a tierra del Ult (impactó en terreno o en el pilar de Lonko).

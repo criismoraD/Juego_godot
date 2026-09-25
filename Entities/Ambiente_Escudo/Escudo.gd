@@ -93,6 +93,8 @@ func _ready():
 	# Asegurar que todas las mallas del escudo estén en la Capa 1 (renderizado frontal junto a personajes y entorno)
 	for mi in _recolectar_mallas():
 		mi.layers = 1
+		if not mi.is_in_group("outline_meshes"):
+			mi.add_to_group("outline_meshes")
 
 	# Buscar el MeshInstance3D
 	_find_mesh_instance(self)
@@ -551,6 +553,8 @@ func _crear_material_flash(color: Color, intensidad: float) -> StandardMaterial3
 	flash_mat.emission_enabled = true
 	flash_mat.emission = color
 	flash_mat.emission_energy_multiplier = intensidad
+	if material_original and material_original.next_pass:
+		flash_mat.next_pass = material_original.next_pass
 	return flash_mat
 
 

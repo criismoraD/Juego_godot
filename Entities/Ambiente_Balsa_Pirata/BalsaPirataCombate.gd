@@ -37,6 +37,7 @@ const ESCENA_IMP_EMBAJADOR: String = "res://Entities/Enemigo_Imp_Estandarte/ImpE
 @export var distancia_frenado_canoa: float = 6.0  ## Desde aquí baja la velocidad ante la canoa
 @export var distancia_detencion_canoa: float = 3.5  ## Aquí se detiene del todo (no la sobrepasa)
 @export var nodo_referencia_frenado: Node3D = null  ## Arrastra aquí la canoa/jugadora (vacío = detección automática)
+@export var extension_proa: float = 0.0  ## Del origen a la proa (m): el freno la suma para que el casco no monte la canoa (barcos grandes > 0)
 
 @export_category("Tripulación Enemiga")
 @export var tipo_enemigo: TipoEnemigo = TipoEnemigo.GOBLIN_ARQUERA  ## Tipo único si la mezcla está vacía
@@ -64,7 +65,21 @@ const ESCENA_IMP_EMBAJADOR: String = "res://Entities/Enemigo_Imp_Estandarte/ImpE
 @export var factor_oscurecer_casco: float = 0.45  ## El modelo se oscurece a esta fracción al destruirse
 @export var duracion_desintegracion_casco: float = 4.0  ## Debe terminar antes del hundimiento (5.5s)
 
+@export_category("Flash de Daño")
+@export var parpadeo_rojo_activo: bool = true  ## El casco parpadea rojo al recibir impactos
+@export var duracion_flash_rojo: float = 0.12  ## Segundos que dura el tinte rojo por impacto
+@export var color_flash_rojo: Color = Color(1.0, 0.0, 0.0)  ## Tinte rojo del flash
+@export var intensidad_emision_flash: float = 2.0  ## Brillo emisivo para que se note a pleno sol
+
+@export_category("Aparición Tripulación")
+@export var efecto_aparicion_morado: bool = false  ## BarcoCombatePirata lo activa: dissolve + crecimiento como el escudo al reconstruirse, en morado
+@export var color_aparicion_morado: Color = Color(0.8, 0.2, 0.8)  ## Morado estándar del proyecto (GuardianaMoradita/Globo)
+@export var duracion_aparicion_morado: float = 1.2  ## Misma duración que Escudo.animar_reaparicion / GameUI._animar_aparicion_escudo_disolucion
+@export var intensidad_aparicion_morado: float = 8.0
+@export var grosor_borde_aparicion: float = 0.08
+
 const SHADER_DISOLVER: Shader = preload("res://System/Shaders/dissolve.gdshader")
+const DANO_LETAL_TRIPULACION: float = 99999.0  ## Daño al hundirse: muerte normal, sin importar la vida restante
 
 var vida_actual: float = 16.0
 var _activa: bool = false  ## Ya entró en cámara y opera
@@ -75,6 +90,10 @@ var _cola_mezcla: Array = []  ## Cola de TipoEnemigo por desplegar
 var _total_tripulacion: int = 0
 var _timer_spawn: float = 0.0
 var _enemigos_vivos: Array[Node3D] = []
+var _mallas_casco_flash: Array[MeshInstance3D] = []  ## Mallas del casco para el flash rojo
+var _originales_flash: Array = []  ## {mesh, material} originales antes del flash
+var _material_flash_rojo: StandardMaterial3D = null  ## Material rojo compartido del flash
+var _flash_seq: int = 0  ## Secuencia para que impactos rápidos reinicien el flash sin pisarse
 
 
 func _ready() -> void:
@@ -83,6 +102,8 @@ func _ready() -> void:
 	rotacion_y_proa = 0.0
 	super._ready()
 	vida_actual = vida_maxima
+	_crear_material_flash_rojo()
+	_cachear_mallas_casco_flash()
 	if is_in_group("enemies"):
 		remove_from_group("enemies")
 	if is_in_group("enemigos"):
@@ -96,6 +117,7 @@ func _process(delta: float) -> void:
 		return
 	if not _activa:
 		_procesar_activacion_camara()
+		_procesar_flotacion(delta)
 		return
 	super._process(delta)
 	if _destruida:
@@ -146,15 +168,22 @@ func _moderar_marcha_ante_canoa() -> void:
 	if dx < 0.0:
 		_velocidad_navegacion = velocidad_navegacion_combate
 		return
+	# La proa va por delante del origen: el casco grande se detiene antes.
+	var detencion_efectiva: float = distancia_detencion_canoa + extension_proa
+	# Banda muerta: sin ella el freno proporcional se acerca cada vez más
+	# despacio pero sin llegar nunca (jamás se detiene).
+	if dx <= detencion_efectiva + 0.15:
+		_detener_ante_canoa()
+		return
 	var rango: float = maxf(distancia_frenado_canoa - distancia_detencion_canoa, 0.1)
-	var factor: float = clampf((dx - distancia_detencion_canoa) / rango, 0.0, 1.0)
-	if factor <= 0.0:
-		if not _aviso_freno_dado:
-			_aviso_freno_dado = true
-			print("[BalsaPirataCombate] Detenida ante la canoa en x=", snappedf(global_position.x, 0.1))
-		detener_navegacion()
-	else:
-		_velocidad_navegacion = velocidad_navegacion_combate * factor
+	_velocidad_navegacion = velocidad_navegacion_combate * clampf((dx - detencion_efectiva) / rango, 0.0, 1.0)
+
+
+func _detener_ante_canoa() -> void:
+	if not _aviso_freno_dado:
+		_aviso_freno_dado = true
+		print("[BalsaPirataCombate] Detenida ante la canoa en x=", snappedf(global_position.x, 0.1))
+	detener_navegacion()
 
 
 ## Jugadora primero (robusto), canoa por clase como respaldo.
@@ -200,10 +229,84 @@ func take_damage(amount: float) -> void:
 	vida_actual -= maxf(amount, 0.0)
 	if vida_actual <= 0.0:
 		_hundir_por_dano()
+		return
+	_parpadear_rojo_impacto()
 
 
 func recibir_dano(amount: int) -> void:
 	take_damage(float(amount))
+
+
+## Prepara el material rojo del flash (mismo lenguaje que EnemyBase._flash_red).
+func _crear_material_flash_rojo() -> void:
+	if is_instance_valid(_material_flash_rojo):
+		return
+	_material_flash_rojo = StandardMaterial3D.new()
+	_material_flash_rojo.albedo_color = color_flash_rojo
+	_material_flash_rojo.emission_enabled = true
+	_material_flash_rojo.emission = color_flash_rojo
+	_material_flash_rojo.emission_energy_multiplier = maxf(intensidad_emision_flash, 0.1)
+
+
+## Cachea las mallas del casco (BarcoModel / modelo balsa). Se refresca en
+## caliente porque el modelo puede cambiar al destruirse.
+func _cachear_mallas_casco_flash() -> void:
+	_mallas_casco_flash.clear()
+	for m in find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		if mi != null and is_instance_valid(mi):
+			_mallas_casco_flash.append(mi)
+
+
+## Parpadeo rojo al impactar: tiñe el casco y restaura tras duracion_flash_rojo.
+## Reiniciable: impactos rápidos alargan el flash sin dejar el casco en rojo.
+func _parpadear_rojo_impacto() -> void:
+	if not parpadeo_rojo_activo:
+		return
+	if _destruida:
+		return
+	if not is_inside_tree() or get_tree() == null:
+		return
+	if not is_instance_valid(_material_flash_rojo):
+		_crear_material_flash_rojo()
+	if _mallas_casco_flash.is_empty():
+		_cachear_mallas_casco_flash()
+	if _mallas_casco_flash.is_empty():
+		return
+	_flash_seq += 1
+	var seq_actual: int = _flash_seq
+	# Solo guardar originales la primera vez del flash en curso.
+	if _originales_flash.is_empty():
+		for mi in _mallas_casco_flash:
+			if not is_instance_valid(mi):
+				continue
+			_originales_flash.append({"mesh": mi, "material": mi.material_override})
+	for mi in _mallas_casco_flash:
+		if is_instance_valid(mi):
+			mi.material_override = _material_flash_rojo
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	await tree.create_timer(maxf(duracion_flash_rojo, 0.05)).timeout
+	if seq_actual != _flash_seq:
+		return
+	if _destruida:
+		return
+	_restaurar_materiales_flash()
+
+
+## Devuelve al casco sus materiales previos al flash.
+## No pisa la desintegración: si ya hay shader de dissolve, no restaura.
+func _restaurar_materiales_flash() -> void:
+	for item in _originales_flash:
+		var mi: MeshInstance3D = item["mesh"] as MeshInstance3D
+		if not is_instance_valid(mi):
+			continue
+		var actual: Material = mi.material_override
+		if actual is ShaderMaterial and (actual as ShaderMaterial).shader == SHADER_DISOLVER:
+			continue
+		mi.material_override = item["material"] as Material
+	_originales_flash.clear()
 
 
 ## Destrucción con desintegración enemiga: primero la secuencia heredada del
@@ -212,6 +315,8 @@ func recibir_dano(amount: int) -> void:
 func destruir_balsa() -> void:
 	if _destruida:
 		return
+	_flash_seq += 1
+	_originales_flash.clear()
 	super.destruir_balsa()
 	if not is_inside_tree():
 		return
@@ -344,6 +449,118 @@ func _spawnear_tripulante() -> void:
 	_enemigos_vivos.append(enemigo)
 	enemigo.tree_exited.connect(_verificar_tripulacion)
 	enemigo_desplegado.emit(enemigo)
+	if efecto_aparicion_morado:
+		_animar_aparicion_tripulante(enemigo)
+
+
+## Materialización de la tripulación con el mismo lenguaje que el escudo del
+## jugador al reconstruirse (dissolve 1.0 -> 0.0 + crecimiento vertical desde
+## la base), pero en morado. Solo visual: no toca colisiones ni lógica.
+func _animar_aparicion_tripulante(enemigo: Node3D) -> void:
+	if not is_instance_valid(enemigo) or not enemigo.is_inside_tree():
+		return
+	if not is_instance_valid(SHADER_DISOLVER):
+		return
+	var mallas: Array[Node] = enemigo.find_children("*", "MeshInstance3D", true, false)
+	if mallas.is_empty():
+		return
+	var items: Array = []
+	for nodo in mallas:
+		if not is_instance_valid(nodo):
+			continue
+		var mi := nodo as MeshInstance3D
+		if mi == null:
+			continue
+		# La sombra falsa a los pies no se disuelve (su shader no usa
+		# textura de cuerpo; igual que en la desintegración de muerte).
+		if mi.name == "SombraMesh" or mi.find_parent("SombraPersonaje") != null:
+			continue
+		# Orden correcto (igual que el dissolve de muerte): override,
+		# override de superficie de la instancia y, por último, el recurso.
+		# Leer solo el recurso pierde la textura real cuando vive en el
+		# override de instancia (ej. la TELA del estandarte con su shader
+		# de viento) y el disolver salía blanco para siempre.
+		var orig: Material = mi.material_override
+		if orig == null:
+			orig = mi.get_surface_override_material(0)
+		if orig == null and mi.mesh and mi.mesh.get_surface_count() > 0:
+			orig = mi.mesh.surface_get_material(0)
+		if orig == null:
+			continue
+		var tex: Texture2D = null
+		var col := Color(1.0, 1.0, 1.0, 1.0)
+		if orig is StandardMaterial3D:
+			tex = (orig as StandardMaterial3D).albedo_texture
+			col = (orig as StandardMaterial3D).albedo_color
+		elif orig is ShaderMaterial:
+			var t = (orig as ShaderMaterial).get_shader_parameter("albedo_texture")
+			if t is Texture2D:
+				tex = t
+			var c = (orig as ShaderMaterial).get_shader_parameter("albedo_color")
+			if c is Color:
+				col = c
+		# Sin textura base el disolver se renderiza blanco (ej. la sombra
+		# falsa SombraPersonaje): esas mallas aparecen sin disolver.
+		if tex == null:
+			continue
+		var mat := ShaderMaterial.new()
+		mat.shader = SHADER_DISOLVER
+		mat.set_shader_parameter("dissolve_amount", 1.0)
+		mat.set_shader_parameter("glow_color", color_aparicion_morado)
+		mat.set_shader_parameter("glow_intensity", intensidad_aparicion_morado)
+		mat.set_shader_parameter("edge_thickness", grosor_borde_aparicion)
+		mat.set_shader_parameter("noise_scale", 20.0)
+		mat.set_shader_parameter("albedo_texture", tex)
+		mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
+		mi.material_override = mat
+		items.append({"mesh": mi, "material": mat, "original": orig})
+	if items.is_empty():
+		return
+	# Nodos visuales directos (modelos GLB): se escalan sin deformar la colisión
+	# del CharacterBody3D, igual que el escudo escala su hijo visual y no el StaticBody.
+	var visuales: Array = []
+	for hijo in enemigo.get_children():
+		if hijo is Node3D and not (hijo is CollisionShape3D):
+			visuales.append({"nodo": hijo, "escala": (hijo as Node3D).scale})
+	if visuales.is_empty():
+		visuales.append({"nodo": enemigo, "escala": enemigo.scale})
+	for v in visuales:
+		var n := v["nodo"] as Node3D
+		if is_instance_valid(n):
+			var e: Vector3 = v["escala"]
+			if e.is_zero_approx():
+				e = Vector3.ONE
+				v["escala"] = e
+			n.scale = Vector3(e.x * 0.4, 0.01, e.z * 0.4)
+	var duracion: float = maxf(duracion_aparicion_morado, 0.1)
+	var tw := enemigo.create_tween().set_parallel(true)
+	tw.tween_method(
+		func(val: float) -> void:
+			for item in items:
+				if is_instance_valid(item["mesh"]):
+					var mo: Material = (item["mesh"] as MeshInstance3D).material_override
+					if mo is ShaderMaterial:
+						(mo as ShaderMaterial).set_shader_parameter("dissolve_amount", val),
+		1.0, 0.0, duracion
+	)
+	for v in visuales:
+		var n2 := v["nodo"] as Node3D
+		if is_instance_valid(n2):
+			tw.tween_property(n2, "scale", v["escala"], duracion) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.finished.connect(
+		func() -> void:
+			for item in items:
+				if is_instance_valid(item["mesh"]):
+					var mi_fin := item["mesh"] as MeshInstance3D
+					# Solo restaurar si nadie más (flash de daño, muerte con
+					# disolución propia) tomó el override durante la aparición.
+					if mi_fin.material_override == item["material"]:
+						mi_fin.material_override = item["original"]
+			for vv in visuales:
+				if is_instance_valid(vv["nodo"]):
+					(vv["nodo"] as Node3D).scale = vv["escala"]
+	)
 
 
 ## Puesto en LOCAL de la balsa para los que faltan por spawnear (centrados y separados).
@@ -393,6 +610,8 @@ func _preconfigurar_tripulante(enemigo: Node3D) -> void:
 		enemigo.set("solo_atacar_en_pantalla", true)
 	if "activar_al_entrar_en_camara" in enemigo:
 		enemigo.set("activar_al_entrar_en_camara", false)
+	if "pasivo_hasta_ser_atacado" in enemigo:
+		enemigo.set("pasivo_hasta_ser_atacado", true)
 
 
 func _configurar_tripulante_para_rio(enemigo: Node3D) -> void:
@@ -466,6 +685,17 @@ func _hundir_por_dano() -> void:
 		return
 	_remover_grupos()
 	destruir_balsa()
+
+
+## Al destruirse el casco, la tripulación real muere por daño letal normal
+## (su animación de muerte + disolución propias) en vez de hundirse con el barco.
+func _matar_tripulacion() -> void:
+	super._matar_tripulacion()
+	for e in _enemigos_vivos:
+		if not is_instance_valid(e) or (e as Node).is_queued_for_deletion():
+			continue
+		if e.has_method("take_damage"):
+			e.call("take_damage", DANO_LETAL_TRIPULACION)
 
 
 func _remover_grupos() -> void:

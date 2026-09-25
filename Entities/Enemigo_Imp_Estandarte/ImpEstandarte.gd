@@ -42,6 +42,10 @@ const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
 @export var tiempo_antes_disolver: float = 1.8
 @export var escala_sangre_min: float = 0.015  ## Escala mínima de las partículas de sangre al morir
 @export var escala_sangre_max: float = 0.03   ## Escala máxima de las partículas de sangre al morir
+@export_category("Comportamiento - Nivel Río / Embajador")
+@export var pasivo_hasta_ser_atacado: bool = false  ## Si true, sostiene el estandarte pacíficamente y no ataca hasta recibir daño
+var _ha_sido_atacado: bool = false
+
 @export_category("Drop - Items")
 @export var power_up_multiple_scene: PackedScene = preload("res://Entities/Item_Flecha_Multiple/PowerUpFlechaMultiple.tscn")
 @export var probabilidad_drop_multiple: float = 1.0  ## 100% de drop de disparo múltiple al morir
@@ -74,6 +78,9 @@ func _on_enemy_ready():
 	color_borde_disolucion = Color(0.7, 0.0, 0.0)
 	rastrear_jugador = true
 
+	if _es_nivel_rio():
+		pasivo_hasta_ser_atacado = true
+
 	# Restaurar materiales originales del casco y estandarte
 	_restaurar_materiales_accesorios()
 	_cachear_visuales_arma()
@@ -83,7 +90,10 @@ func _on_enemy_ready():
 	_actualizar_visual_arma(false)
 	_actualizar_visibilidad_flecha_mano(false)
 
-	_play_animation("IMP_IDLE")
+	if pasivo_hasta_ser_atacado:
+		_play_animation("IMP_IDLE_001")
+	else:
+		_play_animation("IMP_IDLE")
 	_play_bow_animation("ARCO_IDLE")
 
 
@@ -96,24 +106,53 @@ func _process(delta):
 func _on_state_walking():
 	_actualizar_visual_arma(false)
 	_actualizar_visibilidad_flecha_mano(false)
-	_play_animation("IMP_IDLE")
+	if pacifico_detenido and pasivo_hasta_ser_atacado and not _ha_sido_atacado:
+		_play_animation("IMP_IDLE_001", 0.2)
+	else:
+		_play_animation("IMP_IDLE", 0.2)
 	_play_bow_animation("ARCO_IDLE")
 
 
+func _change_state(new_state: State) -> void:
+	if pasivo_hasta_ser_atacado and not _ha_sido_atacado and new_state == State.SHOOTING:
+		current_state = State.WALKING
+		pacifico_detenido = true
+		_actualizar_visual_arma(false)
+		_actualizar_visibilidad_flecha_mano(false)
+		_play_animation("IMP_IDLE_001", 0.2)
+		_play_bow_animation("ARCO_IDLE")
+		return
+	super._change_state(new_state)
+
+
 func _on_pacifico_detenido():
+	pacifico_detenido = true
 	_actualizar_visual_arma(false)
 	_actualizar_visibilidad_flecha_mano(false)
-	_play_animation("IMP_IDLE_001")
+	_play_animation("IMP_IDLE_001", 0.2)
 
 
 func _process_walking(delta):
 	if hit_en_proceso:
 		velocity.x = 0
 		return
+	if pasivo_hasta_ser_atacado and not _ha_sido_atacado:
+		velocity.x = 0.0
+		if estandarte_visual and not estandarte_visual.visible and not estandarte_ya_soltado:
+			_actualizar_visual_arma(false)
+		return
 	super._process_walking(delta)
 
 
 func _on_state_shooting():
+	if pasivo_hasta_ser_atacado and not _ha_sido_atacado:
+		pacifico_detenido = true
+		_actualizar_visual_arma(false)
+		_actualizar_visibilidad_flecha_mano(false)
+		_play_animation("IMP_IDLE_001", 0.2)
+		return
+
+
 	if soltar_estandarte_al_atacar and not estandarte_ya_soltado:
 		_soltar_estandarte_fisico()
 		estandarte_ya_soltado = true
@@ -287,6 +326,9 @@ func _on_state_dying():
 
 
 func _drop_power_up() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if _drop_realizado:
 		return
 	_drop_realizado = true
@@ -341,6 +383,14 @@ func take_damage(amount: float):
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
+	# Si estaba en modo pasivo en el río, al recibir daño se enfada y entra al combate
+	var recien_despertado: bool = false
+	if pasivo_hasta_ser_atacado and not _ha_sido_atacado:
+		_ha_sido_atacado = true
+		pacifico_detenido = false
+		recien_despertado = true
+
+
 	# Ocultar la flecha de la mano inmediatamente si es dañado o muere
 	en_animacion_disparo = false
 	_actualizar_visibilidad_flecha_mano(false)
@@ -348,7 +398,7 @@ func take_damage(amount: float):
 	if not estandarte_ya_soltado:
 		_soltar_estandarte_fisico()
 		estandarte_ya_soltado = true
-		_actualizar_visual_arma(current_state == State.SHOOTING)
+		_actualizar_visual_arma(true)
 
 	super.take_damage(amount)
 
@@ -356,6 +406,8 @@ func take_damage(amount: float):
 		_flash_red()
 		if usar_animacion_hit:
 			_reproducir_hit_aleatorio()
+		elif recien_despertado:
+			_iniciar_combate_tras_ataque()
 		# Reusar sonido del imp normal en daño (atenuado para no saturar)
 		AudioManager.play_sfx("imp_death", volumen_hit_imp_db)
 
@@ -389,12 +441,35 @@ func _on_hit_timer_timeout() -> void:
 	hit_en_proceso = false
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
+	if _ha_sido_atacado and current_state != State.SHOOTING:
+		_iniciar_combate_tras_ataque()
+		return
 	if current_state == State.WALKING:
 		_on_state_walking()
 	elif current_state == State.SHOOTING:
 		espera_entrada_disparo = 0.0
 		shoot_timer = 0.0
 		_iniciar_ciclo_disparo()
+
+
+func _iniciar_combate_tras_ataque() -> void:
+	_actualizar_visual_arma(true)
+	_change_state(State.SHOOTING)
+
+
+func _es_nivel_rio() -> bool:
+	if not is_inside_tree() or get_tree() == null:
+		return false
+	var scene: Node = get_tree().current_scene
+	if scene != null:
+		if scene.has_method("obtener_canoa") or "Rio" in scene.name or (scene.scene_file_path != null and "Rio" in scene.scene_file_path):
+			return true
+	var p: Node = get_parent()
+	while p != null:
+		if "Rio" in p.name or p.has_method("obtener_canoa") or p.has_meta("en_submarino") or p.is_in_group("barco_pirata"):
+			return true
+		p = p.get_parent()
+	return false
 
 
 func _cachear_visuales_arma():

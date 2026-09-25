@@ -24,8 +24,16 @@ const SPAWN_OFFSET_LOCAL: Vector3 = Vector3(0.0, 0.1, 0.3)
 @export var dispersion_min_radianes: float = 0.07
 @export var dispersion_max_radianes: float = 0.15
 @export var num_proyectiles: int = 1
-@export var tiempo_disparo_en_atacar: float = 0.4
+@export var tiempo_disparo_en_atacar: float = 0.3
 @export_range(1.0, 3.0, 0.05) var multiplicador_velocidad_acelerada: float = 1.5  ## Velocidad de la variante acelerada (50% de las gárgolas entra acelerada)
+
+# === CONFIGURACIÓN INCLINACIÓN AL ATACAR ===
+@export_category("Inclinación - Gargola")
+@export var inclinacion_habilitada: bool = true  ## Si true, la gárgola se inclina hacia abajo para apuntar a objetivos debajo suyo
+@export_range(5.0, 45.0, 1.0) var inclinacion_max_grados: float = 26.0  ## Ángulo máximo de inclinación hacia abajo
+@export var velocidad_inclinacion_ataque: float = 5.0  ## Suavizado de inclinación al atacar
+@export var velocidad_inclinacion_retorno: float = 3.5  ## Suavizado de recuperación al vuelo horizontal
+var inclinacion_actual_rad: float = 0.0
 
 # === CONFIGURACIÓN RAGDOLL (muerte como trapo) ===
 @export_category("Ragdoll - Gargola")
@@ -155,18 +163,25 @@ func _on_enemy_ready():
 	_crear_punto_spawn()
 	_apagar_omni_light()
 	_play_animation("FLY_IDLE")
+	# Margen de encuadre estricto para evitar ataques en bordes o fuera de pantalla
+	margen_camara_ataque_x = 6.0
+	margen_camara_salida_x = 6.0
 
 
 func _on_state_walking():
 	_play_animation("FLY_IDLE")
 	fase_combate = FaseCombate.IDLE
 	timer_combate = 0.0
+	ha_disparado_este_ciclo = false
+	ha_mostrado_anticipacion = false
+	_apagar_omni_light()
 
 
 func _on_state_shooting():
 	fase_combate = FaseCombate.IDLE
 	timer_combate = 0.0
 	ha_disparado_este_ciclo = false
+	ha_mostrado_anticipacion = false
 	_play_animation("FLY_IDLE")
 
 
@@ -181,6 +196,8 @@ func take_damage(amount: float) -> void:
 	# Ya no pausa la animación al recibir daño, puede ser dañado en cualquier momento
 	fase_combate = FaseCombate.IDLE
 	_apagar_omni_light()
+	inclinacion_actual_rad = 0.0
+	rotation.z = 0.0
 	
 	# Reproducir sonido de impacto/herida
 	AudioManager.play_sfx("gargola_herida")
@@ -193,6 +210,8 @@ func take_damage(amount: float) -> void:
 
 func _on_state_dying():
 	_apagar_omni_light()
+	inclinacion_actual_rad = 0.0
+	rotation.z = 0.0
 
 	# Destello eliminado por pedido (ya no se spawnea VFXHit_01 en muerte)
 	# _spawn_vfx_hit_01_muerte()
@@ -328,6 +347,9 @@ func _reducir_vfx_hit_a_10_porciento(vfx: Node3D) -> void:
 
 
 func _drop_pocion() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if not posion_scene:
 		return
 	if randf() > posion_drop_chance:
@@ -476,10 +498,16 @@ func _physics_process(delta):
 		_procesar_muerte(delta)
 		return
 
-	oscilacion_fase += delta * velocidad_oscilacion
+	# Amortiguar la oscilación durante carga y ataque para que el apuntado sea firme y natural
+	var factor_oscilacion: float = 1.0
+	if current_state == State.SHOOTING and (fase_combate == FaseCombate.CARGA or fase_combate == FaseCombate.ATAQUE):
+		factor_oscilacion = 0.25
+	oscilacion_fase += delta * velocidad_oscilacion * factor_oscilacion
 	velocity.y = 0.0
 	velocity.z = 0.0
-	global_position.y = altura_base + sin(oscilacion_fase) * amplitud_oscilacion
+	global_position.y = altura_base + sin(oscilacion_fase) * (amplitud_oscilacion * factor_oscilacion)
+
+	_actualizar_inclinacion(delta)
 
 	match current_state:
 		State.WALKING:
@@ -491,6 +519,40 @@ func _physics_process(delta):
 
 	_empujar_si_en_barrera()
 	move_and_slide()
+
+
+## Inclina el cuerpo de la gárgola suavemente hacia abajo cuando ataca a un objetivo debajo suyo
+func _actualizar_inclinacion(delta: float) -> void:
+	if not inclinacion_habilitada or current_state == State.DYING or current_state == State.DEAD:
+		inclinacion_actual_rad = move_toward(inclinacion_actual_rad, 0.0, delta * velocidad_inclinacion_retorno)
+		rotation.z = inclinacion_actual_rad
+		return
+
+	var angulo_deseado: float = 0.0
+
+	# Solo se inclina activamente durante las fases de carga y ataque
+	if current_state == State.SHOOTING and (fase_combate == FaseCombate.CARGA or fase_combate == FaseCombate.ATAQUE):
+		var target: Node3D = player_ref
+		if not is_instance_valid(target) and is_inside_tree() and get_tree() != null:
+			target = get_tree().get_first_node_in_group("player") as Node3D
+			if not target:
+				target = get_tree().get_first_node_in_group("canoa_protagonista") as Node3D
+			player_ref = target
+
+		if is_instance_valid(target) and target.is_inside_tree():
+			var pos_target := target.global_position + Vector3(0.0, 0.5, 0.0)
+			var diff := pos_target - global_position
+			var dx_frente: float = -diff.x  # Positivo si el objetivo está al frente (-X)
+			var dy_abajo: float = -diff.y   # Positivo si el objetivo está debajo (-Y)
+
+			if dx_frente > 0.2 and dy_abajo > 0.0:
+				var angulo_crudo: float = atan2(dy_abajo, dx_frente)
+				angulo_deseado = clampf(angulo_crudo, 0.0, deg_to_rad(inclinacion_max_grados))
+
+	# Suavizado de la inclinación hacia el ángulo deseado
+	var vel: float = velocidad_inclinacion_ataque if angulo_deseado > 0.0 else velocidad_inclinacion_retorno
+	inclinacion_actual_rad = move_toward(inclinacion_actual_rad, angulo_deseado, delta * vel)
+	rotation.z = inclinacion_actual_rad
 
 
 func _procesar_muerte(delta: float) -> void:
@@ -608,6 +670,8 @@ func _procesar_vuelo(delta):
 	if global_position.x <= limite_izq:
 		velocity.x = 0
 		global_position.x = max(global_position.x, limite_izq)
+		if solo_atacar_en_pantalla and not puede_atacar():
+			return
 		_change_state(State.SHOOTING)
 		return
 
@@ -615,6 +679,9 @@ func _procesar_vuelo(delta):
 	walked_distance += velocidad_caminar * delta
 
 	if walked_distance >= target_walk_distance:
+		if solo_atacar_en_pantalla and not puede_atacar():
+			# No pasar a SHOOTING si está fuera de pantalla; continuar volando hacia el encuadre
+			return
 		if _check_spacing():
 			_change_state(State.SHOOTING)
 		else:
@@ -626,6 +693,18 @@ func _procesar_vuelo(delta):
 
 func _procesar_combate(delta):
 	velocity.x = 0
+
+	# Guardia estricta: bajo ninguna circunstancia procesar combate fuera de pantalla
+	if solo_atacar_en_pantalla and not puede_atacar():
+		fase_combate = FaseCombate.IDLE
+		timer_combate = 0.0
+		ha_disparado_este_ciclo = false
+		ha_mostrado_anticipacion = false
+		_apagar_omni_light()
+		_play_animation("FLY_IDLE", 0.2, 1.0)
+		_change_state(State.WALKING)
+		return
+
 	timer_combate += delta
 
 	match fase_combate:
@@ -635,29 +714,29 @@ func _procesar_combate(delta):
 				timer_combate = 0.0
 				ha_disparado_este_ciclo = false
 				ha_mostrado_anticipacion = false
-				_play_animation("CARGA_ATAQUE", 0.25, 1.0)  # blend 0.25 suave desde FLY_IDLE
+				_play_animation("CARGA_ATAQUE", 0.18, 1.0)  # blend orgánico desde FLY_IDLE
 
 		FaseCombate.CARGA:
 			var duracion_carga: float = _get_animation_duration("CARGA_ATAQUE")
 			if duracion_carga <= 0.0:
-				duracion_carga = 1.0
-			# La anticipación aparece al final de la animación de carga (75% del tiempo de carga)
-			if not ha_mostrado_anticipacion and timer_combate >= duracion_carga * 0.75:
+				duracion_carga = 0.625
+			# La anticipación aparece al 65% de la animación de carga (preparación del disparo)
+			if not ha_mostrado_anticipacion and timer_combate >= duracion_carga * 0.65:
 				ha_mostrado_anticipacion = true
 				_spawn_anticipation_vfx()
 
 			if timer_combate >= duracion_carga:
 				fase_combate = FaseCombate.ATAQUE
 				timer_combate = 0.0
-				# ATACAR es de 1 frame → blend largo + velocidad reducida para que se vea natural (no pop)
-				_play_animation("ATACAR", 0.35, 0.55)
+				# Transición rápida y limpia a ATACAR a velocidad completa (0.625s)
+				_play_animation("ATACAR", 0.12, 1.0)
 
 		FaseCombate.ATAQUE:
-			# ATACAR de 1 frame da duración ~0.03s; forzamos mínimo 0.75s para suavizado y disparo a 0.4
 			var duracion_atacar: float = _get_animation_duration("ATACAR")
-			if duracion_atacar < 0.75:
-				duracion_atacar = 0.75
-			if not ha_disparado_este_ciclo and timer_combate >= tiempo_disparo_en_atacar:
+			if duracion_atacar <= 0.0:
+				duracion_atacar = 0.625
+			var momento_disparo: float = minf(tiempo_disparo_en_atacar, duracion_atacar * 0.5)
+			if not ha_disparado_este_ciclo and timer_combate >= momento_disparo:
 				_disparar_proyectiles()
 				ha_disparado_este_ciclo = true
 				_apagar_omni_light()
@@ -665,7 +744,7 @@ func _procesar_combate(delta):
 				fase_combate = FaseCombate.IDLE
 				timer_combate = 0.0
 				_apagar_omni_light()
-				_play_animation("FLY_IDLE", 0.3, 1.0)
+				_play_animation("FLY_IDLE", 0.2, 1.0)
 
 
 func _empujar_si_en_barrera():
@@ -828,6 +907,8 @@ func _get_hips_global_position() -> Vector3:
 
 
 func _disparar_proyectiles() -> void:
+	if solo_atacar_en_pantalla and not puede_atacar():
+		return
 	if not player_ref:
 		player_ref = get_tree().get_first_node_in_group("player")
 		if not player_ref:

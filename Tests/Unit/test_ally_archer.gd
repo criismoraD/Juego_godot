@@ -602,7 +602,62 @@ func test_debug_pausado_con_enemigo_manual_si_cuenta_y_ataca() -> void:
 	mock_spawner.free()
 	AllyArcher._cached_wave_spawner = null
 
+## ─────────────────────────────────────────────────────────────────────────────
+## Tests: Power-ups solo para defensoras de piso (Bug fix: refuerzos móviles)
+## ─────────────────────────────────────────────────────────────────────────────
+
+func test_arquera_movil_no_recibe_flechas_multiples():
+	# Arrange: simular arquera de refuerzo móvil apostada (es_movil=true, en_despliegue=false)
+	_ally.es_movil = true
+	_ally.es_aliada_inicial = false
+	_ally.en_despliegue = false
+	_ally.flechas_multiples = 0
+
+	# Act
+	_ally.agregar_flechas_multiples(3)
+
+	# Assert: no debe recibir nada
+	assert_eq(_ally.flechas_multiples, 0, "Una arquera de refuerzo móvil NO debe recibir flechas múltiples")
 
 
+func test_arquera_movil_no_recibe_flechas_explosivas():
+	# Arrange
+	_ally.es_movil = true
+	_ally.es_aliada_inicial = false
+	_ally.en_despliegue = false
+	_ally.flechas_explosivas = 0
+
+	# Act
+	_ally.agregar_flechas_explosivas(5)
+
+	# Assert
+	assert_eq(_ally.flechas_explosivas, 0, "Una arquera de refuerzo móvil NO debe recibir flechas explosivas")
 
 
+func test_arquera_piso_fija_recibe_power_ups():
+	# Arrange: defensora de piso inicial (es_aliada_inicial=true, es_movil=false)
+	_ally.es_movil = false
+	_ally.es_aliada_inicial = true
+	_ally.flechas_multiples = 0
+	_ally.flechas_explosivas = 0
+
+	# Act
+	_ally.agregar_flechas_multiples(3)
+	_ally.agregar_flechas_explosivas(5)
+
+	# Assert
+	assert_eq(_ally.flechas_multiples, 3, "La defensora de piso fija SÍ debe recibir flechas múltiples")
+	assert_eq(_ally.flechas_explosivas, 5, "La defensora de piso fija SÍ debe recibir flechas explosivas")
+
+
+func test_angulo_disparo_max_reducido():
+	# Assert: el ángulo máximo del tiro al azar no debe superar 22 grados para
+	# evitar disparos demasiado altos contra objetivos terrestres
+	assert_lte(_ally.angulo_disparo_max, 25.0,
+		"angulo_disparo_max debe ser ≤ 25° para acertar a objetivos terrestres (era 35°)")
+
+
+func test_elevacion_maxima_absoluta_reducida():
+	# Assert: el tope de elevación no debe superar 45 grados
+	assert_lte(_ally.elevacion_maxima_absoluta, 50.0,
+		"elevacion_maxima_absoluta debe ser ≤ 50° para evitar disparos casi verticales (era 65°)")

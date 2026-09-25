@@ -18,6 +18,7 @@ signal destino_alcanzado
 
 # === CONSTANTES ===
 const SONIDO_NAVEGACION: AudioStream = preload("res://TEST_/sonido_canoa_por_el_rio.mp3")
+const SCRIPT_ESCOMBRO_MADERO: Script = preload("res://Entities/Ambiente_Barco_Combate_Pirata/EscombroMaderoVolador.gd")
 const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase aleatoria
 const OFFSET_INICIO_AUDIO: float = 0.25  ## Salta el silencio inicial de compresión MP3
 const TIEMPO_DISPARO_CROSSFADE: float = 4.8  ## Comienza el crossfade antes del corte o silencio final del clip
@@ -63,7 +64,11 @@ const VOLUMEN_SILENCIO_DB: float = -80.0
 @export var fase_deriva_z: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
 @export var fase_guinada: float = FASE_ALEATORIA  ## Fase inicial (radianes). -1 = aleatoria
 
-# === SONIDO DE NAVEGACIÓN ===
+# === NAVEGACIÓN SUAVE ===
+@export_category("Navegación Suave")
+@export var aceleracion_navegacion: float = 1.5  ## Rampa de arranque/frenado horizontal (m/s²): evita reposicionamientos de golpe
+@export var duracion_frenado_suave: float = 1.2  ## Duración de referencia del frenado suave (s)
+
 @export_category("Sonido de Navegación")
 @export var sonido_navegacion_activo: bool = true  ## Si true, suena en loop mientras navega y se detiene en paradas
 @export_range(-30.0, 12.0, 0.5) var volumen_navegacion_db: float = -3.0:  ## Volumen sutil y natural del loop de navegación (dB)
@@ -79,11 +84,19 @@ const VOLUMEN_SILENCIO_DB: float = -80.0
 		if is_instance_valid(_audio_navegacion_b):
 			_audio_navegacion_b.pitch_scale = pitch_navegacion
 
+# === ESCOMBROS DE MADERA (IMPACTO) ===
+@export_category("Escombros de Madera")
+@export var expulsar_maderos_en_impacto: bool = true  ## Si true, expulsa maderos voladores al recibir impactos
+@export var escala_maderos_canoa: float = 0.75  ## Tamaño reducido de los maderos (ajustado a la escala menor de la canoa)
+@export var escala_splash_maderos_canoa: float = 0.22  ## Escala de las ondas en el agua generadas por los maderos
+@export var cantidad_maderos_impacto: int = 4  ## Cantidad de maderos arrojados al impactar
+
 # === ESTADO PRIVADO ===
 var _tiempo: float = 0.0
 var _posicion_base: Vector3 = Vector3.ZERO
 var _rotacion_base: Vector3 = Vector3.ZERO
 var _flotando: bool = false
+var _ultimo_tiempo_maderos: float = -10.0
 var _fase_flotacion: float = 0.0
 var _fase_balanceo: float = 0.0
 var _fase_cabeceo: float = 0.0
@@ -94,12 +107,18 @@ var _fase_guinada: float = 0.0
 var _navegando: bool = false
 var _x_destino: float = 0.0
 var _velocidad_navegacion: float = 0.0
+var _velocidad_efectiva: float = 0.0  ## Velocidad real aplicada (rampa suave hacia _velocidad_navegacion)
+var _frenado_suave: bool = false  ## True durante la deceleración continua hasta reposo
+var _navegacion_bloqueada: bool = false  ## True en pausa de travesía: la reacción a enemigos no reimpone velocidad
 var _direccion_navegacion: float = 1.0
 var _audio_navegacion: AudioStreamPlayer = null
 var _audio_navegacion_b: AudioStreamPlayer = null
 var _reloj_audio_voz: float = 0.0
 var _voz_activa: int = 0
 var _en_crossfade: bool = false
+var _seq_oleaje: int = 0
+var _amplitudes_oleaje_base: Dictionary = {}
+var _tween_oleaje: Tween = null
 
 
 # === FUNCIONES BUILT-IN ===
@@ -132,6 +151,149 @@ func _process(delta: float) -> void:
 
 # === FUNCIONES PÚBLICAS ===
 ## Ordena a todos los tripulantes a bordo que comiencen el combate estético.
+## Sacudida de oleaje fuerte (ej. impacto de flecha eléctrica o explosión de mina):
+## eleva las amplitudes de inmediato ante el impacto y las devuelve de forma suave,
+## natural y fluida a sus valores base con amortiguación gradual (EASE_OUT).
+func sacudida_oleaje(duracion: float = 2.0, multiplicador: float = 3.0) -> void:
+	if _amplitudes_oleaje_base.is_empty():
+		_amplitudes_oleaje_base = {
+			"flot": amplitud_flotacion,
+			"bal": amplitud_balanceo,
+			"cab": amplitud_cabeceo,
+			"der_x": amplitud_deriva_x,
+			"der_z": amplitud_deriva_z,
+			"gui": amplitud_guinada,
+		}
+
+	var base_flot: float = float(_amplitudes_oleaje_base["flot"])
+	var base_bal: float = float(_amplitudes_oleaje_base["bal"])
+	var base_cab: float = float(_amplitudes_oleaje_base["cab"])
+	var base_der_x: float = float(_amplitudes_oleaje_base["der_x"])
+	var base_der_z: float = float(_amplitudes_oleaje_base["der_z"])
+	var base_gui: float = float(_amplitudes_oleaje_base.get("gui", amplitud_guinada))
+
+	# Pico de impacto inmediato
+	amplitud_flotacion = base_flot * multiplicador
+	amplitud_balanceo = base_bal * multiplicador
+	amplitud_cabeceo = base_cab * multiplicador
+	amplitud_deriva_x = base_der_x * multiplicador
+	amplitud_deriva_z = base_der_z * multiplicador
+	amplitud_guinada = base_gui * multiplicador
+
+	if not _flotando:
+		flotar()
+
+	_seq_oleaje += 1
+	var seq_actual: int = _seq_oleaje
+
+	if not is_inside_tree() or get_tree() == null:
+		return
+
+	if is_instance_valid(_tween_oleaje) and _tween_oleaje.is_valid():
+		_tween_oleaje.kill()
+
+	# Distribución temporal: sostenido del impacto inicial y retorno gradual/amortiguado (EASE_OUT)
+	var dur_total: float = maxf(duracion, 0.4)
+	var tiempo_sostenido: float = maxf(0.1, dur_total * 0.3)
+	var tiempo_retorno: float = maxf(0.6, dur_total * 0.8)
+
+	_tween_oleaje = create_tween()
+	_tween_oleaje.set_parallel(true)
+
+	_tween_oleaje.tween_property(self, "amplitud_flotacion", base_flot, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_balanceo", base_bal, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_cabeceo", base_cab, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_deriva_x", base_der_x, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_deriva_z", base_der_z, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_guinada", base_gui, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	_tween_oleaje.chain().tween_callback(func() -> void:
+		if seq_actual == _seq_oleaje and is_instance_valid(self):
+			amplitud_flotacion = base_flot
+			amplitud_balanceo = base_bal
+			amplitud_cabeceo = base_cab
+			amplitud_deriva_x = base_der_x
+			amplitud_deriva_z = base_der_z
+			amplitud_guinada = base_gui
+	)
+
+	# Expulsar escombros de maderos si la sacudida corresponde a un impacto de alto calibre
+	if multiplicador >= 2.5 and expulsar_maderos_en_impacto:
+		expulsar_escombros_maderos(global_position)
+
+
+## Expulsa escombros de madera acrobáticos de escala reducida al recibir un impacto de misil o mina acuática.
+## Los maderos caen al agua generando ondas y chapoteos con sonido acuático.
+func expulsar_escombros_maderos(origen_impacto: Vector3 = Vector3.ZERO, cantidad: int = -1) -> Array[Node3D]:
+	if not expulsar_maderos_en_impacto:
+		return []
+
+	var tiempo_actual: float = Time.get_ticks_msec() / 1000.0
+	if tiempo_actual - _ultimo_tiempo_maderos < 0.2:
+		return []
+	_ultimo_tiempo_maderos = tiempo_actual
+
+	var num_maderos: int = cantidad if cantidad > 0 else cantidad_maderos_impacto
+	var root_scene: Node = get_tree().current_scene if is_inside_tree() and get_tree() else null
+	if root_scene == null and is_inside_tree() and get_tree():
+		root_scene = get_tree().root
+	if root_scene == null:
+		root_scene = get_parent()
+	if root_scene == null:
+		root_scene = self
+
+	var pos_centro: Vector3 = global_position
+	if origen_impacto != Vector3.ZERO:
+		pos_centro = origen_impacto
+
+	var altura_agua: float = global_position.y - 0.35
+
+	var maderos_creados: Array[Node3D] = []
+	for i in range(num_maderos):
+		var escombro: Node3D = SCRIPT_ESCOMBRO_MADERO.new() as Node3D
+		if escombro == null:
+			continue
+
+		escombro.set("escala_modelo", escala_maderos_canoa)
+		escombro.set("escala_splash", escala_splash_maderos_canoa)
+
+		root_scene.add_child(escombro)
+
+		var indice_malla: int = (i + randi()) % 6
+		var offset_dispersion: Vector3 = Vector3(
+			randf_range(-0.5, 0.5),
+			randf_range(0.1, 0.35),
+			randf_range(-0.25, 0.25)
+		)
+		var spawn_pos: Vector3 = pos_centro + offset_dispersion
+
+		var direccion_x: float = randf_range(-2.5, 2.5)
+		if origen_impacto != Vector3.ZERO and not origen_impacto.is_equal_approx(global_position):
+			var dir_desde_impacto: float = signf(global_position.x - origen_impacto.x)
+			if not is_zero_approx(dir_desde_impacto):
+				direccion_x = dir_desde_impacto * randf_range(1.5, 3.2) + randf_range(-0.8, 0.8)
+
+		var impulso: Vector3 = Vector3(
+			direccion_x,
+			randf_range(5.5, 8.5),
+			randf_range(-1.2, 1.2)
+		)
+
+		if escombro.has_method("lanzar"):
+			escombro.call("lanzar", spawn_pos, impulso, altura_agua, capa_visual, indice_malla)
+
+		_aplicar_capa_visual_recursiva(escombro)
+		maderos_creados.append(escombro)
+
+	return maderos_creados
+
+
 func iniciar_combate_tripulacion() -> void:
 	for hijo in find_children("*", "TripulanteBarcoFondoAllyArcher", true, false):
 		if hijo.has_method("iniciar_combate"):
@@ -139,10 +301,13 @@ func iniciar_combate_tripulacion() -> void:
 
 
 ## Inicia el desplazamiento horizontal hacia una coordenada X objetivo.
+## El arranque es progresivo: _velocidad_efectiva acelera por rampa hasta el objetivo.
 func navegar_hacia_x(x_destino: float, velocidad: float) -> void:
 	_x_destino = x_destino
 	_velocidad_navegacion = absf(velocidad)
 	_direccion_navegacion = 1.0 if _x_destino > _posicion_base.x else -1.0
+	_navegacion_bloqueada = false
+	_frenado_suave = false
 	_navegando = true
 	_flotando = true
 	set_process(true)
@@ -151,6 +316,38 @@ func navegar_hacia_x(x_destino: float, velocidad: float) -> void:
 ## Detiene la navegación horizontal sin frenar la flotación.
 func detener_navegacion() -> void:
 	_navegando = false
+	_frenado_suave = false
+	_velocidad_navegacion = 0.0
+	_velocidad_efectiva = 0.0
+
+
+## Frenado suave y continuo: decelera por rampa hasta reposo manteniendo la
+## flotación (sin reposicionamiento de golpe). La reacción a enemigos no lo interrumpe.
+func detener_navegacion_suave(duracion: float = -1.0) -> void:
+	if duracion > 0.0:
+		duracion_frenado_suave = duracion
+	_navegacion_bloqueada = true
+	_velocidad_navegacion = 0.0
+	_frenado_suave = true
+	_navegando = true
+	if not _flotando:
+		flotar()
+	set_process(true)
+
+
+## Reanuda la navegación tras una pausa suave de travesía.
+func reanudar_navegacion() -> void:
+	_navegacion_bloqueada = false
+	_frenado_suave = false
+	_navegando = true
+	if not _flotando:
+		flotar()
+	set_process(true)
+
+
+## Velocidad horizontal real aplicada este frame (m/s, con rampa suave).
+func obtener_velocidad_efectiva() -> float:
+	return _velocidad_efectiva
 
 
 ## Indica si la canoa está en movimiento horizontal hacia su destino.
@@ -177,11 +374,30 @@ func flotar() -> void:
 
 ## Detiene el vaivén y devuelve la canoa a su transformada base.
 func detener() -> void:
+	if is_instance_valid(_tween_oleaje) and _tween_oleaje.is_valid():
+		_tween_oleaje.kill()
+	_restaurar_amplitudes_base()
 	_flotando = false
 	_navegando = false
+	_frenado_suave = false
+	_navegacion_bloqueada = false
+	_velocidad_navegacion = 0.0
+	_velocidad_efectiva = 0.0
 	_detener_sonido_navegacion()
 	set_process(false)
 	_restaurar_transformada_base()
+
+
+func _restaurar_amplitudes_base() -> void:
+	if _amplitudes_oleaje_base.is_empty():
+		return
+	amplitud_flotacion = float(_amplitudes_oleaje_base["flot"])
+	amplitud_balanceo = float(_amplitudes_oleaje_base["bal"])
+	amplitud_cabeceo = float(_amplitudes_oleaje_base["cab"])
+	amplitud_deriva_x = float(_amplitudes_oleaje_base["der_x"])
+	amplitud_deriva_z = float(_amplitudes_oleaje_base["der_z"])
+	if _amplitudes_oleaje_base.has("gui"):
+		amplitud_guinada = float(_amplitudes_oleaje_base["gui"])
 
 
 ## Oculta inmediatamente la canoa y a sus tripulantes y desactiva su procesamiento.
@@ -245,7 +461,9 @@ func calcular_rotacion_grados(tiempo: float) -> Vector3:
 
 # === FUNCIONES PRIVADAS ===
 func _actualizar_navegacion(delta: float) -> void:
-	var paso: float = _velocidad_navegacion * delta * _direccion_navegacion
+	# Rampa suave: la velocidad efectiva persigue al objetivo sin saltos.
+	_velocidad_efectiva = move_toward(_velocidad_efectiva, _velocidad_navegacion, maxf(aceleracion_navegacion, 0.1) * delta)
+	var paso: float = _velocidad_efectiva * delta * _direccion_navegacion
 	var nueva_x: float = _posicion_base.x + paso
 
 	var llego: bool = false
@@ -255,11 +473,20 @@ func _actualizar_navegacion(delta: float) -> void:
 		llego = true
 
 	if llego:
-		_posicion_base.x = _x_destino
+		if _x_destino < 99999.0:
+			_posicion_base.x = _x_destino
 		_navegando = false
+		_frenado_suave = false
+		_velocidad_efectiva = 0.0
 		destino_alcanzado.emit()
 	else:
 		_posicion_base.x = nueva_x
+
+	# Fin del frenado suave: reposo continuo sin corte.
+	if _frenado_suave and is_zero_approx(_velocidad_efectiva):
+		_frenado_suave = false
+		_navegando = false
+		_velocidad_efectiva = 0.0
 
 
 func _inicializar_fases() -> void:

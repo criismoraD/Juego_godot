@@ -101,11 +101,13 @@ var _tiempo_para_proximo_ataque: float = 1.0
 var _tiempo_en_estado: float = 0.0
 var _hacha_arrojada_en_ciclo: bool = false
 var _objetivo_actual = null
+var baile_victoria: bool = false  ## Baila en bucle sin atacar hasta detener_baile_victoria()
 
 
 func _ready() -> void:
 	add_to_group("allies")
 	add_to_group("defensoras")
+	add_to_group("defensora_perrena")
 
 	# No pisar la escala si la instancia se colocó con un tamaño específico en el
 	# editor (ej. 0.18 como pasajera de la canoa del nivel del río, bajo un padre
@@ -157,6 +159,36 @@ func fijar_modo_canoa(activo: bool) -> void:
 	_actualizar_dimensiones_hitbox()
 	if current_state == State.IDLE and anim_player:
 		_play_anim(_anim_reposo_nombres(), 0.25, 1.0)
+
+
+## Baile de victoria (p. ej. al destruirse el jefe submarino): deja de atacar
+## y baila en bucle hasta que se llame a detener_baile_victoria().
+func iniciar_baile_victoria() -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	baile_victoria = true
+	_objetivo_actual = null
+	_cambiar_estado(State.IDLE)
+	_mantener_baile_victoria()
+
+
+## Termina el baile de victoria y vuelve al reposo que corresponda.
+func detener_baile_victoria() -> void:
+	if not baile_victoria:
+		return
+	baile_victoria = false
+	if current_state == State.IDLE:
+		_cambiar_estado(State.IDLE)
+
+
+## Sostiene el baile mientras dura la victoria (el clip "Baile" es en loop).
+func _mantener_baile_victoria() -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		baile_victoria = false
+		return
+	if anim_player and anim_player.has_animation("Baile"):
+		if anim_player.current_animation != "Baile" or not anim_player.is_playing():
+			anim_player.play("Baile", 0.25, 1.0)
 
 
 ## True si la posición ya está en el cuadro de la cámara activa.
@@ -721,6 +753,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _proceso_idle(delta: float) -> void:
+	if baile_victoria:
+		_mantener_baile_victoria()
+		return
 	_tiempo_para_proximo_ataque -= delta
 	if _tiempo_para_proximo_ataque <= 0.0:
 		_intentar_iniciar_ataque()
@@ -978,6 +1013,10 @@ func _buscar_mejor_objetivo(es_ataque_especial: bool = false) -> Node:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy) or not (enemy is Node3D) or not (enemy as Node3D).is_inside_tree():
 			continue
+		# La mina submarina no es objetivo de Perrena: la ignora por completo
+		# (ni normal ni especial), igual que la canoa la ignora como bloqueador.
+		if enemy is MinaAcuatica or enemy.is_in_group("mina_acuatica") or enemy.is_in_group("minas"):
+			continue
 		if enemy.get("is_dead") == true or enemy.get("is_dying") == true or enemy.get("muerto") == true:
 			continue
 		if "vida_pilar" in enemy:
@@ -1073,6 +1112,13 @@ func curar(amount: int = 1) -> void:
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 	health = mini(health + amount, vida_maxima)
+	vida_cambiada.emit(health)
+
+
+func curar_completo() -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	health = vida_maxima
 	vida_cambiada.emit(health)
 
 

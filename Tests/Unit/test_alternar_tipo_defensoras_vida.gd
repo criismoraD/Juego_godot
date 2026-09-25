@@ -19,7 +19,7 @@ class MockAudioManager extends Node:
 	func play_music(_index: int) -> void:
 		pass
 
-	func stop_all() -> void:
+	func stop_all(_incluir_musica: bool = true) -> void:
 		pass
 
 

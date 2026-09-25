@@ -46,6 +46,13 @@ enum Fase { SUBIDA, ESPERA_MARCA, CAIDA }
 @export_category("Ataque Mágico - Onda de Choque")
 @export var escala_onda_impacto: float = 0.20  ## Escala reducida de la onda de impacto (~0.9m)
 
+@export_category("Ataque Mágico - Sacudida Canoa")
+@export var sacudir_canoa_al_impactar: bool = true
+@export var duracion_sacudida_canoa: float = 2.0  ## Duración de la sacudida idéntica a la mina (2.0s)
+@export var multiplicador_sacudida_canoa: float = 3.0  ## Multiplicador de oleaje idéntico a la mina (3.0x)
+@export var radio_impacto_canoa_x: float = 2.8  ## Margen horizontal para detectar impacto sobre la canoa
+@export var radio_impacto_canoa_z: float = 1.8  ## Margen de profundidad
+
 var fase: Fase = Fase.SUBIDA
 var _punto_caida: Vector3 = Vector3.ZERO
 var _marca: Node3D = null
@@ -53,6 +60,7 @@ var _gravedad: float = 0.0
 var _fase_iniciada: bool = false
 var _cuerpos_danados_caida: Dictionary = {}
 var _estela_verde: GPUParticles3D = null
+var _canoa_sacudida: bool = false
 
 
 func _ready() -> void:
@@ -252,9 +260,18 @@ func _on_body_entered(body: Node) -> void:
 	if fase != Fase.CAIDA or is_stuck:
 		return
 
+	# Impacto contra la estructura o suelo de la canoa
+	var es_canoa: bool = body.is_in_group("canoas_aliadas") or body.is_in_group("canoa_protagonista") or body.name == "SueloCanoa" or (body.get_parent() is CanoaAliada)
+	if es_canoa:
+		_sacudir_canoa()
+		_explotar_en_impacto()
+		_safe_destroy()
+		return
+
 	if body.is_in_group("allies") or body.is_in_group("player"):
 		if not _cuerpos_danados_caida.has(body):
 			_cuerpos_danados_caida[body] = true
+			_sacudir_canoa_si_impacta()
 			if body.is_in_group("player"):
 				# La protagonista recibe daño y aturdimiento
 				if "last_hit_position" in body:
@@ -281,6 +298,7 @@ func _on_body_entered(body: Node) -> void:
 
 
 func _explotar_en_impacto() -> void:
+	_sacudir_canoa_si_impacta()
 	_reproducir_sonido_rayo()
 
 	if _estela_verde and is_instance_valid(_estela_verde):
@@ -625,3 +643,41 @@ func _reproducir_sonido_rayo() -> void:
 	else:
 		player.queue_free()
 	AudioManager.play_sfx("shield_hit_arrow")
+
+
+func _sacudir_canoa() -> void:
+	if _canoa_sacudida or not sacudir_canoa_al_impactar:
+		return
+	var canoa := _buscar_canoa()
+	if is_instance_valid(canoa) and canoa.has_method("sacudida_oleaje"):
+		_canoa_sacudida = true
+		canoa.call("sacudida_oleaje", duracion_sacudida_canoa, multiplicador_sacudida_canoa)
+
+
+func _sacudir_canoa_si_impacta() -> void:
+	if _canoa_sacudida or not sacudir_canoa_al_impactar:
+		return
+	var canoa := _buscar_canoa()
+	if not is_instance_valid(canoa):
+		return
+	var dx: float = absf(canoa.global_position.x - global_position.x)
+	var dz: float = absf(canoa.global_position.z - global_position.z)
+	if dx <= radio_impacto_canoa_x and dz <= radio_impacto_canoa_z:
+		_sacudir_canoa()
+
+
+func _buscar_canoa() -> Node3D:
+	if not is_inside_tree() or get_tree() == null:
+		return null
+	var canoa := get_tree().get_first_node_in_group("canoa_protagonista") as Node3D
+	if is_instance_valid(canoa):
+		return canoa
+	var canoa_aliada := get_tree().get_first_node_in_group("canoas_aliadas") as Node3D
+	if is_instance_valid(canoa_aliada):
+		return canoa_aliada
+	var escena := get_tree().current_scene
+	if is_instance_valid(escena):
+		var hallada := escena.find_child("CanoaProtagonistaRio", true, false) as Node3D
+		if is_instance_valid(hallada):
+			return hallada
+	return null

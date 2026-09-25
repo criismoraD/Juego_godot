@@ -123,6 +123,9 @@ var _destruida: bool = false
 var _en_hundimiento: bool = false
 var _tween_hundimiento: Tween = null
 var _maderos_lanzados: Array[Node3D] = []
+var _amplitudes_oleaje_base: Dictionary = {}
+var _tween_oleaje: Tween = null
+var _seq_oleaje: int = 0
 
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
@@ -144,9 +147,15 @@ func _process(delta: float) -> void:
 	if _navegando:
 		_actualizar_navegacion(delta)
 
-	if not _flotando:
-		return
+	_procesar_flotacion(delta)
 
+
+## Avanza el vaivén sinusoidal (flotación, balanceo, cabeceo y derivas).
+## Separado para que las subclases de combate lo mantengan corriendo aun
+## inactivas (sin cámara): solo se pausa navegar/atacar/tripular, nunca el agua.
+func _procesar_flotacion(delta: float) -> void:
+	if delta <= 0.0 or _destruida or not _flotando:
+		return
 	_tiempo += delta * escala_tiempo
 	_aplicar_flotacion()
 
@@ -204,6 +213,79 @@ func esta_flotando() -> bool:
 	return _flotando
 
 
+## Sacudida de oleaje ante impacto potente (ej. Ult de Perrena):
+## eleva las amplitudes de flotación y balanceo de inmediato y las retorna
+## de forma suave y amortiguada a sus valores base (EASE_OUT).
+## No fuerza la flotación: la activación sigue siendo por cámara en combate.
+func sacudida_oleaje(duracion: float = 2.2, multiplicador: float = 4.5) -> void:
+	if _destruida or _en_hundimiento:
+		return
+	if _amplitudes_oleaje_base.is_empty():
+		_amplitudes_oleaje_base = {
+			"flot": amplitud_flotacion,
+			"bal": amplitud_balanceo,
+			"cab": amplitud_cabeceo,
+			"der_x": amplitud_deriva_x,
+			"der_z": amplitud_deriva_z,
+			"gui": amplitud_guinada,
+		}
+
+	var base_flot: float = float(_amplitudes_oleaje_base["flot"])
+	var base_bal: float = float(_amplitudes_oleaje_base["bal"])
+	var base_cab: float = float(_amplitudes_oleaje_base["cab"])
+	var base_der_x: float = float(_amplitudes_oleaje_base["der_x"])
+	var base_der_z: float = float(_amplitudes_oleaje_base["der_z"])
+	var base_gui: float = float(_amplitudes_oleaje_base.get("gui", amplitud_guinada))
+
+	# Pico de impacto inmediato
+	amplitud_flotacion = base_flot * multiplicador
+	amplitud_balanceo = base_bal * multiplicador
+	amplitud_cabeceo = base_cab * multiplicador
+	amplitud_deriva_x = base_der_x * multiplicador
+	amplitud_deriva_z = base_der_z * multiplicador
+	amplitud_guinada = base_gui * multiplicador
+
+	_seq_oleaje += 1
+	var seq_actual: int = _seq_oleaje
+
+	if not is_inside_tree() or get_tree() == null:
+		return
+
+	if is_instance_valid(_tween_oleaje) and _tween_oleaje.is_valid():
+		_tween_oleaje.kill()
+
+	# Distribución temporal: sostenido del impacto y retorno gradual/amortiguado (EASE_OUT)
+	var dur_total: float = maxf(duracion, 0.4)
+	var tiempo_sostenido: float = maxf(0.1, dur_total * 0.3)
+	var tiempo_retorno: float = maxf(0.6, dur_total * 0.8)
+
+	_tween_oleaje = create_tween()
+	_tween_oleaje.set_parallel(true)
+
+	_tween_oleaje.tween_property(self, "amplitud_flotacion", base_flot, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_balanceo", base_bal, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_cabeceo", base_cab, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_deriva_x", base_der_x, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_deriva_z", base_der_z, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tween_oleaje.tween_property(self, "amplitud_guinada", base_gui, tiempo_retorno)\
+		.set_delay(tiempo_sostenido).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	_tween_oleaje.chain().tween_callback(func() -> void:
+		if seq_actual == _seq_oleaje and is_instance_valid(self):
+			amplitud_flotacion = base_flot
+			amplitud_balanceo = base_bal
+			amplitud_cabeceo = base_cab
+			amplitud_deriva_x = base_der_x
+			amplitud_deriva_z = base_der_z
+			amplitud_guinada = base_gui
+	)
+
+
 ## Reinicia el ciclo de flotación desde cero, regenerando las fases aleatorias.
 func reiniciar() -> void:
 	_tiempo = 0.0
@@ -258,6 +340,7 @@ func destruir_balsa() -> void:
 	_flotando = false
 	_navegando = false
 	set_process(false)
+	_apagar_colisiones_al_destruirse()
 
 	_matar_tripulacion()
 	_sustituir_por_modelo_destruido()
@@ -275,6 +358,21 @@ func esta_destruida() -> bool:
 ## Retorna los maderos voladores expulsados durante la destrucción.
 func obtener_maderos_lanzados() -> Array[Node3D]:
 	return _maderos_lanzados
+
+
+## Apaga las colisiones del casco y de la cubierta al destruirse: durante el
+## hundimiento/destrucción el casco deja de absorber flechas al instante.
+func _apagar_colisiones_al_destruirse() -> void:
+	if is_in_group("enemies"):
+		remove_from_group("enemies")
+	if is_in_group("enemigos"):
+		remove_from_group("enemigos")
+	for col in find_children("*", "CollisionShape3D", true, false):
+		if col is CollisionShape3D:
+			(col as CollisionShape3D).set_deferred("disabled", true)
+	for body in find_children("*", "CollisionObject3D", true, false):
+		(body as CollisionObject3D).collision_layer = 0
+		(body as CollisionObject3D).collision_mask = 0
 
 
 # === FUNCIONES PRIVADAS ===

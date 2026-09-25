@@ -1,5 +1,5 @@
 class_name GloboAerostatico
-extends "res://System/Core/EnemyBase.gd"
+extends EnemyBase
 
 ## Vehículo volador enemigo: globo aerostático goblin.
 ## Vuela a la altura de la Gárgola y posee bamboleo suave vía Tween.
@@ -97,6 +97,10 @@ var _modelo_canasta_node: Node3D = null  ## Referencia al nodo ModeloCanasta (Ca
 # ==============================================================================
 
 const PROJECTILE_POOL_REF = preload("res://System/Core/ProjectilePool.gd")
+
+## Línea negra 2D (TOON_LINEANEGRA): mismo patrón que AllyArcher.asegurar_contorno_toon.
+const SHADER_TOON_OUTLINE: Shader = preload("res://System/Shaders/TOON_LINEANEGRA.gdshader")
+const GROSOR_OUTLINE_GLOBO: float = 20.0
 
 ## VFX, SFX y textura de la explosión en cadena: idénticos a los del pilar de Lonko
 const ALTURAS_RELATIVAS_EXPLOSION: Array[float] = [0.75, 0.45, 0.15]
@@ -353,6 +357,55 @@ func _obtener_limite_izquierdo_x() -> float:
 # ==============================================================================
 
 
+## Línea negra 2D en el globo intacto, el globo destruido y la canasta.
+## Registra las mallas en "outline_meshes" y les pone el next_pass
+## TOON_LINEANEGRA negro de ancho 20 (igual que aliadas y vasija).
+## Excluye tripulante (ciclo de vida propio), VFX de fuego y sombras.
+func asegurar_contorno_toon() -> void:
+	for raiz in [_modelo_globo_node, _modelo_globo_destruido_node, _modelo_canasta_node]:
+		if raiz and is_instance_valid(raiz):
+			_aplicar_contorno_a(raiz)
+
+
+func _aplicar_contorno_a(nodo_raiz: Node) -> void:
+	if SHADER_TOON_OUTLINE == null:
+		return
+	for hijo in nodo_raiz.find_children("*", "MeshInstance3D", true, false):
+		var mi := hijo as MeshInstance3D
+		if mi == null:
+			continue
+		if "Sombra" in String(mi.name):
+			continue
+		if mi.find_parent("GoblinTripulante*") != null:
+			continue
+		if mi.find_parent("Fuego2D*") != null:
+			continue
+		if not mi.is_in_group("outline_meshes"):
+			mi.add_to_group("outline_meshes")
+		if mi.mesh == null:
+			continue
+		for i in range(mi.mesh.get_surface_count()):
+			var mat: Material = mi.get_active_material(i)
+			if mat is StandardMaterial3D:
+				_poner_next_pass_outline(mat as StandardMaterial3D)
+
+
+## Pone (o repara) el next_pass de línea negra sobre un StandardMaterial3D.
+func _poner_next_pass_outline(std_mat: StandardMaterial3D) -> void:
+	if std_mat.next_pass == null or not (std_mat.next_pass is ShaderMaterial):
+		var outline_mat := ShaderMaterial.new()
+		outline_mat.shader = SHADER_TOON_OUTLINE
+		outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+		outline_mat.set_shader_parameter("outline_width", GROSOR_OUTLINE_GLOBO)
+		std_mat.next_pass = outline_mat
+	elif std_mat.next_pass is ShaderMaterial:
+		var outline_mat := std_mat.next_pass as ShaderMaterial
+		if outline_mat.shader == null:
+			outline_mat.shader = SHADER_TOON_OUTLINE
+		outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
+		outline_mat.set_shader_parameter("outline_width", GROSOR_OUTLINE_GLOBO)
+
+
 func _buscar_nodos_visuales() -> void:
 	_pivot_bamboleo = get_node_or_null("PivotBamboleo") as Node3D
 	_punto_disparo = get_node_or_null("PuntoDisparo") as Node3D
@@ -372,6 +425,9 @@ func _buscar_nodos_visuales() -> void:
 	for partes in find_children("PartesExplotadas", "Node3D", true, false):
 		if partes is Node3D:
 			(partes as Node3D).visible = false
+
+	# Línea negra 2D en globo, globo destruido y canasta (no en tripulante/VFX/sombras)
+	asegurar_contorno_toon()
 
 
 func _poner_postura_idle() -> void:
@@ -492,6 +548,9 @@ func _on_state_dying() -> void:
 
 
 func _drop_posion() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if not posion_scene:
 		return
 	if randf() > posion_drop_chance:
@@ -506,6 +565,9 @@ func _drop_posion() -> void:
 
 
 func _drop_power_up_multiple() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if not power_up_multiple_scene:
 		return
 	if randf() > multiple_drop_chance:
@@ -608,6 +670,9 @@ func _eyectar_canasta() -> void:
 			mi.visible = true
 			mi.material_override = null
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# El reset de overrides deja los materiales de superficie: re-asegurar la
+	# línea negra para que el canasto la conserve durante toda la caída.
+	_aplicar_contorno_a(canasta)
 	for sombra in canasta.find_children("*", "SombraPersonaje", true, false):
 		if is_instance_valid(sombra):
 			sombra.queue_free()

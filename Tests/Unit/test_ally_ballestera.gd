@@ -513,9 +513,55 @@ func test_debug_pausado_con_enemigo_manual_si_puede_atacar() -> void:
 	mock_spawner.free()
 	AllyBallestera._cached_wave_spawner = null
 
+## ─────────────────────────────────────────────────────────────────────────────
+## Tests: Habilidad de escudo solo para ballestera de piso fija (Bug fix)
+## ─────────────────────────────────────────────────────────────────────────────
+
+func test_ballestera_movil_no_puede_reforzar_escudo():
+	# Arrange: ballestera de refuerzo apostada (es_movil=true, en_despliegue=false)
+	_ballestera.es_movil = true
+	_ballestera.en_despliegue = false
+
+	# Act
+	var puede: bool = _ballestera._puede_reforzar_escudo()
+
+	# Assert: una ballestera de refuerzo NUNCA debe reforzar escudos
+	assert_false(puede, "Una ballestera de refuerzo móvil NO debe poder reforzar escudos")
 
 
+func test_ballestera_movil_en_despliegue_no_puede_reforzar():
+	# Arrange
+	_ballestera.es_movil = true
+	_ballestera.en_despliegue = true
+
+	# Act
+	var puede: bool = _ballestera._puede_reforzar_escudo()
+
+	# Assert
+	assert_false(puede, "Una ballestera móvil en despliegue NO debe poder reforzar escudos")
 
 
+func test_ballestera_piso_fija_puede_reforzar_escudo():
+	# Arrange: ballestera fija de piso (es_movil=false)
+	_ballestera.es_movil = false
+	_ballestera.es_mensajera = false
+
+	# Act
+	var puede: bool = _ballestera._puede_reforzar_escudo()
+
+	# Assert
+	assert_true(puede, "La ballestera de piso fija SÍ debe poder reforzar escudos")
+
+
+func test_mensajera_no_puede_reforzar_escudo():
+	# Arrange: mensajera temporal (es_mensajera=true)
+	_ballestera.es_mensajera = true
+	_ballestera.es_movil = false
+
+	# Act
+	var puede: bool = _ballestera._puede_reforzar_escudo()
+
+	# Assert
+	assert_false(puede, "Una mensajera temporal nunca debe reforzar escudos")
 
 

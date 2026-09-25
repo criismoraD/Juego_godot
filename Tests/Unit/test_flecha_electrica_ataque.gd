@@ -117,3 +117,57 @@ func test_flecha_electrica_sube_marca_y_cae() -> void:
 
 	flecha.queue_free()
 	await get_tree().process_frame
+
+
+func test_ult_lonko_sacude_canoa_al_impactar() -> void:
+	# Arrange: Canoa aliada en escena
+	var canoa := Node3D.new()
+	canoa.set_script(load("res://Entities/Ambiente_Canoa_Aliada/CanoaAliada.gd"))
+	canoa.add_to_group("canoa_protagonista")
+	scene_root.add_child(canoa)
+	canoa.global_position = Vector3(0.0, 0.0, 0.0)
+	var amp_base: float = canoa.amplitud_flotacion
+
+	var flecha := FLECHA_ELECTRICA_ATAQUE_SCENE.instantiate() as FlechaElectricaAtaque
+	scene_root.add_child(flecha)
+	flecha.global_position = Vector3(0.0, 1.0, 0.0)
+	flecha.fase = FlechaElectricaAtaque.Fase.CAIDA
+
+	# Act: Simular impacto en la canoa
+	flecha._sacudir_canoa_si_impacta()
+
+	# Assert: amplitudes de oleaje multiplicadas por 3.0 (como la mina)
+	assert_almost_eq(canoa.amplitud_flotacion, amp_base * 3.0, 0.001, "La canoa debe triplicar su amplitud de flotacion al impactar el ult")
+	assert_true(flecha._canoa_sacudida, "Debe registrarse que la canoa fue sacudida")
+
+	canoa.queue_free()
+	flecha.queue_free()
+	await get_tree().process_frame
+
+
+func test_sacudida_oleaje_retorno_suave_y_fluido() -> void:
+	# Arrange: Canoa aliada con amplitudes base conocidas
+	var canoa := Node3D.new()
+	canoa.set_script(load("res://Entities/Ambiente_Canoa_Aliada/CanoaAliada.gd"))
+	scene_root.add_child(canoa)
+	var amp_base_flot: float = canoa.amplitud_flotacion
+	var amp_base_bal: float = canoa.amplitud_balanceo
+
+	# Act 1: Activar sacudida con duración corta para evaluar interpolación
+	canoa.sacudida_oleaje(0.4, 2.5)
+
+	# Assert 1: Inmediatamente tras el impacto se elevan las amplitudes
+	assert_almost_eq(canoa.amplitud_flotacion, amp_base_flot * 2.5, 0.001, "Pico de impacto inmediato")
+	assert_not_null(canoa._tween_oleaje, "Debe existir un Tween para amortiguar el oleaje")
+	assert_true(canoa._tween_oleaje.is_valid(), "El Tween de amortiguación debe estar activo")
+
+	# Act 2: Esperar a que la amortiguación concluya de forma fluida
+	await get_tree().create_timer(0.9).timeout
+
+	# Assert 2: Al concluir la amortiguación gradual, las amplitudes retornan fluidamente a sus valores base
+	assert_almost_eq(canoa.amplitud_flotacion, amp_base_flot, 0.01, "Amplitud de flotación restaurada suavemente")
+	assert_almost_eq(canoa.amplitud_balanceo, amp_base_bal, 0.01, "Amplitud de balanceo restaurada suavemente")
+
+	canoa.queue_free()
+	await get_tree().process_frame
+

@@ -91,15 +91,10 @@ func test_interio_iluminacion_anterior_oculta_para_comparacion() -> void:
 		var root: Node = scene.instantiate()
 		add_child_autofree(root)
 
-		# Assert IluminacionActual visible
-		var ilum_act: Node3D = root.find_child("IluminacionActual", true, false) as Node3D
-		assert_not_null(ilum_act, "Debe existir el grupo IluminacionActual en %s" % path)
-		assert_true(ilum_act.visible, "IluminacionActual debe estar visible por defecto en %s" % path)
-
-		# Assert IluminacionAnterior oculta pero con sombreado real configurado
+		# Assert IluminacionAnterior visible con todas las luces originales
 		var ilum_ant: Node3D = root.find_child("IluminacionAnterior", true, false) as Node3D
 		assert_not_null(ilum_ant, "Debe existir el grupo IluminacionAnterior en %s" % path)
-		assert_false(ilum_ant.visible, "IluminacionAnterior debe estar OCULTA por defecto en %s" % path)
+		assert_true(ilum_ant.visible, "IluminacionAnterior debe estar VISIBLE por defecto en %s" % path)
 
 		var spot_ant: SpotLight3D = ilum_ant.find_child("SpotLight3D_Anterior", true, false) as SpotLight3D
 		assert_not_null(spot_ant, "SpotLight3D_Anterior debe existir en IluminacionAnterior de %s" % path)
@@ -112,10 +107,10 @@ func test_interio_iluminacion_anterior_oculta_para_comparacion() -> void:
 		assert_true(antorcha.shadow_enabled, "LuzAntorcha debe tener sombras habilitadas")
 		assert_gte(antorcha.shadow_opacity, 0.9, "LuzAntorcha debe tener sombras nítidas (>= 0.9)")
 
-		# Assert CapaMascaraSombra oculta
+		# Assert CapaMascaraSombra activa
 		var capa_sombra: CanvasLayer = root.find_child("CapaMascaraSombra", true, false) as CanvasLayer
 		assert_not_null(capa_sombra, "CapaMascaraSombra debe existir en %s" % path)
-		assert_false(capa_sombra.visible, "CapaMascaraSombra debe estar OCULTA por defecto en %s" % path)
+		assert_true(capa_sombra.visible, "CapaMascaraSombra debe estar VISIBLE por defecto en %s" % path)
 
 		# Assert Environment anterior existe y tiene contraste para sombras
 		var env_ant: Environment = load("res://Levels/Nivel_Interior/Interior_Environment_Anterior.tres") as Environment

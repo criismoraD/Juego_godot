@@ -94,6 +94,7 @@ func test_deriva_derecha_e_izquierda() -> void:
 	# Arrange
 	var vasija := _crear_vasija()
 	vasija.deriva_activa = true
+	vasija.deriva_solo_en_pantalla = false  # Prueba pura de deriva, sin gate de pantalla
 	vasija.flotacion_activa = false
 	vasija.velocidad_desplazamiento = 0.5
 	var x0: float = vasija.position.x
@@ -111,6 +112,36 @@ func test_deriva_derecha_e_izquierda() -> void:
 
 	# Assert
 	assert_almost_eq(vasija.position.x, x0, 0.001, "A la izquierda retrocede")
+
+
+# === DERIVA SOLO EN PANTALLA ===
+func test_deriva_no_avanza_hasta_aparecer_en_pantalla() -> void:
+	# Arrange: gate activo por defecto, sin entrar en pantalla
+	var vasija := _crear_vasija()
+	vasija.flotacion_activa = false
+	vasija.velocidad_desplazamiento = 0.5
+	var x0: float = vasija.position.x
+
+	# Act: fuera de pantalla no deriva
+	vasija._process(1.0)
+
+	# Assert
+	assert_almost_eq(vasija.position.x, x0, 0.001, "Sin aparecer en pantalla no debe avanzar")
+	assert_not_null(vasija._notificador_pantalla, "Debe crear el notificador de pantalla")
+
+	# Act: entró en pantalla (señal del notificador)
+	vasija._on_pantalla_cambiada(true)
+	vasija._process(1.0)
+
+	# Assert
+	assert_almost_eq(vasija.position.x, x0 + 0.5, 0.001, "Al aparecer en pantalla ya deriva")
+
+	# Act: sale de pantalla, se detiene de nuevo
+	vasija._on_pantalla_cambiada(false)
+	vasija._process(1.0)
+
+	# Assert
+	assert_almost_eq(vasija.position.x, x0 + 0.5, 0.001, "Fuera de pantalla vuelve a detenerse")
 
 
 # === ITEM VISIBLE 1 SEGUNDO ===
@@ -246,3 +277,21 @@ func test_canasto_que_cae_rompe_vasija() -> void:
 
 	# Assert: el peso la rompe y suelta su item con el flujo natural
 	assert_true(vasija.esta_destruido(), "El canasto debe romper la vasija al caer encima")
+
+
+# === CONTORNO TOON ===
+func test_vasija_tiene_outline_cartoon() -> void:
+	# Arrange & Act
+	var vasija := _crear_vasija()
+	await get_tree().process_frame
+
+	# Assert
+	assert_not_null(vasija.material_contenedor, "Debe tener material de contenedor")
+	assert_not_null(vasija.material_contenedor.next_pass, "El material debe tener next_pass de contorno")
+	var sm := vasija.material_contenedor.next_pass as ShaderMaterial
+	assert_not_null(sm, "next_pass debe ser ShaderMaterial")
+	assert_not_null(sm.shader, "Debe tener shader asignado")
+	assert_eq(sm.get_shader_parameter("outline_color"), Color(0.0, 0.0, 0.0, 1.0), "Contorno negro puro")
+	assert_gt(vasija._mallas.size(), 0, "Debe tener mallas")
+	assert_true(vasija._mallas[0].is_in_group("outline_meshes"), "Mallas deben pertenecer a outline_meshes")
+

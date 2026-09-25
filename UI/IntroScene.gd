@@ -23,6 +23,7 @@ func _ready() -> void:
 	# Set translated text
 	title_label.text = tr("INTRO_TITLE")
 	story_label.text = tr("INTRO_STORY")
+	skip_button.text = tr("BTN_SKIP")
 
 	# Connect skip button
 	skip_button.pressed.connect(_on_skip_pressed)

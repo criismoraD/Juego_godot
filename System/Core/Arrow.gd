@@ -61,6 +61,9 @@ var esta_rebotando: bool = false  ## True cuando la flecha fue repelida/rebotada
 var desintegrando_celeste: bool = false  ## True mientras se desintegra con disolución celeste
 static var _cached_tip_material: StandardMaterial3D = null
 static var _cached_tip_mesh: SphereMesh = null
+const CADA_CUANTOS_FRAMES_OFFSCREEN: int = 3  ## OPT: chequeo fuera de pantalla cada N frames físicos
+var _frames_desde_offscreen: int = 0
+var _camara_cacheada: Camera3D = null  ## OPT: evita buscar la cámara cada frame
 
 
 func _ready():
@@ -138,7 +141,12 @@ func _physics_process(delta):
 				var collider = ray.get_collider()
 				var ignorar_colision: bool = false
 				if collider:
-					if collider.is_in_group("allies") or (tipo_dueño == TipoFlecha.JUGADOR and collider.is_in_group("player")):
+					if collider is ArrowProjectile or collider is EnemyProjectileBase or (collider is Node and (collider.is_in_group("projectiles") or collider.is_in_group("enemy_projectiles") or collider.is_in_group("flechas"))):
+						# Proyectiles en vuelo o clavados (lanzas, tridentes, flechas):
+						# las flechas no colisionan con proyectiles (igual que
+						# _es_objeto_ignorable_por_flecha y el hacha de Perrena).
+						ignorar_colision = true
+					elif collider.is_in_group("allies") or (tipo_dueño == TipoFlecha.JUGADOR and collider.is_in_group("player")):
 						ignorar_colision = true
 					elif collider.is_in_group("enemies") and (("current_state" in collider and (collider.current_state == EnemyBase.State.DYING or collider.current_state == EnemyBase.State.DEAD)) or ("health" in collider and collider.health <= 0)):
 						ignorar_colision = true
@@ -180,12 +188,17 @@ func _physics_process(delta):
 		var angle = atan2(velocity.y, velocity.x)
 		rotation = Vector3(0, 0, angle)
 
-	# 5. Verificar si está fuera de pantalla
-	_check_off_screen()
+	# 5. Verificar si está fuera de pantalla (OPT: cada N frames físicos)
+	_frames_desde_offscreen += 1
+	if _frames_desde_offscreen >= CADA_CUANTOS_FRAMES_OFFSCREEN:
+		_frames_desde_offscreen = 0
+		_check_off_screen()
 
 
 func _check_off_screen() -> void:
-	var camera: Camera3D = CameraUtilsRef.obtener_camara_juego(self)
+	if not is_instance_valid(_camara_cacheada):
+		_camara_cacheada = CameraUtilsRef.obtener_camara_juego(self)
+	var camera: Camera3D = _camara_cacheada
 	if camera:
 		# Verificación rápida 3D relativa a la cámara activa (soporta niveles estáticos y móviles como el río)
 		var cam_pos: Vector3 = camera.global_position
@@ -400,6 +413,16 @@ func _on_body_entered(body):
 		if _ray_ccd: _ray_ccd.add_exception(body)
 		return
 
+	# Casco / cubierta de balsa-barco de combate: el body es el hijo
+	# Static/Animatable (CascoBarco, PlataformaCubierta), el daño vive en el
+	# root (BalsaPirataCombate / BarcoCombatePirata). Como el hacha, resolver
+	# hacia arriba antes de clavar la flecha como si fuera suelo.
+	if tipo_dueño == TipoFlecha.JUGADOR and not es_explosiva:
+		var dueno_casco: Node = _resolver_dueno_con_dano(body)
+		if dueno_casco != null:
+			_danar_enemigo(dueno_casco)
+			return
+
 	# Verificar si es un suelo o plataforma (StaticBody3D o AnimatableBody3D)
 	# Las flechas del jugador se pegan a plataformas desde cualquier dirección
 	if body is StaticBody3D or body is AnimatableBody3D:
@@ -410,39 +433,7 @@ func _on_body_entered(body):
 	if tipo_dueño == TipoFlecha.JUGADOR:
 		# Las flechas del jugador dañan enemigos (x2 con sobrecarga morada al 100%)
 		if body.has_method("take_damage") and body.is_in_group("enemies"):
-			# Verificar interacción con aura repelente / parry (ej: Arquera Rosa, Azulina)
-			if body.has_method("manejar_impacto_aura") and body.manejar_impacto_aura(self):
-				if _destroying or desintegrando_celeste or is_queued_for_deletion():
-					return
-				_rebotar_de_aura(body)
-				return
-
-			if ("_is_invulnerable" in body and body._is_invulnerable) or ("is_invulnerable" in body and body.is_invulnerable):
-				if _ray_ccd: _ray_ccd.add_exception(body)
-				return  # Pasa de largo a través del enemigo invulnerable
-
-			# Guardar posición del impacto para las partículas de sangre
-			if body.has_method("set") and "last_hit_position" in body:
-				body.last_hit_position = global_position
-			if body.has_method("set") and "last_hit_direction" in body:
-				body.last_hit_direction = velocity.normalized()
-			# Autoría del golpe para el conteo de muertes por defensora
-			if body.has_method("set") and "ultimo_atacante" in body:
-				body.ultimo_atacante = tirador
-			var dano_final: float = 1.0
-			if has_meta("fuego_rapido") and bool(get_meta("fuego_rapido")):
-				dano_final *= MULTIPLICADOR_DANO_FUEGO_RAPIDO
-			var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
-			if es_sobrecarga:
-				dano_final *= multiplicador_dano_sobrecarga
-				# SISTEMA GOLPE CRÍTICO: la sobrecarga morada al 100% solo mata de
-				# un golpe si el enemigo está en SU momento vulnerable (definido por
-				# cada enemigo en es_momento_golpe_critico, ej.: Moradita en plena
-				# animación de ataque). Fuera de ese momento recibe el daño x2 normal.
-				if body.has_method("es_momento_golpe_critico") and body.es_momento_golpe_critico():
-					dano_final = GOLPE_CRITICO_DANO
-			body.take_damage(dano_final)
-			_safe_destroy()
+			_danar_enemigo(body)
 	elif tipo_dueño == TipoFlecha.ENEMIGO:
 		# Las flechas del enemigo dañan al jugador
 		if body.has_method("take_damage") and body.is_in_group("player"):
@@ -453,6 +444,62 @@ func _on_body_entered(body):
 				body.last_hit_direction = velocity.normalized()
 			body.take_damage(1.0)
 			_safe_destroy()
+
+
+## Sube por padres buscando el dueño real con take_damage (casco/cubierta del
+## barco -> root BalsaPirataCombate/BarcoCombatePirata). Igual que el hacha.
+func _resolver_dueno_con_dano(nodo: Node) -> Node:
+	if nodo == null or not is_instance_valid(nodo):
+		return null
+	if nodo.has_method("take_damage") and nodo.is_in_group("enemies"):
+		return nodo
+	var curr: Node = nodo.get_parent()
+	while curr != null and is_instance_valid(curr):
+		if curr.has_method("take_damage") and curr.is_in_group("enemies"):
+			return curr
+		# Barco activo aunque el grupo esté en transición: vida_actual + no destruido.
+		if curr.has_method("take_damage") and ("vida_actual" in curr):
+			if curr.has_method("es_enemigo_activo"):
+				if bool(curr.call("es_enemigo_activo")):
+					return curr
+			elif curr.has_method("esta_destruida"):
+				if not bool(curr.call("esta_destruida")):
+					return curr
+		curr = curr.get_parent()
+	return null
+
+
+## Daño estándar de flecha de jugador a enemigo (sangre, autoría, x2 por
+## fuego rápido / sobrecarga, crítico). Extraído de _on_body_entered para
+## reutilizar con dueño resuelto (casco del barco).
+func _danar_enemigo(objetivo: Node) -> void:
+	if objetivo == null or not is_instance_valid(objetivo):
+		return
+	# Verificar interacción con aura repelente / parry (ej: Arquera Rosa, Azulina)
+	if objetivo.has_method("manejar_impacto_aura") and objetivo.manejar_impacto_aura(self):
+		if _destroying or desintegrando_celeste or is_queued_for_deletion():
+			return
+		_rebotar_de_aura(objetivo)
+		return
+	if ("_is_invulnerable" in objetivo and objetivo._is_invulnerable) or ("is_invulnerable" in objetivo and objetivo.is_invulnerable):
+		if _ray_ccd: _ray_ccd.add_exception(objetivo)
+		return
+	if objetivo.has_method("set") and "last_hit_position" in objetivo:
+		objetivo.last_hit_position = global_position
+	if objetivo.has_method("set") and "last_hit_direction" in objetivo:
+		objetivo.last_hit_direction = velocity.normalized()
+	if objetivo.has_method("set") and "ultimo_atacante" in objetivo:
+		objetivo.ultimo_atacante = tirador
+	var dano_final: float = 1.0
+	if has_meta("fuego_rapido") and bool(get_meta("fuego_rapido")):
+		dano_final *= MULTIPLICADOR_DANO_FUEGO_RAPIDO
+	var es_sobrecarga: bool = has_meta("sobrecarga_max") and bool(get_meta("sobrecarga_max"))
+	if es_sobrecarga:
+		dano_final *= multiplicador_dano_sobrecarga
+		if objetivo.has_method("es_momento_golpe_critico") and objetivo.es_momento_golpe_critico():
+			dano_final = GOLPE_CRITICO_DANO
+	objetivo.take_damage(dano_final)
+	_safe_destroy()
 
 
 func _on_area_entered(area: Area3D):

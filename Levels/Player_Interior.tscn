@@ -30,7 +30,6 @@ size = Vector3(0.19726563, 2, 2)
 script = ExtResource("5_script")
 
 [node name="CapaMascaraSombra" type="CanvasLayer" parent="." unique_id=314159265]
-visible = false
 
 [node name="MascaraOscurecer" type="ColorRect" parent="CapaMascaraSombra" unique_id=314159266]
 material = ExtResource("10_mat_sombra")
@@ -126,6 +125,7 @@ transform = Transform3D(0.295, 0, 0, 0, 0.26605266, 0, 0, 0, 0.295, 0, 0.3863153
 environment = ExtResource("8_env")
 
 [node name="IluminacionActual" type="Node3D" parent="." unique_id=149169350]
+visible = false
 
 [node name="SpotLight3D" type="SpotLight3D" parent="IluminacionActual" unique_id=149169358]
 transform = Transform3D(0.8983066, -0.43115902, -0.08454071, -0.058668274, -0.3083989, 0.94944626, -0.43543452, -0.847934, -0.30233216, 0, 0.9436994, -0.13053991)
@@ -177,9 +177,21 @@ shadow_blur = 0.6
 spot_range = 3.8
 spot_attenuation = 1.15
 
+[node name="SpotLight3D_Anterior5" type="SpotLight3D" parent="IluminacionAnterior" unique_id=1748971529]
+transform = Transform3D(0.96888095, -0.051851578, -0.24203531, 0.24752712, 0.2029596, 0.94738466, 0, -0.9778133, 0.20947835, 0.20415983, 0.53418815, 0.053082764)
+layers = 3
+light_color = Color(1, 0.94, 0.88, 1)
+light_energy = 0.499
+light_volumetric_fog_energy = 1.2
+light_projector = ExtResource("7_mascara")
+shadow_enabled = true
+shadow_bias = 0.002
+shadow_blur = 0.6
+spot_range = 3.8
+spot_attenuation = 1.15
+
 [node name="SpotLight3D_Anterior2" type="SpotLight3D" parent="IluminacionAnterior" unique_id=1359779100]
 transform = Transform3D(0.9149598, -0.04227306, -0.4013248, 0.39434662, -0.1174645, 0.9114236, -0.0856701, -0.99217695, -0.090805076, -0.18884219, 0.54724896, -0.33301887)
-visible = false
 light_color = Color(1, 0.94, 0.88, 1)
 light_energy = 0.974
 light_volumetric_fog_energy = 1.2
@@ -219,6 +231,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0983427, 0.44, -0.08)
 visible = false
 light_color = Color(1, 0.7, 0.35, 1)
 light_energy = 2.2
+shadow_enabled = true
+shadow_bias = 0.002
+shadow_blur = 0.6
+omni_range = 1.35
+omni_attenuation = 1.1
+
+[node name="LuzAntorcha7" type="OmniLight3D" parent="IluminacionAnterior" unique_id=2074335962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4815672, 0.44, -0.08)
+layers = 2
+light_color = Color(1, 0.7, 0.35, 1)
+light_energy = 0.616
+light_size = 0.05
 shadow_enabled = true
 shadow_bias = 0.002
 shadow_blur = 0.6

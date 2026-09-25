@@ -12,6 +12,7 @@ func before_each():
 	_spawner.escena_gargola = _create_dummy_scene("GargolaNode")
 	_spawner.escena_lonko = _create_dummy_scene("LonkoNode")
 	_spawner.escena_imp_escudo = _create_dummy_scene("ImpShieldNode")
+	_spawner.escena_arquera_rosa = _create_dummy_scene("ArqueraRosaNode")
 	add_child_autofree(_spawner)
 
 func _create_dummy_scene(node_name: String) -> PackedScene:
@@ -34,27 +35,27 @@ func test_oleada_5_generacion_cola_40_enemigos():
 
 	# Contar cantidad de cada tipo
 	var count_lonko := 0
-	var count_escudo := 0
 	var count_gargola := 0
 	var count_goblin_girl := 0
+	var count_arquera_rosa := 0
 	var count_goblin := 0
 
 	for scene in _spawner.cola_spawn:
 		if scene == _spawner.escena_lonko:
 			count_lonko += 1
-		elif scene == _spawner.escena_imp_escudo:
-			count_escudo += 1
 		elif scene == _spawner.escena_gargola:
 			count_gargola += 1
 		elif scene == _spawner.escena_goblin_girl:
 			count_goblin_girl += 1
+		elif scene == _spawner.escena_arquera_rosa:
+			count_arquera_rosa += 1
 		elif scene == _spawner.escena_goblin:
 			count_goblin += 1
 
-	assert_gte(count_lonko, 10, "La Oleada 5 debe tener mínimo 10 Arqueras Lonko")
-	assert_eq(count_escudo, 4, "La Oleada 5 debe tener 4 Imps de escudo")
-	assert_eq(count_gargola, 7, "La Oleada 5 debe tener 7 Gárgolas")
-	assert_eq(count_goblin_girl, 9, "La Oleada 5 debe tener 9 Arqueras Goblin")
+	assert_eq(count_lonko, 12, "La Oleada 5 debe tener 12 Arqueras Lonko")
+	assert_eq(count_gargola, 9, "La Oleada 5 debe tener 9 Gárgolas")
+	assert_eq(count_goblin_girl, 8, "La Oleada 5 debe tener 8 Arqueras Goblin")
+	assert_eq(count_arquera_rosa, 2, "La Oleada 5 debe tener 2 Arqueras Rosa")
 	assert_eq(count_goblin, 9, "La Oleada 5 debe tener 9 Goblins Ballesta")
 
 func test_generacion_sonido_cuerno_procedural():

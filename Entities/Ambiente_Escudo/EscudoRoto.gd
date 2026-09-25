@@ -149,6 +149,8 @@ func _convertir_a_rigidbody(mesh_instance: MeshInstance3D):
 	mesh_instance.rotation = Vector3.ZERO
 	mesh_instance.scale = mesh_global_scale
 	mesh_instance.layers = 1
+	if not mesh_instance.is_in_group("outline_meshes"):
+		mesh_instance.add_to_group("outline_meshes")
 
 	# Material: asignar por surface (no material_override) para respetar exterior e interior
 	if mesh_instance.mesh:

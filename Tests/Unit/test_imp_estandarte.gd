@@ -84,3 +84,24 @@ func test_imp_embajador_deja_charco_sangre_al_morir():
 	for m in manchas:
 		if is_instance_valid(m):
 			m.queue_free()
+
+
+func test_imp_embajador_idle_sostener_estandarte_al_estar_detenido():
+	# Arrange
+	var imp = IMP_ESTANDARTE_SCENE.instantiate()
+	imp.set("pasivo_hasta_ser_atacado", true)
+	add_child_autofree(imp)
+	await get_tree().process_frame
+
+	# Act: cuando se detiene en cubierta o modo pacífico
+	imp._on_pacifico_detenido()
+
+	# Assert: debe reproducir IMP_IDLE_001 (idle de sostener estandarte)
+	assert_not_null(imp.anim_player)
+	assert_eq(imp.anim_player.current_animation, "IMP_IDLE_001",
+		"Al detenerse debe reproducir IMP_IDLE_001 (idle de sostener estandarte)")
+	assert_true(imp.pacifico_detenido, "pacifico_detenido debe ser true")
+
+
+
+

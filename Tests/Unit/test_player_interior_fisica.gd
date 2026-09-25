@@ -50,3 +50,22 @@ func test_player_interior_gravedad_estable_en_suelo() -> void:
 
 	# Assert
 	assert_true(player.is_inside_tree(), "El jugador debe estar en el árbol")
+
+
+func test_player_interior_sin_linea_negra_en_torre() -> void:
+	# Arrange
+	var scene: PackedScene = load("res://Entities/Jugador_Arquera/Player_Interior.tscn") as PackedScene
+	var player: PlayerInterior = scene.instantiate() as PlayerInterior
+	add_child_autofree(player)
+	await get_tree().process_frame
+
+	# Assert: sin contorno en la torre (ni grupo ni next_pass)
+	var total: int = 0
+	for m in player.find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		total += 1
+		assert_false(mi.is_in_group("outline_meshes"), "La malla %s no debe estar en outline_meshes" % mi.name)
+		var mat: Material = mi.material_override if mi.material_override else mi.get_active_material(0)
+		if mat and mat is StandardMaterial3D:
+			assert_null((mat as StandardMaterial3D).next_pass, "La malla %s no debe tener next_pass de contorno" % mi.name)
+	assert_gt(total, 0, "La arquera debe tener mallas")

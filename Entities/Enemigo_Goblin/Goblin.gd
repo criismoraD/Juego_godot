@@ -309,6 +309,9 @@ func _spawn_sangre_animada(pos: Vector3) -> void:
 
 
 func _drop_power_up() -> void:
+	# Nivel del río: sin drops, solo la vasija contenedora otorga power-ups
+	if EnemyBase.drops_bloqueados_en_nivel(get_tree()):
+		return
 	if not power_up_explosivo_scene:
 		return
 	var chance_efectiva := _get_effective_drop_chance(drop_chance_flecha_explosiva)

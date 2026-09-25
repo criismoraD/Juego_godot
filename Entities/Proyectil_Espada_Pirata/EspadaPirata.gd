@@ -13,9 +13,7 @@ const MAT_ESPADA: Material = preload("res://Entities/Proyectil_Espada_Pirata/MAT
 const VELOCIDAD_GIRO_VUELO: float = 16.0  ## Igual que el hacha de Perrena (rad/s)
 
 @export_category("Giro Espada")
-@export var velocidad_giro_vuelo: float = VELOCIDAD_GIRO_VUELO  ## Giro rápido en vuelo/sube
-@export var velocidad_orientacion_caida: float = 8.0  ## Rapidez para ponerse con la punta abajo al caer
-@export var punta_signo: float = 1.0  ## Extremo de la punta: 1.0 = +X, -1.0 = -X
+@export var velocidad_giro_vuelo: float = VELOCIDAD_GIRO_VUELO  ## Giro continuo durante todo el vuelo
 @export var factor_gravedad: float = 0.6  ## Cae más lento (más tiempo en el aire para predecir la caída)
 
 @export_category("Estela Fantasma")
@@ -45,18 +43,48 @@ func _actualizar_movimiento(delta: float) -> void:
 	_aplicar_movimiento_parabolico(delta, velocidad, gravedad * factor_gravedad)
 	if not _modelo_espada or not is_instance_valid(_modelo_espada):
 		return
-	if direction.y < 0.0:
-		# Cayendo: deja de girar y cae siempre con la punta hacia abajo.
-		var objetivo: float = -punta_signo * PI * 0.5
-		_modelo_espada.rotation.z = lerp_angle(_modelo_espada.rotation.z, objetivo, minf(1.0, velocidad_orientacion_caida * delta))
-	else:
-		_modelo_espada.rotate_z(-velocidad_giro_vuelo * delta)
+	# Gira durante todo el trayecto (tanto al subir como al caer)
+	_modelo_espada.rotate_z(-velocidad_giro_vuelo * delta)
 	_actualizar_estela(delta)
 
 
 func initialize(shoot_direction: Vector3, potencia: float = 1.0) -> void:
 	super.initialize(shoot_direction, potencia)
 	_tiempo_estela = 0.0
+	if _modelo_espada and is_instance_valid(_modelo_espada):
+		_modelo_espada.transform = Transform3D.IDENTITY
+
+
+func _marcar_como_pegado() -> void:
+	var dir_vuelo: Vector3 = direction.normalized()
+	if dir_vuelo.length_squared() < 0.001:
+		dir_vuelo = Vector3(-1.0, -1.0, 0.0).normalized()
+	_orientar_espada_impacto(dir_vuelo)
+	super._marcar_como_pegado()
+
+
+## Orienta el modelo de la espada para que quede clavada con la punta en la dirección
+## del impacto y con el filo de la hoja orientado hacia el suelo/corte.
+func _orientar_espada_impacto(dir: Vector3) -> void:
+	if not _modelo_espada or not is_instance_valid(_modelo_espada):
+		return
+	# En el modelo 3D local:
+	# - La punta de la espada está en -X
+	# - El filo de la hoja está en -Y
+	# - El lomo está en +Y
+	# - La empuñadura está en +X
+	var basis_x: Vector3 = -dir
+	var perp1: Vector3 = Vector3(-dir.y, dir.x, 0.0)
+	var perp2: Vector3 = Vector3(dir.y, -dir.x, 0.0)
+	var basis_y: Vector3 = perp1 if perp1.y > 0.0 else perp2
+	if is_zero_approx(basis_y.y):
+		basis_y = Vector3.UP
+	basis_y = basis_y.normalized()
+	var basis_z: Vector3 = basis_x.cross(basis_y).normalized()
+	_modelo_espada.basis = Basis(basis_x, basis_y, basis_z)
+
+	# Clavar ligeramente la punta en la superficie
+	global_position += dir * 0.08
 
 
 ## Deja fantasmas morados con la silueta exacta de la espada mientras vuela.
@@ -122,6 +150,8 @@ func _aplicar_visuales_cacheados() -> void:
 	for mesh in _cached_mesh_instances:
 		if is_instance_valid(mesh) and mesh is MeshInstance3D:
 			(mesh as MeshInstance3D).visible = true
+			if not (mesh as MeshInstance3D).is_in_group("outline_meshes"):
+				(mesh as MeshInstance3D).add_to_group("outline_meshes")
 
 
 ## En cada reutilización del pool, restaurar la textura (el pickup/limpieza
@@ -131,6 +161,8 @@ func _restaurar_visuales_desde_pool() -> void:
 	for mesh in _cached_mesh_instances:
 		if is_instance_valid(mesh) and mesh is MeshInstance3D:
 			(mesh as MeshInstance3D).visible = true
+			if not (mesh as MeshInstance3D).is_in_group("outline_meshes"):
+				(mesh as MeshInstance3D).add_to_group("outline_meshes")
 
 
 func _aplicar_material_espada() -> void:
@@ -138,4 +170,9 @@ func _aplicar_material_espada() -> void:
 		return
 	var raiz: Node = _modelo_espada if is_instance_valid(_modelo_espada) else self
 	for m in raiz.find_children("*", "MeshInstance3D", true, false):
-		(m as MeshInstance3D).material_override = MAT_ESPADA
+		var mi := m as MeshInstance3D
+		if mi == null:
+			continue
+		mi.material_override = MAT_ESPADA
+		if not mi.is_in_group("outline_meshes"):
+			mi.add_to_group("outline_meshes")

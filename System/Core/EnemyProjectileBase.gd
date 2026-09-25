@@ -184,6 +184,7 @@ func _activar_desde_pool() -> void:
 	monitorable = true
 	set_physics_process(true)
 	_restaurar_visuales_desde_pool()
+	_reactivar_colisiones()
 	_configurar_ciclo_de_vida(_lifecycle_id)
 
 
@@ -206,6 +207,7 @@ func _desactivar_para_pool() -> void:
 	_detener_trail()
 	monitoring = false
 	monitorable = false
+	_desactivar_colisiones()
 	set_physics_process(false)
 
 
@@ -326,6 +328,22 @@ func _marcar_como_pegado() -> void:
 	_detener_trail()
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
+	# Sin forma no hay raycast ni señal que lo detecte: clavado = inerte.
+	# (Solo visual; se reactiva al salir del pool.)
+	_desactivar_colisiones()
+
+
+## Desactiva las formas de colisión para que el proyectil clavado o destruido
+## no bloquee otros proyectiles (rayos CCD y señales). Diferido como el resto.
+func _desactivar_colisiones() -> void:
+	for hijo in find_children("*", "CollisionShape3D", true, false):
+		(hijo as CollisionShape3D).set_deferred("disabled", true)
+
+
+## Reactiva las formas al volver a vuelo (salida del pool).
+func _reactivar_colisiones() -> void:
+	for hijo in find_children("*", "CollisionShape3D", true, false):
+		(hijo as CollisionShape3D).set_deferred("disabled", false)
 
 
 func _programar_destruccion_pegada() -> void:
@@ -407,6 +425,7 @@ func _safe_destroy() -> void:
 	visible = false
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
+	_desactivar_colisiones()
 	set_physics_process(false)
 	var lifecycle_id := _lifecycle_id
 	get_tree().create_timer(DESTROY_DELAY).timeout.connect(
