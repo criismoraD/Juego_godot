@@ -30,7 +30,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var limitar_fps_subviewport_fondo_3d: bool = false
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
 @export var pausar_video_fondo_en_combate: bool = false  ## true = congela la cascada en combate (ahorra CPU); false = cascada animada siempre
-const AUDIO_DEFENSORAS_ENTRADA: AudioStream = preload("res://TEST_/Defensoras entrada.wav")
+const AUDIO_DEFENSORAS_ENTRADA: AudioStream = preload("res://System/Audio/SFX/Defensoras entrada.wav")
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
@@ -2901,7 +2901,7 @@ func _iniciar_mensajera_oleada_5() -> void:
 		if "municion_a_otorgar_jugador" in power_up:
 			power_up.municion_a_otorgar_jugador = 10
 		if "municion_a_otorgar_aliadas" in power_up:
-			power_up.municion_a_otorgar_aliadas = 5
+			power_up.municion_a_otorgar_aliadas = 7
 		var spawn_pos: Vector3 = ballestera.global_position + Vector3(0.8, 0.05, 0.0)
 		add_child(power_up)
 		power_up.global_position = spawn_pos
