@@ -36,8 +36,8 @@ enum State { IDLE, DISSOLVING }
 # CONSTANTES
 # ═══════════════════════════════════════════════════════════════════════════════
 const ESCALA_BASE: float = 0.5
-const SONIDO_POSION: String = "res://TEST_/Posion curativa.wav"
-const SONIDO_APARECE_POCION: String = "res://TEST_/Aparece pocion.wav"
+const SONIDO_POSION: String = "res://Entities/Item_Pocion/Audio/Posion curativa.wav"
+const SONIDO_APARECE_POCION: String = "res://Entities/Item_Pocion/Audio/Aparece pocion.wav"
 const RADIO_PICKUP_JUGADOR: float = 2.0  ## Detección amplia en 2.5D
 const RADIO_PICKUP_Y: float = 2.5
 

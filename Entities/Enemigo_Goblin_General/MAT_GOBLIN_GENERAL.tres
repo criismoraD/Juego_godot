@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://bm28s7qplh1aa"]
 
-[ext_resource type="Texture2D" uid="uid://b4ro5xnq8hyqi" path="res://TEST_/Goblin general/Goblin general_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://b4ro5xnq8hyqi" path="res://Entities/Enemigo_Goblin_General/Goblin general_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

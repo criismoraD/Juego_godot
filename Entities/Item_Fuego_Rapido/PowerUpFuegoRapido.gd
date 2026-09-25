@@ -19,11 +19,11 @@ enum State { IDLE, DISSOLVING }
 # ═══════════════════════════════════════════════════════════════════════════════
 const ESCALA_BASE: float = 0.63  ## Escala base (+40% estandarizada)
 const ESCALA_SPAWN_MINIMA: float = 0.05  ## Escala inicial segura: Jolt rechaza transforms singulares
-const SONIDO_PICKUP: String = "res://TEST_/Obtener arma.wav"
+const SONIDO_PICKUP: String = "res://System/Audio/SFX/Obtener arma.wav"
 const RADIO_PICKUP_JUGADOR: float = 2.0  ## Pickup por proximidad horizontal
 const RADIO_PICKUP_Y: float = 2.5  ## Margen vertical para plataformas/saltos
 const DURACION_DESINTEGRACION: float = 0.6  ## Duración del shader dissolve
-const TEXTURA_MODELO: Texture2D = preload("res://TEST_/Rapid fire/Rapid fire_D.jpg")
+const TEXTURA_MODELO: Texture2D = preload("res://Entities/Item_Fuego_Rapido/Rapid fire_D.jpg")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS

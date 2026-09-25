@@ -7,7 +7,7 @@ extends Node3D
 ## Sincroniza la textura y los parametros con el ShaderMaterial en el editor y en juego.
 ## El nodo raiz queda libre para posicionarlo en el editor.
 
-const TEXTURA_DEFAULT: Texture2D = preload("res://TEST_/Alga.png")
+const TEXTURA_DEFAULT: Texture2D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Alga.png")
 const SHADER_DEFAULT: Shader = preload("res://System/Shaders/alga_oleaje.gdshader")
 
 @export_category("Oleaje")

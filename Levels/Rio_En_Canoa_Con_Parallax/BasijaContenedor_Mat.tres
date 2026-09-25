@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://b107emrrdp0wl"]
 
-[ext_resource type="Texture2D" uid="uid://cvtysr1n1bu7h" path="res://TEST_/Baija contenedor/Basija contenedor_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://cvtysr1n1bu7h" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Baija contenedor/Basija contenedor_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

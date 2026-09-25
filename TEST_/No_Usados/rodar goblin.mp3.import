@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bdtx4ycuu36wd"
+path="res://.godot/imported/rodar goblin.mp3-5d2095575192ca624b39babff1705abb.mp3str"
+
+[deps]
+
+source_file="res://TEST_/No_Usados/rodar goblin.mp3"
+dest_files=["res://.godot/imported/rodar goblin.mp3-5d2095575192ca624b39babff1705abb.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

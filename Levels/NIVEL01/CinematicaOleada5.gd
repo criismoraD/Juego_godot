@@ -27,7 +27,7 @@ const ESCENA_PERRENA: PackedScene = preload("res://Entities/Jugador_Perrena/Perr
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
 ## Escena de diálogo al llegar al límite (estilo intro, con el png de Eryn).
 const ESCENA_DIALOGO: PackedScene = preload("res://UI/DialogoConversacionNivel5.tscn")
-const RUTA_JINGLE: String = "res://TEST_/Perrena Jingle.mp3"
+const RUTA_JINGLE: String = "res://System/Audio/Music/Perrena Jingle.mp3"
 const RUTA_SHADER_CONTORNO: String = "res://System/Shaders/TOON_LINEANEGRA.gdshader"
 ## Contorno mínimo durante la escena (todos los personajes). No baja de
 ## 8 px: con menos, el resolve de MSAA en viewports de fondo transparente
@@ -519,7 +519,7 @@ func _entrar_torre() -> void:
 
 ## SFX de puerta al entrar a la torre (igual que la puerta del nivel).
 func _reproducir_sonido_puerta() -> void:
-	var stream: AudioStream = load("res://TEST_/abrir_puerta.wav")
+	var stream: AudioStream = load("res://System/Audio/SFX/abrir_puerta.wav")
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()

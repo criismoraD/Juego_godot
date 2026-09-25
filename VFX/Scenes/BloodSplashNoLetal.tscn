@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cbcunmrjn50jx"]
 
 [ext_resource type="Script" path="res://VFX/Scenes/BloodSplash2D.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://TEST_/impacto sangre no letal.png" id="2_tex"]
+[ext_resource type="Texture2D" path="res://VFX/Textures/impacto sangre no letal.png" id="2_tex"]
 
 [node name="BloodSplashNoLetal" type="AnimatedSprite3D"]
 transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)

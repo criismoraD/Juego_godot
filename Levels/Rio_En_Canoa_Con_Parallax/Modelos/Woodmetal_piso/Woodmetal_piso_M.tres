@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://do3t4oi67n0l"]
+
+[ext_resource type="Texture2D" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Woodmetal_piso/Woodmetal_piso_D.jpg" id="1_wood"]
+
+[resource]
+resource_name = "Woodmetal_piso_M"
+albedo_color = Color(1, 1, 1, 1)
+albedo_texture = ExtResource("1_wood")

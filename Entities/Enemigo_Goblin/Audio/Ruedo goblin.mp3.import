@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dg84da8qegrkh"
+path="res://.godot/imported/Ruedo goblin.mp3-2101ceb31e1c2e9e33ba3e3ea80bb9d4.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Goblin/Audio/Ruedo goblin.mp3"
+dest_files=["res://.godot/imported/Ruedo goblin.mp3-2101ceb31e1c2e9e33ba3e3ea80bb9d4.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" load_steps=2 format=3]
 
-[ext_resource type="Texture2D" uid="uid://18csd3ptyk1s" path="res://TEST_/Arbol low poly/arbol low poly_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://18csd3ptyk1s" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Arbol low poly/arbol low poly_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "ArbolLowPoly_Mat"

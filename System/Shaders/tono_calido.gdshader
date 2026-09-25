@@ -1,4 +1,4 @@
-﻿shader_type canvas_item;
+shader_type canvas_item;
 
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear;
 uniform vec4 warm_tint : source_color = vec4(0.98, 0.74, 0.48, 1.0);

@@ -114,25 +114,25 @@ func _load_all_sounds():
 	]
 	sfx_streams["disparo_flecha"] = sfx_streams["player_shoot"]
 
-	sfx_streams["disparo_cargado"] = [load("res://TEST_/Disparo cargado.wav")]
-	sfx_streams["sonido_100_carga"] = [load("res://TEST_/sonido 100% carga.mp3")]
+	sfx_streams["disparo_cargado"] = [load("res://System/Audio/SFX/Disparo cargado.wav")]
+	sfx_streams["sonido_100_carga"] = [load("res://System/Audio/SFX/sonido 100% carga.mp3")]
 
 	sfx_streams["bow_tension"] = [
 		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA1.mp3"),
 		load("res://Entities/Jugador_Arquera/TENSADO_CUERDA2.mp3")
 	]
 
-	sfx_streams["fuego_tensado"] = [load("res://TEST_/Fuego tensado.wav")]
+	sfx_streams["fuego_tensado"] = [load("res://System/Audio/SFX/Fuego tensado.wav")]
 
 	sfx_streams["bow_hold"] = [load("res://Entities/Jugador_Arquera/MANTENER_ARCO.mp3")]
 
 	sfx_streams["player_laugh"] = [load("res://Entities/Jugador_Arquera/RISA_PERSONAJE.mp3")]
 
-	sfx_streams["obtencion_arma"] = [load("res://TEST_/Obtener arma.wav")]
+	sfx_streams["obtencion_arma"] = [load("res://System/Audio/SFX/Obtener arma.wav")]
 
-	sfx_streams["impacto_suelo"] = [load("res://TEST_/Impacto suelo.mp3")]
+	sfx_streams["impacto_suelo"] = [load("res://System/Audio/SFX/Impacto suelo.mp3")]
 
-	sfx_streams["vasija_quebrada"] = [load("res://TEST_/vasija_quebrada.mp3")]
+	sfx_streams["vasija_quebrada"] = [load("res://System/Audio/SFX/vasija_quebrada.mp3")]
 
 	# ═══════════════════════════════════════════════════════════════════════════════
 	# SONIDOS DE ENEMIGOS
@@ -182,7 +182,7 @@ func _load_all_sounds():
 	]
 
 	sfx_streams["explosion_acuatica_potente"] = [
-		load("res://TEST_/explosion_acuatica_potente P.mp3")
+		load("res://System/Audio/SFX/explosion_acuatica_potente P.mp3")
 	]
 
 	sfx_streams["cuerno_guerra"] = [
@@ -190,32 +190,32 @@ func _load_all_sounds():
 	]
 
 	sfx_streams["seleccion_defensoras"] = [
-		load("res://TEST_/Seleccion defensoras.mp3")
+		load("res://System/Audio/SFX/Seleccion defensoras.mp3")
 	]
 
 	sfx_streams["seleccion_menu"] = [
-		load("res://TEST_/Seleccion menu.mp3")
+		load("res://System/Audio/SFX/Seleccion menu.mp3")
 	]
 
 	sfx_streams["trident_shot"] = [load("res://Entities/Enemigo_Imp/TRIDENTE_SHOT.mp3")]
-	sfx_streams["lanzar_espada_pirata"] = [load("res://TEST_/lanzar espada pirata.mp3")]
-	sfx_streams["disparo_pistola_pirata_gob"] = [load("res://TEST_/disparo pistola pirata gob.mp3")]
-	sfx_streams["hundimiento_barco_pirata"] = [load("res://TEST_/Barco pirata hundimiento.mp3")]
-	sfx_streams["nadar_pirata"] = [load("res://TEST_/Nadar pirata.mp3")]
-	if ResourceLoader.exists("res://TEST_/Muerte pirata goblin.mp3"):
-		sfx_streams["muerte_pirata_goblin"] = [load("res://TEST_/Muerte pirata goblin.mp3")]
+	sfx_streams["lanzar_espada_pirata"] = [load("res://Entities/Enemigo_Pirata_Goblin/Audio/lanzar espada pirata.mp3")]
+	sfx_streams["disparo_pistola_pirata_gob"] = [load("res://Entities/Enemigo_Pirata_Goblin/Audio/disparo pistola pirata gob.mp3")]
+	sfx_streams["hundimiento_barco_pirata"] = [load("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/Barco pirata hundimiento.mp3")]
+	sfx_streams["nadar_pirata"] = [load("res://Entities/Enemigo_Pirata_Goblin/Audio/Nadar pirata.mp3")]
+	if ResourceLoader.exists("res://Entities/Enemigo_Pirata_Goblin/Audio/Muerte pirata goblin.mp3"):
+		sfx_streams["muerte_pirata_goblin"] = [load("res://Entities/Enemigo_Pirata_Goblin/Audio/Muerte pirata goblin.mp3")]
 
-	sfx_streams["splash_agua"] = [load("res://TEST_/splash sonido.mp3")]
-	sfx_streams["girar_lanza"] = [load("res://TEST_/girar lanza azulina.mp3")]
-	sfx_streams["azulina_muerte"] = [load("res://TEST_/azulina muerte.mp3")]
-	sfx_streams["hit_azulina"] = [load("res://TEST_/Hit azulina.mp3")]
-	sfx_streams["fire_fire_rapido"] = [load("res://TEST_/fire fire rapido.mp3")]
-	if ResourceLoader.exists("res://TEST_/Muerte goblin general.mp3"):
-		sfx_streams["muerte_goblin_general"] = [load("res://TEST_/Muerte goblin general.mp3")]
-	sfx_streams["ult_goblin_general"] = [load("res://TEST_/Ruedo goblin.mp3")]
-	sfx_streams["entrada_azulina"] = [load("res://TEST_/Entrada azulina.mp3")]
-	if ResourceLoader.exists("res://TEST_/Perrena ult.mp3"):
-		sfx_streams["perrena_ult"] = [load("res://TEST_/Perrena ult.mp3")]
+	sfx_streams["splash_agua"] = [load("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/splash sonido.mp3")]
+	sfx_streams["girar_lanza"] = [load("res://Entities/Enemigo_Azulina/Audio/girar lanza azulina.mp3")]
+	sfx_streams["azulina_muerte"] = [load("res://Entities/Enemigo_Azulina/Audio/azulina muerte.mp3")]
+	sfx_streams["hit_azulina"] = [load("res://Entities/Enemigo_Azulina/Audio/Hit azulina.mp3")]
+	sfx_streams["fire_fire_rapido"] = [load("res://System/Audio/SFX/fire fire rapido.mp3")]
+	if ResourceLoader.exists("res://Entities/Enemigo_Goblin_General/Audio/Muerte goblin general.mp3"):
+		sfx_streams["muerte_goblin_general"] = [load("res://Entities/Enemigo_Goblin_General/Audio/Muerte goblin general.mp3")]
+	sfx_streams["ult_goblin_general"] = [load("res://Entities/Enemigo_Goblin/Audio/Ruedo goblin.mp3")]
+	sfx_streams["entrada_azulina"] = [load("res://Entities/Enemigo_Azulina/Audio/Entrada azulina.mp3")]
+	if ResourceLoader.exists("res://Entities/Defensora_Perrena/Audio/Perrena ult.mp3"):
+		sfx_streams["perrena_ult"] = [load("res://Entities/Defensora_Perrena/Audio/Perrena ult.mp3")]
 
 	sfx_streams["shield_imp_impact"] = [
 		load("res://Entities/Enemigo_Imp_Escudo/IMPACTO_IMP_ESCUDO_01.mp3"),
@@ -284,12 +284,10 @@ func _load_all_sounds():
 	var _sfx_recarga_ballesta: AudioStream = null
 	if ResourceLoader.exists("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.wav"):
 		_sfx_recarga_ballesta = load("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/recarga_ballesta.wav"):
-		_sfx_recarga_ballesta = load("res://TEST_/recarga_ballesta.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/recarga_ballesta.wav"):
+		_sfx_recarga_ballesta = load("res://System/Audio/SFX/recarga_ballesta.wav") as AudioStream
 	elif ResourceLoader.exists("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.mp3"):
 		_sfx_recarga_ballesta = load("res://Entities/Aliada_Ballestera/Audio/recarga_ballesta.mp3") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/recarga_ballesta.mp3"):
-		_sfx_recarga_ballesta = load("res://TEST_/recarga_ballesta.mp3") as AudioStream
 
 	if _sfx_recarga_ballesta:
 		sfx_streams["recarga_ballesta"] = [_sfx_recarga_ballesta]
@@ -304,12 +302,8 @@ func _load_all_sounds():
 	var _sfx_correr: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):
 		_sfx_correr = load("res://System/Audio/SFX/sonido_correr_descalzo.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.wav"):
-		_sfx_correr = load("res://TEST_/sonido_correr_descalzo.wav") as AudioStream
 	elif ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.mp3"):
 		_sfx_correr = load("res://System/Audio/SFX/sonido_correr_descalzo.mp3") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.mp3"):
-		_sfx_correr = load("res://TEST_/sonido_correr_descalzo.mp3") as AudioStream
 	if _sfx_correr:
 		sfx_streams["correr_descalzo"] = [_sfx_correr]
 		sfx_streams["sonido_correr_descalzo"] = [_sfx_correr]
@@ -320,8 +314,6 @@ func _load_all_sounds():
 	var _sfx_escalera: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/Subir escaleras.wav"):
 		_sfx_escalera = load("res://System/Audio/SFX/Subir escaleras.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/Subir escaleras.wav"):
-		_sfx_escalera = load("res://TEST_/Subir escaleras.wav") as AudioStream
 	if _sfx_escalera:
 		sfx_streams["subir_escaleras"] = [_sfx_escalera]
 
@@ -329,12 +321,10 @@ func _load_all_sounds():
 	var _sfx_jabalina: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/Goblina jabalina.wav"):
 		_sfx_jabalina = load("res://System/Audio/SFX/Goblina jabalina.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/Goblina jabalina.wav"):
-		_sfx_jabalina = load("res://TEST_/Goblina jabalina.wav") as AudioStream
+	elif ResourceLoader.exists("res://Entities/Enemigo_Goblin/Audio/Goblina jabalina.wav"):
+		_sfx_jabalina = load("res://Entities/Enemigo_Goblin/Audio/Goblina jabalina.wav") as AudioStream
 	elif ResourceLoader.exists("res://System/Audio/SFX/Goblina jabalina.mp3"):
 		_sfx_jabalina = load("res://System/Audio/SFX/Goblina jabalina.mp3") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/Goblina jabalina.mp3"):
-		_sfx_jabalina = load("res://TEST_/Goblina jabalina.mp3") as AudioStream
 	if _sfx_jabalina:
 		sfx_streams["goblina_jabalina"] = [_sfx_jabalina]
 		sfx_streams["Goblina jabalina"] = [_sfx_jabalina]
@@ -342,12 +332,10 @@ func _load_all_sounds():
 	var _sfx_goblina_ataque: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/goblina ataque.wav"):
 		_sfx_goblina_ataque = load("res://System/Audio/SFX/goblina ataque.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/goblina ataque.wav"):
-		_sfx_goblina_ataque = load("res://TEST_/goblina ataque.wav") as AudioStream
+	elif ResourceLoader.exists("res://Entities/Enemigo_Goblin/Audio/goblina ataque.wav"):
+		_sfx_goblina_ataque = load("res://Entities/Enemigo_Goblin/Audio/goblina ataque.wav") as AudioStream
 	elif ResourceLoader.exists("res://System/Audio/SFX/goblina ataque.mp3"):
 		_sfx_goblina_ataque = load("res://System/Audio/SFX/goblina ataque.mp3") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/goblina ataque.mp3"):
-		_sfx_goblina_ataque = load("res://TEST_/goblina ataque.mp3") as AudioStream
 	if _sfx_goblina_ataque:
 		sfx_streams["goblina_ataque"] = [_sfx_goblina_ataque]
 		sfx_streams["goblina ataque"] = [_sfx_goblina_ataque]
@@ -356,12 +344,10 @@ func _load_all_sounds():
 	var _sfx_goblina_dano: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/Goblina daño.wav"):
 		_sfx_goblina_dano = load("res://System/Audio/SFX/Goblina daño.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/Goblina daño.wav"):
-		_sfx_goblina_dano = load("res://TEST_/Goblina daño.wav") as AudioStream
+	elif ResourceLoader.exists("res://Entities/Enemigo_Goblin/Audio/Goblina daño.wav"):
+		_sfx_goblina_dano = load("res://Entities/Enemigo_Goblin/Audio/Goblina daño.wav") as AudioStream
 	elif ResourceLoader.exists("res://System/Audio/SFX/Goblina daño.mp3"):
 		_sfx_goblina_dano = load("res://System/Audio/SFX/Goblina daño.mp3") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/Goblina daño.mp3"):
-		_sfx_goblina_dano = load("res://TEST_/Goblina daño.mp3") as AudioStream
 	if _sfx_goblina_dano:
 		sfx_streams["goblina_dano"] = [_sfx_goblina_dano]
 		sfx_streams["Goblina daño"] = [_sfx_goblina_dano]
@@ -369,12 +355,10 @@ func _load_all_sounds():
 	var _sfx_goblina_muerte: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/goblina muerte.wav"):
 		_sfx_goblina_muerte = load("res://System/Audio/SFX/goblina muerte.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/goblina muerte.wav"):
-		_sfx_goblina_muerte = load("res://TEST_/goblina muerte.wav") as AudioStream
+	elif ResourceLoader.exists("res://Entities/Enemigo_Goblin/Audio/goblina muerte.wav"):
+		_sfx_goblina_muerte = load("res://Entities/Enemigo_Goblin/Audio/goblina muerte.wav") as AudioStream
 	elif ResourceLoader.exists("res://System/Audio/SFX/goblina muerte.mp3"):
 		_sfx_goblina_muerte = load("res://System/Audio/SFX/goblina muerte.mp3") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/goblina muerte.mp3"):
-		_sfx_goblina_muerte = load("res://TEST_/goblina muerte.mp3") as AudioStream
 	if _sfx_goblina_muerte:
 		sfx_streams["goblina_muerte"] = [_sfx_goblina_muerte]
 		sfx_streams["goblina muerte"] = [_sfx_goblina_muerte]
@@ -384,8 +368,8 @@ func _load_all_sounds():
 	var _sfx_muerte_critica: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/Critico.wav"):
 		_sfx_muerte_critica = load("res://System/Audio/SFX/Critico.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/Critico.wav"):
-		_sfx_muerte_critica = load("res://TEST_/Critico.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/Critico.wav"):
+		_sfx_muerte_critica = load("res://System/Audio/SFX/Critico.wav") as AudioStream
 	if _sfx_muerte_critica:
 		sfx_streams["muerte_critica"] = [_sfx_muerte_critica]
 
@@ -398,8 +382,8 @@ func _load_all_sounds():
 	var _sfx_escudo_cayendo: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/Escudo metal callendo.wav"):
 		_sfx_escudo_cayendo = load("res://System/Audio/SFX/Escudo metal callendo.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/Escudo metal callendo.wav"):
-		_sfx_escudo_cayendo = load("res://TEST_/Escudo metal callendo.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/Escudo metal callendo.wav"):
+		_sfx_escudo_cayendo = load("res://System/Audio/SFX/Escudo metal callendo.wav") as AudioStream
 	if _sfx_escudo_cayendo:
 		sfx_streams["escudo_metal_cayendo"] = [_sfx_escudo_cayendo]
 		sfx_streams["Escudo metal callendo"] = [_sfx_escudo_cayendo]
@@ -415,10 +399,10 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://System/Audio/Music/SONIDO BOSQUE.mp3"))  # Índice 3 - Nivel 0 pacifista
 	bgm_streams.append(load("res://System/Audio/Music/VICTORY.mp3"))  # Índice 4 - Victoria
 	bgm_streams.append(load("res://System/Audio/Music/Noche Aplastante.mp3"))  # Índice 5 - Noche Aplastante (Oleada 5)
-	bgm_streams.append(load("res://TEST_/Torre interior.mp3"))  # Índice 6 - Torre interior
-	bgm_streams.append(load("res://TEST_/Viaje por el rio.mp3"))  # Índice 7 - Viaje por el rio
-	bgm_streams.append(load("res://TEST_/Jefe rio.mp3"))  # Índice 8 - Jefe rio
-	bgm_streams.append(load("res://TEST_/Jefe destruido.mp3"))  # Índice 9 - Jefe destruido
+	bgm_streams.append(load("res://System/Audio/Music/Torre interior.mp3"))  # Índice 6 - Torre interior
+	bgm_streams.append(load("res://System/Audio/Music/Viaje por el rio.mp3"))  # Índice 7 - Viaje por el rio
+	bgm_streams.append(load("res://System/Audio/Music/Jefe rio.mp3"))  # Índice 8 - Jefe rio
+	bgm_streams.append(load("res://System/Audio/SFX/Jefe destruido.mp3"))  # Índice 9 - Jefe destruido
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

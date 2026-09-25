@@ -47,10 +47,10 @@ const ESCENA_PIRATA: PackedScene = preload("res://Entities/Enemigo_Pirata_Goblin
 const ESCENA_IMP_EMBAJADOR: PackedScene = preload("res://Entities/Enemigo_Imp_Estandarte/ImpEnemyEstandarte.tscn")
 const ESCENA_FLECHA_LONKO: PackedScene = preload("res://Entities/Enemigo_Lonko/Flecha_Electrica_Ataque.tscn")
 const SFX_CANON_DISPARO: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION01.mp3")
-const SFX_CANON_ENGRANAJE: AudioStream = preload("res://TEST_/Engranaje cañon.mp3")
-const SFX_SPLASH: String = "res://TEST_/splash sonido.mp3"
-const SFX_EMERGIENDO: String = "res://TEST_/submarino_emergiendo.mp3"
-const ESCENA_ONDA_SPLASH: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const SFX_CANON_ENGRANAJE: AudioStream = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/Engranaje_Canon.mp3")
+const SFX_SPLASH: String = "res://Levels/Rio_En_Canoa_Con_Parallax/Audio/splash sonido.mp3"
+const SFX_EMERGIENDO: String = "res://Levels/Rio_En_Canoa_Con_Parallax/Audio/submarino_emergiendo.mp3"
+const ESCENA_ONDA_SPLASH: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
 ## Velocidad de caminata de los enemigos sobre la cubierta del submarino (m/s)
 const VELOCIDAD_CAMINATA_CUBIERTA: float = 2.0
 ## Tiempo de pausa al detenerse en su posición antes de comenzar el ataque (s)

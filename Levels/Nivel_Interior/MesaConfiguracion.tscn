@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cxqj3a8dm482x"]
 
 [ext_resource type="Script" uid="uid://di262r1u7y5af" path="res://Levels/Nivel_Interior/MesaConfiguracion.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://04m0axdhp4op" path="res://TEST_/MESA_CONFIGURACION/MESA_CONFIG_CUARTO.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://04m0axdhp4op" path="res://Levels/Nivel_Interior/Modelos/MESA_CONFIGURACION/MESA_CONFIG_CUARTO.glb" id="2_model"]
 [ext_resource type="PackedScene" uid="uid://c6lvdv381tkyv" path="res://UI/MenuDefensoras/MenuDefensoras.tscn" id="3_defensoras"]
 [ext_resource type="PackedScene" path="res://UI/MenuBestiario/MenuBestiario.tscn" id="4_bestiario"]
 

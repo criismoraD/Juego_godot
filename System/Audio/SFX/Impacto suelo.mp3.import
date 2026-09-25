@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://lb38khbupmlr"
+path="res://.godot/imported/Impacto suelo.mp3-7fe97086d18a5cb93944a65732af04c5.mp3str"
+
+[deps]
+
+source_file="res://System/Audio/SFX/Impacto suelo.mp3"
+dest_files=["res://.godot/imported/Impacto suelo.mp3-7fe97086d18a5cb93944a65732af04c5.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

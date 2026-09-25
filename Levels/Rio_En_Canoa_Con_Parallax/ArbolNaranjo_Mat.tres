@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" load_steps=2 format=3]
 
-[ext_resource type="Texture2D" uid="uid://t20va0s1ii6n" path="res://TEST_/Arbol naranjo/Arbol naranjo_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://t20va0s1ii6n" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Arbol naranjo/Arbol naranjo_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "ArbolNaranjo_Mat"

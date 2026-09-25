@@ -820,3 +820,56 @@ func test_misil_pararse_acelerado_y_vuelve_a_reposo() -> void:
 	assert_eq(mock.llamadas.size(), 2, "Luego pide el reposo")
 	assert_true((mock.llamadas[1]["nombres"] as Array).has("Idle Canoa"), "Reposo de canoa")
 	assert_eq(ap.current_animation, "Idle Canoa", "Termina en reposo")
+
+
+func test_crucero_fondo_disparo_misiles_cosmeticos() -> void:
+	# Arrange: jefe configurado para fase 2
+	_jefe._secuencia_fase2_activa = true
+	_jefe._fase_jefe = 2
+	_jefe._jefe_muerto = false
+
+	# Act & Assert: verificar configuración por defecto de 3 misiles cosméticos
+	assert_true(_jefe.disparar_misiles_fondo_cosmeticos, "Debe estar activo el disparo cosmético de fondo")
+	assert_eq(_jefe.cantidad_misiles_fondo_cosmeticos, 3, "Deben ser exactamente 3 misiles cosméticos")
+	assert_almost_eq(_jefe.intervalo_misiles_cosmeticos, 0.32, 0.01, "Intervalo rápido de ~0.32 s")
+
+	# Act: disparar misil cosmético
+	_jefe._disparar_misil_cosmetico(0)
+
+	# Assert: el misil es cosmético, sin daño ni grupo de enemigos
+	assert_eq(_jefe._misiles_cosmeticos.size(), 1, "Debe registrarse en la lista de misiles cosméticos")
+	var misil = _jefe._misiles_cosmeticos[0]
+	assert_true(misil.es_cosmetico, "El misil debe tener es_cosmetico activo")
+	assert_false(misil.is_in_group("enemies"), "No debe pertenecer al grupo enemies")
+	assert_false(misil.is_in_group("enemy_projectiles"), "No debe pertenecer al grupo enemy_projectiles")
+	assert_false(misil.monitoring, "monitoring debe estar desactivado")
+	assert_false(misil.monitorable, "monitorable debe estar desactivado")
+	assert_false(misil.es_enemigo_activo(), "es_enemigo_activo() debe ser false")
+
+	# Act: intentar danar al misil cosmético
+	var vida_antes = misil.health
+	misil.take_damage(5.0)
+	# Assert: no recibe daño
+	assert_eq(misil.health, vida_antes, "El misil cosmético ignora daño")
+
+	_jefe._limpiar_misiles()
+
+
+func test_misil_cosmetico_genera_splash_al_romper_superficie() -> void:
+	# Arrange: misil cosmético instanciado bajo el agua
+	var MisilScene: PackedScene = load("res://Entities/Proyectil_Misil_Submarino/MisilSubmarino.tscn") as PackedScene
+	var misil = MisilScene.instantiate()
+	add_child_autofree(misil)
+	misil.es_cosmetico = true
+	misil.global_position = Vector3(100.0, -2.5, -39.0)
+	misil.altura_superficie_agua = -0.22
+
+	# Assert: antes de romper la superficie no ha generado splash
+	assert_false(misil._splash_agua_generado, "No debe haber generado splash sumergido")
+
+	# Act: avanzar simulación de física cruzando la superficie
+	misil.velocidad_subida = 10.0
+	misil._physics_process(0.3)  # Y sube a -2.5 + 3.0 = +0.5 > -0.22
+
+	# Assert: splash generado exactamente al cruzar
+	assert_true(misil._splash_agua_generado, "Debe haber generado el splash de agua al salir del agua")

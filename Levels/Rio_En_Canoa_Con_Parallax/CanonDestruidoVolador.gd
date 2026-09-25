@@ -15,10 +15,10 @@ enum TipoPieza {
 	TUERCA = 1,
 }
 
-const ESCENA_MODELO_CANON: PackedScene = preload("res://TEST_/Cañon destruido/Cañon destruido(3K).glb")
-const MESH_TUERCA: Mesh = preload("res://TEST_/Cañon destruido/TuercaRuedaMesh.tres")
-const MATERIAL_CANON: Material = preload("res://TEST_/Cañon destruido/CanonDestruido_Mat.tres")
-const ESCENA_SPLASH_AGUA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const ESCENA_MODELO_CANON: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Cañon destruido/Cañon destruido(3K).glb")
+const MESH_TUERCA: Mesh = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Cañon destruido/TuercaRuedaMesh.tres")
+const MATERIAL_CANON: Material = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Cañon destruido/CanonDestruido_Mat.tres")
+const ESCENA_SPLASH_AGUA: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
 const SFX_SPLASH_CLAVE: String = "splash_agua"
 
 const ESTADO_INACTIVO: int = 0

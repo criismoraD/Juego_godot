@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/Proyectil_Misil_Submarino/MisilSubmarino.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://TEST_/Misil Submarino/Misil submarino.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://Entities/Proyectil_Misil_Submarino/Misil submarino.glb" id="2_model"]
 
 [sub_resource type="SphereShape3D" id="SphereShape_misil"]
 radius = 0.35

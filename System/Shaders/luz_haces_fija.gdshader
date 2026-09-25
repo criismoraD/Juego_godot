@@ -1,4 +1,4 @@
-﻿shader_type canvas_item;
+shader_type canvas_item;
 render_mode blend_add;
 
 uniform vec4 ray_color : source_color = vec4(1.0, 0.90, 0.72, 0.22);

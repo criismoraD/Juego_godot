@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://d3xkb6q2v8m80"]
 
 [ext_resource type="Script" uid="uid://cgj4klfc284al" path="res://Entities/Enemigo_Goblin_General/GoblinGeneral.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cn7upgurdjjx2" path="res://TEST_/Goblin general/Goblin general.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cn7upgurdjjx2" path="res://Entities/Enemigo_Goblin_General/Goblin general.glb" id="2_model"]
 [ext_resource type="Material" uid="uid://bm28s7qplh1aa" path="res://Entities/Enemigo_Goblin_General/MAT_GOBLIN_GENERAL.tres" id="3_material"]
 [ext_resource type="PackedScene" uid="uid://c7tr1s2bag5ww" path="res://Entities/Enemigo_Goblin_Girl/ARCO_GOBLING_GIRL.glb" id="4_bow"]
 [ext_resource type="PackedScene" uid="uid://dqp6bym8k0nbe" path="res://Recursos_Compartidos/FLECHA_ARQUERA_ENEMIGA.glb" id="5_arrow_mesh"]

@@ -8,7 +8,7 @@ signal activada
 
 const SFX_REFUERZO_MENSAJERA: AudioStream = preload("res://System/Audio/SFX/Sonido_refuerzo_mensajera.mp3")
 ## Llamado de refuerzos aliadas (defensoras), distinto del cuerno de guerra (enemigos)
-const SFX_REFUERZOS_ALIADAS: AudioStream = preload("res://TEST_/refuerzos.mp3")
+const SFX_REFUERZOS_ALIADAS: AudioStream = preload("res://System/Audio/SFX/refuerzos.mp3")
 
 @export_category("Flotación")
 @export var altura_flotacion: float = 0.75  ## Altura del icono sobre la base del VFX

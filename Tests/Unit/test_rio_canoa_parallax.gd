@@ -1196,7 +1196,7 @@ func test_sonido_canoa_stream_asignado_y_volumen_audible() -> void:
 	var audio: AudioStreamPlayer = canoa.obtener_audio_navegacion()
 	assert_not_null(audio, "La canoa debe poseer un AudioStreamPlayer para el sonido de navegaciÃ³n")
 	assert_not_null(audio.stream, "El AudioStreamPlayer debe tener cargado el stream de sonido_canoa_por_el_rio")
-	assert_eq(audio.stream.resource_path, "res://TEST_/sonido_canoa_por_el_rio.mp3", "Ruta de sonido_canoa_por_el_rio.mp3 correcta")
+	assert_eq(audio.stream.resource_path, "res://Levels/Rio_En_Canoa_Con_Parallax/Audio/sonido_canoa_por_el_rio.mp3", "Ruta de sonido_canoa_por_el_rio.mp3 correcta")
 	assert_between(audio.volume_db, -20.0, 0.0, "El volumen debe ser sutil y natural (<= 0 dB) para no sobrecargar la mezcla")
 	assert_eq(audio.bus, &"Master", "Debe reproducirse en el bus Master")
 
@@ -1225,7 +1225,7 @@ func test_sonido_canoa_reproduccion_en_travesia() -> void:
 
 func test_sonido_canoa_loop_continuo() -> void:
 	# Arrange
-	var stream: AudioStreamMP3 = load("res://TEST_/sonido_canoa_por_el_rio.mp3") as AudioStreamMP3
+	var stream: AudioStreamMP3 = load("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/sonido_canoa_por_el_rio.mp3") as AudioStreamMP3
 	assert_not_null(stream, "El recurso de audio debe existir")
 
 	# Assert
@@ -1293,12 +1293,12 @@ func test_bandera_morada_textura_y_shader_asignados() -> void:
 
 	# Assert
 	assert_not_null(bandera.texture, "BanderaMorada debe tener textura asignada")
-	assert_eq(bandera.texture.resource_path, "res://TEST_/bandera morada.png", "La textura debe ser bandera morada.png")
+	assert_eq(bandera.texture.resource_path, "res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/bandera morada.png", "La textura debe ser bandera morada.png")
 	assert_not_null(bandera.material_override, "BanderaMorada debe tener material_override")
 	assert_true(bandera.material_override is ShaderMaterial, "material_override debe ser ShaderMaterial")
 	var mat := bandera.material_override as ShaderMaterial
 	assert_not_null(mat.get_shader_parameter("albedo_texture"), "albedo_texture del shader NO debe ser null para evitar que se vea blanca")
-	assert_eq(mat.get_shader_parameter("albedo_texture").resource_path, "res://TEST_/bandera morada.png")
+	assert_eq(mat.get_shader_parameter("albedo_texture").resource_path, "res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/bandera morada.png")
 
 
 func test_bandera_morada_escena_instanciable() -> void:

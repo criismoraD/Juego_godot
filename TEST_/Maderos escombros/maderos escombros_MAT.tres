@@ -1,8 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3]
-
-[ext_resource type="Texture2D" path="res://TEST_/Maderos escombros/maderos escombros_D.jpg" id="1_32130"]
-
-[resource]
-resource_name = "Maderos escombros_M"
-cull_mode = 2
-albedo_texture = ExtResource("1_32130")

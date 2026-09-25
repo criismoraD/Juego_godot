@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://csdmma4vn80h5"
+path="res://.godot/imported/Horda goblins masculina.mp3-8f86f32cf051c32e595b29a121ad8492.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Goblin/Audio/Horda goblins masculina.mp3"
+dest_files=["res://.godot/imported/Horda goblins masculina.mp3-8f86f32cf051c32e595b29a121ad8492.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

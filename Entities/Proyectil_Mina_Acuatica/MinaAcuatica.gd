@@ -9,10 +9,10 @@ extends StaticBody3D
 signal explotada(mina: MinaAcuatica)
 signal destruida(mina: MinaAcuatica)
 
-const ESCENA_SPLASH: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const ESCENA_SPLASH: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
 const ESCENA_VFX_SUELO: PackedScene = preload("res://assets/BinbunVFX_Vol2/ExplosionFX/effects/ground/vfx_ground_explosion_01.tscn")
 const MAT_MINA: StandardMaterial3D = preload("res://Entities/Proyectil_Mina_Acuatica/MinaAcuatica_Mat.tres")
-const SFX_IMPACTO_METAL: AudioStream = preload("res://TEST_/Impacto de metal.mp3")
+const SFX_IMPACTO_METAL: AudioStream = preload("res://System/Audio/SFX/Impacto de metal.mp3")
 const VOLUMEN_IMPACTO_METAL: float = 2.0
 const UNIT_SIZE_SFX_MINA: float = 25.0
 const SHADER_DISOLVER: Shader = preload("res://System/Shaders/dissolve.gdshader")

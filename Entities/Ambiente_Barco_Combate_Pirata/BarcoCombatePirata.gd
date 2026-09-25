@@ -9,7 +9,7 @@ extends BalsaPirataCombate
 
 const MAT_BARCO: Material = preload("res://Entities/Ambiente_Barco_Combate_Pirata/MAT_BARCO_COMBATE_PIRATA.tres")
 const SFX_HUNDIMIENTO: String = "hundimiento_barco_pirata"
-const ESCENA_ONDA_SPLASH: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const ESCENA_ONDA_SPLASH: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
 const SCRIPT_ESCOMBRO_MADERO: Script = preload("res://Entities/Ambiente_Barco_Combate_Pirata/EscombroMaderoVolador.gd")
 
 ## Configuración de los 6 escombros que salen volando al destruir el barco pirata.

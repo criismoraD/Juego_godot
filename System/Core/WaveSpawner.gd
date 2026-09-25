@@ -904,7 +904,7 @@ func reproducir_sonido_cuerno() -> void:
 		)
 
 	# Sonido adicional: Horda goblins masculina (TEST_)
-	const HORDA_STREAM: AudioStream = preload("res://TEST_/Horda goblins masculina.mp3")
+	const HORDA_STREAM: AudioStream = preload("res://Entities/Enemigo_Goblin/Audio/Horda goblins masculina.mp3")
 	if HORDA_STREAM:
 		var horda_player := AudioStreamPlayer.new()
 		horda_player.stream = HORDA_STREAM

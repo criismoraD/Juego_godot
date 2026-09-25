@@ -39,7 +39,7 @@ enum State { IDLE, DISSOLVING }
 # ═══════════════════════════════════════════════════════════════════════════════
 const ESCALA_BASE: float = 0.63  ## +40% de tamaño (0.45 * 1.4)
 const ESCALA_SPAWN_MINIMA: float = 0.05  ## Escala inicial segura: Jolt rechaza transforms singulares (escala ~0)
-const SONIDO_PICKUP: String = "res://TEST_/Obtener arma.wav"
+const SONIDO_PICKUP: String = "res://System/Audio/SFX/Obtener arma.wav"
 
 var dissolve_shader: Shader = preload("res://System/Shaders/dissolve.gdshader")
 

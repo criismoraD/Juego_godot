@@ -21,7 +21,7 @@ const OBRAS_GALERIA: Array[Dictionary] = [
 		"titulo": "Eryn diseño Dialogos",
 		"titulo_key": "OBRA_01_TITULO",
 		"desc_key": "OBRA_01_DESC",
-		"ruta": "res://TEST_/Eryn diseño Dialogos.png"
+		"ruta": "res://UI/GaleriaArte/Eryn diseño Dialogos.png"
 	}
 ]
 

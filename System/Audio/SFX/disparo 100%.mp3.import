@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b236456gigh4n"
+path="res://.godot/imported/disparo 100%.mp3-efd30ed5c9dcadec71133ced43bb2d20.mp3str"
+
+[deps]
+
+source_file="res://System/Audio/SFX/disparo 100%.mp3"
+dest_files=["res://.godot/imported/disparo 100%.mp3-efd30ed5c9dcadec71133ced43bb2d20.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

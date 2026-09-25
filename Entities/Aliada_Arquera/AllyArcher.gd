@@ -69,7 +69,7 @@ const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_P
 const HUMO_PISADAS_FRAMES_H: int = 9
 const HUMO_PISADAS_FRAMES_V: int = 1
 const TEXTURA_ICONO_ATURDIMIENTO: Texture2D = preload("res://UI/Icons/Icono_aturdimiento.png")
-const SFX_VICTORIA_GRITO: AudioStream = preload("res://TEST_/victoria grito defensora arquera aliada.wav")
+const SFX_VICTORIA_GRITO: AudioStream = preload("res://Entities/Aliada_Arquera/Audio/victoria grito defensora arquera aliada.wav")
 const CHECK_ENEMIGOS_INTERVAL: float = 0.1
 const TARGET_UPDATE_INTERVAL: float = 0.1
 

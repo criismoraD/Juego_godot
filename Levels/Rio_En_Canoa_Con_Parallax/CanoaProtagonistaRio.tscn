@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cx4pa18v52pqr" path="res://Entities/Ambiente_Canoa_Aliada/Tripulante_barco_fondo_ally_archer.tscn" id="3_tripulante"]
 [ext_resource type="PackedScene" uid="uid://bsmclkfyqk3dr" path="res://Entities/Jugador_Arquera/Player.tscn" id="4_player"]
 [ext_resource type="PackedScene" uid="uid://d15gh8fw6jre1" path="res://Entities/Defensora_Perrena/DefensoraPerrena.tscn" id="5_74dm6"]
-[ext_resource type="AudioStream" uid="uid://d6g4qojn2ab4" path="res://TEST_/sonido_canoa_por_el_rio.mp3" id="5_audio"]
+[ext_resource type="AudioStream" uid="uid://d6g4qojn2ab4" path="res://Levels/Rio_En_Canoa_Con_Parallax/Audio/sonido_canoa_por_el_rio.mp3" id="5_audio"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/EfectoVientoCanoa.tscn" id="7_viento"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_suelo"]

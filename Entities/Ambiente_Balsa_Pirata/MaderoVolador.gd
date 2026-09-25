@@ -9,9 +9,9 @@ extends Node3D
 signal cayo_al_agua(posicion_impacto: Vector3)
 
 # === CONSTANTES ===
-const ESCENA_MODELO: PackedScene = preload("res://TEST_/Madero volador/Madero volador.glb")
-const MATERIAL_MADERO: Material = preload("res://TEST_/Madero volador/Madero volador_MAT.tres")
-const SFX_IMPACTO_AGUA: AudioStream = preload("res://TEST_/Impacto suelo.mp3")
+const ESCENA_MODELO: PackedScene = preload("res://Entities/Ambiente_Balsa_Pirata/Madero_Volador/Madero volador.glb")
+const MATERIAL_MADERO: Material = preload("res://Entities/Ambiente_Balsa_Pirata/Madero_Volador/Madero volador_MAT.tres")
+const SFX_IMPACTO_AGUA: AudioStream = preload("res://System/Audio/SFX/Impacto suelo.mp3")
 
 const ESTADO_INACTIVO: int = 0
 const ESTADO_VOLANDO: int = 1

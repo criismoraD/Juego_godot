@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Texture2D" uid="uid://brjnksl8nwe3s" path="res://TEST_/Pino 2D.png" id="1_pino"]
+[ext_resource type="Texture2D" uid="uid://brjnksl8nwe3s" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Pino 2D.png" id="1_pino"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/Pino2D.gd" id="2_script"]
 
 [node name="Pino2D" type="Node3D"]

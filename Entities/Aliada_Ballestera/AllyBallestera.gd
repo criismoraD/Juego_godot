@@ -103,8 +103,8 @@ var _prev_pos_x: float = 0.0
 var _sfx_correr: AudioStreamPlayer = null  ## Loop de armadura mientras corre
 var _sfx_escalera: AudioStreamPlayer = null  ## Loop de pasos mientras trepa (SUBIR_ESCALERA)
 var _fade_escalera_tween: Tween = null  ## Fade out del sonido de escalera (evita corte en seco)
-const SONIDO_CORRER_ARMADURA: String = "res://TEST_/sonido_correr_armadura.wav"
-const STREAM_CORRER_ARMADURA: AudioStream = preload("res://TEST_/sonido_correr_armadura.wav")
+const SONIDO_CORRER_ARMADURA: String = "res://Entities/Aliada_Ballestera/Audio/sonido_correr_armadura.wav"
+const STREAM_CORRER_ARMADURA: AudioStream = preload("res://Entities/Aliada_Ballestera/Audio/sonido_correr_armadura.wav")
 const SHADER_TOON_OUTLINE: Shader = preload("res://System/Shaders/TOON_LINEANEGRA.gdshader")
 const VOLUMEN_CORRER_DB: float = 8.0  ## Fuente muy silenciosa (RMS 0.7%): +8 dB audible sin saturar
 

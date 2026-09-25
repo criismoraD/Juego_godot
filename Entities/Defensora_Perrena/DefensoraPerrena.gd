@@ -34,10 +34,10 @@ enum State { DEPLOYING, IDLE, ATTACKING, CELEBRATING, DYING, DEAD }
 const HACHA_SCENE: PackedScene = preload("res://Entities/Proyectil_Hacha_Perrena/HachaPerrena.tscn")
 const MAT_PERRENA: Material = preload("res://Entities/Jugador_Perrena/PERRENA_MAT.tres")
 const MAT_HACHA: Material = preload("res://Entities/Proyectil_Hacha_Perrena/HACHA_PERRENA_MAT.tres")
-const SFX_CELEBRACION: String = "res://TEST_/Guaf perrena exit menu.wav"
-const SFX_ATAQUE: String = "res://TEST_/Sonido ataque perrena.mp3"
-const SFX_ULT: String = "res://TEST_/Perrena ult.mp3"
-const SFX_SWOOSH_HACHA: String = "res://TEST_/Tensado de flecha explosiva.wav"
+const SFX_CELEBRACION: String = "res://Entities/Defensora_Perrena/Audio/Guaf perrena exit menu.wav"
+const SFX_ATAQUE: String = "res://Entities/Defensora_Perrena/Audio/Sonido ataque perrena.mp3"
+const SFX_ULT: String = "res://Entities/Defensora_Perrena/Audio/Perrena ult.mp3"
+const SFX_SWOOSH_HACHA: String = "res://System/Audio/SFX/Tensado de flecha explosiva.wav"
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 const IMPACTOS_REQUERIDOS_PARA_SUBIR: int = 6
 const ATAQUES_PARA_ESPECIAL: int = 7  ## El ataque especial se ejecuta al 7mo ataque lanzado
@@ -355,7 +355,7 @@ func _setup_hacha_mano() -> void:
 		attach.bone_name = "mixamorig_RightHand"
 		skel.add_child(attach)
 
-		var hacha_model_scene := load("res://TEST_/Hacha perrena/Hacha perrena.glb") as PackedScene
+		var hacha_model_scene := load("res://Entities/Proyectil_Hacha_Perrena/Hacha perrena.glb") as PackedScene
 		if hacha_model_scene:
 			hacha_mano = hacha_model_scene.instantiate() as Node3D
 			hacha_mano.name = "HachaManoVisual"

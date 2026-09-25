@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c8iconorefuerzoperrena1"]
 
 [ext_resource type="Script" path="res://Entities/Item_Refuerzo_Perrena/IconoRefuerzoPerrena.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://TEST_/Perrena Icon.png" id="2_icono"]
+[ext_resource type="Texture2D" path="res://UI/Assets/Perrena Icon.png" id="2_icono"]
 [ext_resource type="PackedScene" uid="uid://cocrrn7wicpsd" path="res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn" id="3_vfx"]
 
 [sub_resource type="SphereShape3D" id="SphereShape_pickup"]

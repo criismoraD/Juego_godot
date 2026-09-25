@@ -21,9 +21,9 @@ const VELOCIDAD_GIRO: float = 16.0  ## rad/s de giro del hacha
 const VELOCIDAD_INICIAL_ESPECIAL: float = 26.0  ## Mayor velocidad y potencia para el ataque especial
 const MAT_HACHA: Material = preload("res://Entities/Proyectil_Hacha_Perrena/HACHA_PERRENA_MAT.tres")
 const SFX_IMPACTO: String = "res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3"
-const SFX_IMPACTO_ESPECIAL: String = "res://TEST_/Hacha impacto ult.mp3"  ## Impacto del Ult
-const SFX_REVENTADO_ULT: String = "res://TEST_/Sonido reventado.mp3"  ## Suena cuando el Ult mata a un enemigo
-const SFX_FALLO_TIERRA_ULT: String = "res://TEST_/impacto fallo tierra.mp3"  ## El Ult falló: impactó en terreno o en el pilar de Lonko
+const SFX_IMPACTO_ESPECIAL: String = "res://System/Audio/SFX/Hacha impacto ult.mp3"  ## Impacto del Ult
+const SFX_REVENTADO_ULT: String = "res://System/Audio/SFX/Sonido reventado.mp3"  ## Suena cuando el Ult mata a un enemigo
+const SFX_FALLO_TIERRA_ULT: String = "res://System/Audio/SFX/impacto fallo tierra.mp3"  ## El Ult falló: impactó en terreno o en el pilar de Lonko
 const TEXTURA_ROCAS: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS.png")  ## Mismo atlas del emerger del pilar de Lonko (4 rocas)
 
 ## Offset angular del filo: en el modelo local el filo se sitúa a +73.35° respecto al origen.

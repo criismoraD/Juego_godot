@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dfuegorapido01"]
 
 [ext_resource type="Script" path="res://Entities/Item_Fuego_Rapido/PowerUpFuegoRapido.gd" id="1_powerup"]
-[ext_resource type="PackedScene" uid="uid://p6wr8omao177" path="res://TEST_/Rapid fire/Rapid fire.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://p6wr8omao177" path="res://Entities/Item_Fuego_Rapido/Rapid fire.glb" id="2_glb"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_powerup"]
 radius = 0.85

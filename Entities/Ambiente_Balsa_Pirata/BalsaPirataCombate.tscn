@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/Ambiente_Balsa_Pirata/BalsaPirataCombate.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cfnhjov8psn34" path="res://TEST_/Balsa piarata/Balsa piarata.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cfnhjov8psn34" path="res://Entities/Ambiente_Balsa_Pirata/Balsa piarata.glb" id="2_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_casco_balsa"]
 size = Vector3(1.15, 0.3, 0.85)

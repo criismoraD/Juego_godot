@@ -12,7 +12,7 @@ extends Area3D
 signal activada
 
 const SFX_REFUERZO_MENSAJERA: AudioStream = preload("res://System/Audio/SFX/Sonido_refuerzo_mensajera.mp3")
-const SFX_REFUERZOS_ALIADAS: AudioStream = preload("res://TEST_/refuerzos.mp3")
+const SFX_REFUERZOS_ALIADAS: AudioStream = preload("res://System/Audio/SFX/refuerzos.mp3")
 const DEFENSORA_PERRENA_SCENE: PackedScene = preload("res://Entities/Defensora_Perrena/DefensoraPerrena.tscn")
 
 @export_category("Flotación y Animación")

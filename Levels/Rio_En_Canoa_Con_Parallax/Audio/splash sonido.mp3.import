@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://rflvfwmr1wm5"
+path="res://.godot/imported/splash sonido.mp3-1cba19fd220107a9cdedd1887967b735.mp3str"
+
+[deps]
+
+source_file="res://Levels/Rio_En_Canoa_Con_Parallax/Audio/splash sonido.mp3"
+dest_files=["res://.godot/imported/splash sonido.mp3-1cba19fd220107a9cdedd1887967b735.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1164,12 +1164,11 @@ func _setup_audio_correr_descalzo() -> void:
 	var stream: AudioStream = null
 	if ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):
 		stream = load("res://System/Audio/SFX/sonido_correr_descalzo.wav") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.wav"):
-		stream = load("res://TEST_/sonido_correr_descalzo.wav") as AudioStream
+	elif ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.wav"):
+		stream = load("res://System/Audio/SFX/sonido_correr_descalzo.wav") as AudioStream
 	elif ResourceLoader.exists("res://System/Audio/SFX/sonido_correr_descalzo.mp3"):
 		stream = load("res://System/Audio/SFX/sonido_correr_descalzo.mp3") as AudioStream
-	elif ResourceLoader.exists("res://TEST_/sonido_correr_descalzo.mp3"):
-		stream = load("res://TEST_/sonido_correr_descalzo.mp3") as AudioStream
+
 
 	if stream:
 		var stream_mp3 = stream as AudioStreamMP3

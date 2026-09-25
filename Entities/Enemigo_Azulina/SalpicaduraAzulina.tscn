@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/Enemigo_Azulina/SalpicaduraAzulina.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://TEST_/Salpicadura_test/salpicadura_test_strip.png" id="2_strip"]
+[ext_resource type="Texture2D" path="res://Tests/Scenes/Salpicadura_test/salpicadura_test_strip.png" id="2_strip"]
 
 [node name="SalpicaduraAzulina" type="AnimatedSprite3D"]
 billboard = 1

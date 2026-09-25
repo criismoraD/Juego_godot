@@ -21,10 +21,10 @@ const ESCENA_MINA: PackedScene = preload("res://Entities/Proyectil_Mina_Acuatica
 const ESCENA_GARGOLA: PackedScene = preload("res://Entities/Enemigo_Gargola/Gargola.tscn")
 const UMBRAL_VIDA_DANADO: int = 15
 const ESCENA_HUMO_ESTILIZADO: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/HumoEstilizadoJefe.tscn")
-const ESCENA_SUBMARINO_DESTRUIDO: PackedScene = preload("res://TEST_/Submarino destruido/Submarino destruido.glb")
+const ESCENA_SUBMARINO_DESTRUIDO: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Submarino destruido/Submarino destruido.glb")
 const MAT_SUBMARINO_DESTRUIDO: StandardMaterial3D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/SubmarinoDestruido_Mat.tres")
 const ESCENA_VFX_BIG_IMPACT_02: PackedScene = preload("res://HitFXFree/assets/BinbunVFX_Vol2/StylizedHitFX/effects/big_impact/vfx_big_impact_02.tscn")
-const SFX_BARCO_HUNDIMIENTO: AudioStream = preload("res://TEST_/Barco pirata hundimiento.mp3")
+const SFX_BARCO_HUNDIMIENTO: AudioStream = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/Barco pirata hundimiento.mp3")
 const ESCENA_EXPLOSION_PILAR: PackedScene = preload("res://Entities/Enemigo_Lonko/Explocion_Pilar.tscn")
 const TEXTURA_PIEDRAS_NEGRAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/PIEDRAS_NEGRAS_ DESTRUCION.png")
 const SFX_EXPLOSION_01: AudioStream = preload("res://Entities/Enemigo_Lonko/EXPLOSION01.mp3")
@@ -112,6 +112,14 @@ const OFFSET_ZONA_VERDE_MAX_X: float = 1.05   ## Proa / defensora delantera (Def
 @export var amplitud_balanceo_fondo_z: float = 2.5  ## Rolido lateral de navegación en grados
 @export var amplitud_cabeceo_fondo_x: float = 1.5  ## Cabeceo de navegación en grados
 
+@export_category("Jefe - Misiles Fondo Cosméticos")
+@export var disparar_misiles_fondo_cosmeticos: bool = true  ## Si true, se detiene en el centro y dispara misiles cosméticos hacia arriba
+@export var cantidad_misiles_fondo_cosmeticos: int = 3  ## Cantidad de misiles cosméticos disparados hacia arriba
+@export var intervalo_misiles_cosmeticos: float = 0.32  ## Rápida sucesión entre cada disparo de misil
+@export var pausa_antes_disparo_fondo: float = 0.35  ## Pequeña pausa al detenerse en el naufragio antes de disparar
+@export var pausa_despues_disparo_fondo: float = 0.50  ## Pausa tras el último disparo antes de reanudar la marcha
+@export var velocidad_subida_misil_fondo: float = 18.0  ## Velocidad vertical de subida de los misiles cosméticos
+
 @export_category("Jefe - Mina Acuática")
 @export var mina_offset_cola_x: float = 3.5
 @export var mina_offset_frente_z: float = 1.2
@@ -164,6 +172,7 @@ var _gargolas_ataque_forzado: Array = []
 var _modelo_destruido_tscn: Node3D = null
 var _canon_destruido_lanzado: bool = false
 var _crucero_fondo_completado: bool = false
+var _misiles_cosmeticos: Array[MisilSubmarino] = []
 var _tween_crucero_fondo: Tween = null
 var _tiempo_bamboleo_fondo: float = 0.0
 var _y_base_bamboleo_fondo: float = 0.0
@@ -1069,6 +1078,10 @@ func _limpiar_misiles() -> void:
 		if is_instance_valid(m) and not m.is_queued_for_deletion():
 			m.queue_free()
 	_misiles.clear()
+	for mc in _misiles_cosmeticos:
+		if is_instance_valid(mc) and not mc.is_queued_for_deletion():
+			mc.queue_free()
+	_misiles_cosmeticos.clear()
 
 
 # === FASE 2 ===
@@ -1196,6 +1209,20 @@ func _obtener_y_fondo_fase2() -> float:
 	return y_fondo_fase2
 
 
+func _obtener_x_centro_fondo() -> float:
+	var nivel := get_parent()
+	if is_instance_valid(nivel):
+		var nauf: Node3D = nivel.find_child("NaufragioMitadParaPosicionar2", true, false) as Node3D
+		if not is_instance_valid(nauf):
+			nauf = nivel.find_child("*Naufragio*", true, false) as Node3D
+		if is_instance_valid(nauf):
+			return nauf.global_position.x
+	var cam := _obtener_camara_activa()
+	if cam != null:
+		return cam.global_position.x
+	return _pos_combate.x
+
+
 func _reposicionar_sumergido_al_fondo() -> void:
 	if not _secuencia_fase2_activa or _jefe_muerto:
 		return
@@ -1211,6 +1238,7 @@ func _reposicionar_sumergido_al_fondo() -> void:
 	var y_fondo: float = _obtener_y_fondo_fase2()
 	var x_inicio: float = cam_x - maxf(margen_salida_fondo_x, 15.0)
 	var x_fin: float = cam_x + maxf(margen_salida_fondo_x, 15.0)
+	var x_centro: float = _obtener_x_centro_fondo()
 
 	if fondo_fase2_activo:
 		global_position = Vector3(x_inicio, y_fondo, z_fondo)
@@ -1221,7 +1249,7 @@ func _reposicionar_sumergido_al_fondo() -> void:
 		_disparar_tanda_misiles()
 		_aplicar_escala_fondo()
 		_preparar_bamboleo_fondo()
-		_iniciar_crucero_fondo(x_fin)
+		_iniciar_crucero_fondo(x_fin, x_inicio, x_centro)
 	else:
 		if _ref_sumergida_valida:
 			global_position = Vector3(posicion_sumergida_fase2.x, _altura_objetivo_y - profundidad_fase2, posicion_sumergida_fase2.z)
@@ -1233,15 +1261,86 @@ func _reposicionar_sumergido_al_fondo() -> void:
 		_disparar_tanda_misiles()
 
 
-func _iniciar_crucero_fondo(x_fin: float) -> void:
+func _iniciar_crucero_fondo(x_fin: float, x_inicio: float = -INF, x_centro: float = -INF) -> void:
 	if not _secuencia_fase2_activa or _jefe_muerto:
 		return
 	if is_instance_valid(_tween_crucero_fondo) and _tween_crucero_fondo.is_running():
 		_tween_crucero_fondo.kill()
+
+	if x_inicio == -INF:
+		x_inicio = global_position.x
+	if x_centro == -INF:
+		x_centro = _obtener_x_centro_fondo()
+
+	var dist_total: float = absf(x_fin - x_inicio)
+	var dist_1: float = absf(x_centro - x_inicio)
+	var dist_2: float = absf(x_fin - x_centro)
+
+	# Si no se disparan misiles cosméticos o el centro no está entre inicio y fin, crucero directo
+	if not disparar_misiles_fondo_cosmeticos or dist_total <= 0.001 or (x_centro <= minf(x_inicio, x_fin) or x_centro >= maxf(x_inicio, x_fin)):
+		_tween_crucero_fondo = create_tween()
+		_tween_crucero_fondo.tween_property(self, "global_position:x", x_fin, maxf(duracion_crucero_fondo, 2.0))\
+			.set_trans(Tween.TRANS_LINEAR)
+		_tween_crucero_fondo.tween_callback(_on_crucero_fondo_completado)
+		return
+
+	var frac_1: float = clampf(dist_1 / dist_total, 0.1, 0.9)
+	var frac_2: float = 1.0 - frac_1
+	var dur_total: float = maxf(duracion_crucero_fondo, 2.0)
+	var duracion_1: float = maxf(dur_total * frac_1, 1.0)
+	var duracion_2: float = maxf(dur_total * frac_2, 1.0)
+
 	_tween_crucero_fondo = create_tween()
-	_tween_crucero_fondo.tween_property(self, "global_position:x", x_fin, maxf(duracion_crucero_fondo, 2.0))\
+	# Tramo 1: Navegar de x_inicio hasta el centro de la pantalla (naufragio)
+	_tween_crucero_fondo.tween_property(self, "global_position:x", x_centro, duracion_1)\
 		.set_trans(Tween.TRANS_LINEAR)
+
+	# Detenerse en el centro: pausa antes de disparar
+	_tween_crucero_fondo.tween_interval(maxf(pausa_antes_disparo_fondo, 0.05))
+
+	# Disparar 3 misiles cosméticos hacia arriba en rápida sucesión
+	for i in range(cantidad_misiles_fondo_cosmeticos):
+		if i > 0:
+			_tween_crucero_fondo.tween_interval(maxf(intervalo_misiles_cosmeticos, 0.05))
+		_tween_crucero_fondo.tween_callback(_disparar_misil_cosmetico.bind(i))
+
+	# Pausa tras disparar antes de reanudar
+	_tween_crucero_fondo.tween_interval(maxf(pausa_despues_disparo_fondo, 0.05))
+
+	# Tramo 2: Reanudar trayectoria normal saliendo de pantalla hasta x_fin
+	_tween_crucero_fondo.tween_property(self, "global_position:x", x_fin, duracion_2)\
+		.set_trans(Tween.TRANS_LINEAR)
+
+	# Al completar el crucero y salir de pantalla
 	_tween_crucero_fondo.tween_callback(_on_crucero_fondo_completado)
+
+
+func _disparar_misil_cosmetico(indice: int = 0) -> void:
+	if not _secuencia_fase2_activa or _jefe_muerto:
+		return
+	if not is_inside_tree() or get_tree() == null:
+		return
+	var misil := ESCENA_MISIL.instantiate() as MisilSubmarino
+	if misil == null:
+		return
+	misil.es_cosmetico = true
+	misil.velocidad_subida = maxf(velocidad_subida_misil_fondo, 5.0)
+	misil.escala_modelo = maxf(escala_modelo_fondo * 0.65, 0.3)
+
+	var raiz: Node = get_tree().current_scene
+	if raiz == null:
+		raiz = get_parent()
+	if raiz == null:
+		raiz = get_tree().root
+	raiz.add_child(misil)
+
+	# Dispersión sutil sobre la cubierta del submarino (-1.2, 0.0, 1.2)
+	var offsets: Array[float] = [-1.2, 0.0, 1.2]
+	var off_local_x: float = offsets[indice % offsets.size()]
+	misil.global_position = to_global(Vector3(off_local_x, 0.8, 0.0))
+
+	_reproducir_sfx_canon(misil.global_position)
+	_misiles_cosmeticos.append(misil)
 
 
 func _on_crucero_fondo_completado() -> void:
@@ -1626,6 +1725,10 @@ func _volver_a_fase1() -> void:
 		_tween_crucero_fondo.kill()
 	_secuencia_fase2_activa = false
 	_misiles.clear()
+	for mc in _misiles_cosmeticos:
+		if is_instance_valid(mc) and not mc.is_queued_for_deletion():
+			mc.queue_free()
+	_misiles_cosmeticos.clear()
 	_misiles_resueltos = 0
 	_tanda_actual = 0
 	_limpiar_gargolas()

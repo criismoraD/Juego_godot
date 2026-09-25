@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cdgbsugjp201t"
+path="res://.godot/imported/explosion_acuatica_potente P.mp3-7e2a7affa18e2fa488a5db222a555dea.mp3str"
+
+[deps]
+
+source_file="res://System/Audio/SFX/explosion_acuatica_potente P.mp3"
+dest_files=["res://.godot/imported/explosion_acuatica_potente P.mp3-7e2a7affa18e2fa488a5db222a555dea.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

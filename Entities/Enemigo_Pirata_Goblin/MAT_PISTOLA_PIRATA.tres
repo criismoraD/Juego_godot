@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://c56jkpowuotwo"]
 
-[ext_resource type="Texture2D" uid="uid://ceorqp1gaki42" path="res://TEST_/Pistola pirata/Pistola pirata_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://ceorqp1gaki42" path="res://Entities/Enemigo_Pirata_Goblin/Pistola/Pistola pirata_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://d85h1in3o0et" path="res://System/Shaders/outline_hueso.gdshader" id="2_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

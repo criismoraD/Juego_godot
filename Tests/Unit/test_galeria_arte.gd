@@ -127,7 +127,7 @@ func test_visor_soporta_video_player() -> void:
 		"numero": "99",
 		"tipo": "video",
 		"titulo": "Video Test",
-		"ruta_video": "res://TEST_/0.1 Version.ogv"
+		"ruta_video": "res://UI/GaleriaArte/Videos/0.1 Version.ogv"
 	}
 	_galeria._abrir_visor(obra_video)
 

@@ -242,6 +242,8 @@ func _on_body_entered(body: Node) -> void:
 		return
 
 	if body is StaticBody3D or body is AnimatableBody3D:
+		if _es_plataforma_atravesable_por_flechas(body):
+			return # Tablones del río: se pisan pero no frenan proyectiles
 		if body.has_method("recibir_golpe"):
 			if "es_escudo_enemigo" in body and body.es_escudo_enemigo:
 				return # Pasa a través del escudo enemigo
@@ -267,6 +269,22 @@ func _on_body_entered(body: Node) -> void:
 		_on_impacto_con_dano(body)
 		AudioManager.play_sfx("arrow_impact")
 		_safe_destroy()
+
+
+## PlataformaMaderos del río (o su suelo hijo): se pisa pero los
+## proyectiles la atraviesan sin clavarse.
+func _es_plataforma_atravesable_por_flechas(nodo: Object) -> bool:
+	if nodo == null:
+		return false
+	if nodo is PlataformaMaderos:
+		return true
+	if nodo is Node:
+		var p: Node = (nodo as Node).get_parent()
+		while p != null:
+			if p is PlataformaMaderos:
+				return true
+			p = p.get_parent()
+	return false
 
 
 func _aplicar_dano_a_objetivo(body: Node) -> void:

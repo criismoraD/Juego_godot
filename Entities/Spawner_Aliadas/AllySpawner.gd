@@ -30,7 +30,7 @@ const TIPO_ARQUERA: String = "arquera"
 @export var escena_arquera: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
 
 @export_category("Audio")
-@export var sonido_entrada: AudioStream = preload("res://TEST_/Defensoras entrada.wav")
+@export var sonido_entrada: AudioStream = preload("res://System/Audio/SFX/Defensoras entrada.wav")
 @export var volumen_db: float = -4.0
 
 @export_category("Distribución de Refuerzos")

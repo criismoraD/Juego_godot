@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c56e8qm7yim67"]
 
 [ext_resource type="Script" uid="uid://d12vrxo8ofn1j" path="res://Entities/Ambiente_Barco_Combate_Pirata/BarcoCombatePirata.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cwcp4jioa0bd6" path="res://TEST_/Barco combate Pirata/Barco Combate Pirata.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cwcp4jioa0bd6" path="res://Entities/Ambiente_Barco_Combate_Pirata/Barco Combate Pirata.glb" id="2_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_casco_barco"]
 size = Vector3(1.4, 0.35, 0.45)

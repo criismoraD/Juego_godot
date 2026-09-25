@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" uid="uid://c6475nhskw007" path="res://TEST_/Woodmetal_piso/Woodmetal_piso.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Woodmetal_piso/Woodmetal_piso.glb" id="1_model"]
 [ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/WoodmetalPiso_Mat.tres" id="2_mat"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/WoodmetalPiso.gd" id="3_script"]
 

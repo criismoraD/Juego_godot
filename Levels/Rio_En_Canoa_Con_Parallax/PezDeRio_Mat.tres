@@ -1,7 +1,7 @@
 [gd_resource type="ShaderMaterial" load_steps=3 format=3]
 
 [ext_resource type="Shader" path="res://Levels/Rio_En_Canoa_Con_Parallax/PezDeRio.gdshader" id="1_shader"]
-[ext_resource type="Texture2D" path="res://TEST_/Pez de rio/Pez de rio_D.jpg" id="2_texture"]
+[ext_resource type="Texture2D" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Pez de rio/Pez de rio_D.jpg" id="2_texture"]
 
 [resource]
 render_priority = 0

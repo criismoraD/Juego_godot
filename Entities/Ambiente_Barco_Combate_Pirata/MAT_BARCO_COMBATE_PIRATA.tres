@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://blfe8cdrt8rud"]
 
-[ext_resource type="Texture2D" uid="uid://b80a52uwrsput" path="res://TEST_/Barco combate Pirata/Barco Combate Pirata_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://b80a52uwrsput" path="res://Entities/Ambiente_Barco_Combate_Pirata/Barco Combate Pirata_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

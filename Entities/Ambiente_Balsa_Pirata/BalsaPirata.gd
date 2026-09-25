@@ -21,9 +21,9 @@ signal balsa_destruida
 # === CONSTANTES ===
 const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase aleatoria
 const UMBRAL_LLEGADA_X: float = 0.05  ## Tolerancia en metros para considerar destino alcanzado
-const MAT_BALSA: Material = preload("res://TEST_/Balsa piarata/Balsa piarata_MAT.tres")
-const ESCENA_BALSA_DESTRUIDA: PackedScene = preload("res://TEST_/Balsa pirata destruida/Balsa pirata destruida.glb")
-const MAT_BALSA_DESTRUIDA: Material = preload("res://TEST_/Balsa pirata destruida/Balsa pirata destruida_MAT.tres")
+const MAT_BALSA: Material = preload("res://Entities/Ambiente_Balsa_Pirata/Balsa piarata_MAT.tres")
+const ESCENA_BALSA_DESTRUIDA: PackedScene = preload("res://Entities/Ambiente_Balsa_Pirata/Modelo_Destruido/Balsa pirata destruida.glb")
+const MAT_BALSA_DESTRUIDA: Material = preload("res://Entities/Ambiente_Balsa_Pirata/Modelo_Destruido/Balsa pirata destruida_MAT.tres")
 const SCRIPT_MADERO_VOLADOR: Script = preload("res://Entities/Ambiente_Balsa_Pirata/MaderoVolador.gd")
 const CANTIDAD_MADEROS_VOLADORES: int = 3
 const CONFIG_MADEROS_VOLADORES: Array[Dictionary] = [

@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dnawdkpoc3a7a"]
 
 [ext_resource type="Script" uid="uid://cf5lrirsj7ngx" path="res://Entities/Enemigo_Azulina/Azulina.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://gr2f45n2jtgl" path="res://TEST_/Azulina/Azulina.glb" id="2_model"]
-[ext_resource type="PackedScene" uid="uid://dj6op2ss2l7cx" path="res://TEST_/Lanza Azulina/Lanza Azulina.glb" id="3_lanza"]
+[ext_resource type="PackedScene" uid="uid://gr2f45n2jtgl" path="res://Entities/Enemigo_Azulina/Azulina.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://dj6op2ss2l7cx" path="res://Entities/Proyectil_Lanza_Azulina/Lanza Azulina.glb" id="3_lanza"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_azulina"]
 radius = 0.15234375

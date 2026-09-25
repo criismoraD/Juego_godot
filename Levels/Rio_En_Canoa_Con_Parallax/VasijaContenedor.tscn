@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" uid="uid://bq8iiagb14vlo" path="res://TEST_/Baija contenedor/Basija contenedor.glb" id="1_model"]
-[ext_resource type="PackedScene" uid="uid://bo4pxk1m0mhc6" path="res://TEST_/Basija destruida/Basija destruida.glb" id="2_destruido"]
+[ext_resource type="PackedScene" uid="uid://bq8iiagb14vlo" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Baija contenedor/Basija contenedor.glb" id="1_model"]
+[ext_resource type="PackedScene" uid="uid://bo4pxk1m0mhc6" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Basija destruida/Basija destruida.glb" id="2_destruido"]
 [ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/BasijaContenedor_Mat.tres" id="3_mat"]
 [ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/BasijaDestruida_Mat.tres" id="4_mat_des"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/VasijaContenedor.gd" id="5_script"]

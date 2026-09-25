@@ -4,7 +4,7 @@ extends Sprite3D
 ## Estandarte / Bandera Morada colgante con animación de ondeado por viento.
 ## Sincroniza automáticamente la textura con el ShaderMaterial tanto en el editor como en juego.
 
-const TEXTURA_DEFAULT: Texture2D = preload("res://TEST_/bandera morada.png")
+const TEXTURA_DEFAULT: Texture2D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/bandera morada.png")
 const SHADER_DEFAULT: Shader = preload("res://System/Shaders/bandera_colgante.gdshader")
 
 

@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://b8te5ajeuj3pv"
+path="res://.godot/imported/goblina muerte.wav-b6ef633a071e0088c10f62e853129487.sample"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Goblin/Audio/goblina muerte.wav"
+dest_files=["res://.godot/imported/goblina muerte.wav-b6ef633a071e0088c10f62e853129487.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

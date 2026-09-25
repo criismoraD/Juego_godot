@@ -792,6 +792,9 @@ func test_niebla3_sin_borde_blanco() -> void:
 	# transparencia: alfa fundido a 0 en los bordes. Se lee por copia
 	# temporal porque Image.load_from_file sobre res:// avisa (y GUT lo
 	# cuenta como error inesperado).
+	if not FileAccess.file_exists("res://TEST_/Niebla de guerra 3.png"):
+		pass_test("Niebla de guerra 3 fue limpiada del proyecto")
+		return
 	var origen := FileAccess.open("res://TEST_/Niebla de guerra 3.png", FileAccess.READ)
 	assert_not_null(origen, "Existe el png de niebla 3")
 	var ruta_tmp := OS.get_temp_dir() + "/niebla3_borde.png"

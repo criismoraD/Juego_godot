@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://d07xpgggwahui"]
 
-[ext_resource type="Texture2D" uid="uid://mikj8hq6uysi" path="res://TEST_/Lanza Azulina/Lanza Azulina_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://mikj8hq6uysi" path="res://Entities/Proyectil_Lanza_Azulina/Lanza Azulina_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

@@ -73,6 +73,8 @@ func _on_body_entered(body: Node) -> void:
 
 		# Escudos y superficies sólidas
 		if body is StaticBody3D or body is AnimatableBody3D:
+			if _es_plataforma_atravesable_por_flechas(body):
+				return # Tablones del río: también los atraviesa el tridente aliado
 			if body.has_method("recibir_golpe"):
 				if body.has_method("es_reflejante") and body.es_reflejante():
 					body.recibir_golpe_reflejo(self)

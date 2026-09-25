@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cl0cqubkd6y4l"
+path="res://.godot/imported/Entrada azulina.mp3-54acfbbfe150a96d43aa3cc2541c4dbf.mp3str"
+
+[deps]
+
+source_file="res://Entities/Enemigo_Azulina/Audio/Entrada azulina.mp3"
+dest_files=["res://.godot/imported/Entrada azulina.mp3-54acfbbfe150a96d43aa3cc2541c4dbf.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

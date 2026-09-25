@@ -2608,6 +2608,9 @@ func _es_objeto_ignorable_por_flecha(obj: Object) -> bool:
 	# Proyectiles en vuelo (las flechas no colisionan con proyectiles en el aire)
 	if obj is ArrowProjectile or obj is EnemyProjectileBase or (obj is Node and (obj.is_in_group("projectiles") or obj.is_in_group("enemy_projectiles") or obj.is_in_group("flechas"))):
 		return true
+	# Plataformas de tablones del río (se pisan pero la flecha las atraviesa)
+	if _es_plataforma_maderos(obj):
+		return true
 	# Si es un escudo o estructura aliada
 	if obj.has_method("recibir_golpe") or (obj is Node and obj.is_in_group("escudos")):
 		var es_enemigo: bool = false
@@ -2625,6 +2628,21 @@ func _es_objeto_ignorable_por_flecha(obj: Object) -> bool:
 		if not (obj.is_in_group("enemies") or obj.is_in_group("destructibles") or obj.has_method("recibir_dano")):
 			return true
 
+	return false
+
+
+## PlataformaMaderos del río (o su suelo hijo): se pisa pero la flecha la atraviesa.
+func _es_plataforma_maderos(obj: Object) -> bool:
+	if obj == null:
+		return false
+	if obj is PlataformaMaderos:
+		return true
+	if obj is Node:
+		var p: Node = (obj as Node).get_parent()
+		while p != null:
+			if p is PlataformaMaderos:
+				return true
+			p = p.get_parent()
 	return false
 
 

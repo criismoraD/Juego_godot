@@ -23,7 +23,7 @@
 [ext_resource type="PackedScene" uid="uid://cb5c03pez88q1" path="res://Entities/Ambiente_Pez/Pez.tscn" id="25_pez01"]
 [ext_resource type="Texture2D" uid="uid://d05x62q81630g" path="res://UI/Protagonista/CAPA1_V.png" id="27_50kgx"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Luciernagas/LuciernagasPlane.tscn" id="28_luciernagas"]
-[ext_resource type="Texture2D" uid="uid://c0seb337nvcqk" path="res://TEST_/Fondo nivel 2.png" id="29_fondonivel2"]
+[ext_resource type="Texture2D" uid="uid://c0seb337nvcqk" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Fondo nivel 2.png" id="29_fondonivel2"]
 [ext_resource type="PackedScene" uid="uid://v8ci5ta3tkkr" path="res://Entities/Ambiente_Plataforma_Oneway/PlataformaOneway.tscn" id="30_plataforma"]
 [ext_resource type="PackedScene" uid="uid://cr61kgfu7qhp0" path="res://Entities/Ambiente_Escalera/ESCALERA.tscn" id="31_escalera"]
 [ext_resource type="PackedScene" path="res://Entities/Spawner_Aliadas/AllySpawner.tscn" id="32_spawner"]

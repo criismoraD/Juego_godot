@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://hnfx0h1twner"]
+
+[ext_resource type="Texture2D" path="res://Levels/NIVEL01/Modelos/Casco oxidado/Casco oxidadp_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Casco oxidadp_M"
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")
+metallic = 0.35
+roughness = 0.55

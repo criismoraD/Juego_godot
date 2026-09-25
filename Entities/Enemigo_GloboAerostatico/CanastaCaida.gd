@@ -12,7 +12,7 @@ const TEXTURA_ROCAS_RES: Texture2D = preload("res://Entities/Enemigo_Lonko/ROCAS
 const SFX_IMPACTO_PESADO: AudioStream = preload("res://Entities/Enemigo_GloboAerostatico/Audio/Impacto_pesado.mp3")
 const TEXTURA_SANGRE_DECAL: Texture2D = preload("res://Entities/Enemigo_Goblin/Muerte_Explotado/Mancha_Sangre_Suelo.png")
 const TEXTURA_HUMO_CANASTA: Texture2D = preload("res://VFX/Textures/Smoke/Smoke_2A-2.png")
-const ESCENA_SPLASH_AGUA_AZULINA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const ESCENA_SPLASH_AGUA_AZULINA: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
 
 # === CONFIGURACIÓN - SQUASH AND STRETCH ===
 @export_category("Squash and Stretch")

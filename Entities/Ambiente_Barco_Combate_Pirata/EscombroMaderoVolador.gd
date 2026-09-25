@@ -11,15 +11,15 @@ signal cayo_al_agua(posicion_impacto: Vector3)
 
 # === CONSTANTES ===
 const MESHES_ESCOMBROS: Array[Mesh] = [
-	preload("res://TEST_/Maderos escombros/escombro_0.tres"),
-	preload("res://TEST_/Maderos escombros/escombro_1.tres"),
-	preload("res://TEST_/Maderos escombros/escombro_2.tres"),
-	preload("res://TEST_/Maderos escombros/escombro_3.tres"),
-	preload("res://TEST_/Maderos escombros/escombro_4.tres"),
-	preload("res://TEST_/Maderos escombros/escombro_5.tres"),
+	preload("res://Entities/Ambiente_Barco_Combate_Pirata/Escombros/escombro_0.tres"),
+	preload("res://Entities/Ambiente_Barco_Combate_Pirata/Escombros/escombro_1.tres"),
+	preload("res://Entities/Ambiente_Barco_Combate_Pirata/Escombros/escombro_2.tres"),
+	preload("res://Entities/Ambiente_Barco_Combate_Pirata/Escombros/escombro_3.tres"),
+	preload("res://Entities/Ambiente_Barco_Combate_Pirata/Escombros/escombro_4.tres"),
+	preload("res://Entities/Ambiente_Barco_Combate_Pirata/Escombros/escombro_5.tres"),
 ]
-const MATERIAL_ESCOMBROS: Material = preload("res://TEST_/Maderos escombros/maderos escombros_MAT.tres")
-const ESCENA_SPLASH_AGUA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const MATERIAL_ESCOMBROS: Material = preload("res://Entities/Ambiente_Barco_Combate_Pirata/Escombros/maderos escombros_MAT.tres")
+const ESCENA_SPLASH_AGUA: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
 const SFX_SPLASH_CLAVE: String = "splash_agua"
 
 const ESTADO_INACTIVO: int = 0

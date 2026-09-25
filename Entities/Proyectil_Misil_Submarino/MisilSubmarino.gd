@@ -24,6 +24,8 @@ const SHADER_OUTLINE: Shader = preload("res://System/Shaders/outline_hueso.gdsha
 const MAT_MISIL: Material = preload("res://Entities/Proyectil_Misil_Submarino/MisilSubmarino_Mat.tres")
 const COLOR_OUTLINE_MISIL: Color = Color(0.0, 0.0, 0.0, 1.0)
 const GROSOR_OUTLINE_MISIL: float = 12.0
+const ESCENA_SPLASH: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
+const ESCENA_WATER_SPLASH: PackedScene = preload("res://VFX/Scenes/WaterSplash3D.tscn")
 
 
 @export_category("Misil - Vida")
@@ -52,6 +54,15 @@ const GROSOR_OUTLINE_MISIL: float = 12.0
 @export_category("Misil - Perrena en Canoa")
 @export var velocidad_animacion_pararse: float = 1.35  ## Pararse un poco acelerado al levantarse tras la explosión
 
+@export_category("Misil - Modo Cosmético")
+@export var es_cosmetico: bool = false:
+	set(v):
+		es_cosmetico = v
+		if is_node_ready() and es_cosmetico:
+			_configurar_modo_cosmetico()
+@export var altura_superficie_agua: float = -0.22  ## Nivel donde el misil rompe la superficie y genera splash
+@export var escala_splash_agua: float = 0.40  ## Escala del splash estilo Azulina al salir del agua
+
 var fase: Fase = Fase.SUBIDA
 var _punto_caida: Vector3 = Vector3.ZERO
 var _nodo_canoa: Node3D = null
@@ -61,6 +72,7 @@ var _muerto: bool = false
 var _dano_aplicado: bool = false
 var _tiempo_vida: float = 0.0
 var _materiales_disolver: Array = []
+var _splash_agua_generado: bool = false
 ## ShaderMaterial de contorno (cull_front extrusion, negro).
 var _outline_mat_misil: ShaderMaterial = null
 ## Copia exclusiva del MAT_MISIL por instancia, con el outline en next_pass.
@@ -71,15 +83,31 @@ var _mat_misil_unico: Material = null
 
 func _ready() -> void:
 	health = vida_maxima
-	add_to_group("enemies")
-	add_to_group("enemy_projectiles")
+	if not es_cosmetico:
+		add_to_group("enemies")
+		add_to_group("enemy_projectiles")
+	else:
+		_configurar_modo_cosmetico()
 	_aplicar_material()
 	_inicializar_outline()
 	_aplicar_escala_misil()
-	if not body_entered.is_connected(_on_body_entered):
-		body_entered.connect(_on_body_entered)
-	if not area_entered.is_connected(_on_area_entered):
-		area_entered.connect(_on_area_entered)
+	if not es_cosmetico:
+		if not body_entered.is_connected(_on_body_entered):
+			body_entered.connect(_on_body_entered)
+		if not area_entered.is_connected(_on_area_entered):
+			area_entered.connect(_on_area_entered)
+
+
+func _configurar_modo_cosmetico() -> void:
+	if is_in_group("enemies"):
+		remove_from_group("enemies")
+	if is_in_group("enemy_projectiles"):
+		remove_from_group("enemy_projectiles")
+	monitoring = false
+	monitorable = false
+	collision_layer = 0
+	collision_mask = 0
+	_set_efecto_velocidad(true)
 
 
 func _physics_process(delta: float) -> void:
@@ -93,7 +121,14 @@ func _physics_process(delta: float) -> void:
 		Fase.SUBIDA:
 			global_position.y += velocidad_subida * delta
 			rotation.y += 1.5 * delta
-			if global_position.y >= ALTURA_SALIDA_PANTALLA:
+			if es_cosmetico:
+				if not _splash_agua_generado and global_position.y >= _obtener_altura_agua():
+					_splash_agua_generado = true
+					_generar_splash_salida_agua()
+				if global_position.y >= ALTURA_SALIDA_PANTALLA:
+					queue_free()
+					return
+			elif global_position.y >= ALTURA_SALIDA_PANTALLA:
 				fase = Fase.ESPERA_ARRIBA
 		Fase.ESPERA_ARRIBA:
 			pass
@@ -139,7 +174,7 @@ func iniciar_caida() -> void:
 
 
 func take_damage(amount: float) -> void:
-	if _muerto:
+	if _muerto or es_cosmetico:
 		return
 	health -= int(maxi(1, int(amount)))
 	if health <= 0:
@@ -147,7 +182,7 @@ func take_damage(amount: float) -> void:
 
 
 func es_enemigo_activo() -> bool:
-	return not _muerto and fase == Fase.CAIDA
+	return not _muerto and not es_cosmetico and fase == Fase.CAIDA
 
 
 ## Textura del modelo (igual que el submarino con su _Mat.tres): si el GLB
@@ -535,3 +570,71 @@ func _buscar_perrena() -> Node:
 	if get_tree() == null:
 		return null
 	return get_tree().get_first_node_in_group("defensora_perrena")
+
+
+func _obtener_altura_agua() -> float:
+	if is_inside_tree() and get_tree() != null:
+		var escena: Node = get_tree().current_scene
+		if is_instance_valid(escena):
+			var wp: Node3D = escena.find_child("WaterPlane*", true, false) as Node3D
+			if is_instance_valid(wp):
+				return wp.global_position.y + 0.01
+	return altura_superficie_agua
+
+
+## Genera el efecto de salpicadura estilo Azulina al romper la superficie del agua en Fase.SUBIDA.
+func _generar_splash_salida_agua() -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
+	var y_agua: float = _obtener_altura_agua()
+	var pos_splash: Vector3 = Vector3(global_position.x, y_agua, global_position.z)
+	var raiz: Node = get_tree().current_scene
+	if raiz == null:
+		raiz = get_parent()
+	if raiz == null:
+		raiz = get_tree().root
+
+	# 1. Salpicadura de onda/pilar de Azulina (splash_vfx)
+	if ESCENA_SPLASH != null:
+		var sal := ESCENA_SPLASH.instantiate() as Node3D
+		if is_instance_valid(sal):
+			raiz.add_child(sal)
+			sal.global_position = pos_splash
+			sal.scale = Vector3.ONE * maxf(escala_splash_agua, 0.1)
+			if sal.has_method("play_splash"):
+				sal.call("play_splash")
+			var timer := get_tree().create_timer(1.2)
+			if timer != null:
+				timer.timeout.connect(func():
+					if is_instance_valid(sal):
+						sal.queue_free()
+				)
+
+	# 2. Gotas de agua 3D (WaterSplash3D)
+	if ESCENA_WATER_SPLASH != null:
+		var gotas := ESCENA_WATER_SPLASH.instantiate() as Node3D
+		if is_instance_valid(gotas):
+			raiz.add_child(gotas)
+			gotas.global_position = pos_splash
+			gotas.scale = Vector3.ONE * (maxf(escala_splash_agua, 0.1) * 0.8)
+			if gotas.has_method("restart"):
+				gotas.call("restart")
+			elif gotas is GPUParticles3D:
+				(gotas as GPUParticles3D).restart()
+			var timer_gotas := get_tree().create_timer(1.5)
+			if timer_gotas != null:
+				timer_gotas.timeout.connect(func():
+					if is_instance_valid(gotas):
+						gotas.queue_free()
+				)
+
+	# 3. Sonido acuático si AudioManager está presente
+	if Engine.has_singleton("AudioManager"):
+		var am: Node = Engine.get_singleton("AudioManager")
+		if am and am.has_method("play_sfx"):
+			am.call("play_sfx", "splash_agua")
+	elif is_instance_valid(get_tree().root.find_child("AudioManager", true, false)):
+		var am: Node = get_tree().root.find_child("AudioManager", true, false)
+		if am.has_method("play_sfx"):
+			am.call("play_sfx", "splash_agua")
+

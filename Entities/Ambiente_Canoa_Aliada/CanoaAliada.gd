@@ -17,7 +17,7 @@ extends Node3D
 signal destino_alcanzado
 
 # === CONSTANTES ===
-const SONIDO_NAVEGACION: AudioStream = preload("res://TEST_/sonido_canoa_por_el_rio.mp3")
+const SONIDO_NAVEGACION: AudioStream = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/sonido_canoa_por_el_rio.mp3")
 const SCRIPT_ESCOMBRO_MADERO: Script = preload("res://Entities/Ambiente_Barco_Combate_Pirata/EscombroMaderoVolador.gd")
 const FASE_ALEATORIA: float = -1.0  ## Centinela: al iniciar, genera una fase aleatoria
 const OFFSET_INICIO_AUDIO: float = 0.25  ## Salta el silencio inicial de compresión MP3

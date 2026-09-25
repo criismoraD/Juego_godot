@@ -151,7 +151,7 @@ func test_pirata_usa_sonido_lanzar_espada_al_atacar() -> void:
 
 	# Assert: el ataque suena a espada, no a tridente
 	assert_eq(pirata.sfx_lanzamiento, "lanzar_espada_pirata", "El pirata debe lanzar con sonido de espada")
-	assert_true(ResourceLoader.exists("res://TEST_/lanzar espada pirata.mp3"), "Debe existir el audio de lanzar espada")
+	assert_true(ResourceLoader.exists("res://Entities/Enemigo_Pirata_Goblin/Audio/lanzar espada pirata.mp3"), "Debe existir el audio de lanzar espada")
 
 
 func test_pistola_usa_sonido_disparo_propio() -> void:
@@ -161,7 +161,7 @@ func test_pistola_usa_sonido_disparo_propio() -> void:
 
 	# Assert: clave registrada con el mp3 de la pistola
 	assert_true(am.sfx_streams.has("disparo_pistola_pirata_gob"), "AudioManager debe registrar el disparo de pistola pirata")
-	assert_true(ResourceLoader.exists("res://TEST_/disparo pistola pirata gob.mp3"), "Debe existir el audio del pistoletazo")
+	assert_true(ResourceLoader.exists("res://Entities/Enemigo_Pirata_Goblin/Audio/disparo pistola pirata gob.mp3"), "Debe existir el audio del pistoletazo")
 
 
 func test_espada_gira_todo_el_trayecto() -> void:

@@ -1,4 +1,4 @@
-﻿[gd_scene format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://k82p25g31fw2" path="res://UI/LoadingScreen.gd" id="1_script"]
 

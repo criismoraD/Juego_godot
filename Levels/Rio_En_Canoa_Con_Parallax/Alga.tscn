@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/Alga.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cyd1ns84wuiw0" path="res://TEST_/Alga.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://cyd1ns84wuiw0" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Alga.png" id="2_tex"]
 [ext_resource type="Shader" path="res://System/Shaders/alga_oleaje.gdshader" id="3_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_alga"]

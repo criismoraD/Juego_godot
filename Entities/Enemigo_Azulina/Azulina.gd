@@ -9,8 +9,8 @@ extends EnemyBase
 signal emergencia_completada
 
 const ESCENA_LANZA: PackedScene = preload("res://Entities/Proyectil_Lanza_Azulina/LanzaAzulinaProjectile.tscn")
-const ESCENA_SALPICADURA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
-const ESCENA_LANZA_SUELTA: PackedScene = preload("res://TEST_/Lanza Azulina/Lanza Azulina.glb")
+const ESCENA_SALPICADURA: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
+const ESCENA_LANZA_SUELTA: PackedScene = preload("res://Entities/Proyectil_Lanza_Azulina/Lanza Azulina.glb")
 const MATERIAL_AZULINA: Material = preload("res://Entities/Enemigo_Azulina/Azulina_MAT.tres")
 const MATERIAL_LANZA: StandardMaterial3D = preload("res://Entities/Enemigo_Azulina/LanzaAzulina_MAT.tres")
 const ESCENA_AURA_PARRY: PackedScene = preload("res://assets/BinbunVFX/magic_areas/effects/basic_area/basic_area_vfx_04.tscn")
@@ -672,7 +672,7 @@ const HUESOS_PIERNAS: Array[String] = [  ## Cadera y piernas fijas en su postura
 	"mixamorig_LeftFoot", "mixamorig_RightFoot",
 	"mixamorig_LeftToeBase", "mixamorig_RightToeBase",
 ]
-const RUTA_CIRCULO_PARRY: String = "res://TEST_/circulo protector lanza.png"
+const RUTA_CIRCULO_PARRY: String = "res://Entities/Enemigo_Azulina/Texturas/circulo protector lanza.png"
 
 static var _tex_circulo_cache: Texture2D = null
 static var _aviso_circulo_mostrado: bool = false

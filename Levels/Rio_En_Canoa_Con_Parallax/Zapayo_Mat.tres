@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" load_steps=2 format=3]
 
-[ext_resource type="Texture2D" uid="uid://b8nk3ve0pooab" path="res://TEST_/Zapallo/zapayo_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://b8nk3ve0pooab" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Zapallo/zapayo_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "Zapayo_Mat"

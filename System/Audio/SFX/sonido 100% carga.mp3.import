@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bx14830klfm3m"
+path="res://.godot/imported/sonido 100% carga.mp3-548b1662ad49679a6f6c1f2dc7b85694.mp3str"
+
+[deps]
+
+source_file="res://System/Audio/SFX/sonido 100% carga.mp3"
+dest_files=["res://.godot/imported/sonido 100% carga.mp3-548b1662ad49679a6f6c1f2dc7b85694.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

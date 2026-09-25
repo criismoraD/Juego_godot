@@ -34,6 +34,7 @@ const GROSOR_OUTLINE_TOON: float = 20.0
 @export var vida_maxima: float = 2.0  ## Golpes que aguanta antes de romperse
 @export var item_soltado: ItemSoltado = ItemSoltado.DISPARO_MULTIPLE  ## Item que otorga al instante al destruirse
 @export var cantidad_municion: int = 10  ## Flechas a otorgar (múltiple o explosiva)
+@export_range(1, 5, 1) var cantidad_pociones: int = 1  ## Pociones curativas separadas al soltar poción (cada una cura curacion_pocion)
 @export var curacion_pocion: int = 1  ## Vida a restaurar si suelta poción
 @export var duracion_fuego_rapido: float = 15.0  ## Segundos del buff si suelta fuego rápido
 
@@ -237,6 +238,16 @@ func _soltar_item_visible() -> void:
 			escena_item = ESCENA_FUEGO_RAPIDO
 	if escena_item == null:
 		return
+	# La poción curativa puede soltar varias unidades separadas; el resto un solo item
+	var repeticiones: int = 1
+	if item_soltado == ItemSoltado.POCION_CURATIVA:
+		repeticiones = maxi(1, cantidad_pociones)
+	for r in range(repeticiones):
+		_soltar_una_unidad(escena_item, r, repeticiones)
+
+
+## Instancia y coloca una unidad del item (con dispersión si son varias pociones).
+func _soltar_una_unidad(escena_item: PackedScene, indice: int, total: int) -> void:
 	var item := escena_item.instantiate() as Node3D
 	if item == null:
 		return
@@ -250,7 +261,10 @@ func _soltar_item_visible() -> void:
 	if "duracion_buff" in item:
 		item.set("duracion_buff", duracion_fuego_rapido)
 	get_parent().add_child(item)
-	item.global_position = global_position + Vector3(0.0, 0.6, 0.0)
+	var desfase := Vector3(0.0, 0.6, 0.0)
+	if total > 1:
+		desfase += Vector3(randf_range(-0.45, 0.45), float(indice) * 0.18, randf_range(-0.1, 0.1))
+	item.global_position = global_position + desfase
 
 
 func _hundir_y_disolver() -> void:

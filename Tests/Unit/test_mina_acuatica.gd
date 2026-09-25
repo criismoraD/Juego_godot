@@ -6,7 +6,7 @@ var _mina = null
 
 func before_each() -> void:
 	for n in get_tree().root.get_children():
-		if is_instance_valid(n) and (n.name.begins_with("SfxImpactoMetal") or (n is AudioStreamPlayer3D and (n as AudioStreamPlayer3D).stream == preload("res://TEST_/Impacto de metal.mp3"))):
+		if is_instance_valid(n) and (n.name.begins_with("SfxImpactoMetal") or (n is AudioStreamPlayer3D and (n as AudioStreamPlayer3D).stream == preload("res://System/Audio/SFX/Impacto de metal.mp3"))):
 			n.free()
 	_mina = MinaScene.instantiate()
 	get_tree().root.add_child(_mina)
@@ -19,7 +19,7 @@ func after_each() -> void:
 		_mina.free()
 	_mina = null
 	for n in get_tree().root.get_children():
-		if is_instance_valid(n) and (n.name.begins_with("SfxImpactoMetal") or (n is AudioStreamPlayer3D and (n as AudioStreamPlayer3D).stream == preload("res://TEST_/Impacto de metal.mp3"))):
+		if is_instance_valid(n) and (n.name.begins_with("SfxImpactoMetal") or (n is AudioStreamPlayer3D and (n as AudioStreamPlayer3D).stream == preload("res://System/Audio/SFX/Impacto de metal.mp3"))):
 			n.free()
 
 

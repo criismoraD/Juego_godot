@@ -252,7 +252,7 @@ func _iniciar_secuencia_entrada() -> void:
 
 ## SFX de puerta al entrar a la torre.
 func _reproducir_sonido_puerta() -> void:
-	var stream: AudioStream = load("res://TEST_/abrir_puerta.wav")
+	var stream: AudioStream = load("res://System/Audio/SFX/abrir_puerta.wav")
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()

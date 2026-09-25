@@ -1031,8 +1031,8 @@ func _reproducir_sonido_escudo_cayendo() -> void:
 		var stream: AudioStream = null
 		if ResourceLoader.exists("res://System/Audio/SFX/Escudo metal callendo.wav"):
 			stream = load("res://System/Audio/SFX/Escudo metal callendo.wav") as AudioStream
-		elif ResourceLoader.exists("res://TEST_/Escudo metal callendo.wav"):
-			stream = load("res://TEST_/Escudo metal callendo.wav") as AudioStream
+		elif ResourceLoader.exists("res://System/Audio/SFX/Escudo metal callendo.wav"):
+			stream = load("res://System/Audio/SFX/Escudo metal callendo.wav") as AudioStream
 		if not stream:
 			return
 		var player := AudioStreamPlayer.new()

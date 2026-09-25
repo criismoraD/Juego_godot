@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" load_steps=2 format=3]
 
-[ext_resource type="Texture2D" path="res://TEST_/Tablones madera plataforma/Plataformaa madera_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Tablones madera plataforma/Plataformaa madera_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "PlataformaMaderos_Mat"

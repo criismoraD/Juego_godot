@@ -9,11 +9,11 @@ extends Node3D
 ## - Si pasan tiempo_maximo_visible segundos (10.0) y sigue en cuadro, se
 ##   desvanece con la disoluciÃ³n de muerte enemiga (dissolve 0.0 -> 1.0).
 
-const MODELO_PIRATA: PackedScene = preload("res://TEST_/Pirata Goba/PirataGoblin.glb")
+const MODELO_PIRATA: PackedScene = preload("res://Entities/Enemigo_Pirata_Goblin/PirataGoblin.glb")
 const MAT_PIRATA: StandardMaterial3D = preload("res://Entities/Enemigo_Pirata_Goblin/MAT_PIRATA_GOBLIN.tres")
 const SHADER_DISOLVER: Shader = preload("res://System/Shaders/dissolve.gdshader")
 const COLOR_DESVANECIDO: Color = Color(0.44705883, 0.0, 0.06666667)  ## Borde de muerte del pirata (ImpEnemy.tscn)
-const SFX_NADO: AudioStream = preload("res://TEST_/Nadar pirata.mp3")
+const SFX_NADO: AudioStream = preload("res://Entities/Enemigo_Pirata_Goblin/Audio/Nadar pirata.mp3")
 const NOMBRE_AUDIO_NADO: String = "nadar_pirata"
 
 @export_category("Nado")

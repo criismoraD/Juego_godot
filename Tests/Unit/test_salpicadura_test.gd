@@ -4,8 +4,8 @@ extends "res://addons/gut/test.gd"
 ## Valida la generación correcta de SpriteFrames, número de cuadros,
 ## propiedades de renderizado e integración en NIVEL01.
 
-const SCENE_SALPICADURA: PackedScene = preload("res://TEST_/Salpicadura_test/SalpicaduraTest.tscn")
-const SCRIPT_SALPICADURA: Script = preload("res://TEST_/Salpicadura_test/SalpicaduraTest.gd")
+const SCENE_SALPICADURA: PackedScene = preload("res://Tests/Scenes/Salpicadura_test/SalpicaduraTest.tscn")
+const SCRIPT_SALPICADURA: Script = preload("res://Tests/Scenes/Salpicadura_test/SalpicaduraTest.gd")
 const SCENE_NIVEL01_PATH: String = "res://Levels/NIVEL01/NIVEL01.tscn"
 
 

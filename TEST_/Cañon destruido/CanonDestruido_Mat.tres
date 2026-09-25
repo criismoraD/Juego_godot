@@ -1,9 +1,0 @@
-[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
-
-[ext_resource type="Texture2D" path="res://TEST_/Cañon destruido/Cañon destruido(3K)_D.jpg" id="1_tex"]
-
-[resource]
-resource_name = "CanonDestruido_Mat"
-cull_mode = 2
-albedo_texture = ExtResource("1_tex")
-roughness = 0.85

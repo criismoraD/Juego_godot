@@ -20,7 +20,7 @@ enum TipoFlecha { JUGADOR, ENEMIGO }
 @export var tipo_dueño: TipoFlecha = TipoFlecha.JUGADOR
 @export var multiplicador_dano_sobrecarga: float = 2.0  ## Daño x2 solo con flecha de sobrecarga morada al 100% (meta "sobrecarga_max")
 const MULTIPLICADOR_DANO_FUEGO_RAPIDO: float = 2.0  ## Daño x2 en flechas normales con fuego rápido (meta "fuego_rapido")
-const ESCENA_SPLASH_AGUA: PackedScene = preload("res://TEST_/swimming-in-godot-from-scracth/SCENES/splash_vfx.tscn")
+const ESCENA_SPLASH_AGUA: PackedScene = preload("res://VFX/SplashAgua/SCENES/splash_vfx.tscn")
 const ESCALA_SPLASH_AGUA_FLECHA: float = 0.3  ## Versión pequeña y contenida para flechas
 const DURACION_SPLASH_AGUA_FLECHA: float = 2.0  ## Segundos visible antes de liberarse
 
@@ -145,6 +145,9 @@ func _physics_process(delta):
 						# Proyectiles en vuelo o clavados (lanzas, tridentes, flechas):
 						# las flechas no colisionan con proyectiles (igual que
 						# _es_objeto_ignorable_por_flecha y el hacha de Perrena).
+						ignorar_colision = true
+					elif _es_plataforma_atravesable_por_flechas(collider):
+						# Tablones del río: se pisan pero no frenan flechas.
 						ignorar_colision = true
 					elif collider.is_in_group("allies") or (tipo_dueño == TipoFlecha.JUGADOR and collider.is_in_group("player")):
 						ignorar_colision = true
@@ -413,6 +416,11 @@ func _on_body_entered(body):
 		if _ray_ccd: _ray_ccd.add_exception(body)
 		return
 
+	# Plataformas de tablones del río: se pisan pero las flechas las atraviesan
+	if _es_plataforma_atravesable_por_flechas(body):
+		if _ray_ccd: _ray_ccd.add_exception(body)
+		return
+
 	# Casco / cubierta de balsa-barco de combate: el body es el hijo
 	# Static/Animatable (CascoBarco, PlataformaCubierta), el daño vive en el
 	# root (BalsaPirataCombate / BarcoCombatePirata). Como el hacha, resolver
@@ -585,6 +593,22 @@ func _es_estructura_con_vida(body: Object) -> bool:
 	if body is PilarLonkoBody:
 		return true
 	return "es_pilar_enemigo" in body and bool(body.get("es_pilar_enemigo"))
+
+
+## PlataformaMaderos del río (o su suelo hijo SueloPlataforma): mantiene
+## colisión para personajes pero las flechas la atraviesan sin clavarse.
+func _es_plataforma_atravesable_por_flechas(nodo: Object) -> bool:
+	if nodo == null:
+		return false
+	if nodo is PlataformaMaderos:
+		return true
+	if nodo is Node:
+		var p: Node = (nodo as Node).get_parent()
+		while p != null:
+			if p is PlataformaMaderos:
+				return true
+			p = p.get_parent()
+	return false
 
 
 ## True si el Area3D pertenece a un enemigo del sistema de golpe crítico

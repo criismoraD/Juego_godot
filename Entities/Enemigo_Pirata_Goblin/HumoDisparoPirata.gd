@@ -7,7 +7,7 @@ extends AnimatedSprite3D
 ## funcione y no salga ningún cuadrado). Un solo disparo: se reproduce
 ## una vez y se libera solo.
 
-const TEXTURA_HUMO: Texture2D = preload("res://TEST_/Smoke VFX 2.png")
+const TEXTURA_HUMO: Texture2D = preload("res://VFX/Textures/Smoke VFX 2.png")
 const ANIM_HUMO: StringName = &"humo"
 const COLUMNAS: int = 13
 const FILAS: int = 1

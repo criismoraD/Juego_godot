@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" path="res://TEST_/Pez de rio/Pez de rio.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Pez de rio/Pez de rio.glb" id="1_model"]
 [ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/PezDeRio_Mat.tres" id="2_mat"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/PezDeRio.gd" id="3_script"]
 

@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://dp10k68jou6qm"]
 
 [ext_resource type="Script" uid="uid://bgsvl3cjctvtm" path="res://Levels/Rio_En_Canoa_Con_Parallax/JefeSubmarinoRio.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://bhp7geovbkcnr" path="res://TEST_/Submarino/Submarino.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://bhp7geovbkcnr" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Submarino/Submarino.glb" id="2_model"]
 [ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/Submarino_Mat.tres" id="3_mat"]
-[ext_resource type="AudioStream" uid="uid://rflvfwmr1wm5" path="res://TEST_/splash sonido.mp3" id="4_audio"]
-[ext_resource type="PackedScene" uid="uid://xh8qpha3tyeo" path="res://TEST_/Cañon submarino/cañon submarino.glb" id="5_canon"]
+[ext_resource type="AudioStream" uid="uid://rflvfwmr1wm5" path="res://Levels/Rio_En_Canoa_Con_Parallax/Audio/splash sonido.mp3" id="4_audio"]
+[ext_resource type="PackedScene" uid="uid://xh8qpha3tyeo" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Cañon submarino/cañon submarino.glb" id="5_canon"]
 [ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/CanonSubmarino_Mat.tres" id="6_canon_mat"]
 [ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/HumoEstilizadoJefe.tscn" id="7_humo"]
-[ext_resource type="PackedScene" uid="uid://f5jx3tltdu1x" path="res://TEST_/Submarino destruido/Submarino destruido.glb" id="8_d36xo"]
+[ext_resource type="PackedScene" uid="uid://f5jx3tltdu1x" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Submarino destruido/Submarino destruido.glb" id="8_d36xo"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cubierta"]
 size = Vector3(5.3, 0.25, 2.8)

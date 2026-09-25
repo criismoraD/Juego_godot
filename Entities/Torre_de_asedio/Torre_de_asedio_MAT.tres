@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://dsqbsgfsdpq7u"]
 
-[ext_resource type="Texture2D" uid="uid://doxj22y1vn4se" path="res://TEST_/Torre de asedio/Torre asedio_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://doxj22y1vn4se" path="res://Entities/Torre_de_asedio/Torre asedio_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "Torre_de_asedio_MAT"

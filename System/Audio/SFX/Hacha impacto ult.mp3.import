@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cpoktqjhvrogc"
+path="res://.godot/imported/Hacha impacto ult.mp3-2afb7dc2ccc905b001b15a35caf988fa.mp3str"
+
+[deps]
+
+source_file="res://System/Audio/SFX/Hacha impacto ult.mp3"
+dest_files=["res://.godot/imported/Hacha impacto ult.mp3-2afb7dc2ccc905b001b15a35caf988fa.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

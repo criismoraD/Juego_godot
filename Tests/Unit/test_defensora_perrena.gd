@@ -1101,7 +1101,7 @@ func test_sonido_perrena_ult_en_habilidad_especial() -> void:
 	_root_test.add_child(defensora)
 
 	# Assert constante y recurso
-	assert_eq(DefensoraPerrena.SFX_ULT, "res://TEST_/Perrena ult.mp3", "La constante SFX_ULT debe apuntar a Perrena ult.mp3")
+	assert_eq(DefensoraPerrena.SFX_ULT, "res://Entities/Defensora_Perrena/Audio/Perrena ult.mp3", "La constante SFX_ULT debe apuntar a Perrena ult.mp3")
 	assert_true(ResourceLoader.exists(DefensoraPerrena.SFX_ULT), "El archivo Perrena ult.mp3 debe existir en disco")
 
 	# Act: Iniciar habilidad especial / ult

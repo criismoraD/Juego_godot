@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dqh1kb0rvuddm"]
 
 [ext_resource type="Script" uid="uid://c77pujemgkkuw" path="res://Entities/Torre_de_asedio/Torre_de_asedio.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://dytg0a02u4hb0" path="res://TEST_/Torre de asedio/Torre asedio.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://dytg0a02u4hb0" path="res://Entities/Torre_de_asedio/Torre asedio.glb" id="2_glb"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_rampa_piso"]
 size = Vector3(2.2012267, 0.12, 1.2973877)

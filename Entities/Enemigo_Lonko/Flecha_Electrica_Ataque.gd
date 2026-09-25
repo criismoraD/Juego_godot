@@ -36,7 +36,7 @@ enum Fase { SUBIDA, ESPERA_MARCA, CAIDA }
 
 @export_category("Ataque Mágico - Seguimiento")
 @export var seguir_canoa_en_marca: bool = true  ## En el río el punto sigue a la canoa (y la marca con él); sin canoa queda fijo y esquivable
-@export var radio_dano_area: float = 0.7  ## Daño en área al impactar (cubre la deriva; ~radio de la marca)
+@export var radio_dano_area: float = 0.40  ## Daño en área al impactar (~radio de la marca; esquivable al moverse)
 
 @export_category("Ataque Mágico - Daño")
 @export var dano: float = 1.0
@@ -60,6 +60,8 @@ enum Fase { SUBIDA, ESPERA_MARCA, CAIDA }
 var fase: Fase = Fase.SUBIDA
 var _punto_caida: Vector3 = Vector3.ZERO
 var _marca: Node3D = null
+var _nodo_canoa: Node3D = null
+var _offset_canoa: Vector3 = Vector3.ZERO
 var _gravedad: float = 0.0
 var _fase_iniciada: bool = false
 var _cuerpos_danados_caida: Dictionary = {}
@@ -191,6 +193,13 @@ func _actualizar_movimiento(delta: float) -> void:
 		Fase.CAIDA:
 			if not _fase_iniciada:
 				_iniciar_fase_caida()
+			if is_instance_valid(_nodo_canoa) and seguir_canoa_en_marca:
+				_punto_caida.x = _nodo_canoa.global_position.x + _offset_canoa.x
+				_punto_caida.z = _nodo_canoa.global_position.z + _offset_canoa.z
+				global_position.x = _punto_caida.x
+				global_position.z = _punto_caida.z
+				if is_instance_valid(_marca):
+					_marca.global_position = Vector3(_punto_caida.x, _marca.global_position.y, _punto_caida.z)
 			global_position.y -= velocidad_caida * delta
 			velocidad_caida += _gravedad * delta
 			_rotar_hacia(Vector3.DOWN)
@@ -221,7 +230,27 @@ func _iniciar_fase_espera() -> void:
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		objetivo = players[0] as Node3D
-	if objetivo and is_instance_valid(objetivo) and objetivo.is_inside_tree():
+
+	# Detectar si la jugadora está a bordo de una canoa en movimiento
+	var canoa := _buscar_canoa()
+	_nodo_canoa = null
+	_offset_canoa = Vector3.ZERO
+	if is_instance_valid(canoa) and is_instance_valid(objetivo):
+		if absf(objetivo.global_position.x - canoa.global_position.x) <= 3.0 and absf(objetivo.global_position.z - canoa.global_position.z) <= 3.0:
+			_nodo_canoa = canoa
+			_offset_canoa = Vector3(
+				objetivo.global_position.x - canoa.global_position.x,
+				0.0,
+				objetivo.global_position.z - canoa.global_position.z
+			)
+
+	if is_instance_valid(_nodo_canoa):
+		_punto_caida = Vector3(
+			_nodo_canoa.global_position.x + _offset_canoa.x,
+			0.0,
+			_nodo_canoa.global_position.z + _offset_canoa.z
+		)
+	elif objetivo and is_instance_valid(objetivo) and objetivo.is_inside_tree():
 		_punto_caida = Vector3(objetivo.global_position.x, 0.0, objetivo.global_position.z)
 	else:
 		_punto_caida = Vector3(randf_range(zona_caida_x_min, zona_caida_x_max), 0.0, zona_caida_z)
@@ -238,8 +267,9 @@ func _iniciar_fase_espera() -> void:
 	root.add_child(marca)
 	marca.iniciar(_punto_caida)
 
-	# Cuenta atrás con seguimiento: en el río la canoa no se detiene y el
-	# punto (con su marca) la sigue; sin canoa queda fijo y esquivable.
+	# Cuenta atrás: la marca y el punto de impacto quedan anclados a la última
+	# posición registrada (si está en la canoa, se desplaza con ella manteniendo
+	# ese offset fijo, permitiendo al jugador esquivar si se mueve).
 	var tiempo_marca: float = 0.0
 	while tiempo_marca < segundos_marca:
 		await get_tree().physics_frame
@@ -262,32 +292,46 @@ func _iniciar_fase_espera() -> void:
 		_estela_verde.emitting = true
 
 
-## Durante la marca, el punto sigue a la canoa si la jugadora va a bordo
-## (el río no se detiene); la marca se mueve con él como aviso justo.
-## Sin canoa el punto queda fijo y el ataque se esquiva andando.
+## Durante la marca, si la jugadora estaba a bordo de la canoa, el punto
+## y la marca se mueven solidarios a la canoa conservando el offset relativo
+## donde estaba la jugadora al marcarla. No persigue a la jugadora si se mueve,
+## permitiendo esquivar el impacto. Si no hay canoa, queda 100% fijo.
 func _actualizar_punto_caida_movil() -> void:
 	if not seguir_canoa_en_marca or get_tree() == null:
 		return
-	var canoa := _buscar_canoa()
-	if not is_instance_valid(canoa):
-		return
-	var abordo: bool = false
-	var jugador_nodo: Node3D = null
-	for p in get_tree().get_nodes_in_group("player"):
-		if is_instance_valid(p) and p is Node3D:
-			var np := p as Node3D
-			if absf(np.global_position.x - canoa.global_position.x) <= 3.0 and absf(np.global_position.z - canoa.global_position.z) <= 3.0:
-				abordo = true
-				jugador_nodo = np
-				break
-	if not abordo:
-		return
-	if is_instance_valid(jugador_nodo):
-		_punto_caida.x = jugador_nodo.global_position.x
-		_punto_caida.z = jugador_nodo.global_position.z
+	if not is_instance_valid(_nodo_canoa):
+		var canoa := _buscar_canoa()
+		if not is_instance_valid(canoa):
+			return
+		# Comprobar si hay jugadora a bordo para vincular inicialmente
+		for p in get_tree().get_nodes_in_group("player"):
+			if is_instance_valid(p) and p is Node3D:
+				var np := p as Node3D
+				if absf(np.global_position.x - canoa.global_position.x) <= 3.0 and absf(np.global_position.z - canoa.global_position.z) <= 3.0:
+					_nodo_canoa = canoa
+					_offset_canoa = Vector3(
+						np.global_position.x - canoa.global_position.x,
+						0.0,
+						np.global_position.z - canoa.global_position.z
+					)
+					break
+		if not is_instance_valid(_nodo_canoa):
+			return
 	else:
-		_punto_caida.x = canoa.global_position.x
-		_punto_caida.z = canoa.global_position.z
+		# Si la jugadora se alejó completamente de la canoa (ya no va a bordo), desvincular
+		var sigue_a_bordo: bool = false
+		for p in get_tree().get_nodes_in_group("player"):
+			if is_instance_valid(p) and p is Node3D:
+				var np := p as Node3D
+				if absf(np.global_position.x - _nodo_canoa.global_position.x) <= 3.0 and absf(np.global_position.z - _nodo_canoa.global_position.z) <= 3.0:
+					sigue_a_bordo = true
+					break
+		if not sigue_a_bordo:
+			_nodo_canoa = null
+			return
+
+	_punto_caida.x = _nodo_canoa.global_position.x + _offset_canoa.x
+	_punto_caida.z = _nodo_canoa.global_position.z + _offset_canoa.z
 	if is_instance_valid(_marca):
 		var mp := _marca.global_position
 		_marca.global_position = Vector3(_punto_caida.x, mp.y, _punto_caida.z)
@@ -308,7 +352,7 @@ func _on_body_entered(body: Node) -> void:
 	var es_canoa: bool = body.is_in_group("canoas_aliadas") or body.is_in_group("canoa_protagonista") or body.name == "SueloCanoa" or (body.get_parent() is CanoaAliada)
 	if es_canoa:
 		_sacudir_canoa()
-		_explotar_en_impacto(true)
+		_explotar_en_impacto()
 		_safe_destroy()
 		return
 
@@ -317,99 +361,70 @@ func _on_body_entered(body: Node) -> void:
 			_cuerpos_danados_caida[body] = true
 			_sacudir_canoa_si_impacta()
 			if body.is_in_group("player"):
-				# La protagonista recibe daño y aturdimiento
-				if "last_hit_position" in body:
-					body.last_hit_position = global_position
-				if "last_hit_direction" in body:
-					body.last_hit_direction = Vector3.DOWN
-				if body.has_method("take_damage"):
-					body.take_damage(dano)
-				elif body.has_method("recibir_dano"):
-					body.recibir_dano(dano)
-				if body.has_method("aplicar_paralisis"):
-					body.aplicar_paralisis(4.0)
-				elif body.has_method("aplicar_estado_paralisis"):
-					body.aplicar_estado_paralisis(4.0)
+				_aplicar_dano_y_paralisis_jugador(body as Node3D)
 			else:
-				# Defensoras aliadas (arqueras y ballesteras): sin daño, solo aturdimiento.
-				# La hitbox es un StaticBody3D: resolver la defensora dueña vía metadata.
-				var defensora: Node = body
-				if body.has_meta("defensora_owner"):
-					defensora = body.get_meta("defensora_owner")
-				if is_instance_valid(defensora) and defensora.has_method("aplicar_paralisis"):
-					defensora.aplicar_paralisis(4.0)
+				_aplicar_paralisis_defensora(body)
 			_reproducir_sonido_rayo()
 
 
-## Daño en área al impactar (cubre la deriva de la canoa): la jugadora
-## recibe daño + parálisis y las aliadas solo parálisis, igual que al
-## contacto directo. Radio ~ marca: dentro del cráneo es zona de peligro.
+## Daño en área al impactar: la jugadora recibe daño + parálisis y las aliadas solo parálisis,
+## igual que al contacto directo. Solo afecta a quienes estén dentro del radio del impacto
+## (radio_dano_area), permitiendo esquivar si el jugador se aparta de la marca.
 ## No duplica el golpe directo del mismo impacto.
-func _aplicar_dano_en_area(forzar_canoa: bool = false) -> void:
+func _aplicar_dano_en_area(_forzar_canoa: bool = false) -> void:
 	if _dano_area_aplicado or get_tree() == null:
 		return
 	_dano_area_aplicado = true
 	var centro := Vector3(global_position.x, 0.0, global_position.z)
-
-	# Si el impacto alcanza una canoa o cayó en su radio de influencia, cubrir la canoa entera
-	var canoa := _buscar_canoa()
-	var impacto_en_canoa: bool = forzar_canoa
-	if not impacto_en_canoa and is_instance_valid(canoa):
-		var dx_c: float = absf(canoa.global_position.x - global_position.x)
-		var dz_c: float = absf(canoa.global_position.z - global_position.z)
-		if dx_c <= radio_impacto_canoa_x and dz_c <= radio_impacto_canoa_z:
-			impacto_en_canoa = true
-
-	var radio_x: float = maxf(radio_dano_area, radio_impacto_canoa_x) if impacto_en_canoa else radio_dano_area
-	var radio_z: float = maxf(radio_dano_area, radio_impacto_canoa_z) if impacto_en_canoa else radio_dano_area
 
 	for grupo in ["player", "allies"]:
 		for nodo in get_tree().get_nodes_in_group(grupo):
 			if not is_instance_valid(nodo) or not (nodo is Node3D):
 				continue
 			var n3 := nodo as Node3D
-
-			var en_esta_canoa: bool = impacto_en_canoa and is_instance_valid(canoa) and (
-				n3.get_parent() == canoa or canoa.is_ancestor_of(n3) or
-				(absf(n3.global_position.x - canoa.global_position.x) <= radio_impacto_canoa_x and absf(n3.global_position.z - canoa.global_position.z) <= radio_impacto_canoa_z)
-			)
-
-			if not en_esta_canoa:
-				if absf(n3.global_position.x - centro.x) > radio_x:
-					continue
-				if absf(n3.global_position.z - centro.z) > radio_z:
-					continue
-				if absf(n3.global_position.y - global_position.y) > 3.0:
-					continue
-
 			if "health" in n3 and int(n3.get("health")) <= 0:
 				continue
 			if _cuerpos_danados_caida.has(nodo):
 				continue
+
+			var dist_horizontal: float = Vector2(n3.global_position.x - centro.x, n3.global_position.z - centro.z).length()
+			if dist_horizontal > radio_dano_area:
+				continue
+			if absf(n3.global_position.y - global_position.y) > 3.0:
+				continue
+
 			_cuerpos_danados_caida[nodo] = true
 			if nodo.is_in_group("player"):
-				if "last_hit_position" in n3:
-					n3.set("last_hit_position", global_position)
-				if "last_hit_direction" in n3:
-					n3.set("last_hit_direction", Vector3.DOWN)
-				if n3.has_method("take_damage"):
-					n3.call("take_damage", dano)
-				elif n3.has_method("recibir_dano"):
-					n3.call("recibir_dano", dano)
-				if n3.has_method("aplicar_paralisis"):
-					n3.call("aplicar_paralisis", 4.0)
-				elif n3.has_method("aplicar_estado_paralisis"):
-					n3.call("aplicar_estado_paralisis", 4.0)
+				_aplicar_dano_y_paralisis_jugador(n3)
 			else:
-				var defensora: Node = nodo
-				if nodo.has_meta("defensora_owner"):
-					defensora = nodo.get_meta("defensora_owner") as Node
-				if is_instance_valid(defensora) and defensora.has_method("aplicar_paralisis"):
-					defensora.call("aplicar_paralisis", 4.0)
+				_aplicar_paralisis_defensora(nodo)
 
 
-func _explotar_en_impacto(forzar_canoa: bool = false) -> void:
-	_aplicar_dano_en_area(forzar_canoa)
+func _aplicar_dano_y_paralisis_jugador(nodo: Node3D) -> void:
+	if "last_hit_position" in nodo:
+		nodo.set("last_hit_position", global_position)
+	if "last_hit_direction" in nodo:
+		nodo.set("last_hit_direction", Vector3.DOWN)
+	if nodo.has_method("take_damage"):
+		nodo.call("take_damage", dano)
+	elif nodo.has_method("recibir_dano"):
+		nodo.call("recibir_dano", dano)
+	if nodo.has_method("aplicar_paralisis"):
+		nodo.call("aplicar_paralisis", 4.0)
+	elif nodo.has_method("aplicar_estado_paralisis"):
+		nodo.call("aplicar_estado_paralisis", 4.0)
+
+
+func _aplicar_paralisis_defensora(nodo: Node) -> void:
+	var defensora: Node = nodo
+	if nodo.has_meta("defensora_owner"):
+		defensora = nodo.get_meta("defensora_owner") as Node
+	if is_instance_valid(defensora) and defensora.has_method("aplicar_paralisis"):
+		defensora.call("aplicar_paralisis", 4.0)
+
+
+func _explotar_en_impacto(_forzar_canoa: bool = false) -> void:
+	_aplicar_dano_en_area()
 	_sacudir_canoa_si_impacta()
 	_reproducir_sonido_rayo()
 

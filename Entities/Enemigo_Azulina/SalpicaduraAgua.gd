@@ -7,7 +7,7 @@ extends SalpicaduraAzulina
 ## Un impacto que se libera solo al terminar.
 ## Al heredar de SalpicaduraAzulina sigue contando como tal en tests y spawners.
 
-const TIRA_AGUA: Texture2D = preload("res://TEST_/Salpicadura_agua/salpicadura_agua_alineada.png")
+const TIRA_AGUA: Texture2D = preload("res://Entities/Enemigo_Azulina/Texturas/salpicadura_agua_alineada.png")
 const TOTAL_CUADROS_AGUA: int = 10
 const COLUMNAS_TIRA: int = 10
 const FILAS_TIRA: int = 1

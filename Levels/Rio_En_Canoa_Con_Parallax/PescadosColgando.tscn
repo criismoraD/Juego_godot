@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="PackedScene" path="res://TEST_/Pescados colgando/Pescados colgando.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Pescados colgando/Pescados colgando.glb" id="1_model"]
 [ext_resource type="Material" path="res://Levels/Rio_En_Canoa_Con_Parallax/PescadosColgando_Mat.tres" id="2_mat"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/PescadosColgando.gd" id="3_script"]
 

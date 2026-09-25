@@ -10,7 +10,7 @@ extends Node3D
 
 # === CONSTANTES ===
 const ESCENA_FLECHA_ESTETICA: PackedScene = preload("res://System/Ambiente/FlechaFondoEstetica.tscn")
-const SFX_DISPARO_GOBLIN: AudioStream = preload("res://TEST_/Goblina jabalina.wav")
+const SFX_DISPARO_GOBLIN: AudioStream = preload("res://Entities/Enemigo_Goblin/Audio/Goblina jabalina.wav")
 
 # === ENUMS ===
 enum EstadoTripulante { IDLE, APUNTANDO, DISPARANDO }

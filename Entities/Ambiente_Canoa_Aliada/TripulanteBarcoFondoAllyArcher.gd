@@ -10,7 +10,7 @@ extends Node3D
 
 # === CONSTANTES ===
 const ESCENA_FLECHA_ESTETICA: PackedScene = preload("res://System/Ambiente/FlechaFondoEstetica.tscn")
-const SFX_DISPARO: AudioStream = preload("res://TEST_/disparo 100%.mp3")
+const SFX_DISPARO: AudioStream = preload("res://System/Audio/SFX/disparo 100%.mp3")
 
 # === ENUMS ===
 enum EstadoTripulante { IDLE, PREPARANDO, APUNTANDO, DISPARANDO }

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cx6g8moradab1"]
 
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/BanderaMorada.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://uvcwmwspohbx" path="res://TEST_/bandera morada.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://uvcwmwspohbx" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/bandera morada.png" id="2_tex"]
 [ext_resource type="Shader" uid="uid://ba7y6l2aci0ng" path="res://System/Shaders/bandera_colgante.gdshader" id="3_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_banderaMorada"]

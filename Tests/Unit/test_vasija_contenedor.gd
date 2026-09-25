@@ -212,6 +212,46 @@ func test_suelta_pocion_con_curacion_cero_garantiza_al_menos_uno_y_cura() -> voi
 	assert_gt(jugadora.health, 2, "La jugadora debe haber recuperado salud")
 
 
+func test_suelta_varias_pociones_separadas() -> void:
+	# Arrange
+	var vasija := _crear_vasija()
+	vasija.item_soltado = VasijaContenedor.ItemSoltado.POCION_CURATIVA
+	vasija.curacion_pocion = 1
+	vasija.cantidad_pociones = 3
+
+	# Act
+	vasija.recibir_golpe(1.0)
+	vasija.recibir_golpe(1.0)
+
+	# Assert: tres pociones separadas, cada una con su curación
+	var items: Array = []
+	for hijo in vasija.get_parent().get_children():
+		if hijo is Area3D and "vida_a_restaurar" in hijo:
+			items.append(hijo)
+	assert_eq(items.size(), 3, "Debe soltar 3 pociones separadas")
+	for item in items:
+		assert_eq(int(item.get("vida_a_restaurar")), 1, "Cada poción cura lo configurado")
+	assert_ne(items[0].global_position, items[1].global_position, "Las pociones no deben apilarse en el mismo punto")
+
+
+func test_pocion_por_defecto_suelta_una_sola() -> void:
+	# Arrange
+	var vasija := _crear_vasija()
+	vasija.item_soltado = VasijaContenedor.ItemSoltado.POCION_CURATIVA
+	assert_eq(vasija.cantidad_pociones, 1, "Por defecto una sola poción")
+
+	# Act
+	vasija.recibir_golpe(1.0)
+	vasija.recibir_golpe(1.0)
+
+	# Assert
+	var conteo: int = 0
+	for hijo in vasija.get_parent().get_children():
+		if hijo is Area3D and "vida_a_restaurar" in hijo:
+			conteo += 1
+	assert_eq(conteo, 1, "Por defecto suelta una sola poción")
+
+
 func test_suelta_fuego_rapido_con_duracion_configurada() -> void:
 	# Arrange
 	var vasija := _crear_vasija()

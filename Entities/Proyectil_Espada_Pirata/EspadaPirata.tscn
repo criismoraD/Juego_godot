@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/Proyectil_Espada_Pirata/EspadaPirata.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://TEST_/Espada pirata/Esspada pirata.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://Entities/Proyectil_Espada_Pirata/Esspada pirata.glb" id="2_model"]
 [ext_resource type="Material" path="res://Entities/Proyectil_Espada_Pirata/MAT_ESPADA_PIRATA.tres" id="3_mat"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_espada"]

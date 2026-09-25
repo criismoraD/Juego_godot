@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://6ykse4o0gc6y"]
 
 [ext_resource type="Script" uid="uid://76puwiauah1d" path="res://Entities/Proyectil_Lanza_Azulina/LanzaAzulinaProjectile.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://dj6op2ss2l7cx" path="res://TEST_/Lanza Azulina/Lanza Azulina.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://dj6op2ss2l7cx" path="res://Entities/Proyectil_Lanza_Azulina/Lanza Azulina.glb" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_lanza"]
 radius = 0.08

@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Texture2D" uid="uid://dfdndb0assvwb" path="res://TEST_/Tulemaki.png" id="1_tulemaki"]
+[ext_resource type="Texture2D" uid="uid://dfdndb0assvwb" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Tulemaki.png" id="1_tulemaki"]
 [ext_resource type="Script" path="res://Levels/Rio_En_Canoa_Con_Parallax/TulemakiRebote.gd" id="2_script"]
 
 [node name="Tulemaki" type="Node3D"]

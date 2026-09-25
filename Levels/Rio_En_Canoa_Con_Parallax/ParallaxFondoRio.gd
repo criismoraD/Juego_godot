@@ -9,12 +9,12 @@ extends Node3D
 ## Permite visualizar y editar los fondos directamente en el editor 3D de Godot.
 
 # === CONSTANTES ===
-const VIDEO_FONDO_OGV: VideoStream = preload("res://TEST_/Fondo estatico.ogv")
-const TEX_PREVIEW_FONDO: Texture2D = preload("res://TEST_/Fondo_estatico_preview.png")
-const TEX_ARBOLES: Texture2D = preload("res://TEST_/arboles prueba.png")
-const TEX_NUBES: Texture2D = preload("res://TEST_/nube rosada.png")
-const TEX_ATARDECER: Texture2D = preload("res://TEST_/Fondo nivel 6 atardecer.png")
-const TEX_TERROSO: Texture2D = preload("res://TEST_/Fondo terroso nivel 6.png")
+const VIDEO_FONDO_OGV: VideoStream = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Fondo estatico.ogv")
+const TEX_PREVIEW_FONDO: Texture2D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Fondo_estatico_preview.png")
+const TEX_ARBOLES: Texture2D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/arboles prueba.png")
+const TEX_NUBES: Texture2D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/nube rosada.png")
+const TEX_ATARDECER: Texture2D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Fondo nivel 6 atardecer.png")
+const TEX_TERROSO: Texture2D = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Fondo terroso nivel 6.png")
 const ESCENA_CORDILLERA: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/PiedraFondoCordillera.tscn")
 const ESCENA_REFLEJO: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/ReflejoCordillera.tscn")
 const SEMIALTURA_PISO_MODELO: float = 0.092  ## Mitad del alto del GLB de piso (1m aprox): cima = pos.y + 0.092 * escala.y

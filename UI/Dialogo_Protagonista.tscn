@@ -5,7 +5,7 @@
 [ext_resource type="AudioStream" uid="uid://byl8he8upuuiv" path="res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3" id="3_audio"]
 [ext_resource type="Texture2D" uid="uid://wqonca7ysvbp" path="res://UI/Protagonista/PROTA_NORMAL.png" id="4_qyvsk"]
 [ext_resource type="Shader" uid="uid://qpdkuds4ycao" path="res://System/Shaders/eryn_tits_jiggle.gdshader" id="5_shader"]
-[ext_resource type="Texture2D" uid="uid://u1efafgkmg7m" path="res://TEST_/Eryn tits 3.png" id="6_tits"]
+[ext_resource type="Texture2D" uid="uid://u1efafgkmg7m" path="res://UI/Assets/Eryn tits 3.png" id="6_tits"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_jiggle"]
 shader = ExtResource("5_shader")

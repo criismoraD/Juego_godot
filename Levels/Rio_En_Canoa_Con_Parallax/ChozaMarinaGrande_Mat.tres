@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" load_steps=2 format=3]
 
-[ext_resource type="Texture2D" path="res://TEST_/Choza marina grande/Choza marina grande_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Choza marina grande/Choza marina grande_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "ChozaMarinaGrande_Mat"

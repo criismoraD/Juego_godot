@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://dkpo2j42jx76j"]
 
-[ext_resource type="Texture2D" uid="uid://dihaflypxbg3w" path="res://TEST_/Misil Submarino/Misil submarino_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://dihaflypxbg3w" path="res://Entities/Proyectil_Misil_Submarino/Misil submarino_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
