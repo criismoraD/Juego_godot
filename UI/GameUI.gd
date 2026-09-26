@@ -58,6 +58,20 @@ static func marcar_dialogo_defensora_dicho(clave: String) -> void:
 static func limpiar_dialogos_defensoras() -> void:
 	dialogos_defensoras_dichos.clear()
 
+
+## Devuelve la escena de Ballestera aliada (carga perezosa para romper el ciclo con AllyBallestera.gd).
+static func get_escena_ballestera() -> PackedScene:
+	if _escena_ballestera_cache == null:
+		_escena_ballestera_cache = load(RUTA_ESCENA_BALLESTERA_ALIADA) as PackedScene
+	return _escena_ballestera_cache
+
+
+## Devuelve la escena de Arquera aliada (carga perezosa para romper el ciclo con AllyArcher.gd).
+static func get_escena_arquera() -> PackedScene:
+	if _escena_arquera_cache == null:
+		_escena_arquera_cache = load(RUTA_ESCENA_ARQUERA_ALIADA) as PackedScene
+	return _escena_arquera_cache
+
 @export_category("Debug")
 @export var debug_ui_enabled: bool = true
 
@@ -132,8 +146,14 @@ var btn_toggle_allies: Button
 var btn_revive_allies: Button
 var btn_kill_allies: Button
 var btn_tipo_defensoras: Button
-const ESCENA_BALLESTERA_ALIADA: PackedScene = preload("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
-const ESCENA_ARQUERA_ALIADA: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+# Carga diferida (NO preload): AllyBallestera.gd y AllyArcher.gd referencian
+# GameUI (clase global), y un preload aquí formaba un CICLO que solo revienta
+# en el export (carga en frío desde el PCK): GameUI no compilaba y NIVEL01
+# abortaba su _ready() antes de mostrar el diálogo de inicio.
+const RUTA_ESCENA_BALLESTERA_ALIADA: String = "res://Entities/Aliada_Ballestera/AllyBallestera.tscn"
+const RUTA_ESCENA_ARQUERA_ALIADA: String = "res://Entities/Aliada_Arquera/AllyArcher.tscn"
+static var _escena_ballestera_cache: PackedScene = null
+static var _escena_arquera_cache: PackedScene = null
 static var usar_ballesteras: bool = false
 var plantillas_aliadas: Array = []  # [{name, parent_path, global_transform, template}]
 # === NODOS DE EFECTOS ===
@@ -1946,7 +1966,7 @@ func _toggle_aliadas():
 ## Alterna en tiempo real entre Arqueras y Ballesteras para las defensoras de la muralla
 func _alternar_tipo_defensoras() -> void:
 	usar_ballesteras = not usar_ballesteras
-	var nueva_escena: PackedScene = ESCENA_BALLESTERA_ALIADA if usar_ballesteras else ESCENA_ARQUERA_ALIADA
+	var nueva_escena: PackedScene = get_escena_ballestera() if usar_ballesteras else get_escena_arquera()
 
 	var aliadas_a_reemplazar: Array[Node] = []
 	for ally in AllyArcher.active_allies_cache.duplicate():
