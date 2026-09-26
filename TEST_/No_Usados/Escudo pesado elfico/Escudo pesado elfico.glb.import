@@ -43,7 +43,7 @@ _subresources={
 "materials": {
 "Escudo pesado elfico_M": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://TEST_/No_Usados/Escudo pesado elfico/Escudo_pesado_elfico_MAT.tres",
+"use_external/fallback_path": "res://Levels/Nivel_Interior/MAT_EscudoPesadoElfico.tres",
 "use_external/path": "uid://escudopesadom1"
 }
 }
