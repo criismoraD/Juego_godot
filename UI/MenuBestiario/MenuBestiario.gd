@@ -450,7 +450,7 @@ func _obtener_descripcion_enemigo(datos: Dictionary) -> String:
 func _reproducir_sfx_click() -> void:
 	var audio_mgr: Node = get_node_or_null("/root/AudioManager")
 	if audio_mgr and audio_mgr.has_method("play_sfx"):
-		audio_mgr.call("play_sfx", "res://Assets/Audio/SFX/click.wav")
+		audio_mgr.call("play_sfx", "seleccion_menu")
 		return
 
 	var stream: AudioStream = load("res://System/Audio/SFX/Sonido interactuar mueble.wav")

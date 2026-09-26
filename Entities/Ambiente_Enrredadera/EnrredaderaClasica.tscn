@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Texture2D" uid="uid://b4griy7ty4ejt" path="res://Entities/Ambiente_Enrredadera/enrredadera.png" id="1_enrredadera"]
+[ext_resource type="Texture2D" uid="uid://ckjgkaskm7uqn" path="res://Entities/Ambiente_Enrredadera/enrredadera.png" id="1_enrredadera"]
 [ext_resource type="Shader" uid="uid://ba7y6l2aci0ng" path="res://System/Shaders/bandera_colgante.gdshader" id="2_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_enrredadera"]

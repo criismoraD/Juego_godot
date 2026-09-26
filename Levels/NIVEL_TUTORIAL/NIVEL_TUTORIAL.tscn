@@ -48,7 +48,7 @@
 [ext_resource type="Texture2D" uid="uid://bnajvbrgm1f4t" path="res://Levels/NIVEL01/Texturas/Pasto B.png" id="56_pastoB"]
 [ext_resource type="Texture2D" uid="uid://i5j00bo3m33j" path="res://Levels/NIVEL01/Texturas/Barricada C.png" id="59_barricadaC"]
 [ext_resource type="Texture2D" uid="uid://cke7w3b2v3q6k" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Bandera A.png" id="60_banderaA"]
-[ext_resource type="Texture2D" uid="uid://bxwp2vtq13j1c" path="res://Levels/NIVEL01/Texturas/Carreta_A.png" id="61_carretaA"]
+[ext_resource type="Texture2D" uid="uid://ct3dbmo55umt0" path="res://Levels/NIVEL01/Texturas/Carreta_A.png" id="61_carretaA"]
 [ext_resource type="Texture2D" uid="uid://c0seb337nvcqk" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Fondo nivel 2.png" id="62_fondonivel2"]
 [ext_resource type="Texture2D" uid="uid://cswk5bfsf3odx" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Piso fondo level tutorial.png" id="63_pisofondo"]
 [ext_resource type="Texture2D" uid="uid://jc7rrudwf7xx" path="res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Piso fondo sombra level tutorial.png" id="64_pisofondosombra"]
