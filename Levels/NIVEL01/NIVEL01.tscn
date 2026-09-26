@@ -1076,7 +1076,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.2, 0.4126004)
 transform = Transform3D(0.091842264, 0, 0.99577355, 0, 1, 0, -0.99577355, 0, 0.091842264, 5.6517224, 0.24184366, -1.5195154)
 
 [node name="EnredaderaTorre" parent="." unique_id=2026999167 instance=ExtResource("72_enredadera")]
-transform = Transform3D(0.5608661, -0.17595366, 0, 0.21409826, 0.46093985, 0, 0, 0, 1, -8.103903, 1.1181004, -5.3653374)
+transform = Transform3D(-0.032317758, -0.49266604, 0, 0.59947014, -0.026559934, 0, 0, 0, 1, -8.103903, 1.1181004, -5.3653374)
 layers = 2
 
 [editable path="SubViewportFondo3D/BUSTO_BRONCE2"]

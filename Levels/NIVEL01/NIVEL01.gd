@@ -133,10 +133,10 @@ var _monitor_timer: float = 0.0
 	get_node_or_null("Compositor3D/Fondo3DRect") as TextureRect
 )
 @onready var medio_3d_rect: TextureRect = (
-	get_node_or_null("Compositor3D/Fondo3DRect/Medio3DRect") as TextureRect
+	get_node_or_null("Compositor3D/Medio3DRect") as TextureRect
 )
 @onready var frente_3d_rect: TextureRect = (
-	get_node_or_null("Compositor3D/Fondo3DRect/Medio3DRect/Frente3DRect") as TextureRect
+	get_node_or_null("Compositor3D/Frente3DRect") as TextureRect
 )
 @onready var texture_rect: TextureRect = (
 	get_node_or_null("SubViewportFondo3D/SubViewport/TextureRect") as TextureRect
@@ -197,8 +197,6 @@ func _aplicar_textura_casco_oxidado() -> void:
 
 func _ready():
 	_aplicar_textura_casco_oxidado()
-	# Los diálogos de defensoras ya dichos sobreviven a entrar/salir de la torre.
-	# Solo se limpian en inicio fresco (regreso de torre los conserva).
 	if GameUI.regreso_desde_interior_oleada <= 0:
 		GameUI.limpiar_dialogos_defensoras()
 	_dialogo_audio_player = AudioStreamPlayer.new()
@@ -380,9 +378,6 @@ func _ready():
 			wave_spawner.oleada_iniciada.connect(_on_oleada_iniciada_eliminar_defensas)
 		return
 
-	# Si se solicitó una oleada específica desde el menú de pausa / debug, se
-	# DIFIERE: primero se reproducen el diálogo inicial y el evento del goblin
-	# embajador; el salto de oleada se aplica al comenzar el combate.
 	oleada_debug_pendiente = GameUI.oleada_inicial_solicitada
 	GameUI.oleada_inicial_solicitada = 0
 
