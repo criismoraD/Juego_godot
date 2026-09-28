@@ -3,7 +3,7 @@ extends StaticBody3D
 
 ## Mina acuÃ¡tica del Jefe Submarino: cae del submarino al dispararse el
 ## ataque Lonko y deriva lentamente hacia la canoa como la vasija contenedora.
-## Tiene 2 de vida; si contacta sin ser destruida explota (1 de daÃ±o),
+## Tiene 3 de vida; si contacta sin ser destruida explota (1 de daÃ±o),
 ## sacude la canoa con oleaje fuerte y Perrena simula el golpe sin morir.
 
 signal explotada(mina: MinaAcuatica)
@@ -26,8 +26,8 @@ const COLOR_MORADO_REAPARICION: Color = Color(0.7, 0.1, 1.0)
 
 
 @export_category("Mina - Vida")
-@export var vida_maxima: float = 2.0
-@export var vida_mina: float = 2.0
+@export var vida_maxima: float = 3.0
+@export var vida_mina: float = 3.0
 
 @export_category("Mina - Deriva (como vasija)")
 @export var deriva_activa: bool = true

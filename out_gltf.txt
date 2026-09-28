@@ -1,4 +1,0 @@
-Godot Hierarchy:
-estandarte (Node3D)
-  PALO (MeshInstance3D)
-  TELA (MeshInstance3D)

@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://c_barcomercado_mat"]
+
+[ext_resource type="Texture2D" uid="uid://bhkdqjbbk741j" path="res://Entities/Ambiente_BarcoMercado/Barco mercado_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "BarcoMercado_Mat"
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")
+roughness = 0.85

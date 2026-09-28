@@ -250,8 +250,10 @@ func _generar_ondas_agua() -> Node3D:
 		escala_final_splash = ESCALA_SPLASH_TUERCA
 	splash.scale = Vector3.ONE * escala_final_splash
 
-	# Efecto de splash completo estilo Azulina (las 6 capas: pilar, ondas,
-	# burbujas, gotas, impacto y remate), sin recortes.
+	# Optimización: activar ondas y gotas (capas 1 y 3) para mantener excelente impacto visual sin sobrecargar el motor de partículas
+	if splash.has_method("toggle_layer_index"):
+		for i in range(6):
+			splash.toggle_layer_index(i, i == 1 or i == 3)
 	if splash.has_method("play_splash"):
 		splash.play_splash()
 

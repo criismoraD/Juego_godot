@@ -449,6 +449,44 @@ func test_gargolas_minimo_dos_atacan_a_mitad_de_trayecto() -> void:
 	_jefe._gargolas_forzadas.clear()
 
 
+func test_gargolas_no_designadas_no_disparan() -> void:
+	# Arrange: 5 gárgolas reales como en fase 2
+	var gs: Array = []
+	for i in range(5):
+		var g = _crear_gargola_fase2_en(float(i) * 2.0)
+		gs.append(g)
+		_jefe._gargolas.append(g)
+	# Act: marcar atacantes (primeras 2)
+	_jefe._marcar_gargolas_atacantes()
+	# Assert: designadas conservan cadencia, resto con intervalo desactivado
+	assert_eq(_jefe._gargolas_forzadas.size(), 2, "Solo 2 designadas")
+	for i in range(5):
+		var intervalo: float = float(gs[i].get("intervalo_disparo"))
+		if i < 2:
+			assert_lt(intervalo, 100.0, "La designada %d conserva cadencia" % i)
+		else:
+			assert_gte(intervalo, 9999.0, "La no designada %d no debe disparar" % i)
+	# Cleanup
+	for g in gs:
+		g.queue_free()
+	_jefe._gargolas.clear()
+	_jefe._gargolas_forzadas.clear()
+
+
+func test_forzar_ataque_usa_cadencia_configurada() -> void:
+	# Arrange: cámara + gárgola en pantalla
+	var cam := _crear_camara_activa_en(0.0)
+	var g = _crear_gargola_fase2_en(0.0)
+	# Act: forzar ataque
+	_jefe._forzar_ataque_gargola(g)
+	# Assert: cadencia configurada (lenta), sin ráfaga de 0.3
+	assert_true(_jefe._gargolas_ataque_forzado.has(g), "Queda marcada como forzada")
+	assert_almost_eq(float(g.get("intervalo_disparo")), _jefe.gargolas_intervalo_disparo, 0.01, "Usa la cadencia configurada")
+	assert_gte(float(g.get("intervalo_disparo")), 1.0, "Sin ráfaga rápida")
+	g.queue_free()
+	cam.queue_free()
+
+
 func test_rojo_destruido_se_conserva_un_segundo() -> void:
 	# Arrange / Act / Assert: el modelo destruido conserva el rojo 1 s para integrar el cambio
 	assert_eq(_jefe.duracion_rojo_destruido, 1.0, "El rojo debe conservarse 1 s tras el cambio de modelo")
@@ -873,3 +911,45 @@ func test_misil_cosmetico_genera_splash_al_romper_superficie() -> void:
 
 	# Assert: splash generado exactamente al cruzar
 	assert_true(misil._splash_agua_generado, "Debe haber generado el splash de agua al salir del agua")
+
+
+func test_canoa_libera_bloqueo_al_destruir_jefe() -> void:
+	# Arrange
+	var CanoaScript = load("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.gd")
+	var canoa = CanoaScript.new()
+	add_child_autofree(canoa)
+	canoa._enemigo_bloqueando = _jefe
+	canoa._detenida_por_contacto = true
+	canoa._factor_velocidad_actual = 0.0
+
+	# Act
+	canoa.liberar_bloqueo_enemigo(_jefe)
+
+	# Assert: la canoa queda libre y a velocidad máxima
+	assert_null(canoa._enemigo_bloqueando, "El enemigo bloqueador debe quedar nulo")
+	assert_false(canoa._detenida_por_contacto, "No debe estar detenida por contacto")
+	assert_eq(canoa.obtener_factor_velocidad_actual(), 1.0, "El factor de velocidad debe restablecerse al 100%")
+
+
+func test_submarino_hundiendose_no_es_enemigo_activo_en_canoa() -> void:
+	# Arrange
+	var CanoaScript = load("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.gd")
+	var canoa = CanoaScript.new()
+	add_child_autofree(canoa)
+	_jefe.current_state = SubmarinoRio.State.SUMERGIENDOSE
+	_jefe._jefe_muerto = true
+
+	# Act
+	var activo: bool = canoa._es_enemigo_activo_y_vivo(_jefe)
+
+	# Assert: un submarino que se hunde o muerto no debe considerarse activo
+	assert_false(activo, "El submarino hundiéndose no debe ser considerado enemigo activo")
+
+
+func test_optimizacion_duracion_hundimiento_muerte() -> void:
+	# Arrange & Act
+	var duracion: float = _jefe.duracion_hundimiento_muerte
+
+	# Assert: la duración del hundimiento debe ser ágil para no frenar el nivel
+	assert_true(duracion <= 4.5, "La duracion de hundimiento debe ser ágil (<= 4.5s)")
+

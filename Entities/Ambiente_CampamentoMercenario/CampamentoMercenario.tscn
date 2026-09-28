@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_CampamentoMercenario/Campamento mercenario.glb" id="1_model"]
+[ext_resource type="Material" path="res://Entities/Ambiente_CampamentoMercenario/CampamentoMercenario_Mat.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Entities/Ambiente_CampamentoMercenario/CampamentoMercenario.gd" id="3_script"]
+
+[node name="CampamentoMercenario" type="Node3D"]
+script = ExtResource("3_script")
+material_campamento = ExtResource("2_mat")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]

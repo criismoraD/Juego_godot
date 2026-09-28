@@ -2,10 +2,11 @@
 class_name ZapayoColgante
 extends Node3D
 
-## Fruta colgante con bamboleo muy sutil para el nivel del rio.
+## Fruta colgante con bamboleo muy sutil para el nivel del rio y nivel pueblo.
 ## El pivote "Colgante" queda arriba de la fruta y oscila como péndulo;
 ## el nodo raíz queda libre para posicionarlo en el editor.
-## Aplica el material con textura a las mallas sin depender de sus nombres.
+## Aplica el material con textura a las mallas sin depender de sus nombres
+## y gestiona las capas visuales (capa 1 nítida, capa 2 fondo DOF).
 
 const INDICE_SUPERFICIE_PRINCIPAL: int = 0
 
@@ -16,12 +17,18 @@ const INDICE_SUPERFICIE_PRINCIPAL: int = 0
 @export var amplitud_balanceo: float = 3.0  ## Vaivén lateral en grados (muy sutil)
 @export var amplitud_cabeceo: float = 2.0  ## Vaivén frontal en grados (muy sutil)
 
-@export_category("Textura")
+@export_category("Visual")
 @export var material_zapayo: StandardMaterial3D:
 	set(nuevo_material):
 		material_zapayo = nuevo_material
 		if is_node_ready():
 			_aplicar_material()
+
+@export_flags_3d_render var capa_visual: int = 1:
+	set(nueva_capa):
+		capa_visual = nueva_capa
+		if is_node_ready():
+			_aplicar_capa_visual(self)
 
 # === VARIABLES PRIVADAS ===
 var _tiempo: float = 0.0
@@ -32,7 +39,10 @@ var _tiempo: float = 0.0
 
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
+	if "fondo" in name.to_lower():
+		capa_visual = 2
 	_aplicar_material()
+	_aplicar_capa_visual(self)
 
 
 func _process(delta: float) -> void:
@@ -73,3 +83,10 @@ func _aplicar_a_instancias(nodo: Node) -> void:
 			malla.set_surface_override_material(INDICE_SUPERFICIE_PRINCIPAL, material_zapayo)
 	for hijo in nodo.get_children():
 		_aplicar_a_instancias(hijo)
+
+
+func _aplicar_capa_visual(nodo: Node) -> void:
+	if nodo is VisualInstance3D:
+		(nodo as VisualInstance3D).layers = capa_visual
+	for hijo in nodo.get_children():
+		_aplicar_capa_visual(hijo)

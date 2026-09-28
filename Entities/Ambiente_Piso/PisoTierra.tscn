@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://ch2snhm0ivccx" path="res://Entities/Ambiente_Piso/Piso textura tierra/Piso textura tierra.glb" id="1_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_piso_tierra"]
+size = Vector3(1, 1, 1)
+
+[node name="PisoTierra" type="Node3D"]
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="Suelo" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Suelo"]
+shape = SubResource("BoxShape_piso_tierra")

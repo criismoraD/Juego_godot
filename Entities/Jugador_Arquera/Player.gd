@@ -40,8 +40,8 @@ const DROP_CHANCE_MITIGADO: float = 0.05
 const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-ups (explosivas y múltiples)
 
 @export_category("Movimiento")
-@export var velocidad_caminar: float = 0.6  # Velocidad al caminar
-@export var velocidad_correr: float = 1.2  # Velocidad al correr
+@export var velocidad_caminar: float = 0.7  # Velocidad al caminar
+@export var velocidad_correr: float = 1.4  # Velocidad al correr
 @export var fuerza_salto: float = 2.35  # Fuerza del salto
 @export var umbral_aterrizaje: float = -3.0  # Umbral para aterrizaje fuerte
 @export var velocidad_giro_suave: float = 12.0  ## Velocidad de interpolación de giro al cambiar de dirección
@@ -371,6 +371,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R or event.physical_keycode == KEY_R:
 			cambiar_tipo_municion()
+		return
+	# Rueda del ratón: arriba = siguiente arma, abajo = anterior.
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			cambiar_tipo_municion(1)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			cambiar_tipo_municion(-1)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -573,8 +580,8 @@ func setup_animation_tree_dynamic():
 var current_ladder: Area3D = null
 var is_near_ladder: bool = false
 var _nearby_ladders: Array[Area3D] = []
-@export var velocidad_escalar_subir: float = 0.65  ## Velocidad al subir escaleras (+30% sobre 0.5)
-@export var velocidad_escalar_bajar: float = 0.65  ## Velocidad al bajar escaleras
+@export var velocidad_escalar_subir: float = 0.75  ## Velocidad al subir escaleras (+30% sobre 0.5)
+@export var velocidad_escalar_bajar: float = 0.75  ## Velocidad al bajar escaleras
 @export_range(-360, 360, 1.0) var rotacion_personaje_escalera: float = 180.0  # Giro del modelo al escalar
 @export var volumen_sonido_escalera_db: float = 0.5  ## Volumen del loop de pasos en escalera (ajustado más suave)
 @export var duracion_fade_escalera: float = 0.15  ## Fade out al soltar la escalera o detenerse (evita corte en seco)
@@ -2008,7 +2015,7 @@ func start_shooting():
 	_sonido_morada_max_reproducido = false
 
 
-func cambiar_tipo_municion() -> void:
+func cambiar_tipo_municion(direccion: int = 1) -> void:
 	# Obtener lista de tipos de munición actualmente disponibles
 	var disponibles: Array[TipoMunicion] = [TipoMunicion.NORMAL]
 	if flechas_explosivas > 0:
@@ -2025,7 +2032,7 @@ func cambiar_tipo_municion() -> void:
 	if idx == -1:
 		municion_activa = disponibles[0]
 	else:
-		municion_activa = disponibles[(idx + 1) % disponibles.size()]
+		municion_activa = disponibles[(idx + direccion + disponibles.size()) % disponibles.size()]
 
 	tipo_municion_changed.emit(municion_activa)
 

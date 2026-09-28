@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bl37ox1n4jolc"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d0uca0uwisou3"]
 
 [ext_resource type="Texture2D" uid="uid://bcj5kjwx6mhpy" path="res://Entities/Jugador_Perrena/Perrena_D.jpg" id="1_perrena"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
@@ -7,7 +7,7 @@
 render_priority = 0
 shader = ExtResource("2_outline")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 20.0
+shader_parameter/outline_width = 12.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_outline_perrena")

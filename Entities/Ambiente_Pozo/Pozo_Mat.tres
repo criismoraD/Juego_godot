@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d0dxe54p425kl"]
+
+[ext_resource type="Texture2D" uid="uid://b114hb233tbip" path="res://Entities/Ambiente_Pozo/Pozo_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Pozo_Mat"
+specular_mode = 1
+albedo_texture = ExtResource("1_tex")
+roughness = 0.85

@@ -7,7 +7,39 @@ const WAVE_UPDATE_INTERVAL: float = 0.25  # Actualizar progreso de oleada 4 vece
 # === ESCUDOS ===
 const RUTA_SHADER_OUTLINE := "res://System/Shaders/TOON_LINEANEGRA.gdshader"
 const SHADER_OUTLINE := preload(RUTA_SHADER_OUTLINE)
-const OUTLINE_WIDTH_RUNTIME := 20.0
+const OUTLINE_WIDTH_RUNTIME := 12.0  ## Grosor de contorno toon para personajes humanoides
+## Materiales que conservan su ancho propio (armas, proyectiles, barcos,
+## globo, estructuras, objetos y contornos ajustados a mano): el forzar
+## global no los toca. Rutas res:// exactas de los .tres.
+const MATERIALES_ANCHO_PROPIO: Array[String] = [
+	"res://Entities/Enemigo_Goblin/Hand Crossbow.tres",
+	"res://Entities/Enemigo_Goblin_Girl/ARCO_GIRL_GOBLING.tres",
+	"res://Entities/Enemigo_Azulina/LanzaAzulina_MAT.tres",
+	"res://Entities/Jugador_Arquera/Recurve Bow 2.tres",
+	"res://Entities/Jugador_Arquera/Arrows.tres",
+	"res://Entities/Flecha_Explosiva/Flecha_Explosiva_MAT.tres",
+	"res://Entities/Proyectil_Mina_Acuatica/MinaAcuatica_Mat.tres",
+	"res://Entities/Proyectil_Misil_Submarino/MisilSubmarino_Mat.tres",
+	"res://Entities/Proyectil_Espada_Pirata/MAT_ESPADA_PIRATA.tres",
+	"res://Entities/Proyectil_Hacha_Perrena/HACHA_PERRENA_MAT.tres",
+	"res://Entities/Proyectil_Hueso_Limo/HUESO_MAT.tres",
+	"res://Entities/Enemigo_Pirata_Goblin/MAT_PISTOLA_PIRATA.tres",
+	"res://Entities/Ambiente_Barco_Combate_Pirata/MAT_BARCO_COMBATE_PIRATA.tres",
+	"res://Entities/Ambiente_Canoa_Aliada/Canoa_aliada_MAT.tres",
+	"res://Entities/Ambiente_Escalera/ESCALERAS.tres",
+	"res://Entities/Ambiente_Escudo/Escudonivel3_MAT.tres",
+	"res://Entities/Ambiente_Escudo/ESCUDO2_MAT.tres",
+	"res://Entities/Ambiente_Escudo/MAT_shield.tres",
+	"res://Entities/Ambiente_Pinchos/MAT_spike_trap.tres",
+	"res://Entities/Ambiente_Piso/PISO_MAT.tres",
+	"res://Entities/Ambiente_Plataforma/MAT_platform.tres",
+	"res://Entities/Enemigo_Lonko/PILAR_DESTRUIDO_MAT.tres",
+	"res://Entities/Enemigo_Limo/LIMO_MAT.tres",
+	"res://Entities/Item_Medikit/MEDIKIT_MAT.tres",
+	"res://Entities/Item_Pocion/POSION_MAT.tres",
+	"res://Entities/Item_Flecha_Explosiva/FLECHA_EXPLOCIVA_ICONO_POWE_UP_MAT.tres",
+	"res://Entities/Item_Flecha_Multiple/Flecha_Multiple_MAT.tres",
+]
 static var oleada_inicial_solicitada: int = 0
 static var modo_debug_solicitado: bool = false  ## Activar panel debug en NIVEL01 al entrar por menú escape
 static var continuar_desde_oleada: int = 0  ## Game Over → Continuar desde la oleada donde se murió (histéresis 1-5)
@@ -626,9 +658,9 @@ func _create_pause_panel():
 				get_tree().paused = false
 			AudioManager.stop_all()
 			if has_node("/root/SceneManager"):
-				get_node("/root/SceneManager").change_scene("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
+				get_node("/root/SceneManager").change_scene("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
 			else:
-				get_tree().change_scene_to_file("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
+				get_tree().change_scene_to_file("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
 	)
 	_style_button(lvl_beta_btn, Color(0.6, 0.4, 0.1))
 	hbox_nav_debug.add_child(lvl_beta_btn)
@@ -1452,12 +1484,16 @@ func _aplicar_shader_outline_en_material(
 ) -> void:
 	if material_base == null:
 		return
-
 	var outline = material_base.next_pass
 	if outline is ShaderMaterial:
 		var material_outline := outline as ShaderMaterial
 		material_outline.shader = shader_outline
 		if habilitado:
+			# Materiales con ancho propio (armas, proyectiles, barcos,
+			# estructuras y creados en runtime sin ruta): se respetan tal cual.
+			var ruta: String = material_base.resource_path
+			if ruta.is_empty() or ruta in MATERIALES_ANCHO_PROPIO:
+				return
 			material_outline.set_shader_parameter("outline_width", OUTLINE_WIDTH_RUNTIME)
 			material_outline.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
 		else:

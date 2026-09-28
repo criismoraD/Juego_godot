@@ -61,7 +61,7 @@ const OFFSETS_EXPLOSIONES_CADENA: Array[Vector3] = [
 @export var escala_explosion_vfx: float = 1.6
 @export var inclinacion_camara_grados: float = 28.0
 @export var inclinacion_roll_grados: float = 8.0
-@export var duracion_hundimiento_muerte: float = 8.0
+@export var duracion_hundimiento_muerte: float = 3.8  ## Segundos del hundimiento (optimizado para mantener el ritmo fluido del nivel)
 @export var profundidad_hundimiento_muerte: float = 7.0
 @export var retraso_fin_baile_tras_hundirse: float = 1.5
 @export var volumen_inicial_hundimiento_db: float = 2.0
@@ -126,7 +126,8 @@ const OFFSET_ZONA_VERDE_MAX_X: float = 1.05   ## Proa / defensora delantera (Def
 
 @export_category("Jefe - GÃ¡rgolas Fase 2")
 @export var gargolas_cantidad: int = 5
-@export var gargolas_atacantes_min: int = 2
+@export var gargolas_atacantes_min: int = 2  ## Solo estas 2 atacan; el resto solo cruza la pantalla
+@export var gargolas_intervalo_disparo: float = 1.5  ## Cadencia de las 2 atacantes (mayor = más lento)
 @export var gargola_rango_mitad_x: float = 3.0
 @export var gargola_offset_derecha_x: float = 8.0
 @export var gargola_separacion_x: float = 1.5
@@ -179,6 +180,11 @@ var _y_base_bamboleo_fondo: float = 0.0
 var _pivot_bamboleo_fondo: Node3D = null
 var _escala_previa_fondo: Vector3 = Vector3.ONE
 var _escala_fondo_aplicada: bool = false
+
+# Caché estático de materiales y geometría para evitar compilar shaders y generar micro-congelamientos durante la cadena de explosiones
+static var _pmat_rocas_destruccion_cache: ParticleProcessMaterial = null
+static var _mat_rocas_destruccion_cache: StandardMaterial3D = null
+static var _quad_rocas_destruccion_cache: QuadMesh = null
 
 @onready var _humo_en_escena: GPUParticles3D = get_node_or_null("PivotFlotacion/HumoEstilizadoJefe") as GPUParticles3D
 
@@ -573,7 +579,18 @@ func _ejecutar_secuencia_destruccion() -> void:
 	_desactivar_colisiones()
 	_remover_grupos_enemigos_restantes()
 
-	# Perrena celebra bailando desde la destrucciÃ³n hasta 2 s tras hundirse.
+	# Liberar explícitamente cualquier freno o reducción de velocidad en la canoa protagonista
+	var canoa: Node3D = _obtener_canoa()
+	if is_instance_valid(canoa):
+		if canoa.has_method("liberar_bloqueo_enemigo"):
+			canoa.call("liberar_bloqueo_enemigo", self)
+		elif "_enemigo_bloqueando" in canoa:
+			if canoa.get("_enemigo_bloqueando") == self:
+				canoa.set("_enemigo_bloqueando", null)
+				canoa.set("_detenida_por_contacto", false)
+				canoa.set("_factor_velocidad_actual", 1.0)
+
+	# Perrena celebra bailando desde la destrucción hasta 2 s tras hundirse.
 	_iniciar_baile_perrena()
 
 	# 1. Sonido "Barco pirata hundimiento" con volumen en crescendo
@@ -789,47 +806,51 @@ func _crear_particulas_rocas_destruccion(spawn_pos: Vector3) -> void:
 	if TEXTURA_PIEDRAS_NEGRAS_RES == null:
 		return
 
+	# Reutilizar recursos cacheados para evitar recompilación de shaders e instanciación repetida en caliente
+	if _pmat_rocas_destruccion_cache == null:
+		_pmat_rocas_destruccion_cache = ParticleProcessMaterial.new()
+		_pmat_rocas_destruccion_cache.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+		_pmat_rocas_destruccion_cache.emission_box_extents = Vector3(0.4, 0.2, 0.4)
+		_pmat_rocas_destruccion_cache.direction = Vector3(0, 1, 0)
+		_pmat_rocas_destruccion_cache.spread = 50.0
+		_pmat_rocas_destruccion_cache.initial_velocity_min = 2.5
+		_pmat_rocas_destruccion_cache.initial_velocity_max = 6.0
+		_pmat_rocas_destruccion_cache.gravity = Vector3(0, -11.0, 0)
+		_pmat_rocas_destruccion_cache.scale_min = 0.3
+		_pmat_rocas_destruccion_cache.scale_max = 0.75
+		_pmat_rocas_destruccion_cache.anim_offset_min = 0.0
+		_pmat_rocas_destruccion_cache.anim_offset_max = 1.0
+		_pmat_rocas_destruccion_cache.angle_min = 0.0
+		_pmat_rocas_destruccion_cache.angle_max = 360.0
+		_pmat_rocas_destruccion_cache.angular_velocity_min = -180.0
+		_pmat_rocas_destruccion_cache.angular_velocity_max = 180.0
+
+	if _mat_rocas_destruccion_cache == null:
+		_mat_rocas_destruccion_cache = StandardMaterial3D.new()
+		_mat_rocas_destruccion_cache.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_mat_rocas_destruccion_cache.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_mat_rocas_destruccion_cache.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_mat_rocas_destruccion_cache.albedo_texture = TEXTURA_PIEDRAS_NEGRAS_RES
+		_mat_rocas_destruccion_cache.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		_mat_rocas_destruccion_cache.billboard_keep_scale = true
+		_mat_rocas_destruccion_cache.particles_anim_h_frames = 4
+		_mat_rocas_destruccion_cache.particles_anim_v_frames = 1
+		_mat_rocas_destruccion_cache.particles_anim_loop = false
+		_mat_rocas_destruccion_cache.render_priority = -1
+
+	if _quad_rocas_destruccion_cache == null:
+		_quad_rocas_destruccion_cache = QuadMesh.new()
+		_quad_rocas_destruccion_cache.size = Vector2(0.4, 0.4)
+		_quad_rocas_destruccion_cache.material = _mat_rocas_destruccion_cache
+
 	var parts := GPUParticles3D.new()
 	parts.name = "ParticulasRocasDestruccionSubmarino"
 	parts.amount = 14
-	parts.lifetime = 2.5
+	parts.lifetime = 2.0
 	parts.one_shot = true
 	parts.explosiveness = 0.85
-
-	var pmat := ParticleProcessMaterial.new()
-	pmat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pmat.emission_box_extents = Vector3(0.4, 0.2, 0.4)
-	pmat.direction = Vector3(0, 1, 0)
-	pmat.spread = 50.0
-	pmat.initial_velocity_min = 2.5
-	pmat.initial_velocity_max = 6.0
-	pmat.gravity = Vector3(0, -11.0, 0)
-	pmat.scale_min = 0.3
-	pmat.scale_max = 0.75
-	pmat.anim_offset_min = 0.0
-	pmat.anim_offset_max = 1.0
-	pmat.angle_min = 0.0
-	pmat.angle_max = 360.0
-	pmat.angular_velocity_min = -180.0
-	pmat.angular_velocity_max = 180.0
-	parts.process_material = pmat
-
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_texture = TEXTURA_PIEDRAS_NEGRAS_RES
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	mat.billboard_keep_scale = true
-	mat.particles_anim_h_frames = 4
-	mat.particles_anim_v_frames = 1
-	mat.particles_anim_loop = false
-	mat.render_priority = -1
-
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.4, 0.4)
-	quad.material = mat
-	parts.draw_pass_1 = quad
+	parts.process_material = _pmat_rocas_destruccion_cache
+	parts.draw_pass_1 = _quad_rocas_destruccion_cache
 
 	var root: Node = get_tree().current_scene
 	if root == null:
@@ -896,6 +917,14 @@ func _spawn_vfx_explosion_cola() -> void:
 	vfx.global_position = punto_cola
 	vfx.scale = Vector3.ONE * maxf(escala_explosion_vfx, 0.5)
 
+	# Evitar bucle infinito del controlador VFX: asegurar one_shot para reproducir la explosión una única vez
+	if "one_shot" in vfx:
+		vfx.set("one_shot", true)
+
+	for p in vfx.find_children("*", "GPUParticles3D", true, false):
+		if p is GPUParticles3D:
+			(p as GPUParticles3D).one_shot = true
+
 	if vfx.has_method("play"):
 		vfx.call("play")
 	elif "emitting" in vfx:
@@ -903,7 +932,7 @@ func _spawn_vfx_explosion_cola() -> void:
 
 	var tree: SceneTree = get_tree()
 	if tree != null:
-		tree.create_timer(3.5).timeout.connect(func():
+		tree.create_timer(2.0).timeout.connect(func():
 			if is_instance_valid(vfx) and not vfx.is_queued_for_deletion():
 				vfx.queue_free()
 		)
@@ -1070,7 +1099,8 @@ func _limpiar_enemigos_restantes(forzar_queue_free: bool = true) -> void:
 
 
 func _matar_enemigos_restantes_en_sumersion() -> void:
-	_limpiar_enemigos_restantes(false)
+	# Al explotar o sumergirse el submarino, se liberan limpiamente de inmediato para no saturar la CPU/GPU con disoluciones simultáneas
+	_limpiar_enemigos_restantes(true)
 
 
 func _limpiar_misiles() -> void:
@@ -1613,6 +1643,10 @@ func _marcar_gargolas_atacantes() -> void:
 		var g: Node = _gargolas[i]
 		if is_instance_valid(g):
 			_gargolas_forzadas.append(g)
+	# El resto no ataca: intervalo desactivado, solo cruzan la pantalla.
+	for g in _gargolas:
+		if is_instance_valid(g) and not (g in _gargolas_forzadas) and "intervalo_disparo" in g:
+			g.set("intervalo_disparo", 9999.0)
 
 
 ## Fuerza a una gÃ¡rgola a entrar en combate inmediato (disparo rÃ¡pido).
@@ -1630,7 +1664,7 @@ func _forzar_ataque_gargola(g: Node) -> void:
 			return
 	_gargolas_ataque_forzado.append(g)
 	if "intervalo_disparo" in g:
-		g.set("intervalo_disparo", minf(float(g.get("intervalo_disparo")), 0.3))
+		g.set("intervalo_disparo", maxf(gargolas_intervalo_disparo, 0.2))
 	if "target_walk_distance" in g:
 		g.set("target_walk_distance", 0.0)
 	if "walked_distance" in g:

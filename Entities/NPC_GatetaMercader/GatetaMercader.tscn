@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://c_gateta_mercader_scene"]
+
+[ext_resource type="Script" path="res://Entities/NPC_GatetaMercader/GatetaMercader.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cyc8rpaoi12j1" path="res://Entities/NPC_GatetaMercader/gateta mercader.glb" id="2_model"]
+[ext_resource type="Material" uid="uid://c_gatetamercader_mat" path="res://Entities/NPC_GatetaMercader/GatetaMercader_Mat.tres" id="3_mat"]
+
+[node name="GatetaMercader" type="Node3D"]
+script = ExtResource("1_script")
+material_npc = ExtResource("3_mat")
+capa_visual = 1
+tiempo_min_idle = 20.0
+tiempo_max_idle = 25.0
+
+[node name="Model" parent="." instance=ExtResource("2_model")]

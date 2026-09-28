@@ -410,7 +410,7 @@ func test_cinematica_bloquea_boton_swap() -> void:
 	assert_true(GameUI.regreso_conversacion_nivel5, "Marca el interludio")
 	_limpiar_regreso()
 	assert_true(btn.disabled, "El botón sigue bloqueado (muere la escena)")
-	assert_almost_eq(_ancho_contorno_perrena(_primera_perrena()), 20.0, 0.01, "Contorno restaurado (recurso compartido)")
+	assert_almost_eq(_ancho_contorno_perrena(_primera_perrena()), 12.0, 0.01, "Contorno restaurado (recurso compartido)")
 
 
 func test_cinematica_devuelve_control_si_perrena_era_activa() -> void:
@@ -764,7 +764,7 @@ func test_cinematica_aborto_mitad_restaura_todo() -> void:
 	assert_false(btn.disabled, "Botón restaurado")
 	assert_false(niebla.visible, "Niebla3 oculta al abortar")
 	assert_false(niebla_b.visible, "Niebla oculta al abortar")
-	assert_almost_eq(_ancho_contorno_perrena(_primera_perrena()), 20.0, 0.01, "Contorno restaurado")
+	assert_almost_eq(_ancho_contorno_perrena(_primera_perrena()), 12.0, 0.01, "Contorno restaurado")
 	var arco_abort = _primera_perrena().find_child("ARCO_ANIMADO", true, false)
 	assert_not_null(arco_abort, "Existe el nodo del arco")
 	assert_true(arco_abort.visible, "Arco restaurado al abortar")

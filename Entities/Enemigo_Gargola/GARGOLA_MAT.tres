@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://cqje54hoj6sun"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dohjbwxcg4ayq"]
 
 [ext_resource type="Texture2D" uid="uid://c7v12fjaetrxo" path="res://Entities/Enemigo_Gargola/GARGOLA_D.jpg" id="1_7cnuh"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_feitw"]
@@ -7,7 +7,7 @@
 render_priority = 0
 shader = ExtResource("2_feitw")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 20.0
+shader_parameter/outline_width = 12.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_g6cbk")

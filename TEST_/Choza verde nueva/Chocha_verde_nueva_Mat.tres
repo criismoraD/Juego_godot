@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://7s4mj11jdwp8"]
+
+[ext_resource type="Texture2D" uid="uid://dn21k5ciui05x" path="res://TEST_/Choza verde nueva/Chocha verde nueva_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Chocha_verde_nueva_Mat"
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")
+roughness = 0.85

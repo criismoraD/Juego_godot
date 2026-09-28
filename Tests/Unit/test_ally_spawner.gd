@@ -5,7 +5,7 @@ extends GutTest
 
 var AllySpawnerScript = load("res://Entities/Spawner_Aliadas/AllySpawner.gd")
 var EscenaSpawner: PackedScene = load("res://Entities/Spawner_Aliadas/AllySpawner.tscn")
-var EscenaNivel06: PackedScene = load("res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn")
+var EscenaNivel06: PackedScene = load("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
 
 var _spawner: AllySpawner = null
 var _created_nodes: Array[Node] = []

@@ -19,7 +19,7 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var total_enemigos_oleada_2: int = 26  ## Enemigos totales en la Oleada 2
 @export var total_enemigos_oleada_3: int = 30  ## Enemigos totales en la Oleada 3
 @export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos cuerno)
-@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (12 Lonko, 0 Imp Escudo, 9 Gárgolas, 8 GoblinGirl + 2 Arquera Rosa, 9 Goblin + 10 cuerno)
+@export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (12 Lonko, 2 Imp Escudo, 9 Gárgolas, 7 GoblinGirl + 2 Arquera Rosa, 8 Goblin + 10 cuerno)
 @export var total_enemigos_oleada_6: int = 40  ## Enemigos totales en la Oleada 6 Asalto final (12 arqueras, 15 ballesteros, 5 globos, 6 goblinas de escudo)
 @export_range(0.0, 1.0, 0.05) var mascara_oleada6_alfa: float = 0.85  ## Oscurecido lateral derecho durante la Oleada 6
 
@@ -31,6 +31,14 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export_range(15, 60, 1) var fps_subviewport_fondo_3d: int = 30
 @export var pausar_video_fondo_en_combate: bool = false  ## true = congela la cascada en combate (ahorra CPU); false = cascada animada siempre
 const AUDIO_DEFENSORAS_ENTRADA: AudioStream = preload("res://System/Audio/SFX/Defensoras entrada.wav")
+
+@export_category("Audio y Música")
+@export var reproducir_sonido_ambiente: bool = true  ## Si false, desactiva el sonido ambiental del bosque
+@export var musica_inicial_indice: int = 3  ## Índice de música al iniciar (3 = Bosque ambiente, 10 = Canción pueblo)
+@export var musica_inicial_stream: AudioStream = null  ## Stream directo opcional para la música inicial
+@export var volumen_musica_inicial_db: float = 0.0  ## Ajuste extra de volumen en dB
+@export var mantener_musica_nivel: bool = false  ## Si true, la música del nivel no se reemplaza por combate genérico
+
 @export_category("Debug")
 @export var debug_logs_enabled: bool = false
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
@@ -127,6 +135,20 @@ var _fondo_render_timer: float = 0.0
 var _escala_base_fondo_animado: Vector3 = Vector3.ONE
 # === OPTIMIZACIÓN: Monitoreo de oleadas con timer ===
 var _monitor_timer: float = 0.0
+## Nivel Pueblo: seguimiento de cámara a la protagonista con parallax sutil y fondo estático.
+const FACTOR_PARALLAX_PUEBLO: float = 0.15  ## 15%: desplazamiento sutil en capas 3D lejanas
+const LIMITE_CAMARA_PUEBLO_MIN_X: float = -9.5  ## Límite izquierdo de la cámara en el pueblo pequeño
+const LIMITE_CAMARA_PUEBLO_MAX_X: float = 8.5  ## Límite derecho de la cámara en el pueblo pequeño
+const SUAVIZADO_CAMARA_PUEBLO: float = 8.0  ## Seguimiento natural y reactivo centrado (estilo Mario Bros)
+
+var _camara_pueblo: Camera3D = null
+var _camara_fondo_pueblo: Camera3D = null
+var _fondo_estatico_pueblo: Node3D = null
+var _luz_agua_pueblo: OmniLight3D = null
+var _camara_pueblo_iniciada: bool = false
+var _x_origen_camara_frente: float = 0.0
+var _x_origen_camara_fondo: float = 0.0
+var _offset_x_fondo_estatico: float = 0.0
 @onready var wave_spawner: WaveSpawner = $WaveSpawner
 @onready var game_ui = $GameUI
 @onready var fondo_3d_rect: TextureRect = (
@@ -141,9 +163,9 @@ var _monitor_timer: float = 0.0
 @onready var texture_rect: TextureRect = (
 	get_node_or_null("SubViewportFondo3D/SubViewport/TextureRect") as TextureRect
 )
-@onready var subviewport_fondo_3d: SubViewport = $SubViewportFondo3D
-@onready var subviewport_medio_3d: SubViewport = $SubViewportMedio3D
-@onready var subviewport_frente_3d: SubViewport = $SubViewportFrente3D
+@onready var subviewport_fondo_3d: SubViewport = get_node_or_null("SubViewportFondo3D") as SubViewport
+@onready var subviewport_medio_3d: SubViewport = get_node_or_null("SubViewportMedio3D") as SubViewport
+@onready var subviewport_frente_3d: SubViewport = get_node_or_null("SubViewportFrente3D") as SubViewport
 @onready var fondo_animado_sprite: Sprite3D = (
 	get_node_or_null("SubViewportFondo3D/FONDO ANIMADO") as Sprite3D
 )
@@ -157,9 +179,9 @@ var _monitor_timer: float = 0.0
 	get_node_or_null("SubViewportFondo3D/SubViewport/VideoStreamPlayer") as VideoStreamPlayer
 )
 @onready var torre2_fondo: Node3D = _buscar_nodo_fondo_multiple(["TORRE", "TORRE2", "TORRE3"])
-@onready var escena_rampa_nivel3: Node3D = $EscenaRampaNivel3
-@onready var muro_plataforma: StaticBody3D = $Muro_Plataforma
-@onready var muro_plataforma2: StaticBody3D = $Muro_Plataforma2
+@onready var escena_rampa_nivel3: Node3D = get_node_or_null("EscenaRampaNivel3") as Node3D
+@onready var muro_plataforma: StaticBody3D = get_node_or_null("Muro_Plataforma") as StaticBody3D
+@onready var muro_plataforma2: StaticBody3D = get_node_or_null("Muro_Plataforma2") as StaticBody3D
 @onready var torre_de_asedio: TorreDeAsedio = get_node_or_null("Torre_de_asedio") as TorreDeAsedio
 @onready var trayectoria_embarcaciones: ControladorTrayectoriaEmbarcaciones = (
 	get_node_or_null("%TrayectoriaEmbarcaciones") as ControladorTrayectoriaEmbarcaciones
@@ -231,19 +253,50 @@ func _ready():
 
 	_ajustar_subviewports_3d()
 	_configurar_capas_dof_fondo()
+	_configurar_gemas_primer_plano()
 	if not get_viewport().size_changed.is_connected(_ajustar_subviewports_3d):
 		get_viewport().size_changed.connect(_ajustar_subviewports_3d)
 
 	# Warm-up de shaders
 	VFXFactory.warmup_shaders(self)
 
-	# Sonido ambiente desde el arranque del juego
-	AudioManager.play_music(3, true, 12.0)  # SONIDO BOSQUE.mp3
+	# Detección automática para nivel pueblo si no se configuró explícitamente en el inspector
+	if "pueblo" in name.to_lower():
+		if musica_inicial_indice == 3:
+			reproducir_sonido_ambiente = false
+			musica_inicial_indice = 10
+			mantener_musica_nivel = true
+
+	# Gestión de música y sonido ambiental al iniciar nivel
+	if not reproducir_sonido_ambiente:
+		# Sonido de ambiente eliminado (reproduce la canción asignada sin ambiente)
+		if musica_inicial_stream != null:
+			AudioManager.play_music_stream(musica_inicial_stream, true, volumen_musica_inicial_db)
+		elif musica_inicial_indice > 0:
+			AudioManager.play_music(musica_inicial_indice, true, volumen_musica_inicial_db)
+		else:
+			AudioManager.play_music(0)
+	else:
+		if musica_inicial_stream != null:
+			AudioManager.play_music_stream(musica_inicial_stream, true, volumen_musica_inicial_db)
+		else:
+			var boost_db: float = 12.0 if musica_inicial_indice == 3 else volumen_musica_inicial_db
+			AudioManager.play_music(musica_inicial_indice, true, boost_db)
 
 	if wave_spawner and not wave_spawner.enemigo_eliminado.is_connected(_on_enemigo_eliminado_nivel):
 		wave_spawner.enemigo_eliminado.connect(_on_enemigo_eliminado_nivel)
 	if wave_spawner and not wave_spawner.goblin_spawneado.is_connected(_on_goblin_spawneado_nivel):
 		wave_spawner.goblin_spawneado.connect(_on_goblin_spawneado_nivel)
+
+	# Sincronizar plano de profundidad Z del jugador con el plano de combate si es distinto de cero (ej. Nivel Pueblo Z=3)
+	if wave_spawner and absf(wave_spawner.global_position.z) > 0.1:
+		var prota_z := get_tree().get_first_node_in_group("player") as CharacterBody3D
+		if not prota_z:
+			prota_z = find_child("Player", true, false) as CharacterBody3D
+		if prota_z and "plano_profundidad_z" in prota_z:
+			prota_z.plano_profundidad_z = wave_spawner.global_position.z
+			prota_z.global_position.z = wave_spawner.global_position.z
+
 
 	# Reposicionar jugador si regresa de la habitación interior (puerta)
 	if has_node("/root/SceneManager") and get_node("/root/SceneManager").posicion_retorno_puerta != Vector3.ZERO:
@@ -279,7 +332,8 @@ func _ready():
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
 		_aplicar_configuracion_defensoras()
 		_set_aliadas_activas(true)
-		AudioManager.play_music(2)
+		if not mantener_musica_nivel:
+			AudioManager.play_music(2)
 		# Restaurar los power-ups que el jugador tenía al entrar al interior
 		var _prota := get_tree().get_first_node_in_group("player")
 		if _prota:
@@ -341,7 +395,8 @@ func _ready():
 		# Debug por defecto: defensoras desactivadas y enemigos en pausa (se activan desde el panel)
 		_aliadas_activas = false
 		_set_aliadas_activas(false)
-		AudioManager.play_music(2)
+		if not mantener_musica_nivel:
+			AudioManager.play_music(2)
 		_iniciar_oleadas_libres()
 		wave_spawner.detener_spawning()
 		_crear_panel_controles_spawn()
@@ -360,7 +415,8 @@ func _ready():
 			game_ui.set_modo_minimo(false)
 		get_tree().call_group("ui_vida_protagonista", "mostrar")
 		_set_aliadas_activas(true)
-		AudioManager.play_music(2)
+		if not mantener_musica_nivel:
+			AudioManager.play_music(2)
 		var total_continuar: int = total_enemigos_nivel1
 		match oleada_continuar:
 			2: total_continuar = total_enemigos_oleada_2
@@ -453,7 +509,7 @@ func _mostrar_texto_paso_medea() -> void:
 	fuente_papyrus.base_font = FUENTE_RAVENNA
 
 	var etiqueta := Label.new()
-	etiqueta.text = tr("TITULO_PASO_MEDEA")
+	etiqueta.text = tr("TITULO_PUEBLO") if name == "Nivel Pueblo" else tr("TITULO_PASO_MEDEA")
 	etiqueta.add_theme_font_override("font", fuente_papyrus)
 	etiqueta.add_theme_font_size_override("font_size", TAMANO_FUENTE)
 	etiqueta.add_theme_color_override("font_color", COLOR_TEXTO_NEGRO)
@@ -694,6 +750,27 @@ func _ajustar_subviewport_video_fondo(tamano_base: Vector2i) -> void:
 func _configurar_capas_dof_fondo() -> void:
 	_asignar_capa_visual_recursiva(busto_bronce_fondo, CAPA_VISUAL_FONDO_DOF)
 	_asignar_capa_visual_recursiva(torre2_fondo, CAPA_VISUAL_FONDO_DOF)
+	var campamento := find_child("Campamento", true, false)
+	if campamento:
+		_asignar_capa_visual_recursiva(campamento, CAPA_VISUAL_FONDO_DOF)
+	for piso in find_children("*ampliado*", "Node3D", true, false):
+		_asignar_capa_visual_recursiva(piso, CAPA_VISUAL_FONDO_DOF)
+	for carreta in find_children("*fondo*", "Node3D", true, false):
+		if "carreta" in carreta.name.to_lower():
+			_asignar_capa_visual_recursiva(carreta, CAPA_VISUAL_FONDO_DOF)
+	var carreta_fondo := find_child("CarretaComercio fondo", true, false)
+	if carreta_fondo:
+		_asignar_capa_visual_recursiva(carreta_fondo, CAPA_VISUAL_FONDO_DOF)
+	var puente_madera3 := find_child("PuenteMadera3", true, false)
+	if puente_madera3:
+		_asignar_capa_visual_recursiva(puente_madera3, CAPA_VISUAL_FONDO_DOF)
+
+
+## Gemas del pueblo en primer plano (capa visual 1): las asegura en la
+## capa del frente aunque el modelo traiga otra por defecto.
+func _configurar_gemas_primer_plano() -> void:
+	for gema in find_children("GEMA_NIVEL06*", "Node3D", true, false):
+		_asignar_capa_visual_recursiva(gema, 1)
 
 
 func _buscar_nodo_fondo_multiple(nombres_nodo: Array[String]) -> Node3D:
@@ -736,6 +813,16 @@ func _forzar_refresco_outline_global() -> void:
 
 func _mostrar_dialogo_inicio_protagonista():
 	_set_juego_pausado_dialogo(true)
+	var paginas_custom: PackedStringArray = PackedStringArray()
+	if name == "Nivel Pueblo" or "pueblo" in name.to_lower():
+		var p1: String = tr("DIALOGO_PROTA_PUEBLO_P1")
+		var p2: String = tr("DIALOGO_PROTA_PUEBLO_P2")
+		if p1 == "DIALOGO_PROTA_PUEBLO_P1":
+			p1 = "Me estremezco al saber que estos cerdos salvajes se asentaron tan cerca del bosque"
+		if p2 == "DIALOGO_PROTA_PUEBLO_P2":
+			p2 = "Es raro ver orcos neutrales, creí que todos habrían seguido el llamado a la guerra de la maestra oscura"
+		paginas_custom = PackedStringArray([p1, p2])
+
 	await _mostrar_dialogo_escena(
 		escena_dialogo_inicio_protagonista,
 		velocidad_texto_novela,
@@ -743,7 +830,8 @@ func _mostrar_dialogo_inicio_protagonista():
 		intervalo_min_habla_protagonista,
 		sfx_habla_dialogo,
 		pitch_habla_protagonista,
-		volumen_habla_protagonista_db
+		volumen_habla_protagonista_db,
+		paginas_custom
 	)
 	_set_juego_pausado_dialogo(false)
 
@@ -764,7 +852,8 @@ func _mostrar_dialogo_escena(
 	intervalo_min_sonido: float,
 	audio_stream: AudioStream,
 	pitch_scale: float,
-	volumen_db: float
+	volumen_db: float,
+	paginas_override: PackedStringArray = PackedStringArray()
 ) -> bool:
 	if not escena:
 		push_warning("[NIVEL01] No se encontró la escena de diálogo.")
@@ -774,6 +863,11 @@ func _mostrar_dialogo_escena(
 	if not dialogo_escena:
 		push_warning("[NIVEL01] La escena de diálogo no usa DialogoComic.")
 		return false
+
+	if not paginas_override.is_empty():
+		dialogo_escena.paginas_texto = paginas_override
+		while dialogo_escena.paginas_imagenes.size() < paginas_override.size() and not dialogo_escena.paginas_imagenes.is_empty():
+			dialogo_escena.paginas_imagenes.append(dialogo_escena.paginas_imagenes[0])
 
 	dialogo_escena.velocidad_texto = velocidad
 	dialogo_escena.chars_por_sonido = chars_por_sonido
@@ -792,9 +886,81 @@ func _mostrar_dialogo_escena(
 	return true
 
 
-func _process(delta):
+## Nivel Pueblo: la cámara sigue de forma natural y centrada a la protagonista (estilo Mario Bros),
+## avanzando junto a ella sin rezagarse ni dejar espacios desproporcionados.
+## La cámara del fondo (CamaraFondoDOF) acompaña con un factor de parallax muy sutil (15%),
+## mientras que el fondo 2D (FONDO estatico) se mantiene 100% estático en el marco visual.
+func _actualizar_camara_pueblo(delta: float) -> void:
+	if name != "Nivel Pueblo":
+		return
+	if not is_instance_valid(_camara_pueblo):
+		_camara_pueblo = find_child("CamaraFrente", true, false) as Camera3D
+		_camara_pueblo_iniciada = false
+	if not is_instance_valid(_camara_pueblo):
+		return
+		
+	if not is_instance_valid(_camara_fondo_pueblo):
+		_camara_fondo_pueblo = find_child("CamaraFondoDOF", true, false) as Camera3D
+	if not is_instance_valid(_fondo_estatico_pueblo):
+		_fondo_estatico_pueblo = find_child("FONDO estatico", true, false) as Node3D
+	if not is_instance_valid(_luz_agua_pueblo):
+		_luz_agua_pueblo = find_child("LuzAguaPueblo", true, false) as OmniLight3D
+
+	var tree := get_tree()
+	if not tree:
+		return
+	var prota: Node3D = tree.get_first_node_in_group("player") as Node3D
+	if not is_instance_valid(prota):
+		prota = find_child("Player", true, false) as Node3D
+	if not is_instance_valid(prota):
+		return
+
+	var objetivo_x: float = clampf(prota.global_position.x, LIMITE_CAMARA_PUEBLO_MIN_X, LIMITE_CAMARA_PUEBLO_MAX_X)
+
+	if not _camara_pueblo_iniciada:
+		_camara_pueblo_iniciada = true
+		_camara_pueblo.global_position.x = objetivo_x
+		_x_origen_camara_frente = objetivo_x
+		if is_instance_valid(_luz_agua_pueblo):
+			_luz_agua_pueblo.global_position.x = objetivo_x
+		if is_instance_valid(_camara_fondo_pueblo):
+			_x_origen_camara_fondo = _camara_fondo_pueblo.global_position.x
+		if is_instance_valid(_fondo_estatico_pueblo) and is_instance_valid(_camara_fondo_pueblo):
+			_offset_x_fondo_estatico = _fondo_estatico_pueblo.global_position.x - _camara_fondo_pueblo.global_position.x
+		return
+
+	# Seguimiento natural y fluido centrado en la protagonista (estilo Mario Bros)
+	_camara_pueblo.global_position.x = lerpf(
+		_camara_pueblo.global_position.x,
+		objetivo_x,
+		clampf(delta * SUAVIZADO_CAMARA_PUEBLO, 0.0, 1.0)
+	)
+
+	# Iluminación continua del agua: acompaña a la cámara frontal para mantener la luz y reflejo intactos
+	if is_instance_valid(_luz_agua_pueblo):
+		_luz_agua_pueblo.global_position.x = _camara_pueblo.global_position.x
+
+	# Parallax sutil en elementos 3D del fondo (Capa 2)
+	var delta_frente: float = _camara_pueblo.global_position.x - _x_origen_camara_frente
+	if is_instance_valid(_camara_fondo_pueblo):
+		_camara_fondo_pueblo.global_position.x = _x_origen_camara_fondo + (delta_frente * FACTOR_PARALLAX_PUEBLO)
+		
+		# El fondo 2D permanece 100% estático en pantalla
+		if is_instance_valid(_fondo_estatico_pueblo):
+			_fondo_estatico_pueblo.global_position.x = _camara_fondo_pueblo.global_position.x + _offset_x_fondo_estatico
+
+
+## Retorna la referencia a la luz frontal del agua de Nivel Pueblo
+func obtener_luz_agua_pueblo() -> OmniLight3D:
+	if not is_instance_valid(_luz_agua_pueblo):
+		_luz_agua_pueblo = find_child("LuzAguaPueblo", true, false) as OmniLight3D
+	return _luz_agua_pueblo
+
+
+func _process(delta: float) -> void:
 	_actualizar_render_subviewport_fondo(delta)
 	_monitorear_goblin_rosa_pantalla()
+	_actualizar_camara_pueblo(delta)
 
 	# OPT: Monitoreo de oleadas con timer en vez de cada frame
 	_monitor_timer += delta
@@ -826,12 +992,16 @@ func _actualizar_render_subviewport_fondo(delta: float) -> void:
 		subviewport_fondo_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # NIVEL 0 — PACIFISTA
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
 func _iniciar_nivel_0():
+	# Nivel Pueblo: sin evento del emisario ni pacíficos.
+	if name == "Nivel Pueblo":
+		return
 	estado_actual = NivelEstado.NIVEL_0
 
 	# UI mínimo (solo corazones)
@@ -927,7 +1097,8 @@ func _on_pacifico_danado():
 			supervivientes += 1
 
 	# Música de batalla
-	AudioManager.play_music(2)  # BGM_battle.mp3
+	if not mantener_musica_nivel:
+		AudioManager.play_music(2)  # BGM_battle.mp3
 
 	# Restaurar UI completo
 	if game_ui and game_ui.has_method("set_modo_minimo"):
@@ -1106,6 +1277,10 @@ func _aplicar_perfil_render_combate() -> void:
 
 
 func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
+	# Nivel Pueblo: base pacífica sin oleadas de combate (el nodo WaveSpawner
+	# se conserva porque el script lo requiere, pero no se genera ningún enemigo).
+	if name == "Nivel Pueblo":
+		return
 	estado_actual = NivelEstado.NIVEL_1
 
 	# Asegurar que el contorno toon global siempre esté activo en cada oleada de combate
@@ -1280,10 +1455,11 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		_programar_refuerzo_arqueras_oleada_6(_arqueras_o6_gen)
 
 	# Música según la oleada: Oleada 5 usa "Noche Aplastante" (índice 5), anteriores y oleada 6 usan música de batalla (índice 2)
-	if numero_oleada == 5:
-		AudioManager.play_music(5)
-	else:
-		AudioManager.play_music(2)
+	if not mantener_musica_nivel:
+		if numero_oleada == 5:
+			AudioManager.play_music(5)
+		else:
+			AudioManager.play_music(2)
 
 	# Torre de asedio: solo visible y activa en la Oleada 6 (Asalto final)
 	if is_instance_valid(torre_de_asedio):
@@ -1947,10 +2123,11 @@ func _iniciar_oleada_debug(numero_oleada: int, excluir_de_limpieza: Array = []) 
 		game_ui.set_modo_minimo(false)
 
 	_set_aliadas_activas(true)
-	if numero_oleada == 5:
-		AudioManager.play_music(5)
-	else:
-		AudioManager.play_music(2)
+	if not mantener_musica_nivel:
+		if numero_oleada == 5:
+			AudioManager.play_music(5)
+		else:
+			AudioManager.play_music(2)
 
 	if numero_oleada == 6:
 		oleada_combate_actual = 6

@@ -8,6 +8,19 @@ extends Node
 # === REPRODUCTORES ===
 const MAX_POOL_SIZE = 16
 const MAX_3D_POOL_SIZE = 16
+
+const MUSICA_SILENCIO: int = 0
+const MUSICA_MENU_PRINCIPAL: int = 1
+const MUSICA_COMBATE: int = 2
+const MUSICA_BOSQUE_AMBIENTE: int = 3
+const MUSICA_VICTORIA: int = 4
+const MUSICA_NOCHE_APLASTANTE: int = 5
+const MUSICA_TORRE_INTERIOR: int = 6
+const MUSICA_VIAJE_RIO: int = 7
+const MUSICA_JEFE_RIO: int = 8
+const MUSICA_JEFE_DESTRUIDO: int = 9
+const MUSICA_PUEBLO: int = 10
+
 var sfx_player: AudioStreamPlayer
 var sfx_player_3d: AudioStreamPlayer3D
 var music_player: AudioStreamPlayer
@@ -403,6 +416,7 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://System/Audio/Music/Viaje por el rio.mp3"))  # Índice 7 - Viaje por el rio
 	bgm_streams.append(load("res://System/Audio/Music/Jefe rio.mp3"))  # Índice 8 - Jefe rio
 	bgm_streams.append(load("res://System/Audio/SFX/Jefe destruido.mp3"))  # Índice 9 - Jefe destruido
+	bgm_streams.append(load("res://System/Audio/Music/Cancion pueblo.mp3"))  # Índice 10 - Canción pueblo
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -587,6 +601,7 @@ var bgm_volume_offsets: Dictionary = {
 	7: 0.0,   ## Viaje por el rio (-15.0 dB base)
 	8: 6.0,   ## Jefe rio (-9.0 dB pista, elevada sobre el combate: flecha/tensado bajaron -6 dB)
 	9: 3.5,   ## Jefe destruido (-11.5 dB base, fanfarria triunfal clara)
+	10: 0.0,  ## Canción pueblo (-15.0 dB base)
 }
 
 
@@ -632,6 +647,37 @@ func play_music(index: int, loop: bool = true, volume_boost_db: float = 0.0):
 		elif not _active_music_player.playing:
 			_active_music_player.play()
 		_current_bgm_index = index
+
+
+## Reproduce un AudioStream directamente sin requerir índice preconfigurado
+func play_music_stream(stream: AudioStream, loop: bool = true, volume_boost_db: float = 0.0) -> void:
+	if stream == null:
+		play_music(0)
+		return
+	if _music_tween and _music_tween.is_valid():
+		_music_tween.kill()
+
+	if stream is AudioStreamMP3:
+		stream.loop = loop
+	elif stream is AudioStreamOggVorbis:
+		stream.loop = loop
+	elif stream is AudioStreamWAV:
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if loop else AudioStreamWAV.LOOP_DISABLED
+
+	var inactive_player: AudioStreamPlayer = music_player_b if _active_music_player == music_player else music_player
+	if is_instance_valid(inactive_player):
+		inactive_player.stop()
+
+	if not is_instance_valid(_active_music_player):
+		_active_music_player = music_player
+
+	_active_music_player.volume_db = music_volume_db + volume_boost_db
+	if _active_music_player.stream != stream:
+		_active_music_player.stream = stream
+		_active_music_player.play()
+	elif not _active_music_player.playing:
+		_active_music_player.play()
+	_current_bgm_index = -1
 
 
 ## Transición suave hacia una nueva pista musical o silencio (index = 0).

@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://cx8cwgkqemwry"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bk4qji2124gji"]
 
 [ext_resource type="Texture2D" uid="uid://b5vqmmr7mb50j" path="res://Entities/Enemigo_Goblin/GOBLING_REMASTER_ANIMACIONES_D.jpg" id="1_hhmb0"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_g6iqf"]
@@ -7,7 +7,7 @@
 render_priority = 0
 shader = ExtResource("2_g6iqf")
 shader_parameter/outline_color = Color(0, 0, 0, 1)
-shader_parameter/outline_width = 20.0
+shader_parameter/outline_width = 12.0
 
 [resource]
 resource_name = "GOBLING_MATERIAL"

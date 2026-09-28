@@ -251,16 +251,18 @@ func _generar_cola_spawn() -> void:
 
 	elif wave_num == 5:
 		# Oleada 5: 40 enemigos base + 10 cuerno (Total 50)
-		# 12 Lonko, 0 Imp Escudo, 9 Gárgolas, 8 Arqueras Goblin + 2 Arqueras Rosa, 9 Goblins Ballesta. Total = 40.
+		# 12 Lonko, 2 Imp Escudo, 9 Gárgolas, 7 Arqueras Goblin + 2 Arqueras Rosa, 8 Goblins Ballesta. Total = 40.
 		for i in range(12):
 			pool.append(escena_lonko)
+		for i in range(2):
+			pool.append(escena_imp_escudo)
 		for i in range(9):
 			pool.append(escena_gargola)
-		for i in range(8):
+		for i in range(7):
 			pool.append(escena_goblin_girl)
 		for i in range(2):
 			pool.append(escena_arquera_rosa)
-		for i in range(9):
+		for i in range(8):
 			pool.append(escena_goblin)
 
 	elif wave_num == 6:

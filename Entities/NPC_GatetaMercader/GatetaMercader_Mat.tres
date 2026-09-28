@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://c_gatetamercader_mat"]
+
+[ext_resource type="Texture2D" uid="uid://8wd56y616jsr" path="res://Entities/NPC_GatetaMercader/gateta mercader_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "GatetaMercader_Mat"
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")
+roughness = 0.8

@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/NPC_RatonaHerrera/RatonaHerrera.gd" id="1_ll2c1"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_RatonaHerrera/ratona herrera.glb" id="2_rxyam"]
+[ext_resource type="Material" path="res://Entities/NPC_RatonaHerrera/RatonaHerrera_Mat.tres" id="3_mat"]
+
+[node name="RatonaHerrera" type="Node3D" unique_id=1349951618]
+script = ExtResource("1_ll2c1")
+material_npc = ExtResource("3_mat")
+
+[node name="Pivot" type="Node3D" parent="." unique_id=351293281]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="Model" parent="Pivot" unique_id=650849494 instance=ExtResource("2_rxyam")]
+
+[node name="ratona herrera" parent="Pivot/Model/Armature/Skeleton3D" index="0"]
+material_override = ExtResource("3_mat")
+surface_material_override/0 = ExtResource("3_mat")
+
+[node name="AnimationPlayer" parent="Pivot/Model" index="1" unique_id=2105317536]
+autoplay = "Idle herrera"
+speed_scale = 0.6
+
+[editable path="Pivot/Model"]

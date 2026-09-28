@@ -1,13 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://b6m0sx7schbsx"]
 
-[ext_resource type="Script" path="res://Entities/Proyectil_Misil_Submarino/MisilSubmarino.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://Entities/Proyectil_Misil_Submarino/Misil submarino.glb" id="2_model"]
+[ext_resource type="Script" uid="uid://bqsajp7g55xke" path="res://Entities/Proyectil_Misil_Submarino/MisilSubmarino.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://kc1lgb1vpvr2" path="res://Entities/Proyectil_Misil_Submarino/Misil submarino.glb" id="2_model"]
 
 [sub_resource type="SphereShape3D" id="SphereShape_misil"]
-radius = 0.35
+radius = 0.36659634
 
 [sub_resource type="Gradient" id="Gradient_estela"]
-offsets = PackedFloat32Array(0, 1)
 colors = PackedColorArray(1, 0.6, 0.2, 1, 1, 0.25, 0.05, 0)
 
 [sub_resource type="GradientTexture1D" id="GradientTexture_estela"]
@@ -27,33 +26,30 @@ color_ramp = SubResource("GradientTexture_estela")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial_estela"]
 transparency = 1
+cull_mode = 2
 shading_mode = 0
 vertex_color_use_as_albedo = true
 albedo_color = Color(1, 0.6, 0.2, 1)
-cull_mode = 2
 
 [sub_resource type="SphereMesh" id="SphereMesh_estela"]
+material = SubResource("StandardMaterial_estela")
 radius = 0.06
 height = 0.12
-material = SubResource("StandardMaterial_estela")
 
-[node name="MisilSubmarino" type="Area3D"]
+[node name="MisilSubmarino" type="Area3D" unique_id=1904498664]
 collision_layer = 4
 collision_mask = 71
-monitoring = true
-monitorable = true
 script = ExtResource("1_script")
 
-[node name="ModeloMisil" parent="." instance=ExtResource("2_model")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="ModeloMisil" parent="." unique_id=1338595676 instance=ExtResource("2_model")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1169329998]
+transform = Transform3D(1.0791246, 0, 0, 0, 1.6376094, 0, 0, 0, 1.7005769, 0, 0.3303085, 0.037240148)
 shape = SubResource("SphereShape_misil")
 
-[node name="EstelaCaida" type="GPUParticles3D" parent="."]
+[node name="EstelaCaida" type="GPUParticles3D" parent="." unique_id=1219354913]
 emitting = false
 amount = 28
 lifetime = 0.45
-local_coords = false
 process_material = SubResource("ParticleProcess_estela")
 draw_pass_1 = SubResource("SphereMesh_estela")

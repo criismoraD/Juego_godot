@@ -237,7 +237,7 @@ fov = 5.0
 size = 0.01
 
 [node name="Player" parent="." unique_id=1974804789 instance=ExtResource("4_1cr8j")]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -9.683, 6, 0.05)
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -4.98345, 0.14418983, 0.05)
 rotacion_torso_escalera = 180.0
 color_particulas_salto = Color(0.9764706, 0.6509804, 0.5019608, 0.5019608)
 escala_min_salto = 0.01
@@ -246,7 +246,7 @@ escala_max_salto = 0.05
 [node name="CollisionShape3D" parent="Player" index="0" unique_id=656013072]
 transform = Transform3D(0.99999976, 0, 0, 0, 0.99999976, 0, 0, 0, 0.99999976, 0, 0.8999996, 0)
 
-[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1608648112) index="0" unique_id=1978748589]
+[node name="Skeleton3D" parent="Player/ArqueraModel/Armature" parent_id_path=PackedInt32Array(1974804789, 1511312856, 1391717993) index="0" unique_id=237608549]
 bones/0/position = Vector3(4.172325e-07, -0.35407498, -40.838314)
 bones/0/rotation = Quaternion(-0.7071068, 0, 0, 0.7071068)
 bones/1/rotation = Quaternion(-0.051863074, 0, 0, 0.9986543)
@@ -344,10 +344,10 @@ bones/62/rotation = Quaternion(0.4958501, -0.0030770435, 0.001757189, 0.86840093
 bones/63/rotation = Quaternion(0.2967589, 0.106778584, -0.033413053, 0.9483755)
 
 [node name="BoneAttach_Arco" parent="Player/ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
-transform = Transform3D(0.05425782, 0.9765436, -0.2083691, -0.99617183, 0.06726043, 0.055827364, 0.068532825, 0.2045423, 0.9764552, 22.011602, -0.32546735, -48.460358)
+transform = Transform3D(0.020988328, 0.7758316, 0.6305911, -0.9494218, 0.21311922, -0.23060551, -0.3133022, -0.5938569, 0.741064, 13.269037, 7.447271, -59.029194)
 
 [node name="BoneAttach_Flecha" parent="Player/ArqueraModel/Armature/Skeleton3D" index="2" unique_id=1617127062]
-transform = Transform3D(0.14406963, -0.9648233, 0.21990775, 0.9845342, 0.16213693, 0.06635468, -0.09967555, 0.20694695, 0.9732611, -22.011616, -1.5592093, -48.460354)
+transform = Transform3D(0.95968634, 0.0882528, 0.26685908, -0.2604661, -0.07760114, 0.96235937, 0.10563948, -0.9930707, -0.051485844, -4.7772317, 0.9771353, -52.20528)
 
 [node name="WaveSpawner" type="Node3D" parent="." unique_id=818768354]
 transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 4.746284, 0.6275799, 0)
@@ -641,11 +641,11 @@ draw_pass_1 = SubResource("QuadMesh_dust")
 [node name="TORRE" parent="." unique_id=1701577270 instance=ExtResource("17_cx8r4")]
 transform = Transform3D(5.285, 0, 0, 0, 5.285, 0, 0, 0, 5.285, -9.707, 0.207, -3.336)
 
-[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=1726377201]
+[node name="PLANO_ILUMINADO" parent="TORRE" index="0" unique_id=1766136048]
 visible = false
 material_override = ExtResource("47_plano_mat")
 
-[node name="TORRE" parent="TORRE" index="1" unique_id=1986805220]
+[node name="TORRE" parent="TORRE" index="1" unique_id=1888679626]
 transform = Transform3D(1.0111401, 0, 0, 0, 1.0001929, 0, 0, 0, 1.0001929, -0.002997756, 0, 0)
 visible = false
 layers = 2

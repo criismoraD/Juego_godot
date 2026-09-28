@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://xbbh51b37lxu"
+path="res://.godot/imported/Cancion pueblo.mp3-25c3d39ca2b8ed4c71a7f3443e2b0090.mp3str"
+
+[deps]
+
+source_file="res://System/Audio/Music/Cancion pueblo.mp3"
+dest_files=["res://.godot/imported/Cancion pueblo.mp3-25c3d39ca2b8ed4c71a7f3443e2b0090.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -774,6 +774,9 @@ func _sumergirse_y_liberar() -> void:
 		remove_from_group("enemigos")
 	_desactivar_colisiones()
 	_remover_grupos_enemigos_restantes()
+	var canoa: Node = get_tree().get_first_node_in_group("canoa_protagonista") if get_tree() else null
+	if is_instance_valid(canoa) and canoa.has_method("liberar_bloqueo_enemigo"):
+		canoa.call("liberar_bloqueo_enemigo", self)
 	_reproducir_sfx_splash()
 	_reproducir_sfx_sumergiendose()
 

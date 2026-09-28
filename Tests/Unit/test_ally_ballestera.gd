@@ -390,8 +390,8 @@ func test_ballestera_asegura_contorno_toon_en_ready_y_despliegue() -> void:
 				var sm := std_mat.next_pass as ShaderMaterial
 				assert_eq(
 					float(sm.get_shader_parameter("outline_width")),
-					20.0,
-					"outline_width debe ser 20.0 en la malla %s" % mi.name
+					12.0,
+					"outline_width debe ser 12.0 en la malla %s" % mi.name
 				)
 				assert_eq(
 					sm.get_shader_parameter("outline_color"),
@@ -421,7 +421,7 @@ func test_forzar_outline_en_runtime_aplica_a_material_ballestera() -> void:
 	assert_eq(
 		float(sm.get_shader_parameter("outline_width")),
 		GameUI.OUTLINE_WIDTH_RUNTIME,
-		"BALLESTERA_ALIADA_MAT debe tener outline_width restablecido a 20.0 por _forzar_outline_en_runtime"
+		"BALLESTERA_ALIADA_MAT debe tener outline_width restablecido a 12.0 por _forzar_outline_en_runtime"
 	)
 	assert_eq(
 		sm.get_shader_parameter("outline_color"),

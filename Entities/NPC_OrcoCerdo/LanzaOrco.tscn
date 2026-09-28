@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://c_lanza_orco_scene"]
+
+[ext_resource type="Script" path="res://Entities/NPC_OrcoCerdo/LanzaOrco.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://b7lwba0whbs8j" path="res://Entities/NPC_OrcoCerdo/lanza orco.glb" id="2_model"]
+[ext_resource type="Material" uid="uid://c_lanzaorco_mat" path="res://Entities/NPC_OrcoCerdo/LanzaOrco_Mat.tres" id="3_mat"]
+
+[node name="LanzaOrco" type="Node3D"]
+script = ExtResource("1_script")
+material_lanza = ExtResource("3_mat")
+capa_visual = 1
+
+[node name="Model" parent="." instance=ExtResource("2_model")]

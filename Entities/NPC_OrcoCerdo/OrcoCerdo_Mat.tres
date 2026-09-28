@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d2gtqaqohxwt6"]
+
+[ext_resource type="Texture2D" uid="uid://bjsgqne52l70g" path="res://TEST_/Orco cerdo/Orco cerdo_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "OrcoCerdo_Mat"
+cull_mode = 2
+specular_mode = 1
+albedo_texture = ExtResource("1_tex")
+roughness = 0.8

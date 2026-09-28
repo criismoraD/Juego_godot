@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://jnad0bo4dacv"]
+
+[ext_resource type="Texture2D" uid="uid://cbun3a4bknafn" path="res://Entities/Ambiente_Yunque/Yunk_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Yunque_Mat"
+albedo_texture = ExtResource("1_tex")
+roughness = 0.85

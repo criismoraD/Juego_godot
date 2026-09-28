@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c64kmnupj08cl"]
+
+[ext_resource type="Texture2D" uid="uid://clcww531nmm8d" path="res://Entities/NPC_RatonaHerrera/ratona herrera_D.jpg" id="1_tex"]
+[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline_ratona"]
+render_priority = 0
+shader = ExtResource("2_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 12.0
+
+[resource]
+resource_name = "RatonaHerrera_Mat"
+next_pass = SubResource("ShaderMaterial_outline_ratona")
+cull_mode = 2
+albedo_texture = ExtResource("1_tex")
+roughness = 0.8

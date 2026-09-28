@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+=== INSPECCIÓN TÉCNICA DETALLADA DE ORCO CERDO ===
+Mesh: Orco cerdo_Mesh_0 faces: 6000
+Vértices: 7015 Índices: 18000 Normales: 7015
+Puntos de costura UV (vértices compartidos con UVs separadas): 2192
+Discrepancia en costura pos (-378, 447, 8): UV0 (821,993) col: (0.2078, 0.1725, 0.1843, 1.0) vs UV1 (756,902) col: (0.1098, 0.0667, 0.0588, 1.0) diff: 0.32941177114844
+Discrepancia en costura pos (-345, 475, -4): UV0 (271,987) col: (0.0353, 0.0314, 0.0157, 1.0) vs UV1 (347,801) col: (0.1804, 0.1608, 0.1451, 1.0) diff: 0.40392157994211
+Discrepancia en costura pos (-345, 475, -4): UV0 (271,987) col: (0.0353, 0.0314, 0.0157, 1.0) vs UV1 (960,1019) col: (0.2078, 0.1176, 0.2196, 1.0) diff: 0.46274509839714
+Discrepancia en costura pos (-345, 475, -4): UV0 (271,987) col: (0.0353, 0.0314, 0.0157, 1.0) vs UV1 (772,399) col: (0.1922, 0.1529, 0.1137, 1.0) diff: 0.37647059373558
+Discrepancia en costura pos (-187, 106, -24): UV0 (760,236) col: (0.2157, 0.1451, 0.1294, 1.0) vs UV1 (898,522) col: (0.0, 0.0, 0.0, 1.0) diff: 0.49019609391689
+Total costuras con salto brusco de color (>0.3): 744 max diff: 2.1137255243957

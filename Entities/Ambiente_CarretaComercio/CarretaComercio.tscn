@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Entities/Ambiente_CarretaComercio/carreta comercio.glb" id="1_model"]
+[ext_resource type="Material" path="res://Entities/Ambiente_CarretaComercio/CarretaComercio_Mat.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Entities/Ambiente_CarretaComercio/CarretaComercio.gd" id="3_script"]
+
+[node name="CarretaComercio" type="Node3D"]
+script = ExtResource("3_script")
+material_carreta = ExtResource("2_mat")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]

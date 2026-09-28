@@ -3,7 +3,7 @@ extends GutTest
 const SCENE_NIVEL01: String = "res://Levels/NIVEL01/NIVEL01.tscn"
 const SCENE_RIO: String = "res://Levels/Rio en canoa con paralax.tscn"
 const SCENE_TUTORIAL: String = "res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.tscn"
-const SCENE_ASALTO: String = "res://Levels/NIVEL06_ASALTO/NIVEL06_ASALTO.tscn"
+const SCENE_ASALTO: String = "res://Levels/Nivel_Pueblo/NivelPueblo.tscn"
 
 func test_nivel01_tiene_environment_independiente_y_valores_restaurados() -> void:
 	var packed_n1 := load(SCENE_NIVEL01) as PackedScene
@@ -42,7 +42,7 @@ func test_niveles_no_comparten_mismo_archivo_environment() -> void:
 		"res://Levels/NIVEL01/nivel01_environment.tres",
 		"res://Recursos_Compartidos/rio_environment.tres",
 		"res://Levels/NIVEL_TUTORIAL/tutorial_environment.tres",
-		"res://Levels/NIVEL06_ASALTO/nivel06_environment.tres"
+		"res://Levels/Nivel_Pueblo/pueblo_environment.tres"
 	]
 	var unique_paths := {}
 	for p in paths:

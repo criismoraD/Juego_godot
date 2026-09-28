@@ -1,0 +1,23 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+--- MUESTREANDO COLORES EN LAS UVS DEL MODELO ---
+
+--- Verificando res://Entities/NPC_OrcoCerdo/lanza orco.glb con res://Entities/NPC_OrcoCerdo/lanza orco_D.jpg ---
+Vértice 163 en pos (0.002691, 0.002249, -0.363391) UV (0.738415, 0.902998) pixel (755,923) COLOR: (0.8588, 0.8588, 0.8667, 1.0)
+Vértice 381 en pos (0.011292, 0.0056, -0.465099) UV (0.567468, 0.881514) pixel (580,901) COLOR: (0.949, 0.9529, 0.9608, 1.0)
+Total vértices que caen en zonas blancas (>0.85): 2 de 582
+
+--- Verificando res://Entities/NPC_OrcoCerdo/Orco cerdo.glb con res://Entities/NPC_OrcoCerdo/Orco cerdo_D.jpg ---
+No se encontró malla en res://Entities/NPC_OrcoCerdo/Orco cerdo.glb
+ERROR: 1 RID allocations of type 'N13RendererDummy15MaterialStorage13DummyMaterialE' were leaked at exit.
+ERROR: 1 RID allocations of type 'N13RendererDummy15MaterialStorage11DummyShaderE' were leaked at exit.
+ERROR: 1 RID allocations of type 'N13RendererDummy9DummyMeshE' were leaked at exit.
+ERROR: 1 RID allocations of type 'N17RendererSceneCull8InstanceE' were leaked at exit.
+ERROR: Pages in use exist at exit in PagedAllocator: N20RasterizerSceneDummy21GeometryInstanceDummyE
+   at: ~PagedAllocator (./core/templates/paged_allocator.h:170)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: 27 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 22 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

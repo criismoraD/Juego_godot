@@ -116,6 +116,20 @@ func reanudar_navegacion() -> void:
 	iniciar_travesia(velocidad_avance)
 
 
+## Libera explícitamente cualquier bloqueo o reducción de velocidad causado por una entidad que acaba de morir o hundirse.
+func liberar_bloqueo_enemigo(entidad: Node = null) -> void:
+	if entidad != null:
+		_enemigos_en_area_contacto.erase(entidad)
+		for c in entidad.find_children("*", "CollisionObject3D", true, false):
+			_enemigos_en_area_contacto.erase(c)
+	if _enemigo_bloqueando == entidad or entidad == null:
+		_enemigo_bloqueando = null
+		_detenida_por_contacto = false
+	_limpiar_enemigos_invalidos_area()
+	_factor_velocidad_actual = 1.0
+	_modular_audio_por_velocidad()
+
+
 ## Retorna el factor de velocidad actual (1.0 libre, 0.5 presencia, 0.0 detenido por contacto).
 func obtener_factor_velocidad_actual() -> float:
 	return _factor_velocidad_actual
@@ -256,12 +270,29 @@ func _es_enemigo_activo_y_vivo(nodo: Node) -> bool:
 		var esta_en_piso: bool = es_cuerpo_estatico or (n3d.has_method("is_on_floor") and bool(n3d.call("is_on_floor")))
 		if not esta_en_piso and n3d.global_position.y <= -0.45:
 			return false
+	if n3d is SubmarinoRio:
+		var sub := n3d as SubmarinoRio
+		if sub.current_state == SubmarinoRio.State.SUMERGIENDOSE or sub.current_state == SubmarinoRio.State.DESAPARECIDO:
+			return false
+		if "_jefe_muerto" in sub and bool(sub.get("_jefe_muerto")):
+			return false
+		if not sub.esta_en_superficie():
+			return false
+
 	if n3d.has_method("esta_en_superficie") and not bool(n3d.call("esta_en_superficie")):
 		return false
 	if n3d.has_method("es_enemigo_activo") and not bool(n3d.call("es_enemigo_activo")):
 		return false
 	var padre: Node = n3d.get_parent()
 	while is_instance_valid(padre):
+		if padre is SubmarinoRio:
+			var sub_p := padre as SubmarinoRio
+			if sub_p.current_state == SubmarinoRio.State.SUMERGIENDOSE or sub_p.current_state == SubmarinoRio.State.DESAPARECIDO:
+				return false
+			if "_jefe_muerto" in sub_p and bool(sub_p.get("_jefe_muerto")):
+				return false
+			if not sub_p.esta_en_superficie():
+				return false
 		if padre.has_method("esta_en_superficie") and not bool(padre.call("esta_en_superficie")):
 			return false
 		if padre.has_method("es_enemigo_activo") and not bool(padre.call("es_enemigo_activo")):

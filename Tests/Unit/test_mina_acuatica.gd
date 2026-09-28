@@ -23,31 +23,32 @@ func after_each() -> void:
 			n.free()
 
 
-func test_mina_tiene_dos_de_vida() -> void:
+func test_mina_tiene_tres_de_vida() -> void:
 	# Arrange / Act: valores iniciales
-	# Assert: 2 golpes para destruirla
-	assert_eq(_mina.vida_maxima, 2.0, "La mina debe tener 2 de vida")
-	assert_eq(_mina.vida_mina, 2.0, "Inicia con vida completa")
+	# Assert: 3 golpes para destruirla
+	assert_eq(_mina.vida_maxima, 3.0, "La mina debe tener 3 de vida")
+	assert_eq(_mina.vida_mina, 3.0, "Inicia con vida completa")
 
 
 func test_mina_aguanta_un_golpe() -> void:
 	# Act: un golpe de flecha
 	_mina.recibir_golpe(1.0)
-	# Assert: sigue activa con 1 de vida
-	assert_eq(_mina.vida_mina, 1.0, "Tras un golpe queda 1 de vida")
+	# Assert: sigue activa con 2 de vida
+	assert_eq(_mina.vida_mina, 2.0, "Tras un golpe quedan 2 de vida")
 	assert_false(_mina._destruida, "No se destruye con un golpe")
 	assert_false(_mina._explotada, "No explota con un golpe")
 
 
-func test_mina_se_destruye_con_dos_golpes() -> void:
+func test_mina_se_destruye_con_tres_golpes() -> void:
 	# Arrange: senal de destruida
 	var avisos: Array = []
 	_mina.destruida.connect(func(_m): avisos.append(true))
-	# Act: dos golpes
+	# Act: tres golpes
+	_mina.recibir_golpe(1.0)
 	_mina.recibir_golpe(1.0)
 	_mina.recibir_golpe(1.0)
 	# Assert: destruida sin explosion
-	assert_true(_mina._destruida, "Con dos golpes se destruye")
+	assert_true(_mina._destruida, "Con tres golpes se destruye")
 	assert_false(_mina._explotada, "Destruida por el jugador no explota")
 	assert_eq(avisos.size(), 1, "Avisa una vez")
 
@@ -93,7 +94,7 @@ func test_mina_dano_invalido_no_cura() -> void:
 	# Act: dano negativo
 	_mina.take_damage(-3.0)
 	# Assert: no cura por encima del maximo
-	assert_true(_mina.vida_mina <= 2.0, "El dano negativo no cura la mina")
+	assert_true(_mina.vida_mina <= 3.0, "El dano negativo no cura la mina")
 
 
 # === SONIDO IMPACTO DE METAL AL RECIBIR DANO ===

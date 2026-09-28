@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+
+--- Verificando res://Entities/NPC_OrcoCerdo/Orco cerdo.glb con res://Entities/NPC_OrcoCerdo/Orco cerdo_D.jpg ---
+Meshes encontrados: 1
+Mesh: Orco cerdo
+Vértice 6169 en pos (0.224987, 0.28806, 0.001381) UV (0.491614, 0.694998) pixel (502,710) COLOR: (0.8235, 0.8314, 0.8275, 1.0)
+Total vértices que caen en zonas claras (>0.8): 1 de 7015

@@ -227,14 +227,14 @@ func asegurar_contorno_toon() -> void:
 						var outline_mat := ShaderMaterial.new()
 						outline_mat.shader = shader_outline
 						outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
-						outline_mat.set_shader_parameter("outline_width", 20.0)
+						outline_mat.set_shader_parameter("outline_width", GameUI.OUTLINE_WIDTH_RUNTIME)
 						std_mat.next_pass = outline_mat
 					elif std_mat.next_pass is ShaderMaterial:
 						var outline_mat := std_mat.next_pass as ShaderMaterial
 						if outline_mat.shader == null:
 							outline_mat.shader = shader_outline
 						outline_mat.set_shader_parameter("outline_color", Color(0, 0, 0, 1))
-						outline_mat.set_shader_parameter("outline_width", 20.0)
+						outline_mat.set_shader_parameter("outline_width", GameUI.OUTLINE_WIDTH_RUNTIME)
 
 
 func _configurar_particulas_pisada() -> void:

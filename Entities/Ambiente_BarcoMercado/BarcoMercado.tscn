@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://c_barco_mercado"]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_BarcoMercado/BarcoMercado.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dppwkvqhmec0r" path="res://Entities/Ambiente_BarcoMercado/Barco mercado.glb" id="2_model"]
+[ext_resource type="Material" uid="uid://c_barcomercado_mat" path="res://Entities/Ambiente_BarcoMercado/BarcoMercado_Mat.tres" id="3_mat"]
+
+[node name="BarcoMercado" type="Node3D"]
+script = ExtResource("1_script")
+material_barco = ExtResource("3_mat")
+capa_visual = 2
+flotar_al_iniciar = true
+amplitud_flotacion = 0.03
+frecuencia_flotacion = 0.28
+amplitud_balanceo = 1.2
+frecuencia_balanceo = 0.22
+amplitud_cabeceo = 0.7
+frecuencia_cabeceo = 0.35
+escala_tiempo = 1.0
+
+[node name="BarcoModel" parent="." instance=ExtResource("2_model")]
