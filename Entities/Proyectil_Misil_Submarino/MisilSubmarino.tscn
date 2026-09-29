@@ -31,6 +31,7 @@ shading_mode = 0
 vertex_color_use_as_albedo = true
 albedo_color = Color(1, 0.6, 0.2, 1)
 
+specular_mode = 1
 [sub_resource type="SphereMesh" id="SphereMesh_estela"]
 material = SubResource("StandardMaterial_estela")
 radius = 0.06

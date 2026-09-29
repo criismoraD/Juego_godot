@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bcjdgtq8343ms"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b2077jvrswj3m"]
 
 [ext_resource type="Texture2D" uid="uid://46pdc417jttf" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_01_GOBLING_MUERTE_D.jpg" id="1_5ah45"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_dcrm2"]
@@ -11,4 +11,5 @@ shader_parameter/outline_width = 12.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_rwlwk")
+specular_mode = 1
 albedo_texture = ExtResource("1_5ah45")

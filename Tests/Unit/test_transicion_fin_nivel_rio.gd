@@ -320,3 +320,17 @@ func test_stop_all_sin_musica_no_resetea_indice() -> void:
 
 	# Assert: no debe tocar el índice de música en curso
 	assert_eq(AudioManager.get_current_music_index(), antes, "stop_all(false) no debe resetear la música")
+
+
+func test_escena_siguiente_apunta_a_nivel_pueblo() -> void:
+	# Arrange & Act
+	var nivel: Node3D = SCRIPT_NIVEL_RIO.new() as Node3D
+	add_child_autofree(nivel)
+
+	# Assert
+	assert_eq(
+		nivel.get("escena_siguiente"),
+		"res://Levels/Nivel_Pueblo/NivelPueblo.tscn",
+		"Al terminar el nivel río, la escena siguiente debe ser el Nivel Pueblo"
+	)
+

@@ -16,14 +16,16 @@ script = ExtResource("1_script")
 layout_mode = 0
 mouse_filter = 2
 
-[node name="CuerpoCentro" type="TextureRect" parent="BannerContainer"]
+[node name="CuerpoCentro" type="NinePatchRect" parent="BannerContainer"]
 layout_mode = 0
 offset_right = 140.0
 offset_bottom = 40.0
 mouse_filter = 2
 texture = ExtResource("3_centro")
-expand_mode = 1
-stretch_mode = 1
+patch_margin_top = 8
+patch_margin_bottom = 8
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 0
 
 [node name="PuntaIzq" type="TextureRect" parent="BannerContainer"]
 z_index = 1

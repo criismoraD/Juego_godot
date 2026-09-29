@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://dv4tkcxvwcda8"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bipoin64tfxv7"]
 
 [ext_resource type="Texture2D" uid="uid://5qjul1pb1fl" path="res://Entities/Jugador_Arquera/PROTA_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_oapgu"]
@@ -11,4 +11,5 @@ shader_parameter/outline_width = 12.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_psb7t")
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")

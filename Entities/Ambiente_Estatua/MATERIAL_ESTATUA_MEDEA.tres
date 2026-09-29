@@ -1,9 +1,10 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bngq8bydynpk5"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://dajxmf67slwcl" path="res://Entities/Ambiente_Estatua/ESTAUTA_MEDEA_TEXTURA.png" id="1_1plts"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_Estatua/ESTAUTA_MEDEA_TEXTURA.png" id="1_1plts"]
 
 [resource]
 resource_name = "modddif_material_0"
 shading_mode = 0
+specular_mode = 1
 albedo_texture = ExtResource("1_1plts")
 texture_repeat = false

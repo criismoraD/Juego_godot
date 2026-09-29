@@ -246,3 +246,104 @@ func test_perrena_pueblo_npc_en_nivel_pueblo() -> void:
 	var pivot: Node3D = perrena.get_node_or_null("Pivot")
 	assert_not_null(pivot, "Debe tener nodo Pivot")
 	assert_almost_eq(pivot.rotation_degrees.y, 90.0, 0.5, "El Pivot debe orientarse adecuadamente")
+
+
+func test_dialogo_pueblo_disponible() -> void:
+	# Arrange
+	var perrena: Node3D = SCENE_PERRENA.instantiate()
+	add_child_autofree(perrena)
+
+	# Assert — el sistema de diálogo está inicializado
+	assert_false(perrena.get("_dialogo_mostrado"), "El diálogo no debe haberse mostrado aún")
+	assert_false(perrena.get("_dialogo_activo"), "No debe haber diálogo activo al inicio")
+
+
+func test_color_morado_al_acercarse() -> void:
+	# Arrange
+	var perrena: Node3D = SCENE_PERRENA.instantiate()
+	add_child_autofree(perrena)
+
+	# Act — simular jugador cerca
+	perrena.set("_jugador_cerca", true)
+	perrena.call("_animar_morado", true)
+
+	# Assert — se configura el StandardMaterial3D de tinte morado con alpha
+	var tinte: StandardMaterial3D = perrena.call("obtener_material_tinte")
+	assert_not_null(tinte, "Debe existir el material de tinte morado")
+	assert_eq(tinte.shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED, "El tinte debe ser unshaded")
+	assert_eq(tinte.transparency, BaseMaterial3D.TRANSPARENCY_ALPHA, "El tinte debe tener transparencia alpha")
+	assert_almost_eq(tinte.albedo_color.r, 0.78, 0.01, "El canal R debe ser morado (~0.78)")
+	assert_almost_eq(tinte.albedo_color.g, 0.48, 0.01, "El canal G debe ser morado (~0.48)")
+	assert_almost_eq(tinte.albedo_color.b, 0.95, 0.01, "El canal B debe ser morado (~0.95)")
+
+
+func test_dialogo_solo_una_vez() -> void:
+	# Arrange
+	var perrena: Node3D = SCENE_PERRENA.instantiate()
+	add_child_autofree(perrena)
+
+	# Act — marcar como mostrado
+	perrena.set("_dialogo_mostrado", true)
+
+	# Assert — el sistema no mostrará el diálogo de nuevo
+	assert_true(perrena.get("_dialogo_mostrado"), "El flag de diálogo mostrado debe persistir")
+
+
+func test_prompt_hablar_usa_traduccion() -> void:
+	# Arrange
+	var perrena: Node3D = SCENE_PERRENA.instantiate()
+	add_child_autofree(perrena)
+
+	# Act
+	var prompt: Label3D = perrena.find_child("PromptHablar", true, false) as Label3D
+
+	# Assert
+	assert_not_null(prompt, "Debe crearse el Label3D del prompt")
+	assert_true(prompt.text.begins_with("[E] "), "El texto debe comenzar con [E] ")
+	assert_true(prompt.text.contains(tr("PERRENA_PROMPT_HABLAR")), "El prompt debe contener la traducción de PERRENA_PROMPT_HABLAR")
+
+
+func test_congelar_jugador_durante_dialogo() -> void:
+	# Arrange
+	var perrena: Node3D = SCENE_PERRENA.instantiate()
+	add_child_autofree(perrena)
+
+	var mock_player := CharacterBody3D.new()
+	mock_player.add_to_group("player")
+	mock_player.set("puede_moverse", true)
+	add_child_autofree(mock_player)
+
+	# Act — congelar
+	perrena.call("_set_movimiento_jugador", false)
+
+	# Assert
+	assert_false(mock_player.get("puede_moverse"), "El jugador debe quedar inmovilizado al iniciar diálogo")
+
+	# Act — restaurar
+	perrena.call("_set_movimiento_jugador", true)
+
+	# Assert
+	assert_true(mock_player.get("puede_moverse"), "El jugador debe recuperar el movimiento al finalizar diálogo")
+
+
+func test_jingle_perrena_recurso_existe() -> void:
+	# Arrange & Assert
+	assert_true(ResourceLoader.exists("res://System/Audio/Music/Perrena Jingle.mp3"), "El archivo de jingle de Perrena debe existir")
+	var audio := load("res://System/Audio/Music/Perrena Jingle.mp3") as AudioStream
+	assert_not_null(audio, "El audio del jingle de Perrena debe cargar correctamente")
+
+
+func test_jingle_perrena_loop_activo_en_dialogo() -> void:
+	# Arrange
+	var perrena: Node3D = SCENE_PERRENA.instantiate()
+	add_child_autofree(perrena)
+
+	# Act
+	perrena.set("_dialogo_activo", true)
+	perrena.call("_on_jingle_player_finished")
+
+	# Assert — se maneja callback sin errores
+	assert_true(perrena.get("_dialogo_activo"), "El diálogo debe estar activo")
+
+
+

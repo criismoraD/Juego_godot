@@ -1,10 +1,11 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://c5e3f4h5j6k7l"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://bt1a7ijdc6c7g" path="res://Entities/Ambiente_Hojas/hojas.png" id="1_hojas"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_Hojas/hojas.png" id="1_hojas"]
 
 [resource]
 transparency = 1
 cull_mode = 2
+specular_mode = 1
 vertex_color_use_as_albedo = true
 albedo_texture = ExtResource("1_hojas")
 billboard_mode = 3

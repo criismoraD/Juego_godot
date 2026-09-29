@@ -40,6 +40,7 @@ const DROP_CHANCE_MITIGADO: float = 0.05
 const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-ups (explosivas y múltiples)
 
 @export_category("Movimiento")
+@export var puede_moverse: bool = true  ## Permite congelar al jugador durante diálogos o cinemáticas
 @export var velocidad_caminar: float = 0.7  # Velocidad al caminar
 @export var velocidad_correr: float = 1.4  # Velocidad al correr
 @export var fuerza_salto: float = 2.35  # Fuerza del salto
@@ -279,10 +280,14 @@ func _ready():
 
 	# Buscar AnimationPlayer y nodo del arco
 	bow_node = find_child("ARCO_ANIMADO", true, false) as Node3D
+	if not bow_node:
+		bow_node = find_child("GEO_ARCO_ANIMADO", true, false) as Node3D
 	if bow_node:
 		_bow_base_position = bow_node.position
 		_bow_base_rotation = bow_node.rotation
 		bow_anim_player = bow_node.find_child("AnimationPlayer", true, false)
+		if bow_anim_player:
+			play_bow_animation("ARCO_IDLE")
 
 	# Buscar nodo de la flecha
 	arrow_node = find_child("FLECHA", true, false)
@@ -367,7 +372,20 @@ static func configurar_colision_aparcado(personaje: Node, aparcado: bool) -> voi
 		forma.set_deferred("disabled", aparcado)
 
 
+## Activa o congela todas las acciones y movimiento del jugador (diálogos, cinemáticas)
+func set_puede_moverse(valor: bool) -> void:
+	puede_moverse = valor
+	if not puede_moverse:
+		velocity = Vector3.ZERO
+		_cancel_current_shot()
+		if current_move_state != MoveState.GROUND:
+			current_move_state = MoveState.GROUND
+		update_locomotion_anim(0.0)
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if not puede_moverse:
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R or event.physical_keycode == KEY_R:
 			cambiar_tipo_municion()
@@ -878,8 +896,20 @@ func _process(delta):
 
 
 func _physics_process(delta):
-	# BLOQUEAR TODO SI ESTAMOS MUERTOS
+	# BLOQUEAR TODO SI ESTAMOS MUERTOS O INMOVILIZADOS
 	if is_dead:
+		return
+
+	if not puede_moverse:
+		velocity.x = move_toward(velocity.x, 0.0, 50.0 * delta)
+		if is_on_floor():
+			velocity.y = 0.0
+		else:
+			velocity.y -= gravity * delta
+		move_and_slide()
+		if current_move_state != MoveState.GROUND:
+			current_move_state = MoveState.GROUND
+		update_locomotion_anim(0.0)
 		return
 
 	# Obtener Input
@@ -1691,8 +1721,9 @@ func _exit_tree():
 
 
 func control_visual_state(delta):
-	# BLOQUEAR TODO SI ESTAMOS MUERTOS
-	if is_dead:
+	# BLOQUEAR TODO SI ESTAMOS MUERTOS O INMOVILIZADOS
+	if is_dead or not puede_moverse:
+		_cancel_current_shot()
 		return
 
 	# Si estamos aterrizando, NO permitimos aiming
@@ -1780,8 +1811,8 @@ func control_visual_state(delta):
 				state_timer = 0.0
 				_trajectory_fade_timer = 0.0
 				anim_tree.set(upper_path, "draw")
-				# Iniciar animación de tensar el arco
-				play_bow_animation("ARCO_TENSAR")
+				# Iniciar animación de tensar el arco suave y natural
+				play_bow_animation("ARCO_TENSAR", 0.15, _get_multiplicador_velocidad_disparo_total())
 				# Reproducir sonido de tensar cuerda (se puede detener)
 				AudioManager.play_bow_tension()
 				if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
@@ -1931,8 +1962,8 @@ func control_visual_state(delta):
 						current_aim_state = AimState.DRAWING
 						state_timer = 0.0
 						_trajectory_fade_timer = 0.0
-						anim_tree.set(upper_path, "draw")
-						play_bow_animation("ARCO_TENSAR")
+						# Iniciar animación de tensar el arco suave y natural
+						play_bow_animation("ARCO_TENSAR", 0.15, _get_multiplicador_velocidad_disparo_total())
 						AudioManager.play_bow_tension()
 						if municion_activa == TipoMunicion.EXPLOSIVA and flechas_explosivas > 0:
 							AudioManager.play_sfx("fuego_tensado", 6.0)
@@ -2376,35 +2407,61 @@ func reset_torso_bone():
 
 
 # --- FUNCIONES DE ANIMACIÓN DEL ARCO ---
-func play_bow_animation(anim_name: String):
+func play_bow_animation(anim_name: String, custom_blend: float = -1.0, custom_speed: float = 1.0) -> void:
 	if not bow_anim_player:
 		return
 
-	# Buscar la animación con diferentes prefijos posibles
-	var full_anim_name = ""
-	var possible_names = [
-		anim_name,
-		"Recurve Bow 2 Armature|" + anim_name,
-		"Armature|" + anim_name,
-		"Armature|Armature|" + anim_name
+	var full_anim_name := _resolver_nombre_anim_arco(anim_name)
+	if full_anim_name == "":
+		return
+
+	# Si ya está reproduciendo la misma animación y no es disparo, evitar reiniciar para mantener el tensado fluido
+	if bow_anim_player.current_animation == full_anim_name and bow_anim_player.is_playing() and not ("DISPARO" in anim_name):
+		return
+
+	bow_anim_player.speed_scale = custom_speed
+	bow_anim_player.play(full_anim_name, custom_blend, custom_speed)
+
+
+func _resolver_nombre_anim_arco(anim_name: String) -> String:
+	if not bow_anim_player:
+		return ""
+
+	var prefixes: Array[String] = [
+		"",
+		"Recurve Bow 2 Armature|Recurve Bow 2 Armature|",
+		"Recurve Bow 2 Armature|",
+		"Armature|Armature|",
+		"Armature|",
+		"ENEMY|",
+		"ENEMY| "
 	]
 
-	for anim in possible_names:
-		if bow_anim_player.has_animation(anim):
-			full_anim_name = anim
-			break
+	for prefix in prefixes:
+		var candidate: String = prefix + anim_name
+		if bow_anim_player.has_animation(candidate):
+			return candidate
 
-	if full_anim_name != "":
-		# Evitar spam: Si ya está sonando la misma, no hacer nada (excepto si queremos reiniciar, pero para idle/tensar vale)
-		if bow_anim_player.current_animation == full_anim_name and bow_anim_player.is_playing():
-			return
+	# Fallback: buscar por coincidencia en la lista de animaciones
+	for a in bow_anim_player.get_animation_list():
+		if anim_name in a:
+			return a
 
-		bow_anim_player.speed_scale = 1.0
-		bow_anim_player.play(full_anim_name)
-		# print("→ Arco: Reproduciendo ", full_anim_name) # Comentado para evitar spam excesivo
+	return ""
 
 
-func stop_bow_animation():
+func get_bow_animation_length(anim_name: String) -> float:
+	if not bow_anim_player:
+		return 1.0
+	var full_name := _resolver_nombre_anim_arco(anim_name)
+	if full_name != "" and bow_anim_player.has_animation(full_name):
+		var clip := bow_anim_player.get_animation(full_name)
+		if clip:
+			return clip.length
+	return 1.0
+
+
+func stop_bow_animation() -> void:
 	if bow_anim_player:
 		bow_anim_player.stop()
 

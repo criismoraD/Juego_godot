@@ -2,7 +2,8 @@ class_name Lonko
 extends "res://System/Core/EnemyBase.gd"
 
 ## Lonko: Enemigo arquero avanzado con 6 puntos de vida.
-## Nace, camina hasta su posición de tiro, invoca un pilar vinculado emergiendo del suelo con invulnerabilidad,
+## Nace, camina hasta su posición de tiro, invoca un pilar vinculado emergiendo del suelo
+## (recibe daño durante el baile de subida sin interrumpir su animación),
 ## bamboleo estilo terremoto, asciende en sincronía perfecta con el pilar, se orienta hacia la jugadora y entra en modo ataque.
 ## Al morir, el pilar se hunde en la tierra y se disuelve.
 ## Animaciones:
@@ -121,6 +122,9 @@ var _instancia_pilar: Node3D = null
 var _base_pos_pilar: Vector3 = Vector3.ZERO
 var _tiros_realizados: int = 0  ## Contador de tiros lanzados (para el ataque eléctrico periódico)
 var _apuntar_arriba: bool = false  ## True mientras el próximo disparo es el eléctrico (apunta a -90°)
+# Variables para el shake de cámara total (shared entre _shake_camera_during y _reset_camera_offset)
+var _shake_camaras: Array[Camera3D] = []
+var _shake_posiciones_orig: Array[Vector3] = []
 
 # Recursos de pilares
 var pilar_destruido_scene: PackedScene = preload("res://Entities/Enemigo_Lonko/PILAR_DESTRUIDO.glb")
@@ -529,6 +533,8 @@ func _debe_rastrear_jugador() -> bool:
 		return true
 	if _is_taking_damage:
 		return false
+	if _en_baile_pilar():
+		return false  # Baile de invocación: no rastrear para no romper la orientación al fondo
 	if _apuntar_arriba:
 		return true  # Apuntar al cielo durante toda la carga y disparo del especial
 	return current_state == State.SHOOTING and rastrear_jugador and not _is_invulnerable
@@ -754,7 +760,9 @@ func _iniciar_secuencia_pilar() -> void:
 	if _pilar_invocado or (_instancia_pilar and is_instance_valid(_instancia_pilar)):
 		return
 	_pilar_invocado = true
-	_is_invulnerable = true  ## Invulnerable a ataques y flechas atraviesan durante la subida
+	# Sin invulnerabilidad durante el baile de subida: Lonko recibe daño
+	# mientras baila (las flechas ya no la atraviesan); los impactos no
+	# interrumpen su animación (ver take_damage y _en_baile_pilar).
 	velocity = Vector3.ZERO
 	_base_pos_pilar = global_position
 	_base_pos_pilar.z += offset_z_pilar
@@ -847,10 +855,10 @@ func _iniciar_secuencia_pilar() -> void:
 
 	wobble_task.call()
 
-	# 5. Agitación de cámara durante la subida
-	_shake_camera_during(duracion_real)
+	# 5. Sin agitación de cámara: el shake total volvía el juego injugable.
+	# (_shake_camera_during queda disponible pero ya no se usa en la invocación.)
 
-	# 5. Esperar a que se complete hasta el segundo 9.5 de la animación
+	# 6. Esperar a que se complete hasta el segundo 9.5 de la animación
 	await get_tree().create_timer(duracion_real).timeout
 
 	if not is_instance_valid(self) or current_state == State.DYING or current_state == State.DEAD:
@@ -888,6 +896,13 @@ func _iniciar_secuencia_pilar() -> void:
 ## Retorna true si Lonko está posicionada encima de su pilar con la animación de emerger ya terminada.
 func esta_en_pilar_emergido_completo() -> bool:
 	return _pilar_desplegado and not _girando_hacia_fondo and not _is_invulnerable
+
+
+## True durante el baile de invocación del pilar (subida con PILAR_SUBIDA,
+## pilar invocado pero aún no desplegado). En este estado Lonko puede recibir
+## daño, pero los impactos no interrumpen su animación.
+func _en_baile_pilar() -> bool:
+	return _pilar_invocado and not _pilar_desplegado
 
 
 func _crear_particulas_rocas_pilar(bx: float, by: float, bz: float) -> void:
@@ -1078,27 +1093,80 @@ func _detener_particulas_pilar() -> void:
 		)
 
 
+## Recolecta todas las Camera3D activas de los SubViewports del nivel.
+## Necesario para que el shake sea total: fondo, medio y frente se muevan juntos.
+func _obtener_todas_camaras() -> Array[Camera3D]:
+	var resultado: Array[Camera3D] = []
+	var escena := get_tree().current_scene
+	if not escena:
+		return resultado
+	for cam in escena.find_children("*", "Camera3D", true, false):
+		if cam is Camera3D and cam.name != "PRESPECTIVA":
+			resultado.append(cam)
+	return resultado
+
+
+## Shake de cámara total: mueve el global_position de TODAS las cámaras
+## simultáneamente para que fondo, medio y frente se desplacen al unísono.
+## Intensidad sutil con fade-in / fade-out suaves para evitar el efecto recorte.
 func _shake_camera_during(duration: float) -> void:
+	var camaras := _obtener_todas_camaras()
+	if camaras.is_empty():
+		return
+
+	# Guardar posiciones originales en variables de instancia para que
+	# _reset_camera_offset pueda restaurarlas aunque el shake se interrumpa
+	_shake_camaras = camaras
+	_shake_posiciones_orig.clear()
+	for cam in camaras:
+		_shake_posiciones_orig.append(cam.global_position)
+
+	const INTENSITY_MAX: float = 0.008   # metros — sutil para no molestar
+	const TICK: float = 0.022            # ~45 Hz de actualización
+	const FADE_DURATION: float = 0.25    # s de fade-out al final
+
 	var elapsed: float = 0.0
 	while elapsed < duration:
 		if not is_instance_valid(self) or not is_inside_tree():
+			_reset_camera_offset()
 			return
-		var cam: Camera3D = CameraUtilsRef.obtener_camara_juego(self)
-		if cam:
-			var intensity: float = 0.025
-			cam.h_offset = randf_range(-intensity, intensity)
-			cam.v_offset = randf_range(-intensity, intensity)
-		await get_tree().create_timer(0.03).timeout
-		elapsed += 0.03
+
+		# Fade-in en los primeros 0.15s, fade-out en los últimos FADE_DURATION
+		var fade_in: float = clampf(elapsed / 0.15, 0.0, 1.0)
+		var fade_out: float = clampf((duration - elapsed) / FADE_DURATION, 0.0, 1.0)
+		var intensity: float = INTENSITY_MAX * fade_in * fade_out
+
+		var dx: float = randf_range(-intensity, intensity)
+		var dy: float = randf_range(-intensity, intensity) * 0.5   # menos en Y para no marear
+
+		for i in camaras.size():
+			if not is_instance_valid(camaras[i]):
+				continue
+			# CamaraFondoDOF: solo Y — su X la controla el parallax de NIVEL01 cada frame
+			if camaras[i].name == "CamaraFondoDOF":
+				camaras[i].global_position.y = _shake_posiciones_orig[i].y + dy
+			else:
+				camaras[i].global_position = _shake_posiciones_orig[i] + Vector3(dx, dy, 0.0)
+
+		await get_tree().create_timer(TICK).timeout
+		elapsed += TICK
 
 	_reset_camera_offset()
 
 
 func _reset_camera_offset() -> void:
-	var cam: Camera3D = CameraUtilsRef.obtener_camara_juego(self)
-	if cam:
-		cam.h_offset = 0.0
-		cam.v_offset = 0.0
+	# Restaurar global_position original de cada cámara que fue desplazada.
+	# CamaraFondoDOF solo restaura Y (su X la controla el parallax de NIVEL01).
+	for i in _shake_camaras.size():
+		if i < _shake_posiciones_orig.size() and is_instance_valid(_shake_camaras[i]):
+			if _shake_camaras[i].name == "CamaraFondoDOF":
+				_shake_camaras[i].global_position.y = _shake_posiciones_orig[i].y
+			else:
+				_shake_camaras[i].global_position = _shake_posiciones_orig[i]
+			_shake_camaras[i].h_offset = 0.0
+			_shake_camaras[i].v_offset = 0.0
+	_shake_camaras.clear()
+	_shake_posiciones_orig.clear()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1439,8 +1507,8 @@ func _iniciar_temblor_pilar_ult(duracion_total_recarga: float) -> void:
 	var modelo_ref := _lonko_modelo
 	var orig_x: float = _base_pos_pilar.x if (pilar_ref and _base_pos_pilar != Vector3.ZERO) else (pilar_ref.global_position.x if pilar_ref else 0.0)
 
-	# Duración reducida: vibra solo en el clímax final de la carga (0.85s)
-	var duracion_vibracion_activa: float = min(0.85, duracion_total_recarga)
+	# Vibra solo en el clímax final de la carga (0.70s), con entrada suave
+	var duracion_vibracion_activa: float = min(0.70, duracion_total_recarga)
 	var delay_espera: float = max(0.0, duracion_total_recarga - duracion_vibracion_activa)
 
 	var tremble_task := func():
@@ -1451,55 +1519,59 @@ func _iniciar_temblor_pilar_ult(duracion_total_recarga: float) -> void:
 				return
 
 		var elapsed: float = 0.0
-		# Fase 1: Carga activa concentrada
+		# Fase 1: Carga activa — intensidad reducida y frecuencia más baja para evitar brusquedad
 		while elapsed < duracion_vibracion_activa and _temblor_pilar_activo:
 			if not is_instance_valid(self):
 				return
 			var progress: float = clamp(elapsed / duracion_vibracion_activa, 0.0, 1.0)
-			var current_intensity: float = lerp(0.22, 0.48, progress)
+			# Intensidad máx reducida a 0.22 (era 0.48) con arranque desde 0.08 (era 0.22)
+			var current_intensity: float = lerp(0.08, 0.22, progress)
 
-			# 1. Vibración física del pilar
+			# 1. Vibración física del pilar — frecuencias más bajas (era 45/55 → 28/34)
 			if pilar_ref and is_instance_valid(pilar_ref):
-				var angle_pilar: float = sin(elapsed * 45.0) * current_intensity
-				var offset_x_pilar: float = cos(elapsed * 55.0) * (current_intensity * 0.03)
+				var angle_pilar: float = sin(elapsed * 28.0) * current_intensity
+				# Offset X reducido a 0.015x (era 0.03x)
+				var offset_x_pilar: float = cos(elapsed * 34.0) * (current_intensity * 0.015)
 				pilar_ref.rotation_degrees.z = angle_pilar
 				pilar_ref.global_position.x = orig_x + offset_x_pilar
 
-			# 2. Mini temblor de Lonko acentuando el grito/esfuerzo de canalización
+			# 2. Mini temblor de Lonko — frecuencias suavizadas (era 48/52/64 → 30/33/40)
 			if modelo_ref and is_instance_valid(modelo_ref):
-				var angle_lonko: float = cos(elapsed * 48.0) * (current_intensity * 0.75)
-				var pos_x_lonko: float = sin(elapsed * 52.0) * (current_intensity * 0.022)
-				var pos_y_lonko: float = abs(sin(elapsed * 64.0)) * (current_intensity * 0.018)
+				var angle_lonko: float = cos(elapsed * 30.0) * (current_intensity * 0.65)
+				# Desplazamientos reducidos a 0.010x y 0.008x (eran 0.022x y 0.018x)
+				var pos_x_lonko: float = sin(elapsed * 33.0) * (current_intensity * 0.010)
+				var pos_y_lonko: float = abs(sin(elapsed * 40.0)) * (current_intensity * 0.008)
 				modelo_ref.rotation_degrees.z = angle_lonko
 				modelo_ref.position = Vector3(pos_x_lonko, pos_y_lonko, 0.0)
 
 			await get_tree().create_timer(0.016).timeout
 			elapsed += 0.016
 
-		# Fase 2: Amortiguación final suave y rápida (0.20s)
+		# Fase 2: Amortiguación final — extendida a 0.30s para transición más orgánica (era 0.20s)
 		if _temblor_pilar_activo:
-			var duracion_fade: float = 0.20
+			var duracion_fade: float = 0.30
 			var elapsed_fade: float = 0.0
 			while elapsed_fade < duracion_fade and _temblor_pilar_activo:
 				if not is_instance_valid(self):
 					return
 				var fade_progress: float = 1.0 - (elapsed_fade / duracion_fade)
 				var damp: float = fade_progress * fade_progress  # Decaimiento cuadrático
-				var decay_intensity: float = 0.48 * damp
+				# Partir desde la intensidad máx de la fase 1 (0.22)
+				var decay_intensity: float = 0.22 * damp
 				var total_time: float = elapsed + elapsed_fade
 
 				# Pilar decay
 				if pilar_ref and is_instance_valid(pilar_ref):
-					var angle_pilar: float = sin(total_time * 45.0) * decay_intensity
-					var offset_x_pilar: float = cos(total_time * 55.0) * (decay_intensity * 0.03)
+					var angle_pilar: float = sin(total_time * 28.0) * decay_intensity
+					var offset_x_pilar: float = cos(total_time * 34.0) * (decay_intensity * 0.015)
 					pilar_ref.rotation_degrees.z = angle_pilar
 					pilar_ref.global_position.x = orig_x + offset_x_pilar
 
 				# Lonko decay
 				if modelo_ref and is_instance_valid(modelo_ref):
-					var angle_lonko: float = cos(total_time * 48.0) * (decay_intensity * 0.75)
-					var pos_x_lonko: float = sin(total_time * 52.0) * (decay_intensity * 0.022)
-					var pos_y_lonko: float = abs(sin(total_time * 64.0)) * (decay_intensity * 0.018)
+					var angle_lonko: float = cos(total_time * 30.0) * (decay_intensity * 0.65)
+					var pos_x_lonko: float = sin(total_time * 33.0) * (decay_intensity * 0.010)
+					var pos_y_lonko: float = abs(sin(total_time * 40.0)) * (decay_intensity * 0.008)
 					modelo_ref.rotation_degrees.z = angle_lonko
 					modelo_ref.position = Vector3(pos_x_lonko, pos_y_lonko, 0.0)
 
@@ -1859,6 +1931,11 @@ func take_damage(amount: float) -> void:
 			_tween_subida.kill()
 			_tween_subida = null
 		_change_state(State.DYING)
+	elif _en_baile_pilar():
+		# Daño durante el baile: solo feedback (flash + sonido), sin HIT,
+		# sin cambios de estado y sin interrumpir la animación PILAR_SUBIDA.
+		_reproducir_sonido_dano()
+		return
 	else:
 		_is_taking_damage = true
 		_is_shooting = false

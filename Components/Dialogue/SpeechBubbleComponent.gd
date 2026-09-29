@@ -9,6 +9,7 @@ signal dialogo_iniciado(texto: String)
 signal dialogo_terminado
 
 const ESCENA_UI: PackedScene = preload("res://Components/Dialogue/SpeechBubbleUI.tscn")
+const CameraUtilsRef = preload("res://System/Utils/CameraUtils.gd")
 const NOMBRE_LAYER_GLOBOS: String = "SpeechBubbleCanvasLayer"
 const LAYER_PRIORIDAD: int = 100
 
@@ -25,7 +26,7 @@ const LAYER_PRIORIDAD: int = 100
 @export var color_fondo: Color = Color(0.11, 0.08, 0.16, 0.95)
 @export var color_texto: Color = Color(0.14, 0.09, 0.04, 1.0)
 @export var tamano_fuente: int = 16
-@export var ancho_maximo: float = 380.0
+@export var ancho_maximo: float = 650.0
 @export var ancho_minimo: float = 60.0
 
 @export_group("Comportamiento")
@@ -53,7 +54,11 @@ func _process(_delta: float) -> void:
 	if not _bubble_ui or not is_instance_valid(_bubble_ui) or not _bubble_ui.esta_abierto():
 		return
 
-	var camera := get_viewport().get_camera_3d()
+	var camera: Camera3D = CameraUtilsRef.obtener_camara_juego(self)
+	if not camera:
+		var vp := get_viewport()
+		if vp:
+			camera = vp.get_camera_3d()
 	if not camera:
 		return
 
@@ -138,7 +143,11 @@ func decir(clave_o_texto: String, duracion: float = -1.0) -> void:
 	var dur_final: float = duracion if duracion >= 0.0 else duracion_defecto
 
 	# Actualizar posición inicial de inmediato
-	var camera := get_viewport().get_camera_3d()
+	var camera: Camera3D = CameraUtilsRef.obtener_camara_juego(self)
+	if not camera:
+		var vp := get_viewport()
+		if vp:
+			camera = vp.get_camera_3d()
 	if camera:
 		var pos_3d := to_global(offset_cabeza)
 		var detras: bool = camera.is_position_behind(pos_3d)

@@ -7,6 +7,7 @@ extends "res://addons/gut/test.gd"
 const SCRIPT_HOMBRE_PEZ: GDScript = preload("res://Entities/Ambiente_HombrePez/HombrePez.gd")
 const SCENE_HOMBRE_PEZ: PackedScene = preload("res://Entities/Ambiente_HombrePez/HombrePez.tscn")
 const MATERIAL_HOMBRE_PEZ: StandardMaterial3D = preload("res://Entities/Ambiente_HombrePez/HombrePez_Mat.tres")
+const SCENE_PUEBLO: PackedScene = preload("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
 
 func test_hombre_pez_instancia_correctamente_con_material_y_capa():
 	# Arrange
@@ -78,12 +79,8 @@ func test_hombre_pez_deshabilitar_respiracion_resetea_escala():
 
 
 func test_hombre_pez_presente_en_nivel_pueblo():
-	# Arrange
-	var scene: PackedScene = load("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
-	assert_not_null(scene, "La escena NivelPueblo debe existir")
-	
-	# Act
-	var nivel: Node = scene.instantiate()
+	# Arrange & Act
+	var nivel: Node = SCENE_PUEBLO.instantiate()
 	add_child_autofree(nivel)
 	
 	# Assert

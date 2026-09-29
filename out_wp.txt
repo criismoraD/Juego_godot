@@ -1,7 +1,0 @@
-Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
-
---- BUSCANDO PIXELES BLANCOS EN TEXTURAS ---
-res://Entities/NPC_OrcoCerdo/Orco cerdo_D.jpg tiene 64 pixeles blancos (>0.88)
-Muestras de coords blancas: [(1012, 46), (990, 130), (991, 130), (991, 131), (992, 131), (989, 132), (990, 132), (991, 132), (992, 132), (989, 133), (990, 133), (991, 133), (992, 133), (991, 134), (992, 134), (308, 138), (622, 140), (937, 248), (815, 390), (815, 391)]
-res://Entities/NPC_OrcoCerdo/lanza orco_D.jpg tiene 1097 pixeles blancos (>0.88)
-Hay franjas o zonas blancas grandes. Muestras: [(20, 2), (22, 2), (25, 2), (25, 3), (20, 4), (22, 4), (24, 4), (25, 4), (20, 5), (22, 5)]

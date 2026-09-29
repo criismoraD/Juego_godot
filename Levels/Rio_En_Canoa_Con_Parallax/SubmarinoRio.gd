@@ -703,6 +703,37 @@ func _configurar_enemigo_para_rio(enemigo: Node3D) -> void:
 	if cam and "_camara_cache_pantalla" in enemigo:
 		enemigo.set("_camara_cache_pantalla", cam)
 
+	_aplicar_escala_enemigo_rio(enemigo)
+
+
+## Escala de los enemigos en el río para igualar las proporciones de los personajes de la canoa
+func _aplicar_escala_enemigo_rio(enemigo: Node3D) -> void:
+	if not is_instance_valid(enemigo):
+		return
+	var factor_escala: float = 2.15
+	if enemigo is GoblinGirl or enemigo.name.begins_with("GoblinGirl") or enemigo.name.begins_with("GoblinArquera"):
+		factor_escala = 1.4
+	elif enemigo is PirataGoblin or enemigo.name.begins_with("PirataGoblin"):
+		factor_escala = 1.0
+	elif enemigo is ImpEstandarte or enemigo.name.begins_with("ImpEnemyEstandarte") or enemigo.name.begins_with("ImpEstandarte"):
+		factor_escala = 3.0
+	elif enemigo is ImpEnemy or enemigo.name.begins_with("ImpEnemy"):
+		factor_escala = 1.4
+	elif enemigo is GoblinGeneral or enemigo.name.begins_with("GoblinGeneral"):
+		factor_escala = 1.11
+	elif enemigo is Goblin or enemigo.name.begins_with("Goblin"):
+		factor_escala = 1.11
+
+	if enemigo.is_inside_tree() and enemigo.get_parent() is Node3D:
+		var p_scale: Vector3 = (enemigo.get_parent() as Node3D).global_transform.basis.get_scale()
+		enemigo.scale = Vector3(
+			factor_escala / maxf(p_scale.x, 0.001),
+			factor_escala / maxf(p_scale.y, 0.001),
+			factor_escala / maxf(p_scale.z, 0.001)
+		)
+	else:
+		enemigo.scale = Vector3(factor_escala, factor_escala, factor_escala)
+
 
 func _resolver_escena_enemigo(tipo: TipoEnemigo) -> PackedScene:
 	## Todas las escenas son preload: sin load() en runtime, sin hitches al spawnear.

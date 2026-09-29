@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bgiihbgnkfdvc"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://buahx51gc7thu"]
 
 [ext_resource type="Texture2D" uid="uid://cuqmhyv1ugm23" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Cabeza_GOBLING_MUERTE_D.jpg" id="1_p741l"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_wrjuh"]
@@ -11,4 +11,5 @@ shader_parameter/outline_width = 12.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_0bm7g")
+specular_mode = 1
 albedo_texture = ExtResource("1_p741l")

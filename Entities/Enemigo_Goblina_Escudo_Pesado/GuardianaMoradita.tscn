@@ -48,6 +48,7 @@ particles_anim_h_frames = 1
 particles_anim_v_frames = 1
 particles_anim_loop = false
 
+specular_mode = 1
 [sub_resource type="QuadMesh" id="QuadMesh_polvo"]
 material = SubResource("Mat_polvo")
 size = Vector2(0.65, 0.65)

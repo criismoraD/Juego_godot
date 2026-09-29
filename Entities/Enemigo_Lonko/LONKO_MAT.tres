@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://dbepmjk85sq5b"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dy3jq2qjasgob"]
 
 [ext_resource type="Texture2D" uid="uid://c7gh2cl2dd4n6" path="res://Entities/Enemigo_Lonko/LONKO_D.jpg" id="1_5qean"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_kalos"]
@@ -11,4 +11,5 @@ shader_parameter/outline_width = 12.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_5qean")
+specular_mode = 1
 albedo_texture = ExtResource("1_5qean")

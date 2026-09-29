@@ -1,7 +1,7 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://8qa7mesd2v0l"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://dbxdjkucn4y0" path="res://Entities/Ambiente_Piso/PISO_D.jpg" id="1_y4jfp"]
-[ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_ivsfk"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_Piso/PISO_D.jpg" id="1_y4jfp"]
+[ext_resource type="Shader" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_ivsfk"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ckydk"]
 render_priority = 0
@@ -11,4 +11,5 @@ shader_parameter/outline_width = 20.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_ckydk")
+specular_mode = 1
 albedo_texture = ExtResource("1_y4jfp")

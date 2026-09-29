@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bxa1kaf5suqom"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://db2c6ep4su4lm"]
 
 [ext_resource type="Texture2D" uid="uid://gpcwpod4t72y" path="res://Entities/Jugador_Arquera/DIF_ARCO_PROTA.jpg" id="1_5wm2y"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
@@ -13,5 +13,6 @@ shader_parameter/outline_width = 20.0
 resource_name = "Recurve Bow 2"
 next_pass = SubResource("ShaderMaterial_gv766")
 shading_mode = 0
+specular_mode = 1
 vertex_color_use_as_albedo = true
 albedo_texture = ExtResource("1_5wm2y")

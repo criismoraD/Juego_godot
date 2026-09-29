@@ -58,6 +58,7 @@ signal destruido
 @export var color_reaparicion: Color = Color(0.2, 0.8, 1.0)  ## Tinte del borde de disolución al reaparecer
 # Estado interno
 var golpes_recibidos: int = 0
+var _destruido: bool = false  ## La destrucción es idempotente: un solo EscudoRoto aunque el golpe final llegue varias veces el mismo frame
 var mesh_instance: MeshInstance3D
 var sombra_nodo: Node = null  ## Sombra falsa (excluida del parpadeo)
 var _flash_gen: int = 0  ## Generación del flash: golpes seguidos no se pisan entre sí
@@ -406,6 +407,8 @@ func animar_reaparicion() -> void:
 
 
 func recibir_golpe(amount: int = 1):
+	if _destruido:
+		return
 	if es_metalico and aguante_metalico > 0:
 		recibir_golpe_reflejo(null)
 		return
@@ -591,6 +594,9 @@ func _restaurar_flash(previos: Array) -> void:
 
 
 func _destruir():
+	if _destruido:
+		return
+	_destruido = true
 	_ocultar_icono_potenciado()
 	destruido.emit()
 	AudioManager.play_shield_break()

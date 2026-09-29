@@ -578,12 +578,6 @@ func _contar_proyectiles_enemigos() -> int:
 	return total
 
 
-func _contar_proyectiles_enemigos() -> int:
-	var total := 0
-	for n in get_tree().root.find_children("*", "Area3D", true, false):
-		if n is EspadaPirataProjectile or n is BalaCanonProjectile or n is GoblinGirlArrowProjectile:
-			total += 1
-	return total
 
 
 func test_encuentro_barco_canoa_sin_contacto_y_con_ataques() -> void:
@@ -641,7 +635,8 @@ func test_destruir_oscurece_y_desintegra_como_enemigos() -> void:
 		if sm.shader == BalsaPirataCombate.SHADER_DISOLVER:
 			con_disolver += 1
 			assert_not_null(sm.get_shader_parameter("albedo_texture"), "El disolver debe conservar la textura del casco")
-			var glow: Color = sm.get_shader_parameter("glow_color")			assert_almost_eq(glow.r, balsa.color_borde_balsa.r, 0.01, "Borde del color configurado")
+			var glow: Color = sm.get_shader_parameter("glow_color")
+			assert_almost_eq(glow.r, balsa.color_borde_balsa.r, 0.01, "Borde del color configurado")
 			assert_almost_eq(float(sm.get_shader_parameter("glow_intensity")), 6.0, 0.01, "Brillo de disolver enemigo")
 			assert_not_null(sm.get_shader_parameter("albedo_tint"), "Debe conservar tinte de albedo")
 			var tint: Vector3 = sm.get_shader_parameter("albedo_tint")

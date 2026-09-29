@@ -32,6 +32,7 @@ enum Direccion {
 }
 
 const MATERIAL_DEFECTO: Material = preload("res://Entities/Aliada_Arquera/ALLY_ARCHER_MAT.tres")
+const MATERIAL_ARCO_DEFECTO: Material = preload("res://Entities/Jugador_Arquera/Recurve Bow 2.tres")
 const NOMBRE_ANIM_CAMINAR: StringName = &"Caminar con arco casual"
 const POSE_FEMENINA_2: String = "Pose femenina 2"
 const POSE_IDLE_ANIMADO: String = "Idle animado"
@@ -50,6 +51,16 @@ const FACTOR_FRENO_DEFAULT: float = 0.4
 	set(nuevo_material):
 		material_npc = nuevo_material
 		_aplicar_material()
+
+@export var material_arco: Material = MATERIAL_ARCO_DEFECTO:  ## Material propio del arco (textura DIF_ARCO_PROTA)
+	set(nuevo_material):
+		material_arco = nuevo_material
+		_aplicar_material()
+
+@export var arco_visible: bool = true:  ## Muestra u oculta el arco de la mano derecha
+	set(v):
+		arco_visible = v
+		_actualizar_visibilidad_arco()
 
 @export var sin_linea_negra: bool = false:  ## Quita el contorno toon (next_pass) de las mallas
 	set(v):
@@ -135,7 +146,7 @@ const FACTOR_FRENO_DEFAULT: float = 0.4
 # EXPORTS – Previsualización en Editor
 # ─────────────────────────────────────────────
 @export_category("Previsualización en Editor")
-@export_enum("Ninguna", "Caminar con arco casual", "Pose femenina 2", "Idle animado", "Pose femenina estatica") var previsualizar_animacion: String = "Pose femenina 2":
+@export_enum("Ninguna", "Caminar con arco casual", "Pose femenina 2", "Idle animado", "Pose femenina estatica") var previsualizar_animacion: String = "Caminar con arco casual":
 	set(nombre):
 		previsualizar_animacion = nombre
 		_actualizar_previsualizacion_editor()
@@ -168,6 +179,7 @@ func _ready() -> void:
 	_configurar_pivot()
 	_aplicar_material()
 	_aplicar_capa_visual()
+	_actualizar_visibilidad_arco()
 	_inicializar_animator()
 
 	_direccion_actual = 1.0 if direccion_inicial == Direccion.DERECHA else -1.0
@@ -462,18 +474,29 @@ func _cambiar_estado(nuevo: Estado) -> void:
 
 
 func _aplicar_material() -> void:
-	if material_npc == null:
-		return
-	var mat: Material = _material_sin_outline(material_npc) if sin_linea_negra else material_npc
+	var mat_npc: Material = _material_sin_outline(material_npc) if (sin_linea_negra and material_npc != null) else material_npc
+	var mat_arco: Material = _material_sin_outline(material_arco) if (sin_linea_negra and material_arco != null) else material_arco
+
+	var nodo_arco: Node = find_child("ArcoMano", true, false)
+
 	var meshes := find_children("*", "MeshInstance3D", true, false)
 	for m in meshes:
 		var mi := m as MeshInstance3D
-		if mi:
-			if sin_linea_negra and mi.is_in_group("outline_meshes"):
-				mi.remove_from_group("outline_meshes")
-			mi.material_override = mat
-			if mi.mesh != null and mi.mesh.get_surface_count() > 0:
-				mi.set_surface_override_material(0, mat)
+		if not mi:
+			continue
+
+		var es_malla_arco: bool = (nodo_arco != null and (mi == nodo_arco or nodo_arco.is_ancestor_of(mi)))
+		var mat_a_usar: Material = mat_arco if es_malla_arco else mat_npc
+		if mat_a_usar == null:
+			continue
+
+		if sin_linea_negra and mi.is_in_group("outline_meshes"):
+			mi.remove_from_group("outline_meshes")
+
+		mi.material_override = mat_a_usar
+		if mi.mesh != null and mi.mesh.get_surface_count() > 0:
+			for s in range(mi.mesh.get_surface_count()):
+				mi.set_surface_override_material(s, mat_a_usar)
 
 
 ## Duplica el material sin el pase de contorno toon.
@@ -500,6 +523,13 @@ func _reaplicar_sin_outline() -> void:
 
 func _aplicar_capa_visual() -> void:
 	_asignar_capa_visual_recursiva(self, capa_visual)
+
+
+## Muestra u oculta el arco de la mano derecha.
+func _actualizar_visibilidad_arco() -> void:
+	var arco := find_child("ArcoMano", true, false) as Node3D
+	if is_instance_valid(arco):
+		arco.visible = arco_visible
 
 
 func _asignar_capa_visual_recursiva(nodo: Node, capa: int) -> void:

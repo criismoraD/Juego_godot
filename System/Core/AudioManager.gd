@@ -750,6 +750,22 @@ func stop_music() -> void:
 	play_music(0)
 
 
+## Pausa temporalmente la música activa sin reiniciar la pista.
+func pause_music() -> void:
+	if is_instance_valid(_active_music_player) and _active_music_player.playing:
+		_active_music_player.stream_paused = true
+	elif is_instance_valid(music_player) and music_player.playing:
+		music_player.stream_paused = true
+
+
+## Reanuda la música que estaba pausada.
+func resume_music() -> void:
+	if is_instance_valid(_active_music_player):
+		_active_music_player.stream_paused = false
+	if is_instance_valid(music_player):
+		music_player.stream_paused = false
+
+
 ## Retorna el índice de la pista de música que está sonando actualmente.
 func get_current_music_index() -> int:
 	return _current_bgm_index

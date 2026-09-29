@@ -340,6 +340,31 @@ func _stick_to_shield(shield: Node3D) -> void:
 	_programar_destruccion_pegada()
 
 
+func _reparent_to_shield(shield: Node3D, glob_trans: Transform3D) -> void:
+	if not is_instance_valid(shield) or shield.is_queued_for_deletion():
+		_devolver_o_liberar()
+		return
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+
+	var current_parent: Node = get_parent()
+	if current_parent != shield:
+		if current_parent:
+			current_parent.remove_child(self)
+		shield.add_child(self)
+	global_transform = glob_trans
+
+	# Si el escudo se destruye con la animación de partes, desvanecer la flecha clavada con él
+	if shield.has_signal("destruido"):
+		if not shield.is_connected("destruido", _on_escudo_anfitrion_destruido):
+			shield.connect("destruido", _on_escudo_anfitrion_destruido)
+
+
+func _on_escudo_anfitrion_destruido() -> void:
+	if is_instance_valid(self) and is_inside_tree():
+		_desvanecer_y_liberar()
+
+
 func _marcar_como_pegado() -> void:
 	is_stuck = true
 	direction = Vector3.ZERO
@@ -410,27 +435,6 @@ func _desvanecer_y_liberar() -> void:
 	, 1.0, 0.0, DURACION_DESVANECIMIENTO
 	)
 	tween.tween_callback(_devolver_o_liberar)
-
-
-func _reparent_to_shield(shield: Node3D, saved_transform: Transform3D) -> void:
-	if not is_instance_valid(shield):
-		_devolver_o_liberar()
-		return
-
-	var current_parent := get_parent()
-	if current_parent:
-		current_parent.remove_child(self )
-
-	shield.add_child(self )
-	global_transform = saved_transform
-
-	if shield.has_signal("destruido"):
-		var lifecycle_id := _lifecycle_id
-		shield.destruido.connect(
-			func() -> void:
-				if is_instance_valid(self ) and is_inside_tree() and _lifecycle_id == lifecycle_id:
-					_devolver_o_liberar()
-		)
 
 
 func _safe_destroy() -> void:

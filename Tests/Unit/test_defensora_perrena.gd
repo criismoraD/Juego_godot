@@ -1387,3 +1387,106 @@ func test_hacha_atraviesa_jugadora_sin_dano_ni_clavarse() -> void:
 	assert_eq(jugadora.salud, 4, "La vida de la jugadora no debe bajar")
 	assert_false(hacha._impacto_procesado, "No debe procesar impacto en aliadas")
 	assert_false(hacha.is_stuck, "No debe clavarse en aliadas")
+
+
+func test_perrena_apuntado_torso_hueso_configurado() -> void:
+	# Arrange & Act
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+
+	# Assert
+	assert_not_null(defensora.skeleton, "DefensoraPerrena debe tener referencia a su Skeleton3D")
+	assert_ne(defensora._spine_bone_idx, -1, "El índice del hueso Spine del torso debe ser válido")
+	var bone_name: String = defensora.skeleton.get_bone_name(defensora._spine_bone_idx)
+	assert_true(bone_name == "mixamorig_Spine1" or bone_name == "mixamorig_Spine", "El hueso debe ser mixamorig_Spine1 o mixamorig_Spine")
+
+
+func test_perrena_apuntado_torso_hacia_arriba() -> void:
+	# Arrange: Defensora en (0, 0, 0) y enemigo volador arriba en (8, 4, 0)
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3.ZERO
+
+	var enemigo_alto := Node3D.new()
+	enemigo_alto.name = "EnemigoAlto"
+	enemigo_alto.add_to_group("enemies")
+	_root_test.add_child(enemigo_alto)
+	enemigo_alto.global_position = Vector3(8.0, 4.0, 0.0)
+
+	# Act: Adquirir objetivo e iniciar ataque
+	defensora._objetivo_actual = enemigo_alto
+	defensora._cambiar_estado(DefensoraPerrena.State.ATTACKING)
+	defensora._actualizar_apuntado_torso(0.2)
+
+	# Assert: Pitch debe ser negativo (inclinación hacia arriba) y estar dentro de los límites
+	var pitch_obj: float = defensora.get_pitch_torso_objetivo()
+	var pitch_act: float = defensora.get_pitch_torso_actual()
+	assert_lt(pitch_obj, 0.0, "El pitch objetivo debe ser negativo al apuntar hacia arriba")
+	assert_lt(pitch_act, 0.0, "El pitch actual interpolado debe ser negativo al apuntar hacia arriba")
+	assert_gte(pitch_obj, deg_to_rad(defensora.angulo_torso_arriba_max), "No debe superar el ángulo máximo hacia arriba")
+
+
+func test_perrena_apuntado_torso_hacia_abajo() -> void:
+	# Arrange: Defensora en (0, 0, 0) y enemigo submarino/suelo abajo en (8, -3, 0)
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3.ZERO
+
+	var enemigo_bajo := Node3D.new()
+	enemigo_bajo.name = "EnemigoBajo"
+	enemigo_bajo.add_to_group("enemies")
+	_root_test.add_child(enemigo_bajo)
+	enemigo_bajo.global_position = Vector3(8.0, -3.0, 0.0)
+
+	# Act: Adquirir objetivo e iniciar ataque
+	defensora._objetivo_actual = enemigo_bajo
+	defensora._cambiar_estado(DefensoraPerrena.State.ATTACKING)
+	defensora._actualizar_apuntado_torso(0.2)
+
+	# Assert: Pitch debe ser positivo (inclinación hacia abajo) y estar dentro de los límites
+	var pitch_obj: float = defensora.get_pitch_torso_objetivo()
+	var pitch_act: float = defensora.get_pitch_torso_actual()
+	assert_gt(pitch_obj, 0.0, "El pitch objetivo debe ser positivo al apuntar hacia abajo")
+	assert_gt(pitch_act, 0.0, "El pitch actual interpolado debe ser positivo al apuntar hacia abajo")
+	assert_lte(pitch_obj, deg_to_rad(defensora.angulo_torso_abajo_max), "No debe superar el ángulo máximo hacia abajo")
+
+
+func test_perrena_restaurar_torso_al_volver_idle() -> void:
+	# Arrange: Defensora apuntando a un enemigo
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora.global_position = Vector3.ZERO
+
+	var enemigo := Node3D.new()
+	enemigo.name = "EnemigoTest"
+	enemigo.add_to_group("enemies")
+	_root_test.add_child(enemigo)
+	enemigo.global_position = Vector3(8.0, 4.0, 0.0)
+
+	defensora._objetivo_actual = enemigo
+	defensora._cambiar_estado(DefensoraPerrena.State.ATTACKING)
+	defensora._actualizar_apuntado_torso(0.2)
+	assert_ne(defensora.get_pitch_torso_actual(), 0.0, "Debe haber inclinado el torso")
+
+	# Act: Restaurar torso
+	defensora.restaurar_torso()
+
+	# Assert: Pitch vuelve a 0.0
+	assert_eq(defensora.get_pitch_torso_objetivo(), 0.0, "El objetivo de pitch debe ser 0.0")
+	assert_eq(defensora.get_pitch_torso_actual(), 0.0, "El pitch actual debe volver a 0.0")
+
+
+func test_perrena_muerte_o_victoria_restaura_torso() -> void:
+	# Arrange
+	var defensora: DefensoraPerrena = DefensoraScene.instantiate() as DefensoraPerrena
+	_root_test.add_child(defensora)
+	defensora._pitch_torso_actual = -0.5
+	defensora._pitch_torso_objetivo = -0.5
+
+	# Act: Iniciar baile victoria
+	defensora.iniciar_baile_victoria()
+
+	# Assert
+	assert_eq(defensora.get_pitch_torso_actual(), 0.0, "El pitch debe restaurarse a 0 en baile de victoria")
+	assert_eq(defensora.get_pitch_torso_objetivo(), 0.0, "El pitch objetivo debe ser 0 en baile de victoria")
+

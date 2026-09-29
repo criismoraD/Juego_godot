@@ -22,6 +22,7 @@ transparency = 1
 shading_mode = 0
 albedo_color = Color(1, 0.15, 0.35, 0.92)
 
+specular_mode = 1
 [sub_resource type="SphereMesh" id="SphereMesh_sparkle"]
 material = SubResource("StandardMaterial3D_sparkle")
 radius = 0.07

@@ -1,6 +1,7 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bvsix8ujswxxc"]
+[gd_resource type="StandardMaterial3D" format=3]
 
 [ext_resource type="Texture2D" path="res://Levels/Nivel_Interior/Modelos/MESA_CONFIGURACION/MESA_CONFIG_CUARTO_D.jpg" id="1_27ct4"]
 
 [resource]
+specular_mode = 1
 albedo_texture = ExtResource("1_27ct4")

@@ -261,11 +261,23 @@ func _ready():
 	VFXFactory.warmup_shaders(self)
 
 	# Detección automática para nivel pueblo si no se configuró explícitamente en el inspector
-	if "pueblo" in name.to_lower():
+	if es_nivel_pueblo():
 		if musica_inicial_indice == 3:
 			reproducir_sonido_ambiente = false
 			musica_inicial_indice = 10
 			mantener_musica_nivel = true
+		# Nivel Pueblo: 100% neutral y pacífico, sin enemigos ni oleadas
+		if is_instance_valid(wave_spawner):
+			wave_spawner.detener_spawning()
+			wave_spawner.set_process(false)
+			wave_spawner.set_physics_process(false)
+			wave_spawner.cola_spawn.clear()
+			wave_spawner.active_goblins.clear()
+			wave_spawner.enemigos_por_oleada = 0
+			wave_spawner.is_wave_active = false
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if is_instance_valid(enemy):
+				enemy.remove_from_group("enemies")
 
 	# Gestión de música y sonido ambiental al iniciar nivel
 	if not reproducir_sonido_ambiente:
@@ -443,10 +455,8 @@ func _ready():
 	# Espera inicial solicitada antes del cuadro de diálogo
 	await get_tree().create_timer(delay_dialogo_inicio).timeout
 
-	# Warm-up de shaders durante el diálogo: instancia brevemente los enemigos
-	# y proyectiles del nivel en un punto CUBIERTO por el panel del diálogo,
-	# para que la GPU compile sus pipelines sin tirones en combate.
-	_precalentar_combate_con_retraso(0.5)
+	if not es_nivel_pueblo():
+		_precalentar_combate_con_retraso(0.5)
 
 	# Mensaje inicial de protagonista antes de iniciar el flujo pacifista
 	await _mostrar_dialogo_inicio_protagonista()
@@ -509,7 +519,7 @@ func _mostrar_texto_paso_medea() -> void:
 	fuente_papyrus.base_font = FUENTE_RAVENNA
 
 	var etiqueta := Label.new()
-	etiqueta.text = tr("TITULO_PUEBLO") if name == "Nivel Pueblo" else tr("TITULO_PASO_MEDEA")
+	etiqueta.text = tr("TITULO_PUEBLO") if es_nivel_pueblo() else tr("TITULO_PASO_MEDEA")
 	etiqueta.add_theme_font_override("font", fuente_papyrus)
 	etiqueta.add_theme_font_size_override("font_size", TAMANO_FUENTE)
 	etiqueta.add_theme_color_override("font_color", COLOR_TEXTO_NEGRO)
@@ -814,7 +824,7 @@ func _forzar_refresco_outline_global() -> void:
 func _mostrar_dialogo_inicio_protagonista():
 	_set_juego_pausado_dialogo(true)
 	var paginas_custom: PackedStringArray = PackedStringArray()
-	if name == "Nivel Pueblo" or "pueblo" in name.to_lower():
+	if es_nivel_pueblo():
 		var p1: String = tr("DIALOGO_PROTA_PUEBLO_P1")
 		var p2: String = tr("DIALOGO_PROTA_PUEBLO_P2")
 		if p1 == "DIALOGO_PROTA_PUEBLO_P1":
@@ -891,7 +901,7 @@ func _mostrar_dialogo_escena(
 ## La cámara del fondo (CamaraFondoDOF) acompaña con un factor de parallax muy sutil (15%),
 ## mientras que el fondo 2D (FONDO estatico) se mantiene 100% estático en el marco visual.
 func _actualizar_camara_pueblo(delta: float) -> void:
-	if name != "Nivel Pueblo":
+	if not es_nivel_pueblo():
 		return
 	if not is_instance_valid(_camara_pueblo):
 		_camara_pueblo = find_child("CamaraFrente", true, false) as Camera3D
@@ -950,6 +960,11 @@ func _actualizar_camara_pueblo(delta: float) -> void:
 			_fondo_estatico_pueblo.global_position.x = _camara_fondo_pueblo.global_position.x + _offset_x_fondo_estatico
 
 
+## Retorna true si la escena actual corresponde al Nivel Pueblo (zona neutral pacífica sin enemigos)
+func es_nivel_pueblo() -> bool:
+	return name == "Nivel Pueblo" or "pueblo" in name.to_lower()
+
+
 ## Retorna la referencia a la luz frontal del agua de Nivel Pueblo
 func obtener_luz_agua_pueblo() -> OmniLight3D:
 	if not is_instance_valid(_luz_agua_pueblo):
@@ -1000,7 +1015,7 @@ func _actualizar_render_subviewport_fondo(delta: float) -> void:
 
 func _iniciar_nivel_0():
 	# Nivel Pueblo: sin evento del emisario ni pacíficos.
-	if name == "Nivel Pueblo":
+	if es_nivel_pueblo():
 		return
 	estado_actual = NivelEstado.NIVEL_0
 
@@ -1279,7 +1294,7 @@ func _aplicar_perfil_render_combate() -> void:
 func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> void:
 	# Nivel Pueblo: base pacífica sin oleadas de combate (el nodo WaveSpawner
 	# se conserva porque el script lo requiere, pero no se genera ningún enemigo).
-	if name == "Nivel Pueblo":
+	if es_nivel_pueblo():
 		return
 	estado_actual = NivelEstado.NIVEL_1
 

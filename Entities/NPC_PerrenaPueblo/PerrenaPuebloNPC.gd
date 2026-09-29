@@ -43,6 +43,32 @@ const ANGULO_PIVOT_IZQUIERDA: float = -90.0
 const VELOCIDAD_MINIMA_DESACELERACION: float = 0.2
 const FACTOR_FRENO_DEFAULT: float = 0.4
 
+# ─── Interacción / Diálogo Pueblo ─────────────────────────────────────────────
+const ESCENA_DIALOGO_TORRE: PackedScene = preload("res://UI/DialogoConversacionNivel5.tscn")
+const JINGLE_PERRENA: AudioStream = preload("res://System/Audio/Music/Perrena Jingle.mp3")
+const RADIO_INTERACCION: float = 1.5
+const ALTURA_PROMPT: float = 1.25
+const DURACION_FUNDIDO: float = 0.3
+const COLOR_TINTE_MORADO: Color = Color(0.78, 0.48, 0.95, 0.0)
+const ALFA_TINTE_MAXIMO: float = 0.22
+const HABLANTE_PERRENA: String = "perrena"
+const HABLANTE_ERYN: String = "eryn"
+
+const DIALOGO_PUEBLO_PAGINAS: Array[String] = [
+	"PERRENA_PUEBLO_1",
+	"PERRENA_PUEBLO_2",
+	"PERRENA_PUEBLO_3",
+	"PERRENA_PUEBLO_4",
+	"PERRENA_PUEBLO_5",
+]
+const DIALOGO_PUEBLO_HABLANTES: Array[String] = [
+	"perrena",
+	"eryn",
+	"perrena",
+	"perrena",
+	"eryn",
+]
+
 # ─────────────────────────────────────────────
 # EXPORTS – Configuración Visual
 # ─────────────────────────────────────────────
@@ -172,6 +198,17 @@ var _tiempo_alternancia: float = 0.0
 var _en_pose_gala: bool = true
 var _escala_base_modelo: Vector3 = Vector3.ONE
 
+# ─── Interacción / Diálogo Pueblo ─────────────────────────────────────────────
+var _jugador_cerca: bool = false
+var _dialogo_activo: bool = false
+var _dialogo_mostrado: bool = false
+var _prompt_hablar: Node3D = null
+var _tween_prompt: Tween = null
+var _tween_morado: Tween = null
+var _tint_mat: StandardMaterial3D = null
+var _jingle_player: AudioStreamPlayer = null
+var _jugador_nodo: Node3D = null
+
 # ─────────────────────────────────────────────
 # ONREADY
 # ─────────────────────────────────────────────
@@ -202,10 +239,16 @@ func _ready() -> void:
 	else:
 		iniciar_caminata()
 
+	_construir_interaccion()
+	add_to_group("npcs")
+	add_to_group("npc_dialogo")
+
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not _activo:
 		return
+
+	_actualizar_proximidad()
 
 	if estatico or animaciones_desactivadas:
 		if alternar_pose_idle:
@@ -352,6 +395,21 @@ func obtener_angulo_posado() -> float:
 	if is_instance_valid(_pivot_visual):
 		return _pivot_visual.rotation_degrees.y
 	return posar_angulo
+
+## Retorna el material de tinte morado utilizado en el overlay.
+func obtener_material_tinte() -> StandardMaterial3D:
+	return _tint_mat
+
+
+## Retorna true si este NPC está actualmente en conversación.
+## Usado por otros NPCs para el resaltado exclusivo (solo quien habla queda morado).
+func esta_hablando_dialogo() -> bool:
+	return _dialogo_activo
+
+
+## Retorna true si el jugador está dentro del radio de interacción.
+func esta_jugador_cerca() -> bool:
+	return _jugador_cerca
 
 
 # ─────────────────────────────────────────────
@@ -654,3 +712,305 @@ func _resolver_nombre_animacion(nombre: String) -> StringName:
 		if anim.to_lower() == nombre.to_lower():
 			return StringName(anim)
 	return StringName()
+
+
+# ─────────────────────────────────────────────
+# INTERACCIÓN Y DIÁLOGO – NIVEL PUEBLO
+# ─────────────────────────────────────────────
+
+## Construye el Label3D de prompt reutilizando el nodo existente en la escena
+## o creando uno dinámico si no existe. Parámetros idénticos al resto de NPCs del pueblo.
+func _construir_interaccion() -> void:
+	_prompt_hablar = find_child("PromptHablar", true, false) as Label3D
+	if _prompt_hablar == null:
+		var lbl := Label3D.new()
+		lbl.name = "PromptHablar"
+		lbl.text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+		lbl.pixel_size = 0.0035
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.font_size = 22
+		lbl.outline_size = 5
+		lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		lbl.outline_modulate = Color(0.05, 0.05, 0.08, 0.0)
+		lbl.position = Vector3(0.0, ALTURA_PROMPT, 0.0)
+		lbl.visible = false
+		add_child(lbl)
+		_prompt_hablar = lbl
+	else:
+		# Normalizar un nodo existente a los parámetros estándar
+		var lbl := _prompt_hablar as Label3D
+		lbl.text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+		lbl.pixel_size = 0.0035
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.font_size = 22
+		lbl.outline_size = 5
+		lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		lbl.outline_modulate = Color(0.05, 0.05, 0.08, 0.0)
+		lbl.visible = false
+
+
+## Detecta si el jugador está dentro del radio de interacción y conmuta el prompt.
+## Si otro NPC está hablando, este NPC apaga su resaltado (solo quien habla queda morado).
+func _actualizar_proximidad() -> void:
+	var jugador := _obtener_jugador()
+	if jugador == null:
+		return
+	var cerca_fisica: bool = global_position.distance_to(jugador.global_position) <= RADIO_INTERACCION
+	var cerca: bool = cerca_fisica
+	if not _dialogo_activo and cerca_fisica and _hay_otro_npc_hablando():
+		cerca = false
+	if cerca == _jugador_cerca:
+		return
+	_jugador_cerca = cerca
+	_animar_prompt(cerca)
+	_animar_morado(cerca)
+
+
+## Retorna el nodo del jugador (busca en grupo "player").
+func _obtener_jugador() -> Node3D:
+	if is_instance_valid(_jugador_nodo):
+		return _jugador_nodo
+	var arbol := get_tree()
+	if arbol == null:
+		return null
+	_jugador_nodo = arbol.get_first_node_in_group("player") as Node3D
+	return _jugador_nodo
+
+
+## Fundido suave del prompt con Tween (0.3 s).
+func _animar_prompt(activo: bool) -> void:
+	if _prompt_hablar == null:
+		return
+	if _tween_prompt and _tween_prompt.is_valid():
+		_tween_prompt.kill()
+	if get_tree() == null:
+		_prompt_hablar.visible = activo
+		if "modulate" in _prompt_hablar:
+			_prompt_hablar.modulate.a = 1.0 if activo else 0.0
+		return
+	_tween_prompt = create_tween().set_parallel(true)
+	var objetivo: float = 1.0 if activo else 0.0
+	if activo:
+		if _prompt_hablar is Label3D:
+			(_prompt_hablar as Label3D).text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+		_prompt_hablar.visible = true
+	_tween_prompt.tween_property(_prompt_hablar, "modulate:a", objetivo, DURACION_FUNDIDO).set_trans(Tween.TRANS_SINE)
+	if _prompt_hablar is Label3D:
+		_tween_prompt.tween_property(_prompt_hablar, "outline_modulate:a", objetivo, DURACION_FUNDIDO).set_trans(Tween.TRANS_SINE)
+	if not activo:
+		_tween_prompt.chain().tween_callback(_ocultar_prompt_si_lejos)
+
+
+func _ocultar_prompt_si_lejos() -> void:
+	if not _jugador_cerca and _prompt_hablar:
+		_prompt_hablar.visible = false
+
+
+func _configurar_tinte_morado() -> void:
+	if _tint_mat == null:
+		_tint_mat = StandardMaterial3D.new()
+		_tint_mat.cull_mode = BaseMaterial3D.CULL_BACK
+		_tint_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_tint_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_tint_mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+		_tint_mat.albedo_color = COLOR_TINTE_MORADO
+
+	var meshes: Array[Node] = find_children("*", "MeshInstance3D", true, false)
+	for m in meshes:
+		var mi := m as MeshInstance3D
+		if mi:
+			mi.material_overlay = _tint_mat
+
+
+## Aplica tinte morado overlay a todos los MeshInstance3D del NPC con Tween suave (0.3 s).
+func _animar_morado(activo: bool) -> void:
+	if _tween_morado and _tween_morado.is_valid():
+		_tween_morado.kill()
+
+	if _tint_mat == null:
+		_configurar_tinte_morado()
+
+	var target_alpha: float = ALFA_TINTE_MAXIMO if activo else 0.0
+	if not is_inside_tree() or get_tree() == null:
+		if _tint_mat:
+			_tint_mat.albedo_color.a = target_alpha
+		return
+
+	_tween_morado = create_tween()
+	var duracion: float = DURACION_FUNDIDO if activo else 0.25
+	_tween_morado.tween_method(
+		func(alpha: float) -> void:
+			if _tint_mat:
+				_tint_mat.albedo_color = Color(COLOR_TINTE_MORADO.r, COLOR_TINTE_MORADO.g, COLOR_TINTE_MORADO.b, alpha),
+		_tint_mat.albedo_color.a,
+		target_alpha,
+		duracion
+	).set_trans(Tween.TRANS_SINE)
+
+
+## Captura KEY_E cuando el jugador está cerca. El diálogo queda disponible
+## siempre, incluso después de haberlo escuchado (reinteractuable).
+func _unhandled_input(evento: InputEvent) -> void:
+	if Engine.is_editor_hint():
+		return
+	if _dialogo_activo:
+		return
+	if not _jugador_cerca:
+		return
+	if _hay_otro_npc_hablando():
+		return
+	if not (evento is InputEventKey):
+		return
+	var tecla_ev := evento as InputEventKey
+	if not tecla_ev.pressed or tecla_ev.echo:
+		return
+	if tecla_ev.keycode == KEY_E:
+		_mostrar_dialogo_pueblo()
+		get_viewport().set_input_as_handled()
+
+
+func _exit_tree() -> void:
+	if _dialogo_activo:
+		if is_instance_valid(_jingle_player) and _jingle_player.playing:
+			_jingle_player.stop()
+		AudioManager.resume_music()
+		_set_movimiento_jugador(true)
+
+
+## Instancia y muestra el diálogo de conversación del pueblo (repetible).
+func _mostrar_dialogo_pueblo() -> void:
+	if _dialogo_activo:
+		return
+	if _hay_otro_npc_hablando():
+		return
+	if get_tree() == null:
+		return
+	_dialogo_activo = true
+	_apagar_resaltado_otros_npcs()
+	if _prompt_hablar:
+		_prompt_hablar.visible = false
+
+	# Congelar al jugador por completo (sin movimiento, salto, disparo ni recarga)
+	_set_movimiento_jugador(false)
+
+	# Pausar la música del nivel y reproducir el jingle de Perrena en loop continuo
+	AudioManager.pause_music()
+	if _jingle_player == null:
+		_jingle_player = AudioStreamPlayer.new()
+		_jingle_player.name = "PerrenaJinglePlayer"
+		_jingle_player.bus = "Master"
+		_jingle_player.finished.connect(_on_jingle_player_finished)
+		add_child(_jingle_player)
+
+	_jingle_player.stream = JINGLE_PERRENA
+	if _jingle_player.stream and "loop" in _jingle_player.stream:
+		_jingle_player.stream.set("loop", true)
+	_jingle_player.volume_db = -2.0
+	_jingle_player.play()
+
+	var dialogo := ESCENA_DIALOGO_TORRE.instantiate() as DialogoComic
+	if dialogo == null:
+		push_warning("[PerrenaPuebloNPC] La escena de diálogo no usa DialogoComic.")
+		_dialogo_activo = false
+		if is_instance_valid(_jingle_player) and _jingle_player.playing:
+			_jingle_player.stop()
+		AudioManager.resume_music()
+		_set_movimiento_jugador(true)
+		return
+	dialogo.paginas_texto = PackedStringArray(DIALOGO_PUEBLO_PAGINAS)
+	dialogo.paginas_hablante = PackedStringArray(DIALOGO_PUEBLO_HABLANTES)
+	var ancla: Node = get_tree().current_scene
+	if ancla == null:
+		ancla = get_parent()
+	dialogo.continuado.connect(_on_dialogo_terminado.bind(dialogo))
+	ancla.add_child(dialogo)
+
+
+## Callback al terminar el diálogo: libera la escena, detiene el jingle,
+## reanuda la música del nivel, descongela al jugador y deja el diálogo disponible.
+func _on_dialogo_terminado(dialogo: DialogoComic) -> void:
+	if is_instance_valid(dialogo):
+		dialogo.queue_free()
+	_dialogo_activo = false
+	_dialogo_mostrado = true
+
+	# Detener el jingle de Perrena y reanudar la música normal del nivel
+	if is_instance_valid(_jingle_player) and _jingle_player.playing:
+		_jingle_player.stop()
+	AudioManager.resume_music()
+
+	# Descongelar al jugador
+	_set_movimiento_jugador(true)
+
+	# Reevaluar proximidad: si el jugador sigue cerca, mantener prompt y morado.
+	_jugador_cerca = false
+	_actualizar_proximidad()
+	if not _jugador_cerca:
+		_animar_morado(false)
+
+
+func _on_jingle_player_finished() -> void:
+	if _dialogo_activo and is_instance_valid(_jingle_player):
+		_jingle_player.play()
+
+
+
+## True si algún otro NPC del grupo está actualmente en conversación.
+func _hay_otro_npc_hablando() -> bool:
+	var arbol := get_tree()
+	if arbol == null:
+		return false
+	for nodo in arbol.get_nodes_in_group("npc_dialogo"):
+		if nodo == self:
+			continue
+		if not is_instance_valid(nodo):
+			continue
+		if nodo.has_method("esta_hablando_dialogo"):
+			if bool(nodo.call("esta_hablando_dialogo")):
+				return true
+	return false
+
+
+## Apaga el resaltado morado y el prompt de los demás NPCs para que
+## solo este NPC permanezca morado mientras habla.
+func _apagar_resaltado_otros_npcs() -> void:
+	var arbol := get_tree()
+	if arbol == null:
+		return
+	for nodo in arbol.get_nodes_in_group("npc_dialogo"):
+		if nodo == self:
+			continue
+		if not is_instance_valid(nodo):
+			continue
+		if nodo.has_method("_forzar_apagado_proximidad"):
+			nodo.call("_forzar_apagado_proximidad")
+
+
+## Apaga prompt y tinte propios cuando otro NPC inicia su diálogo.
+## No hace nada si este NPC es quien está hablando.
+func _forzar_apagado_proximidad() -> void:
+	if _dialogo_activo:
+		return
+	_jugador_cerca = false
+	_animar_prompt(false)
+	_animar_morado(false)
+
+
+## Bloquea o desbloquea el movimiento y acciones del jugador.
+func _set_movimiento_jugador(permitir: bool) -> void:
+	var arbol := get_tree()
+	if arbol == null:
+		return
+	for jugador in arbol.get_nodes_in_group("player"):
+		if not is_instance_valid(jugador):
+			continue
+		if jugador.has_method("set_puede_moverse"):
+			jugador.call("set_puede_moverse", permitir)
+		elif "puede_moverse" in jugador:
+			jugador.puede_moverse = permitir
+		elif "can_move" in jugador:
+			jugador.can_move = permitir
+
+		if not permitir:
+			if "velocity" in jugador:
+				jugador.velocity = Vector3.ZERO

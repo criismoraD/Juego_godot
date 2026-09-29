@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bwgd4qu2jqjsv"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bn524jnt71qc4"]
 
 [ext_resource type="Texture2D" uid="uid://djs45aggfa1lj" path="res://Entities/Enemigo_Imp/IMP_ENEMIGO_texture_pbr_20250901.png" id="1_rnwx4"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
@@ -12,4 +12,5 @@ shader_parameter/outline_width = 12.0
 [resource]
 resource_name = "MAT_IMP"
 next_pass = SubResource("ShaderMaterial_outline")
+specular_mode = 1
 albedo_texture = ExtResource("1_rnwx4")

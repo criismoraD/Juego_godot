@@ -5,4 +5,5 @@
 [resource]
 resource_name = "Maderos escombros_M"
 cull_mode = 2
+specular_mode = 1
 albedo_texture = ExtResource("1_32130")

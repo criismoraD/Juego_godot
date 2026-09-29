@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://dbyhnl5s6lc8"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dw44eop51huc"]
 
 [ext_resource type="Texture2D" uid="uid://sxukwir0h551" path="res://Entities/Enemigo_Imp_Escudo/ESCUDO_IMP_TEX.jpg" id="1_1ogve"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_01qtd"]
@@ -13,5 +13,6 @@ shader_parameter/outline_width = 12.0
 resource_name = "M_NoviceHeroShield"
 next_pass = SubResource("ShaderMaterial_2rs7j")
 cull_mode = 2
+specular_mode = 1
 albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
 albedo_texture = ExtResource("1_1ogve")

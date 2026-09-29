@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://c6j20ax51k7pm"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dnsljkgumv7eb"]
 
 [ext_resource type="Texture2D" uid="uid://df6nctw4v8fbe" path="res://Entities/Item_Medikit/MEDIKIT_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
@@ -12,6 +12,7 @@ shader_parameter/outline_width = 20.0
 [resource]
 resource_name = "MEDIKIT_M"
 next_pass = SubResource("ShaderMaterial_outline")
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")
 emission_enabled = true
 emission_texture = ExtResource("1_tex")

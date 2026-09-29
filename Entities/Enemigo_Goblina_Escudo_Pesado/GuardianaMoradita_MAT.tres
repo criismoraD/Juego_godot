@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bbj5qhtk0db2s"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://djrrejn3pv1n2"]
 
 [ext_resource type="Texture2D" uid="uid://caxtm7frra1ie" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/Moradit Gurdianaa_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
@@ -13,4 +13,5 @@ shader_parameter/outline_width = 12.0
 resource_name = "GuardianaMoradita_MAT"
 next_pass = SubResource("ShaderMaterial_outline")
 cull_mode = 2
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")

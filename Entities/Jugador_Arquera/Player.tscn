@@ -31,7 +31,7 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="ArqueraModel" parent="." unique_id=1511312856 instance=ExtResource("2_fbx")]
 transform = Transform3D(-1.355e-07, 0, 3.1, 0, 3.1, 0, -3.1, 0, -1.355e-07, 0, -0.065, 0)
 
-[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 536440546) index="0" unique_id=159602020]
+[node name="Skeleton3D" parent="ArqueraModel/Armature" parent_id_path=PackedInt32Array(1511312856, 1391717993) index="0" unique_id=237608549]
 bones/0/position = Vector3(1.7546701, -1.1081244, -38.63344)
 bones/0/rotation = Quaternion(0.69919634, 0.7145761, -0.011846885, -0.019107163)
 bones/1/rotation = Quaternion(-0.06394092, 0.51371694, -0.74897087, 0.413581)
@@ -138,7 +138,7 @@ bones/63/position = Vector3(-0.02092344, 1.8805807, 3.6470927e-05)
 bones/63/rotation = Quaternion(0.056758706, 0.006098835, -0.11689723, 0.9915021)
 bones/64/position = Vector3(-0.20366618, 1.4137303, -4.255564e-06)
 
-[node name="PROTA" parent="ArqueraModel/Armature/Skeleton3D" index="0" unique_id=767521052]
+[node name="PROTA" parent="ArqueraModel/Armature/Skeleton3D" index="0" unique_id=1047973402]
 transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 0, 0, 0)
 
 [node name="BoneAttach_Arco" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" index="1" unique_id=829651797]
@@ -150,7 +150,7 @@ bone_idx = 17
 transform = Transform3D(4.4982424, -30.294294, -10.129435, 31.179523, 1.941139, 8.04071, -6.9416704, -10.91199, 29.552084, -10.049694, -18.270287, 7.7429447)
 
 [node name="ARCO_ANIMADO" parent="ArqueraModel/Armature/Skeleton3D/BoneAttach_Arco" unique_id=470890658 instance=ExtResource("3_o5en2")]
-transform = Transform3D(-5.3978024, 34.92631, -18.735464, -38.306015, 0.25655925, 11.514478, 10.174119, 19.495844, 33.412575, -0.7302666, 4.909233, 1.2100334)
+transform = Transform3D(-11.243897, 36.878456, -10.656186, -37.815845, -8.732639, 9.6799755, 6.5981526, 12.795336, 37.319485, -0.96935654, 5.0990295, 1.9075756)
 
 [node name="BoneAttach_Flecha" type="BoneAttachment3D" parent="ArqueraModel/Armature/Skeleton3D" index="2" unique_id=1617127062]
 transform = Transform3D(0.4363768, -0.5445568, 0.7162631, 0.21362098, 0.8359991, 0.50544196, -0.874037, -0.0675541, 0.48113936, -5.8578596, -0.5380478, -54.627857)

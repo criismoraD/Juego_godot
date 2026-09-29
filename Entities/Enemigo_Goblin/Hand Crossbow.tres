@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://4fxlfonkc6n0"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://fdngjpixo7oy"]
 
 [ext_resource type="Texture2D" uid="uid://ctgig0swr1cmg" path="res://Entities/Enemigo_Goblin/BALLESTA_GOBLING.png" id="1_nvchs"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
@@ -14,4 +14,5 @@ resource_name = "Hand Crossbow"
 next_pass = SubResource("ShaderMaterial_outline")
 cull_mode = 2
 shading_mode = 0
+specular_mode = 1
 albedo_texture = ExtResource("1_nvchs")

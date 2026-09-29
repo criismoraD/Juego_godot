@@ -160,6 +160,38 @@ func test_jefe_submarino_lanzar_canon_al_destruirse() -> void:
 	assert_true(tiene_tuerca, "Una de las piezas debe ser la tuerca/rueda (TipoPieza.TUERCA)")
 
 
+func test_jefe_submarino_reutiliza_pieza_precalentada_sin_reinstanciar() -> void:
+	# Arrange: jefe con una pieza de cañón ya precalentada (pool del prewarm anti-freeze)
+	var jefe: Node3D = SCRIPT_JEFE_SUBMARINO.new() as Node3D
+	_root_test.add_child(jefe)
+	var pieza: Node3D = SCRIPT_CANON_VOLADOR.new() as Node3D
+	_root_test.add_child(pieza)
+	pieza.visible = false
+	assert_false(bool(pieza.call("esta_volando")), "La pieza precalentada debe estar inactiva")
+	var pool: Array = jefe.get("_piezas_voladoras_precalentadas") as Array
+	pool.append(pieza)
+
+	# Act: sustitución de modelo destruido (primera explosión)
+	jefe.call("_sustituir_por_modelo_destruido")
+
+	# Assert: la pieza del pool se reutiliza (misma instancia, sin reinstanciar el GLB 3K)
+	assert_true(bool(pieza.call("esta_volando")), "La pieza precalentada debe lanzarse reutilizando la instancia")
+	assert_true(pieza.visible, "La pieza reutilizada debe hacerse visible al lanzar")
+	var canones: Array = _root_test.find_children("*", "CanonDestruidoVolador", true, false)
+	assert_eq(canones.size(), 2, "Deben existir exactamente 2 piezas voladoras (cañón reutilizado + tuerca)")
+	assert_true(pieza in canones, "La pieza precalentada debe seguir en escena")
+
+
+func test_jefe_submarino_prewarm_diferido_se_programa_en_ready() -> void:
+	# Arrange & Act: al entrar al árbol, el _ready debe programar el prewarm anti-freeze
+	var jefe: Node3D = SCRIPT_JEFE_SUBMARINO.new() as Node3D
+	_root_test.add_child(jefe)
+
+	# Assert
+	var programado: bool = bool(jefe.get("_precalentamiento_destruccion_en_curso")) or bool(jefe.get("_precalentamiento_destruccion_hecho"))
+	assert_true(programado, "El precalentamiento de la explosión debe programarse al entrar en escena")
+
+
 func test_jefe_submarino_explotar_debug_ejecuta_destruccion() -> void:
 	# Arrange
 	var jefe: Node3D = SCRIPT_JEFE_SUBMARINO.new() as Node3D

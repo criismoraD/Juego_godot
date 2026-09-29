@@ -1,0 +1,61 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/NPC_Gateno/Gateno.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_Gateno/gateno.glb" id="2_model"]
+[ext_resource type="Material" path="res://Entities/NPC_Gateno/Gateno_Mat.tres" id="3_mat"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_Gateno/Katana.tscn" id="4_katana"]
+[ext_resource type="Script" path="res://Components/Dialogue/SpeechBubbleComponent.gd" id="5_speech"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interaccion"]
+size = Vector3(2.5, 2.2, 2.5)
+
+[node name="Gateno" type="Node3D"]
+script = ExtResource("1_script")
+material_npc = ExtResource("3_mat")
+
+[node name="Pivot" type="Node3D" parent="."]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="Model" parent="Pivot" instance=ExtResource("2_model")]
+
+[node name="gateno" parent="Pivot/Model/Armature/Skeleton3D" index="0"]
+material_override = ExtResource("3_mat")
+surface_material_override/0 = ExtResource("3_mat")
+
+[node name="BoneAttachment_ManoDerecha" type="BoneAttachment3D" parent="Pivot/Model/Armature/Skeleton3D" index="1"]
+bone_name = "mixamorig_RightHand"
+bone_idx = 28
+
+[node name="Katana" parent="Pivot/Model/Armature/Skeleton3D/BoneAttachment_ManoDerecha" instance=ExtResource("4_katana")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+
+[node name="AnimationPlayer" parent="Pivot/Model" index="1"]
+
+[node name="AreaInteraccion" type="Area3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+collision_layer = 0
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion"]
+shape = SubResource("BoxShape3D_interaccion")
+
+[node name="PromptHablar" type="Label3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+pixel_size = 0.0035
+billboard = 1
+render_priority = 2
+no_depth_test = true
+modulate = Color(1, 1, 1, 0)
+outline_modulate = Color(0.05, 0.05, 0.08, 0)
+text = "[E] Hablar"
+font_size = 22
+outline_size = 5
+
+[node name="SpeechBubbleComponent" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("5_speech")
+offset_cabeza = Vector3(0, 1.25, 0)
+
+[editable path="Pivot/Model"]

@@ -12,6 +12,7 @@ emission_enabled = true
 emission = Color(0.9882353, 0.8784314, 0, 1)
 emission_energy_multiplier = 3.0
 
+specular_mode = 1
 [sub_resource type="ParticleProcessMaterial" id="trail_process"]
 direction = Vector3(-1, 0, 0)
 spread = 8.0

@@ -70,7 +70,7 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 @export var escala_cordillera: Vector3 = Vector3(10.0, 7.5, 10.0)  ## Escala 3D del modelo de cordillera
 
 @export_category("Piso Aliado / Piso Nueva Version")
-@export var sincronizar_piso_con_cordillera: bool = true  ## Si true, el piso (Piso nueva version / Piso Aliado) se desplaza a la misma velocidad de la cordillera
+@export var sincronizar_piso_con_cordillera: bool = false  ## Si true, el piso (Piso nueva version / Piso Aliado) se desplaza a la misma velocidad de la cordillera
 @export var ancho_segmento_piso: float = 5.4  ## Distancia horizontal entre piezas de piso para el wrap del loop
 @export var sincronizar_reflejo_con_cordillera: bool = true  ## Si true, el reflejo de la cordillera en el agua se desplaza a la misma velocidad que ella
 

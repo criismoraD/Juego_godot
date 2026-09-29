@@ -19,6 +19,7 @@ enum EstadoTripulante { IDLE, PREPARANDO, APUNTANDO, DISPARANDO }
 @export_category("Visual")
 @export var capa_visual: int = 2  ## Capa de renderizado (Fondo = 2)
 @export var esta_sentada: bool = false  ## Si es true, permanece sentada y ataca con split-body blend
+@export var idle_agachada: bool = false  ## Si es true, el reposo es agachada (clip AGACHARSE) en vez de IDLE de pie
 
 @export_category("Combate Estético")
 @export var auto_iniciar_combate: bool = false
@@ -48,6 +49,7 @@ var _punto_disparo: Node3D = null
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
 	_buscar_componentes()
+	_configurar_loops_animaciones()
 	_aplicar_capa_visual_recursiva(self)
 
 	if esta_sentada:
@@ -120,8 +122,13 @@ func _ir_a_idle() -> void:
 	_temporizador_disparo = randf_range(intervalo_disparo_min, intervalo_disparo_max)
 	_ocultar_flecha_mano()
 
-	if esta_sentada and _anim_tree:
-		_anim_tree.set("parameters/UpperBlend/blend_amount", 0.0)
+	if esta_sentada:
+		if _anim_tree:
+			_anim_tree.set("parameters/UpperBlend/blend_amount", 0.0)
+		else:
+			_reproducir_anim_personaje(["AGACHARSE", "IDE", "IDLE_001", "IDLE"], 0.3)
+	elif idle_agachada:
+		_reproducir_anim_personaje(["AGACHARSE"], 0.3)
 	else:
 		_reproducir_anim_personaje(["IDE", "IDLE_001", "IDLE"], 0.3)
 
@@ -255,6 +262,20 @@ func _buscar_nombre_animacion(candidatos: Array) -> StringName:
 	return &""
 
 
+func _configurar_loops_animaciones() -> void:
+	if not _anim_player:
+		return
+	var loop_names: Array = ["AGACHARSE", "AGACHADA", "SENTADA", "IDE", "IDLE"]
+	for anim_name in _anim_player.get_animation_list():
+		var an_upper: String = anim_name.to_upper()
+		for target in loop_names:
+			if target in an_upper:
+				var anim: Animation = _anim_player.get_animation(anim_name)
+				if anim:
+					anim.loop_mode = Animation.LOOP_LINEAR
+				break
+
+
 func _setup_animation_tree() -> void:
 	if not _anim_player or not _skeleton:
 		return
@@ -343,15 +364,17 @@ func _buscar_componentes() -> void:
 		if not ap:
 			continue
 		var anims := ap.get_animation_list()
-		var es_arco: bool = false
+		var has_body_anim: bool = false
 		for a in anims:
-			if "ARCO" in a.to_upper() or "RECURVE" in a.to_upper():
-				es_arco = true
+			var au: String = a.to_upper()
+			if au == "IDE" or au == "IDLE" or "AGACHARSE" in au or "CORRER" in au or "DISPARAR" in au or "MUERTE" in au or "SENTADA" in au:
+				has_body_anim = true
 				break
-		if es_arco and not _bow_anim_player:
-			_bow_anim_player = ap
-		elif not es_arco and not _anim_player:
+
+		if has_body_anim and not _anim_player:
 			_anim_player = ap
+		elif not has_body_anim and not _bow_anim_player:
+			_bow_anim_player = ap
 
 	_skeleton = find_child("Skeleton3D", true, false) as Skeleton3D
 	_arrow_in_hand = find_child("FLECHA", true, false) as Node3D

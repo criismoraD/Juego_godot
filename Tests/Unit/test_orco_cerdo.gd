@@ -7,6 +7,7 @@ extends "res://addons/gut/test.gd"
 
 const SCRIPT_ORCO: GDScript = preload("res://Entities/NPC_OrcoCerdo/OrcoCerdo.gd")
 const SCENE_ORCO: PackedScene = preload("res://Entities/NPC_OrcoCerdo/OrcoCerdo.tscn")
+const SCENE_PUEBLO: PackedScene = preload("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
 
 func test_inicializacion_en_caminando():
 	# Arrange & Act
@@ -198,16 +199,16 @@ func test_desaceleracion_suave_al_aproximarse_al_limite():
 
 func test_orco_cerdo_en_nivel_pueblo():
 	# Arrange
-	var scene: PackedScene = load("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
+	var scene: PackedScene = SCENE_PUEBLO
 	assert_not_null(scene, "La escena NivelPueblo debe cargar")
 
 	# Act
 	var nivel: Node = scene.instantiate()
 	add_child_autofree(nivel)
-	var orco: Node = nivel.find_child("OrcoCerdo", true, false)
+	var orco: Node = nivel.find_child("OrcoCerdo*", true, false)
 
 	# Assert
-	assert_not_null(orco, "OrcoCerdo debe existir en NivelPueblo.tscn")
+	assert_not_null(orco, "OrcoCerdo o OrcoCerdo texto debe existir en NivelPueblo.tscn")
 	var lanza: Node3D = orco.call("obtener_lanza") as Node3D
 	assert_not_null(lanza, "El orco en NivelPueblo debe tener la lanza equipada")
 	assert_gt(orco.get("distancia_recorrido"), 0.0, "Debe tener configurada distancia_recorrido")
@@ -294,7 +295,7 @@ func test_orco_cerdo_reanudar_restaura_caminata():
 
 func test_orco_cerdo5_en_nivel_pueblo_es_estatico():
 	# Arrange
-	var scene: PackedScene = load("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
+	var scene: PackedScene = SCENE_PUEBLO
 	assert_not_null(scene, "La escena NivelPueblo debe cargar")
 
 	# Act
@@ -363,7 +364,7 @@ func test_orco_cerdo_velocidad_animacion_pose():
 
 func test_orco_cerdo8secreto_en_nivel_pueblo():
 	# Arrange
-	var scene: PackedScene = load("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
+	var scene: PackedScene = SCENE_PUEBLO
 	assert_not_null(scene, "La escena NivelPueblo debe cargar")
 
 	# Act

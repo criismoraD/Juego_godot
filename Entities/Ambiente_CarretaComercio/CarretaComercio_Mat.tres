@@ -1,8 +1,9 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://coiwrbxgetlji"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://dlmr0lt2ko533" path="res://Entities/Ambiente_CarretaComercio/carreta comercio_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_CarretaComercio/carreta comercio_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "CarretaComercio_Mat"
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")
 roughness = 0.85

@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dy8quxt8wg3xq"]
+
+[ext_resource type="Texture2D" uid="uid://ceumgfdj7ba5a" path="res://Entities/NPC_Gateno/gateno_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Gateno_Mat"
+cull_mode = 2
+specular_mode = 1
+albedo_texture = ExtResource("1_tex")
+roughness = 0.8

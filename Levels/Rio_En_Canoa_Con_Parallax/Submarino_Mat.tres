@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://pq4kluks08c6"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dcwro21rloetb"]
 
 [ext_resource type="Texture2D" uid="uid://cw8qq7ls6lut5" path="res://Levels/Rio_En_Canoa_Con_Parallax/Modelos/Submarino/Submarino_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
@@ -12,5 +12,6 @@ shader_parameter/outline_width = 20.0
 [resource]
 resource_name = "Submarino_Mat"
 next_pass = SubResource("ShaderMaterial_outline")
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")
 roughness = 0.85

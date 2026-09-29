@@ -632,6 +632,36 @@ func _configurar_tripulante_para_rio(enemigo: Node3D) -> void:
 	if cam and "_camara_cache_pantalla" in enemigo:
 		enemigo.set("_camara_cache_pantalla", cam)
 
+	_aplicar_escala_enemigo_rio(enemigo)
+
+
+## Escala de los enemigos en el río para igualar las proporciones de los personajes de la canoa
+func _aplicar_escala_enemigo_rio(enemigo: Node3D) -> void:
+	if not is_instance_valid(enemigo):
+		return
+	var factor_escala: float = 2.15
+	if enemigo is GoblinGirl or enemigo.name.begins_with("GoblinGirl") or enemigo.name.begins_with("GoblinArquera"):
+		factor_escala = 1.4
+	elif enemigo is PirataGoblin or enemigo.name.begins_with("PirataGoblin"):
+		factor_escala = 1.0
+	elif enemigo is ImpEstandarte or enemigo.name.begins_with("ImpEnemyEstandarte") or enemigo.name.begins_with("ImpEstandarte"):
+		factor_escala = 3.0
+	elif enemigo is ImpEnemy or enemigo.name.begins_with("ImpEnemy"):
+		factor_escala = 1.4
+	elif enemigo is GoblinGeneral or enemigo.name.begins_with("GoblinGeneral"):
+		factor_escala = 1.11
+	elif enemigo is Goblin or enemigo.name.begins_with("Goblin"):
+		factor_escala = 1.11
+
+	var b_scale: Vector3 = global_transform.basis.get_scale()
+	enemigo.scale = Vector3(
+		factor_escala / maxf(b_scale.x, 0.001),
+		factor_escala / maxf(b_scale.y, 0.001),
+		factor_escala / maxf(b_scale.z, 0.001)
+	)
+	enemigo.set_meta("escala_rio_compensada", true)
+
+
 func _iniciar_combate_tripulante(enemigo: Node3D) -> void:
 	if not is_instance_valid(enemigo):
 		return

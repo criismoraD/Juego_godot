@@ -1,8 +1,9 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://dgxi4yeuc3pey"]
+[gd_resource type="StandardMaterial3D" format=3]
 
 [resource]
 resource_name = "Cube_001_Inner_mat"
 cull_mode = 2
+specular_mode = 1
 albedo_color = Color(0.3943455, 0.07801045, 0.05843077, 1)
 roughness = 0.5
 emission_enabled = true

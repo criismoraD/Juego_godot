@@ -39,7 +39,7 @@ const COLOR_TEXTO_BOTON_HOVER: Color = Color(1.0, 0.95, 0.6, 1.0)
 @export_category("Textos y Destino")
 @export var clave_traduccion_titulo: String = CLAVE_TRADUCCION_TITULO
 @export var clave_traduccion_boton: String = CLAVE_TRADUCCION_BOTON
-@export var escena_siguiente: String = "res://Levels/Player_Interior.tscn"
+@export var escena_siguiente: String = "res://Levels/Nivel_Pueblo/NivelPueblo.tscn"
 
 @export_category("Silencio Final")
 ## Al cubrir toda la pantalla: sin enemigos ni combate sonando (música, SFX y loops).

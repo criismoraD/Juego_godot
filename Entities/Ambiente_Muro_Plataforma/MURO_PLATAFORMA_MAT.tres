@@ -1,6 +1,7 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://haea1cv8sf4t"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://cyxfsh8u1l830" path="res://Entities/Ambiente_Muro_Plataforma/MURO_PLATAFORMA_D.jpg" id="1_gqoki"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_Muro_Plataforma/MURO_PLATAFORMA_D.jpg" id="1_gqoki"]
 
 [resource]
+specular_mode = 1
 albedo_texture = ExtResource("1_gqoki")

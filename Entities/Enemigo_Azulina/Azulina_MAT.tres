@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://caqopatfxko1x"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dh0oceph7km4u"]
 
 [ext_resource type="Texture2D" uid="uid://d23g71f5ks8mx" path="res://Entities/Enemigo_Azulina/Azulina_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
@@ -13,5 +13,6 @@ shader_parameter/outline_width = 12.0
 resource_name = "Azulina_Mat"
 next_pass = SubResource("ShaderMaterial_outline")
 cull_mode = 2
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")
 roughness = 0.85

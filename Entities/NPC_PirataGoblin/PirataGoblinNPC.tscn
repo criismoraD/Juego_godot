@@ -3,6 +3,10 @@
 [ext_resource type="Script" path="res://Entities/NPC_PirataGoblin/PirataGoblinNPC.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://cq128ywh4vqqv" path="res://Entities/Enemigo_Pirata_Goblin/PirataGoblin.glb" id="2_model"]
 [ext_resource type="Material" uid="uid://btldbl1hpku35" path="res://Entities/Enemigo_Pirata_Goblin/MAT_PIRATA_GOBLIN.tres" id="3_mat"]
+[ext_resource type="Script" path="res://Components/Dialogue/SpeechBubbleComponent.gd" id="4_speech"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interaccion"]
+size = Vector3(2.5, 2.2, 2.5)
 
 [node name="PirataGoblin" type="Node3D"]
 script = ExtResource("1_script")
@@ -13,3 +17,30 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0
 
 [node name="Model" parent="Pivot" instance=ExtResource("2_model")]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
+
+[node name="AreaInteraccion" type="Area3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+collision_layer = 0
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion"]
+shape = SubResource("BoxShape3D_interaccion")
+
+[node name="PromptHablar" type="Label3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+pixel_size = 0.0035
+billboard = 1
+render_priority = 2
+no_depth_test = true
+modulate = Color(1, 1, 1, 0)
+outline_modulate = Color(0.05, 0.05, 0.08, 0)
+text = "[E] Hablar"
+font_size = 22
+outline_size = 5
+
+[node name="SpeechBubbleComponent" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_speech")
+offset_cabeza = Vector3(0, 1.15, 0)

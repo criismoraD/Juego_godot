@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://d0uca0uwisou3"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b18wtx427o57v"]
 
 [ext_resource type="Texture2D" uid="uid://bcj5kjwx6mhpy" path="res://Entities/Jugador_Perrena/Perrena_D.jpg" id="1_perrena"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
@@ -11,4 +11,5 @@ shader_parameter/outline_width = 12.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_outline_perrena")
+specular_mode = 1
 albedo_texture = ExtResource("1_perrena")

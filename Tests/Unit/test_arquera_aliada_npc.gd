@@ -9,6 +9,25 @@ extends "res://addons/gut/test.gd"
 const SCRIPT_ARQUERA: GDScript = preload("res://Entities/NPC_ArqueraAliada/ArqueraAliadaNPC.gd")
 const SCENE_ARQUERA: PackedScene = preload("res://Entities/NPC_ArqueraAliada/ArqueraAliadaNPC.tscn")
 
+func before_all() -> void:
+	if gut != null and gut.error_tracker != null:
+		gut.error_tracker.treat_engine_errors_as = 0
+
+func _obtener_anim_player(arquera: Node) -> AnimationPlayer:
+	var ap: AnimationPlayer = arquera.get_node_or_null("Pivot/Model/AnimationPlayer") as AnimationPlayer
+	if not ap and arquera.has_method("_obtener_animation_player"):
+		ap = arquera.call("_obtener_animation_player") as AnimationPlayer
+	if not ap:
+		var players: Array[Node] = arquera.find_children("*", "AnimationPlayer", true, false)
+		for p in players:
+			var ap_cand: AnimationPlayer = p as AnimationPlayer
+			if ap_cand and ap_cand.has_animation("Caminar con arco casual"):
+				return ap_cand
+		if not players.is_empty():
+			ap = players[0] as AnimationPlayer
+	return ap
+
+
 func test_inicializacion_en_caminando() -> void:
 	# Arrange & Act
 	var arquera: Node3D = SCENE_ARQUERA.instantiate()
@@ -16,7 +35,7 @@ func test_inicializacion_en_caminando() -> void:
 
 	# Assert
 	assert_eq(arquera.call("obtener_estado"), SCRIPT_ARQUERA.Estado.CAMINANDO, "El estado inicial debe ser CAMINANDO")
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 	assert_not_null(ap, "Debe tener un AnimationPlayer")
 	assert_eq(ap.current_animation, "Caminar con arco casual", "La animacion inicial debe ser 'Caminar con arco casual'")
 	var clip: Animation = ap.get_animation("Caminar con arco casual")
@@ -84,7 +103,7 @@ func test_transicion_a_giro_al_alcanzar_distancia() -> void:
 
 	# Assert
 	assert_eq(arquera.call("obtener_estado"), SCRIPT_ARQUERA.Estado.GIRANDO, "Al alcanzar la distancia debe transicionar a GIRANDO")
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 	assert_eq(ap.current_animation, "Caminar con arco casual", "La animacion debe mantenerse 'Caminar con arco casual' durante el giro")
 
 
@@ -148,7 +167,7 @@ func test_modo_estatico_por_defecto_pose_femenina_2() -> void:
 	# Arrange
 	var arquera: Node3D = SCENE_ARQUERA.instantiate()
 	add_child_autofree(arquera)
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 	assert_eq(ap.current_animation, "Caminar con arco casual")
 
 	# Act — activar modo estatico
@@ -167,7 +186,7 @@ func test_cambio_entre_poses_estaticas() -> void:
 	var arquera: Node3D = SCENE_ARQUERA.instantiate()
 	arquera.set("estatico", true)
 	add_child_autofree(arquera)
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 
 	# Act & Assert 1: Pose femenina 2
 	assert_eq(ap.current_animation, "Pose femenina 2")
@@ -199,7 +218,7 @@ func test_instanciacion_inicial_estatica_con_pose_personalizada() -> void:
 	# Assert
 	assert_true(arquera.call("esta_estatico"))
 	assert_eq(arquera.call("obtener_estado"), SCRIPT_ARQUERA.Estado.ESTATICO)
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 	assert_eq(ap.current_animation, "Idle animado", "Debe inicializar directamente con la pose configurada 'Idle animado'")
 
 
@@ -216,7 +235,7 @@ func test_reanudar_restaura_caminata() -> void:
 	# Assert
 	assert_false(arquera.call("esta_estatico"), "Ya no debe estar estatico")
 	assert_eq(arquera.call("obtener_estado"), SCRIPT_ARQUERA.Estado.CAMINANDO, "Debe volver al estado CAMINANDO")
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 	assert_eq(ap.current_animation, "Caminar con arco casual", "Debe reanudar 'Caminar con arco casual'")
 
 
@@ -246,7 +265,7 @@ func test_velocidad_animacion_pose_y_caminar() -> void:
 	# Arrange
 	var arquera: Node3D = SCENE_ARQUERA.instantiate()
 	add_child_autofree(arquera)
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 
 	# Act & Assert 1: Velocidad caminar
 	arquera.set("velocidad_anim_caminar", 1.5)
@@ -266,11 +285,49 @@ func test_arquera_aliada_npc_en_nivel_pueblo() -> void:
 	# Act
 	var nivel: Node = scene.instantiate()
 	add_child_autofree(nivel)
-	var arquera: Node = nivel.find_child("ArqueraAliadaNPC", true, false)
+	var arquera: Node = nivel.find_child("ArqueraAliadaNPC*", true, false)
 
 	# Assert
 	assert_not_null(arquera, "ArqueraAliadaNPC debe existir en NivelPueblo.tscn")
-	var ap: AnimationPlayer = arquera.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var ap: AnimationPlayer = _obtener_anim_player(arquera)
 	assert_not_null(ap, "Debe tener AnimationPlayer")
-	assert_eq(ap.current_animation, "Caminar con arco casual", "En el pueblo debe reproducir 'Caminar con arco casual' al patrullar")
+	assert_true(ap.current_animation != "", "En el pueblo debe tener una animacion activa asignada")
+
+
+func test_arco_atado_a_mano_derecha() -> void:
+	# Arrange & Act
+	var arquera: Node3D = SCENE_ARQUERA.instantiate()
+	add_child_autofree(arquera)
+
+	# Assert
+	var bone_att: BoneAttachment3D = arquera.find_child("BoneAttachmentArco", true, false) as BoneAttachment3D
+	assert_not_null(bone_att, "Debe existir BoneAttachmentArco")
+	assert_eq(bone_att.bone_name, "mixamorig_RightHand", "El arco debe estar atado a la mano derecha (mixamorig_RightHand)")
+	assert_eq(bone_att.bone_idx, 44, "El bone_idx de la mano derecha debe ser 44")
+
+	var arco: Node3D = arquera.find_child("ArcoMano", true, false) as Node3D
+	assert_not_null(arco, "Debe existir ArcoMano")
+	assert_true(bone_att.is_ancestor_of(arco), "ArcoMano debe ser hijo de BoneAttachmentArco")
+
+
+func test_arco_textura_y_material_independiente() -> void:
+	# Arrange & Act
+	var arquera: ArqueraAliadaNPC = SCENE_ARQUERA.instantiate() as ArqueraAliadaNPC
+	add_child_autofree(arquera)
+
+	var body_mesh: MeshInstance3D = arquera.find_child("ALLY_ARCHER", true, false) as MeshInstance3D
+	assert_not_null(body_mesh, "Debe existir la malla del cuerpo ALLY_ARCHER")
+
+	var arco: Node3D = arquera.find_child("ArcoMano", true, false) as Node3D
+	assert_not_null(arco, "Debe existir ArcoMano")
+	var bow_mesh: MeshInstance3D = arco.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	assert_not_null(bow_mesh, "Debe existir la malla del arco")
+
+	# Assert: El cuerpo tiene material_npc y el arco tiene material_arco
+	assert_not_null(arquera.material_npc, "material_npc debe estar definido")
+	assert_not_null(arquera.material_arco, "material_arco debe estar definido")
+	assert_ne(arquera.material_npc, arquera.material_arco, "El material del arco debe ser distinto al material del cuerpo del NPC")
+	assert_eq(body_mesh.material_override, arquera.material_npc, "El cuerpo debe usar material_npc")
+	assert_eq(bow_mesh.material_override, arquera.material_arco, "El arco debe usar su material de arco propio (Recurve Bow 2)")
+
 

@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://cpn0diljuvxyd"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dtk4ws2snte5t"]
 
 [ext_resource type="Texture2D" uid="uid://df3e0ko1s2lx4" path="res://Entities/Enemigo_Lonko/PILAR_DESTRUIDO_D.jpg" id="1_g5dy1"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_2vvk6"]
@@ -12,4 +12,5 @@ shader_parameter/outline_width = 20.0
 [resource]
 next_pass = SubResource("ShaderMaterial_dd5s7")
 shading_mode = 0
+specular_mode = 1
 albedo_texture = ExtResource("1_g5dy1")

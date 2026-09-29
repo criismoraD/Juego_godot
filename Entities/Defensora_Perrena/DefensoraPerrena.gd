@@ -79,6 +79,12 @@ var en_canoa: bool = false  ## true cuando va de pasajera (se autodetecta por el
 @export var cada_cuantos_ataques_sonido: int = 3  ## Grito de ataque cada N hachas normales (el especial lleva su propio guaf)
 @export_range(-10.0, 24.0, 0.5) var volumen_ult_db: float = 12.0  ## Volumen del sonido Perrena ult
 
+@export_category("Apuntado de Torso")
+@export var apuntado_torso_activo: bool = true  ## Si true, inclina el torso verticalmente hacia el objetivo
+@export_range(-80.0, 0.0, 1.0) var angulo_torso_arriba_max: float = -55.0  ## Límite de inclinación hacia arriba (grados)
+@export_range(0.0, 80.0, 1.0) var angulo_torso_abajo_max: float = 45.0  ## Límite de inclinación hacia abajo (grados)
+@export var velocidad_interpolacion_torso: float = 12.0  ## Suavizado de inclinación para movimiento orgánico y creíble
+
 var current_state: State = State.IDLE
 var contador_ataques: int = 0
 var hitbox_body: StaticBody3D = null
@@ -91,6 +97,11 @@ var armature_original_rotation: Vector3 = Vector3.ZERO
 var punto_spawn_hacha: Marker3D = null
 var last_hit_position: Vector3 = Vector3.ZERO
 var last_hit_direction: Vector3 = Vector3.ZERO
+
+var skeleton: Skeleton3D = null
+var _spine_bone_idx: int = -1
+var _pitch_torso_actual: float = 0.0
+var _pitch_torso_objetivo: float = 0.0
 
 var _particulas_pisada: GPUParticles3D = null
 var _malla_humo_der: QuadMesh = null
@@ -168,6 +179,9 @@ func iniciar_baile_victoria() -> void:
 		return
 	baile_victoria = true
 	_objetivo_actual = null
+	_pitch_torso_objetivo = 0.0
+	_pitch_torso_actual = 0.0
+	_restaurar_torso()
 	_cambiar_estado(State.IDLE)
 	_mantener_baile_victoria()
 
@@ -238,6 +252,12 @@ func _setup_nodos_y_modelo() -> void:
 		armature_node = model_root
 	if armature_node:
 		armature_original_rotation = armature_node.rotation
+
+	skeleton = find_child("Skeleton3D", true, false) as Skeleton3D
+	if skeleton:
+		_spine_bone_idx = skeleton.find_bone("mixamorig_Spine1")
+		if _spine_bone_idx == -1:
+			_spine_bone_idx = skeleton.find_bone("mixamorig_Spine")
 
 	anim_player = _resolver_animation_player()
 	_configurar_loops_animaciones()
@@ -386,6 +406,98 @@ func _orientar_modelo_izquierda() -> void:
 func _orientar_modelo_escalera() -> void:
 	if armature_node:
 		armature_node.rotation.y = armature_original_rotation.y - PI / 2.0
+
+
+## Actualiza la inclinación física del torso (mixamorig_Spine1) hacia el objetivo.
+## - Si el objetivo está arriba (gárgola, globo): dy > 0 -> pitch negativo (hacia arriba).
+## - Si el objetivo está abajo (submarino, enemigos de suelo): dy < 0 -> pitch positivo (hacia abajo).
+## - Interpola suavemente con velocidad_interpolacion_torso para que el movimiento sea creíble y orgánico.
+## - Fuera del ataque o sin objetivo, retorna suavemente a 0.0 y libera el override.
+func _actualizar_apuntado_torso(delta: float) -> void:
+	if not apuntado_torso_activo or not skeleton or _spine_bone_idx == -1:
+		return
+
+	if current_state == State.DYING or current_state == State.DEAD or current_state == State.DEPLOYING or baile_victoria:
+		_pitch_torso_objetivo = 0.0
+		_pitch_torso_actual = 0.0
+		_restaurar_torso()
+		return
+
+	# Solo apunta activamente durante el estado de ataque con un objetivo válido
+	if current_state == State.ATTACKING and is_instance_valid(_objetivo_actual):
+		var my_pos: Vector3 = global_position + Vector3(0.0, 0.5, 0.0)
+		if skeleton:
+			var pose_base: Transform3D = skeleton.get_bone_global_pose(_spine_bone_idx)
+			my_pos = skeleton.to_global(pose_base.origin)
+
+		var target_pos: Vector3 = _obtener_posicion_objetivo(_objetivo_actual)
+		var dy: float = target_pos.y - my_pos.y
+		var dx: float = absf(target_pos.x - my_pos.x)
+		var angulo_rad: float = -atan2(dy, maxf(dx, 0.1))
+		_pitch_torso_objetivo = clampf(angulo_rad, deg_to_rad(angulo_torso_arriba_max), deg_to_rad(angulo_torso_abajo_max))
+	else:
+		_pitch_torso_objetivo = 0.0
+
+	# Interpolación suave para evitar saltos bruscos
+	_pitch_torso_actual = lerpf(_pitch_torso_actual, _pitch_torso_objetivo, clampf(delta * velocidad_interpolacion_torso, 0.0, 1.0))
+
+	# Si ya volvió a neutral, liberar el override
+	if absf(_pitch_torso_actual) < 0.002 and absf(_pitch_torso_objetivo) < 0.001:
+		_pitch_torso_actual = 0.0
+		_restaurar_torso()
+		return
+
+	skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
+	var pose_actual: Transform3D = skeleton.get_bone_global_pose(_spine_bone_idx)
+	var pitch_rot := Quaternion(Vector3.FORWARD, _pitch_torso_actual)
+	var nueva_basis: Basis = pose_actual.basis * Basis(pitch_rot)
+	skeleton.set_bone_global_pose_override(
+		_spine_bone_idx, Transform3D(nueva_basis, pose_actual.origin), 1.0, false
+	)
+
+
+func _restaurar_torso() -> void:
+	if skeleton and _spine_bone_idx != -1:
+		skeleton.set_bone_global_pose_override(_spine_bone_idx, Transform3D.IDENTITY, 0.0, false)
+
+
+func restaurar_torso() -> void:
+	_pitch_torso_objetivo = 0.0
+	_pitch_torso_actual = 0.0
+	_restaurar_torso()
+
+
+func reset_torso_bone() -> void:
+	restaurar_torso()
+
+
+func get_pitch_torso_actual() -> float:
+	return _pitch_torso_actual
+
+
+func get_pitch_torso_objetivo() -> float:
+	return _pitch_torso_objetivo
+
+
+## Obtiene la posición mundo tridimensional del centro del objetivo fijado,
+## considerando ajustes de altura según la clase de entidad (pilares, globos, submarino).
+func _obtener_posicion_objetivo(target) -> Vector3:
+	if not is_instance_valid(target) or not (target is Node3D) or not (target as Node3D).is_inside_tree():
+		return global_position + Vector3(5.0, 0.0, 0.0)
+
+	var target_3d := target as Node3D
+	var offset := Vector3(0.0, 0.4, 0.0)
+
+	if target is PilarLonkoBody or ("es_pilar_enemigo" in target and target.es_pilar_enemigo):
+		offset = Vector3(0.0, 1.2, 0.0)
+	elif target is Lonko or ("lonko" in target.name.to_lower()):
+		offset = Vector3(0.0, 0.6, 0.0)
+	elif target is GloboAerostatico:
+		offset = Vector3(0.0, 0.6, 0.0)
+	elif target is SubmarinoRio or ("submarino" in target.name.to_lower()):
+		offset = Vector3(0.0, 0.2, 0.0)
+
+	return target_3d.global_position + offset
 
 
 func _configurar_particulas_pisada() -> void:
@@ -740,6 +852,7 @@ func _physics_process(delta: float) -> void:
 
 	_particulas_pisada_emitir()
 	_tiempo_en_estado += delta
+	_actualizar_apuntado_torso(delta)
 
 	match current_state:
 		State.DEPLOYING:
@@ -863,10 +976,7 @@ func _lanzar_hacha_especial() -> void:
 	# Prioridad 1 contra cualquier tipo de enemigo del juego
 	var target: Node = _buscar_mejor_objetivo(true)
 	var spawn_p: Vector3 = punto_spawn_hacha.global_position if is_instance_valid(punto_spawn_hacha) and punto_spawn_hacha.is_inside_tree() else (global_position + Vector3(0.2, 1.2, 0.0))
-
-	var target_pos: Vector3 = spawn_p + Vector3(10.0, 0.0, 0.0)
-	if is_instance_valid(target) and target is Node3D and (target as Node3D).is_inside_tree():
-		target_pos = (target as Node3D).global_position + Vector3(0.0, 0.4, 0.0)
+	var target_pos: Vector3 = _obtener_posicion_objetivo(target) if is_instance_valid(target) else (spawn_p + Vector3(10.0, 0.0, 0.0))
 
 	var dir := (target_pos - spawn_p).normalized()
 	if dir.length_squared() < 0.01:
@@ -892,10 +1002,7 @@ func _lanzar_hacha_hacia_objetivo(target) -> void:
 		return
 
 	var spawn_p: Vector3 = punto_spawn_hacha.global_position if is_instance_valid(punto_spawn_hacha) and punto_spawn_hacha.is_inside_tree() else (global_position + Vector3(0.2, 1.2, 0.0))
-	var target_pos: Vector3 = spawn_p + Vector3(8.0, 0.0, 0.0)
-
-	if is_instance_valid(target) and target is Node3D and (target as Node3D).is_inside_tree():
-		target_pos = (target as Node3D).global_position + Vector3(0.0, 0.4, 0.0)
+	var target_pos: Vector3 = _obtener_posicion_objetivo(target) if is_instance_valid(target) else (spawn_p + Vector3(8.0, 0.0, 0.0))
 
 	# Cálculo de trayectoria parabólica hacia el blanco
 	var dx: float = maxf(target_pos.x - spawn_p.x, 1.5)
@@ -1123,6 +1230,9 @@ func curar_completo() -> void:
 
 
 func _morir() -> void:
+	_pitch_torso_objetivo = 0.0
+	_pitch_torso_actual = 0.0
+	_restaurar_torso()
 	_cambiar_estado(State.DYING)
 	murio.emit()
 

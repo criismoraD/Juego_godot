@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://t0a53d8s657t"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://ho3ue8oko22b"]
 
 [ext_resource type="Texture2D" uid="uid://d3cdiumkabmpw" path="res://Entities/Item_Pocion/POSION_D.jpg" id="1_4nihf"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_11s41"]
@@ -11,6 +11,7 @@ shader_parameter/outline_width = 20.0
 
 [resource]
 next_pass = SubResource("ShaderMaterial_fm8ot")
+specular_mode = 1
 albedo_texture = ExtResource("1_4nihf")
 emission_enabled = true
 emission_texture = ExtResource("1_4nihf")

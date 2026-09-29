@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://bner43n6goist"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bd7skgf6erqox"]
 
 [ext_resource type="Texture2D" uid="uid://ystdaody0wgp" path="res://Entities/Ambiente_Escudo/ESCUDO2_D.jpg" id="1_1okq7"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_fkvbx"]
@@ -12,4 +12,5 @@ shader_parameter/outline_width = 5.0
 [resource]
 next_pass = SubResource("ShaderMaterial_grjdq")
 shading_mode = 0
+specular_mode = 1
 albedo_texture = ExtResource("1_1okq7")

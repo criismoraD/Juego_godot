@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://6x6ivs88ex2l"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://ddij0e3o30237"]
 
 [ext_resource type="Texture2D" uid="uid://dbop2251meaxk" path="res://Entities/Proyectil_Mina_Acuatica/Mina acuatica_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
@@ -13,6 +13,7 @@ shader_parameter/outline_width = 20.0
 resource_name = "MinaAcuatica_Mat"
 render_priority = 10
 next_pass = SubResource("ShaderMaterial_outline")
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")
 metallic = 0.25
 roughness = 0.7

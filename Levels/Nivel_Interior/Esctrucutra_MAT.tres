@@ -1,6 +1,7 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://dii618ftksnwa"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://30id11j0814s" path="res://Levels/Nivel_Interior/Esctrucutra_D.jpg" id="1_1vdll"]
+[ext_resource type="Texture2D" path="res://Levels/Nivel_Interior/Esctrucutra_D.jpg" id="1_1vdll"]
 
 [resource]
+specular_mode = 1
 albedo_texture = ExtResource("1_1vdll")

@@ -193,3 +193,35 @@ func test_flecha_enemiga_alta_no_impacta_perrena_en_canoa() -> void:
 
 	# Assert: la flecha está significativamente más arriba que el tope de la hitbox
 	assert_gt(altura_flecha_alta, tope_hitbox_y + 0.4, "La flecha a 1.3m debe pasar limpiamente por encima del tope de 0.75m de Perrena")
+
+
+func test_tripulante_arquera_animacion_agachada() -> void:
+	var trip_scene = load("res://Entities/Ambiente_Canoa_Aliada/Tripulante_barco_fondo_ally_archer.tscn")
+	var acomp: TripulanteBarcoFondoAllyArcher = trip_scene.instantiate() as TripulanteBarcoFondoAllyArcher
+	acomp.esta_sentada = true
+	acomp.idle_agachada = true
+	_root_test.add_child(acomp)
+
+	assert_not_null(acomp, "Tripulante debe instanciarse")
+	assert_not_null(acomp._anim_player, "Acompanante debe tener su AnimationPlayer asignado")
+
+	await get_tree().process_frame
+	await get_tree().physics_frame
+
+	var skel: Skeleton3D = acomp._skeleton
+	var hip_idx = skel.find_bone("mixamorig_Hips")
+	var rest_y: float = skel.get_bone_rest(hip_idx).origin.y
+	var pose_y: float = skel.get_bone_pose(hip_idx).origin.y
+
+	# En pose agachada, la altura de las caderas desciende notablemente respecto a la pose T
+	assert_lt(pose_y, rest_y, "La postura agachada debe bajar las caderas respecto a la pose T de reposo")
+
+
+
+
+
+
+
+
+
+

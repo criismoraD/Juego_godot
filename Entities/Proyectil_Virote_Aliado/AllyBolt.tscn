@@ -10,6 +10,7 @@ height = 0.28668946
 shading_mode = 0
 albedo_color = Color(0.25, 0.8, 1, 1)
 
+specular_mode = 1
 [sub_resource type="CylinderMesh" id="mesh_body"]
 material = SubResource("mat_preview_arrow")
 top_radius = 0.015

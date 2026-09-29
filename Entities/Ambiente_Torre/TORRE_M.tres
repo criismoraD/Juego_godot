@@ -1,12 +1,10 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://djjgbtutpuqm2"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://xqv70ady1mtd" path="res://Entities/Ambiente_Torre/TORRE_D.jpg" id="1_wrw76"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_Torre/TORRE_D.jpg" id="1_wrw76"]
 
 [resource]
 resource_name = "TORRE_M"
-specular_mode = 2
+specular_mode = 1
 albedo_color = Color(0.9063318, 0.9063318, 0.9063318, 1)
 albedo_texture = ExtResource("1_wrw76")
 metallic_specular = 0.0
-roughness = 1.0
-metallic = 0.0

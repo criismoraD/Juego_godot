@@ -41,6 +41,7 @@ particles_anim_h_frames = 7
 particles_anim_v_frames = 1
 particles_anim_loop = false
 
+specular_mode = 1
 [sub_resource type="QuadMesh" id="QuadMesh_kj5ve"]
 material = SubResource("StandardMaterial3D_aeivr")
 size = Vector2(0.028, 0.028)

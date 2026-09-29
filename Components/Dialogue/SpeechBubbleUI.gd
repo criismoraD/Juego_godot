@@ -15,6 +15,8 @@ const ANCHO_COLA: float = 21.0
 const ALTO_COLA: float = 16.0
 const SOLAPAMIENTO_COLA_Y: float = 7.0
 
+const MARGEN_LATERAL: float = 28.0
+
 @export_group("Personalización")
 @export var color_borde: Color = Color(0.95, 0.76, 0.35, 1.0)
 @export var color_fondo: Color = Color(0.11, 0.08, 0.16, 0.95)
@@ -28,7 +30,7 @@ const SOLAPAMIENTO_COLA_Y: float = 7.0
 		tamano_fuente = val
 		_actualizar_estilos()
 
-@export var ancho_maximo: float = 380.0
+@export var ancho_maximo: float = 650.0
 @export var ancho_minimo: float = 60.0
 
 var _tween_globo: Tween = null
@@ -43,9 +45,10 @@ var _esta_abierto: bool = false
 var _chars_sonados: int = 0
 var _chars_por_sonido: int = 3
 var _tamano_actual: Vector2 = Vector2(100.0, ALTO_BANNER)
+var _id_dialogo_actual: int = 0
 
 @onready var banner_container: Control = $BannerContainer
-@onready var cuerpo_centro: TextureRect = $BannerContainer/CuerpoCentro
+@onready var cuerpo_centro: Control = $BannerContainer/CuerpoCentro
 @onready var punta_izq: TextureRect = $BannerContainer/PuntaIzq
 @onready var punta_der: TextureRect = $BannerContainer/PuntaDer
 @onready var texture_cola: TextureRect = $BannerContainer/TextureCola
@@ -139,12 +142,15 @@ func mostrar_dialogo(
 		emit_signal("texto_completado")
 	)
 
+	_id_dialogo_actual += 1
+	var id_esperado: int = _id_dialogo_actual
+
 	# 3. Auto-cierre tras duración
 	if duracion > 0.0:
 		var tiempo_total: float = tiempo_escritura + duracion
 		_timer_autocierre = get_tree().create_timer(tiempo_total, false)
 		_timer_autocierre.timeout.connect(func() -> void:
-			if is_instance_valid(self) and _esta_abierto:
+			if is_instance_valid(self) and _esta_abierto and _id_dialogo_actual == id_esperado:
 				ocultar_dialogo(true)
 		)
 
@@ -153,6 +159,7 @@ func mostrar_dialogo(
 func ocultar_dialogo(animado: bool = true) -> void:
 	if not _esta_abierto:
 		return
+	_id_dialogo_actual += 1
 	_esta_abierto = false
 	_limpiar_tweens()
 
@@ -217,7 +224,7 @@ func _configurar_dimensiones(texto: String) -> void:
 
 	var font: Font = label_texto.get_theme_default_font()
 	var f_size: int = tamano_fuente
-	var margen_lateral := 21.0
+	var margen_lateral := MARGEN_LATERAL
 
 	var lineas: PackedStringArray = texto.split("\n")
 	var max_w_linea: float = 0.0
@@ -228,7 +235,7 @@ func _configurar_dimensiones(texto: String) -> void:
 		else:
 			max_w_linea = maxf(max_w_linea, float(linea.length()) * 10.0)
 
-	# Espacio para el texto + respiro reducido a la mitad en los laterales
+	# Espacio para el texto + respiro en los laterales
 	var total_w := clampf(max_w_linea + margen_lateral * 2.0, ancho_minimo, ancho_maximo)
 
 	# Calcular líneas reales con word-wrap dentro del ancho útil del banner
@@ -236,9 +243,11 @@ func _configurar_dimensiones(texto: String) -> void:
 	var lineas_envueltas := _envolver_texto_en_lineas(texto, font, f_size, ancho_texto)
 
 	# Altura del banner que crece con las líneas (1 línea = alto base)
-	var altura_linea: float = (font.get_height(f_size) if font else float(f_size)) + 4.0
+	var alto_banner := ALTO_BANNER
 	var num_lineas: int = maxi(lineas_envueltas.size(), 1)
-	var alto_banner := ALTO_BANNER + (altura_linea * float(num_lineas - 1))
+	if num_lineas > 1:
+		var altura_linea: float = (font.get_height(f_size) if font else float(f_size)) + 4.0
+		alto_banner = ALTO_BANNER + (altura_linea * float(num_lineas - 1))
 
 	_tamano_actual = Vector2(total_w, alto_banner)
 
@@ -277,7 +286,8 @@ func _reajustar_altura_tras_layout() -> void:
 	if alto_real <= 0.0:
 		return
 
-	var alto_banner := maxf(ALTO_BANNER, alto_real + 16.0)
+	# Si es una sola línea (altura aprox <= 24px), mantener la altura nativa óptima de 40px
+	var alto_banner := ALTO_BANNER if alto_real <= 24.0 else maxf(ALTO_BANNER, alto_real + 16.0)
 	if is_equal_approx(alto_banner, _tamano_actual.y):
 		return
 
@@ -290,8 +300,8 @@ func _reajustar_altura_tras_layout() -> void:
 	punta_der.position = Vector2(total_w - ANCHO_PUNTA, 0.0)
 	punta_der.size = Vector2(ANCHO_PUNTA, alto_banner)
 
-	label_texto.position = Vector2(21.0, 8.0)
-	label_texto.size = Vector2(total_w - 42.0, alto_banner - 16.0)
+	label_texto.position = Vector2(MARGEN_LATERAL, 8.0)
+	label_texto.size = Vector2(total_w - MARGEN_LATERAL * 2.0, alto_banner - 16.0)
 
 	if texture_cola:
 		texture_cola.position = Vector2(total_w * 0.5 - ANCHO_COLA * 0.5, alto_banner - SOLAPAMIENTO_COLA_Y)

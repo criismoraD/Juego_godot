@@ -172,6 +172,16 @@ var _gargolas_forzadas: Array = []
 var _gargolas_ataque_forzado: Array = []
 var _modelo_destruido_tscn: Node3D = null
 var _canon_destruido_lanzado: bool = false
+## Precalentamiento anti-freeze de la explosión: compila shaders e instancia
+## las piezas voladoras (cañón 3K + tuerca) fuera del frame crítico, para que
+## al explotar solo haya que reposicionar y lanzar (sin instantiate ni
+## compilación en caliente, que era lo que congelaba el juego).
+var _precalentamiento_destruccion_hecho: bool = false
+var _precalentamiento_destruccion_en_curso: bool = false
+var _piezas_voladoras_precalentadas: Array[Node3D] = []
+## El material del modelo destruido ya se aplica en _ready; con este flag se
+## evita reaplicarlo (recorrido completo de mallas) en el frame de la explosión.
+var _material_destruido_aplicado: bool = false
 var _crucero_fondo_completado: bool = false
 var _misiles_cosmeticos: Array[MisilSubmarino] = []
 var _tween_crucero_fondo: Tween = null
@@ -215,6 +225,7 @@ func _ready() -> void:
 	_cachear_mallas_casco_flash()
 	_asegurar_particulas_humo()
 	_buscar_y_configurar_modelo_destruido_tscn()
+	_precalentar_recursos_destruccion_diferido()
 	vida_cambiada.emit(vida_actual_jefe, vida_maxima_jefe)
 
 
@@ -328,6 +339,7 @@ func take_damage(amount: float) -> void:
 
 
 func _al_emerger_jefe() -> void:
+	_precalentar_recursos_destruccion_diferido()
 	if _esta_danado and not _jefe_muerto:
 		_activar_humo_danado(true)
 
@@ -336,6 +348,7 @@ func _activar_estado_danado() -> void:
 	if _esta_danado:
 		return
 	_esta_danado = true
+	_precalentar_recursos_destruccion_diferido()
 	_aplicar_material_danado()
 	_activar_humo_danado(true)
 
@@ -603,6 +616,134 @@ func _ejecutar_secuencia_destruccion() -> void:
 	_iniciar_cadena_explosiones_destruccion()
 
 
+## Programa el precalentamiento fuera del frame crítico (idle): compila los
+## shaders de la explosión y deja instanciadas las piezas voladoras para que
+## la destrucción solo tenga que lanzarlas. Se reintenta en emerger y en
+## estado dañado por si en _ready aún no había árbol disponible.
+func _precalentar_recursos_destruccion_diferido() -> void:
+	if _precalentamiento_destruccion_hecho or _precalentamiento_destruccion_en_curso:
+		return
+	if not is_inside_tree() or get_tree() == null:
+		return
+	_precalentamiento_destruccion_en_curso = true
+	call_deferred("_precalentar_recursos_destruccion")
+
+
+## Precalentamiento real (en diferido): crea la caché de partículas de rocas,
+## instancia una vez cada VFX pesado para compilar sus shaders y pre-instancia
+## las 2 piezas voladoras en estado inactivo e invisible.
+func _precalentar_recursos_destruccion() -> void:
+	if _precalentamiento_destruccion_hecho:
+		_precalentamiento_destruccion_en_curso = false
+		return
+	if not is_inside_tree() or get_tree() == null:
+		_precalentamiento_destruccion_en_curso = false
+		return
+	_asegurar_cache_rocas_destruccion()
+	# 1. Compilar shaders de los VFX de la explosión instanciándolos ocultos
+	# un par de frames (el coste aquí no se nota; en la explosión sí).
+	await get_tree().process_frame
+	if not is_instance_valid(self) or is_queued_for_deletion():
+		return
+	_precalentar_escena_vfx(ESCENA_EXPLOSION_PILAR)
+	_precalentar_escena_vfx(ESCENA_VFX_BIG_IMPACT_02)
+	_precalentar_escena_vfx(ESCENA_ONDA_SPLASH)
+	await get_tree().process_frame
+	if not is_instance_valid(self) or is_queued_for_deletion():
+		return
+	await get_tree().process_frame
+	if not is_instance_valid(self) or is_queued_for_deletion():
+		return
+	# 2. Pre-instanciar las piezas voladoras (el GLB del cañón 3K era el otro
+	# gran culpable del freeze): quedan inactivas e invisibles hasta lanzarlas.
+	_precalentar_pieza_voladora(CanonDestruidoVolador.TipoPieza.CANON)
+	_precalentar_pieza_voladora(CanonDestruidoVolador.TipoPieza.TUERCA)
+	_precalentamiento_destruccion_hecho = true
+	_precalentamiento_destruccion_en_curso = false
+
+
+## Instancia una escena VFX oculta un instante para forzar la compilación de
+## sus shaders y materiales fuera del momento crítico, y la libera.
+func _precalentar_escena_vfx(escena: PackedScene) -> void:
+	if escena == null or not is_inside_tree() or get_tree() == null:
+		return
+	var instancia: Node = escena.instantiate()
+	if instancia == null:
+		return
+	var raiz: Node = _resolver_raiz_efectos()
+	raiz.add_child(instancia)
+	if instancia is Node3D:
+		(instancia as Node3D).visible = false
+		(instancia as Node3D).global_position = global_position + Vector3(0.0, -60.0, 0.0)
+	if instancia.has_method("play"):
+		instancia.call("play")
+	for p in instancia.find_children("*", "GPUParticles3D", true, false):
+		if p is GPUParticles3D:
+			(p as GPUParticles3D).emitting = true
+			(p as GPUParticles3D).restart()
+	var tree: SceneTree = get_tree()
+	if tree != null:
+		await tree.process_frame
+	if is_instance_valid(instancia) and not instancia.is_queued_for_deletion():
+		instancia.queue_free()
+
+
+## Pre-instancia una pieza voladora inactiva e invisible bajo la raíz de
+## efectos (sobrevive al queue_free del jefe) para reutilizarla al explotar.
+func _precalentar_pieza_voladora(tipo: int) -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
+	for p in _piezas_voladoras_precalentadas:
+		if is_instance_valid(p) and int(p.get("tipo_pieza")) == tipo:
+			return
+	var pieza: Node3D = SCRIPT_CANON_VOLADOR.new() as Node3D
+	if pieza == null:
+		return
+	pieza.set("tipo_pieza", tipo)
+	var raiz: Node = _resolver_raiz_efectos()
+	raiz.add_child(pieza)
+	pieza.visible = false
+	_piezas_voladoras_precalentadas.append(pieza)
+
+
+## Extrae del pool una pieza precalentada del tipo pedido (o null si no hay).
+func _extraer_pieza_voladora_precalentada(tipo: int) -> Node3D:
+	for i in range(_piezas_voladoras_precalentadas.size() - 1, -1, -1):
+		var p: Node3D = _piezas_voladoras_precalentadas[i]
+		if not is_instance_valid(p) or p.is_queued_for_deletion():
+			_piezas_voladoras_precalentadas.remove_at(i)
+			continue
+		if int(p.get("tipo_pieza")) != tipo:
+			continue
+		if bool(p.call("esta_volando")):
+			continue
+		_piezas_voladoras_precalentadas.remove_at(i)
+		return p
+	return null
+
+
+## Resolución única de la raíz para efectos/VFX (evita divergencias entre
+## precalentamiento y lanzamiento).
+func _resolver_raiz_efectos() -> Node:
+	var raiz: Node = get_tree().current_scene if is_inside_tree() and get_tree() else null
+	if raiz == null and is_inside_tree() and get_tree():
+		raiz = get_tree().root
+	if raiz == null:
+		raiz = get_parent()
+	if raiz == null:
+		raiz = self
+	return raiz
+
+
+## Libera las piezas precalentadas no usadas si el jefe sale de escena sin explotar.
+func _exit_tree() -> void:
+	for p in _piezas_voladoras_precalentadas:
+		if is_instance_valid(p) and not p.is_queued_for_deletion():
+			if not bool(p.call("esta_volando")):
+				p.queue_free()
+	_piezas_voladoras_precalentadas.clear()
+
+
 func _buscar_y_configurar_modelo_destruido_tscn() -> void:
 	if not is_instance_valid(_modelo_destruido_tscn):
 		_modelo_destruido_tscn = get_node_or_null("Submarino destruido2") as Node3D
@@ -612,6 +753,7 @@ func _buscar_y_configurar_modelo_destruido_tscn() -> void:
 		_modelo_destruido_tscn.visible = false
 		if MAT_SUBMARINO_DESTRUIDO != null:
 			_aplicar_material_a_arbol(_modelo_destruido_tscn, MAT_SUBMARINO_DESTRUIDO)
+			_material_destruido_aplicado = true
 
 
 func _aplicar_material_a_arbol(nodo: Node, mat: Material) -> void:
@@ -639,8 +781,10 @@ func _sustituir_por_modelo_destruido() -> void:
 	_buscar_y_configurar_modelo_destruido_tscn()
 	if is_instance_valid(_modelo_destruido_tscn):
 		_modelo_destruido_tscn.visible = true
-		if MAT_SUBMARINO_DESTRUIDO != null:
+		# El material ya quedó aplicado en _ready: no recorrer mallas en caliente.
+		if not _material_destruido_aplicado and MAT_SUBMARINO_DESTRUIDO != null:
 			_aplicar_material_a_arbol(_modelo_destruido_tscn, MAT_SUBMARINO_DESTRUIDO)
+			_material_destruido_aplicado = true
 		modelo = _modelo_destruido_tscn
 		_aplicar_rojo_transitorio_destruido()
 		return
@@ -660,6 +804,7 @@ func _sustituir_por_modelo_destruido() -> void:
 	modelo = nuevo_modelo
 	if MAT_SUBMARINO_DESTRUIDO != null:
 		_aplicar_material_a_arbol(nuevo_modelo, MAT_SUBMARINO_DESTRUIDO)
+		_material_destruido_aplicado = true
 	_aplicar_rojo_transitorio_destruido()
 
 
@@ -694,13 +839,7 @@ func _lanzar_canon_destruido_volador() -> void:
 		return
 	_canon_destruido_lanzado = true
 
-	var root_scene: Node = get_tree().current_scene if is_inside_tree() and get_tree() else null
-	if root_scene == null and is_inside_tree() and get_tree():
-		root_scene = get_tree().root
-	if root_scene == null:
-		root_scene = get_parent()
-	if root_scene == null:
-		root_scene = self
+	var root_scene: Node = _resolver_raiz_efectos()
 
 	var spawn_pos: Vector3 = global_position + Vector3(1.2, 1.85, 0.0)
 	if is_instance_valid(_canon_modelo):
@@ -708,11 +847,16 @@ func _lanzar_canon_destruido_volador() -> void:
 
 	var cota_agua: float = global_position.y if absf(global_position.y) > 0.01 else -0.3
 
-	# 1. CaÃ±Ã³n destruido volador
-	var canon_volador: Node3D = SCRIPT_CANON_VOLADOR.new() as Node3D
+	# 1. Cañón destruido volador (reutiliza la pieza precalentada si existe:
+	# evita instanciar el GLB 3K en el frame de la explosión, que congelaba).
+	var canon_volador: Node3D = _extraer_pieza_voladora_precalentada(CanonDestruidoVolador.TipoPieza.CANON)
+	if canon_volador == null:
+		canon_volador = SCRIPT_CANON_VOLADOR.new() as Node3D
+		if canon_volador != null:
+			canon_volador.set("tipo_pieza", CanonDestruidoVolador.TipoPieza.CANON)
 	if canon_volador != null:
-		canon_volador.set("tipo_pieza", CanonDestruidoVolador.TipoPieza.CANON)
-		root_scene.add_child(canon_volador)
+		_reparentar_pieza_voladora(canon_volador, root_scene)
+		canon_volador.visible = true
 		var impulso_final_canon := Vector3(
 			impulso_canon_destruido.x + randf_range(-variacion_impulso_canon.x, variacion_impulso_canon.x),
 			impulso_canon_destruido.y + randf_range(-variacion_impulso_canon.y, variacion_impulso_canon.y),
@@ -721,11 +865,15 @@ func _lanzar_canon_destruido_volador() -> void:
 		if canon_volador.has_method("lanzar"):
 			canon_volador.call("lanzar", spawn_pos, impulso_final_canon, cota_agua)
 
-	# 2. Tuerca / rueda destruida voladora (trayectoria acrobÃ¡tica divergente)
-	var tuerca_voladora: Node3D = SCRIPT_CANON_VOLADOR.new() as Node3D
+	# 2. Tuerca / rueda destruida voladora (trayectoria acrobática divergente)
+	var tuerca_voladora: Node3D = _extraer_pieza_voladora_precalentada(CanonDestruidoVolador.TipoPieza.TUERCA)
+	if tuerca_voladora == null:
+		tuerca_voladora = SCRIPT_CANON_VOLADOR.new() as Node3D
+		if tuerca_voladora != null:
+			tuerca_voladora.set("tipo_pieza", CanonDestruidoVolador.TipoPieza.TUERCA)
 	if tuerca_voladora != null:
-		tuerca_voladora.set("tipo_pieza", CanonDestruidoVolador.TipoPieza.TUERCA)
-		root_scene.add_child(tuerca_voladora)
+		_reparentar_pieza_voladora(tuerca_voladora, root_scene)
+		tuerca_voladora.visible = true
 		var impulso_final_tuerca := Vector3(
 			impulso_tuerca_destruida.x + randf_range(-variacion_impulso_canon.x, variacion_impulso_canon.x),
 			impulso_tuerca_destruida.y + randf_range(-variacion_impulso_canon.y, variacion_impulso_canon.y),
@@ -734,6 +882,17 @@ func _lanzar_canon_destruido_volador() -> void:
 		var spawn_pos_tuerca: Vector3 = spawn_pos + Vector3(-0.35, 0.15, 0.25)
 		if tuerca_voladora.has_method("lanzar"):
 			tuerca_voladora.call("lanzar", spawn_pos_tuerca, impulso_final_tuerca, cota_agua)
+
+
+## Deja la pieza bajo la raíz de efectos (sobrevive al jefe) sin recrearla.
+func _reparentar_pieza_voladora(pieza: Node3D, root_scene: Node) -> void:
+	if not is_instance_valid(pieza) or root_scene == null:
+		return
+	if pieza.get_parent() == root_scene:
+		return
+	if is_instance_valid(pieza.get_parent()):
+		pieza.get_parent().remove_child(pieza)
+	root_scene.add_child(pieza)
 
 
 func _iniciar_cadena_explosiones_destruccion() -> void:
@@ -800,13 +959,10 @@ func _spawn_explosion_vfx_pilar(spawn_pos: Vector3) -> void:
 	_reproducir_sonido_explosion(spawn_pos)
 
 
-func _crear_particulas_rocas_destruccion(spawn_pos: Vector3) -> void:
-	if not is_inside_tree() or get_tree() == null:
-		return
-	if TEXTURA_PIEDRAS_NEGRAS_RES == null:
-		return
-
-	# Reutilizar recursos cacheados para evitar recompilación de shaders e instanciación repetida en caliente
+## Crea una sola vez los recursos compartidos de las rocas (fuera del frame
+## crítico cuando lo llama el precalentamiento) para no compilar ni asignar
+## materiales en caliente durante la cadena de explosiones.
+func _asegurar_cache_rocas_destruccion() -> void:
 	if _pmat_rocas_destruccion_cache == null:
 		_pmat_rocas_destruccion_cache = ParticleProcessMaterial.new()
 		_pmat_rocas_destruccion_cache.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
@@ -842,6 +998,17 @@ func _crear_particulas_rocas_destruccion(spawn_pos: Vector3) -> void:
 		_quad_rocas_destruccion_cache = QuadMesh.new()
 		_quad_rocas_destruccion_cache.size = Vector2(0.4, 0.4)
 		_quad_rocas_destruccion_cache.material = _mat_rocas_destruccion_cache
+
+
+func _crear_particulas_rocas_destruccion(spawn_pos: Vector3) -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
+	if TEXTURA_PIEDRAS_NEGRAS_RES == null:
+		return
+
+	_asegurar_cache_rocas_destruccion()
+	if _pmat_rocas_destruccion_cache == null or _quad_rocas_destruccion_cache == null:
+		return
 
 	var parts := GPUParticles3D.new()
 	parts.name = "ParticulasRocasDestruccionSubmarino"

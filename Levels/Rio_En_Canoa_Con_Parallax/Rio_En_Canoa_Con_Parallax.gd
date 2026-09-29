@@ -28,7 +28,7 @@ const INTERVALO_CHECK_AGUA: float = 0.1  ## Intervalo mínimo entre comprobacion
 # === EXPORTS ===
 @export_category("Fin de Nivel")
 @export var x_fin_nivel: float = 184.0  ## Coordenada X donde se activa la transición final del nivel
-@export var escena_siguiente: String = "res://Levels/Player_Interior.tscn"  ## Escena de destino al presionar Continuar
+@export var escena_siguiente: String = "res://Levels/Nivel_Pueblo/NivelPueblo.tscn"  ## Escena de destino al presionar Continuar
 @export var duracion_transicion_fin: float = 1.4  ## Duración del barrido de transición de derecha a izquierda
 @export var clave_titulo_fin: String = "RIO_ASALTO_SUPERADO"  ## Título de la cortinilla final ("Asalto al rio Superado")
 
@@ -122,6 +122,7 @@ func _ready() -> void:
 	_inicializar_focos_fijos()
 
 	if is_instance_valid(parallax_fondo):
+		parallax_fondo.set("sincronizar_piso_con_cordillera", false)
 		if parallax_fondo.has_method("fijar_camara_referencia") and is_instance_valid(camara_principal):
 			parallax_fondo.call("fijar_camara_referencia", camara_principal)
 		if parallax_fondo.has_method("_inicializar_capa_piso_aliado"):
@@ -909,6 +910,8 @@ func _configurar_enemigos_para_camara() -> void:
 			if is_instance_valid(camara_principal):
 				e.set("_camara_cache_pantalla", camara_principal)
 			_desactivar_drops_enemigo(e)
+			_asegurar_escala_arquera_rio(e)
+			_asegurar_escala_general_rio(e)
 
 	if get_tree():
 		for e in get_tree().get_nodes_in_group("enemies"):
@@ -920,6 +923,8 @@ func _configurar_enemigos_para_camara() -> void:
 				if is_instance_valid(camara_principal):
 					e.set("_camara_cache_pantalla", camara_principal)
 				_desactivar_drops_enemigo(e)
+				_asegurar_escala_arquera_rio(e)
+				_asegurar_escala_general_rio(e)
 		if not get_tree().node_added.is_connected(_on_node_added_nivel_rio):
 			get_tree().node_added.connect(_on_node_added_nivel_rio)
 
@@ -933,6 +938,28 @@ func _on_node_added_nivel_rio(node: Node) -> void:
 		if is_instance_valid(camara_principal):
 			node.set("_camara_cache_pantalla", camara_principal)
 		_desactivar_drops_enemigo(node)
+		_asegurar_escala_arquera_rio(node)
+		_asegurar_escala_general_rio(node)
+
+
+## Garantiza que todas las goblins arqueras del nivel río se muestren en escala 1.4
+func _asegurar_escala_arquera_rio(e: Node) -> void:
+	if not is_instance_valid(e):
+		return
+	if e is GoblinGirl or e.name.begins_with("GoblinGirl") or e.name.begins_with("GoblinArquera"):
+		if not e.is_in_group("piratas_submarino") and not e.has_meta("en_submarino") and not e.has_meta("escala_rio_compensada"):
+			if e is Node3D:
+				(e as Node3D).scale = Vector3(1.4, 1.4, 1.4)
+
+
+## Garantiza que todas las goblins generales del nivel río se muestren en escala 1.11
+func _asegurar_escala_general_rio(e: Node) -> void:
+	if not is_instance_valid(e):
+		return
+	if e is GoblinGeneral or e.name.begins_with("GoblinGeneral"):
+		if not e.is_in_group("piratas_submarino") and not e.has_meta("en_submarino") and not e.has_meta("escala_rio_compensada"):
+			if e is Node3D:
+				(e as Node3D).scale = Vector3(1.11, 1.11, 1.11)
 
 
 ## En el nivel del río los enemigos no deben soltar power-ups (solo la vasija contenedora).

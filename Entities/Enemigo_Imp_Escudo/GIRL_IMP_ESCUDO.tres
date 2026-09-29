@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://ogg84vougq2t"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dntgn25t6vc6g"]
 
 [ext_resource type="Texture2D" uid="uid://c0iwdc6mgwtnd" path="res://Entities/Enemigo_Imp_Escudo/TEX_IMP_SHIELDDIFUSO.jpg" id="1_ktwti"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_0xof7"]
@@ -13,4 +13,5 @@ shader_parameter/outline_width = 12.0
 resource_name = "Material.001"
 next_pass = SubResource("ShaderMaterial_r7eg0")
 cull_mode = 2
+specular_mode = 1
 albedo_texture = ExtResource("1_ktwti")

@@ -1,6 +1,7 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://ghdrk6dinhuu"]
+[gd_resource type="StandardMaterial3D" format=3]
 
-[ext_resource type="Texture2D" uid="uid://dpf0s0ykqckbj" path="res://Entities/Ambiente_Estatua/03_D.jpg" id="1_013y7"]
+[ext_resource type="Texture2D" path="res://Entities/Ambiente_Estatua/03_D.jpg" id="1_013y7"]
 
 [resource]
+specular_mode = 1
 albedo_texture = ExtResource("1_013y7")

@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://blfe8cdrt8rud"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dyrig2qv34v3y"]
 
 [ext_resource type="Texture2D" uid="uid://b80a52uwrsput" path="res://Entities/Ambiente_Barco_Combate_Pirata/Barco Combate Pirata_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_toon"]
@@ -13,5 +13,6 @@ shader_parameter/outline_width = 20.0
 resource_name = "MAT_BARCO_COMBATE_PIRATA"
 next_pass = SubResource("ShaderMaterial_outline")
 cull_mode = 2
+specular_mode = 1
 albedo_texture = ExtResource("1_tex")
 emission_texture = ExtResource("1_tex")

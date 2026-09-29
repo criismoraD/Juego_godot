@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://baee8t0l01024"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dbh4ryyivhmw5"]
 
 [ext_resource type="Texture2D" uid="uid://d2fx76bwdwrid" path="res://Entities/Item_Flecha_Multiple/Flecha_Multiple_D.jpg" id="1_mskl3"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_pktc8"]
@@ -12,4 +12,5 @@ shader_parameter/outline_width = 20.0
 [resource]
 next_pass = SubResource("ShaderMaterial_7d10k")
 shading_mode = 0
+specular_mode = 1
 albedo_texture = ExtResource("1_mskl3")

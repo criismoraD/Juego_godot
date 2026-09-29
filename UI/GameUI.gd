@@ -552,11 +552,50 @@ func _create_pause_panel():
 
 	# ═══════════════ SELECTOR DE OLEADAS Y NIVELES (DEBUG) ═══════════════
 	var lvl_label = Label.new()
-	lvl_label.text = "⚙️ CONTROLES DE DESARROLLADOR"
+	lvl_label.text = "🗺️ SELECTOR DE NIVELES"
 	lvl_label.add_theme_font_size_override("font_size", 22)
 	lvl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lvl_label.visible = debug_ui_enabled
 	vbox.add_child(lvl_label)
+
+	# Fila de Selector de Niveles
+	var hbox_selector_niveles = HBoxContainer.new()
+	hbox_selector_niveles.name = "HBoxSelectorNiveles"
+	hbox_selector_niveles.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox_selector_niveles.add_theme_constant_override("separation", 10)
+	hbox_selector_niveles.visible = debug_ui_enabled
+	vbox.add_child(hbox_selector_niveles)
+
+	var btn_nivel_bosque = Button.new()
+	btn_nivel_bosque.name = "BtnNivelBosque"
+	btn_nivel_bosque.text = "🌲 Nivel 1 (Bosque)"
+	btn_nivel_bosque.custom_minimum_size = Vector2(170, 40)
+	btn_nivel_bosque.pressed.connect(func(): _ir_a_nivel("res://Levels/NIVEL01/NIVEL01.tscn"))
+	_style_button(btn_nivel_bosque, Color(0.15, 0.45, 0.25))
+	hbox_selector_niveles.add_child(btn_nivel_bosque)
+
+	var btn_nivel_rio = Button.new()
+	btn_nivel_rio.name = "BtnNivelRio"
+	btn_nivel_rio.text = "🚣 Nivel Río"
+	btn_nivel_rio.custom_minimum_size = Vector2(170, 40)
+	btn_nivel_rio.pressed.connect(func(): _ir_a_nivel("res://Levels/Rio en canoa con paralax.tscn"))
+	_style_button(btn_nivel_rio, Color(0.15, 0.4, 0.7))
+	hbox_selector_niveles.add_child(btn_nivel_rio)
+
+	var btn_nivel_pueblo = Button.new()
+	btn_nivel_pueblo.name = "BtnNivelPueblo"
+	btn_nivel_pueblo.text = "🏘️ Nivel Pueblo"
+	btn_nivel_pueblo.custom_minimum_size = Vector2(170, 40)
+	btn_nivel_pueblo.pressed.connect(func(): _ir_a_nivel("res://Levels/Nivel_Pueblo/NivelPueblo.tscn"))
+	_style_button(btn_nivel_pueblo, Color(0.65, 0.4, 0.15))
+	hbox_selector_niveles.add_child(btn_nivel_pueblo)
+
+	var oleadas_label = Label.new()
+	oleadas_label.text = "⚔️ OLEADAS (NIVEL 1)"
+	oleadas_label.add_theme_font_size_override("font_size", 18)
+	oleadas_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	oleadas_label.visible = debug_ui_enabled
+	vbox.add_child(oleadas_label)
 
 	var hbox_levels = HBoxContainer.new()
 	hbox_levels.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -647,24 +686,6 @@ func _create_pause_panel():
 	)
 	_style_button(btn_ir_nivel6, Color(0.75, 0.25, 0.2))
 	hbox_nav_debug.add_child(btn_ir_nivel6)
-
-	var lvl_beta_btn = Button.new()
-	lvl_beta_btn.text = "🏆 Ir al Nivel Beta"
-	lvl_beta_btn.custom_minimum_size = Vector2(170, 40)
-	lvl_beta_btn.pressed.connect(
-		func():
-			if is_paused:
-				is_paused = false
-				get_tree().paused = false
-			AudioManager.stop_all()
-			if has_node("/root/SceneManager"):
-				get_node("/root/SceneManager").change_scene("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
-			else:
-				get_tree().change_scene_to_file("res://Levels/Nivel_Pueblo/NivelPueblo.tscn")
-	)
-	_style_button(lvl_beta_btn, Color(0.6, 0.4, 0.1))
-	hbox_nav_debug.add_child(lvl_beta_btn)
-
 
 	var debug_btn = Button.new()
 	debug_btn.text = "🔧 Modo Debug (NIVEL01)"
@@ -851,6 +872,19 @@ func _on_player_died():
 		root.add_child(game_over_screen)
 	else:
 		add_child(game_over_screen)
+
+
+## Navega a un nivel reseteando audio, checkpoints y estado de pausa
+func _ir_a_nivel(ruta_escena: String) -> void:
+	if is_paused:
+		is_paused = false
+		get_tree().paused = false
+	AudioManager.stop_all()
+	RioEnCanoaConParallax.reset_checkpoint()
+	if has_node("/root/SceneManager"):
+		get_node("/root/SceneManager").change_scene(ruta_escena)
+	else:
+		get_tree().change_scene_to_file(ruta_escena)
 
 
 func _ejecutar_cambio_oleada_debug(numero_oleada: int) -> void:

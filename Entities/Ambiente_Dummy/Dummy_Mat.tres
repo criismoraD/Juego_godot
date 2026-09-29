@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cammp2ek6teed"]
+
+[ext_resource type="Texture2D" uid="uid://br3dj3jkyvnwe" path="res://Entities/Ambiente_Dummy/dummy_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "Dummy_Mat"
+albedo_texture = ExtResource("1_tex")
+roughness = 0.85

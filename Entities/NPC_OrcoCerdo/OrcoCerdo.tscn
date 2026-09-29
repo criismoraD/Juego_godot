@@ -4,6 +4,10 @@
 [ext_resource type="PackedScene" uid="uid://bkyxig7l5nj7y" path="res://Entities/NPC_OrcoCerdo/Orco cerdo.glb" id="2_model"]
 [ext_resource type="Material" path="res://Entities/NPC_OrcoCerdo/OrcoCerdo_Mat.tres" id="3_mat"]
 [ext_resource type="PackedScene" path="res://Entities/NPC_OrcoCerdo/LanzaOrco.tscn" id="4_lanza"]
+[ext_resource type="Script" path="res://Components/Dialogue/SpeechBubbleComponent.gd" id="5_speech"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interaccion"]
+size = Vector3(2.5, 2.2, 2.5)
 
 [node name="OrcoCerdo" type="Node3D" unique_id=499690784]
 script = ExtResource("1_script")
@@ -113,5 +117,32 @@ transform = Transform3D(32.3179, 3.2125244, -168.97023, -118.727554, -87.25384, 
 
 [node name="AnimationPlayer" parent="Pivot/Model" index="1" unique_id=2105317536]
 blend_times = [&"Caminar con lanza", &"girarse Lanza", 0.4, &"girarse Lanza", &"Caminar con lanza", 0.4]
+
+[node name="AreaInteraccion" type="Area3D" parent="." unique_id=1067662184]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+collision_layer = 0
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion" unique_id=1107282362]
+shape = SubResource("BoxShape3D_interaccion")
+
+[node name="PromptHablar" type="Label3D" parent="." unique_id=1983230399]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+pixel_size = 0.0035
+billboard = 1
+render_priority = 2
+no_depth_test = true
+modulate = Color(1, 1, 1, 0)
+outline_modulate = Color(0.05, 0.05, 0.08, 0)
+text = "[E] Hablar"
+font_size = 22
+outline_size = 5
+
+[node name="SpeechBubbleComponent" type="Node3D" parent="." unique_id=892348713]
+unique_name_in_owner = true
+script = ExtResource("5_speech")
+offset_cabeza = Vector3(0, 1.15, 0)
 
 [editable path="Pivot/Model"]

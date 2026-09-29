@@ -22,15 +22,16 @@ script = ExtResource("1_script")
 transform = Transform3D(2.0424726, 0, 0, 0, 1.9994787, 0, 0, 0, 1.782749, 0, 0.005566733, 0)
 
 [node name="Protagonista" parent="." unique_id=2026998502 instance=ExtResource("4_player")]
-transform = Transform3D(0.188, 0, 0, 0, 0.188, 0, 0, 0, 0.188, -0.325598, 0.1553143, 0)
+transform = Transform3D(0.24, 0, 0, 0, 0.24, 0, 0, 0, 0.24, -0.325598, 0.1553143, 0)
 plano_profundidad_z = -7.5
 
 [node name="Acompanante" parent="." unique_id=2026998503 instance=ExtResource("3_tripulante")]
-transform = Transform3D(0.18, 0, 0, 0, 0.18, 0, 0, 0, 0.18, -0.7550017, 0.21778524, 0.10152596)
+transform = Transform3D(0.24, 0, 0, 0, 0.24, 0, 0, 0, 0.24, -0.7337314, 0.21778524, 0.10152596)
 esta_sentada = true
+idle_agachada = true
 
 [node name="DefensoraPerrena" parent="." unique_id=1323239522 instance=ExtResource("5_74dm6")]
-transform = Transform3D(0.18, 0, 0, 0, 0.18, 0, 0, 0, 0.18, 0.6657138, 0.15530086, 0)
+transform = Transform3D(0.23, 0, 0, 0, 0.23, 0, 0, 0, 0.23, 0.705032, 0.14019924, 0)
 vida_maxima = 22
 health = 22
 
@@ -46,12 +47,11 @@ stream = ExtResource("5_audio")
 volume_db = -3.0
 
 [node name="EfectoVientoCanoa" parent="." unique_id=2026998507 instance=ExtResource("7_viento")]
- 
+
 [node name="DetectorContactoEnemigos" type="Area3D" parent="." unique_id=2026998508]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.2, 0)
 collision_layer = 0
 collision_mask = 4
-monitoring = true
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DetectorContactoEnemigos" unique_id=2026998509]

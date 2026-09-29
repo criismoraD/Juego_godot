@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://s7r46f215ung"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d1gpkkf8gvaes"]
 
 [ext_resource type="Texture2D" uid="uid://md0g87gud4aa" path="res://Entities/Aliada_Ballestera/BALLESTERA_ALIADA_D.jpg" id="1_q0313"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_nglhj"]
@@ -12,4 +12,5 @@ shader_parameter/outline_width = 12.0
 [resource]
 next_pass = SubResource("ShaderMaterial_dhcvt")
 shading_mode = 0
+specular_mode = 1
 albedo_texture = ExtResource("1_q0313")

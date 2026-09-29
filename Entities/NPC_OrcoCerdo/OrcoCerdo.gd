@@ -16,6 +16,10 @@ signal estado_cambiado(nuevo_estado: Estado)
 signal animacion_cambiada(nombre_animacion: StringName)
 signal direccion_cambiada(nueva_direccion: float)
 signal pose_estatica_cambiada(nueva_pose: String)
+signal dialogo_iniciado(linea: String)
+signal dialogo_avanzado(indice: int, linea: String)
+signal dialogo_terminado
+signal proximidad_jugador_cambiada(cerca: bool)
 
 # ─────────────────────────────────────────────
 # ENUMS Y CONSTANTES
@@ -36,11 +40,22 @@ enum Direccion {
 
 const MATERIAL_DEFECTO: StandardMaterial3D = preload("res://Entities/NPC_OrcoCerdo/OrcoCerdo_Mat.tres")
 const ESCENA_LANZA: PackedScene = preload("res://Entities/NPC_OrcoCerdo/LanzaOrco.tscn")
+const SONIDO_PASOS_ARMADURA: AudioStreamMP3 = preload("res://Entities/NPC_OrcoCerdo/Audio/caminar_con_armadura.mp3")
+const SONIDO_CERDO: AudioStreamMP3 = preload("res://Entities/NPC_OrcoCerdo/Audio/sonido_cerdo.mp3")
 const NOMBRE_ANIM_CAMINAR: StringName = &"Caminar con lanza"
 const HUESO_MANO_DERECHA: String = "mixamorig_RightHand"
 const ANGULO_PIVOT_DERECHA: float = 90.0
 const ANGULO_PIVOT_IZQUIERDA: float = -90.0
 const VELOCIDAD_MINIMA_DESACELERACION: float = 0.2
+
+const COLOR_TINTE_MORADO: Color = Color(0.78, 0.48, 0.95, 0.0)
+const ALFA_TINTE_MAXIMO: float = 0.22
+const TEXTO_PROMPT_DEFECTO: String = "[E] Hablar"
+const ALTURA_DEFECTO_PROMPT: float = 1.25
+const LINEAS_DIALOGO_DEFECTO: PackedStringArray = [
+	"ORCO_PUEBLO_1",
+	"ORCO_PUEBLO_2"
+]
 
 # ─────────────────────────────────────────────
 # EXPORTS – Configuración Visual
@@ -74,10 +89,20 @@ const VELOCIDAD_MINIMA_DESACELERACION: float = 0.2
 
 @export var distancia_recorrido: float = 6.0  ## Distancia total a recorrer antes de girar (metros)
 @export var velocidad_caminar: float = 1.8   ## Velocidad de caminata horizontal (m/s)
-@export_range(0.2, 2.0, 0.05) var tiempo_giro: float = 0.8  ## Tiempo que toma rotar 180° al girar
+@export_range(0.2, 2.5, 0.05) var tiempo_giro: float = 1.4  ## Tiempo que toma rotar 180° al girar (lento y suave)
 @export_range(0.1, 1.5, 0.05) var tiempo_transicion: float = 0.3  ## Tiempo de crossfade al iniciar animación
 @export_range(0.1, 2.0, 0.05) var distancia_desaceleracion: float = 0.6  ## Distancia previa al límite para desacelerar suavemente
 @export_range(0.1, 2.0, 0.05) var tiempo_aceleracion: float = 0.6  ## Tiempo de aceleración tras girar
+
+@export_category("Pasos con Armadura")
+@export var pasos_armadura_activos: bool = true  ## Suena caminar_con_armadura al caminar
+@export_range(0.2, 2.0, 0.05) var paso_cada_metros: float = 0.5  ## Intervalo referencial de paso
+@export_range(4.0, 30.0, 0.5) var distancia_max_pasos: float = 8.5  ## Solo suena cerca del jugador
+@export_range(-24.0, 6.0, 0.5) var volumen_pasos_db: float = 0.0
+
+@export_category("Sonido Cerdo Diálogo")
+@export var sonido_cerdo_activo: bool = true  ## Reproduce el gruñido al iniciar el diálogo con [E]
+@export_range(-24.0, 6.0, 0.5) var volumen_sonido_cerdo_db: float = 0.0  ## Volumen del gruñido de diálogo
 
 @export_group("Posado 360 Grados", "posar_")
 @export var posar_360: bool = false:  ## Habilita posar libremente la orientación en cualquier ángulo de 0 a 360°
@@ -140,6 +165,23 @@ const VELOCIDAD_MINIMA_DESACELERACION: float = 0.2
 		previsualizar_animacion = nombre
 		_actualizar_previsualizacion_editor()
 
+# ─────────────────────────────────────────────
+# EXPORTS – Interacción y Diálogo
+# ─────────────────────────────────────────────
+@export_category("Interacción y Diálogo")
+@export var dialogo_interactivo: bool = false:  ## Habilita detección de proximidad, tinte morado y diálogo con [E]
+	set(valor):
+		dialogo_interactivo = valor
+		if is_inside_tree() and is_node_ready():
+			_actualizar_configuracion_dialogo()
+
+@export var radio_interaccion: float = 1.35  ## Distancia en metros para activar la proximidad y prompt
+@export var duracion_vinetas: float = 6.0  ## Duración en segundos de cada viñeta antes de auto-avanzar (0 = solo manual)
+## Claves de traducción (translations.csv); SpeechBubbleUI las resuelve con tr().
+@export var lineas_dialogo: PackedStringArray = [
+	"ORCO_PUEBLO_1",
+	"ORCO_PUEBLO_2"
+]
 
 # ─────────────────────────────────────────────
 # VARIABLES PRIVADAS
@@ -155,11 +197,30 @@ var _angulo_giro_destino: float = ANGULO_PIVOT_IZQUIERDA
 
 var _anim_player_ref: AnimationPlayer = null
 var _pivot_visual: Node3D = null
+var _reproductor_pasos: AudioStreamPlayer = null
+var _reproductor_cerdo: AudioStreamPlayer = null
+var _dist_desde_ultimo_paso: float = 0.0
 var _bone_attachment: BoneAttachment3D = null
 var _instancia_lanza: Node3D = null
 var _nodo_modelo_ref: Node3D = null
 var _tiempo_respiracion: float = 0.0
 var _escala_base_modelo: Vector3 = Vector3.ONE
+
+var _jugador_cerca: bool = false
+var _cerca_por_area: bool = false
+var _dialogo_activo: bool = false
+var _indice_dialogo: int = 0
+var _estaba_caminando_antes_de_dialogo: bool = false
+var _direccion_previa_dialogo: float = 1.0
+var _angulo_pivot_previo_dialogo: float = 90.0
+var _tween_giro_dialogo: Tween = null
+var _tint_mat: StandardMaterial3D = null
+var _tween_proximidad: Tween = null
+var _jugador_ref: Node3D = null
+
+@onready var prompt_hablar: Label3D = %PromptHablar if has_node("%PromptHablar") else null
+@onready var speech_bubble: SpeechBubbleComponent = %SpeechBubbleComponent if has_node("%SpeechBubbleComponent") else null
+@onready var area_interaccion: Area3D = %AreaInteraccion if has_node("%AreaInteraccion") else null
 
 # ─────────────────────────────────────────────
 # BUILT-INS
@@ -167,6 +228,8 @@ var _escala_base_modelo: Vector3 = Vector3.ONE
 func _ready() -> void:
 	_velocidad_actual = velocidad_caminar
 	_configurar_pivot()
+	_construir_audio_pasos()
+	_construir_audio_cerdo()
 	_capturar_escala_base()
 	_aplicar_material()
 	_aplicar_capa_visual()
@@ -181,7 +244,13 @@ func _ready() -> void:
 		if estatico:
 			_actualizar_modo_estatico()
 		return
-	
+
+	add_to_group("npcs")
+	add_to_group("npc_dialogo")
+
+	if _es_dialogo_activo():
+		_configurar_dialogo_interactivo()
+
 	if estatico:
 		pausar()
 	else:
@@ -192,7 +261,16 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not _activo:
 		return
 	
+	if _es_dialogo_activo():
+		_procesar_proximidad_jugador(delta)
+	
+	if _dialogo_activo:
+		_detener_audio_pasos()
+		_procesar_respiracion(delta)
+		return
+
 	if estatico:
+		_detener_audio_pasos()
 		if pose_estatica.to_lower() == "respiracion":
 			_procesar_respiracion(delta)
 		return
@@ -204,7 +282,21 @@ func _process(delta: float) -> void:
 			_procesar_caminata(delta)
 				
 		Estado.GIRANDO:
+			_detener_audio_pasos()
 			_procesar_giro(delta)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _es_dialogo_activo() or not _jugador_cerca:
+		return
+	if not _dialogo_activo and _hay_otro_npc_hablando():
+		return
+
+	var es_tecla_e: bool = (event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_E or event.keycode == KEY_ENTER))
+	var es_accion_interact: bool = event.is_action_pressed("interact") if InputMap.has_action("interact") else false
+	if es_tecla_e or es_accion_interact:
+		_interactuar_o_avanzar_dialogo()
+		get_viewport().set_input_as_handled()
 
 
 # ─────────────────────────────────────────────
@@ -326,6 +418,121 @@ func obtener_angulo_posado() -> float:
 	return posar_angulo
 
 
+## Retorna si el diálogo interactivo está actualmente habilitado en este Orco.
+func es_dialogo_activo() -> bool:
+	return _es_dialogo_activo()
+
+
+## Retorna true si el jugador está actualmente dentro del radio de interacción.
+func esta_jugador_cerca() -> bool:
+	return _jugador_cerca
+
+
+## Retorna true si una conversación está actualmente abierta.
+func esta_hablando_dialogo() -> bool:
+	return _dialogo_activo
+
+
+## Retorna el índice actual de viñeta (0 = no iniciado, 1 = viñeta 1, 2 = viñeta 2).
+func obtener_indice_dialogo() -> int:
+	return _indice_dialogo
+
+
+## Simula o dispara la interacción del jugador (equivalente a presionar [E]).
+func interactuar() -> void:
+	_interactuar_o_avanzar_dialogo()
+
+
+## Avanza forzadamente a la siguiente viñeta de diálogo.
+func avanzar_dialogo() -> void:
+	_avanzar_dialogo()
+
+
+## Cierra el diálogo activo inmediatamente.
+func cerrar_dialogo() -> void:
+	_cerrar_dialogo()
+
+
+## Retorna el material de tinte morado utilizado en el overlay.
+func obtener_material_tinte() -> StandardMaterial3D:
+	return _tint_mat
+
+
+## Retorna la referencia al nodo Label3D del prompt [E] Hablar.
+func obtener_prompt_hablar() -> Label3D:
+	return _obtener_prompt_hablar()
+
+
+## Retorna la referencia al componente SpeechBubbleComponent.
+func obtener_speech_bubble() -> SpeechBubbleComponent:
+	return _obtener_speech_bubble()
+
+
+## Retorna el AnimationPlayer del modelo.
+func obtener_animation_player() -> AnimationPlayer:
+	return _obtener_animation_player()
+
+
+## Retorna el nodo del modelo 3D.
+func obtener_nodo_modelo() -> Node3D:
+	return _obtener_nodo_modelo()
+
+
+## Retorna la escala base capturada del modelo.
+func obtener_escala_base_modelo() -> Vector3:
+	return _escala_base_modelo
+
+
+## Retorna la dirección que el NPC seguía en su ruta antes de hablar.
+func obtener_direccion_previa_dialogo() -> float:
+	return _direccion_previa_dialogo
+
+
+## Retorna el ángulo Y actual de rotación del Pivot visual.
+func obtener_angulo_pivot() -> float:
+	_configurar_pivot()
+	if is_instance_valid(_pivot_visual):
+		return _pivot_visual.rotation_degrees.y
+	return 0.0
+
+
+## Orienta manualmente al NPC hacia la posición del jugador.
+func orientar_hacia_jugador(animado: bool = true) -> void:
+	_orientar_hacia_jugador(animado)
+
+
+## Permite simular o fijar programáticamente la proximidad del jugador (útil para tests y cinemáticas).
+func fijar_jugador_cerca(cerca: bool) -> void:
+	_cerca_por_area = cerca
+	if _jugador_cerca != cerca:
+		_jugador_cerca = cerca
+		_on_proximidad_jugador_cambiada(cerca)
+
+
+## Retorna si las condiciones para emitir pasos de armadura se cumplen actualmente.
+func puede_sonar_pasos() -> bool:
+	return _puede_sonar_pasos()
+
+
+## Retorna el reproductor de sonido de pasos de armadura.
+func obtener_reproductor_pasos() -> AudioStreamPlayer:
+	if not is_instance_valid(_reproductor_pasos):
+		_construir_audio_pasos()
+	return _reproductor_pasos
+
+
+## Reproduce manualmente el gruñido de diálogo (equivale al que suena con [E]).
+func reproducir_sonido_cerdo() -> void:
+	_reproducir_sonido_cerdo()
+
+
+## Retorna el reproductor del gruñido de diálogo.
+func obtener_reproductor_cerdo() -> AudioStreamPlayer:
+	if not is_instance_valid(_reproductor_cerdo):
+		_construir_audio_cerdo()
+	return _reproductor_cerdo
+
+
 # ─────────────────────────────────────────────
 # FUNCIONES PRIVADAS
 # ─────────────────────────────────────────────
@@ -347,8 +554,107 @@ func _procesar_caminata(delta: float) -> void:
 	position.x += _direccion_actual * paso
 	_distancia_acumulada += paso
 
+	# Audio continuo de armadura mientras camina y el jugador está cerca
+	if pasos_armadura_activos:
+		_procesar_audio_pasos(delta)
+
 	if _distancia_acumulada >= distancia_recorrido:
 		iniciar_giro()
+
+
+## Crea el reproductor de audio para los pasos de armadura con bucle habilitado.
+func _construir_audio_pasos() -> void:
+	if is_instance_valid(_reproductor_pasos):
+		return
+	_reproductor_pasos = AudioStreamPlayer.new()
+	_reproductor_pasos.name = "PasosArmadura"
+	if SONIDO_PASOS_ARMADURA != null:
+		var stream_dup := SONIDO_PASOS_ARMADURA.duplicate() as AudioStreamMP3
+		if is_instance_valid(stream_dup):
+			stream_dup.loop = true
+			_reproductor_pasos.stream = stream_dup
+		else:
+			_reproductor_pasos.stream = SONIDO_PASOS_ARMADURA
+	_reproductor_pasos.volume_db = volumen_pasos_db
+	_reproductor_pasos.bus = "Master"
+	add_child(_reproductor_pasos)
+
+
+## Solo suena cuando el orco está en marcha activa y el jugador está cerca.
+func _puede_sonar_pasos() -> bool:
+	if not pasos_armadura_activos:
+		return false
+	if estatico or _estado_actual != Estado.CAMINANDO or _dialogo_activo:
+		return false
+	var jugador := _obtener_jugador()
+	if not is_instance_valid(jugador):
+		return false
+	var dist: float = global_position.distance_to(jugador.global_position)
+	if dist > distancia_max_pasos:
+		return false
+	return true
+
+
+## Procesa la reproducción y el volumen del audio de pasos según la distancia al jugador.
+func _procesar_audio_pasos(_delta: float) -> void:
+	if not _puede_sonar_pasos():
+		_detener_audio_pasos()
+		return
+
+	if not is_instance_valid(_reproductor_pasos):
+		_construir_audio_pasos()
+
+	var jugador := _obtener_jugador()
+	if not is_instance_valid(jugador):
+		_detener_audio_pasos()
+		return
+
+	var dist: float = global_position.distance_to(jugador.global_position)
+	var factor: float = clampf(1.0 - (dist / maxf(distancia_max_pasos, 0.1)), 0.0, 1.0)
+	var vol_efectivo: float = volumen_pasos_db + lerpf(-18.0, 0.0, factor)
+	_reproductor_pasos.volume_db = vol_efectivo
+
+	if not _reproductor_pasos.playing:
+		_reproductor_pasos.play()
+
+
+func _detener_audio_pasos() -> void:
+	if is_instance_valid(_reproductor_pasos) and _reproductor_pasos.playing:
+		_reproductor_pasos.stop()
+
+
+func _reproducir_paso_armadura() -> void:
+	_procesar_audio_pasos(0.0)
+
+
+## Crea el reproductor del gruñido de diálogo (one-shot, sin bucle).
+func _construir_audio_cerdo() -> void:
+	if is_instance_valid(_reproductor_cerdo):
+		return
+	_reproductor_cerdo = AudioStreamPlayer.new()
+	_reproductor_cerdo.name = "SonidoCerdo"
+	_reproductor_cerdo.stream = SONIDO_CERDO
+	_reproductor_cerdo.volume_db = volumen_sonido_cerdo_db
+	_reproductor_cerdo.bus = "Master"
+	add_child(_reproductor_cerdo)
+
+
+## Reproduce el gruñido al hablar con el orco. Se reinicia si ya estaba sonando.
+func _reproducir_sonido_cerdo() -> void:
+	if not sonido_cerdo_activo:
+		return
+	if SONIDO_CERDO == null:
+		return
+	if not is_inside_tree():
+		return
+	if not is_instance_valid(_reproductor_cerdo):
+		_construir_audio_cerdo()
+	if not is_instance_valid(_reproductor_cerdo):
+		return
+	_reproductor_cerdo.volume_db = volumen_sonido_cerdo_db
+	if _reproductor_cerdo.playing:
+		_reproductor_cerdo.stop()
+	_reproductor_cerdo.play()
 
 
 func _procesar_giro(delta: float) -> void:
@@ -641,3 +947,440 @@ func _resolver_nombre_animacion_pose(pose: String) -> StringName:
 			return StringName(anim)
 	return StringName()
 
+
+# ─────────────────────────────────────────────
+# MÉTODOS PRIVADOS – Interacción y Diálogo
+# ─────────────────────────────────────────────
+
+func _es_dialogo_activo() -> bool:
+	return dialogo_interactivo or name.to_lower().contains("texto")
+
+
+func _actualizar_configuracion_dialogo() -> void:
+	if not is_inside_tree():
+		return
+	if _es_dialogo_activo():
+		_configurar_dialogo_interactivo()
+	else:
+		_desactivar_dialogo_interactivo()
+
+
+func _desactivar_dialogo_interactivo() -> void:
+	if _dialogo_activo:
+		_cerrar_dialogo()
+	if _jugador_cerca:
+		_jugador_cerca = false
+		_animar_proximidad(false)
+	var prompt := _obtener_prompt_hablar()
+	if is_instance_valid(prompt):
+		prompt.visible = false
+
+
+func _configurar_dialogo_interactivo() -> void:
+	_configurar_tinte_morado()
+	_configurar_area_interaccion()
+	var prompt := _obtener_prompt_hablar()
+	if is_instance_valid(prompt):
+		prompt.text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+		prompt.modulate.a = 0.0
+		prompt.outline_modulate.a = 0.0
+		prompt.visible = false
+	var sb := _obtener_speech_bubble()
+	if is_instance_valid(sb):
+		if not sb.dialogo_terminado.is_connected(_on_speech_bubble_dialogo_terminado):
+			sb.dialogo_terminado.connect(_on_speech_bubble_dialogo_terminado)
+
+
+func _configurar_tinte_morado() -> void:
+	if _tint_mat == null:
+		_tint_mat = StandardMaterial3D.new()
+		_tint_mat.cull_mode = BaseMaterial3D.CULL_BACK
+		_tint_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_tint_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_tint_mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+		_tint_mat.albedo_color = COLOR_TINTE_MORADO
+
+	var meshes: Array[MeshInstance3D] = _obtener_mesh_instances(self)
+	for mi in meshes:
+		mi.material_overlay = _tint_mat
+
+
+func _obtener_mesh_instances(nodo: Node) -> Array[MeshInstance3D]:
+	var lista: Array[MeshInstance3D] = []
+	if nodo is MeshInstance3D:
+		lista.append(nodo as MeshInstance3D)
+	for hijo in nodo.get_children():
+		lista.append_array(_obtener_mesh_instances(hijo))
+	return lista
+
+
+func _obtener_prompt_hablar() -> Label3D:
+	if is_instance_valid(prompt_hablar):
+		return prompt_hablar
+	prompt_hablar = get_node_or_null("%PromptHablar") as Label3D
+	if not prompt_hablar:
+		prompt_hablar = find_child("PromptHablar", true, false) as Label3D
+	if not prompt_hablar and _es_dialogo_activo():
+		_crear_prompt_hablar_dinamico()
+	return prompt_hablar
+
+
+func _crear_prompt_hablar_dinamico() -> void:
+	if is_instance_valid(prompt_hablar):
+		return
+	var lbl := Label3D.new()
+	lbl.name = "PromptHablar"
+	lbl.transform.origin = Vector3(0.0, ALTURA_DEFECTO_PROMPT, 0.0)
+	lbl.pixel_size = 0.0035
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.render_priority = 2
+	lbl.no_depth_test = true
+	lbl.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	lbl.outline_modulate = Color(0.05, 0.05, 0.08, 0.0)
+	lbl.text = "[E] " + tr("PERRENA_PROMPT_HABLAR")
+	lbl.font_size = 22
+	lbl.outline_size = 5
+	lbl.visible = false
+	add_child(lbl)
+	prompt_hablar = lbl
+
+
+func _obtener_speech_bubble() -> SpeechBubbleComponent:
+	if is_instance_valid(speech_bubble):
+		return speech_bubble
+	speech_bubble = get_node_or_null("%SpeechBubbleComponent") as SpeechBubbleComponent
+	if not speech_bubble:
+		speech_bubble = find_child("SpeechBubbleComponent", true, false) as SpeechBubbleComponent
+	if not speech_bubble and _es_dialogo_activo():
+		_crear_speech_bubble_dinamico()
+	return speech_bubble
+
+
+func _crear_speech_bubble_dinamico() -> void:
+	if is_instance_valid(speech_bubble):
+		return
+	var sb := SpeechBubbleComponent.new()
+	sb.name = "SpeechBubbleComponent"
+	sb.offset_cabeza = Vector3(0.0, ALTURA_DEFECTO_PROMPT, 0.0)
+	add_child(sb)
+	speech_bubble = sb
+	sb.dialogo_terminado.connect(_on_speech_bubble_dialogo_terminado)
+
+
+func _configurar_area_interaccion() -> void:
+	var area := get_node_or_null("%AreaInteraccion") as Area3D
+	if not area:
+		area = find_child("AreaInteraccion", true, false) as Area3D
+	if not area:
+		area = Area3D.new()
+		area.name = "AreaInteraccion"
+		area.collision_layer = 0
+		area.collision_mask = 3
+		var col := CollisionShape3D.new()
+		col.name = "CollisionShape3D"
+		var shape := SphereShape3D.new()
+		shape.radius = radio_interaccion
+		col.shape = shape
+		col.position.y = 0.5
+		area.add_child(col)
+		add_child(area)
+	area_interaccion = area
+
+	if not area.body_entered.is_connected(_on_body_entered_interaccion):
+		area.body_entered.connect(_on_body_entered_interaccion)
+	if not area.body_exited.is_connected(_on_body_exited_interaccion):
+		area.body_exited.connect(_on_body_exited_interaccion)
+
+
+func _on_body_entered_interaccion(body: Node3D) -> void:
+	if not _es_dialogo_activo():
+		return
+	if body.is_in_group("player") or body.is_in_group("player_interior") or body is CharacterBody3D:
+		_cerca_por_area = true
+
+
+func _on_body_exited_interaccion(body: Node3D) -> void:
+	if not _es_dialogo_activo():
+		return
+	if body.is_in_group("player") or body.is_in_group("player_interior") or body is CharacterBody3D:
+		_cerca_por_area = false
+
+
+func _obtener_jugador() -> Node3D:
+	if is_instance_valid(_jugador_ref):
+		return _jugador_ref
+	var arbol := get_tree()
+	if arbol == null:
+		return null
+	var j := arbol.get_first_node_in_group("player") as Node3D
+	if not is_instance_valid(j):
+		j = arbol.get_first_node_in_group("player_interior") as Node3D
+	if not is_instance_valid(j) and arbol.current_scene:
+		j = arbol.current_scene.find_child("Player", true, false) as Node3D
+	_jugador_ref = j
+	return _jugador_ref
+
+
+func _procesar_proximidad_jugador(_delta: float) -> void:
+	var jugador := _obtener_jugador()
+	if not is_instance_valid(jugador):
+		return
+	var dist: float = global_position.distance_to(jugador.global_position)
+	var cerca_fisica: bool = (dist <= radio_interaccion) or _cerca_por_area
+	# Solo el NPC en conversación permanece morado: si otro habla, apagar el propio.
+	var cerca: bool = cerca_fisica
+	if not _dialogo_activo and cerca_fisica and _hay_otro_npc_hablando():
+		cerca = false
+
+	if cerca != _jugador_cerca:
+		_jugador_cerca = cerca
+		_on_proximidad_jugador_cambiada(cerca)
+
+
+func _on_proximidad_jugador_cambiada(cerca: bool) -> void:
+	_jugador_cerca = cerca
+	proximidad_jugador_cambiada.emit(cerca)
+	_animar_proximidad(cerca)
+	if not cerca:
+		if _dialogo_activo:
+			_cerrar_dialogo()
+
+
+func _animar_proximidad(activo: bool) -> void:
+	if _tween_proximidad and _tween_proximidad.is_valid():
+		_tween_proximidad.kill()
+
+	_tween_proximidad = create_tween().set_parallel(true)
+	var duracion: float = 0.3 if activo else 0.25
+	var target_alpha_tint: float = ALFA_TINTE_MAXIMO if activo else 0.0
+	var target_alpha_prompt: float = 1.0 if activo else 0.0
+
+	var prompt := _obtener_prompt_hablar()
+	if prompt and is_instance_valid(prompt):
+		if activo and not _dialogo_activo:
+			prompt.visible = true
+		var alfa_final_prompt: float = 0.0 if _dialogo_activo else target_alpha_prompt
+		_tween_proximidad.tween_property(prompt, "modulate:a", alfa_final_prompt, duracion).set_trans(Tween.TRANS_SINE)
+		_tween_proximidad.tween_property(prompt, "outline_modulate:a", alfa_final_prompt, duracion).set_trans(Tween.TRANS_SINE)
+		if not activo:
+			_tween_proximidad.chain().tween_callback(func() -> void:
+				if not _jugador_cerca and is_instance_valid(prompt):
+					prompt.visible = false
+			)
+
+	if _tint_mat == null:
+		_configurar_tinte_morado()
+
+	if _tint_mat:
+		_tween_proximidad.tween_method(
+			func(alpha: float) -> void:
+				if _tint_mat:
+					_tint_mat.albedo_color = Color(COLOR_TINTE_MORADO.r, COLOR_TINTE_MORADO.g, COLOR_TINTE_MORADO.b, alpha),
+			_tint_mat.albedo_color.a,
+			target_alpha_tint,
+			duracion
+		).set_trans(Tween.TRANS_SINE)
+
+
+func _interactuar_o_avanzar_dialogo() -> void:
+	if not _es_dialogo_activo() or not _jugador_cerca:
+		return
+	if not _dialogo_activo and _hay_otro_npc_hablando():
+		return
+
+	if not _dialogo_activo:
+		_iniciar_dialogo()
+	else:
+		_avanzar_dialogo()
+
+
+func _girar_hacia_direccion_x(dir_x: float, animado: bool = true) -> void:
+	_configurar_pivot()
+	if not is_instance_valid(_pivot_visual):
+		return
+
+	var angulo_objetivo: float = ANGULO_PIVOT_DERECHA if dir_x > 0.0 else ANGULO_PIVOT_IZQUIERDA
+
+	if _tween_giro_dialogo and _tween_giro_dialogo.is_valid():
+		_tween_giro_dialogo.kill()
+
+	if not animado or not is_inside_tree():
+		_pivot_visual.rotation_degrees.y = angulo_objetivo
+		return
+
+	# Calcular el camino angular más corto usando wrapf
+	var angulo_act_rad: float = deg_to_rad(_pivot_visual.rotation_degrees.y)
+	var angulo_obj_rad: float = deg_to_rad(angulo_objetivo)
+	var diff_rad: float = wrapf(angulo_obj_rad - angulo_act_rad, -PI, PI)
+	var angulo_final: float = _pivot_visual.rotation_degrees.y + rad_to_deg(diff_rad)
+
+	_tween_giro_dialogo = create_tween()
+	_tween_giro_dialogo.tween_property(_pivot_visual, "rotation_degrees:y", angulo_final, 0.2)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_OUT)
+
+
+func _orientar_hacia_jugador(animado: bool = true) -> void:
+	var jugador := _obtener_jugador()
+	if not is_instance_valid(jugador):
+		return
+	var dir_x: float = 1.0 if jugador.global_position.x >= global_position.x else -1.0
+	_girar_hacia_direccion_x(dir_x, animado)
+
+
+func _restaurar_orientacion_estatica() -> void:
+	_configurar_pivot()
+	if not is_instance_valid(_pivot_visual):
+		return
+	if posar_360:
+		_pivot_visual.rotation_degrees.y = posar_angulo
+	else:
+		_girar_hacia_direccion_x(_direccion_previa_dialogo, true)
+
+
+func _iniciar_dialogo() -> void:
+	if lineas_dialogo.is_empty():
+		return
+	if _hay_otro_npc_hablando():
+		return
+
+	_dialogo_activo = true
+	_apagar_resaltado_otros_npcs()
+	_indice_dialogo = 0
+
+	# Guardar la dirección y orientación previas para reanudar la ruta al terminar
+	_direccion_previa_dialogo = _direccion_actual
+	_configurar_pivot()
+	if is_instance_valid(_pivot_visual):
+		_angulo_pivot_previo_dialogo = _pivot_visual.rotation_degrees.y
+	else:
+		_angulo_pivot_previo_dialogo = ANGULO_PIVOT_DERECHA if _direccion_actual > 0.0 else ANGULO_PIVOT_IZQUIERDA
+
+	# Girarse hacia el lado donde está el jugador
+	_orientar_hacia_jugador(true)
+
+	var ap := _obtener_animation_player()
+	if ap and is_instance_valid(ap) and ap.is_playing():
+		ap.pause()
+
+	if _estado_actual == Estado.CAMINANDO or _estado_actual == Estado.GIRANDO:
+		_estaba_caminando_antes_de_dialogo = true
+		_velocidad_actual = 0.0
+	else:
+		_estaba_caminando_antes_de_dialogo = false
+
+	var prompt := _obtener_prompt_hablar()
+	if prompt and is_instance_valid(prompt):
+		prompt.visible = false
+		prompt.modulate.a = 0.0
+		prompt.outline_modulate.a = 0.0
+
+	_reproducir_sonido_cerdo()
+	_avanzar_dialogo()
+
+
+func _avanzar_dialogo() -> void:
+	var sb := _obtener_speech_bubble()
+	if not sb:
+		return
+
+	# Si el jugador cambió de lado mientras leía, mantenerse mirando hacia él
+	_orientar_hacia_jugador(true)
+
+	if _indice_dialogo < lineas_dialogo.size():
+		var texto_linea: String = lineas_dialogo[_indice_dialogo]
+		var idx_actual: int = _indice_dialogo
+		_indice_dialogo += 1
+		sb.decir(texto_linea, duracion_vinetas)
+		if idx_actual == 0:
+			dialogo_iniciado.emit(texto_linea)
+		else:
+			dialogo_avanzado.emit(_indice_dialogo, texto_linea)
+	else:
+		_cerrar_dialogo()
+
+
+func _cerrar_dialogo() -> void:
+	if not _dialogo_activo and _indice_dialogo == 0:
+		return
+
+	_dialogo_activo = false
+	_indice_dialogo = 0
+
+	_restaurar_transform_modelo()
+
+	var ap := _obtener_animation_player()
+	if ap and is_instance_valid(ap) and not ap.is_playing():
+		if not estatico or pose_estatica.to_lower() != "respiracion":
+			ap.play()
+
+	var sb := _obtener_speech_bubble()
+	if sb and is_instance_valid(sb):
+		sb.ocultar()
+
+	dialogo_terminado.emit()
+
+	if _jugador_cerca:
+		var prompt := _obtener_prompt_hablar()
+		if prompt and is_instance_valid(prompt):
+			prompt.visible = true
+			var tween := create_tween().set_parallel(true)
+			tween.tween_property(prompt, "modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_SINE)
+			tween.tween_property(prompt, "outline_modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_SINE)
+
+	# Al terminar el diálogo, restaurar la ruta y orientación original
+	if _estaba_caminando_antes_de_dialogo and not estatico:
+		_direccion_actual = _direccion_previa_dialogo
+		_girar_hacia_direccion_x(_direccion_actual, true)
+		_velocidad_actual = velocidad_caminar
+	elif estatico:
+		_restaurar_orientacion_estatica()
+
+
+func _on_speech_bubble_dialogo_terminado() -> void:
+	if not _dialogo_activo:
+		return
+
+	if _indice_dialogo >= lineas_dialogo.size():
+		_cerrar_dialogo()
+	else:
+		_avanzar_dialogo()
+
+
+## True si algún otro NPC del grupo está actualmente en conversación.
+## Solo el NPC en conversación debe permanecer morado.
+func _hay_otro_npc_hablando() -> bool:
+	var arbol := get_tree()
+	if arbol == null:
+		return false
+	for nodo in arbol.get_nodes_in_group("npc_dialogo"):
+		if nodo == self:
+			continue
+		if not is_instance_valid(nodo):
+			continue
+		if nodo.has_method("esta_hablando_dialogo"):
+			if bool(nodo.call("esta_hablando_dialogo")):
+				return true
+	return false
+
+
+## Apaga el resaltado de los demás NPCs al iniciar este diálogo.
+func _apagar_resaltado_otros_npcs() -> void:
+	var arbol := get_tree()
+	if arbol == null:
+		return
+	for nodo in arbol.get_nodes_in_group("npc_dialogo"):
+		if nodo == self:
+			continue
+		if not is_instance_valid(nodo):
+			continue
+		if nodo.has_method("_forzar_apagado_proximidad"):
+			nodo.call("_forzar_apagado_proximidad")
+
+
+## Apaga prompt y tinte propios cuando otro NPC inicia su diálogo.
+func _forzar_apagado_proximidad() -> void:
+	if _dialogo_activo:
+		return
+	_jugador_cerca = false
+	_animar_proximidad(false)
