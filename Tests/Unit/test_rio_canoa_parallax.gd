@@ -422,7 +422,7 @@ func test_pisos_aliados_deteccion_en_escena() -> void:
 	# Assert
 	var pisos: Array[Node3D] = nivel.obtener_segmentos_piso_aliado()
 	assert_gt(pisos.size(), 0, "Debe detectar los nodos de piso en la escena")
-	assert_eq(pisos.size(), 21, "Deben estar presentes los 21 segmentos de Piso nueva version (Piso parada excluida para no alterar el parallax)")
+	assert_eq(pisos.size(), 24, "Deben estar presentes los 24 segmentos de Piso nueva version (Piso parada excluida para no alterar el parallax)")
 
 
 func test_pisos_aliados_sincronizados_misma_velocidad_cordillera() -> void:
@@ -538,7 +538,9 @@ func test_textura_agua_fija_no_entra_al_loop() -> void:
 
 
 func test_textura_agua_misma_velocidad_cordillera() -> void:
-	# Arrange: la escena no trae textura mÃ³vil; se registra una dinÃ¡mica para cubrir el mecanismo
+	# Arrange: la escena no trae textura móvil; se registra una dinámica para cubrir el mecanismo.
+	# REGLA RIO: solo el video es 100% estático; el agua está más lejos que la
+	# cordillera y por tanto es más lenta (factor_agua_textura < factor_cordillera).
 	var packed := load(ESCENA_RIO_PATH) as PackedScene
 	var nivel: Node3D = packed.instantiate() as Node3D
 	add_child_autofree(nivel)
@@ -554,6 +556,8 @@ func test_textura_agua_misma_velocidad_cordillera() -> void:
 	var cordillera: Array[Node3D] = parallax.obtener_segmentos_cordillera()
 	assert_gt(cordillera.size(), 0, "Cordillera debe tener segmentos")
 
+	assert_lt(parallax.factor_agua_textura, parallax.factor_cordillera, "El agua (más lejos) debe ser más lenta que la cordillera")
+
 	var pos_inicial_cord: float = cordillera[0].position.x
 	var pos_inicial_agua: float = sprites[0].position.x
 
@@ -561,14 +565,13 @@ func test_textura_agua_misma_velocidad_cordillera() -> void:
 	parallax._actualizar_loop_cordillera(1.0)
 	parallax._actualizar_loop_agua_textura(1.0)
 
-	# Assert: Desplazamiento idÃ©ntico al de la cordillera
+	# Assert: cada capa avanza a su propio ritmo (agua más lenta)
 	var delta_cord: float = pos_inicial_cord - cordillera[0].position.x
 	var delta_agua: float = pos_inicial_agua - sprites[0].position.x
-	var desplazamiento_esperado: float = parallax.velocidad_base * parallax.factor_cordillera * 1.0
 
-	assert_almost_eq(delta_cord, desplazamiento_esperado, MARGEN_FLOAT, "Desplazamiento cordillera")
-	assert_almost_eq(delta_agua, desplazamiento_esperado, MARGEN_FLOAT, "TexturaAgua avanza al ritmo esperado")
-	assert_almost_eq(delta_agua, delta_cord, MARGEN_FLOAT, "TexturaAgua debe moverse exactamente a la misma velocidad que la cordillera")
+	assert_almost_eq(delta_cord, parallax.velocidad_base * parallax.factor_cordillera * 1.0, MARGEN_FLOAT, "Desplazamiento cordillera")
+	assert_almost_eq(delta_agua, parallax.velocidad_base * parallax.factor_agua_textura * 1.0, MARGEN_FLOAT, "TexturaAgua avanza a su ritmo propio (más lento)")
+	assert_lt(delta_agua, delta_cord, "TexturaAgua debe moverse más lento que la cordillera")
 
 
 func test_textura_agua_loop_continuo() -> void:
@@ -1044,10 +1047,11 @@ func test_set_aceleracion_debug_multiplica_canoa_y_parallax() -> void:
 
 
 func test_input_tecla_z_activa_y_desactiva_aceleracion() -> void:
-	# Arrange
+	# Arrange (trampas activas: la puerta maestra bloquea Z en partida normal)
 	var packed := load(ESCENA_RIO_PATH) as PackedScene
 	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
 	add_child_autofree(nivel)
+	nivel.trampas_debug_activas = true
 
 	var ev_press := InputEventKey.new()
 	ev_press.keycode = KEY_Z
@@ -1073,10 +1077,11 @@ func test_input_tecla_z_activa_y_desactiva_aceleracion() -> void:
 
 
 func test_modo_toggle_z_conmuta_estado() -> void:
-	# Arrange
+	# Arrange (trampas activas: la puerta maestra bloquea Z en partida normal)
 	var packed := load(ESCENA_RIO_PATH) as PackedScene
 	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
 	add_child_autofree(nivel)
+	nivel.trampas_debug_activas = true
 	nivel.modo_toggle_z = true
 
 	var ev_press := InputEventKey.new()
@@ -1439,3 +1444,185 @@ func test_tramo_acelerado_llega_hasta_fin_de_nivel() -> void:
 
 	# Assert: sigue en tramo acelerado hasta la cortinilla (antes terminaba en ~126)
 	assert_true(bool(canoa.call("esta_en_tramo_aceleracion")), "El tramo debe cubrir hasta el fin del nivel (x=183)")
+
+
+# === REGLA RIO: SOLO EL VIDEO ES 100% ESTATICO, RESTO PARALLAX POR DISTANCIA ===
+func test_parallax_orden_por_distancia_video_estatico() -> void:
+	# Arrange
+	var parallax: ParallaxFondoRio = SCRIPT_PARALLAX.new() as ParallaxFondoRio
+	add_child_autofree(parallax)
+
+	# Assert: solo el video es 0.0 (estatico, sigue camara); el resto se mueve
+	assert_almost_eq(parallax.factor_fondo_video, 0.0, MARGEN_FLOAT, "El video debe ser 100% estatico (factor 0)")
+	assert_gt(parallax.factor_nubes, 0.0, "Las nubes deben moverse")
+	assert_gt(parallax.factor_arboles, 0.0, "Los arboles deben moverse")
+	assert_gt(parallax.factor_bosque_rojo, 0.0, "El bosque debe moverse")
+	assert_gt(parallax.factor_cordillera, 0.0, "La cordillera debe moverse")
+	assert_gt(parallax.factor_niebla, 0.0, "La niebla debe moverse")
+
+	# Assert: a mas distancia mas lento (lejos -> cerca = lento -> rapido)
+	assert_lt(parallax.factor_nubes, parallax.factor_arboles, "Nubes (mas lejos) mas lentas que arboles")
+	assert_lt(parallax.factor_arboles, parallax.factor_bosque_rojo, "Arboles mas lentos que bosque")
+	assert_lt(parallax.factor_bosque_rojo, parallax.factor_cordillera, "Bosque mas lento que cordillera")
+	assert_lt(parallax.factor_cordillera, parallax.factor_niebla, "Cordillera mas lenta que niebla cercana")
+
+
+# === PUERTA MAESTRA DE TRAMPAS (ANTI CARTEL PREMATURO) ===
+func _crear_evento_tecla(codigo: Key) -> InputEventKey:
+	var ev := InputEventKey.new()
+	ev.keycode = codigo
+	ev.physical_keycode = codigo
+	ev.pressed = true
+	ev.echo = false
+	return ev
+
+
+func test_trampas_bloqueadas_por_defecto_en_partida() -> void:
+	# Arrange: nivel tal como se juega (sin activar trampas)
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
+	add_child_autofree(nivel)
+	nivel.trampas_debug_activas = false
+	assert_false(nivel.trampas_debug_activas, "Precondición: trampas apagadas en partida")
+	var canoa: Node3D = nivel.obtener_canoa()
+	var x_antes: float = canoa.global_position.x
+
+	# Act: pulsar Z / X / N / V accidentales en plena pelea
+	nivel._input(_crear_evento_tecla(KEY_Z))
+	nivel._input(_crear_evento_tecla(KEY_X))
+	nivel._input(_crear_evento_tecla(KEY_N))
+	nivel._input(_crear_evento_tecla(KEY_V))
+
+	# Assert: nada acelera, nada explota, nada teletransporta
+	assert_false(nivel.esta_acelerando_debug(), "Z no debe acelerar en partida normal")
+	assert_almost_eq(canoa.global_position.x, x_antes, MARGEN_FLOAT, "N/V no deben teletransportar en partida normal")
+	assert_false(nivel.esta_nivel_terminado(), "No debe saltar el cartel de nivel superado")
+
+
+func test_trampas_funcionan_con_puerta_activa() -> void:
+	# Arrange: modo testeo explícito
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
+	add_child_autofree(nivel)
+	nivel.trampas_debug_activas = true
+
+	# Act + Assert: Z vuelve a acelerar para testear el recorrido
+	nivel._input(_crear_evento_tecla(KEY_Z))
+	assert_true(nivel.esta_acelerando_debug(), "Con la puerta activa Z acelera")
+
+
+# === TELETRANSPORTE AL PUNTO DE GUARDADO (TECLA V) ===
+func _jefe_de_nivel(nivel: Node) -> Node3D:
+	var jefe: Node3D = nivel.find_child("JefeSubmarino", true, false) as Node3D
+	assert_not_null(jefe, "Debe existir JefeSubmarino en el nivel")
+	return jefe
+
+
+func test_teletransporte_guardado_lleva_al_control() -> void:
+	# Arrange: inicio del nivel, jefe intacto sumergido
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
+	add_child_autofree(nivel)
+	var jefe := _jefe_de_nivel(nivel)
+	var canoa: Node3D = nivel.obtener_canoa()
+
+	# Act: salto directo al punto de guardado (tecla V)
+	nivel._teletransportar_a_punto_guardado()
+
+	# Assert: canoa delante del barco checkpoint (sin checkpoint guardado), sin final
+	var barco: Node3D = nivel.find_child("BarcoCombatePirata3 Check point", true, false) as Node3D
+	assert_not_null(barco, "Debe existir el barco checkpoint en el nivel")
+	var esperado: float = barco.global_position.x - 0.5
+	esperado = minf(esperado, float(nivel.get("x_fin_nivel")) - 8.0)
+	assert_almost_eq(canoa.global_position.x, esperado, 1.5, "La canoa debe quedar en el punto de control")
+	assert_lt(canoa.global_position.x, float(nivel.get("x_fin_nivel")), "El control debe estar antes del fin de nivel")
+	assert_false(nivel.esta_nivel_terminado(), "No debe saltar el cartel de fin de nivel")
+	# La zona queda como checkpoint recién logrado: barco hundido y guardado activo
+	assert_true(bool(barco.call("esta_destruida")), "V debe destruir el BarcoCombatePirata3 Check point")
+	assert_true(RioEnCanoaConParallax.checkpoint_rio_activo, "V debe activar el checkpoint")
+	# El fin queda bloqueado con el jefe vivo aunque la canoa toque el bloque
+	var bloque: Node = nivel.find_child("FinDeMision", true, false)
+	assert_not_null(bloque, "Debe existir el bloque FinDeMision en el nivel")
+	canoa.global_position.x = (bloque as Node3D).global_position.x
+	nivel.call("_comprobar_fin_de_mision")
+	assert_true(bool(bloque.call("esta_cumplida")), "El bloque debe cumplirse al tocarlo")
+	assert_false(nivel.esta_nivel_terminado(), "Con el jefe vivo no debe completar el nivel")
+	assert_eq(int(jefe.call("obtener_fase")), 0, "El encuentro debe quedar en fase 1")
+	assert_false(bool(jefe.call("esta_en_superficie")), "El jefe debe quedar sumergido antes de que la canoa se acerque")
+
+	# Limpieza: no contaminar otros tests con el estático
+	RioEnCanoaConParallax.reset_checkpoint()
+
+
+func test_teletransporte_guardado_no_altera_fase2() -> void:
+	# Arrange: jefe a mitad de fase 2 (crucero de fondo lejos a la derecha).
+	# La V solo va al punto de guardado y hunde el checkpoint: no toca al jefe.
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
+	add_child_autofree(nivel)
+	var jefe := _jefe_de_nivel(nivel)
+	jefe.set("_secuencia_fase2_activa", true)
+	jefe.set("_fase_jefe", 2)
+	(jefe as Node3D).global_position = Vector3(196.0, -3.2, -39.0)
+	var canoa: Node3D = nivel.obtener_canoa()
+
+	# Act
+	nivel._teletransportar_a_punto_guardado()
+
+	# Assert: canoa al punto de control, jefe intacto en su fase
+	var barco2: Node3D = nivel.find_child("BarcoCombatePirata3 Check point", true, false) as Node3D
+	assert_not_null(barco2, "Debe existir el barco checkpoint en el nivel")
+	var esperado2: float = barco2.global_position.x - 0.5
+	esperado2 = minf(esperado2, float(nivel.get("x_fin_nivel")) - 8.0)
+	assert_almost_eq(canoa.global_position.x, esperado2, 1.5, "Debe usar el punto de control")
+	assert_true(bool(jefe.get("_secuencia_fase2_activa")), "La V no debe cancelar la fase 2")
+	assert_eq(int(jefe.call("obtener_fase")), 2, "El jefe sigue en fase 2")
+	assert_true(RioEnCanoaConParallax.checkpoint_rio_activo, "V debe activar el checkpoint")
+	nivel.call("_comprobar_fin_de_mision")
+	assert_false(nivel.esta_nivel_terminado(), "Sin cartel prematuro")
+
+	# Limpieza: no contaminar otros tests con el estático
+	RioEnCanoaConParallax.reset_checkpoint()
+
+
+func test_teletransporte_guardado_con_jefe_muerto_va_al_punto() -> void:
+	# Arrange: jefe ya derrotado; la V igual lleva al punto de guardado
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
+	add_child_autofree(nivel)
+	var jefe := _jefe_de_nivel(nivel)
+	jefe.set("_jefe_muerto", true)
+	var canoa: Node3D = nivel.obtener_canoa()
+
+	# Act
+	nivel._teletransportar_a_punto_guardado()
+
+	# Assert: la canoa aparece en el punto de control aunque el jefe esté muerto
+	var barco: Node3D = nivel.find_child("BarcoCombatePirata3 Check point", true, false) as Node3D
+	assert_not_null(barco, "Debe existir el barco checkpoint en el nivel")
+	assert_almost_eq(canoa.global_position.x, barco.global_position.x - 0.5, 1.5, "V debe llevar al punto de guardado")
+
+	# Limpieza: no contaminar otros tests con el estático
+	RioEnCanoaConParallax.reset_checkpoint()
+
+
+func test_tecla_v_usa_checkpoint_guardado() -> void:
+	# Arrange: checkpoint ya superado en esta sesión
+	var packed := load(ESCENA_RIO_PATH) as PackedScene
+	var nivel: RioEnCanoaConParallax = packed.instantiate() as RioEnCanoaConParallax
+	add_child_autofree(nivel)
+	var jefe := _jefe_de_nivel(nivel)
+	var canoa: Node3D = nivel.obtener_canoa()
+	RioEnCanoaConParallax.checkpoint_rio_activo = true
+	RioEnCanoaConParallax.checkpoint_rio_pos_x = canoa.global_position.x + 30.0
+
+	# Act: tecla V con checkpoint guardado
+	nivel.trampas_debug_activas = true
+	nivel._input(_crear_evento_tecla(KEY_V))
+
+	# Assert: la canoa aparece en el checkpoint, sin cartel de fin
+	assert_almost_eq(canoa.global_position.x, RioEnCanoaConParallax.checkpoint_rio_pos_x, 1.5, "V debe llevar al checkpoint guardado")
+	assert_false(nivel.esta_nivel_terminado(), "Sin cartel prematuro")
+
+	# Limpieza: no contaminar otros tests con el estático
+	RioEnCanoaConParallax.reset_checkpoint()

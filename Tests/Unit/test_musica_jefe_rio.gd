@@ -5,7 +5,7 @@ extends "res://addons/gut/test.gd"
 ## - Funcionamiento de crossfade_music() en AudioManager (rampas suaves y reproductor secundario).
 ## - Disminución de la música del nivel e inicio de "Jefe rio" al acercarse la canoa al área del jefe.
 ## - Disminución de "Jefe rio" hasta desaparecer y regreso de "Viaje por el rio" al ser derrotado el jefe.
-## - Activación inmediata al teletransportarse con la tecla B o detonar con la tecla X.
+## - La tecla V lleva al punto de guardado y la música arranca al acercarse al jefe (o al detonar con la tecla X).
 
 const ESCENA_RIO_PATH: String = "res://Levels/Rio en canoa con paralax.tscn"
 const SCRIPT_JEFE_SUBMARINO: Script = preload("res://Levels/Rio_En_Canoa_Con_Parallax/JefeSubmarinoRio.gd")
@@ -23,6 +23,7 @@ func before_each() -> void:
 func after_each() -> void:
 	if is_instance_valid(_root_test):
 		_root_test.free()
+	RioEnCanoaConParallax.reset_checkpoint()
 	if has_node("/root/AudioManager"):
 		var am = get_node("/root/AudioManager")
 		if am.has_method("stop_all"):
@@ -146,7 +147,7 @@ func test_rio_canoa_vuelve_a_musica_normal_al_derrotar_jefe() -> void:
 		assert_true(am.call("get_current_music_index") in [7, 9], "La transición culmina hacia la pista del nivel (7)")
 
 
-func test_teletransporte_jefe_inicia_musica_jefe() -> void:
+func test_teletransporte_guardado_inicia_musica_jefe() -> void:
 	# Arrange
 	var nivel := RioEnCanoaConParallax.new()
 	_root_test.add_child(nivel)
@@ -160,13 +161,23 @@ func test_teletransporte_jefe_inicia_musica_jefe() -> void:
 	var jefe: JefeSubmarinoRio = SCRIPT_JEFE_SUBMARINO.new() as JefeSubmarinoRio
 	jefe.name = "JefeSubmarino"
 	nivel.add_child(jefe)
-	jefe.global_position = Vector3(140.0, 0.0, 0.0)
+	jefe.global_position = Vector3(130.0, 0.0, 0.0)
 
-	# Act: Simular teletransporte a jefe (tecla B)
-	nivel.call("_teletransportar_a_jefe")
+	# Act 1: Simular teletransporte al punto de guardado (tecla V)
+	nivel.call("_teletransportar_a_punto_guardado")
 
-	# Assert
-	assert_true(bool(nivel.get("_musica_jefe_iniciada")), "Teletransportarse al jefe debe iniciar la música de inmediato")
+	# Assert 1: la canoa queda en el punto fijo junto al checkpoint (125.51),
+	# al alcance del jefe (130.0) pero sin forzar la música desde el control
+	assert_almost_eq(canoa.global_position.x, 125.51, 1.5, "V debe llevar al punto de guardado")
+	assert_false(bool(nivel.get("_musica_jefe_iniciada")), "Desde el control la música aún no arranca")
+
+	# Act 2: checkpoint superado y canoa en el área del jefe → arranca sola
+	nivel.set("_barco_checkpoint_destruido", true)
+	nivel.call("_buscar_y_conectar_jefe")
+	nivel.call("_procesar_musica_area_jefe")
+
+	# Assert 2
+	assert_true(bool(nivel.get("_musica_jefe_iniciada")), "Al acercarse con el checkpoint superado suena Jefe rio")
 	var am = get_node_or_null("/root/AudioManager")
 	if am:
 		assert_eq(am.call("get_current_music_index"), 8, "Debe cambiar a la pista 8 (Jefe rio)")

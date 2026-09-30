@@ -350,6 +350,7 @@ transform = Transform3D(3.705421, 0.46153456, -3.6189556, -0.6427276, 5.1601257,
 
 [node name="012" parent="SubViewportFondo3D/BUSTO_BRONCE2" index="1" unique_id=920637542]
 transform = Transform3D(0.8946598, -0.07065181, 0.4411258, 0.013340352, 0.99119985, 0.13169722, -0.44654828, -0.111939624, 0.8877298, 0.19106698, 0.07903123, 0.71204615)
+layers = 2
 
 [node name="SpotLight3D" type="SpotLight3D" parent="SubViewportFondo3D/BUSTO_BRONCE2/012" index="1" unique_id=900513883]
 transform = Transform3D(0.07183692, -0.13120604, -0.12085824, 0.06142813, -0.10412672, 0.14955424, -0.16747627, -0.09447154, 0.0030139051, -0.55454445, 1.494175, 0.030014038)
@@ -370,6 +371,9 @@ spot_angle = 27.815594
 [node name="BUSTO_BRONCE3" parent="SubViewportFondo3D" unique_id=1432659507 instance=ExtResource("17_qcvbp")]
 transform = Transform3D(4.324531, 0.9981095, -2.3026528, -0.60623753, 4.8671656, 0.9711718, 2.4353456, -0.5607815, 4.33066, 5.822, -2.15, -35.004)
 visible = false
+
+[node name="012" parent="SubViewportFondo3D/BUSTO_BRONCE3" index="1" unique_id=920637542]
+layers = 2
 
 [node name="SubViewport" type="SubViewport" parent="SubViewportFondo3D" unique_id=1162834119]
 scaling_3d_mode = 1

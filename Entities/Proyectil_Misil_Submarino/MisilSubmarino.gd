@@ -239,9 +239,12 @@ func _aplicar_escala_misil() -> void:
 	var modelo: Node3D = find_child("ModeloMisil", true, false) as Node3D
 	if is_instance_valid(modelo):
 		modelo.scale = Vector3.ONE * s
-	# Colisión de impacto (esfera)
+	# Colisión de impacto (esfera): centrada en el pivote para que el giro
+	# de caída no la orbite fuera del cuerpo (si se descentra, durante parte
+	# del giro las flechas no pueden alcanzarla).
 	var colision: CollisionShape3D = find_child("CollisionShape3D", true, false) as CollisionShape3D
 	if is_instance_valid(colision) and colision.shape is SphereShape3D:
+		colision.position = Vector3.ZERO
 		(colision.shape as SphereShape3D).radius = 0.35 * s
 	# Estela en proporción
 	if is_instance_valid(_estela):

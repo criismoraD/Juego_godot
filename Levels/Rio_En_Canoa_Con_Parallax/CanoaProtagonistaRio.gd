@@ -33,6 +33,14 @@ const VELOCIDAD_CORRECCION_FRENO: float = 8.0  ## Velocidad de retroceso continu
 @export var x_fin_tramo_aceleracion: float = 126.01  ## X de fin (BarcoCombatePirata3 Check point)
 @export var velocidad_tramo_acelerado: float = 1.8  ## Velocidad acelerada en el tramo cuando no detecta enemigos (m/s)
 
+@export_category("Choque con Submarino")
+@export var choque_submarino_activo: bool = true  ## Si true, chocar con un submarino causa tamboleo y separación
+@export var retroceso_choque_submarino: float = 3.0  ## Metros extra de separación tras el choque (proa despejada del casco)
+@export var velocidad_separacion_choque: float = 10.0  ## Velocidad de retroceso al separarse del casco (m/s)
+@export var duracion_tamboleo_choque: float = 1.6  ## Duración del tamboleo de choque (s)
+@export var multiplicador_tamboleo_choque: float = 3.0  ## Intensidad del tamboleo respecto al oleaje base
+@export var cooldown_choque_submarino: float = 3.0  ## Tiempo mínimo entre tamboleos (s)
+
 @export_category("Pasajera (Protagonista)")
 @export var limitar_pasajera_a_canoa: bool = true  ## Si true, la protagonista no puede salir de la canoa al moverse
 @export var limite_pasajera_x: Vector2 = Vector2(-0.5, 0.4)  ## Rango local X donde puede moverse
@@ -56,6 +64,11 @@ var _factor_velocidad_actual: float = 1.0
 var _detenida_por_contacto: bool = false
 var _enemigo_bloqueando: Node3D = null
 var _enemigos_en_area_contacto: Array[Node3D] = []
+var _cooldown_choque_sub: float = 0.0
+var _choque_sub_activo: bool = false
+var _sub_en_choque: Node3D = null
+var _jefe_retenido: Node3D = null
+var _x_tope_pelea: float = 0.0
 ## Control manual del viento (debug Z): mientras está activo, el automatismo no lo pisa.
 var _viento_manual_debug: bool = false
 
@@ -88,6 +101,7 @@ func _process(delta: float) -> void:
 	super._process(delta)
 
 	_aplicar_freno_contacto_enemigos(delta)
+	_procesar_choque_submarino(delta)
 
 	# Control de recorrido cíclico opcional
 	if es_ciclica and _posicion_base.x >= limite_derecho_reinicio:
@@ -148,6 +162,16 @@ func esta_en_presencia_de_enemigo() -> bool:
 ## Retorna la referencia al enemigo que está bloqueando o frenando el avance.
 func obtener_enemigo_bloqueando() -> Node3D:
 	return _enemigo_bloqueando
+
+
+## Indica si la canoa está en choque activo con un submarino (tamboleo + separación).
+func esta_en_choque_submarino() -> bool:
+	return _choque_sub_activo and is_instance_valid(_sub_en_choque)
+
+
+## Retorna el submarino con el que se está chocando, si lo hay.
+func obtener_submarino_en_choque() -> Node3D:
+	return _sub_en_choque if is_instance_valid(_sub_en_choque) else null
 
 
 ## Retorna el reproductor de audio de navegación de la canoa.
@@ -215,12 +239,14 @@ func _al_entrar_cuerpo_detector(body: Node3D) -> void:
 
 
 ## El cuerpo o alguno de sus padres es enemigo (cubre cascos/hitboxes hijas
-## como el submarino, cuyos grupos están en la raíz).
+## como el submarino, cuyos grupos están en la raíz) o submarino en superficie.
 func _es_o_cuelga_de_enemigo(nodo: Node) -> bool:
 	var p: Node = nodo
 	while is_instance_valid(p):
 		if p is MinaAcuatica or p.is_in_group("mina_acuatica") or p.is_in_group("minas"):
 			return false
+		if p.is_in_group("submarino") or p.is_in_group("submarinos"):
+			return true
 		if p.is_in_group("enemies") or p.is_in_group("enemigos") or (p is EnemyBase):
 			return true
 		p = p.get_parent()
@@ -360,8 +386,11 @@ func _actualizar_reaccion_enemigos() -> void:
 			menor_distancia_x = enemigo.global_position.x - global_position.x
 			break
 
-	# 2. Comprobar enemigos en grupos en escena
-	var grupos: Array[String] = ["enemies", "enemigos"]
+	# 2. Comprobar enemigos y submarinos en grupos en escena.
+	# Los submarinos (jefe incluido) se quitan de "enemies" en su _ready,
+	# pero frenan la canoa igual: van en sus grupos propios y aportan su
+	# margen_bloqueo_proa para detenerse antes del casco.
+	var grupos: Array[String] = ["enemies", "enemigos", "submarino", "submarinos"]
 	for grupo in grupos:
 		if get_tree() == null:
 			break
@@ -403,6 +432,12 @@ func _actualizar_reaccion_enemigos() -> void:
 		_factor_velocidad_actual = 0.0
 		_detenida_por_contacto = true
 		_enemigo_bloqueando = enemigo_mas_cercano
+		# Si el bloqueador cuelga de un submarino (casco, cubierta), bloquear
+		# contra su raíz: así se aplica su margen_bloqueo_proa y la proa no
+		# entra al casco aunque el contacto lo diera una pieza hija.
+		var raiz_sub: Node3D = _submarino_chocable(_enemigo_bloqueando) if is_instance_valid(_enemigo_bloqueando) else null
+		if raiz_sub != null:
+			_enemigo_bloqueando = raiz_sub
 	elif hay_presencia:
 		_factor_velocidad_actual = factor_velocidad_presencia
 		_detenida_por_contacto = false
@@ -426,6 +461,137 @@ func _actualizar_reaccion_enemigos() -> void:
 
 	if _detenida_por_contacto and is_instance_valid(efecto_viento) and efecto_viento.esta_activo():
 		efecto_viento.set_activo(false)
+
+
+## Indica si la canoa está retenida en la arena del jefe (no avanza).
+func esta_retenida_por_jefe() -> bool:
+	return is_instance_valid(_jefe_retenido)
+
+
+## Retorna el jefe que retiene a la canoa, si lo hay.
+func obtener_jefe_retenido() -> Node3D:
+	return _jefe_retenido if is_instance_valid(_jefe_retenido) else null
+
+
+## Choque con submarino: la canoa y el submarino nunca se atraviesan.
+## Al contactar con un submarino en superficie, la canoa hace tamboleo
+## (sacudida_oleaje) para simular el choque y retrocede hasta una distancia
+## segura con el casco despejado. Mientras dura el choque la canoa queda
+## detenida; al hundirse o alejarse el submarino se reanuda la marcha.
+## Si el submarino está en combate (jefe), la pelea lo retiene en su arena:
+## la canoa no avanza aunque se sumerja en crucero, hasta matarlo.
+func _procesar_choque_submarino(delta: float) -> void:
+	_cooldown_choque_sub = maxf(0.0, _cooldown_choque_sub - maxf(delta, 0.0))
+	if not choque_submarino_activo:
+		_choque_sub_activo = false
+		_sub_en_choque = null
+		_jefe_retenido = null
+		return
+	var sub: Node3D = null
+	if is_instance_valid(_enemigo_bloqueando):
+		sub = _submarino_chocable(_enemigo_bloqueando)
+	if sub == null:
+		sub = _buscar_submarino_solapado()
+	# Retención de arena: el combate fija el tope y persiste en inmersión.
+	if sub != null and _combate_activo_en(sub):
+		var linea: float = sub.global_position.x - distancia_contacto_enemigos - _margen_bloqueo(sub) - retroceso_choque_submarino
+		if sub.global_position.x >= _posicion_base.x - 1.0:
+			_x_tope_pelea = minf(_posicion_base.x, linea)
+		elif _jefe_retenido != sub:
+			_x_tope_pelea = _posicion_base.x
+		_jefe_retenido = sub
+	if not _pelea_retenida_vigente():
+		_jefe_retenido = null
+	if sub == null:
+		_choque_sub_activo = false
+		_sub_en_choque = null
+	else:
+		_sub_en_choque = sub
+		var umbral: float = distancia_contacto_enemigos + _margen_bloqueo(sub)
+		var dx: float = sub.global_position.x - global_position.x
+		if dx > umbral + retroceso_choque_submarino + 1.0:
+			_choque_sub_activo = false
+		elif dx < -umbral:
+			# Submarino superado y dejado atrás: no hay choque ni retroceso.
+			_choque_sub_activo = false
+		else:
+			if not _choque_sub_activo and _cooldown_choque_sub <= 0.0:
+				_choque_sub_activo = true
+				_cooldown_choque_sub = cooldown_choque_submarino
+				sacudida_oleaje(duracion_tamboleo_choque, multiplicador_tamboleo_choque)
+			# Separación activa: la proa queda fuera del casco con margen extra y la
+			# canoa permanece detenida hasta que el submarino desaparece o se aleja.
+			_factor_velocidad_actual = 0.0
+			_detenida_por_contacto = true
+			_enemigo_bloqueando = sub
+			var x_segura: float = sub.global_position.x - umbral - retroceso_choque_submarino
+			if _posicion_base.x > x_segura:
+				_posicion_base.x = move_toward(_posicion_base.x, x_segura, maxf(velocidad_separacion_choque, 0.5) * maxf(delta, 0.001))
+				position.x = _posicion_base.x + calcular_desplazamiento(_tiempo).x
+	# Retención de arena vigente: no avanzar del tope aunque el jefe esté
+	# sumergido en crucero. Solo la muerte o el fin del combate liberan.
+	if is_instance_valid(_jefe_retenido):
+		_factor_velocidad_actual = 0.0
+		_velocidad_navegacion = 0.0
+		_velocidad_efectiva = 0.0
+		_detenida_por_contacto = true
+		_enemigo_bloqueando = _jefe_retenido
+		if _posicion_base.x > _x_tope_pelea:
+			_posicion_base.x = move_toward(_posicion_base.x, _x_tope_pelea, maxf(velocidad_separacion_choque, 0.5) * maxf(delta, 0.001))
+			position.x = _posicion_base.x + calcular_desplazamiento(_tiempo).x
+
+
+## Indica si el nodo tiene un combate activo (jefe en pelea).
+func _combate_activo_en(nodo: Node) -> bool:
+	return is_instance_valid(nodo) and ("combate_activo" in nodo) and bool(nodo.get("combate_activo"))
+
+
+## Indica si la retención de arena sigue vigente: jefe vivo y en combate.
+func _pelea_retenida_vigente() -> bool:
+	if not is_instance_valid(_jefe_retenido):
+		return false
+	if "_jefe_muerto" in _jefe_retenido and bool(_jefe_retenido.get("_jefe_muerto")):
+		return false
+	return _combate_activo_en(_jefe_retenido)
+
+
+## Retorna el nodo submarino (SubmarinoRio o grupo "submarino") si está en
+## superficie y vivo; null si está sumergido, destruido o no es submarino.
+func _submarino_chocable(nodo: Node) -> Node3D:
+	var p: Node = nodo
+	while is_instance_valid(p):
+		var es_sub: bool = (p is SubmarinoRio) or p.is_in_group("submarino") or p.is_in_group("submarinos")
+		if es_sub and p is Node3D:
+			if p.has_method("esta_en_superficie") and not bool(p.call("esta_en_superficie")):
+				return null
+			if "_jefe_muerto" in p and bool(p.get("_jefe_muerto")):
+				return null
+			return p as Node3D
+		if es_sub:
+			return null
+		p = p.get_parent()
+	return null
+
+
+## Busca un submarino en superficie lo bastante cerca como para chocar,
+## aunque aún no figure como bloqueador oficial (ej. emergió sobre la canoa).
+func _buscar_submarino_solapado() -> Node3D:
+	if get_tree() == null:
+		return null
+	var vistos: Array[int] = []
+	for grupo in ["submarino", "submarinos"]:
+		for n in get_tree().get_nodes_in_group(grupo):
+			if not (n is Node3D):
+				continue
+			var sub: Node3D = _submarino_chocable(n)
+			if sub == null or vistos.has(sub.get_instance_id()):
+				continue
+			vistos.append(sub.get_instance_id())
+			var umbral: float = distancia_contacto_enemigos + _margen_bloqueo(sub)
+			var dx: float = sub.global_position.x - global_position.x
+			if dx <= umbral + retroceso_choque_submarino:
+				return sub
+	return null
 
 
 func _aplicar_freno_contacto_enemigos(delta: float = 0.016) -> void:

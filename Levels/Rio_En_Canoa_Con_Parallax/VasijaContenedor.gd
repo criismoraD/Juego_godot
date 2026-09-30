@@ -32,6 +32,7 @@ const GROSOR_OUTLINE_TOON: float = 20.0
 # === EXPORTS ===
 @export_category("Contenedor")
 @export var vida_maxima: float = 2.0  ## Golpes que aguanta antes de romperse
+@export var danio_solo_en_pantalla: bool = true  ## Si true, las flechas perdidas fuera de pantalla no la rompen (evita munición fantasma)
 @export var item_soltado: ItemSoltado = ItemSoltado.DISPARO_MULTIPLE  ## Item que otorga al instante al destruirse
 @export var cantidad_municion: int = 10  ## Flechas a otorgar (múltiple o explosiva)
 @export_range(1, 5, 1) var cantidad_pociones: int = 1  ## Pociones curativas separadas al soltar poción (cada una cura curacion_pocion)
@@ -116,8 +117,13 @@ func _process(delta: float) -> void:
 
 # === FUNCIONES PÚBLICAS ===
 ## Recibe impacto de flecha (1.0 de daño normal; la sobrecarga puede romper de un golpe).
+## Con danio_solo_en_pantalla, los impactos fuera del encuadre se ignoran:
+## una flecha perdida no debe romper una vasija que el jugador ni ve
+## (el item se auto-consume al segundo y otorgaría munición fantasma).
 func recibir_golpe(dano: float = 1.0) -> void:
 	if _destruido or vida_contenedor <= 0.0:
+		return
+	if danio_solo_en_pantalla and not _esta_en_pantalla_ahora():
 		return
 	vida_contenedor -= dano
 	AudioManager.play_sfx("arrow_impact")
@@ -351,4 +357,16 @@ func _on_pantalla_cambiada(v: bool) -> void:
 
 func _puede_derivar() -> bool:
 	return not deriva_solo_en_pantalla or _en_pantalla
+
+
+## True si la vasija está ahora mismo dentro del frustum de la cámara activa.
+## Sin cámara (tests unitarios) se permite el daño para no romper el setup.
+func _esta_en_pantalla_ahora() -> bool:
+	var vp: Viewport = get_viewport()
+	if vp == null:
+		return true
+	var camara: Camera3D = vp.get_camera_3d()
+	if not is_instance_valid(camara):
+		return true
+	return camara.is_position_in_frustum(global_position)
 

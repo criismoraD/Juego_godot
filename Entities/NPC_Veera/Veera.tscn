@@ -1,0 +1,121 @@
+[gd_scene format=3 uid="uid://dksfjji3w48wb"]
+
+[ext_resource type="Script" uid="uid://cc1jhxfsol53m" path="res://Entities/NPC_Veera/Veera.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://TEST_/Fukencia/Fukencia.glb" id="2_model"]
+[ext_resource type="Material" path="res://Entities/NPC_Veera/Fukencia_Mat.tres" id="3_ssqf7"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_Veera/EspadaVeera.tscn" id="4_espada"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_Veera/ColaVeera.tscn" id="5_cola"]
+[ext_resource type="Script" uid="uid://dwk5qib0bq6o0" path="res://Components/Dialogue/SpeechBubbleComponent.gd" id="6_speech"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interaccion"]
+size = Vector3(2.5, 2.2, 2.5)
+
+[node name="Veera" type="Node3D" unique_id=2073931571]
+script = ExtResource("1_script")
+lineas_dialogo = PackedStringArray("Soy Fukencia, guardiana de este pueblo.", "Mi espada está a tu servicio, arquera.")
+
+[node name="Pivot" type="Node3D" parent="." unique_id=755936796]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="Model" parent="Pivot" unique_id=175889735 instance=ExtResource("2_model")]
+
+[node name="Skeleton3D" parent="Pivot/Model/Armature" parent_id_path=PackedInt32Array(175889735, 565042349) index="0" unique_id=236206017]
+bones/0/position = Vector3(-1.9073486e-06, 3.261905, -50.220898)
+bones/0/rotation = Quaternion(-0.7017281, 0.049213223, -0.028530004, 0.71017027)
+bones/1/rotation = Quaternion(0.09049571, -0.015979648, 0.99564946, 0.015406249)
+bones/2/rotation = Quaternion(-0.28051656, 0.05856997, 0.026354017, 0.9576981)
+bones/3/rotation = Quaternion(0.6425542, 0.18016657, 0.049643457, 0.7431014)
+bones/4/rotation = Quaternion(0.41846168, -0.12882309, 0.052266434, 0.89753145)
+bones/6/rotation = Quaternion(-0.09924805, 0.35981262, 0.9274873, -0.021260947)
+bones/7/rotation = Quaternion(-0.24811085, -0.065944426, -0.05568611, 0.96487904)
+bones/8/rotation = Quaternion(0.5573772, 0.0044119693, -0.004351301, 0.83023626)
+bones/9/rotation = Quaternion(0.3563966, 0.13176315, -0.047493596, 0.9237773)
+bones/11/rotation = Quaternion(-0.01890283, -0.024040528, -0.0067891474, 0.9995093)
+bones/12/rotation = Quaternion(0.028034268, -0.036277767, 0.004086651, 0.99894017)
+bones/13/rotation = Quaternion(-0.011214639, -0.036465276, -0.0011785489, 0.9992714)
+bones/14/rotation = Quaternion(-0.68715954, -0.37368596, 0.3903632, -0.4855793)
+bones/15/position = Vector3(-5.6833034e-07, 7.5202246, 2.0478905e-05)
+bones/15/rotation = Quaternion(0.42258984, 0.00032121327, -0.04934609, 0.90497667)
+bones/16/position = Vector3(-1.1760823e-06, 8.363445, 4.0103714e-07)
+bones/16/rotation = Quaternion(0.028001329, 9.333341e-05, 0.41995993, 0.9071106)
+bones/17/position = Vector3(-1.7347026e-06, 11.644363, -1.4705847e-06)
+bones/17/rotation = Quaternion(-0.06994739, 0.29970136, 0.09239023, 0.94696915)
+bones/18/position = Vector3(-3.4495324e-06, 6.5222263, 0.044695158)
+bones/18/rotation = Quaternion(0.053632595, 0.0560192, -0.023110226, 0.9967204)
+bones/19/position = Vector3(-0.051125765, 2.5485587, -5.623908e-06)
+bones/19/rotation = Quaternion(0.14695145, 0.00065320445, 0.022378402, 0.9888904)
+bones/20/rotation = Quaternion(0.032715824, -0.001102266, 0.0141675845, 0.9993637)
+bones/22/position = Vector3(-1.4775555, 3.2652783, -1.1920747e-06)
+bones/22/rotation = Quaternion(-0.0068947254, 0.32580838, 0.14739497, 0.9338501)
+bones/23/position = Vector3(-0.1267302, 2.864413, 3.35281e-06)
+bones/23/rotation = Quaternion(0.104885444, -0.19982922, -0.10147882, 0.9689012)
+bones/24/rotation = Quaternion(-0.015274556, 0.13014358, 0.16509475, 0.97753423)
+bones/26/rotation = Quaternion(-0.016323924, 0.00055621326, -0.015440408, 0.99974746)
+bones/27/rotation = Quaternion(-0.020940024, 0.009565676, -0.006310571, 0.9997151)
+bones/29/rotation = Quaternion(0.58094823, -0.3978586, 0.5793976, 0.41049498)
+bones/30/position = Vector3(2.5120158e-07, 7.5202293, 8.850753e-06)
+bones/30/rotation = Quaternion(0.46787927, -0.08438971, 0.19098663, 0.8587733)
+bones/31/rotation = Quaternion(0.02104, -0.00033041465, -0.3065386, 0.95162565)
+bones/32/rotation = Quaternion(-0.024207182, -0.4668637, -0.14736767, 0.8716278)
+bones/33/position = Vector3(1.440194e-07, 6.3704085, 0.08863321)
+bones/33/rotation = Quaternion(0.01898152, -0.0010259019, -0.020359568, 0.999612)
+bones/34/position = Vector3(0.005220771, 2.6696172, -1.1224095e-06)
+bones/34/rotation = Quaternion(0.23662825, 0.002042797, -0.030199941, 0.97112864)
+bones/35/position = Vector3(-0.012608767, 1.9359404, 1.5042606e-06)
+bones/35/rotation = Quaternion(0.15356617, 0.002487904, -0.026819037, 0.9877713)
+bones/36/position = Vector3(0.0073907375, 2.0611663, -6.198883e-06)
+bones/37/position = Vector3(1.3650298, 3.2939038, -3.9339066e-06)
+bones/37/rotation = Quaternion(0.11277089, -0.19872709, -0.15100087, 0.96176356)
+bones/38/position = Vector3(0.019844592, 2.8523736, 9.053815e-06)
+bones/38/rotation = Quaternion(-0.08677875, -0.1051146, 0.050911266, 0.9893576)
+bones/39/position = Vector3(-0.042421967, 2.2713947, 2.2321924e-06)
+bones/39/rotation = Quaternion(-0.015534512, 0.09033505, -0.10052597, 0.9907033)
+
+[node name="Veera" parent="Pivot/Model/Armature/Skeleton3D" index="0" unique_id=855089912]
+material_override = ExtResource("3_ssqf7")
+surface_material_override/0 = ExtResource("3_ssqf7")
+
+[node name="BoneAttachment_ManoDerecha" type="BoneAttachment3D" parent="Pivot/Model/Armature/Skeleton3D" index="1" unique_id=1411048963]
+transform = Transform3D(0.8094538, -0.100332364, 0.5785482, 0.5514172, 0.46850955, -0.69024515, -0.2018016, 0.87774324, 0.43456182, -14.25506, 1.0865529, -46.64405)
+bone_name = "mixamorig_RightHand"
+bone_idx = 32
+
+[node name="EspadaVeera" parent="Pivot/Model/Armature/Skeleton3D/BoneAttachment_ManoDerecha" unique_id=1015499993 instance=ExtResource("4_espada")]
+transform = Transform3D(30.352995, 36.61046, 7.6255884, -32.2227, 32.940193, 12.241439, 3.4493818, -14.441731, 47.252754, -2.473957, -6.1867137, 3.3772922)
+
+[node name="BoneAttachment_Cola" type="BoneAttachment3D" parent="Pivot/Model/Armature/Skeleton3D" index="2" unique_id=781697217]
+transform = Transform3D(0.9935282, -0.028546281, 0.10994013, -0.10959091, 0.013527513, 0.9938847, -0.029858917, -0.9995009, 0.010311544, -1.9073486e-06, 3.261905, -50.220898)
+bone_name = "mixamorig_Hips"
+bone_idx = 0
+
+[node name="ColaVeera" parent="Pivot/Model/Armature/Skeleton3D/BoneAttachment_Cola" unique_id=1700744909 instance=ExtResource("5_cola")]
+transform = Transform3D(10.830412, -11.562916, -25.475496, 25.615108, 15.083636, 4.0435476, 11.250264, -23.21169, 15.318239, -4.427001, -13.633789, -6.3495913)
+
+[node name="AreaInteraccion" type="Area3D" parent="." unique_id=503444994]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+collision_layer = 0
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion" unique_id=485334740]
+shape = SubResource("BoxShape3D_interaccion")
+
+[node name="PromptHablar" type="Label3D" parent="." unique_id=1116387102]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+pixel_size = 0.0035
+billboard = 1
+no_depth_test = true
+render_priority = 2
+modulate = Color(1, 1, 1, 0)
+outline_modulate = Color(0.05, 0.05, 0.08, 0)
+text = "[E] Hablar"
+font_size = 22
+outline_size = 5
+
+[node name="SpeechBubbleComponent" type="Node3D" parent="." unique_id=1264577470]
+unique_name_in_owner = true
+script = ExtResource("6_speech")
+offset_cabeza = Vector3(0, 1.15, 0)
+
+[editable path="Pivot/Model"]

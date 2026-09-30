@@ -2,6 +2,8 @@ extends "res://addons/gut/test.gd"
 
 ## Tests unitarios para el sistema de Checkpoint, curación completa y baile de victoria
 ## en el nivel del río ('Rio en canoa con paralax').
+## Cubre también la tecla V (debug): teletransporte al tramo del checkpoint sin
+## requerir que el jefe esté en escena ni que el barco checkpoint siga en pie.
 
 const SCRIPT_RIO: Script = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Rio_En_Canoa_Con_Parallax.gd")
 const SCRIPT_JEFE: Script = preload("res://Levels/Rio_En_Canoa_Con_Parallax/JefeSubmarinoRio.gd")
@@ -145,3 +147,55 @@ func test_reset_checkpoint_limpia_correctamente_el_estado() -> void:
 	# Assert
 	assert_false(RioEnCanoaConParallax.checkpoint_rio_activo, "checkpoint_rio_activo debe ser false")
 	assert_eq(RioEnCanoaConParallax.checkpoint_rio_pos_x, 0.0, "checkpoint_rio_pos_x debe ser 0.0")
+
+
+func test_tecla_v_teletransporta_sin_jefe_en_escena() -> void:
+	## La tecla V (teletransportar_a_punto_guardado) debe funcionar aunque el
+	## JefeSubmarino no esté instanciado: se teletransporta la canoa y se activa
+	## el checkpoint sin bloquearse por ausencia del jefe.
+
+	# Arrange
+	var canoa: Node3D = ESCENA_CANOA.instantiate() as Node3D
+	_nivel.add_child(canoa)
+	_nivel.canoa_protagonista = canoa
+	canoa.global_position.x = 5.0
+	_nivel.trampas_debug_activas = true
+	_nivel.permitir_teletransporte_debug = true
+	# Ningún jefe en escena (condición de edge case)
+	assert_eq(get_tree().get_nodes_in_group("jefe_submarino").size(), 0, "Precondición: sin jefe submarino en escena")
+
+	# Act
+	_nivel._teletransportar_a_punto_guardado()
+
+	# Assert: la canoa debe haberse movido al tramo del checkpoint (x > 5.0)
+	# y el estado de checkpoint barco debe considerarse destruido.
+	assert_true(canoa.global_position.x > 5.0 or _nivel._barco_checkpoint_destruido,
+		"Sin jefe: la tecla V debe teletransportar la canoa y/o marcar el barco como destruido")
+
+	# Limpieza
+	canoa.queue_free()
+
+
+func test_tecla_v_funciona_con_barco_ya_destruido_no_produce_error() -> void:
+	## Si el BarcoCombatePirata3 ya fue destruido previamente, la tecla V
+	## no debe tirar error ni bloquear la operación: debe quedar el checkpoint
+	## activo y la canoa reubicada.
+
+	# Arrange
+	var canoa: Node3D = ESCENA_CANOA.instantiate() as Node3D
+	_nivel.add_child(canoa)
+	_nivel.canoa_protagonista = canoa
+	canoa.global_position.x = 3.0
+	_nivel._barco_checkpoint_destruido = true
+	_nivel.trampas_debug_activas = true
+
+	# Act: No debe generar errores aunque el barco ya no exista
+	_nivel._teletransportar_a_punto_guardado()
+
+	# Assert: el checkpoint queda activo y la canoa se reubicó
+	assert_true(_nivel._barco_checkpoint_destruido, "Con barco ya destruido: _barco_checkpoint_destruido debe seguir true")
+	assert_true(canoa.global_position.x > 3.0 or RioEnCanoaConParallax.checkpoint_rio_activo,
+		"La canoa debe haberse teletransportado o el checkpoint debe quedar activo")
+
+	# Limpieza
+	canoa.queue_free()

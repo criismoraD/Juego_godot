@@ -1,0 +1,70 @@
+[gd_scene format=3 uid="uid://bjaxo27xuqsdk"]
+
+[ext_resource type="Script" uid="uid://cc1jhxfsol53m" path="res://Entities/NPC_Veera/Veera.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://jo1y5ptd1vm7" path="res://TEST_/Veera chikita/Veera Chikita.glb" id="2_model"]
+[ext_resource type="Material" path="res://Entities/NPC_Veera/VeeraChikita_Mat.tres" id="3_ssqf7"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_Veera/EspadaVeera.tscn" id="4_espada"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_Veera/ColaVeera.tscn" id="5_cola"]
+[ext_resource type="Script" uid="uid://dwk5qib0bq6o0" path="res://Components/Dialogue/SpeechBubbleComponent.gd" id="6_speech"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_interaccion"]
+size = Vector3(2.5, 2.2, 2.5)
+
+[node name="VeeraChikita" type="Node3D" unique_id=-1200209086]
+script = ExtResource("1_script")
+material_npc = ExtResource("3_ssqf7")
+lineas_dialogo = PackedStringArray("Hola me llamo Veera, soy una cazadora de goblins", "Hoy estoy de buenas para una demostración gratis", "La ciénaga esta infectada de pieles verdes…")
+
+[node name="Pivot" type="Node3D" parent="." unique_id=-1200209085]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="Model" parent="Pivot" unique_id=-1200209084 instance=ExtResource("2_model")]
+
+[node name="Veera Chikita" parent="Pivot/Model/Armature/Skeleton3D" parent_id_path=PackedInt32Array(-1200209084, 1399532828) index="0" unique_id=791596015]
+material_override = ExtResource("3_ssqf7")
+surface_material_override/0 = ExtResource("3_ssqf7")
+
+[node name="BoneAttachment_ManoDerecha" type="BoneAttachment3D" parent="Pivot/Model/Armature/Skeleton3D" parent_id_path=PackedInt32Array(-1200209084, 1399532828) index="1" unique_id=-1200209082]
+transform = Transform3D(0.085213125, -0.9850768, 0.14953955, 0.98103786, 0.10917388, 0.1601404, -0.17407648, 0.13305794, 0.9757007, -30.50784, 2.0662177, -64.77734)
+bone_name = "mixamorig_RightHand"
+bone_idx = 28
+
+[node name="EspadaVeera" parent="Pivot/Model/Armature/Skeleton3D/BoneAttachment_ManoDerecha" unique_id=-1200209081 instance=ExtResource("4_espada")]
+transform = Transform3D(30.489971, 36.77597, 7.6598945, -32.368107, 33.08912, 12.296517, 3.4649487, -14.507019, 47.465363, -2.5118465, -3.7510319, 4.5450554)
+
+[node name="BoneAttachment_Cola" type="BoneAttachment3D" parent="Pivot/Model/Armature/Skeleton3D" parent_id_path=PackedInt32Array(-1200209084, 1399532828) index="2" unique_id=-1200209080]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 3.0185575, -51.326225)
+bone_name = "mixamorig_Hips"
+bone_idx = 0
+
+[node name="ColaVeera" parent="Pivot/Model/Armature/Skeleton3D/BoneAttachment_Cola" unique_id=-1200209079 instance=ExtResource("5_cola")]
+transform = Transform3D(10.83041, -11.562916, -25.475496, 22.170574, 20.208952, 0.25287384, 17.063637, -18.918163, 15.840921, -1.9657575, -9.470665, -11.869965)
+
+[node name="AreaInteraccion" type="Area3D" parent="." unique_id=-1200209078]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+collision_layer = 0
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaInteraccion" unique_id=-1200209077]
+shape = SubResource("BoxShape3D_interaccion")
+
+[node name="PromptHablar" type="Label3D" parent="." unique_id=-1200209076]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+pixel_size = 0.0035
+billboard = 1
+no_depth_test = true
+render_priority = 2
+modulate = Color(1, 1, 1, 0)
+outline_modulate = Color(0.05, 0.05, 0.08, 0)
+text = "[E] Hablar"
+font_size = 22
+outline_size = 5
+
+[node name="SpeechBubbleComponent" type="Node3D" parent="." unique_id=-1200209075]
+unique_name_in_owner = true
+script = ExtResource("6_speech")
+offset_cabeza = Vector3(0, 1.15, 0)
+
+[editable path="Pivot/Model"]

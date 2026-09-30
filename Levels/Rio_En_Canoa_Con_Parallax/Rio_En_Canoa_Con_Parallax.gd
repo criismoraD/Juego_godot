@@ -27,7 +27,7 @@ const INTERVALO_CHECK_AGUA: float = 0.1  ## Intervalo mínimo entre comprobacion
 
 # === EXPORTS ===
 @export_category("Fin de Nivel")
-@export var x_fin_nivel: float = 184.0  ## Coordenada X donde se activa la transición final del nivel
+@export var x_fin_nivel: float = 192.0  ## Coordenada X donde se activa la transición final: la canoa debe pasar por la zona de árboles del fondo (puente 185.8, arbolitos 187-194)
 @export var escena_siguiente: String = "res://Levels/Nivel_Pueblo/NivelPueblo.tscn"  ## Escena de destino al presionar Continuar
 @export var duracion_transicion_fin: float = 1.4  ## Duración del barrido de transición de derecha a izquierda
 @export var clave_titulo_fin: String = "RIO_ASALTO_SUPERADO"  ## Título de la cortinilla final ("Asalto al rio Superado")
@@ -61,11 +61,11 @@ const INTERVALO_CHECK_AGUA: float = 0.1  ## Intervalo mínimo entre comprobacion
 @export var duracion_fade_in_musica_nivel: float = 2.0  ## Segundos para volver a sonar la música normal del nivel
 
 @export_category("Debug / Testeo de Recorrido")
+@export var trampas_debug_activas: bool = false  ## Puerta maestra: Z/V/X/N solo funcionan si está activa (evita explosiones o finales accidentales en partida normal)
 @export var permitir_aceleracion_debug: bool = true  ## Si true, permite acelerar el recorrido con la tecla Z para testeo
 @export var multiplicador_aceleracion: float = MULTIPLICADOR_ACELERACION_DEFECTO  ## Multiplicador de velocidad al presionar la tecla Z
 @export var modo_toggle_z: bool = false  ## Si true, la tecla Z conmuta el modo rápido; si false, acelera mientras se mantenga presionada
-@export var permitir_teletransporte_jefe_debug: bool = true  ## Si true, la tecla B salta directo al combate con el jefe para testeo
-@export var distancia_previa_jefe: float = 12.0  ## La canoa aparece esta distancia antes del jefe para verlo emerger
+@export var permitir_teletransporte_debug: bool = true  ## Si true, la tecla V salta directo al punto de guardado para testeo
 
 # === ONREADY ===
 @onready var parallax_fondo: Node3D = find_child("ParallaxFondo", true, false) as Node3D
@@ -96,6 +96,11 @@ var _tiempo_nivel_rio: float = 0.0
 var _nivel_terminado: bool = false
 var _pantalla_fin_nivel: PantallaFinNivel = null
 var _timer_check_agua: float = 0.0  ## Acumulador para el throttle del check de caída al agua
+var _bloque_fin_mision: Node = null  ## Bloque FinDeMision: única vía para completar el nivel
+var _conteniendo_jefe: bool = false  ## Contención activa ante el jefe vivo
+var _x_tope_jefe: float = 0.0  ## Tope fijado al iniciar la contención (no se recalcula)
+const MARGEN_SEGURIDAD_FIN_DEBUG: float = 8.0  ## La canoa de debug nunca aparece a menos de esto del fin de nivel
+const PUNTO_DEBUG_V_X: float = 125.51  ## Punto exacto de la tecla V: canoa junto al BarcoCombatePirata3 Check point (X 126.01 - 0.5)
 
 # === ESTADO ESTÁTICO DE CHECKPOINT (PERSISTE TRAS REINTENTAR) ===
 static var checkpoint_rio_activo: bool = false
@@ -111,7 +116,9 @@ func _ready() -> void:
 	_factor_travesia_suave = 1.0 if travesia_activa else 0.0
 	_buscar_y_conectar_jefe()
 	_buscar_y_conectar_barco_checkpoint()
+	_conectar_bloque_fin_mision()
 	_inicializar_tramo_aceleracion()
+	_propagar_trampas_debug_al_jefe()
 
 	if is_instance_valid(canoa_protagonista):
 		var canoa_x: float = canoa_protagonista.global_position.x
@@ -122,7 +129,9 @@ func _ready() -> void:
 	_inicializar_focos_fijos()
 
 	if is_instance_valid(parallax_fondo):
-		parallax_fondo.set("sincronizar_piso_con_cordillera", false)
+		# El piso del fondo hace scroll con la cordillera (misma velocidad) para
+		# completar el efecto parallax con wrap infinito en vez de quedarse fijo.
+		parallax_fondo.set("sincronizar_piso_con_cordillera", true)
 		if parallax_fondo.has_method("fijar_camara_referencia") and is_instance_valid(camara_principal):
 			parallax_fondo.call("fijar_camara_referencia", camara_principal)
 		if parallax_fondo.has_method("_inicializar_capa_piso_aliado"):
@@ -152,10 +161,13 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Trampas de testeo (V/X/N/Z): solo con la puerta maestra activa.
+	if not trampas_debug_activas:
+		return
 	if event is InputEventKey and not event.echo and event.pressed:
-		var es_tecla_b: bool = (event.keycode == KEY_B or event.physical_keycode == KEY_B)
-		if es_tecla_b and permitir_teletransporte_jefe_debug:
-			_teletransportar_a_jefe()
+		var es_tecla_v: bool = (event.keycode == KEY_V or event.physical_keycode == KEY_V)
+		if es_tecla_v and permitir_teletransporte_debug:
+			_teletransportar_a_punto_guardado()
 			return
 
 		var es_tecla_x: bool = (event.keycode == KEY_X or event.physical_keycode == KEY_X)
@@ -170,7 +182,7 @@ func _input(event: InputEvent) -> void:
 				return
 
 		var es_tecla_n: bool = (event.keycode == KEY_N or event.physical_keycode == KEY_N)
-		if es_tecla_n and permitir_teletransporte_jefe_debug:
+		if es_tecla_n and permitir_teletransporte_debug:
 			_teletransportar_a_fin_nivel()
 			return
 
@@ -189,6 +201,7 @@ func _input(event: InputEvent) -> void:
 
 func _process(_delta: float) -> void:
 	_comprobar_liberacion_aceleracion()
+	_contener_canoa_ante_jefe_vivo(_delta)
 
 	# Transición continua de la travesía: frenado y arranque por rampa, sin cortes.
 	if _delta > 0.0:
@@ -221,7 +234,7 @@ func _process(_delta: float) -> void:
 	_actualizar_focos_fijos()
 	_procesar_musica_area_jefe()
 	_procesar_enemigos_caidos_al_agua(_delta)
-	_procesar_fin_de_nivel()
+	_comprobar_fin_de_mision()
 
 
 ## La batalla naval (nivel 5) arranca sola al acercarse la cámara centrada.
@@ -240,6 +253,14 @@ func _procesar_activacion_batalla_naval() -> void:
 	if dx <= distancia_activacion_batalla_naval and dx >= -8.0:
 		batalla_naval_rio.spawnear_ambas()
 		_batalla_naval_activada = true
+
+
+## Propaga la puerta maestra de trampas al jefe (su tecla X propia también queda bloqueada).
+func _propagar_trampas_debug_al_jefe() -> void:
+	if not is_instance_valid(_jefe_submarino_ref):
+		_buscar_y_conectar_jefe()
+	if is_instance_valid(_jefe_submarino_ref) and "permitir_explosion_debug_tecla_x" in _jefe_submarino_ref:
+		_jefe_submarino_ref.set("permitir_explosion_debug_tecla_x", trampas_debug_activas and _jefe_submarino_ref.get("permitir_explosion_debug_tecla_x"))
 
 
 ## Localiza el nodo del Jefe Submarino en la escena y se suscribe a sus señales de combate y derrota.
@@ -270,7 +291,7 @@ func _buscar_y_conectar_barco_checkpoint() -> void:
 		return
 	var barco: Node = find_child(nombre_barco_checkpoint, true, false)
 	if not is_instance_valid(barco):
-		barco = find_child("BarcoCombatePirata3*", true, false)
+		barco = find_child("BarcoCombatePirata3 Check point", true, false)
 	if not is_instance_valid(barco) and get_tree() != null:
 		for candidato in get_tree().get_nodes_in_group("barco_checkpoint_musica_jefe"):
 			if is_instance_valid(candidato):
@@ -318,14 +339,22 @@ func _al_destruir_barco_checkpoint() -> void:
 
 
 ## Guarda el estado del checkpoint y despliega la notificación en pantalla.
+## El punto queda anclado al BarcoCombatePirata3 Check point (el barco previo
+## al combate del jefe): SOLO ese barco activa el checkpoint y el respawn
+## siempre deja la canoa junto a sus restos, nunca donde estuviera la canoa.
 func _activar_checkpoint() -> void:
 	checkpoint_rio_activo = true
-	if is_instance_valid(canoa_protagonista):
+	var ref_barco: Node3D = _barco_checkpoint_ref as Node3D
+	if not is_instance_valid(ref_barco):
+		ref_barco = find_child(nombre_barco_checkpoint, true, false) as Node3D
+	if not is_instance_valid(ref_barco):
+		ref_barco = find_child("BarcoCombatePirata3 Check point", true, false) as Node3D
+	if is_instance_valid(ref_barco):
+		checkpoint_rio_pos_x = ref_barco.global_position.x - 0.5
+	elif is_instance_valid(canoa_protagonista):
 		checkpoint_rio_pos_x = canoa_protagonista.global_position.x
-	elif is_instance_valid(_barco_checkpoint_ref):
-		checkpoint_rio_pos_x = (_barco_checkpoint_ref as Node3D).global_position.x - 2.0
 	else:
-		checkpoint_rio_pos_x = 124.0
+		checkpoint_rio_pos_x = PUNTO_DEBUG_V_X
 
 	_mostrar_notificacion_checkpoint()
 
@@ -390,8 +419,10 @@ func _mostrar_notificacion_checkpoint() -> void:
 ## Reposiciona la canoa y cámara en el checkpoint y elimina obstáculos y barcos superados.
 func _aplicar_checkpoint_rio() -> void:
 	_barco_checkpoint_destruido = true
-	var destino_x: float = checkpoint_rio_pos_x if checkpoint_rio_pos_x > 0.0 else 124.0
+	var destino_x: float = checkpoint_rio_pos_x if checkpoint_rio_pos_x > 0.0 else 125.5
+	destino_x = minf(destino_x, x_fin_nivel - MARGEN_SEGURIDAD_FIN_DEBUG)
 	_teletransportar_canoa_x(destino_x)
+	_mostrar_notificacion_checkpoint()
 
 	# 1. Ocultar o eliminar título del nivel
 	var titulo: Node = find_child("TituloRio", true, false)
@@ -499,11 +530,11 @@ func _procesar_musica_area_jefe() -> void:
 
 
 ## Comienza la transición suave: la música actual disminuye y comienza la canción "Jefe rio".
-## Si forzar_debug es true (tecla B de testeo) se omite la puerta del checkpoint.
-func _iniciar_musica_jefe(forzar_debug: bool = false) -> void:
+## Solo suena con el checkpoint superado (puerta del BarcoCombatePirata3 Check point).
+func _iniciar_musica_jefe() -> void:
 	if not musica_jefe_activa or _musica_jefe_iniciada or _musica_jefe_finalizada:
 		return
-	if not forzar_debug and not _puerta_checkpoint_superada():
+	if not _puerta_checkpoint_superada():
 		return
 	_musica_jefe_iniciada = true
 
@@ -519,6 +550,17 @@ func _iniciar_musica_jefe(forzar_debug: bool = false) -> void:
 
 func _al_iniciar_combate_jefe() -> void:
 	_iniciar_musica_jefe()
+
+
+## True si el jefe submarino existe y todavía no fue derrotado.
+func _jefe_sigue_vivo() -> bool:
+	if not is_instance_valid(_jefe_submarino_ref):
+		_buscar_y_conectar_jefe()
+	if not is_instance_valid(_jefe_submarino_ref):
+		return false
+	if "_jefe_muerto" in _jefe_submarino_ref:
+		return not bool(_jefe_submarino_ref.get("_jefe_muerto"))
+	return true
 
 
 ## Apenas el jefe pierde su último punto de salud: se detiene "Jefe rio",
@@ -574,41 +616,103 @@ func _al_derrotar_jefe() -> void:
 	)
 
 
-## Debug (tecla B): salta directo al combate con el jefe para testearlo.
-## Coloca la canoa justo antes del jefe; la cámara y el agua la siguen solas
-## en el _process y el jefe emerge al acercarse.
-func _teletransportar_a_jefe() -> void:
-	var jefe: Node3D = null
-	if get_tree() != null:
-		jefe = get_tree().get_first_node_in_group("jefe_submarino") as Node3D
-	if not is_instance_valid(jefe):
-		jefe = find_child("JefeSubmarino", true, false) as Node3D
-	if not is_instance_valid(jefe) or not is_instance_valid(canoa_protagonista):
+## Debug (tecla V): lleva la canoa protagonista al punto de guardado y hunde
+## el BarcoCombatePirata3 Check point si sigue a flote (para no tener que
+## hacerlo a mano). Su señal balsa_destruida activa el checkpoint real con
+## el aviso "Punto de guardado". La tripulación de ESE barco se retira para
+## que nada bloquee a la canoa y permanezca en el punto. Si el checkpoint ya
+## se activó usa su posición guardada; si no, usa el punto fijo junto al barco.
+func _teletransportar_a_punto_guardado() -> void:
+	if not is_instance_valid(canoa_protagonista):
 		return
-	var destino_x: float = (jefe as Node3D).global_position.x - distancia_previa_jefe
+	var destino_x: float = PUNTO_DEBUG_V_X
+	if checkpoint_rio_activo and checkpoint_rio_pos_x > 0.0:
+		destino_x = checkpoint_rio_pos_x
 	_teletransportar_canoa_x(destino_x)
-	set_travesia_activa(true)
-	if canoa_protagonista.has_method("reanudar_navegacion"):
-		canoa_protagonista.call("reanudar_navegacion")
-	_iniciar_musica_jefe(true)
+	var barco: Node = find_child(nombre_barco_checkpoint, true, false)
+	if not is_instance_valid(barco):
+		barco = find_child("BarcoCombatePirata3 Check point", true, false)
+	if is_instance_valid(barco) and barco.has_method("destruir_balsa"):
+		if not (barco.has_method("esta_destruida") and bool(barco.call("esta_destruida"))):
+			barco.call("destruir_balsa")
+			_limpiar_tripulacion_barco_checkpoint(barco)
+	if is_instance_valid(canoa_protagonista) and canoa_protagonista.has_method("liberar_bloqueo_enemigo"):
+		canoa_protagonista.call("liberar_bloqueo_enemigo")
+
+
+## Retira los enemigos embarcados o caídos junto al BarcoCombatePirata3 Check
+## point hundido (SOLO ese barco): sin bloqueadores la canoa permanece en el
+## punto de guardado en vez de ser arrastrada hacia atrás por el freno.
+func _limpiar_tripulacion_barco_checkpoint(barco: Node) -> void:
+	if not is_instance_valid(barco):
+		return
+	var cx: float = PUNTO_DEBUG_V_X
+	if barco is Node3D:
+		cx = (barco as Node3D).global_position.x
+	_liberar_enemigos_de_nodo(barco)
+	if get_tree() == null:
+		return
+	for grupo in ["enemies", "enemigos"]:
+		for e in get_tree().get_nodes_in_group(grupo):
+			if is_instance_valid(e) and e is Node3D:
+				if absf((e as Node3D).global_position.x - cx) <= 7.0:
+					(e as Node).remove_from_group(grupo)
+					(e as Node3D).queue_free()
+
+
+func _liberar_enemigos_de_nodo(nodo: Node) -> void:
+	for hijo in nodo.get_children():
+		_liberar_enemigos_de_nodo(hijo)
+	if nodo.is_in_group("enemies") or nodo.is_in_group("enemigos"):
+		nodo.remove_from_group("enemies")
+		nodo.remove_from_group("enemigos")
+		nodo.queue_free()
 
 
 ## Debug (tecla N): salta directo al área de fin de nivel para probar la transición y pantalla final.
+## Es un atajo explícito a la cortinilla: omite el bloqueo por jefe vivo.
 func _teletransportar_a_fin_nivel() -> void:
 	_teletransportar_canoa_x(x_fin_nivel - 2.5)
 	set_travesia_activa(true)
 	if is_instance_valid(canoa_protagonista) and canoa_protagonista.has_method("reanudar_navegacion"):
 		canoa_protagonista.call("reanudar_navegacion")
+	terminar_nivel()
 
 
-## Monitorea el avance de la canoa para disparar la transición de fin de nivel al llegar a la meta.
-func _procesar_fin_de_nivel() -> void:
+## Localiza el bloque FinDeMision y conecta su señal: es la ÚNICA forma de
+## completar el nivel (al tocarlo la canoa sale la cortinilla y termina).
+func _conectar_bloque_fin_mision() -> void:
+	_bloque_fin_mision = find_child("FinDeMision", true, false) as Node
+	if not is_instance_valid(_bloque_fin_mision):
+		push_warning("[Rio] Falta el nodo FinDeMision: el nivel no podrá completarse.")
+		return
+	if _bloque_fin_mision.has_signal("mision_cumplida"):
+		if not _bloque_fin_mision.is_connected("mision_cumplida", _al_cumplir_mision):
+			_bloque_fin_mision.connect("mision_cumplida", _al_cumplir_mision)
+
+
+## Comprueba cada frame si la canoa tocó el bloque de fin de misión.
+func _comprobar_fin_de_mision() -> void:
 	if _nivel_terminado:
 		return
+	if not is_instance_valid(_bloque_fin_mision):
+		_conectar_bloque_fin_mision()
+		if not is_instance_valid(_bloque_fin_mision):
+			return
 	if not is_instance_valid(canoa_protagonista):
 		return
-	if canoa_protagonista.global_position.x >= x_fin_nivel:
-		terminar_nivel()
+	if _bloque_fin_mision.has_method("comprobar_canoa"):
+		_bloque_fin_mision.call("comprobar_canoa", canoa_protagonista)
+
+
+## La canoa tocó el bloque FinDeMision: cortinilla y fin de nivel.
+## No se puede saltar al jefe: con el jefe vivo no termina.
+func _al_cumplir_mision() -> void:
+	if _nivel_terminado:
+		return
+	if _jefe_sigue_vivo():
+		return
+	terminar_nivel()
 
 
 ## Mueve la canoa en X manteniendo coherentes su posición base y visual.
@@ -800,6 +904,54 @@ func obtener_montana_beta() -> Node3D:
 ## Muestra el HUD de vida (en el nivel 1 lo revelan las instrucciones, aquí no existen).
 func mostrar_hud() -> void:
 	_mostrar_hud()
+
+
+## Contención ante el jefe vivo: la canoa no rebasa la arena del jefe ni la
+## meta final mientras el jefe siga vivo. Así matar al jefe jamás dispara el
+## final en otro punto: el nivel solo termina al cruzar la zona de árboles.
+## Solo contiene si el jefe ya emergió o pelea (nunca antes del combate, para
+## no impedir la aproximación que lo despierta). El tope se fija una vez al
+## iniciar la contención: congela el avance sin arrastrar jamás hacia atrás.
+## Se ejecuta antes del seguimiento de cámara para no introducir tirones.
+func _contener_canoa_ante_jefe_vivo(delta: float) -> void:
+	if _nivel_terminado:
+		_conteniendo_jefe = false
+		return
+	if not is_instance_valid(canoa_protagonista):
+		_conteniendo_jefe = false
+		return
+	if not _jefe_sigue_vivo():
+		_conteniendo_jefe = false
+		return
+	var jefe: Node3D = _jefe_submarino_ref as Node3D
+	if not is_instance_valid(jefe):
+		_conteniendo_jefe = false
+		return
+	var emergido: bool = jefe.has_method("esta_en_superficie") and bool(jefe.call("esta_en_superficie"))
+	var en_combate: bool = ("combate_activo" in jefe) and bool(jefe.get("combate_activo"))
+	if not emergido and not en_combate:
+		_conteniendo_jefe = false
+		return
+	var cx: float = canoa_protagonista.global_position.x
+	if not _conteniendo_jefe:
+		_conteniendo_jefe = true
+		var linea: float = x_fin_nivel - 4.0
+		if jefe.global_position.x < x_fin_nivel:
+			linea = minf(linea, jefe.global_position.x - 10.4)
+		# Muy pasada de la línea (teletransporte): congelar donde está.
+		_x_tope_jefe = cx if cx > linea + 1.0 else linea
+	if cx <= _x_tope_jefe:
+		return
+	# Retroceso suave hasta el tope (sin teletransporte brusco ni cámara).
+	var val = canoa_protagonista.get("_posicion_base")
+	var base: Vector3 = val if (val is Vector3) else canoa_protagonista.position
+	base.x = move_toward(base.x, _x_tope_jefe, 10.0 * maxf(delta, 0.001))
+	if "_posicion_base" in canoa_protagonista:
+		canoa_protagonista.set("_posicion_base", base)
+	canoa_protagonista.position.x = base.x
+	canoa_protagonista.global_position.x = base.x
+	canoa_protagonista.set("_velocidad_navegacion", 0.0)
+	canoa_protagonista.set("_velocidad_efectiva", 0.0)
 
 
 func _comprobar_liberacion_aceleracion() -> void:
@@ -995,7 +1147,7 @@ func _inicializar_tramo_aceleracion() -> void:
 
 	var barco_ref: Node = find_child(nombre_barco_checkpoint, true, false)
 	if not is_instance_valid(barco_ref):
-		barco_ref = find_child("BarcoCombatePirata3*", true, false)
+		barco_ref = find_child("BarcoCombatePirata3 Check point", true, false)
 	if is_instance_valid(barco_ref) and barco_ref is Node3D:
 		x_fin = (barco_ref as Node3D).global_position.x
 

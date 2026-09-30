@@ -44,7 +44,7 @@ _subresources={
 "GOBLING_MATERIAL": {
 "use_external/enabled": true,
 "use_external/fallback_path": "res://Entities/Enemigo_Goblin/GOBLING_MATERIAL.tres",
-"use_external/path": "uid://cx8cwgkqemwry"
+"use_external/path": "uid://knfkk3ug7f4l"
 }
 }
 }

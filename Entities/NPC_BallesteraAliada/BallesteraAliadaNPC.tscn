@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/NPC_BallesteraAliada/BallesteraAliadaNPC.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://c21688k7g1tgd" path="res://Entities/Aliada_Ballestera/BALLESTERA_ALIADA.glb" id="2_model"]
+[ext_resource type="Material" path="res://Entities/Aliada_Ballestera/BALLESTERA_ALIADA_MAT.tres" id="3_mat"]
+
+[node name="BallesteraAliadaNPC" type="Node3D"]
+script = ExtResource("1_script")
+material_npc = ExtResource("3_mat")
+
+[node name="Pivot" type="Node3D" parent="."]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="Model" parent="Pivot" instance=ExtResource("2_model")]
+transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)

@@ -149,6 +149,7 @@ var combate_activo: bool = false
 var _fase_jefe: FaseJefe = FaseJefe.FASE1
 var _dano_fase: int = 0
 var _jefe_muerto: bool = false
+var _muerte_debug_autorizada: bool = false  ## Solo explotar_debug (tecla X) puede activarla
 var _is_invulnerable: bool = false
 var _esta_danado: bool = false
 var _material_danado: StandardMaterial3D = null
@@ -249,6 +250,12 @@ func _process(_delta: float) -> void:
 	if _jefe_muerto:
 		return
 	if _fase_jefe == FaseJefe.FASE1:
+		# Salvaguarda: en vida jamás debe hundirse-y-liberarse como un
+		# submarino común (eso lo haría desaparecer con vida > 0 y
+		# parecería "muerte antes de tiempo"). Esa ruta es fase 2.
+		if current_state == State.SUMERGIENDOSE or current_state == State.DESAPARECIDO:
+			_iniciar_sumersion()
+			return
 		super._process(_delta)
 		_actualizar_humo_segun_superficie()
 		return
@@ -260,6 +267,8 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not permitir_explosion_debug_tecla_x:
+		return
+	if not _trampas_debug_permitidas_por_nivel():
 		return
 	if event is InputEventKey and not event.echo and event.pressed:
 		var es_tecla_x: bool = (event.keycode == KEY_X or event.physical_keycode == KEY_X)
@@ -294,10 +303,68 @@ func obtener_fase() -> int:
 	return int(_fase_jefe)
 
 
-## Fuerza la detonación y secuencia completa de destrucción del jefe inmediatamente (debug).
+## Reinicio para testeo (tecla V): cancela cualquier fase en curso, limpia proyectiles y esbirros,
+## y deja al jefe en su estado inicial sumergido esperando a que la canoa se aproxime.
+## Retorna false si el jefe ya murió (no hay enfrentamiento que reiniciar).
+func reiniciar_enfrentamiento(reemerger: bool = false) -> bool:
+	if _jefe_muerto:
+		return false
+	_secuencia_fase2_activa = false
+	if is_instance_valid(_tween_crucero_fondo) and _tween_crucero_fondo.is_running():
+		_tween_crucero_fondo.kill()
+	_limpiar_misiles()
+	for mc in _misiles_cosmeticos:
+		if is_instance_valid(mc) and not mc.is_queued_for_deletion():
+			mc.queue_free()
+	_misiles_cosmeticos.clear()
+	_misiles_resueltos = 0
+	_tanda_actual = 0
+	_limpiar_gargolas()
+	_dano_fase = 0
+	_disparo_canon_realizado = false
+	_crucero_fondo_completado = false
+	_restaurar_escala_fondo()
+	_fase_jefe = FaseJefe.FASE1
+	_is_invulnerable = false
+	_esta_danado = false
+	_aplicar_material()
+	_activar_humo_danado(false)
+	vida_actual_jefe = vida_maxima_jefe
+	vida_cambiada.emit(vida_actual_jefe, vida_maxima_jefe)
+	_construir_cola_mezcla()
+	_reactivar_colisiones()
+	_offsets_deck_usados.clear()
+	rotation_degrees = Vector3.ZERO
+	_matar_enemigos_restantes_en_sumersion()
+	visible = true
+	global_position = Vector3(_pos_combate.x, _altura_objetivo_y - profundidad_sumergido, _pos_combate.z)
+	current_state = State.SUMERGIDO
+	combate_activo = false
+	_detener_goteo_cubierta()
+	fase_cambiada.emit(int(_fase_jefe))
+	_restaurar_travesia()
+	if reemerger:
+		emerger()
+	return true
+
+
+## La puerta maestra vive en el nivel: si el nivel la tiene desactivada,
+## la tecla X tampoco detona aunque el flag propio esté activo.
+func _trampas_debug_permitidas_por_nivel() -> bool:
+	var p: Node = get_parent()
+	while is_instance_valid(p):
+		if "trampas_debug_activas" in p:
+			return bool(p.get("trampas_debug_activas"))
+		p = p.get_parent()
+	return true
+
+
+## Fuerza la detonación y secuencia completa de destrucción del jefe inmediatamente (debug, tecla X).
+## Es, junto a la vida a 0, la única vía autorizada de muerte (ver _morir_jefe).
 func explotar_debug() -> void:
 	if _jefe_muerto:
 		return
+	_muerte_debug_autorizada = true
 	if is_instance_valid(_tween_crucero_fondo) and _tween_crucero_fondo.is_running():
 		_tween_crucero_fondo.kill()
 	# Si está sumergido, emergiendo o en fase 2, colocarlo en superficie en el punto de combate
@@ -317,6 +384,8 @@ func explotar_debug() -> void:
 
 func take_damage(amount: float) -> void:
 	if _jefe_muerto:
+		return
+	if amount <= 0.0:
 		return
 	if _is_invulnerable:
 		return
@@ -540,7 +609,7 @@ func _restaurar_materiales_flash() -> void:
 
 
 ## Virtual de la base: en el jefe no libera, encadena a fase 2.
-## El disparo Lonko lo ejecuta _entrar_fase2 de forma explÃ­cita.
+## El disparo Lonko lo ejecuta _entrar_fase2 de forma explícita.
 func _iniciar_sumersion() -> void:
 	if _jefe_muerto:
 		super._sumergirse_y_liberar()
@@ -550,9 +619,26 @@ func _iniciar_sumersion() -> void:
 	_entrar_fase2()
 
 
+## Blindaje: la liberación con queue_free de la base solo existe para
+## submarinos comunes. En el jefe, en vida equivale a "morir antes de
+## tiempo" (desaparece con la barra > 0), así que se redirige a fase 2.
+func _sumergirse_y_liberar() -> void:
+	if not _jefe_muerto:
+		_iniciar_sumersion()
+		return
+	super._sumergirse_y_liberar()
+
+
+## Muerte real del jefe. Solo se ejecuta si la barra llegó a 0
+## (take_damage letal) o si la tecla X lo autorizó (explotar_debug).
+## Cualquier otra llamada (fase 2, hundimientos, oleadas) se ignora.
 func _morir_jefe() -> void:
 	if _jefe_muerto:
 		return
+	if vida_actual_jefe > 0 and not _muerte_debug_autorizada:
+		push_warning("JefeSubmarinoRio: _morir_jefe bloqueado con vida %d (solo vida 0 o tecla X)" % vida_actual_jefe)
+		return
+	_muerte_debug_autorizada = false
 	if is_instance_valid(_tween_crucero_fondo) and _tween_crucero_fondo.is_running():
 		_tween_crucero_fondo.kill()
 	_crucero_fondo_completado = true

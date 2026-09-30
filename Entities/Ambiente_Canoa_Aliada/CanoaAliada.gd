@@ -91,6 +91,24 @@ const VOLUMEN_SILENCIO_DB: float = -80.0
 @export var escala_splash_maderos_canoa: float = 0.22  ## Escala de las ondas en el agua generadas por los maderos
 @export var cantidad_maderos_impacto: int = 4  ## Cantidad de maderos arrojados al impactar
 
+# === TRIPULACIÓN ===
+@export_category("Tripulación")
+@export var tripulantes_visibles: bool = true:  ## Si false, oculta a los tripulantes (visual y proceso)
+	set(v):
+		tripulantes_visibles = v
+		_actualizar_visibilidad_tripulantes()
+
+# === SEPARACIÓN DE SUBMARINOS ===
+@export_category("Separación de Submarinos")
+@export var separacion_submarinos_activa: bool = true  ## Si true, nunca atraviesa submarinos: tamboleo + separación
+@export var medio_casco_submarino_defecto: float = 5.0  ## Medio casco si el submarino no informa el suyo (m)
+@export var margen_casco_submarino: float = 1.5  ## Margen extra despejado a cada lado del casco (m)
+@export var margen_profundidad_submarinos: float = 4.0  ## Rango en Z para considerar el mismo cauce (m)
+@export var velocidad_separacion_submarino: float = 8.0  ## Velocidad de salida del casco (m/s)
+@export var duracion_tamboleo_submarino: float = 1.2  ## Duración del tamboleo al chocar (s)
+@export var multiplicador_tamboleo_submarino: float = 2.5  ## Intensidad del tamboleo respecto al oleaje base
+@export var cooldown_tamboleo_submarino: float = 3.0  ## Tiempo mínimo entre tamboleos (s)
+
 # === ESTADO PRIVADO ===
 var _tiempo: float = 0.0
 var _posicion_base: Vector3 = Vector3.ZERO
@@ -116,6 +134,8 @@ var _audio_navegacion_b: AudioStreamPlayer = null
 var _reloj_audio_voz: float = 0.0
 var _voz_activa: int = 0
 var _en_crossfade: bool = false
+var _cooldown_tamboleo_sub: float = 0.0
+var _sub_solapado: Node3D = null
 var _seq_oleaje: int = 0
 var _amplitudes_oleaje_base: Dictionary = {}
 var _tween_oleaje: Tween = null
@@ -128,6 +148,7 @@ func _ready() -> void:
 	_rotacion_base = rotation_degrees
 	_inicializar_fases()
 	_aplicar_capa_visual_recursiva(self)
+	_actualizar_visibilidad_tripulantes()
 	_inicializar_sonido_navegacion()
 	_flotando = flotar_al_iniciar
 	set_process(_flotando or _navegando)
@@ -141,6 +162,8 @@ func _process(delta: float) -> void:
 		_actualizar_navegacion(delta)
 
 	_actualizar_sonido_navegacion(delta)
+
+	_procesar_separacion_submarinos(delta)
 
 	if not _flotando:
 		return
@@ -400,6 +423,11 @@ func _restaurar_amplitudes_base() -> void:
 		amplitud_guinada = float(_amplitudes_oleaje_base["gui"])
 
 
+## Muestra u oculta a los tripulantes (visual y proceso) sin tocar la canoa.
+func fijar_tripulantes_visibles(visibles: bool) -> void:
+	tripulantes_visibles = visibles
+
+
 ## Oculta inmediatamente la canoa y a sus tripulantes y desactiva su procesamiento.
 func ocultar_y_desactivar() -> void:
 	visible = false
@@ -417,6 +445,16 @@ func ocultar_y_desactivar() -> void:
 ## Indica si la canoa se está moviendo actualmente.
 func esta_flotando() -> bool:
 	return _flotando
+
+
+## Indica si la canoa está separándose de un submarino solapado.
+func esta_separando_submarino() -> bool:
+	return is_instance_valid(_sub_solapado)
+
+
+## Retorna el submarino del que se está separando, si lo hay.
+func obtener_submarino_solapado() -> Node3D:
+	return _sub_solapado if is_instance_valid(_sub_solapado) else null
 
 
 ## Indica si el sonido de navegación está activo en cualquiera de las voces de audio.
@@ -460,6 +498,82 @@ func calcular_rotacion_grados(tiempo: float) -> Vector3:
 
 
 # === FUNCIONES PRIVADAS ===
+## Separación anti-solape con submarinos: ninguna canoa aliada atraviesa un
+## casco. Al solaparse con un submarino en superficie del mismo cauce, la
+## canoa hace tamboleo (sacudida_oleaje) y sale hacia el lado más cercano
+## hasta dejar el casco despejado. Luego retoma su navegación con normalidad.
+func _procesar_separacion_submarinos(delta: float) -> void:
+	_cooldown_tamboleo_sub = maxf(0.0, _cooldown_tamboleo_sub - maxf(delta, 0.0))
+	if not separacion_submarinos_activa:
+		_sub_solapado = null
+		return
+	var sub: Node3D = _buscar_submarino_solapado_cercano()
+	_sub_solapado = sub
+	if sub == null:
+		return
+	var medio: float = _medio_casco_submarino(sub)
+	# Comparación en espacio global; el empuje se aplica en base local para
+	# respetar padres con desplazamiento (ej. controlador de trayectorias).
+	var dx: float = global_position.x - sub.global_position.x
+	if absf(dx) >= medio:
+		return
+	if _cooldown_tamboleo_sub <= 0.0:
+		_cooldown_tamboleo_sub = cooldown_tamboleo_submarino
+		sacudida_oleaje(duracion_tamboleo_submarino, multiplicador_tamboleo_submarino)
+	var lado: float = -1.0 if dx <= 0.0 else 1.0
+	var desfase_local: float = _posicion_base.x - global_position.x
+	var x_segura: float = sub.global_position.x + lado * medio + desfase_local
+	_posicion_base.x = move_toward(_posicion_base.x, x_segura, maxf(velocidad_separacion_submarino, 0.5) * maxf(delta, 0.001))
+	position.x = _posicion_base.x + calcular_desplazamiento(_tiempo).x
+
+
+## Busca un submarino en superficie del mismo cauce lo bastante cerca como
+## para solaparse con la canoa. Solo grupos "submarino"/"submarinos".
+func _buscar_submarino_solapado_cercano() -> Node3D:
+	if get_tree() == null:
+		return null
+	var vistos: Array[int] = []
+	for grupo in ["submarino", "submarinos"]:
+		for n in get_tree().get_nodes_in_group(grupo):
+			if not (n is Node3D):
+				continue
+			var sub: Node3D = _validar_submarino_separable(n)
+			if sub == null or vistos.has(sub.get_instance_id()):
+				continue
+			vistos.append(sub.get_instance_id())
+			if absf(sub.global_position.z - global_position.z) > margen_profundidad_submarinos:
+				continue
+			var medio: float = _medio_casco_submarino(sub)
+			if absf(sub.global_position.x - global_position.x) < medio:
+				return sub
+	return null
+
+
+## Valida que el nodo sea un submarino separable: en superficie y no destruido.
+func _validar_submarino_separable(nodo: Node) -> Node3D:
+	var p: Node = nodo
+	while is_instance_valid(p):
+		if p.is_in_group("submarino") or p.is_in_group("submarinos"):
+			if p is Node3D:
+				if p.has_method("esta_en_superficie") and not bool(p.call("esta_en_superficie")):
+					return null
+				if "_jefe_muerto" in p and bool(p.get("_jefe_muerto")):
+					return null
+				return p as Node3D
+			return null
+		p = p.get_parent()
+	return null
+
+
+## Medio casco del submarino (informa su margen_bloqueo_proa o el defecto).
+func _medio_casco_submarino(sub: Node) -> float:
+	if is_instance_valid(sub) and "margen_bloqueo_proa" in sub:
+		var m = sub.get("margen_bloqueo_proa")
+		if m is int or m is float:
+			return maxf(float(m), 0.0) + margen_casco_submarino
+	return medio_casco_submarino_defecto + margen_casco_submarino
+
+
 func _actualizar_navegacion(delta: float) -> void:
 	# Rampa suave: la velocidad efectiva persigue al objetivo sin saltos.
 	_velocidad_efectiva = move_toward(_velocidad_efectiva, _velocidad_navegacion, maxf(aceleracion_navegacion, 0.1) * delta)
@@ -664,3 +778,10 @@ func _aplicar_capa_visual_recursiva(nodo: Node) -> void:
 	for hijo in nodo.get_children():
 		_aplicar_capa_visual_recursiva(hijo)
 
+
+## Aplica tripulantes_visibles a toda la tripulación embarcada.
+func _actualizar_visibilidad_tripulantes() -> void:
+	for n in find_children("Tripulante*", "Node", true, false):
+		if n is Node3D:
+			(n as Node3D).visible = tripulantes_visibles
+		n.set_process(tripulantes_visibles)

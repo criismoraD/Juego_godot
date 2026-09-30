@@ -953,3 +953,29 @@ func test_optimizacion_duracion_hundimiento_muerte() -> void:
 	# Assert: la duración del hundimiento debe ser ágil para no frenar el nivel
 	assert_true(duracion <= 4.5, "La duracion de hundimiento debe ser ágil (<= 4.5s)")
 
+
+func test_morir_bloqueado_con_vida_positiva() -> void:
+	# Arrange: jefe intacto en superficie
+	_jefe._fase_jefe = 0
+	_jefe.current_state = 2
+	_jefe._altura_objetivo_y = 12.0
+	assert_eq(_jefe.vida_actual_jefe, 43, "Precondición: vida llena")
+	# Act: llamada directa sin vida 0 ni tecla X
+	_jefe._morir_jefe()
+	# Assert: no muere (solo vida 0 o X)
+	assert_false(_jefe._jefe_muerto, "Con vida > 0 y sin X no debe morir")
+
+
+func test_dano_cero_o_negativo_se_ignora() -> void:
+	# Arrange: superficie
+	_jefe._fase_jefe = 0
+	_jefe.current_state = 2
+	_jefe._altura_objetivo_y = 12.0
+	# Act: daños inválidos
+	_jefe.take_damage(0.0)
+	_jefe.take_damage(-5.0)
+	# Assert: vida intacta y sin fase 2 ni muerte
+	assert_eq(_jefe.vida_actual_jefe, 43, "El daño <= 0 debe ignorarse")
+	assert_false(_jefe._jefe_muerto, "No debe morir con daño inválido")
+	assert_eq(_jefe.obtener_fase(), 0, "No debe abandonar fase 1")
+

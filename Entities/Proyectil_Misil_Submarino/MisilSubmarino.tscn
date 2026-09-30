@@ -28,10 +28,10 @@ color_ramp = SubResource("GradientTexture_estela")
 transparency = 1
 cull_mode = 2
 shading_mode = 0
+specular_mode = 1
 vertex_color_use_as_albedo = true
 albedo_color = Color(1, 0.6, 0.2, 1)
 
-specular_mode = 1
 [sub_resource type="SphereMesh" id="SphereMesh_estela"]
 material = SubResource("StandardMaterial_estela")
 radius = 0.06
@@ -45,10 +45,11 @@ script = ExtResource("1_script")
 [node name="ModeloMisil" parent="." unique_id=1338595676 instance=ExtResource("2_model")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1169329998]
-transform = Transform3D(1.0791246, 0, 0, 0, 1.6376094, 0, 0, 0, 1.7005769, 0, 0.3303085, 0.037240148)
+transform = Transform3D(1.9465067, 0, 0, 0, 1.9659358, 0, 0, 0, 1.9726658, 0, 0, 0)
 shape = SubResource("SphereShape_misil")
 
 [node name="EstelaCaida" type="GPUParticles3D" parent="." unique_id=1219354913]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.1552684)
 emitting = false
 amount = 28
 lifetime = 0.45

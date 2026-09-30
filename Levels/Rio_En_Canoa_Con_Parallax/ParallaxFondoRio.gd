@@ -3,10 +3,12 @@ class_name ParallaxFondoRio
 extends Node3D
 
 ## Controlador de Parallax 3D para el escenario 'Rio en canoa con paralax'.
-## Gestiona dos capas de profundidad:
-##   - Fondo lejano: Atardecer (Fondo nivel 6 atardecer) a Z profunda con deriva suave.
-##   - Fondo intermedio: Rocas y tierra (Fondo terroso nivel 6) en loop continuo horizontal.
-## Permite visualizar y editar los fondos directamente en el editor 3D de Godot.
+## REGLA DEL NIVEL RIO: solo el fondo de video es 100% estatico (sigue a la
+## camara 1:1, factor 0.0). Todo lo demas hace scroll parallax: a mas
+## distancia (Z mas negativa) mas lento se mueve.
+## Orden lejos -> cerca (lento -> rapido):
+##   Video (0.0) < Nubes (0.08) < Arboles (0.18) < BosqueRojo (0.25)
+##   < Cordillera/Reflejo/Casa/Piso/ArbolCordillera (0.35) < Niebla (0.5).
 
 # === CONSTANTES ===
 const VIDEO_FONDO_OGV: VideoStream = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Texturas/Fondo estatico.ogv")
@@ -38,11 +40,17 @@ const PROFUNDIDAD_TERROSO: float = -20.0
 	set(v):
 		velocidad_terroso = v
 		velocidad_base = v
-@export var factor_cordillera: float = 0.35  ## Capa más cercana del fondo (más rápida)
-@export var factor_arboles: float = 0.18  ## Capa intermedia de árboles
-@export var factor_nubes: float = 0.08  ## Capa lejana de nubes
-@export var factor_fondo_video: float = 0.0  ## Fondo de video estático (0.0 = sin desplazamiento parallax)
+@export var factor_cordillera: float = 0.35  ## Fondo cercano (el mas rapido del fondo)
+@export var factor_arboles: float = 0.18  ## Arboles lejanos (Z ~ -104)
+@export var factor_nubes: float = 0.08  ## Nubes, lo mas lejano con movimiento (Z ~ -110)
+@export var factor_fondo_video: float = 0.0  ## Fondo de video 100% estatico (0.0 = sin desplazamiento parallax, solo sigue camara)
 @export var factor_atardecer: float = 0.0  ## Compatibilidad
+@export var factor_reflejo: float = 0.35  ## Reflejo espejo de la cordillera: DEBE igualar a la cordillera
+@export var factor_piso_fondo: float = 0.35  ## Piso de fondo a la misma profundidad que la cordillera
+@export var factor_casa_boneta: float = 0.35  ## Casa a la misma profundidad que la cordillera (Z ~ -80)
+@export var factor_arbol_cordillera: float = 0.35  ## Arboles asentados sobre el piso: DEBEN igualar al piso
+@export var factor_agua_textura: float = 0.30  ## Agua entre bosque y cordillera
+@export var factor_niebla: float = 0.50  ## Niebla cercana (Z ~ -34): mas rapida que la cordillera
 @export var velocidad_reproduccion_video: float = 0.03  ## Velocidad absurdamente lenta del video de fondo
 
 @export_category("Fondo de Video")
@@ -526,8 +534,8 @@ func _actualizar_loop_reflejo(delta: float) -> void:
 	if not sincronizar_reflejo_con_cordillera or _segmentos_reflejo.is_empty():
 		return
 
-	# Velocidad idéntica a la cordillera para que el reflejo la acompañe
-	var paso: float = velocidad_base * factor_cordillera * delta
+	# Espejo de la cordillera: misma velocidad para no despegarse de ella.
+	var paso: float = velocidad_base * factor_reflejo * delta
 	for seg in _segmentos_reflejo:
 		if is_instance_valid(seg):
 			seg.position.x -= paso
@@ -575,6 +583,30 @@ func _inicializar_capa_piso_aliado() -> void:
 	_segmentos_piso_aliado.sort_custom(func(a: Node3D, b: Node3D) -> bool:
 		return a.position.x < b.position.x
 	)
+
+	_calibrar_ancho_piso_desde_escena()
+
+
+## Auto-calibra el paso del wrap con la separación real de la escena.
+## El valor manual de ancho_segmento_piso queda como fallback: si la mediana
+## de huecos globales es sana (1-12 m) se adopta para no abrir grietas.
+func _calibrar_ancho_piso_desde_escena() -> void:
+	if _segmentos_piso_aliado.size() < 2:
+		return
+	var xs: Array[float] = []
+	for piso in _segmentos_piso_aliado:
+		if is_instance_valid(piso):
+			xs.append((piso as Node3D).global_position.x)
+	if xs.size() < 2:
+		return
+	xs.sort()
+	var huecos: Array[float] = []
+	for i in range(1, xs.size()):
+		huecos.append(xs[i] - xs[i - 1])
+	huecos.sort()
+	var mediana: float = huecos[huecos.size() / 2]
+	if mediana >= 1.0 and mediana <= 12.0:
+		ancho_segmento_piso = mediana
 
 
 func _es_segmento_piso(nodo: Node) -> bool:
@@ -758,18 +790,48 @@ func _actualizar_loop_piso_aliado(delta: float) -> void:
 	if not sincronizar_piso_con_cordillera or _segmentos_piso_aliado.is_empty():
 		return
 
-	# Velocidad idéntica a la cordillera para que se muevan como si fuera uno solo
-	var paso: float = velocidad_base * factor_cordillera * delta
+	# Piso de fondo a la profundidad de la cordillera: factor propio (por defecto igual).
+	# NOTA: se opera en coordenadas GLOBALES. Los pisos cuelgan del nivel raiz
+	# (desplazado en X) y comparar position.x local con la camara global
+	# provocaba un wrap masivo que hacia desaparecer la franja de tierra.
+	var paso: float = velocidad_base * factor_piso_fondo * delta
 	for piso in _segmentos_piso_aliado:
 		if is_instance_valid(piso):
-			piso.position.x -= paso
+			(piso as Node3D).global_position.x -= paso
 
+	_envolver_piso_global()
+
+
+## Wrap del piso en espacio global: mantiene la franja de tierra continua.
+## Los segmentos que quedan tras la camara reaparecen contiguos a la derecha.
+func _envolver_piso_global() -> void:
+	if _segmentos_piso_aliado.is_empty():
+		return
 	var x_cam: float = _obtener_x_camara()
-	var contenedor: Node = _segmentos_piso_aliado[0].get_parent() if is_instance_valid(_segmentos_piso_aliado[0]) else null
-	var x_cam_local: float = (contenedor as Node3D).to_local(Vector3(x_cam, 0.0, 0.0)).x if (contenedor is Node3D and contenedor != self and contenedor != get_parent()) else x_cam
-	var limite_izquierdo: float = x_cam_local - 40.0
+	var limite_izq: float = x_cam - margen_reciclaje_atras
 
-	_envolver_segmentos(_segmentos_piso_aliado, ancho_segmento_piso, limite_izquierdo)
+	var x_maxima: float = -INF
+	for piso in _segmentos_piso_aliado:
+		var nodo := piso as Node3D
+		if is_instance_valid(nodo) and nodo.global_position.x > x_maxima:
+			x_maxima = nodo.global_position.x
+
+	var para_envolver: Array[Node3D] = []
+	for piso in _segmentos_piso_aliado:
+		var nodo := piso as Node3D
+		if is_instance_valid(nodo) and nodo.global_position.x <= limite_izq:
+			para_envolver.append(nodo)
+
+	if para_envolver.is_empty():
+		return
+
+	para_envolver.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		return a.global_position.x < b.global_position.x
+	)
+
+	for nodo in para_envolver:
+		nodo.global_position.x = x_maxima + ancho_segmento_piso
+		x_maxima = nodo.global_position.x
 
 
 func _inicializar_capa_agua_textura() -> void:
@@ -799,8 +861,8 @@ func _actualizar_loop_agua_textura(delta: float) -> void:
 	if not sincronizar_agua_textura_con_cordillera or _sprites_agua_textura.is_empty():
 		return
 
-	# Velocidad idéntica a la cordillera para completar el efecto parallax
-	var paso: float = velocidad_base * factor_cordillera * delta
+	# Capa intermedia: mas lenta que la cordillera porque esta mas lejos.
+	var paso: float = velocidad_base * factor_agua_textura * delta
 	for sprite in _sprites_agua_textura:
 		if is_instance_valid(sprite):
 			sprite.position.x -= paso
@@ -835,8 +897,8 @@ func _actualizar_loop_casa_boneta(delta: float) -> void:
 	if not sincronizar_casa_boneta_con_cordillera or _segmentos_casa_boneta.is_empty():
 		return
 
-	# Velocidad idéntica a la cordillera para no romper el efecto parallax
-	var paso: float = velocidad_base * factor_cordillera * delta
+	# Casa a la profundidad de la cordillera: factor propio (por defecto igual).
+	var paso: float = velocidad_base * factor_casa_boneta * delta
 	for casa in _segmentos_casa_boneta:
 		if is_instance_valid(casa):
 			casa.position.x -= paso
@@ -975,8 +1037,8 @@ func _actualizar_loop_niebla(delta: float) -> void:
 	if not sincronizar_niebla_con_cordillera or _segmentos_niebla.is_empty():
 		return
 
-	# Velocidad idéntica a la cordillera
-	var paso: float = velocidad_base * factor_cordillera * delta
+	# Niebla cercana (Z ~ -34): mas rapida que la cordillera, mas distancia = mas lento.
+	var paso: float = velocidad_base * factor_niebla * delta
 	for niebla in _segmentos_niebla:
 		if is_instance_valid(niebla):
 			niebla.position.x -= paso
@@ -1076,8 +1138,8 @@ func _actualizar_loop_arbol_cordillera(delta: float) -> void:
 	if not sincronizar_arbol_cordillera or _segmentos_arbol_cordillera.is_empty():
 		return
 
-	# Velocidad idéntica a la cordillera para no romper el efecto parallax
-	var paso: float = velocidad_base * factor_cordillera * delta
+	# Arboles asentados sobre el piso de fondo: igualan al piso para no flotar.
+	var paso: float = velocidad_base * factor_arbol_cordillera * delta
 	for arbol in _segmentos_arbol_cordillera:
 		if is_instance_valid(arbol):
 			arbol.position.x -= paso

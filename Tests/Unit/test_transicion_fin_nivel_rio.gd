@@ -159,26 +159,33 @@ func test_nivel_rio_terminar_nivel_despliega_pantalla() -> void:
 	pantalla.queue_free()
 
 
-func test_nivel_rio_deteccion_coordenada_fin_dispara_terminar_nivel() -> void:
-	# Arrange
+func test_bloque_fin_de_mision_dispara_terminar_nivel() -> void:
+	# Arrange: bloque FinDeMision en X=100, canoa antes del bloque
 	var nivel: Node3D = SCRIPT_NIVEL_RIO.new() as Node3D
-	nivel.set("x_fin_nivel", 100.0)
 	add_child_autofree(nivel)
 
 	var canoa_dummy := Node3D.new()
 	canoa_dummy.name = "CanoaProtagonistaRio"
-	canoa_dummy.position.x = 50.0
+	canoa_dummy.position = Vector3(0.0, 0.0, 0.0)
 	nivel.add_child(canoa_dummy)
 	nivel.set("canoa_protagonista", canoa_dummy)
 
-	# Act 1: Antes de alcanzar la meta no debe terminar
-	nivel.call("_procesar_fin_de_nivel")
-	assert_false(bool(nivel.call("esta_nivel_terminado")), "No debe terminar si X < x_fin_nivel")
+	var bloque: FinDeMision = FinDeMision.new()
+	bloque.name = "FinDeMision"
+	nivel.add_child(bloque)
+	bloque.global_position = Vector3(100.0, 0.0, 0.0)
+	nivel.call("_conectar_bloque_fin_mision")
 
-	# Act 2: Al cruzar la coordenada meta debe terminar
+	# Act 1: Antes de tocar el bloque no debe terminar
+	nivel.call("_comprobar_fin_de_mision")
+	assert_false(bool(nivel.call("esta_nivel_terminado")), "No debe terminar sin tocar el bloque")
+	assert_false(bloque.esta_cumplida(), "El bloque no debe cumplirse lejos")
+
+	# Act 2: Al tocar el bloque debe terminar (única vía)
 	canoa_dummy.position.x = 101.0
-	nivel.call("_procesar_fin_de_nivel")
-	assert_true(bool(nivel.call("esta_nivel_terminado")), "Debe terminar al cruzar X >= x_fin_nivel")
+	nivel.call("_comprobar_fin_de_mision")
+	assert_true(bloque.esta_cumplida(), "El bloque debe cumplirse al tocarlo")
+	assert_true(bool(nivel.call("esta_nivel_terminado")), "Debe terminar al tocar el bloque")
 
 	# Limpieza: matar la transición viva (si completa, pausaría el árbol y contaminaría otros tests)
 	var pantalla_fin = nivel.call("obtener_pantalla_fin_nivel")

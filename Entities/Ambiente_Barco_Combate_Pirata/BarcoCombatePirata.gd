@@ -37,7 +37,7 @@ const CUBIERTAS_GLB: Array = [
 @export_range(0, 4, 1) var cantidad_nadadoras: int = 2
 @export var velocidad_nado: float = 0.9  ## m/s de cada nadadora
 @export var offset_y_agua: float = -0.13  ## Del origen del casco al agua (semisumergidas a la altura del pecho)
-@export var escala_nadadoras: float = 0.8  ## Igual que la tripulación embarcada (PirataGoblin.tscn)
+@export var escala_nadadoras: float = 1.0  ## Igual que las demás goblins piratas del nivel (tripulación y submarinos: 1.0)
 @export var tiempo_nadadoras_en_cuadro: float = 10.0  ## Si siguen en cuadro, se desvanecen como al morir
 
 @export_category("Onda al Hundirse")

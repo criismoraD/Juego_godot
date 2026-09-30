@@ -412,6 +412,7 @@ func test_barco_destruido_suelta_dos_nadadoras_en_el_agua() -> void:
 		assert_eq(nd.direccion_x, -1.0, "Barco quieto: rumbo a la izquierda")
 		assert_almost_eq(nd.rotation.y, -PI * 0.5, 0.01, "Girada de lado (perfil) hacia el rumbo")
 		assert_almost_eq(nd.scale.x, barco.escala_nadadoras, 0.01, "Tamaño de tripulación")
+		assert_almost_eq(nd.scale.x, 1.0, 0.01, "Igual que las demás goblins piratas del nivel (1.0)")
 		assert_eq(nd.tiempo_maximo_visible, 10.0, "10 segundos en cuadro antes de desvanecerse")
 
 

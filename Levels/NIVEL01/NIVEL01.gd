@@ -266,15 +266,11 @@ func _ready():
 			reproducir_sonido_ambiente = false
 			musica_inicial_indice = 10
 			mantener_musica_nivel = true
-		# Nivel Pueblo: 100% neutral y pacífico, sin enemigos ni oleadas
+	# Nivel Pueblo: 100% neutral y pacífico, sin enemigos ni oleadas
+	# Nivel Ciénaga/Pantano: travesía con cámara seguidora, también sin oleadas
+	if es_nivel_sin_oleadas():
 		if is_instance_valid(wave_spawner):
-			wave_spawner.detener_spawning()
-			wave_spawner.set_process(false)
-			wave_spawner.set_physics_process(false)
-			wave_spawner.cola_spawn.clear()
-			wave_spawner.active_goblins.clear()
-			wave_spawner.enemigos_por_oleada = 0
-			wave_spawner.is_wave_active = false
+			_apagar_spawner_oleadas()
 		for enemy in get_tree().get_nodes_in_group("enemies"):
 			if is_instance_valid(enemy):
 				enemy.remove_from_group("enemies")
@@ -759,6 +755,8 @@ func _ajustar_subviewport_video_fondo(tamano_base: Vector2i) -> void:
 
 func _configurar_capas_dof_fondo() -> void:
 	_asignar_capa_visual_recursiva(busto_bronce_fondo, CAPA_VISUAL_FONDO_DOF)
+	for busto_extra in find_children("BUSTO_BRONCE*", "Node3D", true, false):
+		_asignar_capa_visual_recursiva(busto_extra, CAPA_VISUAL_FONDO_DOF)
 	_asignar_capa_visual_recursiva(torre2_fondo, CAPA_VISUAL_FONDO_DOF)
 	var campamento := find_child("Campamento", true, false)
 	if campamento:
@@ -965,6 +963,29 @@ func es_nivel_pueblo() -> bool:
 	return name == "Nivel Pueblo" or "pueblo" in name.to_lower()
 
 
+## Retorna true si el nivel actual es de travesía sin oleadas de combate
+## (Pueblo, Ciénaga/Pantano u otros niveles de recorrido con cámara seguidora).
+## Estos niveles nunca spawnean pacíficos ni oleadas; la cámara sigue al jugador.
+func es_nivel_sin_oleadas() -> bool:
+	if es_nivel_pueblo():
+		return true
+	var nombre_llano: String = name.to_lower()
+	return "cienaga" in nombre_llano or "ciénaga" in nombre_llano or "pantano" in nombre_llano or "swamp" in nombre_llano
+
+
+## Apaga por completo el WaveSpawner: sin oleadas, sin procesos y sin cola.
+func _apagar_spawner_oleadas() -> void:
+	if not is_instance_valid(wave_spawner):
+		return
+	wave_spawner.detener_spawning()
+	wave_spawner.set_process(false)
+	wave_spawner.set_physics_process(false)
+	wave_spawner.cola_spawn.clear()
+	wave_spawner.active_goblins.clear()
+	wave_spawner.enemigos_por_oleada = 0
+	wave_spawner.is_wave_active = false
+
+
 ## Retorna la referencia a la luz frontal del agua de Nivel Pueblo
 func obtener_luz_agua_pueblo() -> OmniLight3D:
 	if not is_instance_valid(_luz_agua_pueblo):
@@ -1014,8 +1035,9 @@ func _actualizar_render_subviewport_fondo(delta: float) -> void:
 
 
 func _iniciar_nivel_0():
-	# Nivel Pueblo: sin evento del emisario ni pacíficos.
-	if es_nivel_pueblo():
+	# Nivel Pueblo / Ciénaga-Pantano: sin evento del emisario ni pacíficos ni oleadas.
+	if es_nivel_sin_oleadas():
+		_apagar_spawner_oleadas()
 		return
 	estado_actual = NivelEstado.NIVEL_0
 

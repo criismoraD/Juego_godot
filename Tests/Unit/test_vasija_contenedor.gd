@@ -346,8 +346,7 @@ func test_canasto_que_cae_rompe_vasija() -> void:
 
 
 # === CONTORNO TOON ===
-func test_vasija_tiene_outline_cartoon() -> void:
-	# Arrange & Act
+func test_vasija_tiene_outline_cartoon() -> void:	# Arrange & Act
 	var vasija := _crear_vasija()
 	await get_tree().process_frame
 
@@ -360,4 +359,58 @@ func test_vasija_tiene_outline_cartoon() -> void:
 	assert_eq(sm.get_shader_parameter("outline_color"), Color(0.0, 0.0, 0.0, 1.0), "Contorno negro puro")
 	assert_gt(vasija._mallas.size(), 0, "Debe tener mallas")
 	assert_true(vasija._mallas[0].is_in_group("outline_meshes"), "Mallas deben pertenecer a outline_meshes")
+
+
+# === DAÑO SOLO EN PANTALLA (ANTI MUNICIÓN FANTASMA) ===
+func _crear_camara_activa(pos: Vector3) -> Camera3D:
+	var camara := Camera3D.new()
+	add_child_autofree(camara)
+	camara.global_position = pos
+	camara.make_current()
+	return camara
+
+
+func test_flecha_perdida_fuera_de_pantalla_no_rompe_vasija() -> void:
+	# Arrange: cámara mirando al origen, vasija muy lejos del frustum
+	_crear_camara_activa(Vector3(0, 2, 10))
+	var vasija := _crear_vasija()
+	vasija.global_position = Vector3(500, 0, -7.6)
+	await get_tree().process_frame
+
+	# Act: dos impactos de flecha perdida
+	vasija.recibir_golpe(1.0)
+	vasija.recibir_golpe(1.0)
+
+	# Assert: intacta, sin item fantasma
+	assert_false(vasija.esta_destruido(), "Fuera de pantalla no debe romperse")
+	assert_almost_eq(vasija.vida_contenedor, 2.0, 0.001, "La vida no debe bajar fuera de pantalla")
+
+
+func test_vasija_en_pantalla_si_recibe_dano() -> void:
+	# Arrange: vasija justo delante de la cámara activa
+	var camara := _crear_camara_activa(Vector3(0, 2, 10))
+	var vasija := _crear_vasija()
+	vasija.global_position = camara.global_position + Vector3(0, -1, -5)
+	await get_tree().process_frame
+
+	# Act
+	vasija.recibir_golpe(1.0)
+
+	# Assert
+	assert_almost_eq(vasija.vida_contenedor, 1.0, 0.001, "En pantalla sí debe dañarse")
+	assert_false(vasija.esta_destruido(), "Con 1 de vida sigue intacta")
+
+
+func test_gate_fuera_de_pantalla_desactivable() -> void:
+	# Arrange: sin cámara el daño pasa (compatibilidad con tests viejos)
+	var vasija := _crear_vasija()
+	vasija.danio_solo_en_pantalla = false
+	vasija.global_position = Vector3(500, 0, -7.6)
+
+	# Act
+	vasija.recibir_golpe(1.0)
+	vasija.recibir_golpe(1.0)
+
+	# Assert
+	assert_true(vasija.esta_destruido(), "Con el gate desactivado se rompe en cualquier sitio")
 
