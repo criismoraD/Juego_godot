@@ -59,8 +59,8 @@ const ALFA_TINTE_MAXIMO: float = 0.22
 const TEXTO_PROMPT_DEFECTO: String = "[E] Hablar"
 const ALTURA_DEFECTO_PROMPT: float = 1.25
 const LINEAS_DIALOGO_DEFECTO: PackedStringArray = [
-	"Soy Fukencia, guardiana de este pueblo.",
-	"Mi espada está a tu servicio, arquera."
+	"VEERA_PUEBLO_1",
+	"VEERA_PUEBLO_2"
 ]
 
 # ─────────────────────────────────────────────
@@ -197,8 +197,8 @@ const LINEAS_DIALOGO_DEFECTO: PackedStringArray = [
 @export var duracion_vinetas: float = 6.0  ## Duración en segundos de cada viñeta antes de auto-avanzar (0 = solo manual)
 ## Claves de traducción (translations.csv) o texto literal; SpeechBubbleUI las resuelve con tr().
 @export var lineas_dialogo: PackedStringArray = [
-	"Soy Veera, guardiana de este pueblo.",
-	"Mi espada está a tu servicio, arquera."
+	"VEERA_PUEBLO_1",
+	"VEERA_PUEBLO_2"
 ]
 
 # ─────────────────────────────────────────────

@@ -154,7 +154,7 @@ var min_ancho_marco_defensora: float = 240.0
 var max_ancho_marco_defensora: float = 750.0
 var min_alto_marco_defensora: float = 70.0
 var padding_defensora: Vector2 = Vector2(28.0, 18.0)
-var texto_defensora_personalizado: String = "¡Distingo varias siluetas en el horizonte!"
+var texto_defensora_personalizado: String = "DEFENSORA_SILUETAS"
 var velocidad_escritura_defensora: float = 0.025
 var duracion_defensora_defecto: float = 4.5
 # === TOGGLE UI ===
@@ -2339,7 +2339,7 @@ func mostrar_pantalla_victoria(titulo: String, on_continuar: Callable):
 
 	# Botón Continuar
 	var boton = Button.new()
-	boton.text = tr("BOTON_CONTINUAR") if TranslationServer.get_locale() != "" else "CONTINUAR"
+	boton.text = tr("BOTON_CONTINUAR")
 	boton.add_theme_font_size_override("font_size", 24)
 
 	var btn_style = StyleBoxFlat.new()
@@ -2754,7 +2754,7 @@ func escalar_marco_a_texto(texto: String, pos_override: Vector2 = Vector2.ZERO) 
 	if not marco_texto_defensora or not texto_defensora:
 		return Vector2.ZERO
 
-	texto_defensora.text = texto
+	texto_defensora.text = tr(texto)
 
 	var font: Font = texto_defensora.get_theme_default_font()
 	var font_size: int = texto_defensora.get_theme_font_size("font_size")

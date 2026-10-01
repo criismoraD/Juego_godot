@@ -4,7 +4,7 @@ extends CanvasLayer
 ## Barra superior de vida del jefe (Submarino, 43). Se muestra al emerger el
 ## jefe y se oculta al derrotarlo. Se conecta por código a las señales del jefe.
 
-@export var nombre_jefe: String = "SUBMARINO"
+@export var nombre_jefe: String = "BOSS_SUBMARINO_NOMBRE"
 @export var color_relleno: Color = Color(0.85, 0.15, 0.2, 1.0)
 @export var color_fondo: Color = Color(0.1, 0.1, 0.12, 0.85)
 
@@ -32,7 +32,7 @@ func _construir_ui() -> void:
 	_contenedor.offset_bottom = 64.0
 	add_child(_contenedor)
 	_etiqueta = Label.new()
-	_etiqueta.text = nombre_jefe
+	_etiqueta.text = tr(nombre_jefe)
 	_etiqueta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_etiqueta.add_theme_font_size_override("font_size", 20)
 	_etiqueta.add_theme_color_override("font_color", Color.WHITE)

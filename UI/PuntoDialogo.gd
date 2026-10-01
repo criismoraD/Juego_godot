@@ -7,7 +7,7 @@ extends Marker2D
 ## posición y configuración editable en el Inspector.
 
 @export_group("Contenido del Diálogo")
-@export_multiline var texto: String = "¡Distingo varias siluetas en el horizonte!":
+@export_multiline var texto: String = "DEFENSORA_SILUETAS":
 	set(value):
 		texto = value
 		if Engine.is_editor_hint():

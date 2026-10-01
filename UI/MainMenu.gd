@@ -58,16 +58,16 @@ func _on_cargar_pressed() -> void:
 	# Intentar cargar partida si existe save file
 	var save_path := "user://savegame.save"
 	if FileAccess.file_exists(save_path):
-		_mostrar_mensaje(tr("MENU_LOAD") + " - " + tr("Cargando..."))
+		_mostrar_mensaje(tr("MENU_LOAD") + " - " + tr("MENU_LOADING"))
 		# Por ahora ir a NIVEL01 con continuación si existe oleada guardada
 		await get_tree().create_timer(0.6).timeout
 		get_tree().change_scene_to_file("res://Levels/NIVEL01/NIVEL01.tscn")
 	else:
-		_mostrar_mensaje("No hay partida guardada / No save found", 2.0)
+		_mostrar_mensaje(tr("MENU_NO_SAVE"), 2.0)
 
 
 func _on_opciones_pressed() -> void:
-	_mostrar_mensaje("Opciones - En desarrollo / Options - Coming soon", 2.0)
+	_mostrar_mensaje(tr("MENU_OPTIONS_WIP"), 2.0)
 
 
 func _on_galeria_pressed() -> void:
@@ -81,7 +81,7 @@ func _on_galeria_pressed() -> void:
 
 
 func _on_creditos_pressed() -> void:
-	_mostrar_mensaje("Créditos - En desarrollo / Credits - Coming soon", 2.0)
+	_mostrar_mensaje(tr("MENU_CREDITS_WIP"), 2.0)
 
 
 func _mostrar_mensaje(texto: String, duracion: float = 0.0) -> void:

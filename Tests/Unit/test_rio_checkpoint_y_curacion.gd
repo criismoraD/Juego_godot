@@ -49,8 +49,8 @@ func test_destruccion_barco_checkpoint_guarda_posicion_y_activa_estado() -> void
 
 func test_notificacion_punto_guardado_texto_blanco_y_traduccion() -> void:
 	# Arrange
-	var texto_esperado: String = tr("Punto de guardado")
-	assert_true(texto_esperado.length() > 0, "tr('Punto de guardado') no debe ser vacío")
+	var texto_esperado: String = tr("PUNTO_DE_GUARDADO")
+	assert_true(texto_esperado.length() > 0, "tr('PUNTO_DE_GUARDADO') no debe ser vacío")
 
 	# Act: Ejecutar la notificación visual
 	_nivel._mostrar_notificacion_checkpoint()

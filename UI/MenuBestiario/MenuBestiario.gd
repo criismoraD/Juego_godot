@@ -354,7 +354,7 @@ func seleccionar_enemigo(idx: int) -> void:
 
 	# Actualizar Stats
 	if lbl_val_numero:
-		lbl_val_numero.text = "N° %d" % int(datos.get("numero", idx + 1))
+		lbl_val_numero.text = tr("BESTIARIO_NUMERO_FORMATO") % int(datos.get("numero", idx + 1))
 	if lbl_val_hp:
 		lbl_val_hp.text = str(datos.get("hp", "1"))
 	if lbl_val_att:
@@ -401,7 +401,7 @@ func _actualizar_retrato(datos: Dictionary) -> void:
 			if placeholder_retrato:
 				placeholder_retrato.visible = true
 			if lbl_placeholder:
-				lbl_placeholder.text = "[ %s ]\n\n(Coloca la imagen PNG en:\n%s)" % [
+				lbl_placeholder.text = tr("BESTIARIO_RETRATO_FALTANTE") % [
 					_obtener_nombre_enemigo(datos),
 					datos.get("imagen_path", "")
 				]

@@ -368,7 +368,7 @@ func _ready():
 			return
 		if oleada_retorno == 5:
 			_mostrar_victoria_con_continuar(
-				tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleadas completadas!"
+				tr("NIVEL_1_COMPLETADO")
 			)
 		else:
 			transicion_carteles_en_progreso = true
@@ -1679,11 +1679,7 @@ func _on_nivel1_completado(_numero_oleada: int):
 		torre_de_asedio.desactivar_torre()
 
 	_mostrar_victoria_con_continuar(
-		(
-			tr("NIVEL_1_COMPLETADO")
-			if TranslationServer.get_locale() != ""
-			else "¡Oleadas completadas!"
-		)
+		tr("NIVEL_1_COMPLETADO")
 	)
 
 
@@ -1721,7 +1717,7 @@ func _mostrar_cartel_nivel1_completado() -> void:
 	add_child(overlay)
 
 	var label := _crear_label_transicion(
-		tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "NIVEL 1\nCOMPLETADO",
+		tr("NIVEL_1_COMPLETADO"),
 		Color(0.2, 1.0, 0.35)  # Verde brillante
 	)
 	overlay.add_child(label)
@@ -1758,15 +1754,15 @@ func _mostrar_cartel_level_01() -> void:
 func _mostrar_inter_nivel_continuar():
 	var msg = ""
 	if oleada_combate_actual == 1:
-		msg = tr("NIVEL_1_COMPLETADO") if TranslationServer.get_locale() != "" else "¡Oleada 1 completada!"
+		msg = tr("OLEADA_1_COMPLETADA")
 	elif oleada_combate_actual == 2:
-		msg = "¡Oleada 2 completada!"
+		msg = tr("OLEADA_2_COMPLETADA")
 	elif oleada_combate_actual == 3:
-		msg = "¡Oleada 3 completada!"
+		msg = tr("OLEADA_3_COMPLETADA")
 	elif oleada_combate_actual == 4:
-		msg = "¡Oleada 4 completada!"
+		msg = tr("OLEADA_4_COMPLETADA")
 	else:
-		msg = "¡Oleada 5 completada!"
+		msg = tr("OLEADA_5_COMPLETADA")
 
 	# Oleada 5: en lugar de la cortinilla negra, cinemática de Perrena. Al
 	# terminar sigue el flujo normal a oleada 6 (ver _continuar_oleada5).
@@ -2013,7 +2009,7 @@ func _mostrar_cartel_nivel_3() -> void:
 	overlay.name = "CartelNivel3"
 	add_child(overlay)
 
-	var texto = "Level 03"
+	var texto = tr("CARTEL_LEVEL_03")
 
 	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
 	overlay.add_child(label)
@@ -2032,7 +2028,7 @@ func _mostrar_cartel_nivel_4() -> void:
 	overlay.name = "CartelNivel4"
 	add_child(overlay)
 
-	var texto = "Level 04"
+	var texto = tr("CARTEL_LEVEL_04")
 
 	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
 	overlay.add_child(label)
@@ -2051,7 +2047,7 @@ func _mostrar_cartel_nivel_5() -> void:
 	overlay.name = "CartelNivel5"
 	add_child(overlay)
 
-	var texto = "Level 05"
+	var texto = tr("CARTEL_LEVEL_05")
 
 	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
 	overlay.add_child(label)
@@ -2070,7 +2066,7 @@ func _mostrar_cartel_nivel_6() -> void:
 	overlay.name = "CartelNivel6"
 	add_child(overlay)
 
-	var texto = "Level 06"
+	var texto = tr("CARTEL_LEVEL_06")
 
 	var label := _crear_label_transicion(texto, Color(1.0, 0.85, 0.2))  # Dorado
 	overlay.add_child(label)

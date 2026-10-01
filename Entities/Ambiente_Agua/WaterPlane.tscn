@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://cxqcex5ugbppo"]
 
+[ext_resource type="Script" path="res://Entities/Ambiente_Agua/WaterPlane.gd" id="1_script"]
 [ext_resource type="Material" uid="uid://cifxoxbexc8a0" path="res://Entities/Ambiente_Agua/Water_Back.tres" id="1_back_mat"]
 [ext_resource type="Material" uid="uid://dw02p8v0orn6c" path="res://Entities/Ambiente_Agua/Water_Front.tres" id="2_front_mat"]
 
@@ -16,6 +17,7 @@ subdivide_depth = 50
 center_offset = Vector3(0, 0, 16.666667)
 
 [node name="WaterPlane" type="Node3D" groups=["agua"] unique_id=1903931376]
+script = ExtResource("1_script")
 
 [node name="WaterPlane_Atras" type="MeshInstance3D" parent="." unique_id=1903931377]
 layers = 2

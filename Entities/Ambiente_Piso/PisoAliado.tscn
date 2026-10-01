@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_Piso/PisoAliado.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://ceixfsg6pedjp" path="res://Entities/Ambiente_Piso/PISO.glb" id="2_model"]
+
+[node name="PisoAliado" type="Node3D"]
+script = ExtResource("1_script")
+capa_visual = 2
+
+[node name="Model" parent="." instance=ExtResource("2_model")]

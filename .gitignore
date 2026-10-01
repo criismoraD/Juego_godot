@@ -42,3 +42,4 @@ build/
 Thumbs.db
 contexto.json
 test_anim_gargola.gd*
+scratch/

@@ -15,11 +15,18 @@ const INDICE_SUPERFICIE_PRINCIPAL: int = 0
 		if is_node_ready():
 			_aplicar_material()
 
+@export_flags_3d_render var capa_visual: int = 1:
+	set(nueva_capa):
+		capa_visual = nueva_capa
+		if is_node_ready():
+			_aplicar_capa_visual(self)
+
 @onready var modelo: Node3D = $Model
 
 
 func _ready() -> void:
 	_aplicar_material()
+	_aplicar_capa_visual(self)
 
 
 ## Aplica el material configurado a la instancia del modelo.
@@ -46,3 +53,12 @@ func _aplicar_a_instancias(nodo: Node) -> void:
 			malla_instancia.set_surface_override_material(INDICE_SUPERFICIE_PRINCIPAL, material_puente)
 	for hijo in nodo.get_children():
 		_aplicar_a_instancias(hijo)
+
+
+func _aplicar_capa_visual(nodo: Node) -> void:
+	if not is_instance_valid(nodo):
+		return
+	if nodo is VisualInstance3D and not (nodo is Light3D or nodo is Camera3D):
+		(nodo as VisualInstance3D).layers = capa_visual
+	for hijo in nodo.get_children():
+		_aplicar_capa_visual(hijo)

@@ -13,7 +13,7 @@ size = Vector3(2.5, 2.2, 2.5)
 [node name="VeeraChikita" type="Node3D" unique_id=-1200209086]
 script = ExtResource("1_script")
 material_npc = ExtResource("3_ssqf7")
-lineas_dialogo = PackedStringArray("Hola me llamo Veera, soy una cazadora de goblins", "Hoy estoy de buenas para una demostración gratis", "La ciénaga esta infectada de pieles verdes…")
+lineas_dialogo = PackedStringArray("VEERA_CHIKITA_1", "VEERA_CHIKITA_2", "VEERA_CHIKITA_3")
 
 [node name="Pivot" type="Node3D" parent="." unique_id=-1200209085]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)

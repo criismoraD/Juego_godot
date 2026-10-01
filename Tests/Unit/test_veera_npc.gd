@@ -41,8 +41,8 @@ func test_inicializacion_componentes_dialogo() -> void:
 	assert_not_null(sb, "Debe existir SpeechBubbleComponent")
 
 	assert_eq(_veera.lineas_dialogo.size(), 2, "Debe tener 2 viñetas configuradas")
-	assert_eq(_veera.lineas_dialogo[0], "Soy Fukencia, guardiana de este pueblo.", "Viñeta 1 literal")
-	assert_eq(_veera.lineas_dialogo[1], "Mi espada está a tu servicio, arquera.", "Viñeta 2 literal")
+	assert_eq(_veera.lineas_dialogo[0], "VEERA_PUEBLO_1", "Viñeta 1 por clave de traducción")
+	assert_eq(_veera.lineas_dialogo[1], "VEERA_PUEBLO_2", "Viñeta 2 por clave de traducción")
 
 
 func test_deteccion_proximidad_y_tinte_morado() -> void:
@@ -81,7 +81,7 @@ func test_flujo_completo_dialogo_dos_vinetas_con_e() -> void:
 	# Assert 1
 	assert_true(_veera.esta_hablando_dialogo(), "Debe estar en modo diálogo activo")
 	assert_eq(_veera.obtener_indice_dialogo(), 1, "Debe estar en la viñeta 1")
-	assert_signal_emitted_with_parameters(_veera, "dialogo_iniciado", ["Soy Fukencia, guardiana de este pueblo."])
+	assert_signal_emitted_with_parameters(_veera, "dialogo_iniciado", ["VEERA_PUEBLO_1"])
 	assert_true(sb.esta_hablando(), "El SpeechBubbleComponent debe estar activo con la viñeta 1")
 	assert_false(prompt.visible, "El prompt [E] Hablar debe ocultarse mientras se habla")
 
@@ -91,7 +91,7 @@ func test_flujo_completo_dialogo_dos_vinetas_con_e() -> void:
 	# Assert 2
 	assert_true(_veera.esta_hablando_dialogo(), "Debe seguir en modo diálogo activo")
 	assert_eq(_veera.obtener_indice_dialogo(), 2, "Debe estar en la viñeta 2")
-	assert_signal_emitted_with_parameters(_veera, "dialogo_avanzado", [2, "Mi espada está a tu servicio, arquera."])
+	assert_signal_emitted_with_parameters(_veera, "dialogo_avanzado", [2, "VEERA_PUEBLO_2"])
 	assert_true(sb.esta_hablando(), "El SpeechBubbleComponent debe seguir activo con la viñeta 2")
 
 	# Act 3: Tercer pulsado de E / cerrar diálogo

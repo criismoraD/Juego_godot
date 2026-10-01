@@ -1196,7 +1196,7 @@ sin_linea_negra = true
 distancia_recorrido = 7.0
 velocidad_caminar = 0.4
 dialogo_interactivo = true
-lineas_dialogo = PackedStringArray("Estoy pensando en unirme al Bando de Vesara", "El imperio está condenado", "Quizás pueda tomar uno de esos apuestos caballeros como esposo")
+lineas_dialogo = PackedStringArray("PIRATA_GOBLIN_PUEBLO_1", "PIRATA_GOBLIN_PUEBLO_2", "PIRATA_GOBLIN_PUEBLO_3")
 
 [node name="PirataGoblin npc 3" parent="." unique_id=353360172 instance=ExtResource("43_pirata_goblin")]
 transform = Transform3D(0.7855015, 0, 0, 0, 0.57775533, 0, 0, 0, 0.6191854, -2.4512408, 0.5063499, -5.3401985)
@@ -1204,7 +1204,7 @@ sin_linea_negra = true
 capa_visual = 2
 distancia_recorrido = 7.0
 velocidad_caminar = 0.4
-lineas_dialogo = PackedStringArray("Estoy pensando en unirme al Bando de Vesara", "El imperio está condenado", "Quizás pueda tomar uno de esos apuestos caballeros como esposo")
+lineas_dialogo = PackedStringArray("PIRATA_GOBLIN_PUEBLO_1", "PIRATA_GOBLIN_PUEBLO_2", "PIRATA_GOBLIN_PUEBLO_3")
 
 [node name="AzulinaPosando" parent="." unique_id=1755073977 instance=ExtResource("45_dyrav")]
 transform = Transform3D(-0.19482452, 0, -0.22813025, 0, 0.3, 0, 0.22813025, 0, -0.19482452, -5.5925226, 1.1736512, -2.421101)

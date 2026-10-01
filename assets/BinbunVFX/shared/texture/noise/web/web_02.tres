@@ -3,10 +3,9 @@
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_qikw8"]
 noise_type = 2
 seed = 12
-fractal_type = 3
 fractal_octaves = 3
-fractal_gain = 1.168
-fractal_weighted_strength = 1.0
+fractal_gain = 0.7
+fractal_weighted_strength = 0.6
 cellular_return_type = 6
 domain_warp_amplitude = 10.0
 domain_warp_frequency = 0.02

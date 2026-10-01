@@ -28,10 +28,18 @@ const SHADER_DEFAULT: Shader = preload("res://System/Shaders/alga_oleaje.gdshade
 		rizo_strength = nuevo_valor
 		_aplicar_parametros()
 
+@export_category("Capa Visual")
+@export_flags_3d_render var capa_visual: int = 1:
+	set(nueva_capa):
+		capa_visual = nueva_capa
+		if is_node_ready():
+			_aplicar_capa_visual(self)
+
 @onready var cuerpo: Sprite3D = $Cuerpo
 
 
 func _ready() -> void:
+	_aplicar_capa_visual(self)
 	if not is_instance_valid(cuerpo):
 		return
 	if cuerpo.texture == null:
@@ -73,3 +81,12 @@ func _aplicar_parametros() -> void:
 	sm.set_shader_parameter("oleaje_strength", oleaje_strength)
 	sm.set_shader_parameter("rizo_speed", rizo_speed)
 	sm.set_shader_parameter("rizo_strength", rizo_strength)
+
+
+func _aplicar_capa_visual(nodo: Node) -> void:
+	if not is_instance_valid(nodo):
+		return
+	if nodo is VisualInstance3D and not (nodo is Light3D or nodo is Camera3D):
+		(nodo as VisualInstance3D).layers = capa_visual
+	for hijo in nodo.get_children():
+		_aplicar_capa_visual(hijo)

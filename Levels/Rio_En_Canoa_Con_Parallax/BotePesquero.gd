@@ -23,6 +23,13 @@ const INDICE_SUPERFICIE_PRINCIPAL: int = 0
 @export var amplitud_balanceo: float = 1.5  ## Vaivén lateral en grados
 @export var amplitud_cabeceo: float = 1.0  ## Vaivén proa-popa en grados
 
+@export_category("Capa Visual")
+@export_flags_3d_render var capa_visual: int = 1:
+	set(nueva_capa):
+		capa_visual = nueva_capa
+		if is_node_ready():
+			_aplicar_capa_visual(self)
+
 # === VARIABLES PRIVADAS ===
 var _tiempo: float = 0.0
 var _pos_modelo_base: Vector3 = Vector3.ZERO
@@ -34,6 +41,7 @@ var _pos_modelo_base: Vector3 = Vector3.ZERO
 # === FUNCIONES BUILT-IN ===
 func _ready() -> void:
 	_aplicar_material()
+	_aplicar_capa_visual(self)
 	if is_instance_valid(modelo):
 		_pos_modelo_base = modelo.position
 
@@ -82,3 +90,12 @@ func _aplicar_flotacion() -> void:
 		0.0,
 		sin(_tiempo * TAU * 0.6) * deg_to_rad(amplitud_balanceo)
 	)
+
+
+func _aplicar_capa_visual(nodo: Node) -> void:
+	if not is_instance_valid(nodo):
+		return
+	if nodo is VisualInstance3D and not (nodo is Light3D or nodo is Camera3D):
+		(nodo as VisualInstance3D).layers = capa_visual
+	for hijo in nodo.get_children():
+		_aplicar_capa_visual(hijo)

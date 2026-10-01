@@ -17,6 +17,12 @@ const INDICE_SUPERFICIE_PRINCIPAL: int = 0
 		if is_node_ready():
 			_aplicar_material()
 
+@export_flags_3d_render var capa_visual: int = 1:
+	set(nueva_capa):
+		capa_visual = nueva_capa
+		if is_node_ready():
+			_aplicar_capa_visual(self)
+
 @export var fuego_activo: bool = true:
 	set(v):
 		fuego_activo = v
@@ -44,6 +50,7 @@ var _alpha_actual: float = 1.0
 
 func _ready() -> void:
 	_aplicar_material()
+	_aplicar_capa_visual(self)
 	_actualizar_estado_fuego()
 	if transparencia_activa and not Engine.is_editor_hint():
 		_preparar_materiales_unicos()
@@ -163,3 +170,12 @@ func _aplicar_alpha(alpha: float) -> void:
 		var color: Color = mat.albedo_color
 		color.a = alpha
 		mat.albedo_color = color
+
+
+func _aplicar_capa_visual(nodo: Node) -> void:
+	if not is_instance_valid(nodo):
+		return
+	if nodo is VisualInstance3D and not (nodo is Light3D or nodo is Camera3D):
+		(nodo as VisualInstance3D).layers = capa_visual
+	for hijo in nodo.get_children():
+		_aplicar_capa_visual(hijo)

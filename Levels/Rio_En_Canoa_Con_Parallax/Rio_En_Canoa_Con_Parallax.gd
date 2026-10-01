@@ -375,7 +375,7 @@ func _mostrar_notificacion_checkpoint() -> void:
 
 	var label := Label.new()
 	label.name = "LabelPuntoGuardado"
-	label.text = tr("Punto de guardado")
+	label.text = tr("PUNTO_DE_GUARDADO")
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_preset(Control.PRESET_TOP_WIDE)
