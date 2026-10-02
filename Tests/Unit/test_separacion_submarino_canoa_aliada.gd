@@ -58,7 +58,7 @@ func test_solape_dispara_tamboleo_y_separa_a_la_izquierda() -> void:
 
 	# Assert: proa despejada a la izquierda del casco
 	var x_segura: float = sub.global_position.x - MEDIO_CASCO_ESPERADO
-	assert_le(canoa.obtener_posicion_base().x, x_segura + 0.6, "Debe salir del casco hacia la izquierda")
+	assert_lte(canoa.obtener_posicion_base().x, x_segura + 0.6, "Debe salir del casco hacia la izquierda")
 	assert_lt(canoa.global_position.x, sub.global_position.x, "Nunca debe atravesar al submarino")
 
 
@@ -72,7 +72,7 @@ func test_solape_por_la_derecha_separa_a_la_derecha() -> void:
 
 	# Assert: sale hacia la derecha sin cruzar el casco
 	var x_segura: float = sub.global_position.x + MEDIO_CASCO_ESPERADO
-	assert_ge(canoa.obtener_posicion_base().x, x_segura - 0.6, "Debe salir del casco hacia la derecha")
+	assert_gte(canoa.obtener_posicion_base().x, x_segura - 0.6, "Debe salir del casco hacia la derecha")
 	assert_gt(canoa.global_position.x, sub.global_position.x, "Nunca debe cruzar hacia el otro lado")
 
 

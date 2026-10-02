@@ -243,6 +243,7 @@ func _setup_nodos_y_modelo() -> void:
 		model_root = find_child("Perrena", true, false) as Node3D
 	if model_root:
 		model_root.scale = Vector3(6.0, 6.0, 6.0)
+		model_root.position.z = -0.15
 		for mesh in model_root.find_children("*", "MeshInstance3D", true, false):
 			if mesh is MeshInstance3D:
 				(mesh as MeshInstance3D).material_override = MAT_PERRENA

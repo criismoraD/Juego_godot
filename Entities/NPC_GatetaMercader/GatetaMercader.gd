@@ -73,6 +73,8 @@ var _anim_player_ref: AnimationPlayer = null
 # BUILT-INS
 # ─────────────────────────────────────────────
 func _ready() -> void:
+	add_to_group("allies")
+	add_to_group("npcs")
 	_aplicar_material()
 	_aplicar_capa_visual()
 	_inicializar_animator()

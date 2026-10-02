@@ -44,7 +44,7 @@ _subresources={
 "Perrena_M": {
 "use_external/enabled": true,
 "use_external/fallback_path": "res://Entities/Jugador_Perrena/PERRENA_MAT.tres",
-"use_external/path": "uid://bl37ox1n4jolc"
+"use_external/path": "uid://b18wtx427o57v"
 }
 }
 }

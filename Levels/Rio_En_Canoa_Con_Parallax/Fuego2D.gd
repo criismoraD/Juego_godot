@@ -1,4 +1,4 @@
-@tool
+﻿@tool
 class_name Fuego2D
 extends AnimatedSprite3D
 
@@ -212,6 +212,7 @@ func _inicializar_luz() -> void:
 	luz_fuego.omni_range = radio_luz
 	luz_fuego.omni_attenuation = 1.35
 	luz_fuego.shadow_enabled = false
+	luz_fuego.light_cull_mask = layers
 	luz_fuego.visible = luz_activa
 
 
@@ -292,16 +293,15 @@ func _procesar_animacion_editor(delta: float) -> void:
 func _configurar_notifier_pantalla() -> void:
 	_notifier_pantalla = VisibleOnScreenNotifier3D.new()
 	_notifier_pantalla.name = "NotifierPantalla"
-	# AABB que cubre la llama y su luz
-	_notifier_pantalla.aabb = AABB(Vector3(-0.6, -0.1, -0.6), Vector3(1.2, 2.0, 1.2))
+	# AABB que cubre la llama y su radio de luz con margen
+	var radio_total: float = maxf(radio_luz, 1.5)
+	_notifier_pantalla.aabb = AABB(
+		Vector3(-radio_total, -0.5, -radio_total),
+		Vector3(radio_total * 2.0, radio_total * 2.0, radio_total * 2.0)
+	)
 	add_child(_notifier_pantalla)
 	_notifier_pantalla.screen_entered.connect(_al_entrar_pantalla)
 	_notifier_pantalla.screen_exited.connect(_al_salir_pantalla)
-	# Estado inicial: si ya est� en pantalla, activar; si no, esperar se�al
-	if _notifier_pantalla.is_on_screen():
-		_al_entrar_pantalla()
-	else:
-		_al_salir_pantalla()
 
 
 func _al_entrar_pantalla() -> void:

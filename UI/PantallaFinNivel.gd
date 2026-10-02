@@ -91,6 +91,8 @@ func _exit_tree() -> void:
 	var vp := get_viewport()
 	if is_instance_valid(vp) and vp.size_changed.is_connected(_actualizar_resolucion):
 		vp.size_changed.disconnect(_actualizar_resolucion)
+	if has_node("/root/AudioManager"):
+		AudioManager.silenciar_todos_los_sfx(false)
 
 
 # === FUNCIONES PÚBLICAS ===
@@ -108,6 +110,9 @@ func iniciar_transicion(on_fin: Callable = Callable()) -> void:
 
 	_rect_transicion.mouse_filter = Control.MOUSE_FILTER_STOP
 	establecer_factor(0.0)
+
+	# Silencio inmediato: al salir la cortinilla no debe escucharse ningún sonido salvo la música
+	_aplicar_silencio_al_salir_cortinilla()
 
 	if is_instance_valid(_tween_transicion) and _tween_transicion.is_running():
 		_tween_transicion.kill()
@@ -361,12 +366,29 @@ func _al_terminar_transicion() -> void:
 		)
 
 
+## Silencio inmediato al salir la cortinilla: detiene y bloquea todos los SFX y loops del nivel,
+## garantizando que únicamente la música siga escuchándose.
+func _aplicar_silencio_al_salir_cortinilla() -> void:
+	if not detener_audio_al_cubrir:
+		return
+	if has_node("/root/AudioManager"):
+		AudioManager.silenciar_todos_los_sfx(true)
+	_detener_reproductores_en_arbol()
+	var arbol := get_tree()
+	if arbol != null:
+		arbol.call_group("canoas_aliadas", "set", "sonido_navegacion_activo", false)
+		arbol.call_group("canoas_aliadas", "_detener_sonido_navegacion")
+		arbol.call_group("canoa_protagonista", "set", "sonido_navegacion_activo", false)
+		arbol.call_group("canoa_protagonista", "silenciar_navegacion")
+
+
 ## Silencio total al cubrir la pantalla: SFX y loops persistentes
 ## (globo, canoa, tensados) + mundo pausado para que nada re-arranque.
 ## La música del nivel sigue sonando.
 func _aplicar_silencio_final() -> void:
 	if detener_audio_al_cubrir:
-		AudioManager.stop_all(not mantener_musica_al_cubrir)
+		if has_node("/root/AudioManager"):
+			AudioManager.silenciar_todos_los_sfx(true)
 		_detener_reproductores_en_arbol()
 	if pausar_mundo_al_cubrir and get_tree() != null:
 		get_tree().paused = true
@@ -380,11 +402,15 @@ func _detener_reproductores_en_arbol() -> void:
 	if arbol == null or arbol.root == null:
 		return
 	var musica: AudioStreamPlayer = null
-	if mantener_musica_al_cubrir:
-		musica = AudioManager.get_music_player()
+	var musica_b: AudioStreamPlayer = null
+	if mantener_musica_al_cubrir and has_node("/root/AudioManager"):
+		var am = get_node("/root/AudioManager")
+		musica = am.get_music_player()
+		if "music_player_b" in am:
+			musica_b = am.music_player_b
 	for nodo in arbol.root.find_children("*", "AudioStreamPlayer", true, false):
 		var p := nodo as AudioStreamPlayer
-		if p and p.playing and p != musica:
+		if p and p.playing and p != musica and p != musica_b:
 			p.stop()
 	for nodo in arbol.root.find_children("*", "AudioStreamPlayer3D", true, false):
 		var p3 := nodo as AudioStreamPlayer3D
@@ -398,6 +424,8 @@ func _al_presionar_continuar() -> void:
 		return
 	if get_tree() != null:
 		get_tree().paused = false
+	if has_node("/root/AudioManager"):
+		AudioManager.silenciar_todos_los_sfx(false)
 	_btn_continuar.disabled = true
 	continuar_presionado.emit()
 

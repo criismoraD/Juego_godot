@@ -77,7 +77,7 @@ const INTERVALO_CHECK_AGUA: float = 0.1  ## Intervalo mínimo entre comprobacion
 @onready var pez_2: Node3D = find_child("Pez2", true, false) as Node3D
 
 # === VARIABLES PRIVADAS ===
-var _offset_camara_x: float = 2.9400935
+var _offset_camara_x: float = 3.6531825
 var _offset_water_x: float = 0.0675573
 var _batalla_naval_activada: bool = false
 var _focos_fijos: Array[SpotLight3D] = []
@@ -100,6 +100,7 @@ var _bloque_fin_mision: Node = null  ## Bloque FinDeMision: única vía para com
 var _conteniendo_jefe: bool = false  ## Contención activa ante el jefe vivo
 var _x_tope_jefe: float = 0.0  ## Tope fijado al iniciar la contención (no se recalcula)
 const MARGEN_SEGURIDAD_FIN_DEBUG: float = 8.0  ## La canoa de debug nunca aparece a menos de esto del fin de nivel
+const DISTANCIA_COMBATE_JEFE: float = 7.3  ## Centro de canoa a centro del jefe en fase 1 (proa a 4.8 + 2.5 de proa que sobresale): plataforma y cañón visibles
 const PUNTO_DEBUG_V_X: float = 125.51  ## Punto exacto de la tecla V: canoa junto al BarcoCombatePirata3 Check point (X 126.01 - 0.5)
 
 # === ESTADO ESTÁTICO DE CHECKPOINT (PERSISTE TRAS REINTENTAR) ===
@@ -343,6 +344,8 @@ func _al_destruir_barco_checkpoint() -> void:
 ## al combate del jefe): SOLO ese barco activa el checkpoint y el respawn
 ## siempre deja la canoa junto a sus restos, nunca donde estuviera la canoa.
 func _activar_checkpoint() -> void:
+	if checkpoint_rio_activo and checkpoint_rio_pos_x > 0.0:
+		return
 	checkpoint_rio_activo = true
 	var ref_barco: Node3D = _barco_checkpoint_ref as Node3D
 	if not is_instance_valid(ref_barco):
@@ -625,10 +628,6 @@ func _al_derrotar_jefe() -> void:
 func _teletransportar_a_punto_guardado() -> void:
 	if not is_instance_valid(canoa_protagonista):
 		return
-	var destino_x: float = PUNTO_DEBUG_V_X
-	if checkpoint_rio_activo and checkpoint_rio_pos_x > 0.0:
-		destino_x = checkpoint_rio_pos_x
-	_teletransportar_canoa_x(destino_x)
 	var barco: Node = find_child(nombre_barco_checkpoint, true, false)
 	if not is_instance_valid(barco):
 		barco = find_child("BarcoCombatePirata3 Check point", true, false)
@@ -636,6 +635,13 @@ func _teletransportar_a_punto_guardado() -> void:
 		if not (barco.has_method("esta_destruida") and bool(barco.call("esta_destruida"))):
 			barco.call("destruir_balsa")
 			_limpiar_tripulacion_barco_checkpoint(barco)
+	var destino_x: float = PUNTO_DEBUG_V_X
+	if checkpoint_rio_activo and checkpoint_rio_pos_x > 0.0:
+		destino_x = checkpoint_rio_pos_x
+	_teletransportar_canoa_x(destino_x)
+	set_travesia_activa(true)
+	if canoa_protagonista.has_method("reanudar_navegacion"):
+		canoa_protagonista.call("reanudar_navegacion")
 	if is_instance_valid(canoa_protagonista) and canoa_protagonista.has_method("liberar_bloqueo_enemigo"):
 		canoa_protagonista.call("liberar_bloqueo_enemigo")
 
@@ -719,9 +725,10 @@ func _al_cumplir_mision() -> void:
 func _teletransportar_canoa_x(destino_x: float) -> void:
 	if not is_instance_valid(canoa_protagonista):
 		return
+	var local_x: float = to_local(Vector3(destino_x, 0.0, 0.0)).x
 	var val = canoa_protagonista.get("_posicion_base")
 	var base: Vector3 = val if (val is Vector3) else canoa_protagonista.position
-	base.x = destino_x
+	base.x = local_x
 	if "_posicion_base" in canoa_protagonista:
 		canoa_protagonista.set("_posicion_base", base)
 	canoa_protagonista.position.x = base.x
@@ -740,8 +747,16 @@ func terminar_nivel(escena_destino: String = "") -> void:
 	_nivel_terminado = true
 	nivel_completado.emit()
 
-	# 1. Frenar la navegación de la canoa suavemente
+	# 1. Frenar la navegación de la canoa suavemente y silenciar su remada
 	set_travesia_activa(false)
+	if is_instance_valid(canoa_protagonista):
+		if canoa_protagonista.has_method("silenciar_navegacion"):
+			canoa_protagonista.call("silenciar_navegacion")
+		elif "sonido_navegacion_activo" in canoa_protagonista:
+			canoa_protagonista.set("sonido_navegacion_activo", false)
+	if get_tree() != null:
+		get_tree().call_group("canoas_aliadas", "set", "sonido_navegacion_activo", false)
+		get_tree().call_group("canoas_aliadas", "_detener_sonido_navegacion")
 
 	# 2. Desactivar agresión de posibles enemigos en pantalla
 	var enemigos := find_children("*", "EnemyBase", true, false)
@@ -749,14 +764,10 @@ func terminar_nivel(escena_destino: String = "") -> void:
 		if is_instance_valid(e) and e is EnemyBase:
 			e.set("solo_atacar_en_pantalla", false)
 
-	# 3. Instanciar pantalla y transición cinemática
-	var pantalla := PantallaFinNivel.new()
-	pantalla.duracion_transicion = duracion_transicion_fin
-	pantalla.clave_traduccion_titulo = clave_titulo_fin
-	if escena_destino != "":
-		pantalla.escena_siguiente = escena_destino
-	elif escena_siguiente != "":
-		pantalla.escena_siguiente = escena_siguiente
+	# 3. Silenciar de inmediato todos los SFX y loops del nivel:
+	# al salir la cortinilla no debe escucharse ningún sonido salvo la música
+	if has_node("/root/AudioManager"):
+		AudioManager.silenciar_todos_los_sfx(true)
 
 	# 3b. Garantizar la música del nivel bajo la cortinilla (pudo quedar el
 	# gap tras la fanfarria del jefe; si ya suena algo no se interrumpe).
@@ -764,6 +775,15 @@ func terminar_nivel(escena_destino: String = "") -> void:
 		var reproductor: AudioStreamPlayer = get_node("/root/AudioManager").get_music_player()
 		if reproductor == null or not reproductor.playing:
 			AudioManager.play_music(MUSICA_VIAJE_RIO, true)
+
+	# 4. Instanciar pantalla y transición cinemática
+	var pantalla := PantallaFinNivel.new()
+	pantalla.duracion_transicion = duracion_transicion_fin
+	pantalla.clave_traduccion_titulo = clave_titulo_fin
+	if escena_destino != "":
+		pantalla.escena_siguiente = escena_destino
+	elif escena_siguiente != "":
+		pantalla.escena_siguiente = escena_siguiente
 
 	_pantalla_fin_nivel = pantalla
 	var raiz: Node = get_tree().current_scene if (get_tree() != null and get_tree().current_scene != null) else self
@@ -937,7 +957,7 @@ func _contener_canoa_ante_jefe_vivo(delta: float) -> void:
 		_conteniendo_jefe = true
 		var linea: float = x_fin_nivel - 4.0
 		if jefe.global_position.x < x_fin_nivel:
-			linea = minf(linea, jefe.global_position.x - 10.4)
+			linea = minf(linea, jefe.global_position.x - DISTANCIA_COMBATE_JEFE)
 		# Muy pasada de la línea (teletransporte): congelar donde está.
 		_x_tope_jefe = cx if cx > linea + 1.0 else linea
 	if cx <= _x_tope_jefe:

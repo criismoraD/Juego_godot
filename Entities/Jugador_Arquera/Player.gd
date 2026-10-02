@@ -79,6 +79,14 @@ const MUNICION_POWER_UP_MAX: int = 20  ## Límite máximo de munición de power-
 @export_category("Hitbox")
 @export var mostrar_hitbox: bool = false  ## Muestra la hitbox del jugador en tiempo real
 @export var plano_profundidad_z: float = 0.05  ## Plano Z prioritario (frente a todas las defensoras)
+
+# === PRIORIDAD VISUAL PROTAGONISTA ===
+const OFFSET_VISUAL_PROTA_BASE_Z: float = 0.35  ## Desplazamiento Z frontal base del modelo visual respecto al nodo raíz
+const MARGEN_VISUAL_FRENTE_Z: float = 0.35  ## Margen de seguridad Z por delante de cualquier unidad aliada cercana
+const RADIO_PROXIMIDAD_HORIZONTAL_X: float = 2.2  ## Radio horizontal en X para evaluar prioridad visual con aliadas
+const RADIO_PROXIMIDAD_VERTICAL_Y: float = 2.0  ## Radio vertical en Y para evaluar prioridad visual con aliadas
+const VELOCIDAD_INTERPOLACION_VISUAL_Z: float = 14.0  ## Suavizado reactivo de profundidad Z
+var _z_visual_actual: float = 0.35
 # === SISTEMA DE VIDA ===
 @export_category("Vida")
 @export var vida_maxima: int = 5
@@ -328,7 +336,8 @@ func _ready():
 	add_child(_sombra)
 
 	global_position.z = plano_profundidad_z
-	_aplicar_prioridad_renderizado(5.0)
+	_inicializar_modelo_visual_prioridad()
+	_aplicar_prioridad_renderizado(10.0)
 
 	if not InputMap.has_action("cambiar_municion"):
 		InputMap.add_action("cambiar_municion")
@@ -345,12 +354,104 @@ func _aplicar_prioridad_renderizado(offset: float) -> void:
 
 ## Configuración física del jugador: capa 1 y máscara con mundo (1) +
 ## BarreraLimite (10), sin proyectiles enemigos (4) y sin capa 2
-## (defensoras aliadas y sus escudos: el jugador pasa por el costado).
+## (defensoras aliadas y sus escudos: el jugador pasa a través sin chocar).
 ## Idempotente: Perrena la re-aplica tras super._ready() para garantizar
 ## paridad total con la protagonista.
 func _aplicar_colision_jugador() -> void:
 	collision_layer = 1
-	collision_mask = (collision_mask | (1 << 9)) & ~(1 << 3)
+	# Capa 1 (mundo) y Capa 10 (BarreraLimite) activas;
+	# Capa 2 (defensoras aliadas/escudos) y Capa 4 (proyectiles enemigos) excluidas explícitamente.
+	collision_mask = (collision_mask | (1 << 9)) & ~((1 << 1) | (1 << 3))
+	_configurar_excepciones_colision_aliadas()
+
+
+func _configurar_excepciones_colision_aliadas() -> void:
+	var tree := get_tree()
+	if not tree:
+		return
+	var excepciones := get_collision_exceptions()
+	for grupo in [&"allies", &"defensoras"]:
+		for ent in tree.get_nodes_in_group(grupo):
+			if ent != self and ent is CollisionObject3D:
+				var col_obj := ent as CollisionObject3D
+				if not excepciones.has(col_obj):
+					add_collision_exception_with(col_obj)
+
+
+func _obtener_modelo_visual() -> Node3D:
+	if visual_model and is_instance_valid(visual_model):
+		return visual_model
+	visual_model = find_child("ArqueraModel", false, false) as Node3D
+	if not visual_model:
+		visual_model = find_child("PerrenaModel", false, false) as Node3D
+	if not visual_model:
+		visual_model = find_child("ImperioGirlModel", false, false) as Node3D
+	if not visual_model:
+		for child in get_children():
+			if child is Node3D and child != collision_shape_node and (child.name.ends_with("Model") or child.name.begins_with("Imperio")):
+				visual_model = child as Node3D
+				break
+	return visual_model
+
+
+func _inicializar_modelo_visual_prioridad() -> void:
+	_obtener_modelo_visual()
+	if visual_model:
+		_z_visual_actual = OFFSET_VISUAL_PROTA_BASE_Z
+		visual_model.position.z = _z_visual_actual
+
+
+func _obtener_z_visual_nodo(nodo: Node3D) -> float:
+	if not nodo or not is_instance_valid(nodo):
+		return -9999.0
+	var modelo: Node3D = nodo.get_node_or_null("model_root") as Node3D
+	if not modelo:
+		modelo = nodo.get_node_or_null("Pivot") as Node3D
+	if not modelo:
+		modelo = nodo.find_child("*Model*", false, false) as Node3D
+	if modelo and is_instance_valid(modelo):
+		return modelo.global_position.z
+	return nodo.global_position.z
+
+
+func _actualizar_prioridad_visual_frente(delta: float) -> void:
+	if not _obtener_modelo_visual():
+		return
+
+	var max_z_aliada: float = -9999.0
+	var hay_aliada_cerca: bool = false
+	var mi_pos: Vector3 = global_position
+
+	var tree := get_tree()
+	if not tree:
+		return
+
+	# Evaluar unidades aliadas y NPCs en escena
+	var grupos: Array[StringName] = [&"allies", &"npcs", &"defensoras"]
+	for grupo in grupos:
+		var entidades: Array[Node] = tree.get_nodes_in_group(grupo)
+		for ent in entidades:
+			if not is_instance_valid(ent) or ent == self or ent.is_ancestor_of(self) or self.is_ancestor_of(ent):
+				continue
+			if not (ent is Node3D):
+				continue
+			var nodo_3d := ent as Node3D
+			var ent_pos: Vector3 = nodo_3d.global_position
+			if absf(mi_pos.x - ent_pos.x) <= RADIO_PROXIMIDAD_HORIZONTAL_X and absf(mi_pos.y - ent_pos.y) <= RADIO_PROXIMIDAD_VERTICAL_Y:
+				var z_efectivo: float = _obtener_z_visual_nodo(nodo_3d)
+				if z_efectivo > max_z_aliada:
+					max_z_aliada = z_efectivo
+				hay_aliada_cerca = true
+
+	var target_z_local: float = OFFSET_VISUAL_PROTA_BASE_Z
+	if hay_aliada_cerca and max_z_aliada > -9000.0:
+		# La protagonista siempre tiene la máxima prioridad visual para aparecer por delante
+		var target_global_z: float = max_z_aliada + MARGEN_VISUAL_FRENTE_Z
+		var required_local_z: float = target_global_z - mi_pos.z
+		target_z_local = maxf(OFFSET_VISUAL_PROTA_BASE_Z, required_local_z)
+
+	_z_visual_actual = lerpf(_z_visual_actual, target_z_local, clampf(VELOCIDAD_INTERPOLACION_VISUAL_Z * delta, 0.0, 1.0))
+	visual_model.position.z = _z_visual_actual
 
 
 ## Aparcado (personaje sin control tras cambiar a Perrena/Eryn): su cuerpo
@@ -648,10 +749,29 @@ func _get_best_ladder() -> Area3D:
 	if _nearby_ladders.size() == 1:
 		return _nearby_ladders[0]
 
-	var best: Area3D = _nearby_ladders[0]
+	# Si el jugador presiona abajo (S), priorizar escaleras que descienden
+	var input_vert_ws := Input.get_axis("move_forward", "move_back")
+	var input_vert_ui := Input.get_axis("ui_up", "ui_down")
+	var input_vert := input_vert_ws if input_vert_ws != 0 else input_vert_ui
+	var want_down := input_vert > 0.3
+
+	var candidates := _nearby_ladders
+	if want_down:
+		var downwards: Array[Area3D] = []
+		for lad in _nearby_ladders:
+			if not is_instance_valid(lad):
+				continue
+			var col: CollisionShape3D = lad.get_node_or_null("ESCALERA")
+			var center_y: float = col.global_position.y if col else lad.global_position.y
+			if center_y < global_position.y:
+				downwards.append(lad)
+		if not downwards.is_empty():
+			candidates = downwards
+
+	var best: Area3D = candidates[0]
 	var min_dist: float = absf(global_position.x - best.global_position.x)
-	for i in range(1, _nearby_ladders.size()):
-		var lad: Area3D = _nearby_ladders[i]
+	for i in range(1, candidates.size()):
+		var lad: Area3D = candidates[i]
 		if is_instance_valid(lad):
 			var dist: float = absf(global_position.x - lad.global_position.x)
 			if dist < min_dist:
@@ -660,22 +780,23 @@ func _get_best_ladder() -> Area3D:
 	return best
 
 
-## True si la protagonista está en la mitad inferior de la escalera activa
-## (al pie, tocando el piso inferior). Ahí S agacha en vez de trepar.
+## True si la protagonista está en el pie de la escalera activa (en el suelo
+## inferior de la misma). Ahí S agacha en vez de trepar hacia abajo.
 func _esta_al_pie_de_escalera() -> bool:
-	if not is_instance_valid(current_ladder):
+	if not is_instance_valid(current_ladder) or not is_on_floor():
 		return false
-	var centro_y: float = current_ladder.global_position.y
 	var col: CollisionShape3D = null
 	for candidato in current_ladder.find_children("*", "CollisionShape3D", true, false):
 		var col_cand := candidato as CollisionShape3D
 		if col_cand and col_cand.shape is BoxShape3D:
 			col = col_cand
 			break
-	if col:
-		# Mitad inferior del área = pie de la escalera
-		return global_position.y <= col.global_position.y
-	return global_position.y <= centro_y
+	if col and col.shape is BoxShape3D:
+		var half_h: float = (col.shape as BoxShape3D).size.y * col.global_transform.basis.get_scale().y * 0.5
+		var bottom_y: float = col.global_position.y - half_h
+		# Solo considerar pie si está dentro del 30% inferior de la escalera
+		return global_position.y <= (bottom_y + half_h * 0.6)
+	return global_position.y <= current_ladder.global_position.y
 
 
 func stop_climbing():
@@ -1001,6 +1122,7 @@ func _physics_process(delta):
 	# 2. MOVIMIENTO FÍSICO
 	move_and_slide()
 	global_position.z = plano_profundidad_z
+	_actualizar_prioridad_visual_frente(delta)
 
 	# 3. DETECCIÓN DE ATERRIZAJE (Post-movimiento)
 	if is_on_floor():

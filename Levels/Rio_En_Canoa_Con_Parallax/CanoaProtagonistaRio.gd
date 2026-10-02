@@ -78,6 +78,10 @@ var _viento_manual_debug: bool = false
 @onready var detector_contacto: Area3D = find_child("DetectorContactoEnemigos", true, false) as Area3D
 
 # === FUNCIONES BUILT-IN ===
+func _init() -> void:
+	separacion_submarinos_activa = false
+
+
 func _ready() -> void:
 	super._ready()
 	add_to_group("canoa_protagonista")
@@ -179,6 +183,16 @@ func obtener_audio_navegacion() -> AudioStreamPlayer:
 	if not is_instance_valid(_audio_navegacion):
 		_inicializar_sonido_navegacion()
 	return _audio_navegacion
+
+
+## Silencia por completo el sonido de navegación y remada de la canoa.
+func silenciar_navegacion() -> void:
+	sonido_navegacion_activo = false
+	_detener_sonido_navegacion()
+	if is_instance_valid(_audio_navegacion):
+		_audio_navegacion.volume_db = VOLUMEN_SILENCIO_DB
+	if is_instance_valid(_audio_navegacion_b):
+		_audio_navegacion_b.volume_db = VOLUMEN_SILENCIO_DB
 
 
 ## Activa o desactiva las estelas cinemáticas de viento de la canoa (tecla Z).
@@ -494,7 +508,8 @@ func _procesar_choque_submarino(delta: float) -> void:
 		sub = _buscar_submarino_solapado()
 	# Retención de arena: el combate fija el tope y persiste en inmersión.
 	if sub != null and _combate_activo_en(sub):
-		var linea: float = sub.global_position.x - distancia_contacto_enemigos - _margen_bloqueo(sub) - retroceso_choque_submarino
+		var extra_choque: float = 0.0 if (_combate_activo_en(sub) or sub.is_in_group("jefe_submarino") or sub is JefeSubmarinoRio) else retroceso_choque_submarino
+		var linea: float = sub.global_position.x - distancia_contacto_enemigos - _margen_bloqueo(sub) - extra_choque
 		if sub.global_position.x >= _posicion_base.x - 1.0:
 			_x_tope_pelea = minf(_posicion_base.x, linea)
 		elif _jefe_retenido != sub:
@@ -509,7 +524,8 @@ func _procesar_choque_submarino(delta: float) -> void:
 		_sub_en_choque = sub
 		var umbral: float = distancia_contacto_enemigos + _margen_bloqueo(sub)
 		var dx: float = sub.global_position.x - global_position.x
-		if dx > umbral + retroceso_choque_submarino + 1.0:
+		var extra_choque: float = 0.0 if (_combate_activo_en(sub) or sub.is_in_group("jefe_submarino") or sub is JefeSubmarinoRio) else retroceso_choque_submarino
+		if dx > umbral + extra_choque + 1.0:
 			_choque_sub_activo = false
 		elif dx < -umbral:
 			# Submarino superado y dejado atrás: no hay choque ni retroceso.
@@ -524,7 +540,7 @@ func _procesar_choque_submarino(delta: float) -> void:
 			_factor_velocidad_actual = 0.0
 			_detenida_por_contacto = true
 			_enemigo_bloqueando = sub
-			var x_segura: float = sub.global_position.x - umbral - retroceso_choque_submarino
+			var x_segura: float = sub.global_position.x - umbral - extra_choque
 			if _posicion_base.x > x_segura:
 				_posicion_base.x = move_toward(_posicion_base.x, x_segura, maxf(velocidad_separacion_choque, 0.5) * maxf(delta, 0.001))
 				position.x = _posicion_base.x + calcular_desplazamiento(_tiempo).x
@@ -589,7 +605,8 @@ func _buscar_submarino_solapado() -> Node3D:
 			vistos.append(sub.get_instance_id())
 			var umbral: float = distancia_contacto_enemigos + _margen_bloqueo(sub)
 			var dx: float = sub.global_position.x - global_position.x
-			if dx <= umbral + retroceso_choque_submarino:
+			var extra_choque: float = 0.0 if (_combate_activo_en(sub) or sub.is_in_group("jefe_submarino") or sub is JefeSubmarinoRio) else retroceso_choque_submarino
+			if dx <= umbral + extra_choque:
 				return sub
 	return null
 

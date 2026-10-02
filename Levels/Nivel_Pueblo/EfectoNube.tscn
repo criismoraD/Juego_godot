@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://c8efectonube01"]
+
+[ext_resource type="Script" path="res://Levels/Nivel_Pueblo/efecto_nube.gd" id="1_script"]
+[ext_resource type="Shader" path="res://System/Shaders/efecto_nube_3d.gdshader" id="2_shader"]
+[ext_resource type="Texture2D" path="res://Levels/Nivel_Pueblo/Texturas/nube_castlevania.png" id="3_texture"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nubes"]
+render_priority = 0
+shader = ExtResource("2_shader")
+shader_parameter/tinte_luz = Color(1, 0.58, 0.18, 0.95)
+shader_parameter/tinte_sombra = Color(0.42, 0.16, 0.14, 0.95)
+shader_parameter/intensidad_color = 1.0
+shader_parameter/modo_recoloreo = 1.0
+shader_parameter/contraste = 1.0
+shader_parameter/direccion_scroll = Vector2(0, 1)
+shader_parameter/uv_offset = 0.0
+shader_parameter/uv_scale = Vector2(2.5, 2)
+shader_parameter/habilitar_fade_bordes = true
+shader_parameter/fade_horizonte_inicio = 0.0
+shader_parameter/fade_horizonte_fin = 0.28
+shader_parameter/fade_cercano_inicio = 0.72
+shader_parameter/fade_cercano_fin = 1.0
+shader_parameter/fade_lateral_margen = 0.08
+shader_parameter/textura_nubes = ExtResource("3_texture")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_nubes"]
+size = Vector2(90, 60)
+
+[node name="Efecto Nube" type="Node3D"]
+script = ExtResource("1_script")
+textura_nube = ExtResource("3_texture")
+
+[node name="MallaNubes" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.207912, 0.978148, 0, -0.978148, 0.207912, 0, 0, 0)
+layers = 2
+material_override = SubResource("ShaderMaterial_nubes")
+mesh = SubResource("PlaneMesh_nubes")

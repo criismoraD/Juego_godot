@@ -2898,30 +2898,33 @@ func _set_movimiento_jugador_bloqueado(bloqueado: bool):
 func _set_juego_pausado_dialogo(bloqueado: bool):
 	_set_movimiento_jugador_bloqueado(bloqueado)
 
-	if not is_instance_valid(wave_spawner):
-		return
-
-	var id_spawner: int = wave_spawner.get_instance_id()
-	if bloqueado:
-		if not estado_spawner_dialogo.has(id_spawner):
-			estado_spawner_dialogo[id_spawner] = {
-				"process": wave_spawner.is_processing(),
-				"physics": wave_spawner.is_physics_processing()
-			}
-		wave_spawner.set_process(false)
-		wave_spawner.set_physics_process(false)
-	else:
-		var estado_spawner = estado_spawner_dialogo.get(
-			id_spawner, {"process": true, "physics": true}
-		)
-		wave_spawner.set_process(bool(estado_spawner["process"]))
-		wave_spawner.set_physics_process(bool(estado_spawner["physics"]))
-		estado_spawner_dialogo.clear()
+	if is_instance_valid(wave_spawner):
+		var id_spawner: int = wave_spawner.get_instance_id()
+		if bloqueado:
+			if not estado_spawner_dialogo.has(id_spawner):
+				estado_spawner_dialogo[id_spawner] = {
+					"process": wave_spawner.is_processing(),
+					"physics": wave_spawner.is_physics_processing()
+				}
+			wave_spawner.set_process(false)
+			wave_spawner.set_physics_process(false)
+		else:
+			var estado_spawner = estado_spawner_dialogo.get(
+				id_spawner, {"process": true, "physics": true}
+			)
+			wave_spawner.set_process(bool(estado_spawner["process"]))
+			wave_spawner.set_physics_process(bool(estado_spawner["physics"]))
+			estado_spawner_dialogo.clear()
 
 	if bloqueado:
 		var grupos_a_pausar: Array[String] = [
-			"enemies", "enemy_projectiles", "allies", "shield_imps"
+			"enemies", "enemy_projectiles", "shield_imps"
 		]
+		# En niveles de combate se pausan las unidades aliadas; en Nivel Pueblo
+		# los NPCs y aliados deben mantener activas sus rutinas normales de movimiento.
+		if not es_nivel_pueblo():
+			grupos_a_pausar.append("allies")
+
 		var nodos_procesados: Dictionary = {}
 
 		for grupo in grupos_a_pausar:

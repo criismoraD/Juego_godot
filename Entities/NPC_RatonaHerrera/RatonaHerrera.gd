@@ -163,6 +163,8 @@ var _pivot_visual: Node3D = null
 # BUILT-INS
 # ─────────────────────────────────────────────
 func _ready() -> void:
+	add_to_group("allies")
+	add_to_group("npcs")
 	_velocidad_actual = velocidad_caminar
 	_configurar_pivot()
 	_aplicar_material()

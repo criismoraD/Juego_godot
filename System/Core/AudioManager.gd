@@ -20,6 +20,8 @@ const MUSICA_VIAJE_RIO: int = 7
 const MUSICA_JEFE_RIO: int = 8
 const MUSICA_JEFE_DESTRUIDO: int = 9
 const MUSICA_PUEBLO: int = 10
+const MUSICA_TUTORIAL: int = 11
+const RUTA_MUSICA_TUTORIAL: String = "res://TEST_/Musica nivel tutorial A.mp3"
 
 var sfx_player: AudioStreamPlayer
 var sfx_player_3d: AudioStreamPlayer3D
@@ -35,6 +37,7 @@ var bgm_streams: Array[AudioStream] = []
 var sfx_volume_db: float = -5.0
 var music_volume_db: float = -15.0
 var bow_tension_atenuacion_db: float = -6.0  ## El tensado del arco suena más bajo que el resto de SFX
+var sfx_bloqueados: bool = false  ## Si true, silencia y bloquea nuevos SFX (cortinilla fin de nivel)
 # === OBJECT POOLING PARA AUDIO ===
 var sfx_pool: Array[AudioStreamPlayer] = []
 var sfx_3d_pool: Array[AudioStreamPlayer3D] = []
@@ -417,6 +420,18 @@ func _load_all_sounds():
 	bgm_streams.append(load("res://System/Audio/Music/Jefe rio.mp3"))  # Índice 8 - Jefe rio
 	bgm_streams.append(load("res://System/Audio/SFX/Jefe destruido.mp3"))  # Índice 9 - Jefe destruido
 	bgm_streams.append(load("res://System/Audio/Music/Cancion pueblo.mp3"))  # Índice 10 - Canción pueblo
+	bgm_streams.append(_cargar_musica_tutorial())  # Índice 11 - Música nivel tutorial (puede ser null hasta convertir el .aac)
+
+
+## Carga la música del tutorial (MP3 importable por Godot).
+func _cargar_musica_tutorial() -> AudioStream:
+	if not ResourceLoader.exists(RUTA_MUSICA_TUTORIAL):
+		push_warning("[AudioManager] Falta la música del tutorial: " + RUTA_MUSICA_TUTORIAL)
+		return null
+	var stream := load(RUTA_MUSICA_TUTORIAL) as AudioStream
+	if stream == null:
+		push_warning("[AudioManager] No se pudo cargar la música del tutorial: " + RUTA_MUSICA_TUTORIAL)
+	return stream
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -471,6 +486,8 @@ func obtener_stream_sfx(sound_name: String) -> AudioStream:
 ## Usa reproductores temporales para permitir sonidos simultáneos
 ## pitch_override > 0 fuerza esa velocidad de reproducción (1.0 = normal)
 func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: float = 0.0):
+	if sfx_bloqueados:
+		return
 	if not sfx_streams.has(sound_name):
 		push_warning("[AudioManager] Sonido no encontrado: " + sound_name)
 		return
@@ -558,6 +575,8 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: 
 
 ## Reproduce un efecto de sonido en posición 3D
 func play_sfx_3d(sound_name: String, position: Vector3):
+	if sfx_bloqueados:
+		return
 	if not sfx_streams.has(sound_name):
 		push_warning("[AudioManager] Sonido no encontrado: " + sound_name)
 		return
@@ -602,6 +621,7 @@ var bgm_volume_offsets: Dictionary = {
 	8: 6.0,   ## Jefe rio (-9.0 dB pista, elevada sobre el combate: flecha/tensado bajaron -6 dB)
 	9: 3.5,   ## Jefe destruido (-11.5 dB base, fanfarria triunfal clara)
 	10: 0.0,  ## Canción pueblo (-15.0 dB base)
+	11: 0.0,  ## Música nivel tutorial (-15.0 dB base)
 }
 
 
@@ -894,10 +914,19 @@ func stop_all(incluir_musica: bool = true):
 				node.stop()
 
 
+## Silencia o desbloquea todos los SFX (deja intacta la música).
+## Usado al terminar niveles cuando sale la cortinilla para que solo suene la música.
+func silenciar_todos_los_sfx(silenciar: bool = true) -> void:
+	sfx_bloqueados = silenciar
+	if silenciar:
+		stop_all(false)
+
+
 ## Recupera el audio tras Game Over → Continuar: limpia pausas de streams
 ## pendientes y reanuda la música actual si quedó detenida con stream asignado.
 ## Idempotente: si todo está bien no cambia nada audible.
 func recuperar_audio_continuar() -> void:
+	sfx_bloqueados = false
 	var jugadores: Array = []
 	if is_instance_valid(sfx_player):
 		jugadores.append(sfx_player)

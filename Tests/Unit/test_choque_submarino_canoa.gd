@@ -5,7 +5,7 @@ extends "res://addons/gut/test.gd"
 ## canoa hace tamboleo (sacudida_oleaje) para simular el choque, queda
 ## detenida y retrocede hasta una distancia segura con el casco despejado.
 
-const SCENE_CANOA_PATH: String = "res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn"
+const ESCENA_CANOA: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/CanoaProtagonistaRio.tscn")
 const MARGEN_FLOAT: float = 0.05
 const AMPLITUD_BALANCEO_BASE: float = 2.5
 
@@ -15,8 +15,7 @@ class DummySubmarino extends Node3D:
 
 
 func _crear_canoa() -> CanoaProtagonistaRio:
-	var canoa_scene := load(SCENE_CANOA_PATH) as PackedScene
-	var canoa: CanoaProtagonistaRio = canoa_scene.instantiate() as CanoaProtagonistaRio
+	var canoa: CanoaProtagonistaRio = ESCENA_CANOA.instantiate() as CanoaProtagonistaRio
 	add_child_autofree(canoa)
 	canoa.global_position = Vector3(0.0, 0.0, 0.0)
 	canoa.expulsar_maderos_en_impacto = false
@@ -62,7 +61,7 @@ func test_choque_separa_sin_atravesar_casco() -> void:
 
 	# Assert: proa fuera del casco con margen extra (2.4 contacto + 3.0 retroceso)
 	var x_segura: float = sub.global_position.x - canoa.distancia_contacto_enemigos - canoa.retroceso_choque_submarino
-	assert_le(canoa.obtener_posicion_base().x, x_segura + 0.5, "La canoa debe retroceder a distancia segura")
+	assert_lte(canoa.obtener_posicion_base().x, x_segura + 0.5, "La canoa debe retroceder a distancia segura")
 	assert_lt(canoa.global_position.x, sub.global_position.x, "La canoa nunca debe atravesar al submarino")
 
 
@@ -148,7 +147,7 @@ func test_freno_bloquea_ante_submarino_en_superficie() -> void:
 	assert_almost_eq(canoa.obtener_factor_velocidad_actual(), 0.0, MARGEN_FLOAT, "El freno debe detener ante el submarino")
 	assert_true(canoa.esta_detenida_por_enemigo(), "Debe quedar detenida")
 	assert_eq(canoa.obtener_enemigo_bloqueando(), sub, "El bloqueador debe ser el submarino")
-	assert_le(canoa.obtener_posicion_base().x, 0.1, "La proa no debe pasar la línea del casco")
+	assert_lte(canoa.obtener_posicion_base().x, 0.1, "La proa no debe pasar la línea del casco")
 
 
 func test_freno_libera_al_hundirse_el_submarino() -> void:
@@ -201,7 +200,7 @@ func test_pelea_retiene_canoa_aunque_jefe_se_sumerja() -> void:
 	# Assert: la canoa no avanza de su tope y sigue detenida
 	assert_true(canoa.esta_retenida_por_jefe(), "La pelea debe seguir retenida en inmersión")
 	assert_almost_eq(canoa.obtener_factor_velocidad_actual(), 0.0, MARGEN_FLOAT, "Debe seguir detenida")
-	assert_le(canoa.obtener_posicion_base().x, x_retenida + 0.3, "No debe avanzar durante la pelea")
+	assert_lte(canoa.obtener_posicion_base().x, x_retenida + 0.3, "No debe avanzar durante la pelea")
 
 
 func test_pelea_libera_al_morir_el_jefe() -> void:

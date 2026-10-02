@@ -133,7 +133,7 @@ func test_duracion_baile_perrena_tras_hundimiento_es_1_punto_5_segundos() -> voi
 	assert_eq(jefe.retraso_fin_baile_tras_hundirse, 1.5, "Perrena debe bailar exactamente 1.5 segundos tras finalizar la animación de destrucción del jefe")
 
 	# Limpieza
-	jefe.queue_free()
+	jefe.free()
 
 
 func test_reset_checkpoint_limpia_correctamente_el_estado() -> void:

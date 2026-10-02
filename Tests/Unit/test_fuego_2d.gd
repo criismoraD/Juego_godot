@@ -148,3 +148,30 @@ func test_bracero_pilar_soporta_fuego_manual() -> void:
 	assert_not_null(bracero.call("obtener_fuego"), "BraceroPilar reconoce el Fuego2D posicionado manualmente")
 	bracero.set("fuego_activo", false)
 	assert_false(fuego.visible, "El bracero apaga el fuego hijo correctamente")
+
+
+func test_luz_cull_mask_hereda_layers() -> void:
+	# Arrange
+	var packed := load(FUEGO_SCENE_PATH) as PackedScene
+	var fuego: AnimatedSprite3D = packed.instantiate() as AnimatedSprite3D
+	fuego.layers = 2
+	add_child_autofree(fuego)
+
+	# Assert: La luz del fuego debe heredar la máscara de capas del sprite
+	var luz: OmniLight3D = fuego.call("obtener_luz") as OmniLight3D
+	assert_not_null(luz, "La luz debe existir")
+	assert_eq(luz.light_cull_mask, 2, "La luz del fuego debe tener el cull mask coincidente con layers")
+
+
+func test_notifier_pantalla_cubre_radio_luz() -> void:
+	# Arrange
+	var packed := load(FUEGO_SCENE_PATH) as PackedScene
+	var fuego: AnimatedSprite3D = packed.instantiate() as AnimatedSprite3D
+	add_child_autofree(fuego)
+
+	# Assert: El VisibleOnScreenNotifier3D debe cubrir el radio de luz para no cortar bruscamente
+	var notif: VisibleOnScreenNotifier3D = fuego.get_node_or_null("NotifierPantalla") as VisibleOnScreenNotifier3D
+	assert_not_null(notif, "Debe existir NotifierPantalla")
+	var radio_luz: float = float(fuego.get("radio_luz"))
+	assert_gte(notif.aabb.size.x, radio_luz * 2.0 - MARGEN_FLOAT, "El AABB debe cubrir el diámetro de la luz en X")
+	assert_gte(notif.aabb.size.z, radio_luz * 2.0 - MARGEN_FLOAT, "El AABB debe cubrir el diámetro de la luz en Z")

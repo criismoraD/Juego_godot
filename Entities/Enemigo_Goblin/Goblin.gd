@@ -104,8 +104,28 @@ func _process(delta: float) -> void:
 
 func _on_enemy_ready():
 	_configurar_particulas_pisada()
+	_fijar_ballesta_mano_izquierda()
 	set_process(true)
 	_play_animation("ENEMIGO_GOBLING_CORRER")
+
+
+## La ballesta debe ir en la mano derecha (mixamorig_RightHandIndex1).
+## El bone_idx guardado en el .tscn depende del orden de huesos del GLB y
+## queda obsoleto al reimportar el modelo: se resuelve en runtime contra
+## el esqueleto real para que siempre siga a la mano derecha.
+func _fijar_ballesta_mano_izquierda() -> void:
+	var skel := get_node_or_null("GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D") as Skeleton3D
+	if skel == null:
+		return
+	var idx: int = skel.find_bone("mixamorig_RightHandIndex1")
+	if idx == -1:
+		push_warning("[Goblin] Hueso mixamorig_RightHandIndex1 no encontrado.")
+		return
+	var attach := skel.get_node_or_null("BoneAttachment3D") as BoneAttachment3D
+	if attach == null:
+		return
+	attach.bone_name = "mixamorig_RightHandIndex1"
+	attach.bone_idx = idx
 
 
 func _on_state_walking():

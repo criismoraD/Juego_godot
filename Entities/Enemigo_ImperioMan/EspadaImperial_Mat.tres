@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://TEST_/Esspada imperial/Espada imperial_D.jpg" id="1_tex"]
+
+[resource]
+resource_name = "EspadaImperial_Mat"
+albedo_texture = ExtResource("1_tex")
+metallic = 0.6
+roughness = 0.35

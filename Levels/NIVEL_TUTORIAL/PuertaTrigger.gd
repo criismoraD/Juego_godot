@@ -200,7 +200,9 @@ func _iniciar_secuencia_entrada() -> void:
 
 	# 2. Girar modelo de la arquera hacia el fondo (espalda siempre a la cámara / hacia la puerta / -Z)
 	var armature_node: Node3D = _jugador_ref.find_child("Armature", true, false) as Node3D
-	var arquera_model: Node3D = _jugador_ref.find_child("ArqueraModel", true, false) as Node3D
+	var arquera_model: Node3D = _jugador_ref.find_child("ImperioGirlModel", true, false) as Node3D
+	if not arquera_model:
+		arquera_model = _jugador_ref.find_child("ArqueraModel", true, false) as Node3D
 
 	var tween := create_tween().set_parallel(true)
 	if arquera_model:

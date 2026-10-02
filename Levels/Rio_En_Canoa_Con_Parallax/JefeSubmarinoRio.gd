@@ -219,6 +219,7 @@ func _ready() -> void:
 		canon_disparo_final_realizado.connect(_al_disparo_lonko_soltar_mina)
 	if not emergido.is_connected(_al_emerger_jefe):
 		emergido.connect(_al_emerger_jefe)
+	_sincronizar_con_bloque_posicion()
 	_pos_combate = global_position
 	_consumir_referencia_sumergida()
 	_crear_material_flash_rojo()
@@ -228,6 +229,18 @@ func _ready() -> void:
 	_buscar_y_configurar_modelo_destruido_tscn()
 	_precalentar_recursos_destruccion_diferido()
 	vida_cambiada.emit(vida_actual_jefe, vida_maxima_jefe)
+
+
+## Si existe el bloque verde marcador de posición (PosicionJefeSubmarino),
+## toma su posición horizontal X para que el jefe aparezca donde el usuario lo ubicó en el mapa.
+func _sincronizar_con_bloque_posicion() -> void:
+	var bloque_pos: Node3D = null
+	if get_tree() != null:
+		bloque_pos = get_tree().get_first_node_in_group("posicion_jefe_submarino") as Node3D
+	if not is_instance_valid(bloque_pos) and get_parent() != null:
+		bloque_pos = get_parent().find_child("PosicionJefeSubmarino", true, false) as Node3D
+	if is_instance_valid(bloque_pos):
+		global_position.x = bloque_pos.global_position.x
 
 
 ## Si existe el submarino de referencia (JefeSubmarino2) en la escena, toma sus
@@ -1396,8 +1409,13 @@ func _entrar_fase2() -> void:
 	_disparo_canon_realizado = false
 	if canon_disparo_final and _canon_listo_para_disparo():
 		super._iniciar_sumersion()
-		await get_tree().create_timer(_duracion_secuencia_canon()).timeout
-		if not _secuencia_fase2_activa or _jefe_muerto:
+		# El reinicio (GameUI) puede liberar el jefe en mitad de la secuencia:
+		# sin árbol no hay temporizador ni continuación válida.
+		var arbol := get_tree()
+		if arbol == null or not is_inside_tree():
+			return
+		await arbol.create_timer(_duracion_secuencia_canon()).timeout
+		if not is_inside_tree() or not _secuencia_fase2_activa or _jefe_muerto:
 			return
 	else:
 		push_warning("JefeSubmarinoRio: caÃ±Ã³n no listo, se hunde sin disparo Lonko")

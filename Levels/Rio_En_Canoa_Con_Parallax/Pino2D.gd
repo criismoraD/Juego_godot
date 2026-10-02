@@ -31,6 +31,11 @@ const NOMBRE_FONDO_PARALLAX: String = "ParallaxFondo"
 		if is_node_ready():
 			_aplicar_altura_pivote()
 @export var respetar_altura_manual: bool = true ## Si true, respeta la altura Y original del editor (evita que se vea plano)
+@export_flags_3d_render var capa_visual: int = 1: ## Selector de capa visual de renderizado 3D (Capa 1 = Frente, Capa 2 = Fondo DOF)
+	set(nueva_capa):
+		capa_visual = nueva_capa
+		if is_node_ready():
+			_aplicar_capa_visual(self)
 
 @export_category("Balanceo viento")
 @export var balanceo_activo: bool = false ## Si false, el pino queda totalmente estatico
@@ -64,6 +69,7 @@ func _ready() -> void:
 	_aplicar_pixel_size()
 	_aplicar_escala_base()
 	_aplicar_altura_pivote()
+	_aplicar_capa_visual(self)
 	if not Engine.is_editor_hint() and not respetar_altura_manual:
 		_asentar()
 
@@ -102,6 +108,14 @@ func _aplicar_altura_pivote() -> void:
 	if not is_instance_valid(sprite):
 		return
 	sprite.position.y = altura_pivote
+
+
+## Aplica la capa visual a todo el subarbol (Capa 1 = Frente, Capa 2 = Fondo DOF).
+func _aplicar_capa_visual(nodo: Node) -> void:
+	if nodo is VisualInstance3D:
+		(nodo as VisualInstance3D).layers = capa_visual
+	for hijo in nodo.get_children():
+		_aplicar_capa_visual(hijo)
 
 
 ## Avanza a la par de la cordillera y recicla por delante de la camara.

@@ -169,6 +169,8 @@ var _anim_idle: StringName = &"IDLE"
 # BUILT-INS
 # ─────────────────────────────────────────────
 func _ready() -> void:
+	add_to_group("allies")
+	add_to_group("npcs")
 	_velocidad_actual = velocidad_caminar
 	_resolver_animaciones()
 	_configurar_pivot()

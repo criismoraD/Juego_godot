@@ -43,3 +43,15 @@ Thumbs.db
 contexto.json
 test_anim_gargola.gd*
 scratch/
+output.txt
+Tests/*.txt
+Tests/calc_*
+Tests/debug_climb*
+Tests/inspect_*
+Tests/lad2_pos*
+Tests/mid_test*
+Tests/middle_*
+Tests/overlap_*
+Tests/walk_*
+Tests/check_lad2_pos*
+Tests/Unit/scratch_*

@@ -44,7 +44,7 @@ _subresources={
 "PROTA_M": {
 "use_external/enabled": true,
 "use_external/fallback_path": "res://Entities/Jugador_Arquera/ARQUERA_MATERIAL.tres",
-"use_external/path": "uid://crcl2un7te63e"
+"use_external/path": "uid://bipoin64tfxv7"
 }
 }
 }

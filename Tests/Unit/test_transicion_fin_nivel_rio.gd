@@ -297,6 +297,36 @@ func test_cubrir_silencia_mundo_y_continuar_reanuda() -> void:
 	assert_true(callback_llamado[0], "Debe ejecutarse el callback de continuar")
 
 
+func test_silencio_inmediato_al_iniciar_transicion_salvo_musica() -> void:
+	# Arrange
+	var am = get_node_or_null("/root/AudioManager")
+	assert_not_null(am, "AudioManager debe existir como autoload")
+	var sfx_dummy := AudioStreamPlayer.new()
+	sfx_dummy.name = "SfxDummy"
+	add_child_autofree(sfx_dummy)
+	sfx_dummy.play()
+
+	var pantalla: PantallaFinNivel = SCRIPT_PANTALLA.new() as PantallaFinNivel
+	pantalla.escena_siguiente = ""
+	add_child_autofree(pantalla)
+
+	# Act: iniciar la transición (sale la cortinilla)
+	pantalla.iniciar_transicion()
+
+	# Assert: de inmediato deben silenciarse SFX y bloquearse nuevos disparos
+	assert_true(bool(am.get("sfx_bloqueados")), "sfx_bloqueados debe ser true de inmediato al salir la cortinilla")
+	assert_false(sfx_dummy.playing, "Cualquier reproductor de SFX en el árbol debe detenerse de inmediato")
+
+	# Intentar reproducir SFX debe ser bloqueado
+	var resultado_sfx = am.play_sfx("impacto_flecha")
+	assert_null(resultado_sfx, "play_sfx() no debe reproducir mientras la cortinilla esté activa")
+
+	# Act 2: Continuar desbloquea los SFX
+	var boton: Button = pantalla.obtener_boton_continuar()
+	boton.emit_signal("pressed")
+	assert_false(bool(am.get("sfx_bloqueados")), "Al presionar Continuar se deben desbloquear los SFX")
+
+
 func test_terminar_nivel_garantiza_musica_viaje_bajo_cortinilla() -> void:
 	# Arrange: sin música sonando (gap tras la fanfarria del jefe)
 	var nivel: Node3D = SCRIPT_NIVEL_RIO.new() as Node3D

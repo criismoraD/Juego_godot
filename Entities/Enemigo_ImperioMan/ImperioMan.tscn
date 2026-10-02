@@ -1,0 +1,104 @@
+[gd_scene format=3 uid="uid://bayslvgnrvr0q"]
+
+[ext_resource type="Script" uid="uid://yppoie4kd00i" path="res://Entities/Enemigo_ImperioMan/ImperioMan.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://clefjpqgnldiy" path="res://TEST_/Imperio man/Imperio man.glb" id="2_model"]
+[ext_resource type="Material" path="res://Entities/Enemigo_ImperioMan/ImperioMan_Mat.tres" id="3_02acd"]
+[ext_resource type="PackedScene" uid="uid://rjwgclotmtey" path="res://TEST_/Esspada imperial/Espada imperial.glb" id="3_espada"]
+[ext_resource type="PackedScene" uid="uid://d2fk4tr5ywwex" path="res://TEST_/No_Usados/Escudo pesado elfico/Escudo pesado elfico.glb" id="5_xloo5"]
+[ext_resource type="Script" uid="uid://co6fj4dfp87gi" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/EscudoPesadoArea.gd" id="6_area"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.35
+height = 1.5919678
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_escudo"]
+size = Vector3(0.5, 0.9, 0.2)
+
+[node name="ImperioMan" type="CharacterBody3D" unique_id=-1194192895]
+collision_layer = 2
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=-1194192894]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7959839, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Modelo" parent="." unique_id=-1194192893 instance=ExtResource("2_model")]
+transform = Transform3D(2.0272298e-08, 0, -1.7, 0, 1.7, 0, 1.7, 0, 2.0272298e-08, 0, 0, 0)
+
+[node name="Skeleton3D" parent="Modelo/Armature" parent_id_path=PackedInt32Array(-1194192893, 628766054) index="0" unique_id=585005629]
+bones/0/position = Vector3(-9.536743e-06, 0.46229514, -39.5131)
+bones/0/rotation = Quaternion(-0.52119523, -0.36032152, 0.41902623, 0.6503392)
+bones/1/rotation = Quaternion(0.09849523, 0.5573374, 0.7804372, -0.26569107)
+bones/2/rotation = Quaternion(-0.6589141, 0.12826137, -0.060735147, 0.73871005)
+bones/3/rotation = Quaternion(0.65338445, -0.057676993, -0.042897888, 0.7536059)
+bones/4/rotation = Quaternion(0.31663227, -0.14416113, 0.03471636, 0.93688655)
+bones/6/rotation = Quaternion(-0.22038315, 0.1945215, 0.8746336, 0.385498)
+bones/7/rotation = Quaternion(-0.27045202, -0.09414427, -0.024459314, 0.95780706)
+bones/8/rotation = Quaternion(0.5444205, 0.12207123, 0.20248401, 0.8048013)
+bones/9/rotation = Quaternion(0.2806055, 0.29848826, 0.01983497, 0.9120153)
+bones/11/rotation = Quaternion(-0.003135834, 0.14054354, -0.07073935, 0.9875392)
+bones/12/rotation = Quaternion(0.06426449, 0.010849979, -0.018408215, 0.99770415)
+bones/13/rotation = Quaternion(0.011952951, -0.09195652, 0.043195345, 0.9947539)
+bones/14/rotation = Quaternion(-0.5474126, -0.45151144, 0.4347342, -0.55451167)
+bones/15/rotation = Quaternion(-0.05636314, -0.058106095, 0.18434013, 0.9795232)
+bones/16/position = Vector3(-1.4038392e-07, 12.605381, 1.6048598e-06)
+bones/16/rotation = Quaternion(0.3768843, -0.4976611, 0.56397676, 0.54057544)
+bones/17/position = Vector3(2.5811655e-06, 15.5799675, 2.0814675e-06)
+bones/17/rotation = Quaternion(0.033246607, 0.41752112, -0.0057046805, 0.9080409)
+bones/18/rotation = Quaternion(0.33305562, 0.024543557, 0.6341178, 0.6973997)
+bones/19/position = Vector3(0.49938166, 2.2774765, 9.914495e-06)
+bones/19/rotation = Quaternion(0.29545093, 0.016776027, 0.29786983, 0.9075797)
+bones/20/position = Vector3(-0.42054772, 2.2970695, 3.2308562e-06)
+bones/20/rotation = Quaternion(0.33161527, 0.05878964, 0.50977486, 0.7916469)
+bones/22/position = Vector3(-1.9460474, 2.1882565, -1.072894e-06)
+bones/22/rotation = Quaternion(0.05563525, 0.0045271176, 0.33051237, 0.9421495)
+bones/23/rotation = Quaternion(0.08936136, 0.10758572, -0.03293076, 0.98962396)
+bones/24/position = Vector3(-0.006848216, 1.9392577, 3.4169207e-06)
+bones/24/rotation = Quaternion(0.36714217, 0.36591536, 0.23862176, 0.82120174)
+bones/25/position = Vector3(0.47553074, 1.1085207, 1.1920926e-06)
+bones/26/rotation = Quaternion(0.100883424, 0.17510578, 0.062493704, 0.9773715)
+bones/27/rotation = Quaternion(-0.17505462, 0.2801108, -0.16304797, 0.9296823)
+bones/29/rotation = Quaternion(0.5621855, -0.43716294, 0.58211476, 0.39240104)
+bones/30/position = Vector3(9.333422e-08, 7.7260776, 2.6531598e-06)
+bones/30/rotation = Quaternion(0.30281875, 0.19155955, 0.08014942, 0.9301516)
+bones/31/position = Vector3(-9.2316793e-07, 12.6070175, 5.0250255e-06)
+bones/31/rotation = Quaternion(0.03265388, -0.23635156, -0.10964838, 0.9649088)
+bones/32/rotation = Quaternion(-0.010375818, -0.44136497, -0.010561803, 0.89720553)
+bones/33/position = Vector3(-1.9338613e-06, 3.929242, -0.09556926)
+bones/33/rotation = Quaternion(0.29095042, -0.015671209, -0.51474935, 0.8063097)
+bones/34/rotation = Quaternion(0.23972279, -0.016100086, -0.30060378, 0.9229904)
+bones/35/rotation = Quaternion(0.2365218, -0.0640709, -0.4834774, 0.8403583)
+bones/37/position = Vector3(1.7969115, 2.0307696, -1.1205642e-05)
+bones/37/rotation = Quaternion(0.29472378, -0.06012604, -0.23536973, 0.92418826)
+bones/38/rotation = Quaternion(-0.09510336, -0.14011602, -0.08100075, 0.98222286)
+bones/39/rotation = Quaternion(-0.029020729, 0.13699837, 0.09159528, 0.9859004)
+
+[node name="Imperio man" parent="Modelo/Armature/Skeleton3D" index="0" unique_id=237913873]
+material_override = ExtResource("3_02acd")
+
+[node name="BoneAttachment_Espada" type="BoneAttachment3D" parent="Modelo/Armature/Skeleton3D" index="1" unique_id=-1194192892]
+transform = Transform3D(-0.02653408, -0.22874193, 0.9731253, 0.7663046, -0.62977195, -0.12713876, 0.64192885, 0.74233717, 0.19199637, -10.774105, -23.900679, -40.83544)
+bone_name = "mixamorig_RightHand"
+bone_idx = 32
+
+[node name="EspadaImperial" parent="Modelo/Armature/Skeleton3D/BoneAttachment_Espada" unique_id=-1194192891 instance=ExtResource("3_espada")]
+transform = Transform3D(18.284262, -21.255806, 47.31677, 45.5832, -17.359785, -25.4128, 24.755972, 47.663696, 11.845396, 20.581215, 18.674725, -40.592564)
+
+[node name="BoneAttachment_Escudo" type="BoneAttachment3D" parent="Modelo/Armature/Skeleton3D" index="2" unique_id=-1194192890]
+transform = Transform3D(-0.012873387, -0.9982, 0.058574867, 0.81450343, -0.044448327, -0.57845366, 0.5800161, 0.040262863, 0.8136095, -15.367348, 28.247427, -57.823845)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
+
+[node name="Escudo pesado elfico2" parent="Modelo/Armature/Skeleton3D/BoneAttachment_Escudo" unique_id=1017640494 instance=ExtResource("5_xloo5")]
+transform = Transform3D(20.7919, -72.35698, 49.31699, -87.1852, -12.387934, 18.581673, -8.150864, -52.06733, -72.95585, 34.57585, 0.15667391, 16.39789)
+
+[node name="EscudoArea" type="Area3D" parent="Modelo/Armature/Skeleton3D/BoneAttachment_Escudo/Escudo pesado elfico2" unique_id=-1194192888]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.42, 0)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("6_area")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Modelo/Armature/Skeleton3D/BoneAttachment_Escudo/Escudo pesado elfico2/EscudoArea" unique_id=-1194192887]
+shape = SubResource("BoxShape3D_escudo")
+
+[editable path="Modelo"]

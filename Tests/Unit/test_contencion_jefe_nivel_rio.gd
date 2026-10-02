@@ -45,9 +45,9 @@ func test_contencion_retiene_canoa_en_arena_con_jefe_vivo() -> void:
 		canoa.fijar_posicion_base(canoa.obtener_posicion_base() + Vector3(0.5, 0.0, 0.0))
 		nivel._contener_canoa_ante_jefe_vivo(0.05)
 
-	# Assert: retenida en el tope (141 - 10.4), sin rebasar la arena
-	assert_le(canoa.obtener_posicion_base().x, 141.0 - 10.4 + 0.6, "No debe rebasar la arena con el jefe vivo")
-	assert_ge(canoa.obtener_posicion_base().x, 129.0, "Debe avanzar hasta la línea de contención")
+	# Assert: retenida en el tope (141 - 7.3, distancia de combate con plataforma y cañón visibles), sin rebasar la arena
+	assert_lte(canoa.obtener_posicion_base().x, 141.0 - 7.3 + 0.6, "No debe rebasar la arena con el jefe vivo")
+	assert_gte(canoa.obtener_posicion_base().x, 133.0, "Debe avanzar hasta la línea de contención de combate")
 
 
 func test_contencion_no_arrastra_hacia_atras() -> void:

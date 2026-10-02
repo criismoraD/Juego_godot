@@ -21,7 +21,6 @@ const GRUPOS_LIMPIEZA_COMBATE: Array[String] = [
 @export var total_enemigos_oleada_4: int = 45  ## Enemigos totales en la Oleada 4 (35 base + 10 refuerzos cuerno)
 @export var total_enemigos_oleada_5: int = 50  ## Enemigos totales en la Oleada 5 (11 Lonko, 4 Imp Escudo, 7 Gárgolas, 8 GoblinGirl + 1 Arquera Rosa, 9 Goblin + 10 cuerno)
 @export var total_enemigos_oleada_6: int = 40  ## Enemigos totales en la Oleada 6 Asalto final (12 arqueras, 15 ballesteros, 5 globos, 6 goblinas de escudo)
-@export_range(0.0, 1.0, 0.05) var mascara_oleada6_alfa: float = 0.85  ## Oscurecido lateral derecho durante la Oleada 6
 
 @export_category("Rendimiento")
 @export_range(0.5, 1.0, 0.05) var escala_render_subviewport_fondo_3d: float = 0.95
@@ -60,9 +59,6 @@ var imp_estandarte: Node3D = null  ## Referencia al imp que lleva el estandarte
 var oleada_debug_pendiente: int = 0  ## Oleada solicitada por debug: se aplica tras el intro y el evento del embajador
 var oleada_combate_actual: int = 1
 var transicion_carteles_en_progreso: bool = false
-var _mascara_oleada6_layer: CanvasLayer = null
-var _mascara_oleada6_rect: Control = null
-var _mascara_oleada6_tween: Tween = null
 var _aliadas_activas: bool = true  ## Estado de aliadas para modo debug
 # Diálogos defensoras — 6 solicitados (eliminar previos, duraciones según spec)
 var _dialogo_cambio_arma_mostrado: bool = false  # arriba PARA CAMBIAR 15s
@@ -103,8 +99,6 @@ const ESCENA_TRIDENTE_IMP: PackedScene = preload("res://Entities/Proyectil_Tride
 const ESCENA_FLECHA_GOBLIN: PackedScene = preload("res://Entities/Proyectil_Flecha_Goblin/GoblinArrow.tscn")
 const ESCENA_PROYECTIL_GARGOLA: PackedScene = preload("res://Entities/Proyectil_Gargola/GargolaProjectile.tscn")
 const ESCENA_GOBLIN_BALLESTA: PackedScene = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
-const TEX_MASCARA_OLEADA6: Texture2D = preload("res://Levels/NIVEL_TUTORIAL/sombra_mascara_oleada6.png")
-const SHADER_SOMBRA_FALSA: Shader = preload("res://System/Shaders/sombra_falsa.gdshader")
 const ESCALA_PRECALENTA: float = 0.05  ## Escala mini de las instancias de warm-up (caben dentro del HUD)
 var _viewport_precarga: SubViewport = null  ## Viewport invisible para compilar shaders sin mostrar nada
 @onready
@@ -132,6 +126,20 @@ var _fondo_render_timer: float = 0.0
 var _escala_base_fondo_animado: Vector3 = Vector3.ONE
 # === OPTIMIZACIÓN: Monitoreo de oleadas con timer ===
 var _monitor_timer: float = 0.0
+@export_category("Cámara seguidora (estilo Nivel Pueblo)")
+@export var seguimiento_camara_activo: bool = true ## Si true, CamaraFrente sigue al jugador en X y avanza a la derecha
+@export var limite_camara_min_x: float = -3.0 ## La cámara parte en -3.0 y solo avanza a la derecha
+@export var limite_camara_max_x: float = 12.0 ## Límite derecho: el recorrido llega más lejos que en el pueblo (suelo hasta ~15.8)
+@export_range(1.0, 20.0, 0.5) var suavizado_camara: float = 8.0 ## Seguimiento fluido centrado (estilo Mario Bros)
+@export_range(0.0, 1.0, 0.01) var factor_parallax_fondo: float = 0.15 ## 15%: desplazamiento sutil de CamaraFondoDOF
+## Referencias de cámara (se resuelven en runtime para no romper si se reestructura la escena).
+var _camara_frente: Camera3D = null ## Cámara de gameplay (SubViewportFrente3D/CamaraFrente)
+var _camara_medio: Camera3D = null ## Cámara del plano medio (acompaña 1:1 al frente)
+var _camara_fondo: Camera3D = null ## Cámara del fondo con DOF (parallax sutil)
+var _camara_editor: Camera3D = null ## PRESPECTIVA técnica (se sincroniza en X)
+var _camara_seguidora_iniciada: bool = false
+var _x_origen_camara_frente: float = 0.0
+var _x_origen_camara_fondo: float = 0.0
 @onready var wave_spawner: WaveSpawner = $WaveSpawner
 @onready var game_ui = $GameUI
 @onready var fondo_3d_rect: TextureRect = (
@@ -212,14 +220,15 @@ func _ready():
 
 	_ajustar_subviewports_3d()
 	_configurar_capas_dof_fondo()
+	_fijar_plano_inicial_camara()
 	if not get_viewport().size_changed.is_connected(_ajustar_subviewports_3d):
 		get_viewport().size_changed.connect(_ajustar_subviewports_3d)
 
 	# Warm-up de shaders
 	VFXFactory.warmup_shaders(self)
 
-	# Sonido ambiente desde el arranque del juego
-	AudioManager.play_music(3, true, 12.0)  # SONIDO BOSQUE.mp3
+	# Música del tutorial desde el arranque del juego
+	AudioManager.play_music(AudioManager.MUSICA_TUTORIAL, true)
 
 	if wave_spawner and not wave_spawner.enemigo_eliminado.is_connected(_on_enemigo_eliminado_nivel):
 		wave_spawner.enemigo_eliminado.connect(_on_enemigo_eliminado_nivel)
@@ -235,7 +244,9 @@ func _ready():
 			prota = find_child("Player", true, false) as CharacterBody3D
 		if prota:
 			prota.global_position = p_retorno
-			var mdl = prota.find_child("ArqueraModel", true, false)
+			var mdl = prota.find_child("ImperioGirlModel", true, false)
+			if not mdl:
+				mdl = prota.find_child("ArqueraModel", true, false)
 			if mdl:
 				mdl.rotation.y = deg_to_rad(90.0)
 
@@ -424,7 +435,9 @@ func _iniciar_modo_tutorial() -> void:
 		prota.velocity = Vector3.ZERO
 	# Bloquear control durante la entrada
 	prota.set_physics_process(false)
-	var model := prota.find_child("ArqueraModel", true, false) as Node3D
+	var model := prota.find_child("ImperioGirlModel", true, false) as Node3D
+	if not model:
+		model = prota.find_child("ArqueraModel", true, false) as Node3D
 	if not model:
 		model = prota.find_child("Armature", true, false) as Node3D
 	if model:
@@ -844,6 +857,7 @@ func _mostrar_dialogo_escena(
 func _process(delta):
 	_actualizar_render_subviewport_fondo(delta)
 	_monitorear_goblin_rosa_pantalla()
+	_actualizar_camara_seguidora(delta)
 
 	# OPT: Monitoreo de oleadas con timer en vez de cada frame
 	_monitor_timer += delta
@@ -873,6 +887,86 @@ func _actualizar_render_subviewport_fondo(delta: float) -> void:
 		subviewport_video_fondo.render_target_update_mode = SubViewport.UPDATE_ONCE
 	if subviewport_fondo_3d:
 		subviewport_fondo_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
+## Fija el plano inicial de la cámara en limite_camara_min_x (-3.0: plano de
+## apertura con la acción al centro).
+## Se aplica en _ready para que el primer frame ya muestre ese encuadre,
+## sin depender de la posición inicial de la protagonista (entra desde -16.5).
+func _fijar_plano_inicial_camara() -> void:
+	if not seguimiento_camara_activo:
+		return
+	if GameUI.regreso_desde_interior_oleada > 0:
+		return
+	if GameUI.continuar_desde_oleada > 0:
+		return
+	if GameUI.modo_debug_solicitado:
+		return
+	_camara_frente = find_child("CamaraFrente", true, false) as Camera3D
+	_camara_medio = find_child("CamaraMedio", true, false) as Camera3D
+	_camara_fondo = find_child("CamaraFondoDOF", true, false) as Camera3D
+	_camara_editor = find_child("PRESPECTIVA", true, false) as Camera3D
+	if not is_instance_valid(_camara_frente):
+		return
+	_camara_frente.global_position.x = limite_camara_min_x
+	_x_origen_camara_frente = limite_camara_min_x
+	if is_instance_valid(_camara_medio):
+		_camara_medio.global_position.x = limite_camara_min_x
+	if is_instance_valid(_camara_editor):
+		_camara_editor.global_position.x = limite_camara_min_x
+	if is_instance_valid(_camara_fondo):
+		_x_origen_camara_fondo = _camara_fondo.global_position.x
+	_camara_seguidora_iniciada = true
+
+
+## Cámara seguidora estilo Nivel Pueblo: CamaraFrente sigue de forma centrada
+## a la protagonista en X (estilo Mario Bros) y avanza hacia la derecha con ella.
+## CamaraMedio y PRESPECTIVA acompañan 1:1; CamaraFondoDOF aplica parallax sutil.
+func _actualizar_camara_seguidora(delta: float) -> void:
+	if not seguimiento_camara_activo:
+		return
+	if delta <= 0.0:
+		return
+	if not is_instance_valid(_camara_frente):
+		_camara_frente = find_child("CamaraFrente", true, false) as Camera3D
+		_camara_seguidora_iniciada = false
+	if not is_instance_valid(_camara_frente):
+		return
+	if not is_instance_valid(_camara_medio):
+		_camara_medio = find_child("CamaraMedio", true, false) as Camera3D
+	if not is_instance_valid(_camara_fondo):
+		_camara_fondo = find_child("CamaraFondoDOF", true, false) as Camera3D
+	if not is_instance_valid(_camara_editor):
+		_camara_editor = find_child("PRESPECTIVA", true, false) as Camera3D
+	var tree := get_tree()
+	if tree == null:
+		return
+	var prota: Node3D = tree.get_first_node_in_group("player") as Node3D
+	if not is_instance_valid(prota):
+		prota = find_child("Player", true, false) as Node3D
+	if not is_instance_valid(prota):
+		return
+	var objetivo_x: float = clampf(prota.global_position.x, limite_camara_min_x, limite_camara_max_x)
+	if not _camara_seguidora_iniciada:
+		_camara_seguidora_iniciada = true
+		_camara_frente.global_position.x = objetivo_x
+		_x_origen_camara_frente = objetivo_x
+		if is_instance_valid(_camara_medio):
+			_camara_medio.global_position.x = objetivo_x
+		if is_instance_valid(_camara_editor):
+			_camara_editor.global_position.x = objetivo_x
+		if is_instance_valid(_camara_fondo):
+			_x_origen_camara_fondo = _camara_fondo.global_position.x
+		return
+	var peso: float = clampf(delta * suavizado_camara, 0.0, 1.0)
+	_camara_frente.global_position.x = lerpf(_camara_frente.global_position.x, objetivo_x, peso)
+	if is_instance_valid(_camara_medio):
+		_camara_medio.global_position.x = _camara_frente.global_position.x
+	if is_instance_valid(_camara_editor):
+		_camara_editor.global_position.x = _camara_frente.global_position.x
+	if is_instance_valid(_camara_fondo):
+		var delta_frente: float = _camara_frente.global_position.x - _x_origen_camara_frente
+		_camara_fondo.global_position.x = _x_origen_camara_fondo + (delta_frente * factor_parallax_fondo)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1336,8 +1430,8 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 		else:
 			torre_asedio_ref.desactivar_torre()
 
-	# Máscara de sombra lateral en la Oleada 6 (oscurece la zona derecha)
-	_actualizar_mascara_oleada6(numero_oleada)
+	# Máscara de sombra lateral en la Oleada 6: eliminada en el tutorial
+	# (sin máscaras de recorte pegadas a la cámara).
 
 
 
@@ -1355,55 +1449,6 @@ func _configurar_oleada_combate(total_enemigos: int, numero_oleada: int = 1) -> 
 	wave_spawner.goblins_spawned_in_wave = wave_spawner.active_goblins.size()
 	wave_spawner.is_wave_active = false
 	wave_spawner.wave_cooldown = 1.0
-
-
-## Muestra (oleada 6) u oculta la máscara de sombra lateral derecha (oscurece esa zona)
-func _actualizar_mascara_oleada6(numero_oleada: int) -> void:
-	if numero_oleada == 6:
-		_mostrar_mascara_oleada6()
-	else:
-		_ocultar_mascara_oleada6()
-
-
-func _mostrar_mascara_oleada6() -> void:
-	if not _mascara_oleada6_layer or not is_instance_valid(_mascara_oleada6_layer):
-		_mascara_oleada6_layer = CanvasLayer.new()
-		_mascara_oleada6_layer.name = "MascaraOleada6"
-		_mascara_oleada6_layer.layer = 21  # Sobre Compositor3D (layer 20), debajo de GameUI (layer 100)
-		add_child(_mascara_oleada6_layer)
-
-		_mascara_oleada6_rect = ColorRect.new()
-		_mascara_oleada6_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_mascara_oleada6_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_mascara_oleada6_rect.modulate = Color(1, 1, 1, 0)
-
-		var mat := ShaderMaterial.new()
-		mat.shader = SHADER_SOMBRA_FALSA
-		mat.set_shader_parameter("shadow_mask", TEX_MASCARA_OLEADA6)
-		mat.set_shader_parameter("shadow_color", Color(0.02, 0.02, 0.04, 1.0))
-		mat.set_shader_parameter("shadow_opacity", 1.0)
-		_mascara_oleada6_rect.material = mat
-
-		_mascara_oleada6_layer.add_child(_mascara_oleada6_rect)
-
-	if _mascara_oleada6_tween and _mascara_oleada6_tween.is_valid():
-		_mascara_oleada6_tween.kill()
-	_mascara_oleada6_rect.visible = true
-	_mascara_oleada6_tween = create_tween()
-	_mascara_oleada6_tween.tween_property(_mascara_oleada6_rect, "modulate:a", mascara_oleada6_alfa, 0.6)
-
-
-func _ocultar_mascara_oleada6() -> void:
-	if not _mascara_oleada6_rect or not is_instance_valid(_mascara_oleada6_rect):
-		return
-	if _mascara_oleada6_tween and _mascara_oleada6_tween.is_valid():
-		_mascara_oleada6_tween.kill()
-	_mascara_oleada6_tween = create_tween()
-	_mascara_oleada6_tween.tween_property(_mascara_oleada6_rect, "modulate:a", 0.0, 0.4)
-	_mascara_oleada6_tween.tween_callback(func():
-		if is_instance_valid(_mascara_oleada6_rect):
-			_mascara_oleada6_rect.visible = false
-	)
 
 
 func _monitorear_nivel_1():
@@ -1505,7 +1550,6 @@ func _on_nivel1_completado(_numero_oleada: int):
 
 	estado_actual = NivelEstado.VICTORIA_NIVEL1
 	_log_debug("[NIVEL01] ¡Oleada 6 completada! Mostrando victoria con botón continuar...")
-	_ocultar_mascara_oleada6()
 
 	_mostrar_victoria_con_continuar(
 		(

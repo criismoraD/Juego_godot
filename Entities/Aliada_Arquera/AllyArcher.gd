@@ -136,6 +136,7 @@ func _ready():
 	model_root = find_child("ArqueraModel", false, false)
 	if model_root:
 		_original_model_y_rot = model_root.rotation.y
+		model_root.position.z = -0.30
 	_prev_pos_x = global_position.x
 
 	# Hueso del torso para el apuntado visual (mismo rig que la protagonista)
