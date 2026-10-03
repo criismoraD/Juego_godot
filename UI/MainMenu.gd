@@ -1,9 +1,10 @@
 extends Control
 ## Menú principal simple: fondo negro, letra blanca, traducible.
-## Aparece después de LanguageSelector. Botones: JUGAR, CARGAR PARTIDA, OPCIONES, GALERIA DE ARTE, CREDITOS.
+## Aparece después de LanguageSelector. Botones: JUGAR, TUTORIAL (BETA), CARGAR PARTIDA, OPCIONES, GALERIA DE ARTE, CREDITOS.
 
 @onready var fade_overlay: ColorRect = $FadeOverlay
 @onready var btn_jugar: Button = $CenterContainer/VBoxContainer/BtnJugar
+@onready var btn_tutorial: Button = $CenterContainer/VBoxContainer/BtnTutorial
 @onready var btn_cargar: Button = $CenterContainer/VBoxContainer/BtnCargar
 @onready var btn_opciones: Button = $CenterContainer/VBoxContainer/BtnOpciones
 @onready var btn_galeria: Button = $CenterContainer/VBoxContainer/BtnGaleria
@@ -30,6 +31,7 @@ func _ready() -> void:
 func _actualizar_textos() -> void:
 	title_label.text = tr("INTRO_TITLE") if tr("INTRO_TITLE") != "INTRO_TITLE" else "Arrow of Anathema"
 	btn_jugar.text = tr("MENU_PLAY")
+	btn_tutorial.text = tr("MENU_TUTORIAL") if tr("MENU_TUTORIAL") != "MENU_TUTORIAL" else "Tutorial (beta)"
 	btn_cargar.text = tr("MENU_LOAD")
 	btn_opciones.text = tr("MENU_OPTIONS")
 	btn_galeria.text = tr("MENU_GALLERY")
@@ -38,6 +40,7 @@ func _actualizar_textos() -> void:
 
 func _conectar_botones() -> void:
 	btn_jugar.pressed.connect(_on_jugar_pressed)
+	btn_tutorial.pressed.connect(_on_tutorial_pressed)
 	btn_cargar.pressed.connect(_on_cargar_pressed)
 	btn_opciones.pressed.connect(_on_opciones_pressed)
 	btn_galeria.pressed.connect(_on_galeria_pressed)
@@ -52,6 +55,16 @@ func _on_jugar_pressed() -> void:
 	var tween := create_tween()
 	tween.tween_property(fade_overlay, "color:a", 1.0, 0.5).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	tween.finished.connect(func(): get_tree().change_scene_to_file("res://UI/IntroScene.tscn"))
+
+
+func _on_tutorial_pressed() -> void:
+	if transitioning:
+		return
+	transitioning = true
+	_mostrar_mensaje("")
+	var tween := create_tween()
+	tween.tween_property(fade_overlay, "color:a", 1.0, 0.5).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	tween.finished.connect(func(): get_tree().change_scene_to_file("res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.tscn"))
 
 
 func _on_cargar_pressed() -> void:

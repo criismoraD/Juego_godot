@@ -1,0 +1,109 @@
+[gd_scene format=3 uid="uid://b0e3svbe5crk6"]
+
+[ext_resource type="Script" uid="uid://bg5dwauh5g1ep" path="res://Entities/Defensora_ImperioGirl_Melee/ImperioGirlMelee.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://chjja8acqjm16" path="res://TEST_/Imperio Girl/Imperio Girl.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://rjwgclotmtey" path="res://TEST_/Esspada imperial/Espada imperial.glb" id="3_espada"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.22
+height = 1.5
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hitbox"]
+size = Vector3(0.5, 1.6, 0.5)
+
+[node name="ImperioGirlMelee" type="CharacterBody3D" unique_id=1597176731]
+collision_layer = 2
+script = ExtResource("1_script")
+
+[node name="ImperioGirlModel" parent="." unique_id=621805636 instance=ExtResource("2_glb")]
+transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
+
+[node name="Skeleton3D" parent="ImperioGirlModel/Armature" parent_id_path=PackedInt32Array(621805636, 2045540422) index="0" unique_id=880762132]
+bones/0/position = Vector3(-1.4305115e-06, 0.38405386, -32.555294)
+bones/0/rotation = Quaternion(-0.67955077, 0.108241, -0.0105716735, 0.7255225)
+bones/1/rotation = Quaternion(-0.032180693, 0.5280089, 0.84520525, 0.07615216)
+bones/2/position = Vector3(7.2966074e-08, 19.339088, 1.5827218e-06)
+bones/2/rotation = Quaternion(-0.5350386, 0.1447485, -0.0545906, 0.8305429)
+bones/3/rotation = Quaternion(0.52386487, -0.29556927, 0.19406419, 0.7749475)
+bones/4/rotation = Quaternion(0.23916166, -0.057136152, -0.030732928, 0.9688099)
+bones/6/rotation = Quaternion(-0.2923435, -0.0031164284, 0.91365033, 0.28243333)
+bones/7/rotation = Quaternion(-0.54900116, -0.14615744, 0.036978018, 0.8221122)
+bones/8/rotation = Quaternion(0.77802, 0.089573674, 0.0066908067, 0.621785)
+bones/9/rotation = Quaternion(0.473111, 0.15053892, 0.016216803, 0.86789465)
+bones/11/rotation = Quaternion(-0.021068312, 0.12483889, 0.016546592, 0.9918153)
+bones/12/rotation = Quaternion(0.11574656, 0.28074563, 0.0073397527, 0.9527491)
+bones/13/rotation = Quaternion(0.057104252, 0.27332142, 0.024830703, 0.9599052)
+bones/14/rotation = Quaternion(-0.36474243, -0.55090755, 0.6283402, -0.41067332)
+bones/15/rotation = Quaternion(0.0969746, -0.0002975538, 0.077357896, 0.992276)
+bones/16/rotation = Quaternion(0.16881782, 0.21086004, 0.76317084, 0.58703405)
+bones/17/position = Vector3(-1.5936496e-07, 10.7448845, 8.763186e-08)
+bones/17/rotation = Quaternion(0.0012647411, -0.06764014, 0.22060299, 0.97301465)
+bones/18/position = Vector3(-0.7815426, 5.665619, -0.086348146)
+bones/18/rotation = Quaternion(0.639513, 0.033671867, -0.0018903407, 0.7680402)
+bones/19/position = Vector3(-0.0070029646, 1.078492, 2.3352231e-06)
+bones/19/rotation = Quaternion(0.74280965, 0.016038463, 0.05318587, 0.667194)
+bones/20/position = Vector3(-0.00024486333, 1.1776522, 4.5507672e-06)
+bones/20/rotation = Quaternion(0.56169474, -0.002082777, 0.052652508, 0.82566494)
+bones/21/position = Vector3(0.007249996, 0.6795105, 1.6726553e-06)
+bones/22/position = Vector3(0.7815425, 4.987879, -0.043783974)
+bones/22/rotation = Quaternion(0.64697516, -0.037194666, -0.0011780877, 0.76160246)
+bones/23/position = Vector3(0.025009513, 1.4360552, -3.9805445e-07)
+bones/23/rotation = Quaternion(0.67734176, 0.0017459213, 0.041539785, 0.7344928)
+bones/24/rotation = Quaternion(0.56927186, 0.01365828, 0.038137574, 0.8211507)
+bones/25/position = Vector3(-0.017000496, 0.9929265, 4.4628982e-06)
+bones/26/position = Vector3(-1.1336467, 1.1471705, 1.0333575)
+bones/26/rotation = Quaternion(0.18611212, 0.32147813, 0.2395084, 0.8970227)
+bones/27/position = Vector3(-0.23903525, 1.5136126, -1.9305708e-06)
+bones/27/rotation = Quaternion(0.24299464, -0.076595314, -0.17729318, 0.9506071)
+bones/28/position = Vector3(0.12858403, 1.7007847, -3.182361e-06)
+bones/28/rotation = Quaternion(0.14757198, -0.00892596, -0.44660637, 0.8824317)
+bones/30/rotation = Quaternion(0.050260637, -0.30343744, 0.008131417, 0.9514901)
+bones/31/rotation = Quaternion(-0.1282906, -0.05963708, 0.19646624, 0.9702505)
+bones/33/rotation = Quaternion(0.6850873, -0.30828953, 0.5355283, 0.3857751)
+bones/34/position = Vector3(-1.0085747e-06, 3.9284754, 4.3598175e-07)
+bones/34/rotation = Quaternion(0.36317992, 0.011777049, -0.45125636, 0.81506395)
+bones/35/rotation = Quaternion(0.21642973, -0.5566822, -0.3720624, 0.7105158)
+bones/36/position = Vector3(-5.995005e-07, 10.696856, 4.6408172e-07)
+bones/36/rotation = Quaternion(-0.016230926, -0.2551922, -0.03717315, 0.96603924)
+bones/37/position = Vector3(1.1578823, 5.3770175, -0.069992855)
+bones/37/rotation = Quaternion(0.30278495, -0.047967367, 0.07854629, 0.94860476)
+bones/38/position = Vector3(0.0056788325, 1.1919056, -6.6868927e-07)
+bones/38/rotation = Quaternion(0.56574744, -0.029299555, 0.013406969, 0.82394886)
+bones/39/position = Vector3(0.006945789, 1.2253978, -1.2882015e-07)
+bones/39/rotation = Quaternion(0.5167539, -0.013461773, 0.0028913615, 0.8560233)
+bones/40/position = Vector3(-0.01262182, 0.7403126, 3.1413551e-06)
+bones/41/position = Vector3(-1.157881, 5.5343523, -0.2890021)
+bones/41/rotation = Quaternion(0.3620398, -0.010179439, 0.100317374, 0.92669314)
+bones/42/position = Vector3(0.011537582, 1.4134399, 7.232204e-07)
+bones/42/rotation = Quaternion(0.5615529, -0.008716937, -0.037000578, 0.8265672)
+bones/43/position = Vector3(-0.006470531, 1.4460902, 8.309348e-07)
+bones/43/rotation = Quaternion(0.35079163, 0.0039330353, -0.019974073, 0.9362322)
+bones/45/position = Vector3(1.3103545, 1.0361047, 0.951957)
+bones/45/rotation = Quaternion(0.12394209, -0.59904647, -0.20179743, 0.76489174)
+bones/46/position = Vector3(0.27586693, 1.5132159, -1.5819359e-07)
+bones/46/rotation = Quaternion(0.06320087, 0.09136491, -0.031025548, 0.9933255)
+bones/47/position = Vector3(-0.09576674, 1.7068131, 7.6054566e-06)
+bones/47/rotation = Quaternion(0.13054463, 0.013787413, 0.24631368, 0.9602591)
+
+[node name="BoneAttachment_Espada" type="BoneAttachment3D" parent="ImperioGirlModel/Armature/Skeleton3D" index="1" unique_id=600140100]
+transform = Transform3D(-0.98632663, 0.1328633, -0.09750244, -0.14458364, -0.9815574, 0.12506114, -0.07908821, 0.13744828, 0.98734665, 8.093573, -7.4328775, -36.55694)
+bone_name = "mixamorig_RightHand"
+bone_idx = 36
+
+[node name="EspadaImperial" parent="ImperioGirlModel/Armature/Skeleton3D/BoneAttachment_Espada" unique_id=923232020 instance=ExtResource("3_espada")]
+transform = Transform3D(-3.005569, -39.058876, -10.861121, 39.002327, 0.18604362, -11.46206, 11.062564, -11.267748, 37.459995, 33.67076, 3.9593983, 11.352989)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=410826689]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="HitboxBody" type="StaticBody3D" parent="." unique_id=433997448 groups=["allies"]]
+unique_name_in_owner = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HitboxBody" unique_id=1173781630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("BoxShape3D_hitbox")
+
+[editable path="ImperioGirlModel"]
