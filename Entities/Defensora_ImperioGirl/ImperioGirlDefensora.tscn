@@ -1,0 +1,61 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/Defensora_ImperioGirl/ImperioGirlDefensora.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://chjja8acqjm16" path="res://TEST_/Imperio Girl/Imperio Girl.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx" id="3_arco"]
+[ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="4_flecha"]
+[ext_resource type="PackedScene" uid="uid://c463x5x6uwew4" path="res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb" id="5_flecha_exp"]
+[ext_resource type="Script" uid="uid://dwk5qib0bq6o0" path="res://Components/Dialogue/SpeechBubbleComponent.gd" id="6_speech"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hitbox"]
+size = Vector3(14.259399, 2.0159912, 0.6836548)
+
+[node name="ImperioGirlDefensora" type="Node3D"]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 0, 0, 0)
+script = ExtResource("1_script")
+idle_max = 3.0
+
+[node name="ImperioGirlModel" parent="." instance=ExtResource("2_glb")]
+transform = Transform3D(-1.0053619e-07, 0, 2.3, 0, 2.3, 0, -2.3, 0, -1.0053619e-07, 0, 0, 0)
+
+[node name="BoneAttach_Arco" type="BoneAttachment3D" parent="ImperioGirlModel/Armature/Skeleton3D" index="1"]
+transform = Transform3D(0.31401584, -0.2492659, -0.9161123, 0.13944186, 0.9665643, -0.21519724, 0.9391217, -0.06016879, 0.33827436, -2.210146, 23.857306, -52.613075)
+bone_name = "mixamorig_LeftHand"
+bone_idx = 17
+
+[node name="ARCO_ANIMADO" parent="ImperioGirlModel/Armature/Skeleton3D/BoneAttach_Arco" instance=ExtResource("3_arco")]
+transform = Transform3D(-11.243897, 36.878456, -10.656186, -37.815845, -8.732639, 9.6799755, 6.5981526, 12.795336, 37.319485, -0.96935654, 5.0990295, 1.9075756)
+
+[node name="SpawnPosition_FlechaExplosiva" type="Marker3D" parent="ImperioGirlModel/Armature/Skeleton3D/BoneAttach_Arco"]
+transform = Transform3D(4.4982424, -30.294294, -10.129435, 31.179523, 1.941139, 8.04071, -6.9416704, -10.91199, 29.552084, -10.049694, -18.270287, 7.7429447)
+
+[node name="BoneAttach_Flecha" type="BoneAttachment3D" parent="ImperioGirlModel/Armature/Skeleton3D" index="2"]
+transform = Transform3D(0.4363768, -0.5445568, 0.7162631, 0.21362098, 0.8359991, 0.50544196, -0.874037, -0.0675541, 0.48113936, -5.8578596, -0.5380478, -54.627857)
+bone_name = "mixamorig_RightHand"
+bone_idx = 36
+
+[node name="FlechaExplosiva" parent="ImperioGirlModel/Armature/Skeleton3D/BoneAttach_Flecha" instance=ExtResource("5_flecha_exp")]
+transform = Transform3D(8.05503, -36.252083, -9.907173, -24.329357, 2.6922657, -29.632471, 28.643463, 12.48148, -22.383343, 5.3902016, 15.487649, 7.723442)
+visible = false
+
+[node name="FLECHA" parent="ImperioGirlModel/Armature/Skeleton3D/BoneAttach_Flecha" instance=ExtResource("4_flecha")]
+transform = Transform3D(-8.403967, 30.81243, -1.99194, -23.576057, -7.736585, -20.206808, -19.938494, -3.839222, 24.732906, -0.49650955, 3.162592, -0.08917618)
+visible = false
+
+[node name="PuntoDisparo" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36668172, 1.609096, 0)
+
+[node name="SpeechBubbleComponent" type="Node3D" parent="."]
+script = ExtResource("6_speech")
+offset_cabeza = Vector3(0, 2.5, 0)
+
+[node name="HitboxBody" type="StaticBody3D" parent="." groups=["allies"]]
+unique_name_in_owner = true
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HitboxBody"]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.008880477, 1.0583862, -3.1455688)
+shape = SubResource("BoxShape3D_hitbox")
+
+[editable path="ImperioGirlModel"]

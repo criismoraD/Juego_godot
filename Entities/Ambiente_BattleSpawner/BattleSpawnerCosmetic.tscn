@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://battle_spawner_cosmetic"]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_BattleSpawner/BattleSpawnerCosmetic.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_spawner"]
+transparency = 1
+shading_mode = 0
+cull_mode = 2
+albedo_color = Color(0.0, 0.4, 1.0, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_spawner"]
+material = SubResource("Mat_spawner")
+size = Vector3(2.0, 2.5, 2.0)
+
+[node name="BattleSpawnerCosmetic" type="Node3D"]
+script = ExtResource("1_script")
+bando = "azul"
+cantidad_inicial = 5
+intervalo_spawn_inicial = 0.8
+delay_inicio = 1.0
+auto_iniciar = true
+equilibrio_activo = true
+intervalo_evaluacion = 5.0
+refuerzos_por_ciclo = 2
+intervalo_refuerzo = 0.5
+plano_z_batalla = 8.0
+scatter_x = 1.5
+scatter_z = 0.5
+mostrar_visual_en_juego = false
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_spawner")

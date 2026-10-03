@@ -9,8 +9,11 @@ extends CharacterBody3D
 ## Diferencias: ataca cuerpo a cuerpo con la espada imperial (mano derecha)
 ## en vez de lanzar tridentes, porta en la mano izquierda el escudo élfico
 ## (comparte la vida del cuerpo: los golpes al escudo dañan a Imperio Man),
-## tiene 10 de vida,
-## NUNCA sufre daño crítico y JAMÁS ataca a la protagonista ni a aliadas.
+## tiene 10 de vida, hace 2 de daño por tajo,
+## NUNCA sufre daño crítico, JAMÁS ataca a la protagonista ni a aliadas,
+## las flechas del jugador lo atraviesan sin dañarlo (él y su escudo están
+## marcados como defensa aliada) y SOLO ataca cuando hay enemigos dentro
+## del alcance de su espada. Al morir se disuelve en amarillo como los enemigos.
 
 enum State { RUNNING, ATTACKING, DEFENDING, SHIELD_HIT, DYING, DEAD, TURNING }
 
@@ -19,13 +22,12 @@ signal died
 const VIDA_MAXIMA_DEFAULT: int = 10
 const VELOCIDAD_CARRERA_DEFAULT: float = 1.8
 const DISTANCIA_PROTECCION_DEFAULT: float = 0.65
-const DANO_CUERPO_A_CUERPO_DEFAULT: int = 1
+const DANO_CUERPO_A_CUERPO_DEFAULT: int = 2
 const ALCANCE_MELEE_DEFAULT: float = 1.8
 const MARGEN_Z_MELEE_DEFAULT: float = 1.5
 const TIEMPO_GOLPE_MELEE_DEFAULT: float = 0.6
 const DURACION_ATAQUE_DEFAULT: float = 1.2
 const INTERVALO_ATAQUE_DEFENSA: float = 6.0
-const TIEMPO_DEFENSA_SIN_ENEMIGOS_ATAQUE: float = 7.0
 const DURACION_DISOLUCION: float = 1.2
 
 const DISSOLVE_SHADER: Shader = preload("res://System/Shaders/dissolve.gdshader")
@@ -44,7 +46,7 @@ const ESCALA_ESCUDO_MANO: float = 0.55
 @export var velocidad_carrera: float = VELOCIDAD_CARRERA_DEFAULT
 @export var distancia_proteccion: float = DISTANCIA_PROTECCION_DEFAULT
 @export var rotacion_y_modelo: float = 270.0
-@export var color_borde_disolucion: Color = Color(0.85, 0.9, 1.0)
+@export var color_borde_disolucion: Color = Color(1.0, 0.6, 0.2)  ## Amarillo de disolución como los enemigos (EnemyBase)
 @export var dano_cuerpo_a_cuerpo: int = DANO_CUERPO_A_CUERPO_DEFAULT
 @export var alcance_melee: float = ALCANCE_MELEE_DEFAULT
 @export var margen_z_melee: float = MARGEN_Z_MELEE_DEFAULT
@@ -71,11 +73,9 @@ var posicion_objetivo_zona_roja: float = -1.0
 var primer_ataque_realizado: bool = false
 var tiempo_defensa_primer_ataque: float = 0.0
 
-var _necesita_atacar: bool = true
 var _ha_atacado_en_animacion: bool = false
 var _attack_timer: float = 0.0
 var _timer_defensa: float = 0.0
-var _timer_defensa_sin_enemigos: float = 0.0
 var _check_enemigos_timer: float = 0.0
 var _shield_hit_timer: float = 0.0
 var _turn_timer: float = 0.0
@@ -118,6 +118,7 @@ func _ready() -> void:
 	_configurar_excepciones_colision_aliadas()
 	_buscar_aliado_a_proteger()
 	_excluir_escudo_mano()
+	_marcar_escudo_mano_como_aliado()
 	_cambiar_estado(State.RUNNING)
 
 
@@ -181,6 +182,24 @@ func _excluir_escudo_mano() -> void:
 	var escudo := _nodo_escudo_mano() as StaticBody3D
 	if is_instance_valid(escudo):
 		add_collision_exception_with(escudo)
+
+
+## El escudo de mano reutiliza EscudoPesadoArea (pensado para enemigas,
+## con es_escudo_enemigo en true): marcarlo como defensa ALIADA para que
+## las flechas del jugador y las explosiones lo atraviesen sin dañarlo.
+## Los proyectiles enemigos sí lo alcanzan y dañan a Imperio Man.
+func _marcar_escudo_mano_como_aliado() -> void:
+	var areas: Array[Node] = []
+	var attach := find_child("BoneAttachment_Escudo", true, false)
+	if is_instance_valid(attach):
+		areas = (attach as Node).find_children("*", "Area3D", true, false)
+	if areas.is_empty():
+		areas = find_children("*", "Area3D", true, false)
+	for area in areas:
+		if "es_escudo_enemigo" in area:
+			area.set("es_escudo_enemigo", false)
+		if "es_pilar_enemigo" in area:
+			area.set("es_pilar_enemigo", false)
 
 
 ## Busca el Skeleton3D del modelo sin depender de rutas fijas.
@@ -294,7 +313,6 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 			velocity.x = 0.0
 			velocity.z = 0.0
 			_timer_defensa = 0.0
-			_timer_defensa_sin_enemigos = 0.0
 			_play_anim("Idle", 0.25, 1.0)
 		State.SHIELD_HIT:
 			_shield_hit_timer = 0.45
@@ -341,7 +359,9 @@ func _process_running(delta: float) -> void:
 		velocity.x = 0.0
 		if model_root and abs(model_root.rotation_degrees.y - rotacion_y_modelo) > 5.0:
 			model_root.rotation_degrees.y = rotacion_y_modelo
-		if _necesita_atacar:
+		# SOLO ataca si hay enemigos dentro del alcance de la espada;
+		# sin enemigos queda defendiendo (idle) en su puesto.
+		if _enemigo_en_alcance_melee():
 			_cambiar_estado(State.ATTACKING)
 		else:
 			_cambiar_estado(State.DEFENDING)
@@ -399,9 +419,10 @@ func _process_defending(delta: float) -> void:
 			_buscar_aliado_a_proteger()
 
 	if is_instance_valid(aliado_protegido) and aliado_protegido.is_inside_tree():
-		_timer_defensa_sin_enemigos = 0.0
 		_timer_defensa += delta
-		if _timer_defensa >= INTERVALO_ATAQUE_DEFENSA:
+		# SOLO ataca si hay enemigos en alcance de espada (pasea el ciclo
+		# con el intervalo para no encadenar tajos sin pausa).
+		if _timer_defensa >= INTERVALO_ATAQUE_DEFENSA and _enemigo_en_alcance_melee():
 			_timer_defensa = 0.0
 			_cambiar_estado(State.ATTACKING)
 			return
@@ -418,9 +439,9 @@ func _process_defending(delta: float) -> void:
 				_cambiar_estado(State.RUNNING)
 	else:
 		_timer_defensa = 0.0
-		_timer_defensa_sin_enemigos += delta
-		if _timer_defensa_sin_enemigos >= TIEMPO_DEFENSA_SIN_ENEMIGOS_ATAQUE:
-			_timer_defensa_sin_enemigos = 0.0
+		# Sin aliado que proteger: solo ataca si un enemigo entra en alcance;
+		# en caso contrario queda defendiendo en idle en su puesto.
+		if _enemigo_en_alcance_melee():
 			_cambiar_estado(State.ATTACKING)
 			return
 

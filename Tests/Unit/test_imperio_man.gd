@@ -71,6 +71,7 @@ func test_tajo_dana_enemigos_y_nunca_al_jugador() -> void:
 
 	# Assert
 	assert_gt(enemigo.dano_recibido, 0, "El tajo debe dañar enemigos en rango")
+	assert_eq(enemigo.dano_recibido, 2, "El tajo hace 2 de daño cuerpo a cuerpo")
 	assert_eq(enemigo.ultimo_atacante, imperio, "Debe registrar autoría del golpe")
 	assert_eq(jugador.health, 10, "Jamás debe dañar a la protagonista")
 
@@ -129,3 +130,56 @@ func test_muerte_disuelve_y_emite_died() -> void:
 	# Assert
 	assert_signal_emitted(imperio, "died", "Debe emitir died al disolverse")
 	assert_false(is_instance_valid(imperio), "Debe liberarse tras la disolución")
+
+
+func test_escudo_mano_marcado_como_defensa_aliada() -> void:
+	# Arrange
+	var imperio: ImperioMan = _crear_imperio()
+
+	# Act: áreas del escudo de mano (las flechas del jugador las ignoran si no son enemigas)
+	var areas: Array = imperio.find_children("*", "Area3D", true, false)
+	assert_gt(areas.size(), 0, "El escudo de mano debe tener Area3D")
+
+	# Assert: ninguna debe figurar como escudo enemigo (si no, el jugador podría dañarlo)
+	for area in areas:
+		if "es_escudo_enemigo" in area:
+			assert_false(bool(area.get("es_escudo_enemigo")), "El escudo aliado no es escudo enemigo")
+		if "es_pilar_enemigo" in area:
+			assert_false(bool(area.get("es_pilar_enemigo")), "El escudo aliado no es pilar enemigo")
+
+
+func test_no_ataca_sin_enemigos() -> void:
+	# Arrange: puesto fijo como en el tutorial, sin enemigos en la escena
+	var imperio: ImperioMan = _crear_imperio()
+	imperio.estatico = true
+
+	# Act: varios frames de lógica (en modo normal antes atacaba por temporizador)
+	for i in range(20):
+		imperio._physics_process(0.05)
+
+	# Assert: queda defendiendo en idle, jamás en ATTACKING
+	assert_eq(imperio.current_state, ImperioMan.State.DEFENDING, "Sin enemigos no ejecuta ataque")
+
+
+func test_ataca_cuando_enemigo_entra_en_rango() -> void:
+	# Arrange: puesto fijo con un enemigo dentro del alcance de espada
+	var imperio: ImperioMan = _crear_imperio()
+	imperio.estatico = true
+	var enemigo := DummyEnemy.new()
+	add_child_autofree(enemigo)
+	enemigo.global_position = Vector3(-1.0, 0.0, 0.0)
+
+	# Act
+	for i in range(5):
+		imperio._physics_process(0.05)
+
+	# Assert
+	assert_eq(imperio.current_state, ImperioMan.State.ATTACKING, "Con enemigo en rango sí ataca")
+
+
+func test_disolucion_amarilla_como_enemigos() -> void:
+	# Arrange
+	var imperio: ImperioMan = _crear_imperio()
+
+	# Assert: mismo amarillo de EnemyBase (1.0, 0.6, 0.2)
+	assert_eq(imperio.color_borde_disolucion, Color(1.0, 0.6, 0.2), "Disolución amarilla de enemigos")

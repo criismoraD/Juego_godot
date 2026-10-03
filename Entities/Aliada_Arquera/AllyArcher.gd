@@ -84,12 +84,14 @@ var _prev_pos_x: float = 0.0  ## Para detectar hacia dónde corre (volteo del hu
 var anim_player: AnimationPlayer
 var bow_anim_player: AnimationPlayer
 var _sfx_escalera: AudioStreamPlayer = null  ## Loop de pasos mientras trepa (SUBIR_ESCALERA)
+var volumen_pasos_db: float = 0.5  ## Volumen del loop de pasos; las subclases lo ajustan (ej. ImperioGirlDefensora más suave)
 var _fade_escalera_tween: Tween = null  ## Fade out del sonido de escalera (evita corte en seco)
 var skeleton: Skeleton3D
 var arrow_node: Node3D
 var explosive_arrow_node: Node3D
 var hitbox_body: StaticBody3D
 var model_root: Node3D
+var nombre_nodo_modelo: String = "ArqueraModel"  ## Punto de override: las subclases (ej. ImperioGirlDefensora) ponen aquí su modelo
 var _original_model_y_rot: float = 0.0
 var ultima_muerte_anim: String = ""
 var _flecha_soltada: bool = false
@@ -133,7 +135,7 @@ func _ready():
 	health = vida_maxima
 	set_physics_process(false)
 
-	model_root = find_child("ArqueraModel", false, false)
+	model_root = find_child(nombre_nodo_modelo, false, false)
 	if model_root:
 		_original_model_y_rot = model_root.rotation.y
 		model_root.position.z = -0.30
@@ -586,7 +588,7 @@ func _actualizar_sonido_escalera() -> void:
 	if _fade_escalera_tween and _fade_escalera_tween.is_valid():
 		_fade_escalera_tween.kill()
 		_fade_escalera_tween = null
-	_sfx_escalera.volume_db = 0.5
+	_sfx_escalera.volume_db = volumen_pasos_db
 	if not _sfx_escalera.playing:
 		_sfx_escalera.play()
 

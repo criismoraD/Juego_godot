@@ -129,7 +129,7 @@ static func _asegurar_cache_barreras(tree: SceneTree) -> void:
 	var barreras_lim := tree.get_nodes_in_group("barrera_limite")
 	for b in barreras_lim:
 		if is_instance_valid(b) and b is Node3D and b.is_inside_tree():
-			if b.global_position.x > -12.0:
+			if b.global_position.x > -12.0 and b.global_position.x < 0.0:
 				var tam_x: float = b.tamano.x if "tamano" in b else 1.0
 				var lim: float = b.global_position.x + (tam_x * 0.5) + 0.35
 				_cached_limite_izq_x = lim

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dte8kekf2yh3a"]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_Lluvia_Flechas/LluviaDeFlechas.gd" id="1_script"]
+
+[node name="LluviaDeFlechas" type="Node3D"]
+script = ExtResource("1_script")

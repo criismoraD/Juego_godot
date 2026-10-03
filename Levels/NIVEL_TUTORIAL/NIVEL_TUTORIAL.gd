@@ -37,7 +37,7 @@ const TUTORIAL_SIN_OLEADAS: bool = true  ## Sin oleadas: el spawner queda deteni
 const X_SPAWN_ENTRADA_TUTORIAL: float = -16.5  ## X fuera de pantalla donde aparece la protagonista
 const X_DESTINO_ENTRADA_TUTORIAL: float = -7.5  ## X donde se detiene tras entrar
 const Y_SUELO_TUTORIAL: float = 0.2  ## Altura del suelo para la entrada
-const VELOCIDAD_ENTRADA_TUTORIAL: float = 1.4  ## Unidades/seg de la caminata de entrada
+const VELOCIDAD_ENTRADA_TUTORIAL: float = 3.5  ## Unidades/seg de la carrera de entrada (corre, no camina)
 # === CONFIGURACIÓN NIVEL 0 (PACIFISTA) ===
 @export_category("Nivel 0 — Pacifista")
 @export var velocidad_pacificos: float = 0.5  ## Velocidad de caminata de los pacíficos
@@ -251,7 +251,7 @@ func _ready():
 				mdl.rotation.y = deg_to_rad(90.0)
 
 	# ═══════════════════════════════════════════════════════════════════════════
-	# MODO TUTORIAL: sin oleadas. La protagonista entra caminando desde la
+	# MODO TUTORIAL: sin oleadas. La protagonista entra corriendo desde la
 	# izquierda en lugar de aparecer desde el aire.
 	# Reposicionarla YA (antes del primer frame de física) para que no caiga del aire.
 	# ═══════════════════════════════════════════════════════════════════════════
@@ -408,7 +408,7 @@ func _ready():
 	_iniciar_nivel_0()
 
 
-## MODO TUTORIAL: sin oleadas. La protagonista entra caminando desde la
+## MODO TUTORIAL: sin oleadas. La protagonista entra corriendo desde la
 ## izquierda (fuera de pantalla) hasta su puesto, en lugar de caer desde el aire.
 func _iniciar_modo_tutorial() -> void:
 	# 1. Spawner detenido por completo: el tutorial aún no tiene oleadas
@@ -443,21 +443,31 @@ func _iniciar_modo_tutorial() -> void:
 	if model:
 		model.rotation.y = deg_to_rad(90.0)  ## Mirar a la derecha
 
-	# 4. Animación de caminar mientras avanza (árbol del Player: idle/walk_fwd)
+	# 4. Animación de correr mientras avanza (árbol del Player: idle/run_fwd)
 	var anim_tree := prota.find_child("AnimationTree", true, false) as AnimationTree
 	if anim_tree:
-		anim_tree.set("parameters/Locomotion/transition_request", "walk_fwd")
+		anim_tree.set("parameters/Locomotion/transition_request", "run_fwd")
 
-	# 5. Caminar hasta el puesto de inicio
+	# 5. Sonido de carrera: el propio loop de armadura de Imperio Girl
+	# (mismo clip que la ballestera aliada). Forzado porque el tween mueve el
+	# global_position con velocity a cero y la detección normal no lo oiría.
+	if prota.has_method("iniciar_sonido_correr_forzado"):
+		prota.iniciar_sonido_correr_forzado()
+
+	# 6. Correr hasta el puesto de inicio (menos tiempo que la caminata anterior)
 	var dist: float = absf(X_DESTINO_ENTRADA_TUTORIAL - X_SPAWN_ENTRADA_TUTORIAL)
 	var tween := create_tween()
 	tween.tween_property(prota, "global_position:x", X_DESTINO_ENTRADA_TUTORIAL, dist / VELOCIDAD_ENTRADA_TUTORIAL) \
 		.set_trans(Tween.TRANS_LINEAR)
 	await tween.finished
 	if not is_instance_valid(self) or not is_instance_valid(prota):
+		if is_instance_valid(prota) and prota.has_method("detener_sonido_correr_forzado"):
+			prota.detener_sonido_correr_forzado()
 		return
 
-	# 6. Volver a idle y liberar el control
+	# 7. Cortar el sonido, volver a idle y liberar el control
+	if is_instance_valid(prota) and prota.has_method("detener_sonido_correr_forzado"):
+		prota.detener_sonido_correr_forzado()
 	if anim_tree and is_instance_valid(anim_tree):
 		anim_tree.set("parameters/Locomotion/transition_request", "idle")
 	prota.set_physics_process(true)
@@ -2120,7 +2130,7 @@ func _aplicar_configuracion_defensoras() -> void:
 		return
 
 	var ballestera_scene: PackedScene = preload("res://Entities/Aliada_Ballestera/AllyBallestera.tscn")
-	var arquera_scene: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+	var arquera_scene: PackedScene = preload("res://Entities/Defensora_ImperioGirl/ImperioGirlDefensora.tscn")
 
 	# Piso 1 (Inferior): AllyArcher2 en (-7.1104116, 1.585446, -0.02)
 	var tipo_piso1: String = GameUI.defensoras_config.get(1, "arquera")
@@ -3077,7 +3087,7 @@ func _contar_arqueras_moviles_vivas() -> int:
 ## Entra corriendo desde la izquierda, sube escaleras y toma su puesto sin
 ## traspasar el límite jugable de la isla aliada.
 func _desplegar_arquera_movil_oleada_6() -> void:
-	var arquera_scene: PackedScene = preload("res://Entities/Aliada_Arquera/AllyArcher.tscn")
+	var arquera_scene: PackedScene = preload("res://Entities/Defensora_ImperioGirl/ImperioGirlDefensora.tscn")
 	if not arquera_scene:
 		return
 	var arquera := arquera_scene.instantiate() as AllyArcher

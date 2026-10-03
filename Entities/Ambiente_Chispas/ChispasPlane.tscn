@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://cg2xoufhoc21u"]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_Chispas/ChispasPlane.gd" id="1_script"]
+[ext_resource type="Material" uid="uid://dmatchispas01" path="res://Entities/Ambiente_Chispas/MAT_chispas.tres" id="2_mat_chispas"]
+
+[sub_resource type="Gradient" id="Gradient_Chispas"]
+offsets = PackedFloat32Array(0, 0.15, 0.7, 1)
+colors = PackedColorArray(3.5, 1.925, 0.42, 0, 4.55, 2.21, 0.38, 0.95, 3.5, 1.44, 0.15, 0.85, 1.75, 0.05, 0.01, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_Chispas"]
+gradient = SubResource("Gradient_Chispas")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_Chispas"]
+emission_shape = 3
+emission_box_extents = Vector3(17.5, 0.2, 1)
+emission_shape_offset = Vector3(0, 11, 0)
+direction = Vector3(-0.35, -1, 0)
+spread = 22.0
+initial_velocity_min = 0.4
+initial_velocity_max = 1.25
+gravity = Vector3(-0.063, -0.6, 0)
+scale_min = 0.06
+scale_max = 0.18
+color_ramp = SubResource("GradientTexture1D_Chispas")
+turbulence_enabled = true
+turbulence_noise_strength = 0.08
+turbulence_noise_scale = 5.0
+turbulence_influence_min = 0.02
+turbulence_influence_max = 0.06
+
+[sub_resource type="QuadMesh" id="QuadMesh_Chispas"]
+material = ExtResource("2_mat_chispas")
+size = Vector2(0.35, 0.35)
+
+[node name="ChispasPlane" type="GPUParticles3D"]
+layers = 2
+amount = 120
+lifetime = 14.0
+preprocess = 14.0
+visibility_aabb = AABB(-25, -15, -5, 50, 30, 10)
+local_coords = false
+process_material = SubResource("ParticleProcessMaterial_Chispas")
+draw_pass_1 = SubResource("QuadMesh_Chispas")
+script = ExtResource("1_script")

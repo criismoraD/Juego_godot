@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_Piso/SueloColision.gd" id="1_suelo"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_suelo"]
+size = Vector3(36, 1, 4)
+
+[sub_resource type="StandardMaterial3D" id="Mat_suelo"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.55, 0.2, 0.25)
+cull_mode = 2
+
+[sub_resource type="BoxMesh" id="BoxMesh_suelo"]
+material = SubResource("Mat_suelo")
+size = Vector3(36, 1, 4)
+
+[node name="SueloColision" type="StaticBody3D"]
+script = ExtResource("1_suelo")
+tamano = Vector3(36, 1, 4)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape_suelo")
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_suelo")

@@ -1,0 +1,60 @@
+[gd_scene format=3 uid="uid://qes82nwsq4yn"]
+
+[ext_resource type="Script" path="res://Entities/Enemigo_Goblin_Garrote/GoblinGarrote.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://k3nj0crucrl" path="res://Entities/Enemigo_Goblin/GOBLING_REMASTER_ANIMACIONES.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblin_Garrote/GarroteGoblin.tscn" id="3_garrote"]
+[ext_resource type="PackedScene" uid="uid://ba3am7tn32s5x" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Piernas_GOBLING_MUERTE.glb" id="4_piernas"]
+[ext_resource type="PackedScene" uid="uid://dftvddswjhkcr" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Cabeza_GOBLING_MUERTE.glb" id="5_cabeza"]
+[ext_resource type="PackedScene" uid="uid://bidywox2rsf5c" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_01_GOBLING_MUERTE.glb" id="6_brazo1"]
+[ext_resource type="PackedScene" uid="uid://bfayt5mqq4wcs" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_02_GOBLING_MUERTE.glb" id="7_brazo2"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_goblin"]
+radius = 0.16748047
+height = 0.6040527
+
+[node name="GoblinGarrote" type="CharacterBody3D" groups=["enemies", "enemigos"]]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_script")
+velocidad_caminar = 2.4
+distancia_minima_caminar = 1.0
+distancia_maxima_caminar = 4.0
+
+[node name="GOBLING_REMASTER_ANIMACIONES" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
+
+[node name="Armature" parent="GOBLING_REMASTER_ANIMACIONES" index="0"]
+transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
+
+[node name="Skeleton3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature" index="0"]
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D" index="1"]
+transform = Transform3D(0.2714778, -0.5976307, 0.7544123, 0.05560416, 0.79227924, 0.60761964, -0.96083695, -0.12300658, 0.24831708, -20.27837, 23.426609, -75.85204)
+bone_name = "mixamorig_RightHandIndex1"
+bone_idx = 29
+
+[node name="GarroteGoblin" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D/BoneAttachment3D" instance=ExtResource("3_garrote")]
+transform = Transform3D(56.5685, 0, -56.5685, 0, 80, 0, 56.5685, 0, 56.5685, 0, 5, -5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(0.99137384, 0, 0, 0, 0.99137384, 0, 0, 0, 0.99137384, 0, 0.3022279, 0)
+shape = SubResource("CapsuleShape_goblin")
+
+[node name="PartesExplotadas" type="Node3D" parent="."]
+transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
+visible = false
+
+[node name="Piernas" parent="PartesExplotadas" instance=ExtResource("4_piernas")]
+transform = Transform3D(1, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 1, 0, -0.064776085, 0)
+
+[node name="Cabeza" parent="PartesExplotadas" instance=ExtResource("5_cabeza")]
+transform = Transform3D(0.78, 0, -5.542233e-15, 0, 0.78, 0, 5.542233e-15, 0, 0.78, -0.007733301, 0.99825186, 0.11249772)
+
+[node name="Brazo_01" parent="PartesExplotadas" instance=ExtResource("6_brazo1")]
+transform = Transform3D(1, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 1, -0.3092329, 0.39419746, 1.3516998e-08)
+
+[node name="Brazo_02" parent="PartesExplotadas" instance=ExtResource("7_brazo2")]
+transform = Transform3D(1, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 1, 0.2565931, 0.45801905, -1.12160405e-08)
+
+[editable path="GOBLING_REMASTER_ANIMACIONES"]

@@ -101,19 +101,30 @@ func test_imperio_girl_aim_walk_forward_animation():
 	var girl = IMPERIO_GIRL_SCENE.instantiate()
 	add_child(girl)
 	
-	# 1. Verificar registro y alias del clip de caminar apuntando
+	# 1. Verificar registro de clips clave
 	assert_true(
-		girl.anim_player.has_animation("Armature|Armature|APUNTAR_CAMINAR_ADELANTE"),
-		"ImperioGirl debe tener registrado el alias Armature|Armature|APUNTAR_CAMINAR_ADELANTE"
+		girl.anim_player.has_animation("Armature|Armature|CAMINAR_ADELANTE"),
+		"ImperioGirl debe tener registrado CAMINAR_ADELANTE"
 	)
-	var anim: Animation = girl.anim_player.get_animation("Armature|Armature|APUNTAR_CAMINAR_ADELANTE")
-	assert_not_null(anim, "La animacion de apuntar caminando debe existir")
-	assert_eq(anim.loop_mode, Animation.LOOP_LINEAR, "La animacion debe tener LOOP_LINEAR activado")
+	assert_true(
+		girl.anim_player.has_animation("Armature|Armature|CAMINAR_ATRAS"),
+		"ImperioGirl debe tener generado y registrado CAMINAR_ATRAS para retroceder"
+	)
+	var anim_atras: Animation = girl.anim_player.get_animation("Armature|Armature|CAMINAR_ATRAS")
+	assert_not_null(anim_atras, "La animacion de retroceder debe existir")
+	assert_eq(anim_atras.loop_mode, Animation.LOOP_LINEAR, "CAMINAR_ATRAS debe tener LOOP_LINEAR activado")
 	
-	# 2. Verificar detección de clip de aim walk dedicado
-	assert_true(girl._tiene_clip_aim_walk_dedicado(), "_tiene_clip_aim_walk_dedicado() debe retornar true")
+	# Verificar que TOMAR_FLECHA es una pose de tensar/apuntar y NO la suelta de flecha
+	assert_true(
+		girl.anim_player.has_animation("Armature|Armature|TOMAR_FLECHA"),
+		"Debe tener registrado TOMAR_FLECHA"
+	)
+	assert_true(
+		girl.anim_player.has_animation("Armature|Armature|APUNTAR_IDLE"),
+		"Debe tener registrado APUNTAR_IDLE"
+	)
 	
-	# 3. Locomocion normal sin apuntar (moverse hacia adelante -> run_fwd)
+	# 2. Locomocion normal sin apuntar (moverse hacia adelante -> run_fwd)
 	girl.current_aim_state = Player.AimState.NONE
 	girl.update_locomotion_anim(1.0)
 	assert_eq(
@@ -130,34 +141,34 @@ func test_imperio_girl_aim_walk_forward_animation():
 		"Sin input debe solicitar idle"
 	)
 	
-	# 4. Apuntando a la derecha y avanzando hacia la derecha (input_dir > 0) -> aim_walk_fwd
+	# 3. Paridad con Eryn: Apuntando a la derecha y avanzando hacia la derecha (input_dir > 0) -> walk_fwd
 	girl.current_aim_state = Player.AimState.AIMING
 	girl._mirando_derecha = true
 	girl.update_locomotion_anim(1.0)
 	assert_eq(
 		girl.anim_tree.get("parameters/Locomotion/transition_request"),
-		"aim_walk_fwd",
-		"Al apuntar y avanzar de frente debe solicitar aim_walk_fwd"
+		"walk_fwd",
+		"Al apuntar y avanzar de frente debe solicitar walk_fwd igual que Eryn"
 	)
 	
-	# 5. Apuntando a la derecha y retrocediendo hacia la izquierda (input_dir < 0) -> walk_back
+	# 4. Paridad con Eryn: Apuntando a la derecha y retrocediendo hacia la izquierda (input_dir < 0) -> walk_back
 	girl.update_locomotion_anim(-1.0)
 	assert_eq(
 		girl.anim_tree.get("parameters/Locomotion/transition_request"),
 		"walk_back",
-		"Al apuntar y retroceder debe solicitar walk_back"
+		"Al apuntar y retroceder debe solicitar walk_back igual que Eryn"
 	)
 	
-	# 6. Apuntando a la izquierda y avanzando hacia la izquierda (input_dir < 0) -> aim_walk_fwd
+	# 5. Paridad con Eryn: Apuntando a la izquierda y avanzando hacia la izquierda (input_dir < 0) -> walk_fwd
 	girl._mirando_derecha = false
 	girl.update_locomotion_anim(-1.0)
 	assert_eq(
 		girl.anim_tree.get("parameters/Locomotion/transition_request"),
-		"aim_walk_fwd",
-		"Al apuntar a la izquierda y moverse a la izquierda debe solicitar aim_walk_fwd"
+		"walk_fwd",
+		"Al apuntar a la izquierda y moverse a la izquierda debe solicitar walk_fwd"
 	)
 	
-	# 7. Apuntando a la izquierda y retrocediendo hacia la derecha (input_dir > 0) -> walk_back
+	# 6. Paridad con Eryn: Apuntando a la izquierda y retrocediendo hacia la derecha (input_dir > 0) -> walk_back
 	girl.update_locomotion_anim(1.0)
 	assert_eq(
 		girl.anim_tree.get("parameters/Locomotion/transition_request"),
@@ -165,15 +176,52 @@ func test_imperio_girl_aim_walk_forward_animation():
 		"Al apuntar a la izquierda y retroceder a la derecha debe solicitar walk_back"
 	)
 	
-	# 8. Al tensar el arco (DRAWING) y moverse de frente -> aim_walk_fwd
+	# 7. Al tensar el arco (DRAWING) y moverse de frente -> walk_fwd
 	girl.current_aim_state = Player.AimState.DRAWING
 	girl._mirando_derecha = true
 	girl.update_locomotion_anim(1.0)
 	assert_eq(
 		girl.anim_tree.get("parameters/Locomotion/transition_request"),
-		"aim_walk_fwd",
-		"En estado DRAWING avanzando de frente debe solicitar aim_walk_fwd"
+		"walk_fwd",
+		"En estado DRAWING avanzando de frente debe solicitar walk_fwd"
 	)
+	
+	# 8. Al tensar el arco (DRAWING) y retroceder -> walk_back
+	girl.update_locomotion_anim(-1.0)
+	assert_eq(
+		girl.anim_tree.get("parameters/Locomotion/transition_request"),
+		"walk_back",
+		"En estado DRAWING retrocediendo debe solicitar walk_back"
+	)
+	
+	girl.queue_free()
+
+
+func test_imperio_girl_escalera_y_apuntado_paridad():
+	var girl = IMPERIO_GIRL_SCENE.instantiate()
+	add_child(girl)
+	
+	# 1. Rotación de escalera para orientarse de cara a los peldaños / espalda a cámara
+	assert_almost_eq(girl.rotacion_personaje_escalera, 270.0, 0.1, "Debe ser 270 deg por el offset del modelo")
+	
+	# 2. Al entrar a la escalera sin apuntar, debe adoptar la rotación hacia la pared
+	girl.current_move_state = Player.MoveState.CLIMBING
+	girl.current_aim_state = Player.AimState.NONE
+	girl._apply_character_rotation(0.016, true)
+	var ang_escalera: float = rad_to_deg(girl.armature_node.rotation.y)
+	assert_almost_eq(ang_escalera, 270.0 - 0.5, 1.0, "El armature debe rotar hacia los peldaños")
+	
+	# 3. Al apuntar en la escalera, debe voltearse de perfil hacia la derecha/izquierda
+	girl.current_aim_state = Player.AimState.AIMING
+	girl._mirando_derecha = true
+	girl._apply_character_rotation(0.016, true)
+	var ang_apuntar_der: float = rad_to_deg(girl.armature_node.rotation.y)
+	assert_almost_eq(ang_apuntar_der, rad_to_deg(girl.armature_original_rotation.y), 1.0, "Debe mirar de perfil a la derecha al apuntar")
+	
+	girl._mirando_derecha = false
+	girl._apply_character_rotation(0.016, true)
+	var ang_apuntar_izq: float = rad_to_deg(girl.armature_node.rotation.y)
+	assert_almost_eq(ang_apuntar_izq, rad_to_deg(girl.armature_original_rotation.y + PI), 1.0, "Debe mirar de perfil a la izquierda al apuntar")
 	
 	girl.queue_free()
 
