@@ -35,7 +35,7 @@ const VELOCIDAD_CORRECCION_FRENO: float = 8.0  ## Velocidad de retroceso continu
 
 @export_category("Choque con Submarino")
 @export var choque_submarino_activo: bool = true  ## Si true, chocar con un submarino causa tamboleo y separación
-@export var retroceso_choque_submarino: float = 3.0  ## Metros extra de separación tras el choque (proa despejada del casco)
+@export var retroceso_choque_submarino: float = 1.0  ## Metros extra de separación tras el choque: basta para despejar la proa del casco sin lanzar la canoa lejos (barrera invisible pequeña)
 @export var velocidad_separacion_choque: float = 10.0  ## Velocidad de retroceso al separarse del casco (m/s)
 @export var duracion_tamboleo_choque: float = 1.6  ## Duración del tamboleo de choque (s)
 @export var multiplicador_tamboleo_choque: float = 3.0  ## Intensidad del tamboleo respecto al oleaje base

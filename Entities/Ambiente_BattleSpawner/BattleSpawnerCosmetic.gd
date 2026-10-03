@@ -89,9 +89,73 @@ const MAX_UNIDADES_ACTIVAS: int = 12
 @export_range(0.1, 5.0, 0.1) var intervalo_refuerzo: float = 0.5
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# EXPORTS — RESPAWN CONTINUO
+# ═══════════════════════════════════════════════════════════════════════════════
+@export_category("Respawn Continuo")
+## Si true, respawnea automáticamente una unidad cada vez que una muere
+## (por combate o por la ZonaKillBatalla). Mantiene el conteo constante
+## e impide que la batalla se detenga por falta de unidades.
+@export var respawn_al_morir: bool = true
+
+## Delay (segundos) antes de respawnear la unidad que acaba de morir.
+## Evita que aparezcan de golpe en el borde de pantalla.
+@export_range(0.0, 10.0, 0.1) var delay_respawn: float = 2.0
+
+## Número mínimo de unidades que se intenta mantener vivas.
+## Si el conteo cae por debajo de este valor el respawn se acelera
+## ignorando el delay (respawn inmediato al siguiente frame).
+@export_range(0, 10, 1) var minimo_unidades_vivas: int = 1
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXPORTS — EQUILIBRIO DE COMBATE
+# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXPORTS — GESTIÓN DE CADÁVERES
+# ═══════════════════════════════════════════════════════════════════════════════
+@export_category("Gestión de Cadáveres")
+## Máximo de cadáveres simultáneos permitidos en pantalla para este bando (ej. 8).
+## Al superarse, los cadáveres más antiguos desaparecen desvaneciéndose.
+@export_range(1, 20, 1) var max_cadaveres: int = 8
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXPORTS — EQUILIBRIO DE COMBATE
+# ═══════════════════════════════════════════════════════════════════════════════
+@export_category("Equilibrio de Combate")
+## Vida que tendrán las unidades al spawnear (si es > 0). Permite igualar la resistencia
+## o diferenciar bandos (ej. 3 para armadura imperio, 1 para goblins).
+@export_range(1, 20, 1) var vida_unidad: int = 2
+
+## Daño de ataque de las unidades (si es > 0).
+@export_range(1, 10, 1) var dano_unidad: int = 1
+
+## Velocidad de avance de las unidades (m/s). Si es > 0, iguala la velocidad de ambos bandos
+## para que alcancen el centro de la plataforma simultáneamente.
+@export_range(0.5, 10.0, 0.1) var velocidad_unidad: float = 2.2
+
+## Límite Y inferior de seguridad. Si una unidad cae por debajo de esta altura,
+## se elimina como baja de combate y activa el respawn continuo.
+@export var limite_y_muerte: float = -4.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXPORTS — AUDIO
+# ═══════════════════════════════════════════════════════════════════════════════
+@export_category("Audio")
+## Si true, silencia a las unidades spawneadas por este bloque (pasos, ataques, muertes)
+## para evitar saturar el audio en batallas cosméticas de fondo.
+@export var silenciar_unidades: bool = false:
+	set(v):
+		silenciar_unidades = v
+		if not is_inside_tree():
+			return
+		for u in _unidades_activas:
+			if is_instance_valid(u):
+				_silenciar_unidad(u)
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS — POSICIONAMIENTO
 # ═══════════════════════════════════════════════════════════════════════════════
 @export_category("Posicionamiento")
+
 ## Plano Z en el que viven las unidades de batalla.
 @export var plano_z_batalla: float = 8.0
 
@@ -116,6 +180,7 @@ const MAX_UNIDADES_ACTIVAS: int = 12
 # VARIABLES DE ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
 var _unidades_activas: Array[Node3D] = []
+var _cadaveres: Array[Node3D] = []
 var _batalla_iniciada: bool = false
 var _timer_evaluacion: float = 0.0
 var _spawneando: bool = false
@@ -163,13 +228,44 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	if not _batalla_iniciada or not equilibrio_activo:
+	if not _batalla_iniciada:
+		return
+
+	_verificar_caida_vacio()
+
+	if not equilibrio_activo:
 		return
 
 	_timer_evaluacion += delta
 	if _timer_evaluacion >= intervalo_evaluacion:
 		_timer_evaluacion = 0.0
 		_evaluar_equilibrio()
+
+
+## Detecta si alguna unidad activa o cadáver cayó de la plataforma al vacío.
+## En caso afirmativo, la elimina y emite la señal de muerte para reciclarla.
+func _verificar_caida_vacio() -> void:
+	for i in range(_unidades_activas.size() - 1, -1, -1):
+		var u: Node3D = _unidades_activas[i]
+		if not is_instance_valid(u):
+			continue
+		if u.global_position.y < limite_y_muerte:
+			if u.has_method("take_damage"):
+				u.call("take_damage", 99999.0)
+			elif u.has_signal("died"):
+				u.emit_signal("died")
+			elif not u.is_queued_for_deletion():
+				u.queue_free()
+
+	for i in range(_cadaveres.size() - 1, -1, -1):
+		var c: Node3D = _cadaveres[i]
+		if not is_instance_valid(c):
+			_cadaveres.remove_at(i)
+			continue
+		if c.global_position.y < limite_y_muerte:
+			_cadaveres.remove_at(i)
+			if not c.is_queued_for_deletion():
+				c.queue_free()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -189,6 +285,17 @@ func iniciar_batalla() -> void:
 func contar_unidades_vivas() -> int:
 	_limpiar_muertos()
 	return _unidades_activas.size()
+
+
+## True si el bloque de este bando está activo: batalla iniciada y nodo vigente
+## en el árbol. El nivel tutorial lo usa para el sonido de batalla de fondo
+## (solo suena con ambos bloques —azul y rojo— activos).
+func batalla_activa() -> bool:
+	if not _batalla_iniciada:
+		return false
+	if not is_inside_tree() or is_queued_for_deletion():
+		return false
+	return true
 
 
 ## Spawnea una unidad adicional manualmente.
@@ -294,6 +401,27 @@ func _aplicar_fix_post_arbol(unidad: Node3D) -> void:
 	if unidad.has_method("_actualizar_orientacion_modelo"):
 		unidad.call("_actualizar_orientacion_modelo")
 
+	# Sincronización y equilibrio de atributos de combate
+	if vida_unidad > 0:
+		if "vida_maxima" in unidad:
+			unidad.set("vida_maxima", vida_unidad)
+		if "health" in unidad:
+			unidad.set("health", vida_unidad)
+
+	if dano_unidad > 0:
+		if "dano_cuerpo_a_cuerpo" in unidad:
+			unidad.set("dano_cuerpo_a_cuerpo", dano_unidad)
+
+	if velocidad_unidad > 0.0:
+		if "velocidad_correr" in unidad:
+			unidad.set("velocidad_correr", velocidad_unidad)
+		if "velocidad_caminar" in unidad:
+			unidad.set("velocidad_caminar", velocidad_unidad)
+
+	# Silenciar unidades si está activo en este spawner
+	if silenciar_unidades:
+		_silenciar_unidad(unidad)
+
 	var sc: Script = unidad.get_script() as Script
 	if sc == null or "ImperioGirlMelee" not in sc.resource_path:
 		return
@@ -301,6 +429,23 @@ func _aplicar_fix_post_arbol(unidad: Node3D) -> void:
 	# Re-ejecutar setup de animaciones un frame después para asegurar que el
 	# AnimationPlayer ya esté listo (evita condición de carrera con _ready).
 	get_tree().create_timer(0.05).timeout.connect(_post_setup_imperio_girl.bind(unidad))
+
+
+## Silencia los efectos de sonido de una unidad para evitar saturar el audio en batallas cosméticas.
+func _silenciar_unidad(unidad: Node3D) -> void:
+	if not is_instance_valid(unidad):
+		return
+	if "silenciar_audio" in unidad:
+		unidad.set("silenciar_audio", true)
+	for child in unidad.find_children("*", "AudioStreamPlayer3D", true, false):
+		var asp := child as AudioStreamPlayer3D
+		if is_instance_valid(asp):
+			asp.volume_db = -80.0
+	for child in unidad.find_children("*", "AudioStreamPlayer", true, false):
+		var asp := child as AudioStreamPlayer
+		if is_instance_valid(asp):
+			asp.volume_db = -80.0
+
 
 
 func _post_setup_imperio_girl(unidad: Node3D) -> void:
@@ -339,12 +484,60 @@ func _on_unidad_murio(unidad: Node3D) -> void:
 	if is_instance_valid(unidad) and _unidades_activas.has(unidad):
 		_unidades_activas.erase(unidad)
 	unit_died.emit(bando)
+	_registrar_cadaver(unidad)
+	_respawnear_con_delay()
 
 
 func _on_unidad_salio_arbol(unidad: Node3D) -> void:
 	if _unidades_activas.has(unidad):
 		_unidades_activas.erase(unidad)
+	if _cadaveres.has(unidad):
+		_cadaveres.erase(unidad)
 	unit_died.emit(bando)
+	_respawnear_con_delay()
+
+
+## Registra un cadáver en la lista del bando. Si supera max_cadaveres (8 por bando),
+## el más antiguo desaparece desvaneciéndose.
+func _registrar_cadaver(unidad: Node3D) -> void:
+	if not is_instance_valid(unidad):
+		return
+	_limpiar_cadaveres()
+	_cadaveres.append(unidad)
+	while _cadaveres.size() > max_cadaveres:
+		var viejo: Node3D = _cadaveres.pop_front()
+		if is_instance_valid(viejo):
+			_desvanecer_y_liberar_cadaver(viejo)
+
+
+## Ejecuta el desvanecimiento y liberación del cadáver más antiguo.
+func _desvanecer_y_liberar_cadaver(cadaver: Node3D) -> void:
+	if not is_instance_valid(cadaver) or cadaver.is_queued_for_deletion():
+		return
+	if cadaver.has_method("desvanecer_y_liberar"):
+		cadaver.call("desvanecer_y_liberar")
+	elif cadaver.has_method("_start_dissolve_effect"):
+		cadaver.call("_start_dissolve_effect")
+	elif cadaver.has_method("_start_dissolve"):
+		cadaver.call("_start_dissolve")
+	else:
+		var tween: Tween = create_tween()
+		tween.tween_property(cadaver, "scale", Vector3.ZERO, 1.2)
+		tween.tween_callback(cadaver.queue_free)
+
+
+func _limpiar_cadaveres() -> void:
+	var validos: Array[Node3D] = []
+	for c: Node3D in _cadaveres:
+		if is_instance_valid(c) and not c.is_queued_for_deletion():
+			validos.append(c)
+	_cadaveres = validos
+
+
+## Devuelve la cantidad actual de cadáveres visibles de este bando.
+func contar_cadaveres() -> int:
+	_limpiar_cadaveres()
+	return _cadaveres.size()
 
 
 func _limpiar_muertos() -> void:
@@ -353,6 +546,33 @@ func _limpiar_muertos() -> void:
 		if is_instance_valid(u):
 			vivas.append(u)
 	_unidades_activas = vivas
+
+
+## Respawnea una unidad tras un delay para reemplazar a la que murió.
+## Si el bando tiene menos unidades que el mínimo configurado, el respawn
+## es inmediato (sin delay) para evitar que la batalla quede vacía.
+func _respawnear_con_delay() -> void:
+	if not _batalla_iniciada:
+		return
+	if not respawn_al_morir:
+		return
+	if _unidades_activas.size() >= MAX_UNIDADES_ACTIVAS:
+		return
+
+	# Respawn acelerado si quedan muy pocas unidades vivas
+	var vivos_actuales: int = contar_unidades_vivas()
+	var usar_delay: float = delay_respawn if vivos_actuales >= minimo_unidades_vivas else 0.0
+
+	if usar_delay > 0.0:
+		get_tree().create_timer(usar_delay).timeout.connect(
+			func() -> void:
+				if is_instance_valid(self) and _batalla_iniciada:
+					await _spawn_una_unidad()
+		)
+	else:
+		await get_tree().process_frame
+		if is_instance_valid(self) and _batalla_iniciada:
+			await _spawn_una_unidad()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://d0hjpjkrn7pmh"]
 
-[ext_resource type="Texture2D" uid="uid://d2ydxcpudsu1o" path="res://TEST_/Garrote goblin/garrote goblin_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://d2ydxcpudsu1o" path="res://Entities/Enemigo_Goblin_Garrote/garrote goblin_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]

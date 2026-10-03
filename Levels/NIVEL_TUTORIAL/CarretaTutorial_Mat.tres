@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://et6ckb7x65px"]
 
-[ext_resource type="Texture2D" path="res://TEST_/Carreta tutorial/carreta tutorial_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://dqh70krhv4d8g" path="res://Levels/NIVEL_TUTORIAL/carreta tutorial_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "CarretaTutorial_Mat"

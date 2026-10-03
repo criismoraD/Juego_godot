@@ -1135,8 +1135,24 @@ func _crear_particulas_rocas_destruccion(spawn_pos: Vector3) -> void:
 		)
 
 
+## SFX 3D por pool de AudioManager (sin crear nodos por evento = sin tirones).
+func _sfx_pool_3d(nombre: String, pos: Vector3, boost_db: float = 0.0, pitch: float = 0.0) -> bool:
+	if not is_inside_tree() or get_tree() == null:
+		return false
+	if not get_tree().root.has_node("AudioManager"):
+		return false
+	var mgr: Node = get_tree().root.get_node("AudioManager")
+	if mgr == null or not mgr.has_method("play_sfx_3d"):
+		return false
+	mgr.call("play_sfx_3d", nombre, pos, boost_db, pitch)
+	return true
+
+
 func _reproducir_sonido_explosion(spawn_pos: Vector3) -> void:
 	if not is_inside_tree() or get_tree() == null:
+		return
+	# Pool elige al azar entre EXPLOSION01/02 igual que antes (canon_submarino)
+	if _sfx_pool_3d("canon_submarino", spawn_pos, -1.5):
 		return
 	var stream: AudioStream = SFX_EXPLOSION_01 if randf() < 0.5 else SFX_EXPLOSION_02
 	if not stream:

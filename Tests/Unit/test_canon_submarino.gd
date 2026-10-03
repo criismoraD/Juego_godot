@@ -7,6 +7,35 @@ var SubmarinoScene: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Paralla
 var _root_test: Node3D = null
 
 
+class MockAudioPool3D extends Node:
+	var llamadas: Array = []
+	func play_sfx_3d(sound_name: String, position: Vector3, volume_boost_db: float = 0.0, pitch_override: float = 0.0) -> void:
+		llamadas.append({"nombre": sound_name, "pos": position, "vol": volume_boost_db, "pitch": pitch_override})
+
+
+## Intercambia el AudioManager real por un mock que graba play_sfx_3d.
+func _usar_mock_audio_pool() -> Array:
+	var real: Node = null
+	if get_tree().root.has_node("AudioManager"):
+		real = get_tree().root.get_node("AudioManager")
+		get_tree().root.remove_child(real)
+	var mock := MockAudioPool3D.new()
+	mock.name = "AudioManager"
+	get_tree().root.add_child(mock)
+	return [mock, real]
+
+
+func _restaurar_audio_manager(par: Array) -> void:
+	var mock: Node = par[0] as Node
+	var real: Node = par[1] as Node
+	if is_instance_valid(mock):
+		if mock.is_inside_tree():
+			get_tree().root.remove_child(mock)
+		mock.free()
+	if is_instance_valid(real) and not real.is_inside_tree():
+		get_tree().root.add_child(real)
+
+
 func before_each() -> void:
 	_root_test = Node3D.new()
 	_root_test.name = "RootTestCanonSubmarino"
@@ -148,9 +177,11 @@ func test_sin_canon_se_hunde_directo() -> void:
 	assert_false(submarino._disparo_canon_realizado, "No debe haber disparo del cañón")
 
 
-## 7. Al moverse el cañón suena el engranaje
+## 7. Al moverse el cañón suena el engranaje (por pool, sin crear nodos)
 func test_canon_reproduce_engranaje_al_apuntar() -> void:
 	# Arrange
+	var audio_par := _usar_mock_audio_pool()
+	var mock: MockAudioPool3D = audio_par[0] as MockAudioPool3D
 	var submarino := _crear_submarino()
 	_acortar_secuencia_canon(submarino)
 	submarino.canon_disparo_final = true
@@ -158,8 +189,14 @@ func test_canon_reproduce_engranaje_al_apuntar() -> void:
 	# Act: inicia la despedida (eleva el cañón)
 	submarino._iniciar_sumersion()
 
-	# Assert: engranaje sonando durante el movimiento
-	assert_not_null(_root_test.find_child("SfxCanonEngranaje", true, false), "Al elevar el cañón debe sonar el engranaje")
+	# Assert: engranaje pedido al pool y sin nodo nuevo (= sin tirones)
+	var sono := false
+	for l in mock.llamadas:
+		if (l as Dictionary).get("nombre") == "engranaje_canon":
+			sono = true
+	assert_true(sono, "Al elevar el cañón debe pedir engranaje_canon al pool 3D")
+	assert_null(_root_test.find_child("SfxCanonEngranaje", true, false), "Con pool no debe crear nodo SfxCanonEngranaje")
+	_restaurar_audio_manager(audio_par)
 
 
 ## 8. La boca deriva de la malla real (calza con la punta aunque se edite el modelo)

@@ -43,7 +43,7 @@
 [ext_resource type="Material" path="res://Entities/NPC_Veera/Fukencia_Mat.tres" id="49_fukencia_mat"]
 [ext_resource type="PackedScene" uid="uid://cgskofh0hi2ky" path="res://Levels/NIVEL01/Modelos/pechera metalica/pechera metalica.glb" id="50_pechera"]
 [ext_resource type="PackedScene" path="res://Entities/NPC_PerrenaPueblo/PerrenaPuebloNPC.tscn" id="52_perrena_pueblo"]
-[ext_resource type="PackedScene" path="res://TEST_/Choza verde nueva/ChochaVerdeNueva.tscn" id="53_choza_verde"]
+[ext_resource type="PackedScene" path="res://Levels/Nivel_Pueblo/ChochaVerdeNueva.tscn" id="53_choza_verde"]
 [ext_resource type="PackedScene" path="res://Entities/Ambiente_Dummy/Dummy.tscn" id="53_dummy"]
 [ext_resource type="Texture2D" uid="uid://cso1gbk0o4lhn" path="res://assets/Textures/Mandoble 2D.png" id="55_mandoble"]
 [ext_resource type="PackedScene" uid="uid://dksfjji3w48wb" path="res://Entities/NPC_Veera/Veera.tscn" id="56_veera"]

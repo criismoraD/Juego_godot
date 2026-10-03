@@ -10,7 +10,6 @@ extends Node3D
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTES Y CONFIGURACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
-const MAT_TORRE: Material = preload("res://Entities/Torre_de_asedio/Torre_de_asedio_MAT.tres")
 const ESCENA_GOBLIN_BALLESTERO: PackedScene = preload("res://Entities/Enemigo_Goblin/Goblin.tscn")
 const ESCENA_GOBLIN_ARQUERA: PackedScene = preload("res://Entities/Enemigo_Goblin_Girl/GoblinGirl.tscn")
 
@@ -34,6 +33,13 @@ const ESCENA_GOBLIN_ARQUERA: PackedScene = preload("res://Entities/Enemigo_Gobli
 @export var colision_rampa: CollisionShape3D = null  ## Forma del piso de la rampa
 @export var limites_rampa: StaticBody3D = null  ## Barreras laterales y frontales
 
+@export_category("Capa Visual")
+@export_flags_3d_render var capa_visual: int = 1:  ## Capas donde se ve la torre (selector del inspector)
+	set(nueva_capa):
+		capa_visual = nueva_capa
+		if is_node_ready():
+			_aplicar_capa_visual(self)
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # VARIABLES DE ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -50,12 +56,9 @@ var _proximo_tipo_arquera: bool = false
 # ═══════════════════════════════════════════════════════════════════════════════
 # CICLO DE VIDA
 # ═══════════════════════════════════════════════════════════════════════════════
-func _enter_tree() -> void:
-	_aplicar_material_textura()
-
-
 func _ready() -> void:
-	_aplicar_material_textura()
+	# El modelo mejorado trae sus propias texturas de madera: no forzar material.
+	_aplicar_capa_visual(self)
 
 	posicion_inicial = global_position
 	rotacion_inicial = rotation
@@ -80,16 +83,18 @@ func _ready() -> void:
 	desactivar_torre()
 
 
-func _aplicar_material_textura() -> void:
-	var modelo = get_node_or_null("ModeloTorre")
-	if is_instance_valid(modelo):
-		if modelo is MeshInstance3D:
-			modelo.material_override = MAT_TORRE
-			modelo.set_surface_override_material(0, MAT_TORRE)
-		for child in modelo.find_children("*", "MeshInstance3D", true, false):
-			if child is MeshInstance3D:
-				child.material_override = MAT_TORRE
-				child.set_surface_override_material(0, MAT_TORRE)
+## Aplica la capa visual a la torre y su modelo (selector del inspector).
+func _aplicar_capa_visual(nodo: Node) -> void:
+	if not is_instance_valid(nodo):
+		return
+	if nodo is VisualInstance3D:
+		(nodo as VisualInstance3D).layers = capa_visual
+	for hijo: Node in nodo.get_children():
+		_aplicar_capa_visual(hijo)
+
+
+## Sin override: el modelo mejorado trae sus propias texturas de madera.
+## (Se retiró el material forzado Torre_de_asedio_MAT + su _D mejorada.)
 
 
 

@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/Defensora_ImperioGirl/ImperioGirlDefensora.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://chjja8acqjm16" path="res://TEST_/Imperio Girl/Imperio Girl.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://chjja8acqjm16" path="res://Entities/Jugador_ImperioGirl/Imperio Girl.glb" id="2_glb"]
 [ext_resource type="PackedScene" uid="uid://npoldnoqi57p" path="res://Entities/Jugador_Arquera/GEO_ARCO_ANIMADO.fbx" id="3_arco"]
 [ext_resource type="PackedScene" uid="uid://djhvryeb0mwjb" path="res://Entities/Jugador_Arquera/FLECHA.fbx" id="4_flecha"]
 [ext_resource type="PackedScene" uid="uid://c463x5x6uwew4" path="res://Entities/Flecha_Explosiva/Flecha_Explosiva.glb" id="5_flecha_exp"]

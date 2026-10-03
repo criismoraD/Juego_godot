@@ -8,6 +8,44 @@ var CanoaScene: PackedScene = preload("res://Levels/Rio_En_Canoa_Con_Parallax/Ca
 var _root_test: Node3D = null
 
 
+class MockAudioPool3D extends Node:
+	var llamadas: Array = []
+	func play_sfx_3d(sound_name: String, position: Vector3, volume_boost_db: float = 0.0, pitch_override: float = 0.0) -> void:
+		llamadas.append({"nombre": sound_name, "pos": position, "vol": volume_boost_db, "pitch": pitch_override})
+
+
+## Intercambia el AudioManager real por un mock que graba play_sfx_3d.
+## Retorna [mock, real] para restaurar después (evita contaminar la suite).
+func _usar_mock_audio_pool() -> Array:
+	var real: Node = null
+	if get_tree().root.has_node("AudioManager"):
+		real = get_tree().root.get_node("AudioManager")
+		get_tree().root.remove_child(real)
+	var mock := MockAudioPool3D.new()
+	mock.name = "AudioManager"
+	get_tree().root.add_child(mock)
+	return [mock, real]
+
+
+func _restaurar_audio_manager(par: Array) -> void:
+	var mock: Node = par[0] as Node
+	var real: Node = par[1] as Node
+	if is_instance_valid(mock):
+		if mock.is_inside_tree():
+			get_tree().root.remove_child(mock)
+		mock.free()
+	if is_instance_valid(real) and not real.is_inside_tree():
+		get_tree().root.add_child(real)
+
+
+func _llamo_sonido(mock: MockAudioPool3D, nombre: String) -> Dictionary:
+	for l in mock.llamadas:
+		var d := l as Dictionary
+		if d.get("nombre") == nombre:
+			return d
+	return {}
+
+
 func before_each() -> void:
 	_root_test = Node3D.new()
 	_root_test.name = "RootTestSubmarino"
@@ -291,7 +329,9 @@ func test_submarino_deja_de_contar_como_enemigo_al_hundirse_para_que_canoa_avanc
 
 
 func test_emerger_reproduce_sonido_submarino_emergiendo() -> void:
-	# Arrange: submarino sumergido
+	# Arrange: submarino sumergido + AudioManager mockeado (pool, sin crear nodos)
+	var audio_par := _usar_mock_audio_pool()
+	var mock: MockAudioPool3D = audio_par[0] as MockAudioPool3D
 	var submarino: SubmarinoRio = SubmarinoScene.instantiate() as SubmarinoRio
 	submarino.position = Vector3(40.0, 0.0, -7.5)
 	submarino.altura_emergido_y = 0.0
@@ -302,9 +342,11 @@ func test_emerger_reproduce_sonido_submarino_emergiendo() -> void:
 	# Act: iniciar emergencia
 	submarino.emerger()
 
-	# Assert: estado + sonido posicionado
+	# Assert: estado + sonido posicionado por pool (sin nodos nuevos = sin tirones)
 	assert_eq(submarino.current_state, SubmarinoRio.State.EMERGIENDO, "Debe cambiar a EMERGIENDO")
-	assert_not_null(_root_test.find_child("SfxEmergiendo", true, false), "Al emerger debe sonar submarino_emergiendo")
+	assert_false(_llamo_sonido(mock, "submarino_emergiendo").is_empty(), "Al emerger debe pedir submarino_emergiendo al pool 3D")
+	assert_null(_root_test.find_child("SfxEmergiendo", true, false), "Con pool no debe crear nodo SfxEmergiendo")
+	_restaurar_audio_manager(audio_par)
 
 
 ## 12. Los enemigos que salen del submarino caminan con animación, se orientan en la dirección de marcha y se detienen antes de atacar
@@ -349,7 +391,9 @@ func test_submarino_enemigos_caminan_se_orientan_y_se_detienen_para_atacar() -> 
 
 ## 13. Al sumergirse, el submarino reproduce el mismo sonido de emerger pero más despacio (pitch menor a 1.0)
 func test_sumersion_reproduce_sonido_emerger_mas_despacio() -> void:
-	# Arrange: submarino en superficie
+	# Arrange: submarino en superficie + AudioManager mockeado (pool, sin crear nodos)
+	var audio_par := _usar_mock_audio_pool()
+	var mock: MockAudioPool3D = audio_par[0] as MockAudioPool3D
 	var submarino: SubmarinoRio = SubmarinoScene.instantiate() as SubmarinoRio
 	_root_test.add_child(submarino)
 	submarino.current_state = SubmarinoRio.State.EN_SUPERFICIE
@@ -358,11 +402,13 @@ func test_sumersion_reproduce_sonido_emerger_mas_despacio() -> void:
 	# Act: iniciar sumersión
 	submarino._iniciar_sumersion()
 
-	# Assert: debe generarse SfxSumergiendose con un pitch_scale más lento/grave (< 1.0)
-	var sfx := _root_test.find_child("SfxSumergiendose", true, false) as AudioStreamPlayer3D
-	assert_not_null(sfx, "Al sumergirse debe sonar SfxSumergiendose")
-	assert_lt(sfx.pitch_scale, 1.0, "El sonido de sumersión debe reproducirse a una velocidad/tono más lento (pitch < 1.0)")
-	assert_almost_eq(sfx.pitch_scale, submarino.pitch_sonido_sumersion, 0.01, "El pitch debe coincidir con pitch_sonido_sumersion configurado")
+	# Assert: pool con pitch grave (< 1.0) y sin nodo nuevo
+	var llamada := _llamo_sonido(mock, "submarino_emergiendo")
+	assert_false(llamada.is_empty(), "Al sumergirse debe pedir submarino_emergiendo al pool 3D")
+	assert_lt(float(llamada.get("pitch", 1.0)), 1.0, "El sonido de sumersión debe reproducirse a una velocidad/tono más lento (pitch < 1.0)")
+	assert_almost_eq(float(llamada.get("pitch", 0.0)), submarino.pitch_sonido_sumersion, 0.01, "El pitch debe coincidir con pitch_sonido_sumersion configurado")
+	assert_null(_root_test.find_child("SfxSumergiendose", true, false), "Con pool no debe crear nodo SfxSumergiendose")
+	_restaurar_audio_manager(audio_par)
 
 
 func test_puestos_esquivan_vela_y_no_se_enciman() -> void:
@@ -462,13 +508,13 @@ func test_emerger_genera_onda_del_splash_nuevo() -> void:
 
 
 func test_canoa_frena_antes_del_casco_con_margen() -> void:
-	# Arrange: canoa y submarino en superficie separados 7.4m (contacto con margen 5+2.4)
+	# Arrange: canoa y submarino en superficie separados 6.0m (contacto con margen 3.6+2.4)
 	var canoa: CanoaProtagonistaRio = CanoaScene.instantiate() as CanoaProtagonistaRio
 	_root_test.add_child(canoa)
 	canoa.global_position = Vector3(0.0, 0.0, -7.5)
 	var submarino: SubmarinoRio = SubmarinoScene.instantiate() as SubmarinoRio
 	_root_test.add_child(submarino)
-	submarino.global_position = Vector3(7.4, 0.0, -7.5)
+	submarino.global_position = Vector3(6.0, 0.0, -7.5)
 	submarino.current_state = SubmarinoRio.State.EN_SUPERFICIE
 	submarino.add_to_group("enemies")
 	submarino.add_to_group("enemigos")
@@ -484,7 +530,7 @@ func test_canoa_frena_antes_del_casco_con_margen() -> void:
 	canoa._posicion_base.x = 9.0
 	canoa._aplicar_freno_contacto_enemigos()
 
-	# Assert: la proa queda fuera del casco (7.4m del centro)
+	# Assert: la proa queda fuera del casco (6.0m del centro)
 	assert_almost_eq(canoa._posicion_base.x, 0.0, 0.01, "El freno la devuelve fuera del casco")
 
 

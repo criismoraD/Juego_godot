@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://ds4f6ullvlgl6"]
 
-[ext_resource type="Texture2D" uid="uid://btljbwkj1pt33" path="res://TEST_/Fukencia/Fukencia_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://btljbwkj1pt33" path="res://Entities/NPC_Veera/Fukencia_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "Fukencia_Mat"

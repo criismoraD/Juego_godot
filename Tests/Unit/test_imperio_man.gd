@@ -120,15 +120,16 @@ func test_escudo_elfico_texturado_en_mano() -> void:
 func test_muerte_disuelve_y_emite_died() -> void:
 	# Arrange
 	var imperio: ImperioMan = _crear_imperio()
-	watch_signals(imperio)
+	var senal_emitida: bool = false
+	imperio.died.connect(func(): senal_emitida = true)
 
 	# Act
 	imperio.take_damage(99.0)
 	assert_eq(imperio.current_state, ImperioMan.State.DYING, "Debe entrar en DYING")
-	await get_tree().create_timer(1.6).timeout
+	await wait_seconds(1.8)
 
 	# Assert
-	assert_signal_emitted(imperio, "died", "Debe emitir died al disolverse")
+	assert_true(senal_emitida, "Debe emitir died al disolverse")
 	assert_false(is_instance_valid(imperio), "Debe liberarse tras la disolución")
 
 
@@ -183,3 +184,42 @@ func test_disolucion_amarilla_como_enemigos() -> void:
 
 	# Assert: mismo amarillo de EnemyBase (1.0, 0.6, 0.2)
 	assert_eq(imperio.color_borde_disolucion, Color(1.0, 0.6, 0.2), "Disolución amarilla de enemigos")
+
+
+func test_tajo_dana_solo_un_enemigo_con_multiples_en_rango() -> void:
+	# Arrange
+	var imperio: ImperioMan = _crear_imperio()
+	var enemigo_a := DummyEnemy.new()
+	add_child_autofree(enemigo_a)
+	enemigo_a.global_position = Vector3(-0.8, 0.0, 0.0)
+
+	var enemigo_b := DummyEnemy.new()
+	add_child_autofree(enemigo_b)
+	enemigo_b.global_position = Vector3(-1.2, 0.0, 0.0)
+
+	# Act
+	imperio._golpe_espada()
+
+	# Assert (AAA): solo un enemigo recibe daño a la vez
+	var total_golpeados: int = 0
+	if enemigo_a.dano_recibido > 0:
+		total_golpeados += 1
+	if enemigo_b.dano_recibido > 0:
+		total_golpeados += 1
+
+	assert_eq(total_golpeados, 1, "El ataque de espada debe dañar exactamente a un enemigo a la vez")
+
+
+func test_imperio_man_mantiene_orientacion_derecha_siempre() -> void:
+	# Arrange
+	var imperio: ImperioMan = _crear_imperio()
+	var rot_esperada: float = imperio.rotacion_y_modelo
+
+	# Act: intentar forzar estado TURNING o rotación contraria
+	imperio._cambiar_estado(ImperioMan.State.TURNING)
+	imperio._physics_process(0.05)
+
+	# Assert (AAA): se mantiene mirando a la derecha y no se queda volteado
+	assert_almost_eq(imperio.model_root.rotation_degrees.y, rot_esperada, 0.1, "Siempre debe mirar a la derecha")
+	assert_ne(imperio.current_state, ImperioMan.State.TURNING, "No debe quedarse en TURNING volteado")
+

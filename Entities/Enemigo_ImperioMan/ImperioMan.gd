@@ -36,8 +36,8 @@ const SANGRE_NO_LETAL_SCENE: PackedScene = preload("res://VFX/Scenes/BloodSplash
 const MAT_IMPERIO: Material = preload("res://Entities/Enemigo_ImperioMan/ImperioMan_Mat.tres")
 const MAT_ESPADA: Material = preload("res://Entities/Enemigo_ImperioMan/EspadaImperial_Mat.tres")
 const MAT_ESCUDO_ELFICO: Material = preload("res://Levels/Nivel_Interior/MAT_EscudoPesadoElfico.tres")
-const ESCENA_ESPADA: PackedScene = preload("res://TEST_/Esspada imperial/Espada imperial.glb")
-const ESCENA_ESCUDO_MANO: PackedScene = preload("res://TEST_/No_Usados/Escudo pesado elfico/Escudo pesado elfico.glb")
+const ESCENA_ESPADA: PackedScene = preload("res://Entities/Enemigo_ImperioMan/Espada imperial.glb")
+const ESCENA_ESCUDO_MANO: PackedScene = preload("res://Entities/Enemigo_ImperioMan/Escudo pesado elfico.glb")
 const ESCALA_ESPADA_MANO: float = 0.7
 const ESCALA_ESCUDO_MANO: float = 0.55
 
@@ -53,6 +53,9 @@ const ESCALA_ESCUDO_MANO: float = 0.55
 @export var tiempo_golpe_melee: float = TIEMPO_GOLPE_MELEE_DEFAULT
 @export var duracion_ataque_total: float = DURACION_ATAQUE_DEFAULT
 @export var estatico: bool = false  ## Si true, fija su posición: no se desplaza, ataca y defiende en el sitio
+@export var rotacion_y_puesto: float = 270.0  ## Orientación fija al estar estatico (90 = mira derecha a los goblins, escudo al frente)
+@export var inmortal: bool = false  ## Si true, ignora todo daño (defensor del tutorial)
+@export var riposta_cada_bloqueos: int = 0  ## Si > 0: bloquea el melee y contrataca con espada cada N bloqueos (solo con enemigo a melee en rango). 0 = conducta clásica.
 @export var plano_profundidad_z: float = 0.0  ## Plano Z del defensor Imperio Man (por delante de ballesteras y por detrás de la prota)
 
 @export_category("Zona de Entrada (Zona Roja)")
@@ -75,6 +78,7 @@ var tiempo_defensa_primer_ataque: float = 0.0
 
 var _ha_atacado_en_animacion: bool = false
 var _attack_timer: float = 0.0
+var _bloqueos_acumulados: int = 0
 var _timer_defensa: float = 0.0
 var _check_enemigos_timer: float = 0.0
 var _shield_hit_timer: float = 0.0
@@ -127,6 +131,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+
+	_asegurar_orientacion_derecha()
 
 	match current_state:
 		State.RUNNING:
@@ -241,7 +247,7 @@ func _enlazar_attachment(attach: BoneAttachment3D, esqueleto: Skeleton3D, idx_hu
 	attach.bone_name = esqueleto.get_bone_name(idx_hueso)
 
 
-## Ata la espada imperial a la mano derecha (espada del TEST_).
+## Ata la espada imperial a la mano derecha (espada imperial de Enemigo_ImperioMan).
 ## Si el TSCN ya la trae, repara su enlace al hueso real.
 func _equipar_espada_mano_derecha() -> void:
 	var existente := find_child("EspadaImperial", true, false) as Node3D
@@ -318,13 +324,10 @@ func _cambiar_estado(nuevo_estado: State) -> void:
 			_shield_hit_timer = 0.45
 			_play_anim("Bloqueo escudo", 0.1, 1.1)
 		State.TURNING:
-			velocity = Vector3.ZERO
-			var dur_voltearse: float = 0.8
-			_turn_timer = dur_voltearse
-			_play_anim("Idle", 0.25, 1.0)
-			if model_root:
-				var tw := create_tween()
-				tw.tween_property(model_root, "rotation:y", deg_to_rad(90.0), dur_voltearse * 0.85).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			# Siempre debe mirar a la derecha para bloquear con el escudo
+			_asegurar_orientacion_derecha()
+			_cambiar_estado(State.DEFENDING)
+			return
 		State.DYING:
 			_morir()
 
@@ -338,10 +341,13 @@ func _process_running(delta: float) -> void:
 	if not is_instance_valid(aliado_protegido) or not aliado_protegido.is_inside_tree():
 		_buscar_aliado_a_proteger()
 
+	_asegurar_orientacion_derecha()
+
 	if estatico:
 		# Puesto fijo: no se desplaza; ataca si hay enemigo al alcance.
+		# En modo riposta no inicia ataques: solo contrataca por bloqueos.
 		velocity.x = 0.0
-		if _enemigo_en_alcance_melee():
+		if riposta_cada_bloqueos <= 0 and _enemigo_en_alcance_melee():
 			_cambiar_estado(State.ATTACKING)
 		else:
 			_cambiar_estado(State.DEFENDING)
@@ -357,8 +363,7 @@ func _process_running(delta: float) -> void:
 
 	if abs(diff_x) <= 0.15 and global_position.x <= zona_roja_max_x:
 		velocity.x = 0.0
-		if model_root and abs(model_root.rotation_degrees.y - rotacion_y_modelo) > 5.0:
-			model_root.rotation_degrees.y = rotacion_y_modelo
+		_asegurar_orientacion_derecha()
 		# SOLO ataca si hay enemigos dentro del alcance de la espada;
 		# sin enemigos queda defendiendo (idle) en su puesto.
 		if _enemigo_en_alcance_melee():
@@ -369,19 +374,16 @@ func _process_running(delta: float) -> void:
 
 	if global_position.x > zona_roja_max_x:
 		velocity.x = -velocidad_carrera
-		if model_root and abs(model_root.rotation_degrees.y - rotacion_y_modelo) > 5.0:
-			model_root.rotation_degrees.y = rotacion_y_modelo
+		_asegurar_orientacion_derecha()
 	else:
 		var dir: float = sign(diff_x)
 		velocity.x = dir * velocidad_carrera
-		if model_root:
-			var rot_y_deseada: float = 90.0 if dir > 0.0 else rotacion_y_modelo
-			if abs(model_root.rotation_degrees.y - rot_y_deseada) > 5.0:
-				model_root.rotation_degrees.y = rot_y_deseada
+		_asegurar_orientacion_derecha()
 
 
 func _process_attacking(delta: float) -> void:
 	_attack_timer += delta
+	_asegurar_orientacion_derecha()
 
 	if not _ha_atacado_en_animacion and _attack_timer >= tiempo_golpe_melee:
 		_ha_atacado_en_animacion = true
@@ -394,16 +396,19 @@ func _process_attacking(delta: float) -> void:
 			primer_ataque_realizado = true
 			tiempo_defensa_primer_ataque = 0.0
 
+		# En puesto fijo no gira ni se desplaza tras atacar: mantiene su
+		# orientación a la derecha con el escudo al frente.
+		if estatico:
+			_cambiar_estado(State.DEFENDING)
+			return
+
 		var otro_enemigo := _buscar_otro_enemigo_cercano()
 		if otro_enemigo != null:
 			aliado_protegido = otro_enemigo
 			var destino_x: float = min(aliado_protegido.global_position.x - distancia_proteccion, zona_roja_max_x)
 			var diff_x: float = destino_x - global_position.x
 			if abs(diff_x) > 0.2:
-				if diff_x > 0.3:
-					_cambiar_estado(State.TURNING)
-				else:
-					_cambiar_estado(State.RUNNING)
+				_cambiar_estado(State.RUNNING)
 				return
 
 		_cambiar_estado(State.DEFENDING)
@@ -411,6 +416,7 @@ func _process_attacking(delta: float) -> void:
 
 func _process_defending(delta: float) -> void:
 	tiempo_defensa_primer_ataque += delta
+	_asegurar_orientacion_derecha()
 
 	_check_enemigos_timer -= delta
 	if _check_enemigos_timer <= 0.0:
@@ -421,8 +427,10 @@ func _process_defending(delta: float) -> void:
 	if is_instance_valid(aliado_protegido) and aliado_protegido.is_inside_tree():
 		_timer_defensa += delta
 		# SOLO ataca si hay enemigos en alcance de espada (pasea el ciclo
-		# con el intervalo para no encadenar tajos sin pausa).
-		if _timer_defensa >= INTERVALO_ATAQUE_DEFENSA and _enemigo_en_alcance_melee():
+		# con el intervalo para no encadenar tajos sin pausa). En modo
+		# riposta el ataque lo dictan los bloqueos, no el temporizador.
+		if riposta_cada_bloqueos <= 0 and _timer_defensa >= INTERVALO_ATAQUE_DEFENSA \
+				and _enemigo_en_alcance_melee():
 			_timer_defensa = 0.0
 			_cambiar_estado(State.ATTACKING)
 			return
@@ -433,60 +441,71 @@ func _process_defending(delta: float) -> void:
 		var destino_x: float = min(aliado_protegido.global_position.x - distancia_proteccion, zona_roja_max_x)
 		var diff_x: float = destino_x - global_position.x
 		if abs(diff_x) > 1.2:
-			if diff_x > 0.3:
-				_cambiar_estado(State.TURNING)
-			else:
-				_cambiar_estado(State.RUNNING)
+			_cambiar_estado(State.RUNNING)
 	else:
 		_timer_defensa = 0.0
 		# Sin aliado que proteger: solo ataca si un enemigo entra en alcance;
 		# en caso contrario queda defendiendo en idle en su puesto.
-		if _enemigo_en_alcance_melee():
+		# En modo riposta no inicia ataques por su cuenta.
+		if riposta_cada_bloqueos <= 0 and _enemigo_en_alcance_melee():
 			_cambiar_estado(State.ATTACKING)
 			return
 
 
 func _process_shield_hit(delta: float) -> void:
 	_shield_hit_timer -= delta
+	_asegurar_orientacion_derecha()
 	if _shield_hit_timer <= 0.0:
 		_cambiar_estado(State.DEFENDING)
 
 
-func _process_turning(delta: float) -> void:
-	_turn_timer -= delta
-	_velocidad_actual = move_toward(_velocidad_actual, 0.0, velocidad_carrera * delta)
-	if _turn_timer <= 0.0:
-		_cambiar_estado(State.RUNNING)
+func _process_turning(_delta: float) -> void:
+	_asegurar_orientacion_derecha()
+	_cambiar_estado(State.DEFENDING)
 
 
 # === ATAQUE CUERPO A CUERPO ===
-## Tajo de espada imperial al frente (-X): solo daña ENEMIGOS en alcance y
-## mismo cauce. JAMÁS daña a la protagonista ni a aliadas.
+## Tajo de espada imperial al frente (+X hacia la derecha): daña solo a UN enemigo
+## a la vez (el más cercano dentro de alcance). JAMÁS daña a la protagonista ni a aliadas.
 func _golpe_espada() -> void:
 	AudioManager.play_sfx("lanzar_espada_pirata")
-	var danados: int = 0
-	if get_tree() != null:
-		for grupo in ["enemies", "enemigos"]:
-			for objetivo in get_tree().get_nodes_in_group(grupo):
-				if not is_instance_valid(objetivo) or not (objetivo is Node3D):
-					continue
-				if objetivo == self:
-					continue
-				var victima := objetivo as Node3D
-				var dx: float = global_position.x - victima.global_position.x
-				if dx < 0.0 or dx > alcance_melee:
-					continue
-				if absf(victima.global_position.z - global_position.z) > margen_z_melee:
-					continue
-				if "health" in victima and int(victima.get("health")) <= 0:
-					continue
-				if victima.has_method("take_damage"):
-					if "last_hit_position" in victima:
-						victima.set("last_hit_position", victima.global_position)
-					if "ultimo_atacante" in victima:
-						victima.set("ultimo_atacante", self)
-					victima.call("take_damage", dano_cuerpo_a_cuerpo)
-					danados += 1
+	if get_tree() == null:
+		return
+
+	# Solo puede causar daño a un enemigo a la vez cuando ataca:
+	# busca el enemigo válido más cercano dentro del alcance melee
+	var mejor_objetivo: Node3D = null
+	var menor_dist: float = INF
+
+	for grupo in ["enemies", "enemigos"]:
+		for objetivo in get_tree().get_nodes_in_group(grupo):
+			if not is_instance_valid(objetivo) or not (objetivo is Node3D):
+				continue
+			if objetivo == self:
+				continue
+			var victima := objetivo as Node3D
+			var dx: float = absf(global_position.x - victima.global_position.x)
+			if dx > alcance_melee:
+				continue
+			if absf(victima.global_position.z - global_position.z) > margen_z_melee:
+				continue
+			if "health" in victima and int(victima.get("health")) <= 0:
+				continue
+			if (victima.has_method("recibir_golpe_melee") or victima.has_method("take_damage") or victima.has_method("recibir_golpe")) and dx < menor_dist:
+				menor_dist = dx
+				mejor_objetivo = victima
+
+	if is_instance_valid(mejor_objetivo):
+		if "last_hit_position" in mejor_objetivo:
+			mejor_objetivo.set("last_hit_position", mejor_objetivo.global_position)
+		if "ultimo_atacante" in mejor_objetivo:
+			mejor_objetivo.set("ultimo_atacante", self)
+		if mejor_objetivo.has_method("recibir_golpe_melee"):
+			mejor_objetivo.call("recibir_golpe_melee", float(dano_cuerpo_a_cuerpo), self)
+		elif mejor_objetivo.has_method("take_damage"):
+			mejor_objetivo.call("take_damage", dano_cuerpo_a_cuerpo)
+		elif mejor_objetivo.has_method("recibir_golpe"):
+			mejor_objetivo.call("recibir_golpe", float(dano_cuerpo_a_cuerpo))
 
 
 # === PROTECCIÓN DE ALIADOS (protagonista y defensoras) ===
@@ -559,6 +578,8 @@ func es_momento_golpe_critico() -> bool:
 
 
 func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
+	if inmortal:
+		return
 	if current_state == State.DYING or current_state == State.DEAD:
 		return
 
@@ -580,6 +601,37 @@ func take_damage(amount: float, golpe_en_escudo: bool = false) -> void:
 
 func recibir_golpe(amount: float = 1.0) -> void:
 	take_damage(amount, false)
+
+
+## Bloqueo de melee con riposta: si el modo riposta está activo, el tajo se
+## bloquea sin daño y cada N bloqueos contrataca con espada (solo con enemigo
+## a melee en su rango). Retorna true si bloqueó.
+func recibir_golpe_melee(amount: float, atacante: Node = null) -> bool:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return false
+	if amount <= 0.0:
+		return false
+	if inmortal:
+		_registrar_bloqueo()
+		return true
+	if riposta_cada_bloqueos <= 0:
+		take_damage(amount, false)
+		return false
+	_registrar_bloqueo()
+	return true
+
+
+func _registrar_bloqueo() -> void:
+	if current_state == State.DYING or current_state == State.DEAD:
+		return
+	_bloqueos_acumulados += 1
+	_flash_impacto_escudo()
+	if current_state != State.ATTACKING:
+		_cambiar_estado(State.SHIELD_HIT)
+	if riposta_cada_bloqueos > 0 and _bloqueos_acumulados >= riposta_cada_bloqueos \
+			and _enemigo_en_alcance_melee():
+		_bloqueos_acumulados = 0
+		_cambiar_estado(State.ATTACKING)
 
 
 func recibir_golpe_escudo(amount: float = 1.0) -> void:
@@ -678,8 +730,8 @@ func _enemigo_en_alcance_melee() -> bool:
 			if objetivo == self:
 				continue
 			var victima := objetivo as Node3D
-			var dx: float = global_position.x - victima.global_position.x
-			if dx < 0.0 or dx > alcance_melee + 0.3:
+			var dx: float = absf(global_position.x - victima.global_position.x)
+			if dx > alcance_melee + 0.3:
 				continue
 			if absf(victima.global_position.z - global_position.z) > margen_z_melee:
 				continue
@@ -720,7 +772,7 @@ func _start_dissolve() -> void:
 			mat.set_shader_parameter("albedo_tint", Vector3(col.r, col.g, col.b))
 
 		mesh.material_override = mat
-		_dissolve_materials.append({"mesh": mesh, "material": mat})
+		_dissolve_materials.append(mat)
 
 	var tween: Tween = create_tween()
 	tween.tween_method(_update_dissolve, 0.0, 1.0, DURACION_DISOLUCION)
@@ -728,9 +780,9 @@ func _start_dissolve() -> void:
 
 
 func _update_dissolve(val: float) -> void:
-	for material in _dissolve_materials:
-		if is_instance_valid(material):
-			(material as ShaderMaterial).set_shader_parameter("dissolve_amount", val)
+	for mat in _dissolve_materials:
+		if is_instance_valid(mat) and mat is ShaderMaterial:
+			mat.set_shader_parameter("dissolve_amount", val)
 
 
 func _finish_dissolve() -> void:
@@ -801,9 +853,19 @@ func _aplicar_material_escudo_elfico(escudo: Node) -> void:
 			mi.set_surface_override_material(0, MAT_ESCUDO_ELFICO)
 
 
+func _obtener_rotacion_derecha() -> float:
+	return rotacion_y_puesto if estatico else rotacion_y_modelo
+
+
+func _asegurar_orientacion_derecha() -> void:
+	if is_instance_valid(model_root):
+		var rot_deseada: float = _obtener_rotacion_derecha()
+		if absf(model_root.rotation_degrees.y - rot_deseada) > 0.05:
+			model_root.rotation_degrees.y = rot_deseada
+
+
 func _aplicar_rotacion_modelo() -> void:
-	if model_root:
-		model_root.rotation_degrees.y = rotacion_y_modelo
+	_asegurar_orientacion_derecha()
 
 
 func _play_anim(anim_name: String, blend_time: float = 0.2, speed: float = 1.0) -> void:

@@ -117,6 +117,39 @@ var escena_resultado_pacifista: PackedScene = preload("res://UI/Resultado_Pacifi
 var sfx_habla_dialogo: AudioStream = preload(
 	"res://Entities/Ambiente_Escudo/IMPACTO_ESCUDO_BALLESTA.mp3"
 )
+const RUTA_SONIDO_BATALLA_FONDO: String = "res://System/Audio/Music/Batalla tutorial.mp3"
+const RUTA_SONIDO_GRITOS_GUERRA: String = "res://System/Audio/Music/sonido gritos guerra.mp3"
+const RUTA_SONIDO_BATALLA_GOBLINS: String = "res://System/Audio/Music/batalla goblins.mp3"
+@export_category("Batalla de fondo (audio)")
+@export var volumen_batalla_fondo_db: float = -16.0  ## De fondo: audible sin tapar música ni diálogos
+@export var volumen_gritos_guerra_db: float = -18.0  ## De fondo: gritos bajo la batalla, sin saturar
+@export var volumen_batalla_goblins_db: float = -13.0  ## Un poco más fuerte para marcar el ritmo de la batalla
+@export var duracion_gritos_seg: float = 8.0  ## Cuánto suenan los gritos antes de alternar
+@export var duracion_goblins_seg: float = 6.0  ## Cuánto suena batalla goblins antes de alternar
+var _sonido_batalla_player: AudioStreamPlayer = null
+var _sonido_gritos_player: AudioStreamPlayer = null
+var _sonido_goblins_player: AudioStreamPlayer = null
+const ESCENA_GOBLIN_GARROTE: PackedScene = preload("res://Entities/Enemigo_Goblin_Garrote/GoblinGarrote.tscn")
+@export_category("Oleada infinita tutorial")
+@export var oleada_garrotes_activa: bool = true  ## Al iniciar: 5 goblins con garrote con respawn infinito
+@export var cantidad_garrotes: int = 5
+@export var intervalo_respawn_garrote: float = 2.0  ## Segundos para reaparecer tras morir
+@export var velocidad_garrotes: float = 1.2  ## Más lentos que lo normal (2.2) para el tutorial
+@export var velocidad_garrotes_tutorial: float = 1.2  ## Velocidad de carrera más lenta para la oleada tutorial (default 1.2 vs 2.4)
+var _garrotes: Array = []
+var _garrote_timers: Array[float] = []
+## A la derecha del defensor imperial (x=-3.99): todos lo enfrentan al avanzar.
+const POS_GARROTES_INICIAL: Array[Vector3] = [
+	Vector3(-2.0, 0.5, 0.0),
+	Vector3(0.0, 0.5, 0.0),
+	Vector3(2.0, 0.5, 0.0),
+	Vector3(4.0, 0.5, 0.0),
+	Vector3(6.0, 0.5, 0.0),
+]
+var _fase_ritmo_batalla: int = 0  ## 0 = gritos, 1 = goblins
+var _timer_ritmo_batalla: float = 0.0
+var _spawner_batalla_azul: Node = null
+var _spawner_batalla_rojo: Node = null
 var estados_proceso_jugador: Dictionary = {}
 var estados_proceso_dialogo: Dictionary = {}
 var estado_spawner_dialogo: Dictionary = {}
@@ -229,6 +262,10 @@ func _ready():
 
 	# Música del tutorial desde el arranque del juego
 	AudioManager.play_music(AudioManager.MUSICA_TUTORIAL, true)
+
+	_configurar_sonido_batalla_fondo()
+	_activar_torre_asedio_tutorial()
+	_iniciar_oleada_garrotes()
 
 	if wave_spawner and not wave_spawner.enemigo_eliminado.is_connected(_on_enemigo_eliminado_nivel):
 		wave_spawner.enemigo_eliminado.connect(_on_enemigo_eliminado_nivel)
@@ -880,6 +917,160 @@ func _process(delta):
 			_monitorear_nivel_0()
 		NivelEstado.NIVEL_1:
 			_monitorear_nivel_1()
+
+	_procesar_sonido_batalla_fondo()
+	_procesar_oleada_garrotes()
+
+
+## Prepara el loop de batalla de fondo (bloques azul y rojo): volumen bajo,
+## en bus Master para que lo cubran las cortinillas de fin de nivel.
+func _configurar_sonido_batalla_fondo() -> void:
+	_spawner_batalla_azul = get_node_or_null("SpawnerBatallaAzul")
+	_spawner_batalla_rojo = get_node_or_null("SpawnerBatallaRojo")
+	if not ResourceLoader.exists(RUTA_SONIDO_BATALLA_FONDO):
+		push_warning("[NIVEL_TUTORIAL] Falta sonido de batalla de fondo: " + RUTA_SONIDO_BATALLA_FONDO)
+		return
+	var stream := load(RUTA_SONIDO_BATALLA_FONDO) as AudioStream
+	if stream == null:
+		return
+	_sonido_batalla_player = _crear_loop_fondo("SonidoBatallaFondo", stream, volumen_batalla_fondo_db)
+	if not ResourceLoader.exists(RUTA_SONIDO_GRITOS_GUERRA):
+		push_warning("[NIVEL_TUTORIAL] Faltan gritos de guerra: " + RUTA_SONIDO_GRITOS_GUERRA)
+		return
+	var stream_gritos := load(RUTA_SONIDO_GRITOS_GUERRA) as AudioStream
+	if stream_gritos == null:
+		return
+	_sonido_gritos_player = _crear_loop_fondo("SonidoGritosGuerra", stream_gritos, volumen_gritos_guerra_db)
+	if not ResourceLoader.exists(RUTA_SONIDO_BATALLA_GOBLINS):
+		push_warning("[NIVEL_TUTORIAL] Falta batalla goblins: " + RUTA_SONIDO_BATALLA_GOBLINS)
+		return
+	var stream_goblins := load(RUTA_SONIDO_BATALLA_GOBLINS) as AudioStream
+	if stream_goblins == null:
+		return
+	_sonido_goblins_player = _crear_loop_fondo("SonidoBatallaGoblins", stream_goblins, volumen_batalla_goblins_db)
+
+
+## Crea un loop de fondo con volumen suave en bus Master.
+func _crear_loop_fondo(nombre: String, stream: AudioStream, volumen_db: float) -> AudioStreamPlayer:
+	if "loop" in stream:
+		stream.set("loop", true)
+	var player := AudioStreamPlayer.new()
+	player.name = nombre
+	player.stream = stream
+	player.volume_db = volumen_db
+	player.bus = "Master"
+	add_child(player)
+	return player
+
+
+## Los loops suenan solo con AMBOS bloques activos; si uno se desactiva, se apagan.
+## La base de batalla es continua; gritos y goblins se alternan para el ritmo.
+func _procesar_sonido_batalla_fondo() -> void:
+	var azul_ok := _bloque_batalla_activo(_spawner_batalla_azul)
+	if azul_ok:
+		azul_ok = _bloque_batalla_activo(_spawner_batalla_rojo)
+	_actualizar_loop_fondo(_sonido_batalla_player, azul_ok)
+	if not azul_ok:
+		_timer_ritmo_batalla = 0.0
+		_fase_ritmo_batalla = 0
+		_actualizar_loop_fondo(_sonido_gritos_player, false)
+		_actualizar_loop_fondo(_sonido_goblins_player, false)
+		return
+	_timer_ritmo_batalla += MONITOR_INTERVAL
+	var duracion_fase: float = duracion_gritos_seg if _fase_ritmo_batalla == 0 else duracion_goblins_seg
+	if _timer_ritmo_batalla >= maxf(duracion_fase, 0.5):
+		_timer_ritmo_batalla = 0.0
+		_fase_ritmo_batalla = 1 - _fase_ritmo_batalla
+	_actualizar_loop_fondo(_sonido_gritos_player, _fase_ritmo_batalla == 0)
+	_actualizar_loop_fondo(_sonido_goblins_player, _fase_ritmo_batalla == 1)
+
+
+func _actualizar_loop_fondo(player: AudioStreamPlayer, activo: bool) -> void:
+	if not is_instance_valid(player):
+		return
+	if activo and not player.playing:
+		player.play()
+	elif not activo and player.playing:
+		player.stop()
+
+
+func _bloque_batalla_activo(spawner: Node) -> bool:
+	if not is_instance_valid(spawner):
+		return false
+	if spawner.has_method("batalla_activa"):
+		return bool(spawner.call("batalla_activa"))
+	return spawner.is_inside_tree() and not spawner.is_queued_for_deletion()
+
+
+## Oleada inicial del tutorial: N goblins con garrote con respawn infinito.
+## No interfiere con las oleadas del WaveSpawner (lista propia).
+func _iniciar_oleada_garrotes() -> void:
+	_garrotes.clear()
+	_garrote_timers.clear()
+	if not oleada_garrotes_activa:
+		return
+	for i in range(maxi(cantidad_garrotes, 0)):
+		var pos := POS_GARROTES_INICIAL[i % POS_GARROTES_INICIAL.size()]
+		_garrotes.append(_spawnear_garrote(pos))
+		_garrote_timers.append(0.0)
+
+
+func _procesar_oleada_garrotes() -> void:
+	if not oleada_garrotes_activa or _garrotes.is_empty():
+		return
+	for i in range(_garrotes.size()):
+		if not _garrote_caido(_garrotes[i]):
+			_garrote_timers[i] = 0.0
+			continue
+		_garrote_timers[i] += MONITOR_INTERVAL
+		if _garrote_timers[i] >= maxf(intervalo_respawn_garrote, 0.5):
+			_garrote_timers[i] = 0.0
+			var pos := POS_GARROTES_INICIAL[i % POS_GARROTES_INICIAL.size()]
+			_garrotes[i] = _spawnear_garrote(pos)
+
+
+func _spawnear_garrote(pos: Vector3) -> Node3D:
+	if ESCENA_GOBLIN_GARROTE == null:
+		return null
+	var garrote := ESCENA_GOBLIN_GARROTE.instantiate() as Node3D
+	if garrote == null:
+		return null
+	# Oleada tutorial: van a por el defensor imperial, no directos a la prota,
+	# y más lentos de lo normal.
+	if "velocidad_correr" in garrote:
+		garrote.set("velocidad_correr", velocidad_garrotes)
+	if "velocidad_caminar" in garrote:
+		garrote.set("velocidad_caminar", velocidad_garrotes)
+	if "priorizar_defensores" in garrote:
+		garrote.set("priorizar_defensores", true)
+	add_child(garrote)
+	garrote.global_position = pos
+	return garrote
+
+
+func _garrote_caido(garrote: Node) -> bool:
+	if not is_instance_valid(garrote):
+		return true
+	if garrote.is_queued_for_deletion() or not garrote.is_inside_tree():
+		return true
+	var estado = garrote.get("current_state")
+	if estado == 2 or estado == 3 or str(estado) == "DYING" or str(estado) == "DEAD":
+		return true
+	var estado_melee = garrote.get("estado_melee")
+	if str(estado_melee) == "MURIENDO" or str(estado_melee) == "DEAD":
+		return true
+	return false
+
+
+## Muestra la torre de asedio de fondo (decorativa: estática y sin spawns,
+## viene así desde la escena con se_desplaza=false y max_enemigos_rampa=0).
+func _activar_torre_asedio_tutorial() -> void:
+	var torre := get_node_or_null("TorreAsedioTutorial")
+	if torre == null or not torre.has_method("activar_torre"):
+		return
+	torre.set("se_desplaza", false)
+	torre.set("max_enemigos_rampa", 0)
+	torre.call("activar_torre")
 
 
 func _actualizar_render_subviewport_fondo(delta: float) -> void:

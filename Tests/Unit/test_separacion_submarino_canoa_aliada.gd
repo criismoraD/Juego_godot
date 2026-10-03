@@ -119,6 +119,33 @@ func test_separacion_desactivada_no_reacciona() -> void:
 	assert_almost_eq(canoa.amplitud_balanceo, AMPLITUD_BALANCEO_BASE, MARGEN_FLOAT, "Sin tamboleo")
 
 
+func test_navegando_espera_sin_parpadear_ante_submarino() -> void:
+	# Arrange: canoa navegando a x=100 con submarino a flote a +4m (corta el paso)
+	var canoa: CanoaAliada = _crear_canoa()
+	canoa.navegar_hacia_x(100.0, 2.0)
+	var sub: Node3D = _crear_submarino(4.0)
+
+	# Act: avanzar 3 segundos (60 frames)
+	_avanzar(canoa, 60)
+
+	# Assert: nunca atraviesa el casco
+	assert_lt(canoa.global_position.x, sub.global_position.x, "Nunca debe atravesar al submarino")
+	# Assert: sigue esperando (destino más allá, submarino a flote)
+	assert_true(canoa.esta_separando_submarino(), "Debe seguir esperando ante el submarino a flote")
+	# Assert: sin parpadeo: la base descansa estable en la cota con histéresis
+	var esperado: float = sub.global_position.x - (MEDIO_CASCO_ESPERADO + canoa.histeresis_separacion_submarino)
+	assert_almost_eq(canoa.obtener_posicion_base().x, esperado, 0.15, "Debe descansar estable en la cota de espera")
+
+	# Act: el submarino se sumerge (vía superficie falsa)
+	sub.remove_from_group("submarino")
+	sub.remove_from_group("submarinos")
+	_avanzar(canoa, 20)
+
+	# Assert: retoma la navegación hacia su destino
+	assert_false(canoa.esta_separando_submarino(), "Al irse el submarino deja de esperar")
+	assert_gt(canoa.obtener_velocidad_efectiva(), 0.0, "Debe retomar la marcha")
+
+
 func test_sin_submarinos_navega_libre() -> void:
 	# Arrange
 	var canoa: CanoaAliada = _crear_canoa()

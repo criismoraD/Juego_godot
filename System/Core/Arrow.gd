@@ -367,6 +367,8 @@ func _on_body_entered(body):
 		var es_enemigo = false
 		if "es_escudo_enemigo" in body:
 			es_enemigo = body.es_escudo_enemigo
+		elif body.is_in_group("enemies"):
+			es_enemigo = true
 
 		if tipo_dueño == TipoFlecha.ENEMIGO:
 			if es_enemigo:

@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://bayslvgnrvr0q"]
 
 [ext_resource type="Script" uid="uid://yppoie4kd00i" path="res://Entities/Enemigo_ImperioMan/ImperioMan.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://clefjpqgnldiy" path="res://TEST_/Imperio man/Imperio man.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://clefjpqgnldiy" path="res://Entities/Enemigo_ImperioMan/Imperio man.glb" id="2_model"]
 [ext_resource type="Material" path="res://Entities/Enemigo_ImperioMan/ImperioMan_Mat.tres" id="3_02acd"]
-[ext_resource type="PackedScene" uid="uid://rjwgclotmtey" path="res://TEST_/Esspada imperial/Espada imperial.glb" id="3_espada"]
-[ext_resource type="PackedScene" uid="uid://d2fk4tr5ywwex" path="res://TEST_/No_Usados/Escudo pesado elfico/Escudo pesado elfico.glb" id="5_xloo5"]
+[ext_resource type="PackedScene" uid="uid://rjwgclotmtey" path="res://Entities/Enemigo_ImperioMan/Espada imperial.glb" id="3_espada"]
+[ext_resource type="PackedScene" uid="uid://d2fk4tr5ywwex" path="res://Entities/Enemigo_ImperioMan/Escudo pesado elfico.glb" id="5_xloo5"]
 [ext_resource type="Script" uid="uid://co6fj4dfp87gi" path="res://Entities/Enemigo_Goblina_Escudo_Pesado/EscudoPesadoArea.gd" id="6_area"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]

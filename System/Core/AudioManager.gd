@@ -21,7 +21,7 @@ const MUSICA_JEFE_RIO: int = 8
 const MUSICA_JEFE_DESTRUIDO: int = 9
 const MUSICA_PUEBLO: int = 10
 const MUSICA_TUTORIAL: int = 11
-const RUTA_MUSICA_TUTORIAL: String = "res://TEST_/Musica nivel tutorial A.mp3"
+const RUTA_MUSICA_TUTORIAL: String = "res://System/Audio/Music/Musica nivel tutorial A.mp3"
 
 var sfx_player: AudioStreamPlayer
 var sfx_player_3d: AudioStreamPlayer3D
@@ -222,6 +222,13 @@ func _load_all_sounds():
 		sfx_streams["muerte_pirata_goblin"] = [load("res://Entities/Enemigo_Pirata_Goblin/Audio/Muerte pirata goblin.mp3")]
 
 	sfx_streams["splash_agua"] = [load("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/splash sonido.mp3")]
+	# Río: submarinos y cañón por pool 3D (antes creaban AudioStreamPlayer3D por evento)
+	sfx_streams["submarino_emergiendo"] = [load("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/submarino_emergiendo.mp3")]
+	sfx_streams["canon_submarino"] = [
+		load("res://Entities/Enemigo_Lonko/EXPLOSION01.mp3"),
+		load("res://Entities/Enemigo_Lonko/EXPLOSION02.mp3")
+	]
+	sfx_streams["engranaje_canon"] = [load("res://Levels/Rio_En_Canoa_Con_Parallax/Audio/Engranaje_Canon.mp3")]
 	sfx_streams["girar_lanza"] = [load("res://Entities/Enemigo_Azulina/Audio/girar lanza azulina.mp3")]
 	sfx_streams["azulina_muerte"] = [load("res://Entities/Enemigo_Azulina/Audio/azulina muerte.mp3")]
 	sfx_streams["hit_azulina"] = [load("res://Entities/Enemigo_Azulina/Audio/Hit azulina.mp3")]
@@ -573,8 +580,10 @@ func play_sfx(sound_name: String, volume_boost_db: float = 0.0, pitch_override: 
 		temp_player.play()
 
 
-## Reproduce un efecto de sonido en posición 3D
-func play_sfx_3d(sound_name: String, position: Vector3):
+## Reproduce un efecto de sonido en posición 3D (pool, sin crear nodos).
+## volume_boost_db y pitch_override permiten igualar mezclas previas puntuales
+## (ej. sumersión del submarino más grave); por defecto conserva la mezcla base.
+func play_sfx_3d(sound_name: String, position: Vector3, volume_boost_db: float = 0.0, pitch_override: float = 0.0):
 	if sfx_bloqueados:
 		return
 	if not sfx_streams.has(sound_name):
@@ -595,13 +604,17 @@ func play_sfx_3d(sound_name: String, position: Vector3):
 			volume_to_use -= 3.1
 		elif sound_name in ["gargola_fire", "gargola_impacto"]:
 			volume_to_use -= 8.0
-		temp_player.volume_db = volume_to_use
+		temp_player.volume_db = volume_to_use + volume_boost_db
 
-		# Pitch dithering
-		if "shoot" in sound_name:
+		# Pitch forzado o dithering
+		if pitch_override > 0.0:
+			temp_player.pitch_scale = pitch_override
+		elif "shoot" in sound_name:
 			temp_player.pitch_scale = randf_range(shoot_pitch_min, shoot_pitch_max)
 		elif "hurt" in sound_name or "death" in sound_name or "impact" in sound_name or "hit" in sound_name:
 			temp_player.pitch_scale = randf_range(damage_pitch_min, damage_pitch_max)
+		else:
+			temp_player.pitch_scale = 1.0
 
 		if not temp_player.is_inside_tree():
 			add_child(temp_player)

@@ -26,9 +26,11 @@ const VELOCIDAD_CORRER_DEFAULT: float = 2.2
 const ALCANCE_MELEE_DEFAULT: float = 1.6
 const MARGEN_Z_MELEE_DEFAULT: float = 1.4
 const DANO_MELEE_DEFAULT: int = 1
-const TIEMPO_IMPACTO_MELEE_DEFAULT: float = 0.6
-const DURACION_ATAQUE_DEFAULT: float = 1.3
-const INTERVALO_ENTRE_ATAQUES_DEFAULT: float = 1.0
+const TIEMPO_IMPACTO_MELEE_DEFAULT: float = 0.45
+const DURACION_ATAQUE_DEFAULT: float = 0.90
+const INTERVALO_ENTRE_ATAQUES_DEFAULT: float = 0.30
+const VELOCIDAD_ANIMACION_ATAQUE_DEFAULT: float = 1.2
+const COLOR_FLASH_DANO_DEFAULT: Color = Color(1.0, 0.12, 0.12, 1.0)
 const DURACION_DISOLUCION: float = 1.2
 
 const MAT_IMPERIO_GIRL: Material = preload(
@@ -36,7 +38,7 @@ const MAT_IMPERIO_GIRL: Material = preload(
 const MAT_ESPADA: Material = preload(
 		"res://Entities/Enemigo_ImperioMan/EspadaImperial_Mat.tres")
 const ESCENA_ESPADA: PackedScene = preload(
-		"res://TEST_/Esspada imperial/Espada imperial.glb")
+		"res://Entities/Enemigo_ImperioMan/Espada imperial.glb")
 const DISSOLVE_SHADER: Shader = preload(
 		"res://System/Shaders/dissolve.gdshader")
 const SANGRE_NO_LETAL_SCENE: PackedScene = preload(
@@ -95,8 +97,13 @@ enum Estado { CORRIENDO, ATACANDO, MURIENDO, DEAD }
 @export var tiempo_impacto_melee: float = TIEMPO_IMPACTO_MELEE_DEFAULT
 @export var duracion_ataque_total: float = DURACION_ATAQUE_DEFAULT
 @export var intervalo_entre_ataques: float = INTERVALO_ENTRE_ATAQUES_DEFAULT
+@export var velocidad_animacion_ataque: float = VELOCIDAD_ANIMACION_ATAQUE_DEFAULT
 @export var plano_profundidad_z: float = 0.0
 @export var color_borde_disolucion: Color = Color(1.0, 0.75, 0.2, 1.0)
+## Color del flash de parpadeo al recibir daño (rojo de impacto).
+@export var color_flash_impacto: Color = COLOR_FLASH_DANO_DEFAULT
+## Si true, silencia los efectos de sonido de ataque y muerte (útil en batallas cosméticas de fondo).
+@export var silenciar_audio: bool = false
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # VARIABLES DE ESTADO
@@ -112,11 +119,15 @@ var _cooldown_ataque_timer: float = 0.0
 var _is_dissolving: bool = false
 var _dissolve_materials: Array = []
 
+var _hit_squash_tween: Tween = null
+var _escala_base_modelo: Vector3 = Vector3.ONE
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # REFERENCIAS ONREADY
 # ═══════════════════════════════════════════════════════════════════════════════
 var anim_player: AnimationPlayer = null
 var _model_root: Node3D = null
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -131,6 +142,9 @@ func _ready() -> void:
 	add_to_group("defensoras")
 
 	_model_root = find_child("ImperioGirlModel", true, false) as Node3D
+	if is_instance_valid(_model_root):
+		_escala_base_modelo = _model_root.scale
+
 	_actualizar_orientacion_modelo()
 	_aplicar_material_imperio()
 	_equipar_espada_mano_derecha()
@@ -184,12 +198,13 @@ func _cambiar_estado(nuevo: Estado) -> void:
 	match nuevo:
 		Estado.CORRIENDO:
 			velocity.x = direccion_avance * velocidad_correr
-			_play_anim("CORRER")
+			_play_anim("CORRER", 0.15, 1.0)
 		Estado.ATACANDO:
-			velocity.x = 0.0
+			# Impulso fluido hacia adelante al inicio del swing para dar contundencia e inercia
+			velocity.x = direccion_avance * (velocidad_correr * 0.35)
 			_timer_ataque = 0.0
 			_ha_golpeado_en_animacion = false
-			_play_anim("ATAQUE")
+			_play_anim("ATAQUE", 0.08, velocidad_animacion_ataque)
 		Estado.MURIENDO:
 			_morir()
 
@@ -202,10 +217,11 @@ func _process_corriendo(delta: float) -> void:
 
 
 func _process_atacando(delta: float) -> void:
-	velocity.x = 0.0
+	# Desaceleración suave del paso hacia adelante durante el swing
+	velocity.x = move_toward(velocity.x, 0.0, 10.0 * delta)
 	_timer_ataque += delta
 
-	# Punto de impacto de la espada
+	# Punto de impacto de la espada sincronizado con el corte
 	if not _ha_golpeado_en_animacion and _timer_ataque >= tiempo_impacto_melee:
 		_ha_golpeado_en_animacion = true
 		_ejecutar_golpe_espada()
@@ -214,12 +230,14 @@ func _process_atacando(delta: float) -> void:
 	if _timer_ataque >= duracion_ataque_total:
 		_cooldown_ataque_timer = intervalo_entre_ataques
 		if _enemigo_en_alcance():
-			# Encadenar otro ataque sin pasar por CORRIENDO
+			# Encadenar otro ataque continuo y fluido sin pausar
 			_timer_ataque = 0.0
 			_ha_golpeado_en_animacion = false
-			_play_anim("ATAQUE")
+			velocity.x = direccion_avance * (velocidad_correr * 0.25)
+			_play_anim("ATAQUE", 0.06, velocidad_animacion_ataque)
 		else:
 			_cambiar_estado(Estado.CORRIENDO)
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -228,11 +246,15 @@ func _process_atacando(delta: float) -> void:
 func _ejecutar_golpe_espada() -> void:
 	if get_tree() == null:
 		return
-	if is_inside_tree() and get_tree().root.has_node("AudioManager"):
+	if not silenciar_audio and is_inside_tree() and get_tree().root.has_node("AudioManager"):
 		get_tree().root.get_node("AudioManager").call(
 				"play_sfx", "lanzar_espada_pirata", 0.0)
 
+	# Golpea exactamente UNA unidad por swing: el primer enemigo válido en alcance.
+	var golpe_aplicado: bool = false
 	for grupo in ["enemies", "enemigos"]:
+		if golpe_aplicado:
+			break
 		for objetivo in get_tree().get_nodes_in_group(grupo):
 			if not is_instance_valid(objetivo) or not (objetivo is Node3D):
 				continue
@@ -246,14 +268,24 @@ func _ejecutar_golpe_espada() -> void:
 				continue
 			if victima.has_method("take_damage"):
 				if "last_hit_position" in victima:
-					victima.set("last_hit_position", global_position)
+					var pos_sangre: Vector3 = victima.global_position + Vector3(0.0, 0.45, 0.0)
+					victima.set("last_hit_position", pos_sangre)
 				if "last_hit_direction" in victima:
 					victima.set("last_hit_direction", Vector3(direccion_avance, 0.0, 0.0))
 				if "ultimo_atacante" in victima:
 					victima.set("ultimo_atacante", self)
 				victima.call("take_damage", float(dano_cuerpo_a_cuerpo))
 			elif victima.has_method("recibir_golpe"):
+				if "last_hit_position" in victima:
+					var pos_sangre: Vector3 = victima.global_position + Vector3(0.0, 0.45, 0.0)
+					victima.set("last_hit_position", pos_sangre)
+				if "last_hit_direction" in victima:
+					victima.set("last_hit_direction", Vector3(direccion_avance, 0.0, 0.0))
 				victima.call("recibir_golpe", float(dano_cuerpo_a_cuerpo))
+			# Un solo impacto por swing: salir de ambos bucles.
+			golpe_aplicado = true
+			break
+
 
 
 func _enemigo_en_alcance() -> bool:
@@ -285,7 +317,9 @@ func take_damage(amount: float) -> void:
 		return
 
 	health -= int(amount)
+	_play_anim("HIT", 0.04, 1.25)
 	_flash_impacto()
+	_aplicar_squash_stretch_impacto()
 
 	if health <= 0:
 		health = 0
@@ -299,6 +333,11 @@ func recibir_golpe(amount: float = 1.0) -> void:
 
 
 func _morir() -> void:
+	if _hit_squash_tween and _hit_squash_tween.is_valid():
+		_hit_squash_tween.kill()
+	if is_instance_valid(_model_root):
+		_model_root.scale = _escala_base_modelo
+
 	estado = Estado.MURIENDO
 	velocity = Vector3.ZERO
 	_play_anim("MUERTE")
@@ -307,19 +346,36 @@ func _morir() -> void:
 	if is_instance_valid(col):
 		col.set_deferred("disabled", true)
 
-	if is_inside_tree() and get_tree().root.has_node("AudioManager"):
+	if not silenciar_audio and is_inside_tree() and get_tree().root.has_node("AudioManager"):
 		get_tree().root.get_node("AudioManager").call("play_sfx", "imp_death", 0.0)
 
+	died.emit()
+
+	# Si no forma parte de una batalla cosmética gestionada por spawner,
+	# se desvanece tras unos segundos de respaldo.
+	if not is_in_group("batalla_cosmetica"):
+		get_tree().create_timer(4.0, false).timeout.connect(func() -> void:
+			if is_instance_valid(self) and estado == Estado.MURIENDO and not _is_dissolving:
+				desvanecer_y_liberar()
+		)
+
+
+## Desvanece el cadáver con el shader de disolución y libera el nodo.
+## Invocado por el gestor de cadáveres cuando se supera el límite en pantalla.
+func desvanecer_y_liberar() -> void:
+	if _is_dissolving or is_queued_for_deletion():
+		return
 	_start_dissolve()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# VISUAL – FLASH DE IMPACTO
+# VISUAL – FLASH DE IMPACTO Y SQUASH & STRETCH
 # ═══════════════════════════════════════════════════════════════════════════════
+## Visual – Flash de daño de color rojo para acentuar el impacto recibido.
 func _flash_impacto() -> void:
 	var flash_mat := StandardMaterial3D.new()
 	flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	flash_mat.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+	flash_mat.albedo_color = color_flash_impacto
 
 	var meshes := find_children("*", "MeshInstance3D", true, false)
 	for m in meshes:
@@ -327,14 +383,50 @@ func _flash_impacto() -> void:
 		if is_instance_valid(mi):
 			mi.material_overlay = flash_mat
 
-	get_tree().create_timer(0.08, false).timeout.connect(func() -> void:
+	get_tree().create_timer(0.12, false).timeout.connect(func() -> void:
 		if not is_instance_valid(self):
 			return
 		for m in find_children("*", "MeshInstance3D", true, false):
 			var mi := m as MeshInstance3D
-			if is_instance_valid(mi):
+			if is_instance_valid(mi) and mi.material_overlay == flash_mat:
 				mi.material_overlay = null
 	)
+
+
+## Aplica un efecto visual de estirar y contraer (Squash & Stretch)
+## sobre el modelo para intensificar y hacer contundente el impacto recibido.
+func _aplicar_squash_stretch_impacto() -> void:
+	if not is_instance_valid(_model_root):
+		return
+
+	if _hit_squash_tween and _hit_squash_tween.is_valid():
+		_hit_squash_tween.kill()
+
+	var base_scale: Vector3 = _escala_base_modelo if _escala_base_modelo != Vector3.ZERO else _model_root.scale
+
+	# 1. Contracción / Squash (compresión en Y y expansión en X/Z)
+	var squash_scale: Vector3 = Vector3(
+		base_scale.x * 1.25,
+		base_scale.y * 0.75,
+		base_scale.z * 1.25
+	)
+
+	# 2. Rebote elástico / Stretch (se estira hacia arriba y se comprime en X/Z)
+	var stretch_scale: Vector3 = Vector3(
+		base_scale.x * 0.90,
+		base_scale.y * 1.18,
+		base_scale.z * 0.90
+	)
+
+	_model_root.scale = squash_scale
+
+	_hit_squash_tween = create_tween()
+	# Transición hacia el stretch elástico
+	_hit_squash_tween.tween_property(_model_root, "scale", stretch_scale, 0.08)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Retorno amortiguado y suave a la escala base
+	_hit_squash_tween.tween_property(_model_root, "scale", base_scale, 0.12)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -404,7 +496,6 @@ func _update_dissolve(val: float) -> void:
 
 func _finish_dissolve() -> void:
 	estado = Estado.DEAD
-	died.emit()
 	queue_free()
 
 

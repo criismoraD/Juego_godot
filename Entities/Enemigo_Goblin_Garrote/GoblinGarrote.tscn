@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://qes82nwsq4yn"]
 
-[ext_resource type="Script" path="res://Entities/Enemigo_Goblin_Garrote/GoblinGarrote.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dbwvnhgs7mk1k" path="res://Entities/Enemigo_Goblin_Garrote/GoblinGarrote.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://k3nj0crucrl" path="res://Entities/Enemigo_Goblin/GOBLING_REMASTER_ANIMACIONES.glb" id="2_model"]
-[ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblin_Garrote/GarroteGoblin.tscn" id="3_garrote"]
+[ext_resource type="PackedScene" uid="uid://c4chmh0hil4nr" path="res://Entities/Enemigo_Goblin_Garrote/GarroteGoblin.tscn" id="3_garrote"]
 [ext_resource type="PackedScene" uid="uid://ba3am7tn32s5x" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Piernas_GOBLING_MUERTE.glb" id="4_piernas"]
 [ext_resource type="PackedScene" uid="uid://dftvddswjhkcr" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Cabeza_GOBLING_MUERTE.glb" id="5_cabeza"]
 [ext_resource type="PackedScene" uid="uid://bidywox2rsf5c" path="res://Entities/Enemigo_Goblin/Muerte_Explotado/Brazo_01_GOBLING_MUERTE.glb" id="6_brazo1"]
@@ -12,49 +12,108 @@
 radius = 0.16748047
 height = 0.6040527
 
-[node name="GoblinGarrote" type="CharacterBody3D" groups=["enemies", "enemigos"]]
+[node name="GoblinGarrote" type="CharacterBody3D" unique_id=1945161176 groups=["enemies", "enemigos"]]
 transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
 collision_layer = 4
-collision_mask = 1
 script = ExtResource("1_script")
 velocidad_caminar = 2.4
-distancia_minima_caminar = 1.0
 distancia_maxima_caminar = 4.0
 
-[node name="GOBLING_REMASTER_ANIMACIONES" parent="." instance=ExtResource("2_model")]
+[node name="GOBLING_REMASTER_ANIMACIONES" parent="." unique_id=230788667 instance=ExtResource("2_model")]
 transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
 
-[node name="Armature" parent="GOBLING_REMASTER_ANIMACIONES" index="0"]
+[node name="Armature" parent="GOBLING_REMASTER_ANIMACIONES" index="0" unique_id=451306401]
 transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
 
-[node name="Skeleton3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature" index="0"]
+[node name="Skeleton3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature" index="0" unique_id=118020823]
+bones/0/position = Vector3(0.44472376, 0.20636988, -72.24861)
+bones/0/rotation = Quaternion(0.90365005, 0.42271182, -0.047628514, -0.04962727)
+bones/1/rotation = Quaternion(-0.1340882, 0.25549465, -0.88670814, 0.36123607)
+bones/1/scale = Vector3(1, 1.0000005, 1)
+bones/2/position = Vector3(-1.8321562e-05, 30.580536, -3.163128e-05)
+bones/2/rotation = Quaternion(-0.4685731, 0.17467579, 0.050873913, 0.86448795)
+bones/3/position = Vector3(6.746849e-05, 29.727533, 1.02309e-05)
+bones/3/rotation = Quaternion(0.50228643, -0.12785384, 0.05484301, 0.8534366)
+bones/4/position = Vector3(2.13379e-06, 15.869383, 1.9199739e-05)
+bones/4/rotation = Quaternion(0.25482392, -0.25102496, 0.018258182, 0.93365836)
+bones/5/position = Vector3(2.3782291e-05, 6.430427, 1.2248693e-05)
+bones/6/position = Vector3(-11.831702, -0.2688863, -3.7390625)
+bones/6/rotation = Quaternion(-0.10522482, 0.4639471, -0.8641185, -0.16425602)
+bones/6/scale = Vector3(0.99999994, 0.9999998, 0.99999976)
+bones/7/position = Vector3(3.9580143e-05, 30.584234, -3.443382e-05)
+bones/7/rotation = Quaternion(-0.5254845, -0.040407002, -0.12178378, 0.8410719)
+bones/8/position = Vector3(-5.7822854e-06, 29.7185, 3.0907573e-05)
+bones/8/rotation = Quaternion(0.6884471, 0.20283706, 0.096675515, 0.68960243)
+bones/9/position = Vector3(-2.4414598e-05, 15.962518, -0.00030420072)
+bones/9/rotation = Quaternion(0.2351585, 0.2559502, -0.03727974, 0.9369099)
+bones/10/position = Vector3(5.692276e-06, 6.593508, -5.8650952e-05)
+bones/11/position = Vector3(-6.4074993e-07, 1.2178007, 6.750803)
+bones/11/rotation = Quaternion(0.7112488, 0.028442062, 0.009086435, 0.7023059)
+bones/12/position = Vector3(9.35124e-07, 8.003037, 5.8242007e-05)
+bones/12/rotation = Quaternion(0.051748764, 0.055685673, -0.025540013, 0.99677926)
+bones/13/rotation = Quaternion(-0.051265635, 0.05808054, -0.019346451, 0.996807)
+bones/14/position = Vector3(5.27503, 9.163369, -0.16747789)
+bones/14/rotation = Quaternion(-0.5809231, -0.39431244, 0.45696232, -0.5461058)
+bones/15/position = Vector3(-4.0461528e-05, 11.029799, -0.00028614915)
+bones/15/rotation = Quaternion(0.3850748, 0.009887446, -0.009283105, 0.9227857)
+bones/16/position = Vector3(4.4404766e-05, 18.714832, 0.00022294949)
+bones/16/rotation = Quaternion(0.07776533, -0.16542397, 0.24667041, 0.9517044)
+bones/17/position = Vector3(0.00012357878, 21.387697, 0.0002789976)
+bones/17/rotation = Quaternion(-0.06019605, 0.018870251, 0.021211479, 0.99778277)
+bones/18/position = Vector3(-2.499069e-05, 17.16418, -0.00018321627)
+bones/18/rotation = Quaternion(-0.00048693464, -0.01339158, 0.050323926, 0.99864304)
+bones/19/position = Vector3(2.9087092e-05, 1.6717486, -4.291547e-06)
+bones/19/rotation = Quaternion(-0.014058684, -0.00014360728, 0.035534114, 0.9992696)
+bones/20/position = Vector3(0.16626811, 2.4831507, 0.2720126)
+bones/20/rotation = Quaternion(0.14848574, 0.0041144136, -0.07068139, 0.9863768)
+bones/21/position = Vector3(-0.12654662, 1.4323885, -0.08198857)
+bones/22/position = Vector3(2.4018462e-07, 10.289644, 5.6795772e-05)
+bones/22/rotation = Quaternion(0.10843025, 0.08161018, 0.0068195937, 0.99072516)
+bones/23/position = Vector3(-5.066408e-07, 3.599681, 2.017994)
+bones/23/rotation = Quaternion(-0.04272502, 0.19953316, -0.03795016, 0.9782233)
+bones/24/position = Vector3(5.960447e-07, 29.920408, 16.773153)
+bones/25/position = Vector3(-5.275026, 9.175804, -0.23653603)
+bones/25/rotation = Quaternion(0.5910595, -0.34182796, 0.42760214, 0.59241784)
+bones/26/position = Vector3(3.7225433e-05, 11.030013, -8.20002e-05)
+bones/26/rotation = Quaternion(0.41824988, 0.004877619, 0.32206064, 0.84930575)
+bones/27/position = Vector3(-4.6902205e-05, 18.711386, 0.00012227483)
+bones/27/rotation = Quaternion(0.08089312, 0.10338488, -0.40377688, 0.9053907)
+bones/28/position = Vector3(0.00013223436, 21.407215, -0.00013582231)
+bones/28/rotation = Quaternion(0.053646322, -0.018336194, -0.30611187, 0.95030606)
+bones/29/position = Vector3(-4.339383e-05, 7.320273, -2.5501904e-06)
+bones/29/rotation = Quaternion(0.3171237, -0.0704936, -0.05291036, 0.94427943)
+bones/30/position = Vector3(2.3022296e-05, 7.000736, -1.342316e-05)
+bones/30/rotation = Quaternion(0.5700616, -0.10629169, 0.08240272, 0.8105194)
+bones/31/position = Vector3(0.7608105, 2.6204135, -0.095142245)
+bones/31/rotation = Quaternion(0.4538808, -0.137326, -0.04995423, 0.8789985)
+bones/32/position = Vector3(1.3298886, 5.564135, 0.3563569)
 
-[node name="BoneAttachment3D" type="BoneAttachment3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D" index="1"]
-transform = Transform3D(0.2714778, -0.5976307, 0.7544123, 0.05560416, 0.79227924, 0.60761964, -0.96083695, -0.12300658, 0.24831708, -20.27837, 23.426609, -75.85204)
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D" index="1" unique_id=976401094]
+transform = Transform3D(0.19413215, -0.063310236, 0.9789306, 0.52733105, 0.848204, -0.049719244, -0.82718474, 0.5258723, 0.19804895, -40.393684, -6.156278, -70.43118)
 bone_name = "mixamorig_RightHandIndex1"
 bone_idx = 29
 
-[node name="GarroteGoblin" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D/BoneAttachment3D" instance=ExtResource("3_garrote")]
-transform = Transform3D(56.5685, 0, -56.5685, 0, 80, 0, 56.5685, 0, 56.5685, 0, 5, -5)
+[node name="GarroteGoblin" parent="GOBLING_REMASTER_ANIMACIONES/Armature/Skeleton3D/BoneAttachment3D" unique_id=1389319798 instance=ExtResource("3_garrote")]
+transform = Transform3D(8.359443, 69.613335, -38.52414, -48.473633, 35.172993, 53.039326, 63.09061, 17.800306, 45.855423, 4.414997, -18.84132, -15.493778)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=808364248]
 transform = Transform3D(0.99137384, 0, 0, 0, 0.99137384, 0, 0, 0, 0.99137384, 0, 0.3022279, 0)
 shape = SubResource("CapsuleShape_goblin")
 
-[node name="PartesExplotadas" type="Node3D" parent="."]
+[node name="PartesExplotadas" type="Node3D" parent="." unique_id=359103662]
 transform = Transform3D(-2.0544352e-08, 0, -0.47, 0, 0.47, 0, 0.47, 0, -2.0544352e-08, 0, 0, 0)
 visible = false
 
-[node name="Piernas" parent="PartesExplotadas" instance=ExtResource("4_piernas")]
+[node name="Piernas" parent="PartesExplotadas" unique_id=1490424481 instance=ExtResource("4_piernas")]
 transform = Transform3D(1, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 1, 0, -0.064776085, 0)
 
-[node name="Cabeza" parent="PartesExplotadas" instance=ExtResource("5_cabeza")]
+[node name="Cabeza" parent="PartesExplotadas" unique_id=1277703594 instance=ExtResource("5_cabeza")]
 transform = Transform3D(0.78, 0, -5.542233e-15, 0, 0.78, 0, 5.542233e-15, 0, 0.78, -0.007733301, 0.99825186, 0.11249772)
 
-[node name="Brazo_01" parent="PartesExplotadas" instance=ExtResource("6_brazo1")]
+[node name="Brazo_01" parent="PartesExplotadas" unique_id=1073047117 instance=ExtResource("6_brazo1")]
 transform = Transform3D(1, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 1, -0.3092329, 0.39419746, 1.3516998e-08)
 
-[node name="Brazo_02" parent="PartesExplotadas" instance=ExtResource("7_brazo2")]
+[node name="Brazo_02" parent="PartesExplotadas" unique_id=138412966 instance=ExtResource("7_brazo2")]
 transform = Transform3D(1, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 1, 0.2565931, 0.45801905, -1.12160405e-08)
 
 [editable path="GOBLING_REMASTER_ANIMACIONES"]

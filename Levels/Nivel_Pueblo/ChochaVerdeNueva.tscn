@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://c_chocha_verde_nueva_scene"]
+
+[ext_resource type="PackedScene" path="res://Levels/Nivel_Pueblo/Chocha verde nueva.glb" id="1_model"]
+[ext_resource type="Material" path="res://Levels/Nivel_Pueblo/Chocha_verde_nueva_Mat.tres" id="2_mat"]
+[ext_resource type="Script" path="res://Levels/Nivel_Pueblo/ChochaVerdeNueva.gd" id="3_script"]
+
+[node name="ChochaVerdeNueva" type="Node3D"]
+script = ExtResource("3_script")
+material_choza = ExtResource("2_mat")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+unique_name_in_owner = true

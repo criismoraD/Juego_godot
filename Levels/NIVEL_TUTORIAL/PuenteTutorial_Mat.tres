@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b1o048pe3o2km"]
 
-[ext_resource type="Texture2D" path="res://TEST_/Puente/Puente_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://dikxdii1pj146" path="res://Levels/NIVEL_TUTORIAL/Puente_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "PuenteTutorial_Mat"

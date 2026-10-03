@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/NPC_Veera/EspadaVeera.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cwvsqx3d8mmwm" path="res://TEST_/Cuchillo vera/cuchillo vera.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://cwvsqx3d8mmwm" path="res://Entities/NPC_Veera/cuchillo vera.glb" id="2_model"]
 [ext_resource type="Material" path="res://Entities/NPC_Veera/EspadaVeera_Mat.tres" id="3_mat"]
 
 [node name="EspadaVeera" type="Node3D"]

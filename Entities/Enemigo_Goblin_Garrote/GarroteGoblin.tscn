@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cgarrotegoblinprop"]
 
-[ext_resource type="PackedScene" path="res://TEST_/Garrote goblin/garrote goblin.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://Entities/Enemigo_Goblin_Garrote/garrote goblin.glb" id="1_model"]
 [ext_resource type="Material" uid="uid://dgarrotegoblinmat" path="res://Entities/Enemigo_Goblin_Garrote/GarroteGoblin_MAT.tres" id="2_mat"]
 
 [node name="GarroteGoblin" instance=ExtResource("1_model")]

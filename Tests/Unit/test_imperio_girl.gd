@@ -201,15 +201,15 @@ func test_imperio_girl_escalera_y_apuntado_paridad():
 	var girl = IMPERIO_GIRL_SCENE.instantiate()
 	add_child(girl)
 	
-	# 1. Rotación de escalera para orientarse de cara a los peldaños / espalda a cámara
-	assert_almost_eq(girl.rotacion_personaje_escalera, 270.0, 0.1, "Debe ser 270 deg por el offset del modelo")
+	# 1. Rotación de escalera para orientarse de cara a los peldaños / espalda a cámara (180 deg idéntico a la protagonista)
+	assert_almost_eq(girl.rotacion_personaje_escalera, 180.0, 0.1, "Debe ser 180 deg igual a la protagonista")
 	
 	# 2. Al entrar a la escalera sin apuntar, debe adoptar la rotación hacia la pared
 	girl.current_move_state = Player.MoveState.CLIMBING
 	girl.current_aim_state = Player.AimState.NONE
 	girl._apply_character_rotation(0.016, true)
 	var ang_escalera: float = rad_to_deg(girl.armature_node.rotation.y)
-	assert_almost_eq(ang_escalera, 270.0 - 0.5, 1.0, "El armature debe rotar hacia los peldaños")
+	assert_almost_eq(ang_escalera, 180.0 - 0.5, 1.0, "El armature debe rotar hacia los peldaños")
 	
 	# 3. Al apuntar en la escalera, debe voltearse de perfil hacia la derecha/izquierda
 	girl.current_aim_state = Player.AimState.AIMING
@@ -224,4 +224,39 @@ func test_imperio_girl_escalera_y_apuntado_paridad():
 	assert_almost_eq(ang_apuntar_izq, rad_to_deg(girl.armature_original_rotation.y + PI), 1.0, "Debe mirar de perfil a la izquierda al apuntar")
 	
 	girl.queue_free()
+
+
+func test_imperio_girl_modos_de_loop_en_animaciones():
+	var girl = IMPERIO_GIRL_SCENE.instantiate()
+	add_child(girl)
+
+	# Loops continuos
+	for anim_loop in [
+		"Armature|Armature|IDLE",
+		"Armature|Armature|CAMINAR_ADELANTE",
+		"Armature|Armature|CAMINAR_ATRAS",
+		"Armature|Armature|CORRER_ADELANTE",
+		"Armature|Armature|APUNTAR_IDLE",
+		"Armature|Armature|SUBIR_ESCALERA",
+		"Armature|Armature|CAER_SALTAR"
+	]:
+		assert_true(girl.anim_player.has_animation(anim_loop), "Debe tener %s" % anim_loop)
+		var a: Animation = girl.anim_player.get_animation(anim_loop)
+		if a:
+			assert_eq(a.loop_mode, Animation.LOOP_LINEAR, "%s debe tener loop activado" % anim_loop)
+
+	# One-shots (no deben loopear)
+	for anim_oneshot in [
+		"Armature|Armature|DISPARAR",
+		"Armature|Armature|ATERRIZAJE",
+		"Armature|Armature|HIT",
+		"Armature|Armature|MUERTE"
+	]:
+		assert_true(girl.anim_player.has_animation(anim_oneshot), "Debe tener %s" % anim_oneshot)
+		var a: Animation = girl.anim_player.get_animation(anim_oneshot)
+		if a:
+			assert_eq(a.loop_mode, Animation.LOOP_NONE, "%s debe ser one-shot (LOOP_NONE)" % anim_oneshot)
+
+	girl.queue_free()
+
 

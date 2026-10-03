@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://b0e3svbe5crk6"]
 
 [ext_resource type="Script" uid="uid://bg5dwauh5g1ep" path="res://Entities/Defensora_ImperioGirl_Melee/ImperioGirlMelee.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://chjja8acqjm16" path="res://TEST_/Imperio Girl/Imperio Girl.glb" id="2_glb"]
-[ext_resource type="PackedScene" uid="uid://rjwgclotmtey" path="res://TEST_/Esspada imperial/Espada imperial.glb" id="3_espada"]
+[ext_resource type="PackedScene" uid="uid://chjja8acqjm16" path="res://Entities/Jugador_ImperioGirl/Imperio Girl.glb" id="2_glb"]
+[ext_resource type="PackedScene" uid="uid://rjwgclotmtey" path="res://Entities/Enemigo_ImperioMan/Espada imperial.glb" id="3_espada"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.22

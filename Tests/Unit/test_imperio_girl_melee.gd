@@ -289,3 +289,58 @@ func test_señal_died_se_emite_al_morir() -> void:
 	# Assert
 	assert_signal_emitted(melee, "died",
 			"La señal 'died' debe emitirse al terminar la disolución")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FEEDBACK DE IMPACTO (FLASH ROJO Y SQUASH & STRETCH) Y FLUIDEZ DE ATAQUE
+# ─────────────────────────────────────────────────────────────────────────────
+func test_color_flash_impacto_es_rojo() -> void:
+	# Arrange & Act
+	var melee: ImperioGirlMelee = _crear_melee()
+
+	# Assert: El flash de impacto debe ser rojo, no blanco
+	assert_gt(melee.color_flash_impacto.r, 0.8,
+			"El flash de impacto debe tener componente roja alta")
+	assert_lt(melee.color_flash_impacto.g, 0.3,
+			"El flash de impacto no debe ser blanco (verde bajo)")
+	assert_lt(melee.color_flash_impacto.b, 0.3,
+			"El flash de impacto no debe ser blanco (azul bajo)")
+
+
+func test_squash_stretch_se_activa_al_recibir_dano() -> void:
+	# Arrange
+	var melee: ImperioGirlMelee = _crear_melee()
+	await get_tree().process_frame
+
+	var modelo := melee.find_child("ImperioGirlModel", true, false) as Node3D
+	assert_not_null(modelo, "El modelo debe existir")
+	var escala_inicial: Vector3 = modelo.scale
+
+	# Act
+	melee.take_damage(1.0)
+
+	# Assert: Inmediatamente se comprime (Squash: Y menor que antes, X/Z mayor)
+	# y el tween de animación queda registrado y activo
+	assert_not_null(melee._hit_squash_tween,
+			"Debe crearse un tween para squash & stretch al recibir impacto")
+	assert_true(melee._hit_squash_tween.is_valid(),
+			"El tween de deformación de impacto debe ser válido")
+	assert_lt(modelo.scale.y, escala_inicial.y,
+			"La escala Y debe comprimirse en el impacto (squash)")
+	assert_gt(modelo.scale.x, escala_inicial.x,
+			"La escala X debe expandirse en el impacto (squash)")
+
+
+func test_parametros_ataque_fluido() -> void:
+	# Arrange & Act
+	var melee: ImperioGirlMelee = _crear_melee()
+
+	# Assert: Los tiempos de ataque deben permitir encadenamiento ágil
+	assert_eq(melee.velocidad_animacion_ataque, 1.2,
+			"La animación de ataque debe reproducirse acelerada (1.2x) para mayor agilidad")
+	assert_lte(melee.duracion_ataque_total, 0.95,
+			"La duración total del golpe debe ser ágil (<= 0.95s)")
+	assert_lte(melee.intervalo_entre_ataques, 0.35,
+			"El intervalo entre golpes debe ser corto para fluidez continua")
+	assert_lte(melee.tiempo_impacto_melee, 0.50,
+			"El punto de impacto debe coincidir ágilmente con el swing")

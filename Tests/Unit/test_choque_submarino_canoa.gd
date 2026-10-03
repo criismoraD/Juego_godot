@@ -59,7 +59,7 @@ func test_choque_separa_sin_atravesar_casco() -> void:
 	# Act: 3 segundos de simulación
 	_avanzar(canoa, 60)
 
-	# Assert: proa fuera del casco con margen extra (2.4 contacto + 3.0 retroceso)
+	# Assert: proa fuera del casco con margen extra (2.4 contacto + retroceso configurado)
 	var x_segura: float = sub.global_position.x - canoa.distancia_contacto_enemigos - canoa.retroceso_choque_submarino
 	assert_lte(canoa.obtener_posicion_base().x, x_segura + 0.5, "La canoa debe retroceder a distancia segura")
 	assert_lt(canoa.global_position.x, sub.global_position.x, "La canoa nunca debe atravesar al submarino")

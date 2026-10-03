@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://pixmwcxlnfmw"]
 
-[ext_resource type="Texture2D" path="res://TEST_/Torree tutorial/Torree tutorial_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://c0nckp7dypi6p" path="res://Levels/NIVEL_TUTORIAL/Torree tutorial_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "TorreeTutorial_Mat"

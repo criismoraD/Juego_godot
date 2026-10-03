@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bvaunulhqpcxc"
+path="res://.godot/imported/sonido gritos guerra.mp3-24690856e37b9d6942a29149ca1c15b2.mp3str"
+
+[deps]
+
+source_file="res://System/Audio/Music/sonido gritos guerra.mp3"
+dest_files=["res://.godot/imported/sonido gritos guerra.mp3-24690856e37b9d6942a29149ca1c15b2.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

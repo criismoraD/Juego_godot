@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://5rbh03pps0cj"]
 
-[ext_resource type="Texture2D" path="res://TEST_/Imperio man/Imperio man_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://cie2ljpswgbm3" path="res://Entities/Enemigo_ImperioMan/Imperio man_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "ImperioMan_Mat"

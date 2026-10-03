@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://hqx8ryfllsx7"]
 
-[ext_resource type="Texture2D" uid="uid://br8s6qnrto8a0" path="res://TEST_/Veera chikita/Veera Chikita_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://br8s6qnrto8a0" path="res://Entities/NPC_Veera/Veera Chikita_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "VeeraChikita_Mat"

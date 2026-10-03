@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://b18wtx427o58a"]
 
-[ext_resource type="Texture2D" uid="uid://b54sy44f6cxeb" path="res://TEST_/Imperio Girl/Imperio Girl_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://b54sy44f6cxeb" path="res://Entities/Jugador_ImperioGirl/Imperio Girl_D.jpg" id="1_tex"]
 [ext_resource type="Shader" uid="uid://ctu2vbbxnfkr7" path="res://System/Shaders/TOON_LINEANEGRA.gdshader" id="2_outline"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline_imperio"]

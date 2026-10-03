@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bqx4os2j6h08e"]
 
-[ext_resource type="Texture2D" uid="uid://yvy578hcf5c0" path="res://TEST_/Cola veera/Cola veera_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://yvy578hcf5c0" path="res://Entities/NPC_Veera/Cola veera_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "ColaVeera_Mat"

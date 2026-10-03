@@ -40,7 +40,7 @@ func test_tutorial_contiene_arbalesta_con_textura():
 
 	# Assert
 	var arbalesta := nivel.find_child("ArbalestaTutorial", true, false)
-	assert_not_null(arbalesta, "Debe existir el nodo ArbalestaTutorial (modelo TEST_/Arbalesta)")
+	assert_not_null(arbalesta, "Debe existir el nodo ArbalestaTutorial (modelo Levels/NIVEL_TUTORIAL)")
 	assert_not_null(arbalesta.get_node_or_null("Model"), "ArbalestaTutorial debe tener hijo Model con el GLB")
 	var mat: Material = arbalesta.get("material_arbalesta") as Material
 	assert_not_null(mat, "ArbalestaTutorial debe tener asignado material_arbalesta con su textura")
@@ -55,7 +55,7 @@ func test_tutorial_contiene_carreta_con_texturas():
 
 	# Assert
 	var carreta := nivel.find_child("CarretaTutorial", true, false)
-	assert_not_null(carreta, "Debe existir el nodo CarretaTutorial (modelo TEST_/Carreta tutorial)")
+	assert_not_null(carreta, "Debe existir el nodo CarretaTutorial (modelo Levels/NIVEL_TUTORIAL)")
 	assert_not_null(carreta.get_node_or_null("Model"), "CarretaTutorial debe tener hijo Model con el GLB")
 	var mat: Material = carreta.get("material_carreta") as Material
 	assert_not_null(mat, "CarretaTutorial debe tener asignado material_carreta con sus texturas")

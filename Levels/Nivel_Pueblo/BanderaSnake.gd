@@ -6,7 +6,7 @@ extends Sprite3D
 ## Sincroniza automáticamente la textura con el ShaderMaterial tanto en el
 ## editor como en juego (mismo patrón que BanderaMorada).
 
-const TEXTURA_DEFAULT: Texture2D = preload("res://TEST_/Bandera snake.png")
+const TEXTURA_DEFAULT: Texture2D = preload("res://Levels/Nivel_Pueblo/Bandera snake.png")
 const SHADER_DEFAULT: Shader = preload("res://System/Shaders/bandera_colgante.gdshader")
 
 

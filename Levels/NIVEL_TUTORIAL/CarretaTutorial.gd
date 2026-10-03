@@ -2,7 +2,7 @@
 class_name CarretaTutorial
 extends Node3D
 
-## Wrapper posicionable para la carreta del tutorial (modelo TEST_/Carreta tutorial).
+## Wrapper posicionable para la carreta del tutorial (modelo Levels/NIVEL_TUTORIAL).
 ## Aplica el material con textura a todas las mallas importadas del GLB,
 ## sin depender del nombre interno del nodo importado.
 ## Panel de capa visual en el inspector: elige en qué capa va

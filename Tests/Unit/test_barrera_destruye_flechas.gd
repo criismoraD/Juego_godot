@@ -95,3 +95,23 @@ func test_enemy_walks_out_of_barrier():
 	
 	# Limpieza
 	enemy.free()
+
+
+func test_barrera_protege_batalla_fondo_tutorial():
+	# Arrange: nivel tutorial con batalla de fondo (bloques azul y rojo)
+	var escena := load("res://Levels/NIVEL_TUTORIAL/NIVEL_TUTORIAL.tscn") as PackedScene
+	assert_not_null(escena, "NIVEL_TUTORIAL.tscn debe cargar sin errores")
+	var nivel := escena.instantiate()
+	get_tree().root.add_child(nivel)
+
+	# Assert: barrera presente entre el cauce y la batalla (z=-10.45)
+	var barrera := nivel.get_node_or_null("BarreraDestruyeFlechas")
+	assert_not_null(barrera, "Debe existir BarreraDestruyeFlechas en el tutorial")
+	assert_true(barrera.is_in_group("barrera_destruye_flechas"), "En el grupo que detectan las flechas")
+	var tam: Vector3 = barrera.get("tamano")
+	assert_gte(tam.x, 40.0, "Debe cubrir el frente de la batalla en X")
+	assert_lte(barrera.global_position.z, -2.0, "Delante de la batalla de fondo")
+	assert_gte(barrera.global_position.z, -10.45, "Detrás del cauce jugable")
+
+	# Limpieza
+	nivel.free()

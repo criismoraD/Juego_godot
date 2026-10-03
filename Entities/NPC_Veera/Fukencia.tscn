@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://5gp40ys4rt2a"]
 
 [ext_resource type="Script" uid="uid://cc1jhxfsol53m" path="res://Entities/NPC_Veera/Veera.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://TEST_/Fukencia/Fukencia.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://Entities/NPC_Veera/Fukencia.glb" id="2_model"]
 [ext_resource type="Material" path="res://Entities/NPC_Veera/Fukencia_Mat.tres" id="3_ssqf7"]
 [ext_resource type="PackedScene" path="res://Entities/NPC_Veera/EspadaVeera.tscn" id="4_espada"]
 [ext_resource type="PackedScene" path="res://Entities/NPC_Veera/ColaVeera.tscn" id="5_cola"]

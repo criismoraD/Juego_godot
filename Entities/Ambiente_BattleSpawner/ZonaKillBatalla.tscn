@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://zona_kill_batalla"]
+
+[ext_resource type="Script" path="res://Entities/Ambiente_BattleSpawner/ZonaKillBatalla.gd" id="1_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kill"]
+size = Vector3(3.0, 8.0, 10.0)
+
+[node name="ZonaKillBatalla" type="Area3D"]
+script = ExtResource("1_script")
+collision_layer = 0
+collision_mask = 4294967295
+mostrar_debug_en_editor = true
+color_debug = Color(1.0, 0.0, 0.0, 0.35)
+eliminar_todos_los_bandos = true
+bando_objetivo = "azul"
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_kill")

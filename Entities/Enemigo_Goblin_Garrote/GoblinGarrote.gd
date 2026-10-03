@@ -18,6 +18,7 @@ const DURACION_ATAQUE_MELEE_DEFAULT: float = 1.6
 const DURACION_BLOQUEO_DEFAULT: float = 0.9
 const INTERVALO_ENTRE_ATAQUES_DEFAULT: float = 1.0
 const VELOCIDAD_CORRER_DEFAULT: float = 2.4
+const ESCENA_SANGRE_LETAL: PackedScene = preload("res://VFX/Scenes/BloodSplashNormal.tscn")
 
 const TEXTURA_HUMO_PISADAS: Texture2D = preload("res://VFX/Textures/Smoke/Humo_Pisadas_1A-1.png")
 const HUMO_PISADAS_FRAMES_H: int = 9
@@ -50,12 +51,19 @@ enum EstadoMelee {
 		if is_node_ready():
 			_actualizar_orientacion_modelo()
 @export var plano_profundidad_z: float = 0.0
+## Si true, silencia los efectos de sonido de este goblin (ataques, bloqueos, muertes) en batallas cosméticas.
+@export var silenciar_audio: bool = false
+## Si true, ataca primero al defensor aliado más cercano en vez de ir directo
+## a por la protagonista (oleada del tutorial contra el defensor imperial).
+@export var priorizar_defensores: bool = false
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # VARIABLES DE ESTADO
 # ═══════════════════════════════════════════════════════════════════════════════
 var estado_melee: EstadoMelee = EstadoMelee.CORRIENDO
 var murio_por_explosion: bool = false
+var _sangre_letal_spawneada: bool = false
+
 
 var _timer_ataque: float = 0.0
 var _ha_golpeado_en_animacion: bool = false
@@ -76,6 +84,81 @@ func _on_enemy_ready() -> void:
 	_fijar_garrote_mano_derecha()
 	set_process(true)
 	_cambiar_estado_melee(EstadoMelee.CORRIENDO)
+	# La guardia de _cambiar_estado_melee devuelve early si el estado inicial
+	# ya es CORRIENDO (valor por defecto), así que arrancamos manualmente.
+	_forzar_animacion_correr()
+
+
+## Busca la animación de correr específica del goblin con garrote ("correr con garrote" / "correr garrote"),
+## asegurando que su loop_mode sea LOOP_LINEAR y reproduciéndola de forma continua.
+func _forzar_animacion_correr() -> void:
+	if not anim_player:
+		return
+	const VARIANTES_CORRER: Array[String] = [
+		"correr con garrote",
+		"correr garrote",
+		"Correr con garrote",
+		"Correr garrote",
+		"Armature|correr con garrote",
+		"Armature|correr garrote",
+		"Armature|Armature|correr con garrote",
+		"Armature|Armature|correr garrote",
+		"ENEMIGO_GOBLING_CORRER",
+		"Armature|ENEMIGO_GOBLING_CORRER",
+		"Armature|Armature|ENEMIGO_GOBLING_CORRER",
+		"Correr",
+	]
+	for nombre: String in VARIANTES_CORRER:
+		if not anim_player.has_animation(nombre):
+			continue
+		var anim: Animation = anim_player.get_animation(nombre)
+		if is_instance_valid(anim) and anim.loop_mode != Animation.LOOP_LINEAR:
+			anim.loop_mode = Animation.LOOP_LINEAR
+		var anim_speed: float = clampf(velocidad_correr / VELOCIDAD_CORRER_DEFAULT, 0.45, 1.2)
+		if anim_player.current_animation != nombre:
+			anim_player.play(nombre, -1.0, anim_speed)
+		else:
+			anim_player.speed_scale = anim_speed
+		return
+
+	# Búsqueda semántica por si el nombre varía ligeramente (ej. "correr_garrote", etc.)
+	for anim_name: String in anim_player.get_animation_list():
+		var lower: String = anim_name.to_lower()
+		if "correr" in lower and "garrote" in lower:
+			var anim: Animation = anim_player.get_animation(anim_name)
+			if is_instance_valid(anim) and anim.loop_mode != Animation.LOOP_LINEAR:
+				anim.loop_mode = Animation.LOOP_LINEAR
+			var anim_speed: float = clampf(velocidad_correr / VELOCIDAD_CORRER_DEFAULT, 0.45, 1.2)
+			if anim_player.current_animation != anim_name:
+				anim_player.play(anim_name, -1.0, anim_speed)
+			else:
+				anim_player.speed_scale = anim_speed
+			return
+
+
+## Override para interceptar llamadas genéricas a "Correr" y redirigirlas a la animación con garrote.
+func _play_animation(anim_name: String, custom_blend: float = -1.0, speed: float = 1.0) -> void:
+	var lower: String = anim_name.to_lower()
+	if lower == "correr" or ("correr" in lower and "garrote" in lower):
+		_forzar_animacion_correr()
+		return
+	if lower == "caminar" or ("caminar" in lower and "garrote" in lower):
+		if anim_player and anim_player.has_animation("caminar garrote"):
+			var anim: Animation = anim_player.get_animation("caminar garrote")
+			if is_instance_valid(anim) and anim.loop_mode != Animation.LOOP_LINEAR:
+				anim.loop_mode = Animation.LOOP_LINEAR
+			if anim_player.current_animation != "caminar garrote":
+				anim_player.play("caminar garrote")
+			return
+	super._play_animation(anim_name, custom_blend, speed)
+
+
+## Desvanece el cadáver con el shader de disolución y libera el nodo.
+## Invocado por el gestor de cadáveres cuando se supera el límite en pantalla.
+func desvanecer_y_liberar() -> void:
+	if is_dissolving or is_queued_for_deletion():
+		return
+	_start_dissolve_effect()
 
 
 func _actualizar_orientacion_modelo() -> void:
@@ -152,7 +235,7 @@ func _cambiar_estado_melee(nuevo_estado: EstadoMelee) -> void:
 	match nuevo_estado:
 		EstadoMelee.CORRIENDO:
 			velocity.x = direccion_avance * velocidad_correr
-			_play_animation("Correr")
+			_forzar_animacion_correr()
 		EstadoMelee.ATACANDO:
 			velocity.x = 0.0
 			_timer_ataque = 0.0
@@ -243,6 +326,15 @@ func _ejecutar_golpe_garrote() -> void:
 
 
 func _objetivo_en_alcance_melee() -> bool:
+	# Oleada tutorial: el defensor frena el paso aunque el objetivo sea otro;
+	# al alcanzarlo se queda peleando en vez de traspasarlo.
+	if priorizar_defensores:
+		var defensor := _buscar_aliado_cercano()
+		if defensor != null:
+			var dd: float = (defensor.global_position.x - global_position.x) * direccion_avance
+			var ddz: float = absf(global_position.z - defensor.global_position.z)
+			if dd >= -0.3 and dd <= alcance_melee + 0.3 and ddz <= margen_z_melee:
+				return true
 	var obj := _buscar_objetivo_cercano()
 	if not obj or not is_instance_valid(obj):
 		return false
@@ -257,6 +349,12 @@ func _buscar_objetivo_cercano() -> Node3D:
 	if not is_inside_tree():
 		return null
 
+	# 0. Oleada tutorial: el defensor aliado más cercano primero.
+	if priorizar_defensores:
+		var defensor := _buscar_aliado_cercano()
+		if defensor != null:
+			return defensor
+
 	# 1. Protagonista (solo si no es batalla cosmética o está en rango Z)
 	if not is_in_group("batalla_cosmetica"):
 		var player := get_tree().get_first_node_in_group("player") as Node3D
@@ -269,6 +367,13 @@ func _buscar_objetivo_cercano() -> Node3D:
 					return player
 
 	# 2. Defensoras o aliadas (en el mismo rango Z)
+	return _buscar_aliado_cercano()
+
+
+## Defensor aliado vivo más cercano por delante (para bloquear el paso).
+func _buscar_aliado_cercano() -> Node3D:
+	if not is_inside_tree():
+		return null
 	var aliados := get_tree().get_nodes_in_group("allies")
 	var mas_cercano: Node3D = null
 	var min_dist_x: float = INF
@@ -370,6 +475,9 @@ func _on_state_dying() -> void:
 	if _particulas_pisada:
 		_particulas_pisada.emitting = false
 
+	# Efecto visual de sangre letal garantizado
+	_crear_splash_sangre_letal()
+
 	if murio_por_explosion:
 		_ejecutar_explosion_desmembramiento()
 		return
@@ -382,6 +490,43 @@ func _on_state_dying() -> void:
 	]
 	var chosen_death: String = death_anims[randi() % death_anims.size()]
 	_play_animation(chosen_death)
+
+
+## Spawnea el efecto de impacto de sangre letal (BloodSplashNormal) en el torso del goblin.
+func _crear_splash_sangre_letal() -> void:
+	if _sangre_letal_spawneada or not tiene_sangre:
+		return
+	_sangre_letal_spawneada = true
+
+	var escena: PackedScene = escena_sangre if escena_sangre else ESCENA_SANGRE_LETAL
+	if not escena:
+		return
+
+	var splash_node := escena.instantiate() as Node3D
+	if not splash_node:
+		return
+
+	var target_parent: Node = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent()
+	if not target_parent:
+		target_parent = self
+	target_parent.add_child(splash_node)
+
+	# Ubicación en el torso del goblin (aprox 0.45m de altura sobre el suelo)
+	var splash_pos: Vector3 = global_position + Vector3(0.0, 0.45, 0.0) + offset_sangre
+	if last_hit_position != Vector3.ZERO and last_hit_position.distance_to(global_position) <= 1.5:
+		splash_pos = last_hit_position + offset_sangre
+
+	var dir_impacto: Vector3 = last_hit_direction if last_hit_direction != Vector3.ZERO else Vector3(-direccion_avance, 0.0, 0.0)
+
+	if splash_node.has_method("setup"):
+		splash_node.call("setup", splash_pos, dir_impacto, Color.WHITE)
+	elif splash_node is Node3D:
+		splash_node.global_position = splash_pos
+
+
+## Redirige el spawn de sangre letal de EnemyBase al método dedicado para evitar duplicaciones.
+func _spawn_blood_splash(_custom_modulate: Color = Color.WHITE) -> void:
+	_crear_splash_sangre_letal()
 
 
 ## Al morir por explosión: suelta el garrote con física en lugar de la ballesta
@@ -408,12 +553,14 @@ func _ejecutar_explosion_desmembramiento() -> void:
 	_play_sfx("sangre_splash")
 	_play_sfx("goblin_explosive_death", 2.3)
 
-	# 3. Sangre animada
+	# 3. Sangre letal y sangre animada
+	_crear_splash_sangre_letal()
 	_spawn_sangre_animada(global_position)
 	if ClassDB.class_exists("VFXFactory") or has_node("/root/VFXFactory"):
 		var vfx_fac = get_node_or_null("/root/VFXFactory")
 		if vfx_fac and vfx_fac.has_method("spawn_ground_blood_splatter"):
 			vfx_fac.call("spawn_ground_blood_splatter", self, global_position)
+
 
 	# 4. Calcular dirección de impulso
 	var push_dir: float = 1.0
@@ -594,5 +741,8 @@ func _particulas_pisada_emitir() -> void:
 
 
 func _play_sfx(sfx_name: String, volume_db: float = 0.0) -> void:
+	if silenciar_audio:
+		return
 	if is_inside_tree() and get_tree().root.has_node("AudioManager"):
 		get_tree().root.get_node("AudioManager").call("play_sfx", sfx_name, volume_db)
+

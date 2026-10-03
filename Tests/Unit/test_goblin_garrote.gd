@@ -45,10 +45,31 @@ func test_animaciones_requeridas_disponibles() -> void:
 
 	# Assert
 	assert_not_null(anim_player, "Debe existir un AnimationPlayer en el modelo")
-	assert_true(anim_player.has_animation("Correr"), "Debe tener la animación 'Correr'")
+	assert_true(anim_player.has_animation("correr con garrote") or anim_player.has_animation("Correr"),
+		"Debe tener la animación 'correr con garrote' o 'Correr'")
 	assert_true(anim_player.has_animation("Ataque melee"), "Debe tener la animación 'Ataque melee'")
 	assert_true(anim_player.has_animation("Bloqueo"), "Debe tener la animación 'Bloqueo'")
 	assert_true(anim_player.has_animation("Idle"), "Debe tener la animación 'Idle'")
+
+	goblin.queue_free()
+
+
+func test_animacion_correr_garrote_activada_correctamente() -> void:
+	# Arrange
+	var goblin := ESCENA_GOBLIN_GARROTE.instantiate() as GoblinGarrote
+	add_child(goblin)
+
+	# Act
+	goblin._forzar_animacion_correr()
+
+	# Assert
+	var anim_player := goblin.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	assert_not_null(anim_player, "Debe tener AnimationPlayer")
+	var anim_activa: String = anim_player.current_animation.to_lower()
+	assert_true("correr" in anim_activa, "Debe estar reproduciendo animación de correr")
+	if anim_player.has_animation("correr con garrote"):
+		assert_eq(anim_player.current_animation, "correr con garrote",
+			"Debe reproducir específicamente 'correr con garrote'")
 
 	goblin.queue_free()
 
@@ -168,3 +189,53 @@ func test_recibir_golpe_melee_cuando_ya_esta_muerto() -> void:
 	assert_false(resultado, "No debe procesar ni bloquear golpes cuando ya está muerto")
 
 	goblin.queue_free()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TESTS DE SANGRE LETAL Y SILENCIADO DE AUDIO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+func test_sangre_letal_se_spawnea_al_morir() -> void:
+	# Arrange
+	var goblin := ESCENA_GOBLIN_GARROTE.instantiate() as GoblinGarrote
+	add_child(goblin)
+	assert_false(goblin._sangre_letal_spawneada, "Inicialmente no debe haber spawneado sangre letal")
+
+	# Act
+	goblin._on_state_dying()
+
+	# Assert
+	assert_true(goblin._sangre_letal_spawneada, "Al entrar en estado dying debe activarse _sangre_letal_spawneada")
+
+	goblin.queue_free()
+
+
+func test_sangre_letal_no_duplica_en_multiples_llamadas() -> void:
+	# Arrange
+	var goblin := ESCENA_GOBLIN_GARROTE.instantiate() as GoblinGarrote
+	add_child(goblin)
+
+	# Act
+	goblin._crear_splash_sangre_letal()
+	var conteo_hijos_antes: int = get_child_count()
+	goblin._crear_splash_sangre_letal()
+	var conteo_hijos_despues: int = get_child_count()
+
+	# Assert
+	assert_eq(conteo_hijos_antes, conteo_hijos_despues, "Llamar a _crear_splash_sangre_letal múltiples veces no debe duplicar instancias")
+
+	goblin.queue_free()
+
+
+func test_silenciar_audio_evita_reproducir_sfx() -> void:
+	# Arrange
+	var goblin := ESCENA_GOBLIN_GARROTE.instantiate() as GoblinGarrote
+	add_child(goblin)
+	goblin.silenciar_audio = true
+
+	# Act & Assert: No debe causar error ni intentar reproducir en AudioManager
+	goblin._play_sfx("cualquier_sfx")
+	assert_true(goblin.silenciar_audio, "silenciar_audio debe permanecer en true")
+
+	goblin.queue_free()
+

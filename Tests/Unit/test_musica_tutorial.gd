@@ -4,7 +4,7 @@ extends "res://addons/gut/test.gd"
 ## y el nivel tutorial la usa como ambiente de arranque.
 
 const SCRIPT_AUDIO: Script = preload("res://System/Core/AudioManager.gd")
-const RUTA_MUSICA_TUTORIAL: String = "res://TEST_/Musica nivel tutorial A.mp3"
+const RUTA_MUSICA_TUTORIAL: String = "res://System/Audio/Music/Musica nivel tutorial A.mp3"
 
 
 func test_musica_tutorial_tiene_indice_propio() -> void:

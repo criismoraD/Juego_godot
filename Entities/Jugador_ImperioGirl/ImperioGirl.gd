@@ -6,7 +6,7 @@ extends "res://Entities/Jugador_Arquera/Player.gd"
 ## - Mismo comportamiento de disparo: tensado fluido hacia la mejilla (TOMAR_FLECHA -> APUNTAR_IDLE),
 ##   rotación de torso pitch con el ratón y disparo ágil (DISPARAR).
 ## - Mismo comportamiento de escaleras: orientación natural de cara a los peldaños / espalda a cámara
-##   (rotacion_personaje_escalera = 270°), y giro lateral de perfil al apuntar/disparar en escalera.
+##   (rotacion_personaje_escalera = 180°, idéntico a Eryn), y giro lateral de perfil al apuntar/disparar en escalera.
 ## - Locomoción idéntica al apuntar: caminar adelante de frente y caminar hacia atrás retrocediendo
 ##   con animación invertida fluida (CAMINAR_ATRAS).
 ## - Mismo sistema de daño, vida (4), flechas explosivas/múltiples y HUD.
@@ -20,15 +20,18 @@ const FLECHA_EXPLOSIVA_SCENE: PackedScene = preload("res://Entities/Flecha_Explo
 const MAPEO_ANIMS: Dictionary = {
 	"Idle espera": "Armature|Armature|IDLE",
 	"Caminar": "Armature|Armature|CAMINAR_ADELANTE",
+	"Caminar hacia atras": "Armature|Armature|CAMINAR_ATRAS",
 	"Correr": "Armature|Armature|CORRER_ADELANTE",
 	"Disparo arco": "Armature|Armature|DISPARAR",
 	"Aterrizaje": "Armature|Armature|ATERRIZAJE",
 	"Caida": "Armature|Armature|CAER_SALTAR",
-	"Agacharse": "Armature|Armature|CAER_SALTAR",
-	"Standing Up": "Armature|Armature|IDLE",
+	"Agacharse": "Armature|Armature|AGANCHARSE",
+	"Standing Up": "Armature|Armature|PARARSE",
 	"Hit": "Armature|Armature|HIT",
 	"Muerte1": "Armature|Armature|MUERTE",
+	"Muerte2": "Armature|Armature|MUERTE_2",
 	"Apuntar idle": "Armature|Armature|APUNTAR_IDLE",
+	"Subir escalera": "Armature|Armature|SUBIR_ESCALERA",
 	"Climbing Ladder": "Armature|Armature|SUBIR_ESCALERA",
 	"Standing Aim Walk Forward": "Armature|Armature|APUNTAR_CAMINAR_ADELANTE",
 	"@tomar_flecha": "Armature|Armature|TOMAR_FLECHA",
@@ -52,14 +55,15 @@ var _entrada_aim_full_lista: bool = false
 func _init() -> void:
 	vida_maxima = 4
 	duracion_maxima_disparo = 0.20
-	# Paridad visual exacta con Eryn (vista 2.5D lateral):
-	# - rotacion_personaje_escalera = 270.0: debido al offset de 90° del esqueleto de Mixamo en
-	#   Imperio Girl, 270° orienta su espalda a la cámara y cara a los peldaños, idéntico a Eryn (180°).
+	# Paridad visual y mecánica exacta con Eryn (vista 2.5D lateral):
+	# - rotacion_personaje_escalera = 180.0: con el nuevo clip de Subir escalera orientado de forma estándar,
+	#   180° orienta su espalda a la cámara y cara a los peldaños, idéntico a Eryn (180°).
 	# - rotacion_torso_escalera = 0.0: alineación neutral del torso al apuntar en escalera.
 	# - eje_rotacion = 2 (Z / FORWARD): el pitch del torso inclina arriba/abajo en el plano 2.5D.
-	rotacion_personaje_escalera = 270.0
+	rotacion_personaje_escalera = 180.0
 	rotacion_torso_escalera = 0.0
 	eje_rotacion = 2
+
 
 
 func _ready() -> void:
@@ -213,7 +217,7 @@ static func _player_corporal_en(nodo: Node) -> AnimationPlayer:
 			return directo
 	for n in nodo.find_children("*", "AnimationPlayer", true, false):
 		var ap := n as AnimationPlayer
-		if ap and (ap.has_animation("Idle espera") or ap.has_animation("Climbing Ladder") or ap.has_animation("Caminar")):
+		if ap and (ap.has_animation("Idle espera") or ap.has_animation("Subir escalera") or ap.has_animation("Climbing Ladder") or ap.has_animation("Caminar")):
 			return ap
 	return nodo.find_child("AnimationPlayer", true, false) as AnimationPlayer
 
@@ -276,16 +280,28 @@ func _remapear_animaciones_imperio(anim_p: AnimationPlayer) -> void:
 		if clip_destino in [
 			"Armature|Armature|IDLE",
 			"Armature|Armature|CAMINAR_ADELANTE",
+			"Armature|Armature|CAMINAR_ATRAS",
 			"Armature|Armature|APUNTAR_IDLE",
 			"Armature|Armature|CORRER_ADELANTE",
 			"Armature|Armature|SUBIR_ESCALERA",
-			"Armature|Armature|APUNTAR_CAMINAR_ADELANTE"
+			"Armature|Armature|APUNTAR_CAMINAR_ADELANTE",
+			"Armature|Armature|CAER_SALTAR"
 		]:
 			fuente.loop_mode = Animation.LOOP_LINEAR
+		elif clip_destino in [
+			"Armature|Armature|DISPARAR",
+			"Armature|Armature|ATERRIZAJE",
+			"Armature|Armature|HIT",
+			"Armature|Armature|MUERTE",
+			"Armature|Armature|MUERTE_2"
+		]:
+			fuente.loop_mode = Animation.LOOP_NONE
+
 		_registrar_alias(anim_p, clip_destino, fuente)
 		if clip_destino.begins_with("Armature|Armature|"):
 			var alias_corto: String = clip_destino.replace("Armature|Armature|", "Armature|")
 			_registrar_alias(anim_p, alias_corto, fuente)
+
 
 	# 2. Generar clip invertido en tiempo para CAMINAR_ATRAS a partir de Caminar
 	# Esto permite que al retroceder cargando el arco o apuntando, las piernas den pasos hacia atras reales

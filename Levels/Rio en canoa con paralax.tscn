@@ -395,7 +395,7 @@ directional_shadow_split_2 = 0.25
 directional_shadow_split_3 = 0.55
 directional_shadow_blend_splits = true
 directional_shadow_fade_start = 0.85
-directional_shadow_max_distance = 65.0
+directional_shadow_max_distance = 30.0
 
 [node name="DirectionalLight3D2" type="DirectionalLight3D" parent="Lighting/DirectionalLight3D" unique_id=2026999003]
 transform = Transform3D(0.37613553, -0.35728383, 0.9424466, 0.18451758, 1.107951, 0.26640055, -0.8248061, 0.084928155, 0.48937958, 11.101227, 3.21533, -2.8423324)
@@ -3145,10 +3145,10 @@ activar_al_entrar_en_camara = true
 solo_atacar_en_pantalla = true
 
 [node name="Submarino" parent="." unique_id=2026999250 instance=ExtResource("64_submarino")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.311504, -1.2892933, -7.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.311504, -0.7, -7.5)
 cantidad_enemigos = 5
 cantidad_pirata = 5
-altura_emergido_y = 12.0
+altura_emergido_y = -0.7
 velocidad_emerger = 1.5
 distancia_activacion_x = 14.0
 canon_tiempo_apuntado = 2.0
@@ -3156,11 +3156,11 @@ canon_margen_boca = 0.6
 canon_tiempo_regreso = 1.5
 
 [node name="Submarino3" parent="." unique_id=759287405 instance=ExtResource("64_submarino")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53.095707, -1.2892933, -7.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53.095707, -0.7, -7.5)
 cantidad_enemigos = 5
 cantidad_goblin_arquera = 4
 cantidad_imp_embajador = 1
-altura_emergido_y = 12.0
+altura_emergido_y = -0.7
 velocidad_emerger = 1.5
 distancia_activacion_x = 14.0
 canon_tiempo_apuntado = 2.0

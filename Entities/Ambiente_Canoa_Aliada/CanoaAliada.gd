@@ -103,6 +103,7 @@ const VOLUMEN_SILENCIO_DB: float = -80.0
 @export var separacion_submarinos_activa: bool = true  ## Si true, nunca atraviesa submarinos: tamboleo + separación
 @export var medio_casco_submarino_defecto: float = 5.0  ## Medio casco si el submarino no informa el suyo (m)
 @export var margen_casco_submarino: float = 1.5  ## Margen extra despejado a cada lado del casco (m)
+@export var histeresis_separacion_submarino: float = 0.6  ## Margen extra de salida: evita el parpadeo en el borde del casco (no reentra hasta despejarlo)
 @export var margen_profundidad_submarinos: float = 4.0  ## Rango en Z para considerar el mismo cauce (m)
 @export var velocidad_separacion_submarino: float = 8.0  ## Velocidad de salida del casco (m/s)
 @export var duracion_tamboleo_submarino: float = 1.2  ## Duración del tamboleo al chocar (s)
@@ -501,28 +502,37 @@ func calcular_rotacion_grados(tiempo: float) -> Vector3:
 ## Separación anti-solape con submarinos: ninguna canoa aliada atraviesa un
 ## casco. Al solaparse con un submarino en superficie del mismo cauce, la
 ## canoa hace tamboleo (sacudida_oleaje) y sale hacia el lado más cercano
-## hasta dejar el casco despejado. Luego retoma su navegación con normalidad.
+## hasta dejar el casco despejado con histéresis. Si el submarino corta el paso
+## hacia su destino, espera en la cota segura sin parpadear hasta que se despeje.
 func _procesar_separacion_submarinos(delta: float) -> void:
 	_cooldown_tamboleo_sub = maxf(0.0, _cooldown_tamboleo_sub - maxf(delta, 0.0))
 	if not separacion_submarinos_activa:
 		_sub_solapado = null
 		return
+	var previo: Node3D = _sub_solapado
 	var sub: Node3D = _buscar_submarino_solapado_cercano()
+	if sub == null and is_instance_valid(previo) and _sigue_solapado_con_histeresis(previo):
+		sub = previo
 	_sub_solapado = sub
 	if sub == null:
 		return
 	var medio: float = _medio_casco_submarino(sub)
+	var limite: float = medio + maxf(histeresis_separacion_submarino, 0.0)
 	# Comparación en espacio global; el empuje se aplica en base local para
 	# respetar padres con desplazamiento (ej. controlador de trayectorias).
 	var dx: float = global_position.x - sub.global_position.x
-	if absf(dx) >= medio:
+	if absf(dx) >= limite and not _sub_bloquea_paso(sub):
+		_sub_solapado = null
 		return
-	if _cooldown_tamboleo_sub <= 0.0:
+	# Tamboleo solo al entrar en contacto nuevo: mientras se mantiene la espera
+	# no se re-sacude (evita maderos y parpadeo repetidos contra el mismo casco).
+	if previo != sub and _cooldown_tamboleo_sub <= 0.0:
 		_cooldown_tamboleo_sub = cooldown_tamboleo_submarino
 		sacudida_oleaje(duracion_tamboleo_submarino, multiplicador_tamboleo_submarino)
 	var lado: float = -1.0 if dx <= 0.0 else 1.0
 	var desfase_local: float = _posicion_base.x - global_position.x
-	var x_segura: float = sub.global_position.x + lado * medio + desfase_local
+	# Cota con histéresis: sale hasta despejar el casco con margen extra para no reentrar.
+	var x_segura: float = sub.global_position.x + lado * limite + desfase_local
 	_posicion_base.x = move_toward(_posicion_base.x, x_segura, maxf(velocidad_separacion_submarino, 0.5) * maxf(delta, 0.001))
 	position.x = _posicion_base.x + calcular_desplazamiento(_tiempo).x
 
@@ -547,6 +557,37 @@ func _buscar_submarino_solapado_cercano() -> Node3D:
 			if absf(sub.global_position.x - global_position.x) < medio:
 				return sub
 	return null
+
+
+## Mantiene la separación con el submarino previo hasta despejarlo con el margen
+## de histéresis (aunque ya salga del radio estricto de solape): evita reentrar
+## y parpadear en el borde mientras la navegación empuja hacia su destino.
+func _sigue_solapado_con_histeresis(sub: Node3D) -> bool:
+	if not is_instance_valid(sub) or not (sub is Node3D):
+		return false
+	var s := sub as Node3D
+	if not s.is_inside_tree():
+		return false
+	if _validar_submarino_separable(s) == null:
+		return false
+	if absf(s.global_position.z - global_position.z) > margen_profundidad_submarinos:
+		return false
+	var medio: float = _medio_casco_submarino(s)
+	return absf(s.global_position.x - global_position.x) < medio + maxf(histeresis_separacion_submarino, 0.0)
+
+
+## True si el submarino corta el paso hacia el destino de navegación (canoa y
+## destino en lados opuestos del casco). Mientras bloquee el paso se mantiene
+## la espera en la cota segura —sin avanzar ni reentrar— hasta que el submarino
+## se sumerja, se hunda o deje el cauce.
+func _sub_bloquea_paso(sub: Node3D) -> bool:
+	if not _navegando or not is_instance_valid(sub):
+		return false
+	var a_destino: float = _x_destino - sub.global_position.x
+	var a_canoa: float = global_position.x - sub.global_position.x
+	if absf(a_destino) < 0.05 or absf(a_canoa) < 0.05:
+		return true
+	return signf(a_destino) != signf(a_canoa)
 
 
 ## Valida que el nodo sea un submarino separable: en superficie y no destruido.
@@ -575,6 +616,12 @@ func _medio_casco_submarino(sub: Node) -> float:
 
 
 func _actualizar_navegacion(delta: float) -> void:
+	# Espera anti-parpadeo: mientras se mantiene la separación con un submarino
+	# no se avanza (la separación empuja a la cota segura); al despejar se retoma
+	# con rampa suave, sin forcejeo hacia dentro del casco.
+	if is_instance_valid(_sub_solapado):
+		_velocidad_efectiva = move_toward(_velocidad_efectiva, 0.0, maxf(aceleracion_navegacion, 0.1) * delta)
+		return
 	# Rampa suave: la velocidad efectiva persigue al objetivo sin saltos.
 	_velocidad_efectiva = move_toward(_velocidad_efectiva, _velocidad_navegacion, maxf(aceleracion_navegacion, 0.1) * delta)
 	var paso: float = _velocidad_efectiva * delta * _direccion_navegacion

@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://iom52p2t7y6w"]
 
-[ext_resource type="Texture2D" uid="uid://bhvjngo1vltw6" path="res://TEST_/Cuchillo vera/cuchillo vera_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://bhvjngo1vltw6" path="res://Entities/NPC_Veera/cuchillo vera_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "EspadaVeera_Mat"

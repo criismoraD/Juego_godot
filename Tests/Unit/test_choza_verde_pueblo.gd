@@ -1,12 +1,12 @@
 extends "res://addons/gut/test.gd"
 
 ## Test unitario y de integración para ChochaVerdeNueva en NivelPueblo:
-## Verifica la carga de escena desde TEST_/Choza verde nueva/ChochaVerdeNueva.tscn,
+## Verifica la carga de escena desde Levels/Nivel_Pueblo/ChochaVerdeNueva.tscn,
 ## asignación de material con textura Chocha verde nueva_D.jpg,
 ## capas visuales (primer plano capa 1 y fondo desenfocado capa 2) y su presencia en NivelPueblo.
 
-const SCENE_CHOZA_VERDE: PackedScene = preload("res://TEST_/Choza verde nueva/ChochaVerdeNueva.tscn")
-const MATERIAL_CHOZA_VERDE: StandardMaterial3D = preload("res://TEST_/Choza verde nueva/Chocha_verde_nueva_Mat.tres")
+const SCENE_CHOZA_VERDE: PackedScene = preload("res://Levels/Nivel_Pueblo/ChochaVerdeNueva.tscn")
+const MATERIAL_CHOZA_VERDE: StandardMaterial3D = preload("res://Levels/Nivel_Pueblo/Chocha_verde_nueva_Mat.tres")
 
 func test_choza_verde_instancia_correctamente_con_material_y_capa() -> void:
 	# Arrange

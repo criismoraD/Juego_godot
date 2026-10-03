@@ -2,7 +2,7 @@
 class_name PuenteTutorial
 extends Node3D
 
-## Wrapper posicionable para el puente del tutorial (modelo TEST_/Puente).
+## Wrapper posicionable para el puente del tutorial (modelo Levels/NIVEL_TUTORIAL/Puente.glb).
 ## Aplica el material con textura a todas las mallas importadas del GLB,
 ## sin depender del nombre interno del nodo importado.
 ## Panel de capa visual en el inspector: elige en qué capa va

@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Entities/NPC_Veera/ColaVeera.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://dryysifhwotcq" path="res://TEST_/Cola veera/Cola veera.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://dryysifhwotcq" path="res://Entities/NPC_Veera/Cola veera.glb" id="2_model"]
 [ext_resource type="Material" path="res://Entities/NPC_Veera/ColaVeera_Mat.tres" id="3_mat"]
 
 [node name="ColaVeera" type="Node3D"]

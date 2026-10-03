@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cb6lf1cm8hw6s"]
 
-[ext_resource type="Texture2D" path="res://TEST_/Casa destruida/Casa destruida_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://3vhhll8bphpt" path="res://Levels/NIVEL_TUTORIAL/Casa destruida_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "CasaDestruida_Mat"

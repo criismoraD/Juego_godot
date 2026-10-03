@@ -231,3 +231,40 @@ func test_orientacion_goblin_garrote_mira_a_la_izquierda() -> void:
 				"El modelo de Goblin Garrote debe mirar a la izquierda (-X) con -90 grados.")
 		unidad.queue_free()
 
+
+# ─── TESTS DE SILENCIAR UNIDADES Y GESTIÓN DE CADÁVERES ──────────────────────
+
+func test_silenciar_unidades_se_aplica_al_spawnear() -> void:
+	# Arrange
+	_spawner_azul.silenciar_unidades = true
+	# Act
+	var unidad: Node3D = await _spawner_azul._spawn_una_unidad()
+	# Assert
+	assert_not_null(unidad, "Debe spawnear la unidad")
+	if unidad:
+		assert_true("silenciar_audio" in unidad and bool(unidad.get("silenciar_audio")),
+			"La unidad debe tener silenciar_audio activo si el spawner tiene silenciar_unidades = true")
+		unidad.queue_free()
+
+
+func test_max_cadaveres_respeta_limite_y_desvanece_antiguos() -> void:
+	# Arrange
+	_spawner_azul.max_cadaveres = 2
+	var cad1 := Node3D.new()
+	var cad2 := Node3D.new()
+	var cad3 := Node3D.new()
+	add_child_autofree(cad1)
+	add_child_autofree(cad2)
+	add_child_autofree(cad3)
+
+	# Act
+	_spawner_azul._registrar_cadaver(cad1)
+	_spawner_azul._registrar_cadaver(cad2)
+	assert_eq(_spawner_azul.contar_cadaveres(), 2, "Debe haber 2 cadáveres registrados")
+
+	_spawner_azul._registrar_cadaver(cad3)
+
+	# Assert
+	assert_lte(_spawner_azul.contar_cadaveres(), 2, "No debe superar el límite máximo de cadáveres configurado")
+
+

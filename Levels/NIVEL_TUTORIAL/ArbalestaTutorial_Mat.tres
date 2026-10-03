@@ -1,6 +1,6 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://boanpb3gy41yl"]
 
-[ext_resource type="Texture2D" path="res://TEST_/Arbalesta/arbalesta_D.jpg" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://bfkflkvyip426" path="res://Levels/NIVEL_TUTORIAL/arbalesta_D.jpg" id="1_tex"]
 
 [resource]
 resource_name = "ArbalestaTutorial_Mat"

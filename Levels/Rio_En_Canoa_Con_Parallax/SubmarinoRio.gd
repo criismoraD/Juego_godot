@@ -106,7 +106,7 @@ const TIEMPO_DETENCION_PREVIO_ATAQUE: float = 0.15
 ## (no al asomar por el borde, para apreciar la animación completa)
 @export var distancia_activacion_x: float = 2.5
 @export_category("Bloqueo de Canoa")
-@export var margen_bloqueo_proa: float = 5.0  ## Mitad del casco + margen: la canoa se detiene antes de tocarlo
+@export var margen_bloqueo_proa: float = 3.6  ## Medio casco (3.0) + margen: la canoa frena con ~1 m de proa despejada y el submarino queda encuadrado en cámara (plataforma y cañón visibles)
 
 @export_category("Flotación")
 ## Si true, realiza un suave balanceo y cabeceo al estar en la superficie
@@ -970,8 +970,24 @@ func _restaurar_canon() -> void:
 	_tween_canon.tween_property(_canon_modelo, "rotation", _canon_rot_base, maxf(canon_tiempo_regreso, 0.05)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
+## SFX 3D por pool de AudioManager (sin crear nodos por evento = sin tirones).
+## Sin AudioManager (tests/editor aislado) usa la vía local clásica con nodo propio.
+func _sfx_pool_3d(nombre: String, pos: Vector3, boost_db: float = 0.0, pitch: float = 0.0) -> bool:
+	if get_tree() == null:
+		return false
+	if not get_tree().root.has_node("AudioManager"):
+		return false
+	var mgr: Node = get_tree().root.get_node("AudioManager")
+	if mgr == null or not mgr.has_method("play_sfx_3d"):
+		return false
+	mgr.call("play_sfx_3d", nombre, pos, boost_db, pitch)
+	return true
+
+
 ## Estampido del cañón en su boca (explosión grave reutilizada de Lonko).
 func _reproducir_sfx_canon(pos: Vector3) -> void:
+	if _sfx_pool_3d("canon_submarino", pos):
+		return
 	if not is_instance_valid(SFX_CANON_DISPARO):
 		return
 	var player := AudioStreamPlayer3D.new()
@@ -990,6 +1006,8 @@ func _reproducir_sfx_canon(pos: Vector3) -> void:
 
 ## Crujido del engranaje mientras el cañón se mueve (al elevar y al regresar).
 func _reproducir_sfx_engranaje(pos: Vector3) -> void:
+	if _sfx_pool_3d("engranaje_canon", pos):
+		return
 	if not is_instance_valid(SFX_CANON_ENGRANAJE):
 		return
 	var player := AudioStreamPlayer3D.new()
@@ -1064,6 +1082,8 @@ func _reproducir_sfx_splash() -> void:
 	if is_instance_valid(audio_splash) and audio_splash.stream != null:
 		audio_splash.play()
 	elif ResourceLoader.exists(SFX_SPLASH):
+		if _sfx_pool_3d("splash_agua", global_position, 2.0):
+			return
 		var stream := load(SFX_SPLASH) as AudioStream
 		if stream:
 			var player := AudioStreamPlayer3D.new()
@@ -1081,6 +1101,8 @@ func _reproducir_sfx_splash() -> void:
 
 ## Sonido del submarino emergiendo (se dispara al iniciar la emergencia).
 func _reproducir_sfx_emergiendo() -> void:
+	if _sfx_pool_3d("submarino_emergiendo", global_position, 2.0):
+		return
 	if not ResourceLoader.exists(SFX_EMERGIENDO):
 		return
 	var stream := load(SFX_EMERGIENDO) as AudioStream
@@ -1263,6 +1285,8 @@ func _detener_goteo_cubierta() -> void:
 
 ## Sonido del submarino sumergiéndose (mismo audio de emerger pero más despacio y con tono más bajo/pesado).
 func _reproducir_sfx_sumergiendose() -> void:
+	if _sfx_pool_3d("submarino_emergiendo", global_position, 2.0, pitch_sonido_sumersion):
+		return
 	if not ResourceLoader.exists(SFX_EMERGIENDO):
 		return
 	var stream := load(SFX_EMERGIENDO) as AudioStream
